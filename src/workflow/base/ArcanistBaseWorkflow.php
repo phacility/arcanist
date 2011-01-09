@@ -534,7 +534,7 @@ class ArcanistBaseWorkflow {
     }
     $api->setRelativeCommit(trim($merge_base));
   }
-  
+
   protected function normalizeRevisionID($revision_id) {
     return ltrim(strtoupper($revision_id), 'D');
   }

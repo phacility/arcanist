@@ -116,7 +116,7 @@ try {
       'conduit.connect',
       array(
         'client'            => 'arc',
-        'clientVersion'     => 1,
+        'clientVersion'     => 2,
         'clientDescription' => php_uname('n').':'.$description,
         'user'              => getenv('USER'),
       ));

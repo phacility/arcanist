@@ -92,7 +92,7 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
     $modules = array();
     $moduleinfo = array();
-    
+
     $project_root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
 
     foreach ($paths as $path) {

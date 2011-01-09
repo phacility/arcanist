@@ -1,3 +1,5 @@
+.DS_Store
+._*
 *.a
 *.o
 /support/xhpast/xhpast

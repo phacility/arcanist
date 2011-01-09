@@ -108,7 +108,7 @@ EOTEXT
       $repository_api->amendGitHeadCommit($message);
       echo "Amended commit message.\n";
     }
-    
+
     $working_copy = $this->getWorkingCopy();
     $remote_hooks = $working_copy->getConfig('remote_hooks_installed', false);
     if (!$remote_hooks) {
@@ -120,7 +120,7 @@ EOTEXT
         'mark-committed',
         array($revision_id));
       $mark_workflow->run();
-    }    
+    }
 
     return 0;
   }
