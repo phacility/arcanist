@@ -1,0 +1,15 @@
+Property changes on: conf/haste
+___________________________________________________________________
+Modified: svn:ignore
+   - *.phpz
+
+   + *.php
+
+
+
+Property changes on: scripts/unittest/bin/run_all_unittests
+___________________________________________________________________
+Modified: svn:special
+   - *
+   + moo
+

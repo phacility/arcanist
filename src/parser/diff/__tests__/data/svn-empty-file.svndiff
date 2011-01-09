@@ -1,0 +1,11 @@
+Index: flib/intern/arcanist/workflow/commit/__init__.php
+===================================================================
+
+Property changes on: flib/intern/arcanist/workflow/commit/ArcanistCommitWorkflow.php
+___________________________________________________________________
+Added: svn:mergeinfo
+   Merged /tfb/branches/internmove/www/lib/intern/arcanist/ArcanistCommitWorkflow.php:r83462-126155
+   Merged /tfb/releases/thefacebook-r126219-10122008/www/lib/intern/arcanist/ArcanistCommitWorkflow.php:r126613,126628,126633-126634
+   Merged /tfb/branches/ads-create-v3/www/lib/intern/arcanist/ArcanistCommitWorkflow.php:r140558-142418
+   Merged /tfb/branches/coyote/www/lib/intern/arcanist/ArcanistCommitWorkflow.php:r167289,167325,167327,167437
+

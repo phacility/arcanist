@@ -1,0 +1,81 @@
+<?php
+// This test is just making sure we have undone all of the stream elision that
+// the default XHP grammar does, since it does certain transformations against
+// whitespace and entities in the lexer itself. If our parse tree elides
+// whitespace, the "+" operator trigger on the last line will patch at the wrong
+// offset and the test will fail.
+<div
+      id 
+      
+        =
+        
+          {
+            
+                $x
+                
+                
+                    }
+                       >
+  x
+  
+    {
+        $x
+        
+        }
+        
+        <a />
+        
+          &amp;
+          
+          '
+          
+          "
+  
+   </div>
+              
+              
+                 ;
+
+$x+$y;
+~~~~~~~~~~
+warning:39:3
+~~~~~~~~~~
+<?php
+// This test is just making sure we have undone all of the stream elision that
+// the default XHP grammar does, since it does certain transformations against
+// whitespace and entities in the lexer itself. If our parse tree elides
+// whitespace, the "+" operator trigger on the last line will patch at the wrong
+// offset and the test will fail.
+<div
+      id 
+      
+        =
+        
+          {
+            
+                $x
+                
+                
+                    }
+                       >
+  x
+  
+    {
+        $x
+        
+        }
+        
+        <a />
+        
+          &amp;
+          
+          '
+          
+          "
+  
+   </div>
+              
+              
+                 ;
+
+$x + $y;

@@ -1,0 +1,66 @@
+<?php
+if ( $x ) { }
+f( );
+q(                      );
+g();
+if ($x) { }
+else if ( $y ) { }
+<div>( a b c )</div>;
+$obj->m(
+  $x,
+  $y,
+  $z);
+for ( $ii = 0; $ii < 1; $ii++ ) { }
+foreach ( $x as $y ) { }
+function q( $x ) { }
+class X {
+  public function f( $y ) {
+  }
+}
+foreach ( $z as $k => $v ) {
+}
+some_call( /* respect authorial intent */ $b,
+  $a // if comments are present
+  );
+~~~~~~~~~~
+warning:2:5
+warning:2:8
+warning:3:3
+warning:4:3
+warning:7:10
+warning:7:13
+warning:13:6
+warning:13:30
+warning:14:10
+warning:14:19
+warning:15:12
+warning:15:15
+warning:17:21
+warning:17:24
+warning:20:10
+warning:20:25
+~~~~~~~~~~
+<?php
+if ($x) { }
+f();
+q();
+g();
+if ($x) { }
+else if ($y) { }
+<div>( a b c )</div>;
+$obj->m(
+  $x,
+  $y,
+  $z);
+for ($ii = 0; $ii < 1; $ii++) { }
+foreach ($x as $y) { }
+function q($x) { }
+class X {
+  public function f($y) {
+  }
+}
+foreach ($z as $k => $v) {
+}
+some_call( /* respect authorial intent */ $b,
+  $a // if comments are present
+  );

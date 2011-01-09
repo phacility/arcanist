@@ -1,0 +1,19 @@
+commit 501f6d519703458471dbea6284ec5f49d1408598
+Merge: f3d9834 e4b5d09
+Author: Hans Fugal <fugalh@facebook.com>
+Date:   21 hours ago
+
+    fbi.have_debug() to disappear
+
+    Summary:
+    fbi.have_debug() is boring because libfbi has no --enable-debug-log
+    option - the only question is whether the debugging will do anything (if
+    libasox or libmc has --enable-debug-log). So it always returns true. It
+    will probably go away, and this is the change to go with that.
+
+    Test Plan:
+    python test/test.py -d 1
+
+    Reviewers: marc, larry
+    Tags: libmc,libfbi
+

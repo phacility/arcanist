@@ -1,0 +1,13 @@
+<?php
+
+class A {
+  public function u() {
+    $this->f();
+  }
+  public static function v() {
+    $this->f();
+  }
+}
+
+~~~~~~~~~~
+error:8:5 Use of $this in a static method.

@@ -1,0 +1,4 @@
+diff --git a/lib/display/intern/ui/widget/UIWidgetRSSBox.php b/flib/intern/widgets/ui/UIWidgetRSSBox.php
+similarity index 100%
+copy from lib/display/intern/ui/widget/UIWidgetRSSBox.php
+copy to flib/intern/widgets/ui/UIWidgetRSSBox.php

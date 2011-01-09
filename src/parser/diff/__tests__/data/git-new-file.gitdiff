@@ -1,0 +1,7 @@
+diff --git a/duck b/duck
+new file mode 100644
+index 0000000..7984de9
+--- /dev/null
++++ b/duck
+@@ -0,0 +1 @@
++"Quack," says the duck!

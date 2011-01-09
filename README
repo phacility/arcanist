@@ -1,0 +1,11 @@
+PROJECT STATUS: CAVEAT EMPTOR
+
+This is an unstable preview release. I'm open sourcing some of Facebook's
+internal tools, but they'll be unstable for at least a couple months.
+-epriestley
+
+
+WHAT IS ARCANIST?
+
+Arcanist is the CLI for Facebook's code review tool, Differential. Since
+Differential isn't released yet, it may not be terribly useful on its own.

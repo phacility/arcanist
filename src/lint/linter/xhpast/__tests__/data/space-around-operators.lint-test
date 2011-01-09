@@ -1,0 +1,59 @@
+<?php
+$a + $b;
+$a+$b;
+$a +$b;
+$a+ $b;
+$a = -$b;
+$a=-$b;
+$a-=$b;
+$a -=$b;
+$a-= $b;
+$a===$b;
+$a.$b;
+function x($n=null) { }
+function x($n = null) { }
+<div id="id">1+1=2</div>;
+$y /* ! */ += // ?
+$z;
+$obj->method();
+Dog::bark();
+$prev = ($total == 1) ? $navids[0] : $navids[$total-1];
+$next = ($total == 1) ? $navids[0] : $navids[$current+1];
+if ($x instanceof :y:z &&$w) { }
+if ($x instanceof :y:z && $w) { }
+~~~~~~~~~~
+warning:3:3
+warning:4:4
+warning:5:3
+warning:7:3
+warning:8:3
+warning:9:4
+warning:10:3
+warning:11:3
+warning:20:52
+warning:21:54
+warning:22:24
+~~~~~~~~~~
+<?php
+$a + $b;
+$a + $b;
+$a + $b;
+$a + $b;
+$a = -$b;
+$a = -$b;
+$a -= $b;
+$a -= $b;
+$a -= $b;
+$a === $b;
+$a.$b;
+function x($n=null) { }
+function x($n = null) { }
+<div id="id">1+1=2</div>;
+$y /* ! */ += // ?
+$z;
+$obj->method();
+Dog::bark();
+$prev = ($total == 1) ? $navids[0] : $navids[$total - 1];
+$next = ($total == 1) ? $navids[0] : $navids[$current + 1];
+if ($x instanceof :y:z && $w) { }
+if ($x instanceof :y:z && $w) { }

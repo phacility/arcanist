@@ -1,0 +1,15 @@
+Index: scripts/intern/test/testfile2
+===================================================================
+Index: scripts/intern/test/testfile3
+===================================================================
+--- scripts/intern/test/testfile3	(revision 223313)
++++ scripts/intern/test/testfile3	(working copy)
+@@ -5,7 +5,7 @@
+ %%
+ %%%
+ %%%
+-%%%%
++%%%%quack
+ %%%%
+ %%%%%
+ %%%%%

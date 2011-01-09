@@ -1,0 +1,41 @@
+<?php
+class a {
+  const b = 1, c = d;
+  protected $E, $H;
+  public function F($G, $GG) { }
+}
+
+interface i { }
+
+class :XhpStuff { }
+
+function YY($ZZ) { }
+
+class Quack {
+  const R = 1, S = 2;
+  protected $tX, $uY;
+  public function vV($w_w) { }
+}
+
+<div class="protected function">const $y;</div>;
+
+class :ui:lol-whatever:omg { }
+
+function () use ($this_is_a_closure) { };
+
+function f(&$YY) {
+}
+~~~~~~~~~~
+warning:2:7
+warning:3:9
+warning:3:16
+warning:4:13
+warning:4:17
+warning:5:19
+warning:5:21
+warning:5:25
+warning:8:11
+warning:10:7
+warning:12:10
+warning:12:13
+warning:26:12

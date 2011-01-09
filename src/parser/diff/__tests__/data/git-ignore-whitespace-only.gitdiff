@@ -1,0 +1,13 @@
+diff --git a/scripts/intern/test/testfile2 b/scripts/intern/test/testfile2
+index c654992..def8290 100644
+diff --git a/scripts/intern/test/testfile3 b/scripts/intern/test/testfile3
+index c654992..ef692c0 100644
+--- a/scripts/intern/test/testfile3
++++ b/scripts/intern/test/testfile3
+@@ -9,5 +9,5 @@ asdfasdf
+ %%%%
+ %%%%%
+ %%%%%
+-
++quack
+ !

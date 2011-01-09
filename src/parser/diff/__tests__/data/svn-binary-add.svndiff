@@ -1,0 +1,10 @@
+Index: binary.bin
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+
+Property changes on: binary.bin
+___________________________________________________________________
+Added: svn:mime-type
+   + application/octet-stream
+

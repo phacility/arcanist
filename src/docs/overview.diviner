@@ -1,0 +1,30 @@
+@title Arcanist Overview
+
+This document provides an overview of Arcanist, a code workflow tool. Arcanist
+(commonly, "arc") is the command-line frontend to Differential.
+
+A detailed command reference is available by running ##arc help##.
+
+= Overview =
+
+Arcanist is the command-line interface to Differential, and supports some
+related revision control operations. Arcanist allows you to do things like:
+
+  - send your code to Differential for review with ##arc diff##
+  - commit reviewed changes with ##arc commit## (svn) or ##arc amend## (git)
+  - check your code for syntax and style errors with ##arc lint##
+  - run unit tests that cover your changes with ##arc unit##
+  - export changes from Differential or the working copy with ##arc export##
+  - apply patches from Differential or patchfiles with ##arc patch##
+  - execute context-aware blame with ##arc cover##
+  - show Differential status with ##arc list##
+  
+In general, these workflows are agnostic to the underlying version control
+system and will work properly in git or svn repositories.
+
+= Configuring a New Project =
+
+Create a .arcconfig file.
+
+= SVN Basics =
+

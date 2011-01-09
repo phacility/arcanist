@@ -1,0 +1,17 @@
+diff --git a/html/home.php b/html/home_evan.php
+similarity index 100%
+rename from html/home.php
+rename to html/home_evan.php
+diff --git a/scripts/intern/test/testfile3 b/scripts/intern/test/testfile3
+index c654992..614d414 100644
+--- a/scripts/intern/test/testfile3
++++ b/scripts/intern/test/testfile3
+@@ -3,7 +3,7 @@ asdfasdf
+ %
+ %%
+ %%
+-%%%
++%%%x
+ %%%
+ %%%%
+ %%%%

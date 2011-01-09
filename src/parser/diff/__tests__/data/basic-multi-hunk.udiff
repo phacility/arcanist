@@ -1,0 +1,32 @@
+--- left	2010-03-03 10:29:17.000000000 -0800
++++ right	2010-03-03 10:29:36.000000000 -0800
+@@ -1,4 +1,4 @@
+-     1	quack
++     1	duck
+      2	quack
+      3	quack
+      4	quack
+@@ -19,7 +19,7 @@
+     19	quack
+     20	quack
+     21	quack
+-    22	quack
++    22	duck
+     23	quack
+     24	quack
+     25	quack
+@@ -50,7 +50,7 @@
+     50	quack
+     51	quack
+     52	quack
+-    53	quack
++    53	duck
+     54	quack
+     55	quack
+     56	quack
+@@ -64,4 +64,4 @@
+     64	quack
+     65	quack
+     66	quack
+-    67	quack
++    67	duck

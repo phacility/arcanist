@@ -1,0 +1,9 @@
+*.a
+*.o
+/support/xhpast/xhpast
+/src/staticanalysis/parsers/xhpast/bin/xhpast
+parser.yacc.cpp
+parser.yacc.hpp
+scanner.lex.cpp
+scanner.lex.hpp
+parser.yacc.output

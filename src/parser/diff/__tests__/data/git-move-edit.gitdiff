@@ -1,0 +1,16 @@
+diff --git a/html/home.php b/html/home_evan.php
+similarity index 99%
+rename from html/home.php
+rename to html/home_evan.php
+index b42cc95..fcd3819 100755
+--- a/html/home.php
++++ b/html/home_evan.php
+@@ -14,7 +14,7 @@ require_module('login/context');
+ 
+ define('DEFAULT_HOME_PAGE_KEY', FEED_FILTER_KEY_DUAL_NEWS_FEED);
+ 
+-require_login();
++// require_login();
+ 
+ $viewer_context = ViewerContext::newWebViewerContext();
+ $user = $viewer_context->getUserID();

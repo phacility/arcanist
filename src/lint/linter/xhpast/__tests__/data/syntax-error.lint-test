@@ -1,0 +1,4 @@
+<?php
+char *buf = null;
+~~~~~~~~~~
+error:2:1

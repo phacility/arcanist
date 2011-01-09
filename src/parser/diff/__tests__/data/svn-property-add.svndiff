@@ -1,0 +1,18 @@
+Index: scripts/intern/test/testfile2
+===================================================================
+--- scripts/intern/test/testfile2	(revision 223313)
++++ scripts/intern/test/testfile2	(working copy)
+@@ -9,5 +9,5 @@
+ %%%%
+ %%%%%
+ %%%%%
+-
++quack
+ !
+
+Property changes on: scripts/intern/test/testfile2
+___________________________________________________________________
+Added: duck
+   + quack
+
+

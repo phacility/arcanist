@@ -1,0 +1,18 @@
+Index: scripts/intern/test/testfile2
+===================================================================
+--- scripts/intern/test/testfile2	(revision 281100)
++++ scripts/intern/test/testfile2	(working copy)
+@@ -1,6 +1,6 @@
+ asdfasdf
++% quack
+ %
+-%
+ %%
+ %%
+ %%%
+@@ -10,4 +10,4 @@
+ %%%%%
+ %%%%%
+ 
+-!
++! quack

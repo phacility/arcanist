@@ -1,0 +1,14 @@
+diff --git a/last_min_rev.txt b/last_min_rev.txt
+old mode 100644
+new mode 100755
+index d989c70..e7c6b72
+--- a/last_min_rev.txt
++++ b/last_min_rev.txt
+@@ -1,2 +1,7 @@
+ 175441
+ amenghra: updating minimum revision to 175441
++a
++d
++ab
++b
++dsb

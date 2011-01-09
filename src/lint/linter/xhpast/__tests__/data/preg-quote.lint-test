@@ -1,0 +1,12 @@
+<?php
+
+function foo($bar) {
+  preg_quote($bar);
+  preg_quote($bar, '/');
+  preg_Quote('moo');
+  preg_quote('moo', '/');
+}
+
+~~~~~~~~~~
+error:4:3 Wrong number of arguments to preg_quote()
+error:6:3 Wrong number of arguments to preg_quote()

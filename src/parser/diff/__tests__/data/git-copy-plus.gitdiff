@@ -1,0 +1,44 @@
+diff --git a/lib/display/intern/ui/widget/UIWidgetLunchtime.php b/flib/intern/widgets/ui/UIWidgetGraphConnect.php
+similarity index 57%
+copy from lib/display/intern/ui/widget/UIWidgetLunchtime.php
+copy to flib/intern/widgets/ui/UIWidgetGraphConnect.php
+index 71268f0..ab5a8a8 100644
+--- a/lib/display/intern/ui/widget/UIWidgetLunchtime.php
++++ b/flib/intern/widgets/ui/UIWidgetGraphConnect.php
+@@ -2,11 +2,12 @@
+ // Copyright 2004-present Facebook. All Rights Reserved.
+ 
+ /**
+- * A box for lunchtime
++ * A box for connecting to the subject, could be adding a tag, adding a friend,
++ * etc...
+  *
+  * @author mnovati
+  */
+-class UIWidgetLunchtime extends UIWidgetBox {
++class UIWidgetGraphConnect extends UIWidgetBox {
+ 
+   protected $controller = 'UIWidget';
+ 
+@@ -17,7 +18,9 @@ class UIWidgetLunchtime extends UIWidgetBox {
+    */
+   protected function doSetup() {
+     parent::doSetup();
+-    $this->addClass('UIWidgetLunchtime');
++
++    require_static('UIWidgetGraphConnect-css');
++    $this->addClass('UIWidgetGraphConnect');
+     $this->addClass('clearfix');
+   }
+ 
+@@ -28,9 +31,7 @@ class UIWidgetLunchtime extends UIWidgetBox {
+    * @author mnovati
+    */
+   public function setupContent() {
+-    $this->setupPagelet('/intern/widget/pagelet/lunch.php',
+-                        $context = array(),
+-                        $is_async = true);
++    $this->setupPagelet('/intern/widget/pagelet/graph_connect.php');
+   }
+ 
+ }
