@@ -48,9 +48,13 @@ if ($argc != 2) {
 phutil_require_module('phutil', 'filesystem');
 $dir = Filesystem::resolvePath($argv[1]);
 
-phutil_require_module('arcanist', 'staticanalysis/parsers/xhpast/bin');
+phutil_require_module('phutil', 'parser/xhpast/bin');
+phutil_require_module('phutil', 'parser/xhpast/api/tree');
+
 phutil_require_module('arcanist', 'lint/linter/phutilmodule');
 phutil_require_module('arcanist', 'lint/message');
+phutil_require_module('arcanist', 'staticanalysis/parsers/phutilmodule');
+
 
 $data = array();
 $futures = array();
@@ -62,8 +66,6 @@ foreach (Filesystem::listDirectory($dir, $hidden_files = false) as $file) {
   $futures[$file] = xhpast_get_parser_future($data[$file]);
 }
 
-phutil_require_module('arcanist', 'staticanalysis/parsers/xhpast/api/tree');
-phutil_require_module('arcanist', 'staticanalysis/parsers/phutilmodule');
 
 $requirements = new PhutilModuleRequirements();
 $requirements->addBuiltins($builtin);

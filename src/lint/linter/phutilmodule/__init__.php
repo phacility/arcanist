@@ -14,6 +14,7 @@ phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'future');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'moduleutils');
+phutil_require_module('phutil', 'parser/xhpast/bin');
 
 
 phutil_require_source('ArcanistPhutilModuleLinter.php');

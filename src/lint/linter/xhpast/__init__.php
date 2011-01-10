@@ -8,8 +8,8 @@
 
 phutil_require_module('arcanist', 'lint/linter/base');
 phutil_require_module('arcanist', 'lint/severity');
-phutil_require_module('arcanist', 'staticanalysis/parsers/xhpast/api/tree');
-phutil_require_module('arcanist', 'staticanalysis/parsers/xhpast/bin');
+phutil_require_module('phutil', 'parser/xhpast/api/tree');
+phutil_require_module('phutil', 'parser/xhpast/bin');
 
 phutil_require_module('phutil', 'utils');
 

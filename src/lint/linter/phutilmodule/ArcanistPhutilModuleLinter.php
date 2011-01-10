@@ -90,6 +90,12 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
   public function willLintPaths(array $paths) {
 
+    if ($paths) {
+      if (!xhpast_is_available()) {
+        throw new Exception(xhpast_get_build_instructions());
+      }
+    }
+
     $modules = array();
     $moduleinfo = array();
 

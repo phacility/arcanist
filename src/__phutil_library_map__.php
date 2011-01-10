@@ -64,17 +64,9 @@ phutil_register_library_map(array(
     'PhutilModuleRequirements' => 'staticanalysis/parsers/phutilmodule',
     'PhutilUnitTestEngine' => 'unit/engine/phutil',
     'UnitTestableArcanistLintEngine' => 'lint/engine/test',
-    'XHPASTNode' => 'staticanalysis/parsers/xhpast/api/node',
-    'XHPASTNodeList' => 'staticanalysis/parsers/xhpast/api/list',
-    'XHPASTSyntaxErrorException' => 'staticanalysis/parsers/xhpast/api/exception',
-    'XHPASTToken' => 'staticanalysis/parsers/xhpast/api/token',
-    'XHPASTTree' => 'staticanalysis/parsers/xhpast/api/tree',
   ),
   'function' =>
   array(
-    'xhp_parser_node_constants' => 'staticanalysis/parsers/xhpast/constants',
-    'xhpast_get_parser_future' => 'staticanalysis/parsers/xhpast/bin',
-    'xhpast_parser_token_constants' => 'staticanalysis/parsers/xhpast/constants',
   ),
   'requires_class' =>
   array(
