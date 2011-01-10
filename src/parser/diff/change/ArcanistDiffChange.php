@@ -63,9 +63,11 @@ class ArcanistDiffChange {
     $obj->metdadata = $dict['metadata'];
     $obj->oldPath = $dict['oldPath'];
     $obj->currentPath = $dict['currentPath'];
-    $obj->awayPaths = $dict['awayPaths'];
-    $obj->oldProperties = $dict['oldProperties'];
-    $obj->newProperties = $dict['newProperties'];
+    // TODO: The backend is shipping down some bogus data, e.g. diff 199453.
+    // Should probably clean this up.
+    $obj->awayPaths     = nonempty($dict['awayPaths'],     array());
+    $obj->oldProperties = nonempty($dict['oldProperties'], array());
+    $obj->newProperties = nonempty($dict['newProperties'], array());
     $obj->type = $dict['type'];
     $obj->fileType = $dict['fileType'];
     $obj->commitHash = $dict['commitHash'];
