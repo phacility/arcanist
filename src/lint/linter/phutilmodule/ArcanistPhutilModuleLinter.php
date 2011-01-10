@@ -189,10 +189,14 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
             'module'  => $module_name,
           ));
           $disk_path = $this->getModulePathOnDisk($req_module);
-          $futures[$req_module] = new ExecFuture(
-            '%s %s',
-            $bin,
-            $disk_path);
+          if (Filesystem::pathExists($disk_path)) {
+            $futures[$req_module] = new ExecFuture(
+              '%s %s',
+              $bin,
+              $disk_path);
+          } else {
+            $dependencies[$req_module] = array();
+          }
         }
       }
     }
@@ -241,7 +245,12 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
               $library = null,
               $name);
             if ($class_spec) {
-              if (phutil_autoload_class($name)) {
+              try {
+                $loaded = phutil_autoload_class($name);
+              } catch (PhutilLibraryLoadException $ex) {
+                $loaded = false;
+              }
+              if ($loaded) {
                 $resolvable[] = $message;
                 $need_classes[$name] = $class_spec;
               } else {
@@ -274,7 +283,12 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
               $library = null,
               $name);
             if ($func_spec) {
-              if (phutil_autoload_function($name)) {
+              try {
+                $loaded = phutil_autoload_function($name);
+              } catch (PhutilLibraryLoadException $ex) {
+                $loaded = false;
+              }
+              if ($loaded) {
                 $resolvable[] = $message;
                 $need_functions[$name] = $func_spec;
               } else {
