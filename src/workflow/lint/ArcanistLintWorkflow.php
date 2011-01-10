@@ -53,6 +53,20 @@ EOTEXT
         'help' =>
           "Override configured lint engine for this project."
       ),
+      'apply-patches' => array(
+        'help' =>
+          'Apply patches suggested by lint to the working copy without '.
+          'prompting.',
+        'conflicts' => array(
+          'never-apply-patches' => true,
+        ),
+      ),
+      'never-apply-patches' => array(
+        'help' => 'Never apply patches suggested by lint.',
+        'conflicts' => array(
+          'apply-patches' => true,
+        ),
+      ),
       '*' => 'paths',
     );
   }
@@ -146,8 +160,18 @@ EOTEXT
 
     $results = $engine->run();
 
-    $apply_patches = true;
-    $prompt_patches = true;
+    if ($this->getArgument('never-apply-patches')) {
+      $apply_patches = false;
+    } else {
+      $apply_patches = true;
+    }
+
+    if ($this->getArgument('apply-patches')) {
+      $prompt_patches = false;
+    } else {
+      $prompt_patches = true;
+    }
+
     $wrote_to_disk = false;
 
     $renderer = new ArcanistLintRenderer();
@@ -192,15 +216,18 @@ EOTEXT
     }
 
     if ($wrote_to_disk && ($repository_api instanceof ArcanistGitAPI)) {
-      $amend = phutil_console_confirm(
-        "Amend HEAD with lint patches?",
-        $default_no = false);
-      if (!$amend) {
-        throw new ArcanistUsageException("Resolve lint changes and relint.");
+      $amend = phutil_console_confirm("Amend HEAD with lint patches?");
+      if ($amend) {
+        execx(
+          '(cd %s; git commit -a --amend -C HEAD)',
+          $repository_api->getPath());
+      } else {
+        if ($this->getParentWorkflow()) {
+          throw new ArcanistUsageException(
+            "Sort out the lint changes that were applied to the working ".
+            "copy and relint.");
+        }
       }
-      execx(
-        '(cd %s; git commit -a --amend -C HEAD)',
-        $repository_api->getPath());
     }
 
     $result_code = self::RESULT_OKAY;

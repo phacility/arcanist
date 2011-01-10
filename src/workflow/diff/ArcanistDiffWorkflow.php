@@ -90,6 +90,8 @@ EOTEXT
         'conflicts' => array(
           'lintall'   => '--nolint suppresses lint.',
           'advice'    => '--nolint suppresses lint.',
+          'apply-patches' => '--nolint suppresses lint.',
+          'never-apply-patches' => '--nolint suppresses lint.',
         ),
       ),
       'only' => array(
@@ -102,6 +104,8 @@ EOTEXT
           'edit'      => '--only does not affect revisions.',
           'lintall'   => '--only suppresses lint.',
           'advice'    => '--only suppresses lint.',
+          'apply-patches' => '--only suppresses lint.',
+          'never-apply-patches' => '--only suppresses lint.',
           'nounit'    => '--only implies --nounit.',
           'nolint'    => '--only implies --nolint.',
         ),
@@ -142,6 +146,20 @@ EOTEXT
       'advice' => array(
         'help' =>
           "Raise lint advice in addition to lint warnings and errors.",
+      ),
+      'apply-patches' => array(
+        'help' =>
+          'Apply patches suggested by lint to the working copy without '.
+          'prompting.',
+        'conflicts' => array(
+          'never-apply-patches' => true,
+        ),
+      ),
+      'never-apply-patches' => array(
+        'help' => 'Never apply patches suggested by lint.',
+        'conflicts' => array(
+          'apply-patches' => true,
+        ),
       ),
       '*' => 'paths',
     );
@@ -695,6 +713,12 @@ EOTEXT
       }
       if ($this->getArgument('advice')) {
         $argv[] = '--advice';
+      }
+      if ($this->getArgument('apply-patches')) {
+        $argv[] = '--apply-patches';
+      }
+      if ($this->getArgument('never-apply-patches')) {
+        $argv[] = '--never-apply-patches';
       }
       if ($repository_api instanceof ArcanistSubversionAPI) {
         $argv = array_merge($argv, array_keys($paths));
