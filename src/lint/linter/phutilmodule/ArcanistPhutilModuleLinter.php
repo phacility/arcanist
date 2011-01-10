@@ -136,12 +136,18 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
     $bin = dirname($arc_root).'/scripts/phutil_analyzer.php';
 
     $futures = array();
-    foreach ($modules as $key) {
+    foreach ($modules as $mkey => $key) {
       $disk_path = $this->getModulePathOnDisk($key);
-      $futures[$key] = new ExecFuture(
-        '%s %s',
-        $bin,
-        $disk_path);
+      if (Filesystem::pathExists($disk_path)) {
+        $futures[$key] = new ExecFuture(
+          '%s %s',
+          $bin,
+          $disk_path);
+      } else {
+        // This can occur in git when you add a module in HEAD and then remove
+        // it in unstaged changes in the working copy. Just ignore it.
+        unset($modules[$mkey]);
+      }
     }
 
     $requirements = array();
@@ -340,19 +346,26 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
         $need_functions,
         $drop_modules);
       $init_path = $this->getModulePathOnDisk($key).'/__init__.php';
-      $init_path = Filesystem::readablePath($init_path);
-      if (file_exists($init_path)) {
+      $try_path = Filesystem::readablePath($init_path);
+      if (Filesystem::pathExists($try_path)) {
+        $init_path = $try_path;
         $old_file = Filesystem::readFile($init_path);
-        $this->willLintPath($init_path);
-        $message = $this->raiseLintAtOffset(
-          0,
-          self::LINT_INIT_REBUILD,
-          "This regenerated phutil '__init__.php' file is suggested to ".
-          "address lint problems with static dependencies in the module.",
-          $old_file,
-          $new_file);
-        $message->setDependentMessages($resolvable);
+      } else {
+        $old_file = '';
       }
+      $this->willLintPath($init_path);
+      $message = $this->raiseLintAtOffset(
+        null,
+        self::LINT_INIT_REBUILD,
+        "This generated phutil '__init__.php' file is suggested to address ".
+        "lint problems with static dependencies in the module.",
+        $old_file,
+        $new_file);
+      $message->setDependentMessages($resolvable);
+      foreach ($resolvable as $message) {
+        $message->setObsolete(true);
+      }
+      $message->setGenerateFile(true);
     }
   }
 
@@ -456,7 +469,9 @@ EOHEADER;
       foreach ($places as $place) {
         list($file, $offset) = explode(':', $place);
         $this->willLintPath(
-          Filesystem::readablePath($this->getModulePathOnDisk($key).'/'.$file));
+          Filesystem::readablePath(
+            $this->getModulePathOnDisk($key).'/'.$file,
+            $this->getEngine()->getWorkingCopy()->getProjectRoot()));
         return $this->raiseLintAtOffset(
           $offset,
           $code,

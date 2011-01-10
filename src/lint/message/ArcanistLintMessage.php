@@ -28,7 +28,9 @@ class ArcanistLintMessage {
   protected $originalText;
   protected $replacementText;
   protected $appliedToDisk;
+  protected $generateFile;
   protected $dependentMessages = array();
+  protected $obsolete;
 
   public static function newFromDictionary(array $dict) {
     $message = new ArcanistLintMessage();
@@ -140,6 +142,24 @@ class ArcanistLintMessage {
 
   public function hasFileContext() {
     return ($this->getLine() !== null);
+  }
+
+  public function setGenerateFile($generate_file) {
+    $this->generateFile = $generate_file;
+    return $this;
+  }
+
+  public function getGenerateFile() {
+    return $this->generateFile;
+  }
+
+  public function setObsolete($obsolete) {
+    $this->obsolete = $obsolete;
+    return $this;
+  }
+
+  public function getObsolete() {
+    return $this->obsolete;
   }
 
   public function isPatchable() {

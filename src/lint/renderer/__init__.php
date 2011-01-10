@@ -9,6 +9,7 @@
 phutil_require_module('arcanist', 'lint/severity');
 
 phutil_require_module('phutil', 'console');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistLintRenderer.php');

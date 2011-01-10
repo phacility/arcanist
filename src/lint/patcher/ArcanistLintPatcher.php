@@ -53,7 +53,10 @@ final class ArcanistLintPatcher {
 
     // Copy existing file to preserve permissions. 'chmod --reference' is not
     // supported under OSX.
-    execx('cp -p %s %s', $path, $lint);
+    if (Filesystem::pathExists($path)) {
+      // This path may not exist if we're generating a new file.
+      execx('cp -p %s %s', $path, $lint);
+    }
     Filesystem::writeFile($lint, $data);
 
     list($err) = exec_manual("mv -f %s %s", $lint, $path);

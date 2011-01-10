@@ -168,6 +168,9 @@ EOTEXT
 
         if ($prompt_patches) {
           $old_file = $result->getFilePathOnDisk();
+          if (!Filesystem::pathExists($old_file)) {
+            $old_file = '/dev/null';
+          }
           $new_file = new TempFile();
           Filesystem::writeFile($new_file, $new);
 
@@ -193,7 +196,7 @@ EOTEXT
         "Amend HEAD with lint patches?",
         $default_no = false);
       if (!$amend) {
-        throw new ArcanistUsageException("Resolve lint changes and rediff.");
+        throw new ArcanistUsageException("Resolve lint changes and relint.");
       }
       execx(
         '(cd %s; git commit -a --amend -C HEAD)',

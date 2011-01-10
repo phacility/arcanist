@@ -68,7 +68,9 @@ abstract class ArcanistLintEngine {
   }
 
   public function getFilePathOnDisk($path) {
-    return $path;
+    return Filesystem::resolvePath(
+      $path,
+      $this->getWorkingCopy()->getProjectRoot());
   }
 
   public function setMinimumSeverity($severity) {
@@ -145,12 +147,12 @@ abstract class ArcanistLintEngine {
     }
 
     foreach ($this->results as $path => $result) {
+      $result->setFilePathOnDisk($this->getFilePathOnDisk($path));
       if (isset($this->fileData[$path])) {
         // Only set the data if any linter loaded it. The goal here is to
         // avoid binaries when we don't actually care about their contents,
         // for performance.
         $result->setData($this->fileData[$path]);
-        $result->setFilePathOnDisk($this->getFilePathOnDisk($path));
       }
     }
 

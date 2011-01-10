@@ -156,7 +156,12 @@ abstract class ArcanistLinter {
 
     $path = $this->getActivePath();
     $engine = $this->getEngine();
-    list($line, $char) = $engine->getLineAndCharFromOffset($path, $offset);
+    if ($offset === null) {
+      $line = null;
+      $char = null;
+    } else {
+      list($line, $char) = $engine->getLineAndCharFromOffset($path, $offset);
+    }
 
     return $this->raiseLintAtLine(
       $line + 1,

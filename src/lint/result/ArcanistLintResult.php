@@ -22,6 +22,7 @@ final class ArcanistLintResult {
   protected $data;
   protected $filePathOnDisk;
   protected $messages = array();
+  protected $effectiveMessages = array();
   private $needsSort;
 
   public function setPath($path) {
@@ -41,9 +42,9 @@ final class ArcanistLintResult {
 
   public function getMessages() {
     if ($this->needsSort) {
-      $this->sortMessages();
+      $this->sortAndFilterMessages();
     }
-    return $this->messages;
+    return $this->effectiveMessages;
   }
 
   public function setData($data) {
@@ -73,18 +74,32 @@ final class ArcanistLintResult {
     return false;
   }
 
-  private function sortMessages() {
+  private function sortAndFilterMessages() {
     $messages = $this->messages;
+
+    foreach ($messages as $key => $message) {
+      if ($message->getObsolete()) {
+        unset($messages[$key]);
+        continue;
+      }
+      if ($message->getGenerateFile()) {
+        $messages = array(
+          $key => $message,
+        );
+        break;
+      }
+    }
+
     $map = array();
     foreach ($messages as $key => $message) {
       $map[$key] = ($message->getLine() * (2 << 12)) + $message->getChar();
     }
     asort($map);
     $messages = array_select_keys($messages, array_keys($map));
-    $this->messages = $messages;
+
+    $this->effectiveMessages = $messages;
     $this->needsSort = false;
 
-    return $this;
   }
 
 }

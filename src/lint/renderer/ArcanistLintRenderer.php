@@ -115,7 +115,8 @@ class ArcanistLintRenderer {
 
     for (; $cursor < $line_num + $text_length; $cursor++) {
       $chevron = ($cursor == $line_num);
-      $data = $line_data[$cursor - 1];
+      // We may not have any data if, e.g., the old file does not exist.
+      $data = idx($line_data, $cursor - 1, null);
 
       // Highlight the problem substring.
       $text_line = $text_lines[$cursor - $line_num];

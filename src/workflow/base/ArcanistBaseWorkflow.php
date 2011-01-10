@@ -478,12 +478,17 @@ class ArcanistBaseWorkflow {
     }
 
     if (empty($this->changeCache[$path])) {
-      // TODO: This can legitimately occur under git if you make a change,
-      // "git commit" it, and then revert the change in the working copy and
-      // run "arc lint". We should probably just make a dummy, empty changeset
-      // in this case, at least under git.
-      throw new Exception(
-        "Trying to get change for unchanged path '{$path}'!");
+      if ($repository_api instanceof ArcanistGitAPI) {
+        // This can legitimately occur under git if you make a change, "git
+        // commit" it, and then revert the change in the working copy and run
+        // "arc lint".
+        $change = new ArcanistDiffChange();
+        $change->setCurrentPath($path);
+        return $change;
+      } else {
+        throw new Exception(
+          "Trying to get change for unchanged path '{$path}'!");
+      }
     }
 
     return $this->changeCache[$path];
