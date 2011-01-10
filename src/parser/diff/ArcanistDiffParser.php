@@ -90,6 +90,22 @@ class ArcanistDiffParser {
         }
         $cpath = $info['Copied From URL'];
         $cpath = substr($cpath, strlen($root));
+        if ($info['Copied From Rev']) {
+          // The user can "svn cp /path/to/file@12345 x", which pulls a file out
+          // of version history at a specific revision. If we just use the path,
+          // we'll collide with possible changes to that path in the working
+          // copy below. In particular, "svn cp"-ing a path which no longer
+          // exists somewhere in the working copy and then adding that path
+          // gets us to the "origin change type" branches below with a
+          // TYPE_ADD state on the path. To avoid this, append the origin
+          // revision to the path so we'll necessarily generate a new change.
+          // TODO: In theory, you could have an '@' in your path and this could
+          // cause a collision, e.g. two files named 'f' and 'f@12345'. This is
+          // at least somewhat the user's fault, though.
+          if ($info['Copied From Rev'] != $info['Revision']) {
+            $cpath .= '@'.$info['Copied From Rev'];
+          }
+        }
         $change->setOldPath($cpath);
 
         $from[$path] = $cpath;
