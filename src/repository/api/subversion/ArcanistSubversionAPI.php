@@ -161,13 +161,33 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function buildInfoFuture($path) {
-    // Note: here and elsewhere we need to append "@" to the path because if
-    // a file has a literal "@" in it, everything after that will be
-    // interpreted as a revision. By appending "@" with no argument, SVN
-    // parses it properly.
-    return new ExecFuture(
-      'svn info %s@',
-      $this->getPath($path));
+    if ($path == '/') {
+      // When the root of a working copy is referenced by a symlink and you
+      // execute 'svn info' on that symlink, svn fails. This is a longstanding
+      // bug in svn:
+      //
+      // See http://subversion.tigris.org/issues/show_bug.cgi?id=2305
+      //
+      // To reproduce, do:
+      //
+      //  $ ln -s working_copy working_link
+      //  $ svn info working_copy # ok  
+      //  $ svn info working_link # fails
+      //
+      // Work around this by cd-ing into the directory before executing
+      // 'svn info'.
+      return new ExecFuture(
+        '(cd %s && svn info .)',
+        $this->getPath());
+    } else {
+      // Note: here and elsewhere we need to append "@" to the path because if
+      // a file has a literal "@" in it, everything after that will be
+      // interpreted as a revision. By appending "@" with no argument, SVN
+      // parses it properly.
+      return new ExecFuture(
+        'svn info %s@',
+        $this->getPath($path));
+    }
   }
 
   public function buildDiffFuture($path) {
