@@ -411,5 +411,27 @@ EODIFF;
 
     return $blame;
   }
+  
+  public function getOriginalFileData($path) {
+    // SVN issues warnings for nonexistent paths, directories, etc., but still
+    // returns no error code. However, for new paths in the working copy it
+    // fails. Assume that failure means the original file does not exist.
+    list($err, $stdout) = exec_manual(
+      '(cd %s && svn cat %s@)',
+      $this->getPath(),
+      $path);
+    if ($err) {
+      return null;
+    }
+    return $stdout;
+  }
+  
+  public function getCurrentFileData($path) {
+    $full_path = $this->getPath($path);
+    if (Filesystem::pathExists($full_path)) {
+      return Filesystem::readFile($full_path);
+    }
+    return null;
+  }
 
 }

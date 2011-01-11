@@ -287,4 +287,71 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $blame;
   }
 
+  public function getOriginalFileData($path) {
+    return $this->getFileDataAtRevision($path, $this->getRelativeCommit());
+  }
+
+  public function getCurrentFileData($path) {
+    return $this->getFileDataAtRevision($path, 'HEAD');
+  }
+
+  private function parseGitTree($stdout) {
+    $result = array();
+
+    $stdout = trim($stdout);
+    if (!strlen($stdout)) {
+      return $result;
+    }
+
+    $lines = explode("\n", $stdout);
+    foreach ($lines as $line) {
+      $matches = array();
+      $ok = preg_match(
+        '/^(\d{6}) (blob|tree) ([a-z0-9]{40})[\t](.*)$/',
+        $line,
+        $matches);
+      if (!$ok) {
+        throw new Exception("Failed to parse git ls-tree output!");
+      }
+      $result[$matches[4]] = array(
+        'mode' => $matches[1],
+        'type' => $matches[2],
+        'ref'  => $matches[3],
+      );
+    }
+    return $result;
+  }
+
+  private function getFileDataAtRevision($path, $revision) {
+
+    // NOTE: We don't want to just "git show {$revision}:{$path}" since if the
+    // path was a directory at the given revision we'll get a list of its files
+    // and treat it as though it as a file containing a list of other files,
+    // which is silly.
+
+    list($stdout) = execx(
+      '(cd %s && git ls-tree %s -- %s)',
+      $this->getPath(),
+      $revision,
+      $path);
+
+    $info = $this->parseGitTree($stdout);
+    if (empty($info[$path])) {
+      // No such path, or the path is a directory and we executed 'ls-tree dir/'
+      // and got a list of its contents back.
+      return null;
+    }
+
+    if ($info[$path]['type'] != 'blob') {
+      // Path is or was a directory, not a file.
+      return null;
+    }
+
+    list($stdout) = execx(
+      '(cd %s && git cat-file blob %s)',
+       $this->getPath(),
+       $info[$path]['ref']);
+    return $stdout;
+  }
+
 }

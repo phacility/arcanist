@@ -541,7 +541,7 @@ class ArcanistDiffParser {
     if ($is_binary_add) {
       $this->nextLine(); // Cannot display: file marked as a binary type.
       $this->nextNonemptyLine(); // svn:mime-type = application/octet-stream
-      $this->pullBinaries($change);
+      $this->markBinary($change);
       return;
     }
 
@@ -552,7 +552,7 @@ class ArcanistDiffParser {
       $line);
     if ($is_binary_diff) {
       $this->nextNonemptyLine(); // Binary files x and y differ
-      $this->pullBinaries($change);
+      $this->markBinary($change);
       return;
     }
 
@@ -587,45 +587,9 @@ class ArcanistDiffParser {
     return $matches['path'];
   }
 
-  protected function pullBinaries(ArcanistDiffChange $change) {
+  protected function markBinary(ArcanistDiffChange $change) {
     $change->setFileType(ArcanistDiffChangeType::FILE_BINARY);
-
-    // TODO: Reimplement this.
-    return;
-
-/*
-    $api = $this->getRepositoryAPI();
-    if (!$api) {
-      return;
-    }
-
-    $is_image = Filesystem::isImageFilename($change->getCurrentPath());
-    if (!$is_image) {
-      // TODO: We could store binaries for reasonably-sized files.
-      return;
-    }
-
-    $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
-
-    $old_data = $api->getOriginalFileData($change->getCurrentPath());
-    $new_data = $api->getCurrentFileData($change->getCurrentPath());
-
-    $old_fbid = $this->createAttachment($change->getOldPath(), $old_data);
-    $new_fbid = $this->createAttachment($change->getCurrentPath(), $new_data);
-
-    $info = array(
-      'tools-attachment-old-fbid'  => $old_fbid,
-      'tools-attachment-new-fbid'  => $new_fbid,
-    );
-
-    $change->setMetadata('attachment-data', $info);
-
-*/
-  }
-
-  protected function createAttachment($name, $data) {
-    // TODO: Implement attachments over conduit.
-    return null;
+    return $this;
   }
 
   protected function parseChangeset(ArcanistDiffChange $change) {

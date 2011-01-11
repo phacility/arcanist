@@ -479,7 +479,84 @@ EOTEXT
       }
     }
 
+
+    // TODO: Ideally, we should do this later, after validating commit message
+    // fields (i.e., test plan), in case there are large/slow file upload steps
+    // involved.
+    foreach ($changes as $change) {
+      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
+        continue;
+      }
+
+      $path = $change->getCurrentPath();
+      $old_file = $repository_api->getOriginalFileData($path);
+      $new_file = $repository_api->getCurrentFileData($path);
+
+      $old_dict = $this->uploadFile($old_file, basename($path), 'old binary');
+      $new_dict = $this->uploadFile($new_file, basename($path), 'new binary');
+
+      if ($old_dict['guid']) {
+        $change->setMetadata('old:binary-guid', $old_dict['guid']);
+      }
+      if ($new_dict['guid']) {
+        $change->setMetadata('new:binary-guid', $new_dict['guid']);
+      }
+
+      $change->setMetadata('old:file:size',      strlen($old_file));
+      $change->setMetadata('new:file:size',      strlen($new_file));
+      $change->setMetadata('old:file:mime-type', $old_dict['mime']);
+      $change->setMetadata('new:file:mime-type', $new_dict['mime']);
+
+      if (preg_match('@^image/@', $new_dict['mime'])) {
+        $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
+      }
+    }
+
+
     return $changes;
+  }
+
+  private function uploadFile($data, $name, $desc) {
+    $result = array(
+      'guid' => null,
+      'mime' => null,
+    );
+
+    if (!strlen($data)) {
+      return $result;
+    }
+
+    $future = new ExecFuture('file -ib -');
+    $future->write($data);
+    list($mime_type) = $future->resolvex();
+
+    $mime_type = trim($mime_type);
+    if (strpos($mime_type, ',') !== false) {
+      // TODO: This is kind of silly, but 'file -ib' goes crazy on executables.
+      $mime_type = reset(explode(',', $mime_type));
+    }
+      
+
+    $result['mime'] = $mime_type;
+
+    // TODO: Make this configurable.
+    $bin_limit = 1024 * 1024; // 1 MB limit
+    if (strlen($data) > $bin_limit) {
+      return $result;
+    }
+
+    $bytes = strlen($data);
+    echo "Uploading {$desc} '{$name}' ({$mime_type}, {$bytes} bytes)...\n";
+
+    $guid = $this->getConduit()->callMethodSynchronous(
+      'file.upload',
+      array(
+        'data_base64' => base64_encode($data),
+        'name'        => $name,
+      ));
+
+    $result['guid'] = $guid;
+    return $result;
   }
 
   /**

@@ -132,5 +132,7 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getBlame($path);
   abstract public function getWorkingCopyStatus();
   abstract public function getRawDiffText($path);
+  abstract public function getOriginalFileData($path);
+  abstract public function getCurrentFileData($path);
 
 }
