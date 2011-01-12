@@ -22,7 +22,7 @@ class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
     return phutil_console_format(<<<EOTEXT
       **git-hook-pre-receive**
           Supports: git
-          You can install this as a git pre-recieve hook.
+          You can install this as a git pre-receive hook.
 EOTEXT
       );
   }
