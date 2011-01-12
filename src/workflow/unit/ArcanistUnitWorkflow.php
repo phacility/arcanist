@@ -23,6 +23,8 @@ class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
   const RESULT_FAIL     = 2;
   const RESULT_SKIP     = 3;
 
+  private $unresolvedTests;
+
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **unit**
@@ -96,13 +98,16 @@ EOTEXT
         ' <bg:yellow>** UNSOUND **</bg>'),
       );
 
+    $unresolved = array();
     foreach ($results as $result) {
       $result_code = $result->getResult();
       echo $status_codes[$result_code].' '.$result->getName()."\n";
       if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
         echo $result->getUserData()."\n";
+        $unresolved[] = $result;
       }
     }
+    $this->unresolvedTests = $unresolved;
 
     $overall_result = self::RESULT_OKAY;
     foreach ($results as $result) {
@@ -111,13 +116,16 @@ EOTEXT
           $result_code == ArcanistUnitTestResult::RESULT_BROKEN) {
         $overall_result = self::RESULT_FAIL;
         break;
-      }
-      if ($result_code == ArcanistUnitTestResult::RESULT_UNSOUND) {
+      } else if ($result_code == ArcanistUnitTestResult::RESULT_UNSOUND) {
         $overall_result = self::RESULT_UNSOUND;
-        break;
       }
     }
 
     return $overall_result;
   }
+
+  public function getUnresolvedTests() {
+    return $this->unresolvedTests;
+  }
+
 }

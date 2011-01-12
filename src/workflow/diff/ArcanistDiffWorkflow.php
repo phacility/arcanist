@@ -212,8 +212,10 @@ EOTEXT
 
     if ($lint_result === ArcanistLintWorkflow::RESULT_OKAY) {
       $lint = 'okay';
-    } else if ($lint_result === ArcanistLintWorkflow::RESULT_WARNINGS) {
+    } else if ($lint_result === ArcanistLintWorkflow::RESULT_ERRORS) {
       $lint = 'fail';
+    } else if ($lint_result === ArcanistLintWorkflow::RESULT_WARNINGS) {
+      $lint = 'warn';
     } else if ($lint_result === ArcanistLintWorkflow::RESULT_SKIP) {
       $lint = 'skip';
     } else {
@@ -222,9 +224,10 @@ EOTEXT
 
     if ($unit_result === ArcanistUnitWorkflow::RESULT_OKAY) {
       $unit = 'okay';
-    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_UNSOUND ||
-               $unit_result === ArcanistUnitWorkflow::RESULT_FAIL) {
+    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_FAIL) {
       $unit = 'fail';
+    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_UNSOUND) {
+      $unit = 'warn';
     } else if ($unit_result === ArcanistUnitWorkflow::RESULT_SKIP) {
       $unit = 'skip';
     } else {
@@ -267,6 +270,24 @@ EOTEXT
         array(
           'diff_id' => $diff_info['diffid'],
           'name'    => 'arc:lint',
+          'data'    => json_encode($data),
+        ));
+    }
+
+    if ($this->unresolvedTests) {
+      $data = array();
+      foreach ($this->unresolvedTests as $test) {
+        $data[] = array(
+          'name'      => $test->getName(),
+          'result'    => $test->getResult(),
+          'userdata'  => $test->getUserData(),
+        );
+      }
+      $conduit->callMethodSynchronous(
+        'differential.setdiffproperty',
+        array(
+          'diff_id' => $diff_info['diffid'],
+          'name'    => 'arc:unit',
           'data'    => json_encode($data),
         ));
     }
@@ -840,15 +861,19 @@ EOTEXT
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
-          $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           echo phutil_console_format(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
-          throw new ArcanistUsageException(
-            "Resolve lint errors or run with --nolint.");
+          $continue = phutil_console_confirm(
+            "Lint issued unresolved errors! Ignore lint errors?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
           break;
       }
+
+      $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -892,10 +917,15 @@ EOTEXT
         case ArcanistUnitWorkflow::RESULT_FAIL:
           echo phutil_console_format(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
-          throw new ArcanistUsageException(
-            "Resolve unit test errors or run with --nounit.");
+          $continue = phutil_console_confirm(
+            "Unit test results include failures! Ignore test failures?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
           break;
       }
+
+      $this->unresolvedTests = $unit_workflow->getUnresolvedTests();
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
