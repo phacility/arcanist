@@ -449,7 +449,6 @@ class ArcanistBaseWorkflow {
 
     $change = $this->getChange($path);
     $lines = $change->getChangedLines($mode);
-
     return array_keys($lines);
   }
 

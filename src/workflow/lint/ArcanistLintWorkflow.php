@@ -23,6 +23,8 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
   const RESULT_ERRORS     = 2;
   const RESULT_SKIP       = 3;
 
+  private $unresolvedMessages;
+
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **lint** [__options__] [__paths__] (svn)
@@ -230,6 +232,7 @@ EOTEXT
       }
     }
 
+    $unresolved = array();
     $result_code = self::RESULT_OKAY;
     foreach ($results as $result) {
       foreach ($result->getMessages() as $message) {
@@ -238,11 +241,15 @@ EOTEXT
             $result_code = self::RESULT_ERRORS;
             break;
           } else if ($message->isWarning()) {
-            $result_code = self::RESULT_WARNINGS;
+            if ($result_code != self::RESULT_ERRORS) {
+              $result_code = self::RESULT_WARNINGS;
+            }
+            $unresolved[] = $message;
           }
         }
       }
     }
+    $this->unresolvedMessages = $unresolved;
 
     if (!$this->getParentWorkflow()) {
       if ($result_code == self::RESULT_OKAY) {
@@ -253,4 +260,9 @@ EOTEXT
 
     return $result_code;
   }
+
+  public function getUnresolvedMessages() {
+    return $this->unresolvedMessages;
+  }
+
 }

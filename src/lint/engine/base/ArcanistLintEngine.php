@@ -135,7 +135,7 @@ abstract class ArcanistLintEngine {
         // When a user runs "arc diff", we default to raising only warnings on
         // lines they have changed (errors are still raised anywhere in the
         // file).
-        $changed = $this->getPathChangedLines($path);
+        $changed = $this->getPathChangedLines($message->getPath());
         if ($changed !== null && !$message->isError()) {
           if (empty($changed[$message->getLine()])) {
             continue;

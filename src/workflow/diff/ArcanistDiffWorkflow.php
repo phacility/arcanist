@@ -19,6 +19,8 @@
 class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;
+  private $unresolvedLint;
+  private $unresolvedUnit;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
@@ -246,6 +248,28 @@ EOTEXT
     $diff_info = $conduit->callMethodSynchronous(
       'differential.creatediff',
       $diff);
+
+    if ($this->unresolvedLint) {
+      $data = array();
+      foreach ($this->unresolvedLint as $message) {
+        $data[] = array(
+          'path'        => $message->getPath(),
+          'line'        => $message->getLine(),
+          'char'        => $message->getChar(),
+          'code'        => $message->getCode(),
+          'severity'    => $message->getSeverity(),
+          'name'        => $message->getName(),
+          'description' => $message->getDescription(),
+        );
+      }
+      $conduit->callMethodSynchronous(
+        'differential.setdiffproperty',
+        array(
+          'diff_id' => $diff_info['diffid'],
+          'name'    => 'arc:lint',
+          'data'    => json_encode($data),
+        ));
+    }
 
     if ($this->shouldOnlyCreateDiff()) {
       echo phutil_console_format(
@@ -535,7 +559,7 @@ EOTEXT
       // TODO: This is kind of silly, but 'file -ib' goes crazy on executables.
       $mime_type = reset(explode(',', $mime_type));
     }
-      
+
 
     $result['mime'] = $mime_type;
 
@@ -816,6 +840,7 @@ EOTEXT
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
+          $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           echo phutil_console_format(
