@@ -171,7 +171,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       // To reproduce, do:
       //
       //  $ ln -s working_copy working_link
-      //  $ svn info working_copy # ok  
+      //  $ svn info working_copy # ok
       //  $ svn info working_link # fails
       //
       // Work around this by cd-ing into the directory before executing
@@ -411,7 +411,7 @@ EODIFF;
 
     return $blame;
   }
-  
+
   public function getOriginalFileData($path) {
     // SVN issues warnings for nonexistent paths, directories, etc., but still
     // returns no error code. However, for new paths in the working copy it
@@ -425,7 +425,7 @@ EODIFF;
     }
     return $stdout;
   }
-  
+
   public function getCurrentFileData($path) {
     $full_path = $this->getPath($path);
     if (Filesystem::pathExists($full_path)) {

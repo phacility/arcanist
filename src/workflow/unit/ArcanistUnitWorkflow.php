@@ -62,12 +62,6 @@ EOTEXT
         "to specify a unit test engine.");
     }
 
-    $ok = phutil_autoload_class($engine_class);
-    if (!$ok) {
-      throw new ArcanistUsageException(
-        "Configured unit test engine '{$engine_class}' could not be loaded.");
-    }
-
     $repository_api = $this->getRepositoryAPI();
 
     if ($this->getArgument('paths')) {
@@ -79,6 +73,7 @@ EOTEXT
       $paths = array_keys($paths);
     }
 
+    PhutilSymbolLoader::loadClass($engine_class);
     $engine = newv($engine_class, array());
     $engine->setWorkingCopy($working_copy);
     $engine->setPaths($paths);

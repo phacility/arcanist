@@ -136,11 +136,7 @@ EOTEXT
         "specify a lint engine.");
     }
 
-    $ok = phutil_autoload_class($engine);
-    if (!$ok) {
-      throw new ArcanistUsageException(
-        "Configured lint engine '{$engine}' could not be loaded.");
-    }
+    PhutilSymbolLoader::loadClass($engine);
 
     $engine = newv($engine, array());
     $engine->setWorkingCopy($working_copy);

@@ -29,12 +29,7 @@ class ArcanistConfiguration {
       return null;
     }
 
-    if (!phutil_module_exists('arcanist', 'workflow/'.$command)) {
-      return null;
-    }
-
     $workflow_class = 'Arcanist'.ucfirst($command).'Workflow';
-
     $workflow_class = preg_replace_callback(
       '/-([a-z])/',
       array(
@@ -43,18 +38,31 @@ class ArcanistConfiguration {
       ),
       $workflow_class);
 
-    phutil_autoload_class($workflow_class);
+    $symbols = id(new PhutilSymbolLoader())
+      ->setType('class')
+      ->setName($workflow_class)
+      ->setLibrary('arcanist')
+      ->selectAndLoadSymbols();
+
+    if (!$symbols) {
+      return null;
+    }
 
     return newv($workflow_class, array());
   }
 
   public function buildAllWorkflows() {
-    $classes = phutil_find_class_descendants('ArcanistBaseWorkflow');
+    $symbols = id(new PhutilSymbolLoader())
+      ->setType('class')
+      ->setAncestorClass('ArcanistBaseWorkflow')
+      ->setLibrary('arcanist')
+      ->selectAndLoadSymbols();
+
     $workflows = array();
-    foreach ($classes as $class) {
+    foreach ($symbols as $symbol) {
+      $class = $class['name'];
       $name = preg_replace('/^Arcanist(\w+)Workflow$/', '\1', $class);
       $name = strtolower($name);
-      phutil_autoload_class($class);
       $workflows[$name] = newv($class, array());
     }
 

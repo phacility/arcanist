@@ -23,7 +23,7 @@ phutil_require_module('phutil', 'conduit/client');
 phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'filesystem');
-phutil_require_module('phutil', 'autoload');
+phutil_require_module('phutil', 'symbols');
 
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'configuration');
@@ -69,7 +69,7 @@ try {
 
   $config = $working_copy->getConfig('arcanist_configuration');
   if ($config) {
-    phutil_autoload_class($config);
+    PhutilSymbolLoader::loadClass($config);
     $config = new $config();
   } else {
     $config = new ArcanistConfiguration();

@@ -6,7 +6,7 @@
 
 
 
-phutil_require_module('phutil', 'autoload');
+phutil_require_module('phutil', 'symbols');
 phutil_require_module('phutil', 'utils');
 
 

@@ -241,13 +241,16 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
             $places);
 
           if ($type == 'class' || $type == 'interface') {
-            $class_spec = PhutilLibraryMapRegistry::findClass(
-              $library = null,
-              $name);
-            if ($class_spec) {
+            $loader = new PhutilSymbolLoader();
+            $loader->setType($type);
+            $loader->setName($name);
+            $symbols = $loader->selectSymbolsWithoutLoading();
+            if ($symbols) {
+              $class_spec = reset($symbols);
               try {
-                $loaded = phutil_autoload_class($name);
-              } catch (PhutilLibraryLoadException $ex) {
+                $loader->selectAndLoadSymbols();
+                $loaded = true;
+              } catch (PhutilMissingSymbolException $ex) {
                 $loaded = false;
               }
               if ($loaded) {
@@ -279,13 +282,16 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
               }
             }
           } else {
-            $func_spec = PhutilLibraryMapRegistry::findFunction(
-              $library = null,
-              $name);
-            if ($func_spec) {
+            $loader = new PhutilSymbolLoader();
+            $loader->setType($type);
+            $loader->setName($name);
+            $symbols = $loader->selectSymbolsWithoutLoading();
+            if ($symbols) {
+              $func_spec = reset($symbols);
               try {
-                $loaded = phutil_autoload_function($name);
-              } catch (PhutilLibraryLoadException $ex) {
+                $loader->selectAndLoadSymbols();
+                $loaded = true;
+              } catch (PhutilMissingSymbolException $ex) {
                 $loaded = false;
               }
               if ($loaded) {

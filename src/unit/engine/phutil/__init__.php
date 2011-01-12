@@ -9,9 +9,9 @@
 phutil_require_module('arcanist', 'exception/usage/noeffect');
 phutil_require_module('arcanist', 'unit/engine/base');
 
-phutil_require_module('phutil', 'autoload');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'moduleutils');
+phutil_require_module('phutil', 'symbols');
 phutil_require_module('phutil', 'utils');
 
 

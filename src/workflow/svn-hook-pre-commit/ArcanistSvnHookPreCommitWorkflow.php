@@ -46,12 +46,12 @@ EOTEXT
 
     // TODO: Do stuff with commit message.
     var_dump($commit_message);
-    
+
     list($changed) = execx(
       'svnlook changed --transaction %s %s',
       $transaction,
       $repository);
-      
+
     $paths = array();
     $changed = explode("\n", trim($changed));
     foreach ($changed as $line) {
@@ -59,13 +59,13 @@ EOTEXT
       preg_match('/^..\s*(.*)$/', $line, $matches);
       $paths[$matches[1]] = strlen($matches[1]);
     }
-    
+
     $resolved = array();
     $failed = array();
     $missing = array();
     $found = array();
     asort($paths);
-    
+
     foreach ($paths as $path => $length) {
       foreach ($resolved as $rpath => $root) {
         if (!strncmp($path, $rpath, strlen($rpath))) {
@@ -74,12 +74,12 @@ EOTEXT
         }
       }
       $config = $path;
-      
+
       if (basename($config) == '.arcconfig') {
         $resolved[$config] = $config;
         continue;
       }
-      
+
       $config = rtrim($config, '/');
       $last_config = $config;
       do {
@@ -109,12 +109,12 @@ EOTEXT
         }
         $last_config = $config;
       } while (true);
-      
+
       if (empty($resolved[$path])) {
         $failed[] = $path;
       }
     }
-    
+
     if ($failed && $resolved) {
       $failed_paths = '        '.implode("\n        ", $failed);
       $resolved_paths = '        '.implode("\n        ", array_keys($resolved));
@@ -127,12 +127,12 @@ EOTEXT
         "Files not in projects:\n\n".
         $failed_paths);
     }
-    
+
     if (!$resolved) {
       // None of the affected paths are beneath a .arcconfig file.
       return 3;
     }
-    
+
     $groups = array();
     foreach ($resolved as $path => $project) {
       $groups[$project][] = $path;
@@ -150,10 +150,10 @@ EOTEXT
         "only that project.\n\n".
         $message);
     }
-    
+
     $project_root = key($groups);
     $paths = reset($groups);
-    
+
     $data = array();
     foreach ($paths as $path) {
       list($err, $filedata) = exec_manual(
@@ -163,7 +163,7 @@ EOTEXT
         $path);
       $data[$path] = $err ? null : $filedata;
     }
-    
+
     // TODO: Do stuff with data.
     var_dump($data);
 

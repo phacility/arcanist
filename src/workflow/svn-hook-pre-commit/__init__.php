@@ -6,10 +6,11 @@
 
 
 
+phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'workflow/base');
 
 phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'future/exec');
 
 
-phutil_require_source('ArcanistSvnHoookPreCommitWorkflow.php');
+phutil_require_source('ArcanistSvnHookPreCommitWorkflow.php');

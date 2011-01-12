@@ -20,6 +20,8 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   public function run() {
 
+    $bootloader = PhutilBootloader::getInstance();
+
     $tests = array();
     foreach ($this->getPaths() as $path) {
       $library_root = phutil_get_library_root_for_path($path);
@@ -41,7 +43,10 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       if (basename($library_path) == '__tests__') {
         // Okay, this is a __tests__ module.
       } else {
-        if (phutil_module_exists($library_name, $library_path.'/__tests__')) {
+        $exists = $bootloader->moduleExists(
+          $library_name,
+          $library_path.'/__tests__');
+        if ($exists) {
           // This is a module which has a __tests__ module in it.
           $path .= '/__tests__';
         } else {
@@ -72,14 +77,16 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     }
 
     $run_tests = array();
-    $all_test_classes = phutil_find_class_descendants('ArcanistPhutilTestCase');
-    $all_test_classes = array_fill_keys($all_test_classes, true);
     foreach ($tests as $test) {
-      $local_classes = phutil_find_classes_declared_in_module(
-        $test['library'],
-        $test['module']);
-      $local_classes = array_fill_keys($local_classes, true);
-      $run_tests += array_intersect($local_classes, $all_test_classes);
+      $symbols = id(new PhutilSymbolLoader())
+        ->setType('class')
+        ->setLibrary($test['library'])
+        ->setModule($test['module'])
+        ->setAncestorClass('ArcanistPhutilTestCase')
+        ->selectAndLoadSymbols();
+      foreach ($symbols as $symbol) {
+        $run_tests[$symbol['name']] = true;
+      }
     }
     $run_tests = array_keys($run_tests);
 
@@ -90,7 +97,7 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $results = array();
     foreach ($run_tests as $test_class) {
-      phutil_autoload_class($test_class);
+      PhutilSymbolLoader::loadClass($test_class);
       $test_case = newv($test_class, array());
       $results[] = $test_case->run();
     }

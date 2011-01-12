@@ -6,13 +6,12 @@
 
 
 
-phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/noengine');
 phutil_require_module('arcanist', 'unit/result');
 phutil_require_module('arcanist', 'workflow/base');
 
-phutil_require_module('phutil', 'autoload');
 phutil_require_module('phutil', 'console');
+phutil_require_module('phutil', 'symbols');
 phutil_require_module('phutil', 'utils');
 
 

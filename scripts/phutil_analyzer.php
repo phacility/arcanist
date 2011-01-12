@@ -23,7 +23,9 @@ $builtin_functions  = get_defined_functions();
 $builtin_functions  = $builtin_functions['internal'];
 
 $builtin = array(
-  'class'     => array_fill_keys($builtin_classes, true),
+  'class'     => array_fill_keys($builtin_classes, true) + array(
+    'PhutilBootloader' => true,
+  ),
   'function'  => array_fill_keys($builtin_functions, true) + array(
     'empty' => true,
     'isset' => true,
@@ -31,8 +33,6 @@ $builtin = array(
     'print' => true,
     'exit'  => true,
     'die'   => true,
-
-    'phutil_module_exists' => true,
   ),
   'interface' => array_fill_keys($builtin_interfaces, true),
 );
