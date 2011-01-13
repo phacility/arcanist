@@ -162,6 +162,8 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistSubversionAPI) {
+      $patch_err = 0;
+
       $copies = array();
       $deletes = array();
       $patches = array();
@@ -248,11 +250,16 @@ EOTEXT
       foreach ($patches as $path => $patch) {
         $tmp = new TempFile();
         Filesystem::writeFile($tmp, $patch);
+        $err = null;
         passthru(
           csprintf(
             '(cd %s; patch -p0 < %s)',
             $repository_api->getPath(),
-            $tmp));
+            $tmp),
+          $err);
+        if ($err) {
+          $patch_err = max($patch_err, $err);
+        }
       }
 
       foreach ($adds as $add) {
@@ -286,13 +293,32 @@ EOTEXT
         }
       }
 
-      echo "Applied patch.\n";
+      if ($patch_err == 0) {
+        echo phutil_console_format(
+          "<bg:green>** OKAY **</bg> Successfully applied patch to the ".
+          "working copy.\n");
+      } else {
+        echo phutil_console_format(
+          "\n\n<bg:yellow>** WARNING **</bg> Some hunks could not be applied ".
+          "cleanly by the unix 'patch' utility. Your working copy may be ".
+          "different from the revision's base, or you may be in the wrong ".
+          "subdirectory. You can export the raw patch file using ".
+          "'arc export --unified', and then try to apply it by fiddling with ".
+          "options to 'patch' (particularly, -p), or manually. The output ".
+          "above, from 'patch', may be helpful in figuring out what went ".
+          "wrong.\n");
+      }
+
+      return $patch_err;
     } else {
       $future = new ExecFuture(
         '(cd %s; git apply --index)',
         $repository_api->getPath());
       $future->write($bundle->toGitPatch());
       $future->resolvex();
+
+      echo phutil_console_format(
+        "<bg:green>** OKAY **</bg> Successfully applied patch.\n");
     }
 
     return 0;

@@ -20,7 +20,7 @@ class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $unresolvedUnit;
+  private $unresolvedTests;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
