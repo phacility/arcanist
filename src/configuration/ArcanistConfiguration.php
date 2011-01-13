@@ -60,7 +60,7 @@ class ArcanistConfiguration {
 
     $workflows = array();
     foreach ($symbols as $symbol) {
-      $class = $class['name'];
+      $class = $symbol['name'];
       $name = preg_replace('/^Arcanist(\w+)Workflow$/', '\1', $class);
       $name = strtolower($name);
       $workflows[$name] = newv($class, array());
