@@ -97,6 +97,12 @@ try {
                         $need_repository_api;
 
   if ($need_working_copy) {
+    if (!$working_copy->getProjectRoot()) {
+      throw new ArcanistUsageException(
+        "There is no '.arcconfig' file in this directory or any parent ".
+        "directory. Create a '.arcconfig' file to configure this project ".
+        "for use with Arcanist.");
+    }
     $workflow->setWorkingCopy($working_copy);
   }
 
