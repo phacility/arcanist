@@ -687,7 +687,7 @@ EOTEXT
           "Changes in the specified commit range include more than one ".
           "commit with a valid template commit message. This is ambiguous, ".
           "your commit range should contain only one template commit ".
-          "message. Alternatively, use --diff-only to ignore commit ".
+          "message. Alternatively, use --preview to ignore commit ".
           "messages.");
       }
     }
@@ -699,13 +699,13 @@ EOTEXT
         throw new ArcanistUsageException(
           "All changes between the specified commits have template parsing ".
           "problems:\n\n".$desc."\n\nIf you only want to create a diff ".
-          "(not a revision), use --diff-only to ignore commit messages.");
+          "(not a revision), use --preview to ignore commit messages.");
       } else if (count($problems) == 1) {
         throw new ArcanistUsageException(
           "Commit message is not properly formatted:\n\n".$desc."\n\n".
           "You should use the standard git commit template to provide a ".
           "commit message. If you only want to create a diff (not a ".
-          "revision), use --diff-only to ignore commit messages.");
+          "revision), use --preview to ignore commit messages.");
       }
     }
 
