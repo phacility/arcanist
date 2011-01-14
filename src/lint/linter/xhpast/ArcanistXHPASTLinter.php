@@ -38,6 +38,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_TODO_COMMENT             = 16;
   const LINT_EXIT_EXPRESSION          = 17;
   const LINT_COMMENT_STYLE            = 18;
+  const LINT_CLASS_FILENAME_MISMATCH  = 19;
+
 
   public function getLintNameMap() {
     return array(
@@ -59,6 +61,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_TODO_COMMENT             => 'TODO Comment',
       self::LINT_EXIT_EXPRESSION          => 'Exit Used as Expression',
       self::LINT_COMMENT_STYLE            => 'Comment Style',
+      self::LINT_CLASS_FILENAME_MISMATCH  => 'Class-Filename Mismatch',
     );
   }
 
@@ -128,6 +131,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintUndeclaredVariables($root);
     $this->lintArrayIndexWhitespace($root);
     $this->lintHashComments($root);
+    $this->lintPrimaryDeclarationFilenameMatch($root);
   }
 
   protected function lintHashComments($root) {
@@ -878,6 +882,48 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
           $string);
       }
     }
+  }
+
+  /**
+   * Lint that if the file declares exactly one interface or class,
+   * the name of the file matches the name of the class,
+   * unless the classname is funky like an XHP element.
+   */
+  private function lintPrimaryDeclarationFilenameMatch($root) {
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+    $interfaces = $root->selectDescendantsOfType('n_INTERFACE_DECLARATION');
+
+    if (count($classes) + count($interfaces) != 1) {
+      return;
+    }
+
+    $declarations = count($classes) ? $classes : $interfaces;
+    $declarations->rewind();
+    $declaration = $declarations->current();
+
+    $decl_name = $declaration->getChildByIndex(1);
+    $decl_string = $decl_name->getConcreteString();
+
+    //Exclude strangely named classes.
+    if (!preg_match('/\w+/', $decl_string)) {
+      return;
+    }
+
+    $rename = $decl_string.'.php';
+
+    $path = $this->getActivePath();
+    $filename = basename($path);
+
+    if ($rename == $filename) {
+      return;
+    }
+
+    $this->raiseLintAtNode(
+      $decl_name,
+      self::LINT_CLASS_FILENAME_MISMATCH,
+      "The name of this file differs from the name of the class or interface ".
+      "it declares. Rename the file to '{$rename}'."
+    );
   }
 
   protected function raiseLintAtToken(

@@ -35,6 +35,7 @@ warning:14:10
 warning:14:19
 warning:15:12
 warning:15:15
+error:16:7 XHP19 Class-Filename Mismatch
 warning:17:21
 warning:17:24
 warning:20:10
