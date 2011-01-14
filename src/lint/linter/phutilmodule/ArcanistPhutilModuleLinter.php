@@ -32,7 +32,6 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
   const LINT_ANALYZER_DYNAMIC             = 101;
   const LINT_ANALYZER_NO_INIT             = 102;
   const LINT_ANALYZER_MULTIPLE_CLASSES    = 103;
-  const LINT_ANALYZER_CLASS_FILENAME      = 104;
 
   public function getLintNameMap() {
     return array(
@@ -50,8 +49,6 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
       self::LINT_ANALYZER_NO_INIT       => 'Analyzer: No __init__.php File',
       self::LINT_ANALYZER_MULTIPLE_CLASSES
         => 'Analyzer: File Declares Multiple Classes',
-      self::LINT_ANALYZER_CLASS_FILENAME
-        => 'Analyzer: Filename Does Not Match Class Declaration',
     );
   }
 

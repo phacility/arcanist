@@ -233,21 +233,6 @@ foreach (Futures($futures) as $file => $future) {
           "file.");
         break;
       }
-    } else if (count($classes) == 1) {
-      foreach ($classes as $class) {
-        $class_name = $class->getChildByIndex(1);
-        $class_string = $class_name->getConcreteString();
-        if ($file != $class_string.'.php') {
-          $rename = $class_string.'.php';
-          $requirements->addLint(
-            $class_name,
-            $class_string,
-            ArcanistPhutilModuleLinter::LINT_ANALYZER_CLASS_FILENAME,
-            "The name of this file differs from the name of the class it ".
-            "declares. Rename the file to '{$rename}'.");
-        }
-        break;
-      }
     }
 
     $uses_of_new = $root->selectDescendantsOfType('n_NEW');
