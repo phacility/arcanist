@@ -33,6 +33,10 @@ EOTEXT
     );
   }
 
+  public function shouldShellComplete() {
+    return false;
+  }
+
   public function run() {
 
     $svnargs = $this->getArgument('svnargs');

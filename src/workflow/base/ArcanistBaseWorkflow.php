@@ -543,4 +543,16 @@ class ArcanistBaseWorkflow {
     return ltrim(strtoupper($revision_id), 'D');
   }
 
+  protected function shouldShellComplete() {
+    return true;
+  }
+
+  protected function getShellCompletions(array $argv) {
+    return array();
+  }
+
+  protected function getSupportedRevisionControlSystems() {
+    return array('any');
+  }
+
 }

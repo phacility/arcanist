@@ -62,6 +62,14 @@ class ArcanistConfiguration {
     foreach ($symbols as $symbol) {
       $class = $symbol['name'];
       $name = preg_replace('/^Arcanist(\w+)Workflow$/', '\1', $class);
+      $name[0] = strtolower($name[0]);
+      $name = preg_replace_callback(
+        '/[A-Z]/',
+        array(
+          'ArcanistConfiguration',
+          'replaceClassnameUppers',
+        ),
+        $name);
       $name = strtolower($name);
       $workflows[$name] = newv($class, array());
     }
@@ -83,6 +91,10 @@ class ArcanistConfiguration {
 
   public static function replaceClassnameHyphens($m) {
     return strtoupper($m[1]);
+  }
+
+  public static function replaceClassnameUppers($m) {
+    return '-'.strtolower($m[0]);
   }
 
 }

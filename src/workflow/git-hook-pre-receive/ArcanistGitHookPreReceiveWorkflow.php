@@ -40,6 +40,10 @@ EOTEXT
     return true;
   }
 
+  public function shouldShellComplete() {
+    return false;
+  }
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
     if (!$working_copy->getProjectID()) {

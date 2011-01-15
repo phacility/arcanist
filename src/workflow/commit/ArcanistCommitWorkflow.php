@@ -248,4 +248,8 @@ EOTEXT
     }
   }
 
+  protected function getSupportedRevisionControlSystems() {
+    return array('svn');
+  }
+
 }

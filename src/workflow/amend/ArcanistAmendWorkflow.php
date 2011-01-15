@@ -124,4 +124,9 @@ EOTEXT
 
     return 0;
   }
+
+  protected function getSupportedRevisionControlSystems() {
+    return array('git');
+  }
+
 }

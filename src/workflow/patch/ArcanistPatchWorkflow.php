@@ -40,6 +40,7 @@ EOTEXT
     return array(
       'revision' => array(
         'param' => 'revision_id',
+        'paramtype' => 'complete',
         'help' =>
           "Apply changes from a Differential revision, using the most recent ".
           "diff that has been attached to it.",
@@ -54,11 +55,13 @@ EOTEXT
       ),
       'arcbundle' => array(
         'param' => 'bundlefile',
+        'paramtype' => 'file',
         'help' =>
           "Apply changes from an arc bundle generated with 'arc export'.",
       ),
       'patch' => array(
         'param' => 'patchfile',
+        'paramtype' => 'file',
         'help' =>
           "Apply changes from a git patchfile or unified patchfile.",
       ),
@@ -322,5 +325,10 @@ EOTEXT
     }
 
     return 0;
+  }
+
+  public function getShellCompletions(array $argv) {
+    // TODO: Pull open diffs from 'arc list'?
+    return array('ARGUMENT');
   }
 }
