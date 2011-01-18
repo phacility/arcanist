@@ -249,6 +249,8 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
                 $loaded = true;
               } catch (PhutilMissingSymbolException $ex) {
                 $loaded = false;
+              } catch (PhutilBootloaderException $ex) {
+                $loaded = false;
               }
               if ($loaded) {
                 $resolvable[] = $message;
@@ -289,6 +291,8 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
                 $loader->selectAndLoadSymbols();
                 $loaded = true;
               } catch (PhutilMissingSymbolException $ex) {
+                $loaded = false;
+              } catch (PhutilBootloaderException $ex) {
                 $loaded = false;
               }
               if ($loaded) {
