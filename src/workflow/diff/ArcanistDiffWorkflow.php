@@ -21,6 +21,7 @@ class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $hasWarnedExternals = false;
   private $unresolvedLint;
   private $unresolvedTests;
+  private $diffID;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
@@ -54,6 +55,10 @@ EOTEXT
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+  
+  public function getDiffID() {
+    return $this->diffID;
   }
 
   public function getArguments() {
@@ -340,6 +345,8 @@ EOTEXT
     foreach ($changes as $change) {
       echo '  '.$change->renderTextSummary()."\n";
     }
+    
+    $this->diffID = $diff_info['diffid'];
 
     return 0;
   }
