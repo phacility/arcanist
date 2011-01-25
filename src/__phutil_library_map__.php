@@ -23,6 +23,7 @@ phutil_register_library_map(array(
     'ArcanistDiffHunk' => 'parser/diff/hunk',
     'ArcanistDiffParser' => 'parser/diff',
     'ArcanistDiffParserTestCase' => 'parser/diff/__tests__',
+    'ArcanistDiffUtils' => 'difference',
     'ArcanistDiffWorkflow' => 'workflow/diff',
     'ArcanistDifferentialCommitMessage' => 'differential/commitmessage',
     'ArcanistDifferentialCommitMessageParserException' => 'differential/commitmessage',
