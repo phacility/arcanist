@@ -38,6 +38,11 @@ class PhutilLintEngine extends ArcanistLintEngine {
       if (!$this->pathExists($path)) {
         unset($paths[$key]);
       }
+      if (preg_match('@^externals/@', $path)) {
+        // Third-party stuff lives in /externals/; don't run lint engines
+        // against it.
+        unset($paths[$key]);
+      }
     }
 
     $generated_linter = new ArcanistGeneratedLinter();

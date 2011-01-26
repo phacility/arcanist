@@ -56,7 +56,7 @@ foreach ($files as $file => $hash) {
   $modules[Filesystem::readablePath(dirname($file), $root)][] = $hash;
 }
 
-echo "Found ".count($files)." in ".count($modules)." modules.\n";
+echo "Found ".count($files)." files in ".count($modules)." modules.\n";
 
 $signatures = array();
 foreach ($modules as $module => $hashes) {
@@ -97,11 +97,6 @@ foreach ($signatures as $module => $signature) {
 if ($futures) {
   echo "Found ".count($specs)." modules in cache; ".
        "analyzing ".count($futures)." modified modules";
-} else {
-  echo "All modules were found in cache.\n";
-}
-
-if ($futures) {
   foreach (Futures($futures)->limit(8) as $module => $future) {
     echo ".";
     $specs[$module] = array(
@@ -110,6 +105,8 @@ if ($futures) {
     );
   }
   echo "\n";
+} else {
+  echo "All modules were found in cache.\n";
 }
 
 $class_map = array();
@@ -186,7 +183,7 @@ Filesystem::writeFile($root.'/__phutil_library_map__.php', $map_file);
 echo "Writing module cache...\n";
 
 Filesystem::writeFile(
-  $root.'/.phutil_module_cache', 
+  $root.'/.phutil_module_cache',
   json_encode($specs));
 
 echo "Done.\n";
