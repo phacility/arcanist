@@ -26,6 +26,7 @@ if ($argc != 2) {
 }
 
 phutil_require_module('phutil', 'filesystem');
+phutil_require_module('phutil', 'filesystem/filefinder');
 phutil_require_module('phutil', 'future/exec');
 
 $root = Filesystem::resolvePath($argv[1]);
@@ -35,31 +36,88 @@ if (!@file_exists($root.'/__phutil_library_init__.php')) {
 }
 
 echo "Finding phutil modules...\n";
+$files = id(new FileFinder($root))
+  ->withType('f')
+  ->withSuffix('php')
+  ->excludePath('*/.*')
+  ->setGenerateChecksums(true)
+  ->find();
 
-list($stdout) = execx(
-  "(cd %s && find . -type d -path '*/.*' -prune -o -type d -print0)",
-  $root);
+// NOTE: Sorting by filename ensures that hash computation is stable; it is
+// important we sort by name instead of by hash because sorting by hash could
+// create a bad cache hit if the user swaps the contents of two files.
+ksort($files);
 
-$futures = array();
-foreach (array_filter(explode("\0", $stdout)) as $dir) {
-  if ($dir == '.') {
+$modules = array();
+foreach ($files as $file => $hash) {
+  if (dirname($file) == $root) {
     continue;
   }
-  $module = preg_replace('@^\\./@', '', $dir);
-  $futures[$module] = new ExecFuture(
-    '%s %s',
-    dirname(__FILE__).'/phutil_analyzer.php',
-    $root.'/'.$module);
+  $modules[Filesystem::readablePath(dirname($file), $root)][] = $hash;
 }
 
-echo "Analyzing ".number_format(count($futures))." modules";
+echo "Found ".count($files)." in ".count($modules)." modules.\n";
+
+$signatures = array();
+foreach ($modules as $module => $hashes) {
+  $hashes = implode(' ', $hashes);
+  $signature = md5($hashes);
+  $signatures[$module] = $signature;
+}
+
+try {
+  $cache = Filesystem::readFile($root.'/.phutil_module_cache');
+} catch (Exception $ex) {
+  $cache = null;
+}
+
+$signature_cache = array();
+if ($cache) {
+  $signature_cache = json_decode($cache, true);
+  if (!is_array($signature_cache)) {
+    $signature_cache = array();
+  }
+}
+
+$specs = array();
+
+$futures = array();
+foreach ($signatures as $module => $signature) {
+  if (isset($signature_cache[$module]) &&
+      $signature_cache[$module]['signature'] == $signature) {
+    $specs[$module] = $signature_cache[$module];
+  } else {
+    $futures[$module] = new ExecFuture(
+      '%s %s',
+      dirname(__FILE__).'/phutil_analyzer.php',
+      $root.'/'.$module);
+  }
+}
+
+if ($futures) {
+  echo "Found ".count($specs)." modules in cache; ".
+       "analyzing ".count($futures)." modified modules";
+} else {
+  echo "All modules were found in cache.\n";
+}
+
+if ($futures) {
+  foreach (Futures($futures)->limit(8) as $module => $future) {
+    echo ".";
+    $specs[$module] = array(
+      'signature' => $signatures[$module],
+      'spec'      => $future->resolveJSON(),
+    );
+  }
+  echo "\n";
+}
+
 $class_map = array();
 $requires_class_map = array();
 $requires_interface_map = array();
 $function_map = array();
-foreach (Futures($futures)->limit(16) as $module => $future) {
-  echo ".";
-  $spec = $future->resolveJSON();
+foreach ($specs as $module => $info) {
+  $spec = $info['spec'];
   foreach (array('class', 'interface') as $type) {
     foreach ($spec['declares'][$type] as $class => $where) {
       if (!empty($class_map[$class])) {
@@ -124,5 +182,11 @@ EOPHP;
 echo "Writing library map file...\n";
 
 Filesystem::writeFile($root.'/__phutil_library_map__.php', $map_file);
+
+echo "Writing module cache...\n";
+
+Filesystem::writeFile(
+  $root.'/.phutil_module_cache', 
+  json_encode($specs));
 
 echo "Done.\n";
