@@ -43,9 +43,7 @@ class ArcanistApacheLicenseLinter extends ArcanistLinter {
     $copyright_holder = $working_copy->getConfig('copyright_holder');
 
     if (!$copyright_holder) {
-      throw new ArcanistUsageException(
-        "This project uses the ArcanistApacheLicenseLinter, but does not ".
-        "define a 'copyright_holder' in its .arcconfig.");
+      return;
     }
 
     $year = date('Y');
