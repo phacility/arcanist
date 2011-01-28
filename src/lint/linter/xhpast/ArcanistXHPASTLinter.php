@@ -904,8 +904,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $decl_name = $declaration->getChildByIndex(1);
     $decl_string = $decl_name->getConcreteString();
 
-    //Exclude strangely named classes.
-    if (!preg_match('/\w+/', $decl_string)) {
+    // Exclude strangely named classes, e.g. XHP tags.
+    if (!preg_match('/^\w+$/', $decl_string)) {
       return;
     }
 

@@ -143,7 +143,6 @@ abstract class ArcanistLinter {
     $code,
     $desc) {
 
-    $path = $this->getActivePath();
     return $this->raiseLintAtLine(null, null, $code, $desc, null, null);
   }
 
