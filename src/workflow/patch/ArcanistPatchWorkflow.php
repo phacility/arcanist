@@ -226,7 +226,7 @@ EOTEXT
           $props = $prop_old + $prop_new;
           foreach ($props as $key => $ignored) {
             if (idx($prop_old, $key) !== idx($prop_new, $key)) {
-              $propset[$change->getCurrentPath()][$key] = idx($prop_new[$key]);
+              $propset[$change->getCurrentPath()][$key] = idx($prop_new, $key);
             }
           }
         }
