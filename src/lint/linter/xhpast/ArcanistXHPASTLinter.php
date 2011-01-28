@@ -108,6 +108,10 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
   }
+  
+  public function getXHPASTTreeForPath($path) {
+    return idx($this->trees, $path);
+  }
 
   public function lintPath($path) {
     if (empty($this->trees[$path])) {
