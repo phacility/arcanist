@@ -166,12 +166,20 @@ EOTEXT
       case self::SOURCE_LOCAL:
         $repository_api = $this->getRepositoryAPI();
         $parser = new ArcanistDiffParser();
-
-        // TODO: git support, paths support
-        $paths = $repository_api->getWorkingCopyStatus();
-        $changes = $parser->parseSubversionDiff(
-          $repository_api,
-          $paths);
+        
+        if ($repository_api instanceof ArcanistGitAPI) {
+          $this->parseGitRelativeCommit(
+            $repository_api,
+            $this->getArgument('paths'));
+          $diff = $repository_api->getFullGitDiff();
+          $changes = $parser->parseDiff($diff);
+        } else {
+          // TODO: paths support
+          $paths = $repository_api->getWorkingCopyStatus();
+          $changes = $parser->parseSubversionDiff(
+            $repository_api,
+            $paths);
+        }
 
         $bundle = ArcanistBundle::newFromChanges($changes);
         break;
