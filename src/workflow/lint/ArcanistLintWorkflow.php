@@ -24,6 +24,12 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
   const RESULT_SKIP       = 3;
 
   private $unresolvedMessages;
+  private $shouldAmendChanges = false;
+
+  public function setShouldAmendChanges($should_amend) {
+    $this->shouldAmendChanges = $should_amend;
+    return $this;
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
@@ -213,18 +219,18 @@ EOTEXT
       }
     }
 
-    if ($wrote_to_disk && ($repository_api instanceof ArcanistGitAPI)) {
+    if ($wrote_to_disk &&
+        ($repository_api instanceof ArcanistGitAPI) &&
+        $this->shouldAmendChanges) {
       $amend = phutil_console_confirm("Amend HEAD with lint patches?");
       if ($amend) {
         execx(
           '(cd %s; git commit -a --amend -C HEAD)',
           $repository_api->getPath());
       } else {
-        if ($this->getParentWorkflow()) {
-          throw new ArcanistUsageException(
-            "Sort out the lint changes that were applied to the working ".
-            "copy and relint.");
-        }
+        throw new ArcanistUsageException(
+          "Sort out the lint changes that were applied to the working ".
+          "copy and relint.");
       }
     }
 

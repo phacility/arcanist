@@ -56,7 +56,7 @@ EOTEXT
   public function requiresRepositoryAPI() {
     return true;
   }
-  
+
   public function getDiffID() {
     return $this->diffID;
   }
@@ -345,7 +345,7 @@ EOTEXT
     foreach ($changes as $change) {
       echo '  '.$change->renderTextSummary()."\n";
     }
-    
+
     $this->diffID = $diff_info['diffid'];
 
     return 0;
@@ -855,7 +855,10 @@ EOTEXT
         $argv[] = $repository_api->getRelativeCommit();
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
-      $lint_result   = $lint_workflow->run();
+
+      $lint_workflow->setShouldAmendChanges(true);
+
+      $lint_result = $lint_workflow->run();
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
