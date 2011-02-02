@@ -20,6 +20,7 @@ abstract class ArcanistBaseUnitTestEngine {
 
   private $workingCopy;
   private $paths;
+  private $arguments = array();
 
   final public function __construct() {
 
@@ -43,6 +44,15 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getPaths() {
     return $this->paths;
+  }
+
+  final public function setArguments(array $arguments) {
+    $this->arguments = $arguments;
+    return $this;
+  }
+
+  final public function getArgument($key, $default = null) {
+    return idx($this->arguments, $key, $default);
   }
 
   abstract public function run();

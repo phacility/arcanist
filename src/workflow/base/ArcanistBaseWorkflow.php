@@ -555,4 +555,29 @@ class ArcanistBaseWorkflow {
     return array('any');
   }
 
+  protected function getPassthruArgumentsAsMap($command) {
+    $map = array();
+    foreach ($this->getCompleteArgumentSpecification() as $key => $spec) {
+      if (!empty($spec['passthru'][$command])) {
+        if (isset($this->arguments[$key])) {
+          $map[$key] = $this->arguments[$key];
+        }
+      }
+    }
+    return $map;
+  }
+
+  protected function getPassthruArgumentsAsArgv($command) {
+    $spec = $this->getCompleteArgumentSpecification();
+    $map = $this->getPassthruArgumentsAsMap($command);
+    $argv = array();
+    foreach ($map as $key => $value) {
+      $argv[] = '--'.$key;
+      if (!empty($spec[$key]['param'])) {
+        $argv[] = $value;
+      }
+    }
+    return $argv;
+  }
+
 }
