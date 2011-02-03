@@ -46,7 +46,7 @@ class ArcanistDiffHunk {
     );
   }
 
-  public function newFromDictionary(array $dict) {
+  public static function newFromDictionary(array $dict) {
     $obj = new ArcanistDiffHunk();
 
     $obj->oldOffset = $dict['oldOffset'];
