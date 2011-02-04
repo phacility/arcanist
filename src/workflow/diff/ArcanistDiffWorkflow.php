@@ -149,10 +149,16 @@ EOTEXT
       'lintall' => array(
         'help' =>
           "Raise all lint warnings, not just those on lines you changed.",
+        'passthru' => array(
+          'lint' => true,
+        ),
       ),
       'advice' => array(
         'help' =>
           "Raise lint advice in addition to lint warnings and errors.",
+        'passthru' => array(
+          'lint' => true,
+        ),
       ),
       'apply-patches' => array(
         'help' =>
@@ -161,11 +167,17 @@ EOTEXT
         'conflicts' => array(
           'never-apply-patches' => true,
         ),
+        'passthru' => array(
+          'lint' => true,
+        ),
       ),
       'never-apply-patches' => array(
         'help' => 'Never apply patches suggested by lint.',
         'conflicts' => array(
           'apply-patches' => true,
+        ),
+        'passthru' => array(
+          'lint' => true,
         ),
       ),
       '*' => 'paths',
@@ -836,19 +848,7 @@ EOTEXT
 
     echo "Linting...\n";
     try {
-      $argv = array();
-      if ($this->getArgument('lintall')) {
-        $argv[] = '--lintall';
-      }
-      if ($this->getArgument('advice')) {
-        $argv[] = '--advice';
-      }
-      if ($this->getArgument('apply-patches')) {
-        $argv[] = '--apply-patches';
-      }
-      if ($this->getArgument('never-apply-patches')) {
-        $argv[] = '--never-apply-patches';
-      }
+      $argv = $this->getPassthruArgumentsAsArgv('lint');
       if ($repository_api instanceof ArcanistSubversionAPI) {
         $argv = array_merge($argv, array_keys($paths));
       } else {
@@ -905,7 +905,7 @@ EOTEXT
 
     echo "Running unit tests...\n";
     try {
-      $argv = array();
+      $argv = $this->getPassthruArgumentsAsArgv('unit');
       if ($repository_api instanceof ArcanistSubversionAPI) {
         $argv = array_merge($argv, array_keys($paths));
       }

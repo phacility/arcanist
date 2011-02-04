@@ -77,6 +77,7 @@ EOTEXT
     $engine = newv($engine_class, array());
     $engine->setWorkingCopy($working_copy);
     $engine->setPaths($paths);
+    $engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
     $results = $engine->run();
 
