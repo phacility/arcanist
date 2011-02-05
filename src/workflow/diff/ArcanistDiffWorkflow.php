@@ -833,6 +833,11 @@ EOTEXT
         ->setName('differential-update-comments')
         ->editInteractively();
       $comments = preg_replace('/^\s*#.*$/m', '', $comments);
+
+      $comments = rtrim($comments);
+      if (!strlen($comments)) {
+        throw new ArcanistUserAbortException();
+      }
     }
 
     return $comments;
