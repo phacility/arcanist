@@ -66,6 +66,17 @@ try {
       phutil_load_library($library_root);
     }
   }
+  
+  $user_config = array();
+  $user_config_path = getenv('HOME').'/.arcrc';
+  if (Filesystem::pathExists($user_config_path)) {
+    $user_config_data = Filesystem::readFile($user_config_path);
+    $user_config = json_decode($user_config_data, true);
+    if (!is_array($user_config)) {
+      throw new ArcanistUsageException(
+        "Your '~/.arcrc' file is not a valid JSON file.");
+    }
+  }
 
   $config = $working_copy->getConfig('arcanist_configuration');
   if ($config) {
@@ -116,6 +127,11 @@ try {
     $conduit = new ConduitClient($conduit_uri);
     $conduit->setTraceMode($config_trace_mode);
     $workflow->setConduit($conduit);
+    
+    $hosts_config = idx($user_config, 'hosts', array());
+    $host_config = idx($hosts_config, $conduit_uri, array());
+    $user_name = idx($host_config, 'user', getenv('USER'));
+    $certificate = idx($host_config, 'cert');
 
     $description = implode(' ', $argv);
     $connection = $conduit->callMethodSynchronous(
@@ -124,9 +140,15 @@ try {
         'client'            => 'arc',
         'clientVersion'     => 2,
         'clientDescription' => php_uname('n').':'.$description,
-        'user'              => getenv('USER'),
+        'user'              => $user_name,
+        'certificate'       => $certificate,
       ));
-    $conduit->setConnectionID($connection['connectionID']);
+      
+    $workflow->setUserName($user_name);
+    $user_phid = idx($connection, 'userPHID');
+    if ($user_phid) {
+      $workflow->setUserGUID($user_phid);
+    }
   }
 
   if ($need_repository_api) {
@@ -135,7 +157,7 @@ try {
     $workflow->setRepositoryAPI($repository_api);
   }
 
-  if ($need_auth) {
+  if ($need_auth && !$workflow->getUserGUID()) {
     $user_name = getenv('USER');
     $user_find_future = $conduit->callMethod(
       'user.find',
