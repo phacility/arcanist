@@ -6,7 +6,6 @@
 
 
 
-phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'lint/linter/base');
 
 

@@ -39,6 +39,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_EXIT_EXPRESSION          = 17;
   const LINT_COMMENT_STYLE            = 18;
   const LINT_CLASS_FILENAME_MISMATCH  = 19;
+  const LINT_TAUTOLOGICAL_EXPRESSION  = 20;
 
 
   public function getLintNameMap() {
@@ -62,6 +63,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_EXIT_EXPRESSION          => 'Exit Used as Expression',
       self::LINT_COMMENT_STYLE            => 'Comment Style',
       self::LINT_CLASS_FILENAME_MISMATCH  => 'Class-Filename Mismatch',
+      self::LINT_TAUTOLOGICAL_EXPRESSION  => 'Tautological Expression',
     );
   }
 
@@ -108,7 +110,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
   }
-  
+
   public function getXHPASTTreeForPath($path) {
     return idx($this->trees, $path);
   }
@@ -136,6 +138,42 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintArrayIndexWhitespace($root);
     $this->lintHashComments($root);
     $this->lintPrimaryDeclarationFilenameMatch($root);
+    $this->lintTautologicalExpressions($root);
+  }
+
+  private function lintTautologicalExpressions($root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+
+    static $operators = array(
+      '-'   => true,
+      '/'   => true,
+      '-='  => true,
+      '/='  => true,
+      '<='  => true,
+      '<'   => true,
+      '=='  => true,
+      '===' => true,
+      '>='  => true,
+      '>'   => true,
+    );
+
+    foreach ($expressions as $expr) {
+      $operator = $expr->getChildByIndex(1)->getConcreteString();
+      if (empty($operators[$operator])) {
+        continue;
+      }
+
+      $left = $expr->getChildByIndex(0)->getSemanticString();
+      $right = $expr->getChildByIndex(2)->getSemanticString();
+
+      if ($left == $right) {
+        $this->raiseLintAtNode(
+          $expr,
+          self::LINT_TAUTOLOGICAL_EXPRESSION,
+          'Both sides of this expression are identical, so it always '.
+          'evaluates to a constant.');
+      }
+    }
   }
 
   protected function lintHashComments($root) {

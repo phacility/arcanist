@@ -166,7 +166,7 @@ EOTEXT
       case self::SOURCE_LOCAL:
         $repository_api = $this->getRepositoryAPI();
         $parser = new ArcanistDiffParser();
-        
+
         if ($repository_api instanceof ArcanistGitAPI) {
           $this->parseGitRelativeCommit(
             $repository_api,
