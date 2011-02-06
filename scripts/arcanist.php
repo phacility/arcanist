@@ -66,7 +66,7 @@ try {
       phutil_load_library($library_root);
     }
   }
-  
+
   $user_config = array();
   $user_config_path = getenv('HOME').'/.arcrc';
   if (Filesystem::pathExists($user_config_path)) {
@@ -117,6 +117,7 @@ try {
     $workflow->setWorkingCopy($working_copy);
   }
 
+  $set_guid = false;
   if ($need_conduit) {
     $conduit_uri  = $working_copy->getConduitURI();
     if (!$conduit_uri) {
@@ -127,7 +128,7 @@ try {
     $conduit = new ConduitClient($conduit_uri);
     $conduit->setTraceMode($config_trace_mode);
     $workflow->setConduit($conduit);
-    
+
     $hosts_config = idx($user_config, 'hosts', array());
     $host_config = idx($hosts_config, $conduit_uri, array());
     $user_name = idx($host_config, 'user', getenv('USER'));
@@ -143,10 +144,11 @@ try {
         'user'              => $user_name,
         'certificate'       => $certificate,
       ));
-      
+
     $workflow->setUserName($user_name);
     $user_phid = idx($connection, 'userPHID');
     if ($user_phid) {
+      $set_guid = true;
       $workflow->setUserGUID($user_phid);
     }
   }
@@ -157,7 +159,7 @@ try {
     $workflow->setRepositoryAPI($repository_api);
   }
 
-  if ($need_auth && !$workflow->getUserGUID()) {
+  if ($need_auth && !$set_guid) {
     $user_name = getenv('USER');
     $user_find_future = $conduit->callMethod(
       'user.find',
