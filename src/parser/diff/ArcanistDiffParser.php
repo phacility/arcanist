@@ -176,18 +176,18 @@ class ArcanistDiffParser {
     do {
       $patterns = array(
         // This is a normal SVN text change, probably from "svn diff".
-        '(?<type>Index): (?<cur>.+)',
+        '(?P<type>Index): (?P<cur>.+)',
         // This is an SVN property change, probably from "svn diff".
-        '(?<type>Property changes on): (?<cur>.+)',
+        '(?P<type>Property changes on): (?P<cur>.+)',
         // This is a git commit message, probably from "git show".
-        '(?<type>commit) (?<hash>[a-f0-9]+)',
+        '(?P<type>commit) (?P<hash>[a-f0-9]+)',
         // This is a git diff, probably from "git show" or "git diff".
-        '(?<type>diff --git) a/(?<old>.+) b/(?<cur>.+)',
+        '(?P<type>diff --git) a/(?P<old>.+) b/(?P<cur>.+)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
-        '(?<type>---) (?<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
-        '(?<binary>Binary) files '.
-          '(?<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
-          '(?<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
+        '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
+        '(?P<binary>Binary) files '.
+          '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
+          '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
       );
 
       $ok = false;
@@ -419,17 +419,17 @@ class ArcanistDiffParser {
       do {
 
         $patterns = array(
-          '(?<new>new) file mode (?<newmode>\d+)',
-          '(?<deleted>deleted) file mode (?<oldmode>\d+)',
+          '(?P<new>new) file mode (?P<newmode>\d+)',
+          '(?P<deleted>deleted) file mode (?P<oldmode>\d+)',
           // These occur when someone uses `chmod` on a file.
-          'old mode (?<oldmode>\d+)',
-          'new mode (?<newmode>\d+)',
+          'old mode (?P<oldmode>\d+)',
+          'new mode (?P<newmode>\d+)',
           // These occur when you `mv` a file and git figures it out.
           'similarity index ',
-          'rename from (?<old>.*)',
-          '(?<move>rename) to (?<cur>.*)',
-          'copy from (?<old>.*)',
-          '(?<copy>copy) to (?<cur>.*)'
+          'rename from (?P<old>.*)',
+          '(?P<move>rename) to (?P<cur>.*)',
+          'copy from (?P<old>.*)',
+          '(?P<copy>copy) to (?P<cur>.*)'
         );
 
         $ok = false;
@@ -576,7 +576,7 @@ class ArcanistDiffParser {
     $line = $this->getLine();
     $matches = null;
     $ok = preg_match(
-      '@^[-+]{3} (?:[ab]/)?(?<path>.*?)(?:\s*\(.*\))?$@',
+      '@^[-+]{3} (?:[ab]/)?(?P<path>.*?)(?:\s*\(.*\))?$@',
       $line,
       $matches);
     if (!$ok) {
