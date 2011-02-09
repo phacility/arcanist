@@ -729,7 +729,8 @@ EOTEXT
     }
 
     if ($blessed) {
-      if (!$blessed->getFieldValue('reviewerGUIDs')) {
+      if (!$blessed->getFieldValue('reviewerGUIDs') &&
+          !$blessed->getFieldValue('reviewerPHIDs')) {
         $message = "You have not specified any reviewers. Continue anyway?";
         if (!phutil_console_confirm($message)) {
           throw new ArcanistUsageException('Specify reviewers and retry.');
