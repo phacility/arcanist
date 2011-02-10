@@ -1,2 +1,8 @@
-{}
+{
+  "name" : "Arcanist",
+  "src_base" : "https://github.com/facebook/arcanist/blob/master",
+  "groups" : {
+  
+  }
+}
 
