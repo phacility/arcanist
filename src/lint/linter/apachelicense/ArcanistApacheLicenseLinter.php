@@ -25,6 +25,7 @@ class ArcanistApacheLicenseLinter extends ArcanistLicenseLinter {
     $year = date('Y');
 
     return <<<EOLICENSE
+
 /*
  * Copyright {$year} {$copyright_holder}
  *

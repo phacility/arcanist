@@ -56,12 +56,12 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
     $patterns = $this->getLicensePatterns();
     $license = $this->getLicenseText($copyright_holder);
 
+    $data = $this->getData($path);
+    $matches = 0;
+
     foreach ($patterns as $pattern) {
-      $data = $this->getData($path);
-      $matches = 0;
       if (preg_match($pattern, $data, $matches)) {
-        $expect = rtrim(implode('', array_slice($matches, 1)))."\n\n".$license;
-        $expect = ltrim($expect);
+        $expect = rtrim(implode('', array_slice($matches, 1)))."\n".$license;
         if (rtrim($matches[0]) != rtrim($expect)) {
           $this->raiseLintAtOffset(
             0,
