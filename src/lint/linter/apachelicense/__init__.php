@@ -5,8 +5,6 @@
  */
 
 
-
-phutil_require_module('arcanist', 'lint/linter/base');
-
+phutil_require_module('arcanist', 'lint/linter/license');
 
 phutil_require_source('ArcanistApacheLicenseLinter.php');

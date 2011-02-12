@@ -16,46 +16,15 @@
  * limitations under the License.
  */
 
-class ArcanistApacheLicenseLinter extends ArcanistLinter {
-
-  const LINT_NO_LICENSE_HEADER = 1;
-
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
+class ArcanistApacheLicenseLinter extends ArcanistLicenseLinter {
   public function getLinterName() {
     return 'APACHELICENSE';
   }
 
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array(
-      self::LINT_NO_LICENSE_HEADER   => 'No License Header',
-    );
-  }
-
-  public function lintPath($path) {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $copyright_holder = $working_copy->getConfig('copyright_holder');
-
-    if (!$copyright_holder) {
-      return;
-    }
-
+  protected function getLicenseText($copyright_holder) {
     $year = date('Y');
 
-    $maybe_php_or_script = '(#![^\n]+?[\n])?(<[?]php\s+?)?';
-    $patterns = array(
-      "@^{$maybe_php_or_script}//[^\n]*Copyright[^\n]*[\n]\s*@i",
-      "@^{$maybe_php_or_script}/[*].*?Copyright.*?[*]/\s*@is",
-      "@^{$maybe_php_or_script}\s*@",
-    );
-
-    $license = <<<EOLICENSE
+    return <<<EOLICENSE
 /*
  * Copyright {$year} {$copyright_holder}
  *
@@ -74,24 +43,14 @@ class ArcanistApacheLicenseLinter extends ArcanistLinter {
 
 
 EOLICENSE;
-
-    foreach ($patterns as $pattern) {
-      $data = $this->getData($path);
-      $matches = 0;
-      if (preg_match($pattern, $data, $matches)) {
-        $expect = rtrim(implode('', array_slice($matches, 1)))."\n\n".$license;
-        $expect = ltrim($expect);
-        if (rtrim($matches[0]) != rtrim($expect)) {
-          $this->raiseLintAtOffset(
-            0,
-            self::LINT_NO_LICENSE_HEADER,
-            'This file has a missing or out of date license header.',
-            $matches[0],
-            $expect);
-        }
-        break;
-      }
-    }
   }
 
+  protected function getLicensePatterns() {
+    $maybe_php_or_script = '(#![^\n]+?[\n])?(<[?]php\s+?)?';
+    return array(
+      "@^{$maybe_php_or_script}//[^\n]*Copyright[^\n]*[\n]\s*@i",
+      "@^{$maybe_php_or_script}/[*].*?Copyright.*?[*]/\s*@is",
+      "@^{$maybe_php_or_script}\s*@",
+    );
+  }
 }

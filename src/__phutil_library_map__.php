@@ -34,6 +34,7 @@ phutil_register_library_map(array(
     'ArcanistGitAPI' => 'repository/api/git',
     'ArcanistGitHookPreReceiveWorkflow' => 'workflow/git-hook-pre-receive',
     'ArcanistHelpWorkflow' => 'workflow/help',
+    'ArcanistLicenseLinter' => 'lint/linter/license',
     'ArcanistLintEngine' => 'lint/engine/base',
     'ArcanistLintMessage' => 'lint/message',
     'ArcanistLintPatcher' => 'lint/patcher',
@@ -75,7 +76,7 @@ phutil_register_library_map(array(
   'requires_class' =>
   array(
     'ArcanistAmendWorkflow' => 'ArcanistBaseWorkflow',
-    'ArcanistApacheLicenseLinter' => 'ArcanistLinter',
+    'ArcanistApacheLicenseLinter' => 'ArcanistLicenseLinter',
     'ArcanistCommitWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistCoverWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistDiffParserTestCase' => 'ArcanistPhutilTestCase',
@@ -86,6 +87,7 @@ phutil_register_library_map(array(
     'ArcanistGitAPI' => 'ArcanistRepositoryAPI',
     'ArcanistGitHookPreReceiveWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistHelpWorkflow' => 'ArcanistBaseWorkflow',
+    'ArcanistLicenseLinter' => 'ArcanistLinter',
     'ArcanistLintWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistListWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistMarkCommittedWorkflow' => 'ArcanistBaseWorkflow',
