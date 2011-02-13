@@ -68,7 +68,7 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
             self::LINT_NO_LICENSE_HEADER,
             'This file has a missing or out of date license header.',
             $matches[0],
-            $expect);
+            ltrim($expect));
         }
         break;
       }

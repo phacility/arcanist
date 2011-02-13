@@ -1,3 +1,11 @@
+#!/usr/bin/php
+<?php
+
+do_stuff();
+~~~~~~~~~~
+error:1:1
+~~~~~~~~~~
+#!/usr/bin/php
 <?php
 
 /*
@@ -16,11 +24,4 @@
  * limitations under the License.
  */
 
-class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
-
-  public function testXHPASTLint() {
-    $linter = new ArcanistXHPASTLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
-  }
-
-}
+do_stuff();

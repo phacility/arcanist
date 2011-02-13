@@ -50,7 +50,14 @@ EOLICENSE;
     $maybe_php_or_script = '(#![^\n]+?[\n])?(<[?]php\s+?)?';
     return array(
       "@^{$maybe_php_or_script}//[^\n]*Copyright[^\n]*[\n]\s*@i",
-      "@^{$maybe_php_or_script}/[*].*?Copyright.*?[*]/\s*@is",
+
+      // We need to be careful about matching after "/*", since otherwise we'll
+      // end up in trouble on code like this, and consume the entire thing:
+      //
+      //  /* a */
+      //  copyright();
+      //  /* b */
+      "@^{$maybe_php_or_script}/[*](?:[^*]|[*][^/])*?Copyright.*?[*]/\s*@is",
       "@^{$maybe_php_or_script}\s*@",
     );
   }

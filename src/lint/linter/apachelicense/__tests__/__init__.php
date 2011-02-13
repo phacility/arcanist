@@ -6,8 +6,8 @@
 
 
 
+phutil_require_module('arcanist', 'lint/linter/apachelicense');
 phutil_require_module('arcanist', 'lint/linter/base/test');
-phutil_require_module('arcanist', 'lint/linter/xhpast');
 
 
-phutil_require_source('ArcanistXHPASTLinterTestCase.php');
+phutil_require_source('ArcanistApacheLicenseLinterTestCase.php');

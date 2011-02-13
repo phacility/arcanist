@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
+class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testXHPASTLint() {
-    $linter = new ArcanistXHPASTLinter();
+  public function testApacheLicenseLint() {
+    $linter = new ArcanistApacheLicenseLinter();
     return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
   }
 

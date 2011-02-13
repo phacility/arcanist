@@ -1,5 +1,13 @@
 <?php
 
+/* Copyright 1901 Facebook */
+
+do_stuff();
+~~~~~~~~~~
+error:1:1
+~~~~~~~~~~
+<?php
+
 /*
  * Copyright 2011 Facebook, Inc.
  *
@@ -16,11 +24,4 @@
  * limitations under the License.
  */
 
-class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
-
-  public function testXHPASTLint() {
-    $linter = new ArcanistXHPASTLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
-  }
-
-}
+do_stuff();

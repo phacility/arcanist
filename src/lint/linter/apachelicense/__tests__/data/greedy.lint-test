@@ -1,5 +1,17 @@
 <?php
 
+/* Some Comment */
+
+function Copyright(Copyright $copyright) {
+  return new Copyright($copyright);
+}
+
+/* More Comments */
+~~~~~~~~~~
+error:1:1
+~~~~~~~~~~
+<?php
+
 /*
  * Copyright 2011 Facebook, Inc.
  *
@@ -16,11 +28,10 @@
  * limitations under the License.
  */
 
-class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
+/* Some Comment */
 
-  public function testXHPASTLint() {
-    $linter = new ArcanistXHPASTLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
-  }
-
+function Copyright(Copyright $copyright) {
+  return new Copyright($copyright);
 }
+
+/* More Comments */

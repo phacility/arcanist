@@ -1,5 +1,11 @@
-<?php
+#include <stdio>
 
+int main(int argv, char **argv) {
+  return 0;
+}
+~~~~~~~~~~
+error:1:1
+~~~~~~~~~~
 /*
  * Copyright 2011 Facebook, Inc.
  *
@@ -16,11 +22,8 @@
  * limitations under the License.
  */
 
-class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
+#include <stdio>
 
-  public function testXHPASTLint() {
-    $linter = new ArcanistXHPASTLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
-  }
-
+int main(int argv, char **argv) {
+  return 0;
 }
