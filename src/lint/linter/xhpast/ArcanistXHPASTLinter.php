@@ -153,6 +153,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       '<'   => true,
       '=='  => true,
       '===' => true,
+      '!='  => true,
+      '!==' => true,
       '>='  => true,
       '>'   => true,
     );

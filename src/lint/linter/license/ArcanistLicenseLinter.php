@@ -62,7 +62,7 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
     foreach ($patterns as $pattern) {
       if (preg_match($pattern, $data, $matches)) {
         $expect = rtrim(implode('', array_slice($matches, 1)))."\n".$license;
-        if (rtrim($matches[0]) != rtrim($expect)) {
+        if (trim($matches[0]) != trim($expect)) {
           $this->raiseLintAtOffset(
             0,
             self::LINT_NO_LICENSE_HEADER,

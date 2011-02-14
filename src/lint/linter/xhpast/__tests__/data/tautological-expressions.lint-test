@@ -12,6 +12,9 @@ if ($y[2] - $y[2]) {
 if ($x == $y) {
 }
 
+// See xhpast 0.54 -> 0.55.
+return $a->sub->value < $b->sub->value;
+
 ~~~~~~~~~~
 error:3:5
 error:6:5
