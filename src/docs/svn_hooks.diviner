@@ -1,0 +1,19 @@
+@title Installing Arcanist SVN Hooks
+@group config
+
+= Installing Arcanist SVN Hooks =
+
+You can install Arcanist as an SVN pre-commit hook, to reject commits which
+contain lint errors. The immediate value of this is that syntax errors won't
+be committable, but you can block other kinds of badness with appropriate lint
+engines.
+
+To install Arcanist as a pre-commit hook, add this to your svn/hooks/pre-commit:
+
+  #!/bin/sh
+  /path/to/arcanist/bin/arc svn-hook-pre-commit $@ 1>&2
+  
+Make sure you make this file executable, or you'll get an error for every commit
+with an unhelpful error message. You also need to specify the full path since
+SVN nukes ENV before executing scripts.
+
