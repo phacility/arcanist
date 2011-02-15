@@ -93,9 +93,4 @@ class PhutilLintEngine extends ArcanistLintEngine {
     return $linters;
   }
 
-  public function pathExists($path) {
-    $disk_path = $this->getFilePathOnDisk($path);
-    return Filesystem::pathExists($disk_path);
-  }
-
 }

@@ -20,7 +20,7 @@ class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **svn-hook-pre-receive** __repository__ __transaction__
+      **svn-hook-pre-commit** __repository__ __transaction__
           Supports: svn
           You can install this as an SVN pre-commit hook.
 EOTEXT
@@ -48,8 +48,12 @@ EOTEXT
       $transaction,
       $repository);
 
+    if (strpos($commit_message, '@bypass-lint') !== false) {
+      return 0;
+    }
+
+
     // TODO: Do stuff with commit message.
-    var_dump($commit_message);
 
     list($changed) = execx(
       'svnlook changed --transaction %s %s',
@@ -119,6 +123,7 @@ EOTEXT
       }
     }
 
+
     if ($failed && $resolved) {
       $failed_paths = '        '.implode("\n        ", $failed);
       $resolved_paths = '        '.implode("\n        ", array_keys($resolved));
@@ -134,7 +139,7 @@ EOTEXT
 
     if (!$resolved) {
       // None of the affected paths are beneath a .arcconfig file.
-      return 3;
+      return 0;
     }
 
     $groups = array();
@@ -155,11 +160,19 @@ EOTEXT
         $message);
     }
 
-    $project_root = key($groups);
+    $config_file = key($groups);
+    $project_root = dirname($config_file);
     $paths = reset($groups);
+
+    list($config) = execx(
+      'svnlook cat --transaction %s %s %s',
+      $transaction,
+      $repository,
+      $config_file);
 
     $data = array();
     foreach ($paths as $path) {
+      // TODO: This should be done in parallel.
       list($err, $filedata) = exec_manual(
         'svnlook cat --transaction %s %s %s',
         $transaction,
@@ -168,9 +181,51 @@ EOTEXT
       $data[$path] = $err ? null : $filedata;
     }
 
-    // TODO: Do stuff with data.
-    var_dump($data);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
+      $project_root,
+      $config);
 
-    return 1;
+    $lint_engine = $working_copy->getConfig('lint_engine');
+    if (!$lint_engine) {
+      return 0;
+    }
+
+    PhutilSymbolLoader::loadClass($lint_engine);
+
+    $engine = newv($lint_engine, array());
+    $engine->setWorkingCopy($working_copy);
+    $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+    $engine->setPaths(array_keys($data));
+    $engine->setFileData($data);
+    $engine->setCommitHookMode(true);
+
+    $results = $engine->run();
+
+    $renderer = new ArcanistLintRenderer();
+    $failures = array();
+    foreach ($results as $result) {
+      if (!$result->getMessages()) {
+        continue;
+      }
+      $failures[] = $result;
+    }
+
+    if ($failures) {
+      $at = "@";
+      $msg = phutil_console_format(
+        "\n**LINT ERRORS**\n\n".
+        "This changeset has lint errors. You must fix all lint errors before ".
+        "you can commit.\n\n".
+        "You can add '{$at}bypass-lint' to your commit message to disable ".
+        "lint checks for this commit, or '{$at}nolint' to the file with ".
+        "errors to disable lint for that file.\n\n");
+      echo phutil_console_wrap($msg);
+      foreach ($failures as $result) {
+        echo $renderer->renderLintResult($result);
+      }
+      return 1;
+    }
+
+    return 99;
   }
 }

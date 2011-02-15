@@ -27,6 +27,7 @@ abstract class ArcanistLintEngine {
   private $minimumSeverity = null;
 
   private $changedLines = array();
+  private $commitHookMode = false;
 
   public function __construct() {
 
@@ -59,12 +60,31 @@ abstract class ArcanistLintEngine {
     return idx($this->changedLines, $path);
   }
 
+  public function setFileData($data) {
+    $this->fileData = $data + $this->fileData;
+    return $this;
+  }
+
+  public function setCommitHookMode($mode) {
+    $this->commitHookMode = $mode;
+    return $this;
+  }
+
   protected function loadData($path) {
     if (!isset($this->fileData[$path])) {
       $disk_path = $this->getFilePathOnDisk($path);
       $this->fileData[$path] = Filesystem::readFile($disk_path);
     }
     return $this->fileData[$path];
+  }
+
+  public function pathExists($path) {
+    if ($this->getCommitHookMode()) {
+      return (idx($this->fileData, $path) !== null);
+    } else {
+      $disk_path = $this->getFilePathOnDisk($path);
+      return Filesystem::pathExists($disk_path);
+    }
   }
 
   public function getFilePathOnDisk($path) {
@@ -79,7 +99,7 @@ abstract class ArcanistLintEngine {
   }
 
   public function getCommitHookMode() {
-    return false;
+    return $this->commitHookMode;
   }
 
   public function run() {

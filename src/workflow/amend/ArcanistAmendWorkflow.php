@@ -95,6 +95,10 @@ EOTEXT
       }
     }
 
+    // TODO: The old 'arc amend' had a check here to see if you were running
+    // 'arc amend' with an explicit revision but HEAD already had another
+    // revision in it. Maybe this is worth restoring?
+
     $conduit = $this->getConduit();
     $message = $conduit->callMethodSynchronous(
       'differential.getcommitmessage',

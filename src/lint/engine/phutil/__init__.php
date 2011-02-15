@@ -7,14 +7,12 @@
 
 
 phutil_require_module('arcanist', 'lint/engine/base');
+phutil_require_module('arcanist', 'lint/linter/apachelicense');
 phutil_require_module('arcanist', 'lint/linter/filename');
 phutil_require_module('arcanist', 'lint/linter/generated');
 phutil_require_module('arcanist', 'lint/linter/phutilmodule');
 phutil_require_module('arcanist', 'lint/linter/text');
 phutil_require_module('arcanist', 'lint/linter/xhpast');
-phutil_require_module('arcanist', 'lint/linter/apachelicense');
-
-phutil_require_module('phutil', 'filesystem');
 
 
 phutil_require_source('PhutilLintEngine.php');

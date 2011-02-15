@@ -31,27 +31,36 @@ class ArcanistWorkingCopyIdentity {
         continue;
       }
       $proj_raw = Filesystem::readFile($config_file);
-      $proj = json_decode($proj_raw, true);
-      if (!is_array($proj)) {
-        throw new Exception(
-          "Unable to parse '.arcconfig' file in '{$dir}'. The file contents ".
-          "should be valid JSON.");
-      }
-      $required_keys = array(
-        'project_id',
-      );
-      foreach ($required_keys as $key) {
-        if (!array_key_exists($key, $proj)) {
-          throw new Exception(
-            "Required key '{$key}' is missing from '.arcconfig' file in ".
-            "'{$dir}'.");
-        }
-      }
-      $config = $proj;
+      $config = self::parseRawConfigFile($proj_raw);
       $project_root = $dir;
       break;
     }
     return new ArcanistWorkingCopyIdentity($project_root, $config);
+  }
+
+  public static function newFromRootAndConfigFile($root, $config_raw) {
+    $config = self::parseRawConfigFile($config_raw);
+    return new ArcanistWorkingCopyIdentity($root, $config);
+  }
+
+  private static function parseRawConfigFile($raw_config) {
+    $proj = json_decode($raw_config, true);
+    if (!is_array($proj)) {
+      throw new Exception(
+        "Unable to parse '.arcconfig' file in '{$dir}'. The file contents ".
+        "should be valid JSON.");
+    }
+    $required_keys = array(
+      'project_id',
+    );
+    foreach ($required_keys as $key) {
+      if (!array_key_exists($key, $proj)) {
+        throw new Exception(
+          "Required key '{$key}' is missing from '.arcconfig' file in ".
+          "'{$dir}'.");
+      }
+    }
+    return $proj;
   }
 
   protected function __construct($root, array $config) {
