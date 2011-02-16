@@ -20,7 +20,11 @@ class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
 
   public function testApacheLicenseLint() {
     $linter = new ArcanistApacheLicenseLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
+    return $this->executeTestsInDirectory(
+      dirname(__FILE__).'/data/',
+      $linter,
+      $working_copy);
   }
 
 }

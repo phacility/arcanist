@@ -20,7 +20,11 @@ class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
 
   public function testXHPASTLint() {
     $linter = new ArcanistXHPASTLinter();
-    return $this->executeTestsInDirectory(dirname(__FILE__).'/data/', $linter);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
+    return $this->executeTestsInDirectory(
+      dirname(__FILE__).'/data/',
+      $linter,
+      $working_copy);
   }
 
 }
