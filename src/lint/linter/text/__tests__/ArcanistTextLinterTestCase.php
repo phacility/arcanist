@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
+class ArcanistTextLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testApacheLicenseLint() {
-    $linter = new ArcanistApacheLicenseLinter();
+  public function testTextLint() {
+    $linter = new ArcanistTextLinter();
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/data/',

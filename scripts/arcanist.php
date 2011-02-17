@@ -32,12 +32,17 @@ phutil_require_module('arcanist', 'repository/api/base');
 
 $config_trace_mode = false;
 $args = array_slice($argv, 1);
+$load = array();
+$matches = null;
 foreach ($args as $key => $arg) {
   if ($arg == '--') {
     break;
   } else if ($arg == '--trace') {
     unset($args[$key]);
     $config_trace_mode = true;
+  } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
+    unset($args[$key]);
+    $load['?'] = $matches[1];
   }
 }
 
@@ -54,7 +59,11 @@ try {
   }
 
   $working_copy = ArcanistWorkingCopyIdentity::newFromPath($_SERVER['PWD']);
-  $libs = $working_copy->getConfig('phutil_libraries');
+  if ($load) {
+    $libs = $load;
+  } else {
+    $libs = $working_copy->getConfig('phutil_libraries');
+  }
   if ($libs) {
     foreach ($libs as $name => $location) {
       if ($config_trace_mode) {

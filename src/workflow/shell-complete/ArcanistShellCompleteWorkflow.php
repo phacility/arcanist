@@ -123,6 +123,7 @@ EOTEXT
         }
         return 0;
       } else {
+        
         $output = array();
         foreach ($arguments as $argument => $spec) {
           if ($argument == '*') {
@@ -135,8 +136,23 @@ EOTEXT
           }
           $output[] = '--'.$argument;
         }
-
-        echo implode(' ', $output)."\n";
+        
+        $cur = idx($argv, $pos, '');
+        $any_match = false;
+        foreach ($output as $possible) {
+          if (!strncmp($possible, $cur, strlen($cur))) {
+            $any_match = true;
+          }
+        }
+        
+        if (!$any_match && isset($arguments['*'])) {
+          // TODO: the '*' specifier should probably have more details about
+          // whether or not it is a list of files. Since it almost always is in
+          // practice, assume FILE for now.
+          echo "FILE\n";
+        } else {
+          echo implode(' ', $output)."\n";
+        }
         return 0;
       }
     }

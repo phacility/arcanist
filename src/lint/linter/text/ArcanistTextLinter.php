@@ -24,6 +24,7 @@ class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EOF_NEWLINE            = 4;
   const LINT_BAD_CHARSET            = 5;
   const LINT_TRAILING_WHITESPACE    = 6;
+  const LINT_NO_COMMIT              = 7;
 
   private $maxLineLength = 80;
 
@@ -54,6 +55,7 @@ class ArcanistTextLinter extends ArcanistLinter {
       self::LINT_EOF_NEWLINE          => 'File Does Not End in Newline',
       self::LINT_BAD_CHARSET          => 'Bad Charset',
       self::LINT_TRAILING_WHITESPACE  => 'Trailing Whitespace',
+      self::LINT_NO_COMMIT            => 'Explicit @no'.'commit',
     );
   }
 
@@ -74,6 +76,10 @@ class ArcanistTextLinter extends ArcanistLinter {
     $this->lintLineLength($path);
     $this->lintEOFNewline($path);
     $this->lintTrailingWhitespace($path);
+
+    if ($this->getEngine()->getCommitHookMode()) {
+      $this->lintNoCommit($path);
+    }
   }
 
   protected function lintNewlines($path) {
@@ -180,5 +186,22 @@ class ArcanistTextLinter extends ArcanistLinter {
         '');
     }
   }
+
+  private function lintNoCommit($path) {
+    $data = $this->getData($path);
+
+    $deadly = '@no'.'commit';
+
+    $offset = strpos($data, $deadly);
+    if ($offset !== false) {
+      $this->raiseLintAtOffset(
+        $offset,
+        self::LINT_NO_COMMIT,
+        'This file is explicitly marked as "'.$deadly.'", which blocks '.
+        'commits.',
+        $deadly);
+    }
+  }
+
 
 }

@@ -36,6 +36,11 @@ EOTEXT
 
   public function getArguments() {
     return array(
+      'engine' => array(
+        'param' => 'classname',
+        'help' =>
+          "Override configured unit engine for this project."
+      ),
       '*' => 'paths',
     );
   }

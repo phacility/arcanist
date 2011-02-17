@@ -6,9 +6,9 @@
 
 
 
-phutil_require_module('arcanist', 'lint/linter/apachelicense');
 phutil_require_module('arcanist', 'lint/linter/base/test');
+phutil_require_module('arcanist', 'lint/linter/text');
 phutil_require_module('arcanist', 'workingcopyidentity');
 
 
-phutil_require_source('ArcanistApacheLicenseLinterTestCase.php');
+phutil_require_source('ArcanistTextLinterTestCase.php');

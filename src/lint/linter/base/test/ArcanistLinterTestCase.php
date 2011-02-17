@@ -18,16 +18,14 @@
 
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
-  public function executeTestsInDirectory($root, $linter) {
+  public function executeTestsInDirectory($root, $linter, $working_copy) {
     foreach (Filesystem::listDirectory($root, $hidden = false) as $file) {
-      $this->lintFile($root.$file, $linter);
+      $this->lintFile($root.$file, $linter, $working_copy);
     }
   }
 
-  private function lintFile($file, $linter) {
+  private function lintFile($file, $linter, $working_copy) {
     $linter = clone $linter;
-
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
 
     $contents = Filesystem::readFile($file);
     $contents = explode("~~~~~~~~~~\n", $contents);
@@ -77,8 +75,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $engine->setWorkingCopy($working_copy);
       $engine->setPaths(array($path));
 
-//  TODO: restore this
-//      $engine->setCommitHookMode(idx($config, 'hook', false));
+      $engine->setCommitHookMode(idx($config, 'hook', false));
 
       $linter->addPath($path);
       $linter->addData($path, $data);
