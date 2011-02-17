@@ -226,6 +226,6 @@ EOTEXT
       return 1;
     }
 
-    return 99;
+    return 0;
   }
 }
