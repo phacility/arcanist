@@ -30,8 +30,9 @@ class ArcanistDifferentialCommitMessage {
     $obj = new ArcanistDifferentialCommitMessage();
     $obj->rawCorpus = $corpus;
 
+    // TODO: Remove "Diffcamp" backward compatibility.
     $match = null;
-    if (preg_match('/^Differential Revision:\s*D?(\d+)/m', $corpus, $match)) {
+    if (preg_match('/^(?:Differential|DiffCamp) Revision:\s*D?(\d+)/im', $corpus, $match)) {
       $obj->revisionID = (int)$match[1];
     }
 

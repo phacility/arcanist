@@ -126,6 +126,10 @@ EOTEXT
       }
     }
 
+    echo phutil_console_wrap(
+      "You may now push this commit upstream, as appropriate (e.g. with ".
+      "'git push', or 'git svn dcommit', or by printing and faxing it).\n");
+
     return 0;
   }
 
