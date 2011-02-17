@@ -40,10 +40,17 @@ foreach ($args as $key => $arg) {
   } else if ($arg == '--trace') {
     unset($args[$key]);
     $config_trace_mode = true;
+  } else if ($arg == '--no-ansi') {
+    unset($args[$key]);
+    PhutilConsoleFormatter::disableANSI(true);
   } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $load['?'] = $matches[1];
   }
+}
+
+if (!posix_isatty(STDOUT)) {
+  PhutilConsoleFormatter::disableANSI(true);
 }
 
 $args = array_values($args);
