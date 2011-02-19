@@ -423,6 +423,13 @@ EOTEXT
         $this->getArgument('paths', array()));
       $paths = $repository_api->getWorkingCopyStatus();
     }
+
+    foreach ($paths as $path => $mask) {
+      if ($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+        unset($paths[$path]);
+      }
+    }
+
     return $paths;
   }
 
