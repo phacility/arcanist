@@ -31,6 +31,7 @@ phutil_require_module('arcanist', 'workingcopyidentity');
 phutil_require_module('arcanist', 'repository/api/base');
 
 $config_trace_mode = false;
+$force_conduit = null;
 $args = array_slice($argv, 1);
 $load = array();
 $matches = null;
@@ -46,6 +47,9 @@ foreach ($args as $key => $arg) {
   } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $load['?'] = $matches[1];
+  } else if (preg_match('/^--conduit-uri=(.*)$/', $arg, $matches)) {
+    unset($args[$key]);
+    $force_conduit = $matches[1];
   }
 }
 
@@ -135,7 +139,12 @@ try {
 
   $set_guid = false;
   if ($need_conduit) {
-    $conduit_uri  = $working_copy->getConduitURI();
+
+    if ($force_conduit) {
+      $conduit_uri = $force_conduit;
+    } else {
+      $conduit_uri = $working_copy->getConduitURI();
+    }
     if (!$conduit_uri) {
       throw new ArcanistUsageException(
         "No Conduit URI is specified in the .arcconfig file for this project. ".
