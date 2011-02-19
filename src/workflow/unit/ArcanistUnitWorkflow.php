@@ -71,12 +71,20 @@ EOTEXT
 
     if ($this->getArgument('paths')) {
       // TODO: deal with git stuff
-
       $paths = $this->getArgument('paths');
     } else {
       $paths = $repository_api->getWorkingCopyStatus();
+
+      // TODO: clean this up
+      foreach ($paths as $path => $mask) {
+        if ($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+          unset($paths[$path]);
+        }
+      }
+
       $paths = array_keys($paths);
     }
+
 
     PhutilSymbolLoader::loadClass($engine_class);
     $engine = newv($engine_class, array());
