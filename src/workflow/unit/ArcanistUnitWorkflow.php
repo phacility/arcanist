@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Runs unit tests which cover your changes.
+ *
+ * @group workflow
+ */
 class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
 
   const RESULT_OKAY     = 0;

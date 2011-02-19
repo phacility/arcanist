@@ -16,6 +16,12 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown when there is a problem with how a user is invoking a command, rather
+ * than a technical problem.
+ *
+ * @group workflow
+ */
 class ArcanistUsageException extends Exception {
 
 }

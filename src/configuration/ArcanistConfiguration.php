@@ -16,6 +16,28 @@
  * limitations under the License.
  */
 
+/**
+ * Runtime workflow configuration. In Arcanist, commands you type like
+ * "arc diff" or "arc lint" are called "workflows". This class allows you to add
+ * new workflows (and extend existing workflows) by subclassing it and then
+ * pointing to your subclass in your project configuration.
+ *
+ * For instructions on how to extend this class and customize Arcanist in your
+ * project, see @{article:Building New Configuration Classes}.
+ *
+ * When specified as the **arcanist_configuration** class in your project's
+ * ##.arcconfig##, your subclass will be instantiated (instead of this class)
+ * and be able to handle all the method calls. In particular, you can:
+ *
+ *    - create, replace, or disable workflows by overriding buildWorkflow()
+ *      and buildAllWorkflows();
+ *    - add additional steps before or after workflows run by overriding
+ *      willRunWorkflow() or didRunWorkflow(); and
+ *    - add new flags to existing workflows by overriding
+ *      getCustomArgumentsForCommand().
+ *
+ * @group config
+ */
 class ArcanistConfiguration {
 
   public function buildWorkflow($command) {

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Facilitiates implementation of test cases for @{class:ArcanistLinter}s.
+ *
+ * @group testcase
+ */
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
   public function executeTestsInDirectory($root, $linter, $working_copy) {

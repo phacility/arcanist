@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Applies rules for modules in Phutil libraries.
+ *
+ * @group linter
+ */
 class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
   const LINT_UNDECLARED_CLASS       = 1;

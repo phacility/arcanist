@@ -1,8 +1,7 @@
 @title Setting Up .arcconfig
 @group config
 
-This document describes how to configure Arcanist projects with ##.arcconfig##
-files.
+Explains how to configure Arcanist projects with ##.arcconfig## files.
 
 = .arcconfig Basics =
 

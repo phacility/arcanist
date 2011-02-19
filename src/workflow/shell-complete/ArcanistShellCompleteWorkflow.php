@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Powers shell-completion scripts.
+ *
+ * @group workflow
+ */
 class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

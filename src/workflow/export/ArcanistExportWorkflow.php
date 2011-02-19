@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Exports changes from Differential or the working copy to a file.
+ *
+ * @group workflow
+ */
 final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
 
   const SOURCE_LOCAL      = 'local';

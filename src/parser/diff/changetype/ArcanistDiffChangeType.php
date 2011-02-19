@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Defines constants for file types and operations in changesets.
+ *
+ * @group diff
+ */
 class ArcanistDiffChangeType {
   const TYPE_ADD        = 1;
   const TYPE_CHANGE     = 2;

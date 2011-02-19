@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Explicitly marks Differential revisions as "Committed".
+ *
+ * @group workflow
+ */
 class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

@@ -30,6 +30,8 @@ phutil_require_module('arcanist', 'configuration');
 phutil_require_module('arcanist', 'workingcopyidentity');
 phutil_require_module('arcanist', 'repository/api/base');
 
+ini_set('memory_limit', -1);
+
 $config_trace_mode = false;
 $force_conduit = null;
 $args = array_slice($argv, 1);

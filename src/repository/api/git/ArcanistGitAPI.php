@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Interfaces with Git working copies.
+ *
+ * @group workingcopy
+ */
 class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $status;

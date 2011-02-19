@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Tests for @{class:ArcanistXHPASTLinter}.
+ *
+ * @group testcase
+ */
 class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
 
   public function testXHPASTLint() {

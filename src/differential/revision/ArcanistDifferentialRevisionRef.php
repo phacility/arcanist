@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Reference to a Differential revision.
+ *
+ * @group differential
+ */
 class ArcanistDifferentialRevisionRef {
 
   protected $id;

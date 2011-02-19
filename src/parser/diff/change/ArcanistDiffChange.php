@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Represents a change to an individual path.
+ *
+ * @group diff
+ */
 class ArcanistDiffChange {
 
   protected $metadata = array();

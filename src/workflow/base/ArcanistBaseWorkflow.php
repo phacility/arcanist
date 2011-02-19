@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Implements a runnable command, like "arc diff" or "arc help".
+ *
+ * @group workflow
+ */
 class ArcanistBaseWorkflow {
 
   private $conduit;

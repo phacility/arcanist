@@ -16,4 +16,9 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown to prematurely end test execution.
+ *
+ * @group unitrun
+ */
 class ArcanistPhutilTestTerminatedException extends Exception {}

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Covers your professional reputation by blaming changes to locate reviewers.
+ *
+ * @group workflow
+ */
 class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

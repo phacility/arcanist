@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Represents a parsed commit message.
+ *
+ * @group differential
+ */
 class ArcanistDifferentialCommitMessage {
 
   private $rawCorpus;

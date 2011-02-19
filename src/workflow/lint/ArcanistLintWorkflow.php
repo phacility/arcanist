@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Runs lint rules on changes.
+ *
+ * @group workflow
+ */
 class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
 
   const RESULT_OKAY       = 0;

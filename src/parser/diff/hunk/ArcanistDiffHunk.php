@@ -17,8 +17,9 @@
  */
 
 /**
- * A hunk is a contiguous set of added and removed lines in a diff. This is
- * the parsed representation thereof.
+ * Represents a contiguous set of added and removed lines in a diff.
+ *
+ * @group diff
  */
 class ArcanistDiffHunk {
 

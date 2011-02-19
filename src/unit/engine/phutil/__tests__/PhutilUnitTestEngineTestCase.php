@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Very meta test for @{class:PhutilUnitTestEngine}.
+ *
+ * @group testcase
+ */
 class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
   public function testPass() {

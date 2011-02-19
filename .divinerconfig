@@ -3,7 +3,17 @@
   "src_base" : "https://github.com/facebook/arcanist/blob/master",
   "groups" : {
     "intro" : "Introduction",
-    "config" : "Setup & Configuration"
+    "config" : "Setup & Configuration",    
+    "workflow" : "Workflows",
+    "lint" : "Lint Integration",
+    "linter" : "Linters",
+    "unit" : "Unit Test Integration",
+    "unitrun" : "Unit Test Runners",
+    "diff" : "Diff and Changeset APIs",
+    "differential" : "Differential Integration",
+    "workingcopy" : "Working Copy APIs",
+    "module" : "Phutil Module System",
+    "testcase" : "Test Cases"
   }
 }
 

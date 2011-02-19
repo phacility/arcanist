@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Seduces the reader with majestic prose.
+ *
+ * @group workflow
+ */
 class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

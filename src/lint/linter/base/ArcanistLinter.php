@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Implements lint rules, like syntax checks for a specific language.
+ *
+ * @group linter
+ */
 abstract class ArcanistLinter {
 
   protected $paths  = array();

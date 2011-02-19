@@ -68,7 +68,7 @@ phutil_register_library_map(array(
     'ArcanistXHPASTLinter' => 'lint/linter/xhpast',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/xhpast/__tests__',
     'PhutilLintEngine' => 'lint/engine/phutil',
-    'PhutilModuleRequirements' => 'staticanalysis/parsers/phutilmodule',
+    'PhutilModuleRequirements' => 'parser/phutilmodule',
     'PhutilUnitTestEngine' => 'unit/engine/phutil',
     'PhutilUnitTestEngineTestCase' => 'unit/engine/phutil/__tests__',
     'UnitTestableArcanistLintEngine' => 'lint/engine/test',

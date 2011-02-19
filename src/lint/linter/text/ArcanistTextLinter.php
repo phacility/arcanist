@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Enforces basic text file rules.
+ *
+ * @group linter
+ */
 class ArcanistTextLinter extends ArcanistLinter {
 
   const LINT_DOS_NEWLINE            = 1;

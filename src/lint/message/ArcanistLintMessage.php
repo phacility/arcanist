@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Message emitted by a linter, like an error or warning.
+ *
+ * @group lint
+ */
 class ArcanistLintMessage {
 
   protected $path;

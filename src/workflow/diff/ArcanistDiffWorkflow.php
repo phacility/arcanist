@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Sends changes from your working copy to Differential for code review.
+ *
+ * @group workflow
+ */
 class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;

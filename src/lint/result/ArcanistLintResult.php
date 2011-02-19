@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * A group of @{class:ArcanistLintMessage}s that apply to a file.
+ *
+ * @group lint
+ */
 final class ArcanistLintResult {
 
   protected $path;

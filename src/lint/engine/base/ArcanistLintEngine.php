@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Manages lint execution.
+ *
+ * @group lint
+ */
 abstract class ArcanistLintEngine {
 
   protected $workingCopy;

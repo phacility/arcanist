@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Updates git commit messages after a revision is "Accepted".
+ *
+ * @group workflow
+ */
 class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

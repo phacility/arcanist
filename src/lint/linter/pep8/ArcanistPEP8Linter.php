@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Uses "pep8.py" to enforce PEP8 rules for Python.
+ *
+ * @group linter
+ */
 class ArcanistPEP8Linter extends ArcanistLinter {
 
   public function willLintPaths(array $paths) {

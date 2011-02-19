@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Base test case for the very simple libphutil test framework.
+ *
+ * @group unitrun
+ */
 abstract class ArcanistPhutilTestCase {
 
   private $runningTest;

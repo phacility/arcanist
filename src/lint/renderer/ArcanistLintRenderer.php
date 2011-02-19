@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Shows lint messages to the user.
+ *
+ * @group lint
+ */
 class ArcanistLintRenderer {
 
   private $summaryMode;

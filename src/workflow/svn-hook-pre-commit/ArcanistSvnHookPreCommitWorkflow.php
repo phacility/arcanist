@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Installable as an SVN "pre-commit" hook.
+ *
+ * @group workflow
+ */
 class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

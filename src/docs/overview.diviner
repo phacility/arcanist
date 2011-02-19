@@ -1,10 +1,10 @@
 @title Arcanist Overview
 @group intro
 
-This document provides an overview of Arcanist, a code workflow tool. Arcanist
-(commonly, "arc") is the command-line frontend to Differential.
+Overview of Arcanist, a code workflow tool.
 
-A detailed command reference is available by running ##arc help##.
+Arcanist (commonly, "arc") is the command-line frontend to Differential. A
+detailed command reference is available by running ##arc help##.
 
 = Overview =
 

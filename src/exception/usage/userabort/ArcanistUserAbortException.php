@@ -16,6 +16,12 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown when the user chooses not to continue when warned that they're about
+ * to do something dangerous.
+ *
+ * @group workflow
+ */
 class ArcanistUserAbortException extends ArcanistUsageException {
   public function __construct() {
     parent::__construct('User aborted the workflow.');
