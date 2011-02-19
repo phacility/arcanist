@@ -199,7 +199,12 @@ EOTEXT
     $engine->setFileData($data);
     $engine->setCommitHookMode(true);
 
-    $results = $engine->run();
+    try {
+      $results = $engine->run();
+    } catch (ArcanistNoEffectException $no_effect) {
+      // Nothing to do, bail out.
+      return 0;
+    }
 
     $renderer = new ArcanistLintRenderer();
     $failures = array();
@@ -226,6 +231,6 @@ EOTEXT
       return 1;
     }
 
-    return 99;
+    return 0;
   }
 }
