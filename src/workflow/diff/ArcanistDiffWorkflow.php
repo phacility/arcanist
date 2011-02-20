@@ -328,6 +328,50 @@ EOTEXT
       );
 
       if ($message->getRevisionID()) {
+        // TODO: This is silly -- we're getting a text corpus from the server
+        // and then sending it right back to be parsed. This should be a
+        // single call.
+        $remote_corpus = $conduit->callMethodSynchronous(
+          'differential.getcommitmessage',
+          array(
+            'revision_id' => $message->getRevisionID(),
+          ));
+        $remote_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+          $remote_corpus);
+        $remote_message->pullDataFromConduit($conduit);
+
+        // TODO: We should throw here if you deleted the 'testPlan'.
+
+        $sync = array('title', 'summary', 'testPlan');
+        foreach ($sync as $field) {
+          $local = $message->getFieldValue($field);
+          $remote_message->setFieldValue($field, $local);
+        }
+
+        $should_edit = $this->getArgument('edit');
+        if (!$should_edit) {
+          $local_sum = $message->getChecksum();
+          $remote_sum = $remote_message->getChecksum();
+          if ($local_sum != $remote_sum) {
+            $prompt =
+              "You have made local changes to your commit message. Arcanist ".
+              "ignores most local changes. Instead, use the '--edit' flag to ".
+              "edit revision information. Edit revision information now?";
+            $should_edit = phutil_console_confirm(
+              $prompt,
+              $default_no = false);
+          }
+        }
+
+        if ($should_edit) {
+          // TODO: lol. But we need differential.unparsecommitmessage or
+          // something.
+          throw new ArcanistUsageException(
+            '--edit is not supported yet. Edit revisions from the web '.
+            'UI.');
+        }
+
+        $revision['fields'] = $remote_message->getFields();
 
         $update_message = $this->getUpdateMessage();
 
