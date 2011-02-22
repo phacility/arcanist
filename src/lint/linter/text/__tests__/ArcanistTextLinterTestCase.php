@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Test cases for @{class:ArcanistTextLinter}.
+ *
+ * @group testcase
+ */
 class ArcanistTextLinterTestCase extends ArcanistLinterTestCase {
 
   public function testTextLint() {

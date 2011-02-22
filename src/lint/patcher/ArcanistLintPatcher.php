@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Applies lint patches to the working copy.
+ *
+ * @group lint
+ */
 final class ArcanistLintPatcher {
 
   private $dirtyUntil     = 0;

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Adds the Apache license to source files.
+ *
+ * @group linter
+ */
 class ArcanistApacheLicenseLinter extends ArcanistLicenseLinter {
   public function getLinterName() {
     return 'APACHELICENSE';

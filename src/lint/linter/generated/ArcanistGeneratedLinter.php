@@ -1,8 +1,9 @@
 <?php
 
 /**
- * This linter just stops the lint process when a file is marked as generated
- * code.
+ * Stops other linters from running on generated code.
+ *
+ * @group linter
  */
 class ArcanistGeneratedLinter extends ArcanistLinter {
 

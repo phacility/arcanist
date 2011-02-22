@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Uses XHPAST to apply lint rules to PHP or PHP+XHP.
+ *
+ * @group linter
+ */
 class ArcanistXHPASTLinter extends ArcanistLinter {
 
   private $trees = array();

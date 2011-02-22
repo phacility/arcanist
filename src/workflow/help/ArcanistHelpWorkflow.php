@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Seduces the reader with majestic prose.
+ *
+ * @group workflow
+ */
 class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
@@ -156,6 +161,14 @@ EOTEXT
 
       __--no-ansi__
           Output in plain ASCII text only, without color or style.
+
+      __--load-phutil-library=/path/to/library__
+          Ignore libraries listed in .arcconfig and explicitly load specified
+          libraries instead. Mostly useful for Arcanist development.
+
+      __--conduit-uri=...__
+          Ignore configured Conduit URI and use an explicit one instead. Mostly
+          useful for Arcanist development.
 
 
 EOTEXT

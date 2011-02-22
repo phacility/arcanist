@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Interfaces with Subversion working copies.
+ *
+ * @group workingcopy
+ */
 class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   protected $svnStatus;

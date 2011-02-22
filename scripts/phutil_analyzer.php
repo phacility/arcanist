@@ -53,7 +53,7 @@ phutil_require_module('phutil', 'parser/xhpast/api/tree');
 
 phutil_require_module('arcanist', 'lint/linter/phutilmodule');
 phutil_require_module('arcanist', 'lint/message');
-phutil_require_module('arcanist', 'staticanalysis/parsers/phutilmodule');
+phutil_require_module('arcanist', 'parser/phutilmodule');
 
 
 $data = array();
@@ -114,7 +114,7 @@ foreach (Futures($futures) as $file => $future) {
         }
         $requirements->addSourceDependency($name, $value);
       } else if ($call_name == 'phutil_require_module') {
-        analyze_require_module($call, $requirements);
+        analyze_phutil_require_module($call, $requirements);
       }
     }
   } else {
@@ -146,7 +146,7 @@ foreach (Futures($futures) as $file => $future) {
 
       $call_name = $name->getConcreteString();
       if ($call_name == 'phutil_require_module') {
-        analyze_require_module($call, $requirements);
+        analyze_phutil_require_module($call, $requirements);
       } else if ($call_name == 'call_user_func' ||
                  $call_name == 'call_user_func_array') {
         $params = $call->getChildByIndex(1)->getChildren();
@@ -307,7 +307,12 @@ if (!$has_init && $has_files) {
 
 echo json_encode($requirements->toDictionary());
 
-function analyze_require_module(
+/**
+ * Parses meaning from calls to phutil_require_module() in __init__.php files.
+ *
+ * @group module
+ */
+function analyze_phutil_require_module(
   XHPASTNode $call,
   PhutilModuleRequirements $requirements) {
 

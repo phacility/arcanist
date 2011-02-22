@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Adds a license or copyright header to source files.
+ *
+ * @group linter
+ */
 abstract class ArcanistLicenseLinter extends ArcanistLinter {
   const LINT_NO_LICENSE_HEADER = 1;
 

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Represents the outcome of running a unit test.
+ *
+ * @group unit
+ */
 class ArcanistUnitTestResult {
 
   const RESULT_PASS         = 'pass';

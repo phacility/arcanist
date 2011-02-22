@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Interfaces with the VCS in the working copy.
+ *
+ * @group workingcopy
+ */
 abstract class ArcanistRepositoryAPI {
 
   const FLAG_MODIFIED     = 1;

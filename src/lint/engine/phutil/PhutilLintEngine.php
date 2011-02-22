@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Lint engine which enforces libphutil rules.
+ *
+ * @group linter
+ */
 class PhutilLintEngine extends ArcanistLintEngine {
 
   public function buildLinters() {

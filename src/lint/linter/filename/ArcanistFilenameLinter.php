@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Stifles creativity in choosing imaginative file names.
+ *
+ * @group linter
+ */
 class ArcanistFilenameLinter extends ArcanistLinter {
 
   const LINT_BAD_FILENAME = 1;

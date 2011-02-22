@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Executes "svn commit" once a revision has been "Accepted".
+ *
+ * @group workflow
+ */
 class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

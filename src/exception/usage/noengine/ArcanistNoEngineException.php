@@ -16,5 +16,10 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown when no engine is configured for linting or running unit tests.
+ *
+ * @group workflow
+ */
 class ArcanistNoEngineException extends ArcanistUsageException {
 }

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Describes the severity of an @{class:ArcanistLintMessage}.
+ *
+ * @group lint
+ */
 class ArcanistLintSeverity {
 
   const SEVERITY_ADVICE       = 'advice';

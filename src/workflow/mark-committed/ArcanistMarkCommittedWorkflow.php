@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Explicitly marks Differential revisions as "Committed".
+ *
+ * @group workflow
+ */
 class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
@@ -26,7 +31,7 @@ class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
           to do this; arc commit (svn), arc amend (git) or commit hooks in the
           master remote repository should do it for you. However, if these
           mechanisms have failed for some reason you can use this command to
-          manually change a revision status from "accepted" to "committed".
+          manually change a revision status from "Accepted" to "Committed".
 EOTEXT
       );
   }

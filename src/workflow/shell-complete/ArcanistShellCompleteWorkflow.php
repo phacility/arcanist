@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Powers shell-completion scripts.
+ *
+ * @group workflow
+ */
 class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
@@ -24,7 +29,6 @@ class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
           Supports: bash, etc.
           Implements shell completion. To use shell completion, source the
           appropriate script from 'resources/shell/' in your .shellrc.
-
 EOTEXT
       );
   }
@@ -123,7 +127,7 @@ EOTEXT
         }
         return 0;
       } else {
-        
+
         $output = array();
         foreach ($arguments as $argument => $spec) {
           if ($argument == '*') {
@@ -136,7 +140,7 @@ EOTEXT
           }
           $output[] = '--'.$argument;
         }
-        
+
         $cur = idx($argv, $pos, '');
         $any_match = false;
         foreach ($output as $possible) {
@@ -144,7 +148,7 @@ EOTEXT
             $any_match = true;
           }
         }
-        
+
         if (!$any_match && isset($arguments['*'])) {
           // TODO: the '*' specifier should probably have more details about
           // whether or not it is a list of files. Since it almost always is in

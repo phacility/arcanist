@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Lists dependencies and requirements for a module.
+ *
+ * @group module
+ */
 class PhutilModuleRequirements {
 
   protected $builtins = array(

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Installable as a git pre-receive hook.
+ *
+ * @group workflow
+ */
 class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

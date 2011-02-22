@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Manages unit test execution.
+ *
+ * @group unit
+ */
 abstract class ArcanistBaseUnitTestEngine {
 
   private $workingCopy;

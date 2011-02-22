@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Test cases for @{class:ArcanistDiffParser}.
+ *
+ * @group testcase
+ */
 class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
 
   public function testParser() {

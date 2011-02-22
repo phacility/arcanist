@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Lists open revisions in Differential.
+ *
+ * @group workflow
+ */
 class ArcanistListWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {

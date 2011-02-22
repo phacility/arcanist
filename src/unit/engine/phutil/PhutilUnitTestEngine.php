@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Very basic unit test engine which runs libphutil tests.
+ *
+ * @group unitrun
+ */
 class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   public function run() {

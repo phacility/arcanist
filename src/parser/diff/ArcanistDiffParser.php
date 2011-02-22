@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Parses diffs from a working copy.
+ *
+ * @group diff
+ */
 class ArcanistDiffParser {
 
   protected $api;

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown when a commit message isn't parseable.
+ *
+ * @group differential
+ */
 class ArcanistDifferentialCommitMessageParserException extends Exception {
 
 }

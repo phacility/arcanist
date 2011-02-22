@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Applies changes from Differential or a file to the working copy.
+ *
+ * @group workflow
+ */
 final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
 
   const SOURCE_BUNDLE     = 'bundle';

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Interfaces with basic information about the working copy.
+ *
+ * @group workingcopy
+ */
 class ArcanistWorkingCopyIdentity {
 
   protected $projectConfig;

@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Represents a parsed commit message.
+ *
+ * @group differential
+ */
 class ArcanistDifferentialCommitMessage {
 
   private $rawCorpus;
@@ -75,6 +80,11 @@ class ArcanistDifferentialCommitMessage {
     return null;
   }
 
+  public function setFieldValue($key, $value) {
+    $this->fields[$key] = $value;
+    return $this;
+  }
+
   public function getFields() {
     return $this->fields;
   }
@@ -89,6 +99,13 @@ class ArcanistDifferentialCommitMessage {
 
   public function getGitSVNUUID() {
     return $this->gitSVNUUID;
+  }
+
+  public function getChecksum() {
+    $fields = array_filter($this->fields);
+    ksort($fields);
+    $fields = json_encode($fields);
+    return md5($fields);
   }
 
 }

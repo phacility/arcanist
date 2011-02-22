@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Test cases for @{class:ArcanistApacheLicenseLinter}.
+ *
+ * @group testcase
+ */
 class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
 
   public function testApacheLicenseLint() {

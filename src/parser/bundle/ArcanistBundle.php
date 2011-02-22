@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Converts changesets between different formats.
+ *
+ * @group diff
+ */
 class ArcanistBundle {
 
   private $changes;

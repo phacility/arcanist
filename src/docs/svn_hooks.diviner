@@ -1,6 +1,8 @@
 @title Installing Arcanist SVN Hooks
 @group config
 
+Describes how to set up Arcanist as an SVN pre-commit hook.
+
 = Installing Arcanist SVN Hooks =
 
 You can install Arcanist as an SVN pre-commit hook, to reject commits which

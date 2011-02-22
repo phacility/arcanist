@@ -16,6 +16,11 @@
  * limitations under the License.
  */
 
+/**
+ * Thrown when the user chooses an invalid revision when prompted by a workflow.
+ *
+ * @group workflow
+ */
 class ArcanistChooseInvalidRevisionException extends Exception {
 
 }
