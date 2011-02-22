@@ -109,6 +109,9 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
           case 'deleted':
             $mask |= self::FLAG_DELETED;
             break;
+          case 'conflicted':
+            $mask |= self::FLAG_CONFLICT;
+            break;
           default:
             throw new Exception("Unrecognized item status '{$item}'.");
         }
