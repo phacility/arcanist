@@ -201,21 +201,6 @@ EOTEXT
 
     $parent = null;
 
-    $base_revision = $repository_api->getSourceControlBaseRevision();
-    $base_path     = $repository_api->getSourceControlPath();
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $info = $this->getGitParentLogInfo();
-      if ($info['parent']) {
-        $parent = $info['parent'];
-      }
-      if ($info['base_revision']) {
-        $base_revision = $info['base_revision'];
-      }
-      if ($info['base_path']) {
-        $base_path = $info['base_path'];
-      }
-    }
-
     $paths = $this->generateAffectedPaths();
 
     $lint_result = $this->runLint($paths);
@@ -254,6 +239,23 @@ EOTEXT
       $unit = 'skip';
     } else {
       $unit = 'none';
+    }
+
+    // NOTE: This has to happen after generateChanges(), since it may overwrite
+    // the SVN effective base revision.
+    $base_revision = $repository_api->getSourceControlBaseRevision();
+    $base_path     = $repository_api->getSourceControlPath();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      $info = $this->getGitParentLogInfo();
+      if ($info['parent']) {
+        $parent = $info['parent'];
+      }
+      if ($info['base_revision']) {
+        $base_revision = $info['base_revision'];
+      }
+      if ($info['base_path']) {
+        $base_path = $info['base_path'];
+      }
     }
 
     $diff = array(
@@ -505,26 +507,31 @@ EOTEXT
       }
 
       if ($bases) {
-        // We have at least one path which isn't new.
-        $repository_info = $repository_api->getSVNInfo('/');
-        $bases['.'] = $repository_info['Revision'];
-        if ($bases['.']) {
-          $rev = $bases['.'];
-          foreach ($bases as $path => $baserev) {
-            if ($baserev !== $rev) {
-              $revlist = array();
-              foreach ($bases as $path => $baserev) {
-                $revlist[] = "    Revision {$baserev}, {$path}";
-              }
-              $revlist = implode("\n", $revlist);
-              throw new ArcanistUsageException(
-                "Base revisions of changed paths are mismatched. Update all ".
-                "paths to the same base revision before creating a diff: ".
-                "\n\n".
-                $revlist);
+        $rev = reset($bases);
+        foreach ($bases as $path => $baserev) {
+          if ($baserev !== $rev) {
+            $revlist = array();
+            foreach ($bases as $path => $baserev) {
+              $revlist[] = "    Revision {$baserev}, {$path}";
             }
+            $revlist = implode("\n", $revlist);
+            throw new ArcanistUsageException(
+              "Base revisions of changed paths are mismatched. Update all ".
+              "paths to the same base revision before creating a diff: ".
+              "\n\n".
+              $revlist);
           }
         }
+        
+        // If you have a change which affects several files, all of which are
+        // at a consistent base revision, treat that revision as the effective
+        // base revision. The use case here is that you made a change to some
+        // file, which updates it to HEAD, but want to be able to change it
+        // again without updating the entire working copy. This is a little
+        // sketchy but it arises in Facebook Ops workflows with config files and
+        // doesn't have any real material tradeoffs (e.g., these patches are
+        // perfectly applyable).
+        $repository_api->overrideSVNBaseRevisionNumber($rev);
       }
 
       $changes = $parser->parseSubversionDiff(
