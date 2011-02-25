@@ -53,6 +53,9 @@ class PhutilLintEngine extends ArcanistLintEngine {
     $generated_linter = new ArcanistGeneratedLinter();
     $linters[] = $generated_linter;
 
+    $nolint_linter = new ArcanistNoLintLinter();
+    $linters[] = $nolint_linter;
+
     $text_linter = new ArcanistTextLinter();
     $linters[] = $text_linter;
     foreach ($paths as $path) {
@@ -63,6 +66,9 @@ class PhutilLintEngine extends ArcanistLintEngine {
       if ($is_text) {
         $generated_linter->addPath($path);
         $generated_linter->addData($path, $this->loadData($path));
+
+        $nolint_linter->addPath($path);
+        $nolint_linter->addData($path, $this->loadData($path));
 
         $text_linter->addPath($path);
         $text_linter->addData($path, $this->loadData($path));
