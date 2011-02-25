@@ -17,18 +17,18 @@
  */
 
 /**
- * Stops other linters from running on generated code.
+ * Stops other linters from running on code marked with
+ * a nolint annotation.
  *
  * @group linter
  */
-class ArcanistGeneratedLinter extends ArcanistLinter {
-
+class ArcanistNoLintLinter extends ArcanistLinter {
   public function willLintPaths(array $paths) {
     return;
   }
 
   public function getLinterName() {
-    return 'GEN';
+    return 'NOLINT';
   }
 
   public function getLintSeverityMap() {
@@ -43,9 +43,8 @@ class ArcanistGeneratedLinter extends ArcanistLinter {
   public function lintPath($path) {
     $data = $this->getData($path);
 
-    if (preg_match('/@'.'generated/', $data)) {
+    if (preg_match('/@'.'nolint/', $data)) {
       $this->stopAllLinters();
     }
   }
-
 }

@@ -17,35 +17,13 @@
  */
 
 /**
- * Stops other linters from running on generated code.
+ * Test for @{class:ArcanistNoLintLinter}.
  *
- * @group linter
+ * Not a real test... meant to fail lint
+ * if @nolint is not respected.
+ *
+ * @group testcase
  */
-class ArcanistGeneratedLinter extends ArcanistLinter {
-
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
-  public function getLinterName() {
-    return 'GEN';
-  }
-
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array(
-    );
-  }
-
-  public function lintPath($path) {
-    $data = $this->getData($path);
-
-    if (preg_match('/@'.'generated/', $data)) {
-      $this->stopAllLinters();
-    }
-  }
+class ArcanistNoLintTestCaseMisnamed extends ArcanistLinterTestCase {
 
 }
