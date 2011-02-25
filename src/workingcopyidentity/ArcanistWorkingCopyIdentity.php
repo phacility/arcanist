@@ -36,24 +36,30 @@ class ArcanistWorkingCopyIdentity {
         continue;
       }
       $proj_raw = Filesystem::readFile($config_file);
-      $config = self::parseRawConfigFile($proj_raw);
+      $config = self::parseRawConfigFile($proj_raw, $config_file);
       $project_root = $dir;
       break;
     }
     return new ArcanistWorkingCopyIdentity($project_root, $config);
   }
 
-  public static function newFromRootAndConfigFile($root, $config_raw) {
-    $config = self::parseRawConfigFile($config_raw);
+  public static function newFromRootAndConfigFile(
+    $root,
+    $config_raw,
+    $from_where) {
+
+    $config = self::parseRawConfigFile($config_raw, $from_where);
     return new ArcanistWorkingCopyIdentity($root, $config);
   }
 
-  private static function parseRawConfigFile($raw_config) {
+  private static function parseRawConfigFile($raw_config, $from_where) {
     $proj = json_decode($raw_config, true);
     if (!is_array($proj)) {
       throw new Exception(
-        "Unable to parse '.arcconfig' file in '{$dir}'. The file contents ".
-        "should be valid JSON.");
+        "Unable to parse '.arcconfig' file '{$from_where}'. The file contents ".
+        "should be valid JSON.\n\n".
+        "FILE CONTENTS\n".
+        substr($raw_config, 0, 2048));
     }
     $required_keys = array(
       'project_id',
@@ -61,8 +67,8 @@ class ArcanistWorkingCopyIdentity {
     foreach ($required_keys as $key) {
       if (!array_key_exists($key, $proj)) {
         throw new Exception(
-          "Required key '{$key}' is missing from '.arcconfig' file in ".
-          "'{$dir}'.");
+          "Required key '{$key}' is missing from '.arcconfig' file ".
+          "'{$from_where}'.");
       }
     }
     return $proj;

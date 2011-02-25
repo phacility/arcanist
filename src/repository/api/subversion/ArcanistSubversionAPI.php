@@ -29,7 +29,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   protected $svnInfoRaw = array();
   protected $svnDiffRaw = array();
-  
+
   private $svnBaseRevisionNumber;
 
   public function getSourceControlSystemName() {
@@ -165,7 +165,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $info = $this->getSVNInfo('/');
     return $info['URL'].'@'.$this->getSVNBaseRevisionNumber();
   }
-  
+
   public function getSVNBaseRevisionNumber() {
     if ($this->svnBaseRevisionNumber) {
       return $this->svnBaseRevisionNumber;
@@ -173,7 +173,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $info = $this->getSVNInfo('/');
     return $info['Revision'];
   }
-  
+
   public function overrideSVNBaseRevisionNumber($effective_base_revision) {
     $this->svnBaseRevisionNumber = $effective_base_revision;
     return $this;

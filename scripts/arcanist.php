@@ -82,10 +82,13 @@ try {
       if ($config_trace_mode) {
         echo "Loading phutil library '{$name}' from '{$location}'...\n";
       }
-      $library_root = Filesystem::resolvePath(
+      $resolved_location = Filesystem::resolvePath(
         $location,
         $working_copy->getProjectRoot());
-      phutil_load_library($library_root);
+      if (Filesystem::pathExists($resolved_location)) {
+        $location = $resolved_location;
+      }
+      phutil_load_library($location);
     }
   }
 
