@@ -522,7 +522,7 @@ EOTEXT
               $revlist);
           }
         }
-        
+
         // If you have a change which affects several files, all of which are
         // at a consistent base revision, treat that revision as the effective
         // base revision. The use case here is that you made a change to some

@@ -106,7 +106,12 @@ final class ArcanistLintPatcher {
       $new_str = $lint->getReplacementText();
       $new_len = strlen($new_str);
 
-      $data = substr_replace($data, $new_str, $working_offset, $old_len);
+      if ($working_offset == strlen($data)) {
+        // Temporary hack to work around a destructive hphpi issue, see #451031.
+        $data .= $new_str;
+      } else {
+        $data = substr_replace($data, $new_str, $working_offset, $old_len);
+      }
 
       $this->changeCharacterDelta($new_len - $old_len);
       $this->setDirtyCharacterOffset($orig_offset + $old_len);
