@@ -692,7 +692,7 @@ EOTEXT
   private function getGitUpdateMessage() {
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser($repository_api);
+    $parser = new ArcanistDiffParser();
     $commit_messages = $repository_api->getGitCommitLog();
     $commit_messages = $parser->parseDiff($commit_messages);
 
@@ -710,7 +710,7 @@ EOTEXT
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser($repository_api);
+    $parser = new ArcanistDiffParser();
     $commit_messages = $repository_api->getGitCommitLog();
     $commit_messages = $parser->parseDiff($commit_messages);
 
@@ -814,7 +814,7 @@ EOTEXT
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser($repository_api);
+    $parser = new ArcanistDiffParser();
     $history_messages = $repository_api->getGitHistoryLog();
     if (!$history_messages) {
       // This can occur on the initial commit.

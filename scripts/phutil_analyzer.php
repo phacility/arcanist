@@ -198,6 +198,11 @@ foreach (Futures($futures) as $file => $future) {
     //  TODO?: String literal in array literal in call_user_func /
     //         call_user_func_array().
 
+    // TODO: Raise a soft warning for use of an unknown class in:
+    //  - Typehints
+    //  - instanceof
+    //  - catch
+
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
     foreach ($classes as $class) {
       $class_name = $class->getChildByIndex(1);
