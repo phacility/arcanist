@@ -43,7 +43,7 @@ class ArcanistDiffHunk {
       'delLines'  => $this->delLines,
       'isMissingOldNewline' => $this->isMissingOldNewline,
       'isMissingNewNewline' => $this->isMissingNewNewline,
-      'corpus' => $this->corpus,
+      'corpus'    => (string)$this->corpus,
     );
   }
 
