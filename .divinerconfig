@@ -14,6 +14,10 @@
     "workingcopy" : "Working Copy APIs",
     "module" : "Phutil Module System",
     "testcase" : "Test Cases"
-  }
+  },
+  "engines" : [
+    ["DivinerArticleEngine", {}],
+    ["DivinerXHPEngine", {}]
+  ]
 }
 
