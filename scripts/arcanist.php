@@ -55,7 +55,8 @@ foreach ($args as $key => $arg) {
   }
 }
 
-if (!posix_isatty(STDOUT)) {
+// The POSIX extension is not available by default in some PHP installs.
+if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
   PhutilConsoleFormatter::disableANSI(true);
 }
 
