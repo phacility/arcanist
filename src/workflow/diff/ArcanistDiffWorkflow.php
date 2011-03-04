@@ -337,6 +337,8 @@ EOTEXT
           'differential.getcommitmessage',
           array(
             'revision_id' => $message->getRevisionID(),
+            'edit' => true,
+            'fields' => array(),
           ));
         $remote_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
           $remote_corpus);
@@ -365,15 +367,64 @@ EOTEXT
           }
         }
 
-        if ($should_edit) {
-          // TODO: lol. But we need differential.unparsecommitmessage or
-          // something.
-          throw new ArcanistUsageException(
-            '--edit is not supported yet. Edit revisions from the web '.
-            'UI.');
-        }
-
         $revision['fields'] = $remote_message->getFields();
+
+        if ($should_edit) {
+          $updated_corpus = $conduit->callMethodSynchronous(
+            'differential.getcommitmessage',
+            array(
+              'revision_id' => $message->getRevisionID(),
+              'edit' => true,
+              'fields' => $message->getFields(),
+            ));
+          $new_text = id(new PhutilInteractiveEditor($updated_corpus))
+            ->setName('differential-edit-revision-info')
+            ->editInteractively();
+          $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+            $new_text);
+          $new_message->pullDataFromConduit($conduit);
+/*
+          TODO: restore these checks
+
+
+          try { // <<< this try goes right after the edit
+
+            if (!$new_message->getTitle()) {
+              throw new UsageException(
+                "You can not remove the Revision title.");
+            }
+            if (!$new_message->getTestPlan()) {
+              throw new UsageException(
+                "You can not remove the 'Test Plan'.");
+            }
+            if ($new_message->getRevisionID() != $revision->getID()) {
+              throw new UsageException(
+                "You changed or deleted the Differential revision ID! Why ".
+                "would you do that?!");
+            }
+
+          } catch (Exception $ex) {
+            $ii = 0;
+            do {
+              $name = $ii
+                ? 'differential-message-'.$ii.'.txt'
+                : 'differential-message.txt';
+              if (!file_exists($name)) {
+                break;
+              }
+              ++$ii;
+            } while(true);
+            require_module_lazy('resource/filesystem');
+            Filesystem::writeFile($name, $new_text);
+            echo "Exception! Message was saved to '{$name}'.\n";
+            throw $ex;
+          }
+*/
+
+
+
+          $revision['fields'] = $new_message->getFields();
+        }
 
         $update_message = $this->getUpdateMessage();
 
