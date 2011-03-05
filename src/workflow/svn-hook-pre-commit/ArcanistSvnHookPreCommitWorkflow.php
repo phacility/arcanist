@@ -114,6 +114,7 @@ EOTEXT
         } else {
           $resolved[$path] = $config ? $config.'/.arcconfig' : '.arcconfig';
           $found[$config] = $resolved[$path];
+          break;
         }
         $config = dirname($config);
         if ($config == '.') {
