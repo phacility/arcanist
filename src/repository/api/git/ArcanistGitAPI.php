@@ -119,11 +119,11 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $relative = $this->getRelativeCommit();
     if ($relative == self::GIT_MAGIC_ROOT_COMMIT) {
       list($stdout) = execx(
-        '(cd %s; git log HEAD)',
+        '(cd %s; git log --format=medium HEAD)',
         $this->getPath());
     } else {
       list($stdout) = execx(
-        '(cd %s; git log %s..HEAD)',
+        '(cd %s; git log --format=medium %s..HEAD)',
         $this->getPath(),
         $this->getRelativeCommit());
     }
@@ -132,7 +132,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getGitHistoryLog() {
     list($stdout) = execx(
-      '(cd %s; git log -n%d %s)',
+      '(cd %s; git log --format=medium -n%d %s)',
       $this->getPath(),
       self::SEARCH_LENGTH_FOR_PARENT_REVISIONS,
       $this->getRelativeCommit());
