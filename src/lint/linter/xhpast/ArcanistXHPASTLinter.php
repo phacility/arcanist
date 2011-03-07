@@ -79,6 +79,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   public function getLintSeverityMap() {
     return array(
       self::LINT_TODO_COMMENT => ArcanistLintSeverity::SEVERITY_ADVICE,
+      self::LINT_UNABLE_TO_PARSE
+        => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_FORMATTING_CONVENTIONS
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_NAMING_CONVENTIONS
