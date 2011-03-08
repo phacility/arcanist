@@ -177,11 +177,21 @@ EOTEXT
       $patches = array();
       $propset = array();
       $adds = array();
+      $symlinks = array();
 
       $changes = $bundle->getChanges();
       foreach ($changes as $change) {
         $type = $change->getType();
         $should_patch = true;
+
+        $filetype = $change->getFileType();
+        switch ($filetype) {
+          case ArcanistDiffChangeType::FILE_SYMLINK:
+            $should_patch = false;
+            $symlinks[] = $change;
+            break;
+        }
+
         switch ($type) {
           case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
           case ArcanistDiffChangeType::TYPE_MULTICOPY:
@@ -268,6 +278,23 @@ EOTEXT
             '(cd %s; svn rm %s)',
             $repository_api->getPath(),
             $delete));
+      }
+
+      foreach ($symlinks as $symlink) {
+        $link_target = $symlink->getSymlinkTarget();
+        $link_path = $symlink->getCurrentPath();
+        switch ($symlink->getType()) {
+          case ArcanistDiffChangeType::TYPE_ADD:
+          case ArcanistDiffChangeType::TYPE_MODIFY:
+          case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+          case ArcanistDiffChangeType::TYPE_COPY_HERE:
+            execx(
+              '(cd %s && ln -sf %s %s)',
+              $repository_api->getPath(),
+              $link_target,
+              $link_path);
+            break;
+        }
       }
 
       foreach ($patches as $path => $patch) {
