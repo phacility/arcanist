@@ -110,6 +110,12 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
           case 'added':
             $mask |= self::FLAG_ADDED;
             break;
+          case 'replaced':
+            // This is the result of "svn rm"-ing a file, putting another one
+            // in place of it, and then "svn add"-ing the new file. Just treat
+            // this as equivalent to "modified".
+            $mask |= self::FLAG_MODIFIED;
+            break;
           case 'modified':
             $mask |= self::FLAG_MODIFIED;
             break;
