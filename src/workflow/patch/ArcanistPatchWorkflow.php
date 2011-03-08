@@ -237,6 +237,21 @@ EOTEXT
         }
       }
 
+      // Before we start doing anything, create all the directories we're going
+      // to add files to if they don't already exist.
+      foreach ($copies as $copy) {
+        list($src, $dst) = $copy;
+        $this->createParentDirectoryOf($dst);
+      }
+
+      foreach ($patches as $path => $patch) {
+        $this->createParentDirectoryOf($path);
+      }
+
+      foreach ($adds as $add) {
+        $this->createParentDirectoryOf($add);
+      }
+
       foreach ($copies as $copy) {
         list($src, $dst) = $copy;
         passthru(
@@ -335,5 +350,29 @@ EOTEXT
   public function getShellCompletions(array $argv) {
     // TODO: Pull open diffs from 'arc list'?
     return array('ARGUMENT');
+  }
+
+  /**
+   * Create parent directories one at a time, since we need to "svn add" each
+   * one. (Technically we could "svn add" just the topmost new directory.)
+   */
+  private function createParentDirectoryOf($path) {
+    $repository_api = $this->getRepositoryAPI();
+    $dir = dirname($path);
+    if (Filesystem::pathExists($dir)) {
+      return;
+    } else {
+      // Make sure the parent directory exists before we make this one.
+      $this->createParentDirectoryOf($dir);
+      execx(
+        '(cd %s && mkdir %s)',
+        $repository_api->getPath(),
+        $dir);
+      passthru(
+        csprintf(
+          '(cd %s && svn add %s)',
+          $repository_api->getPath(),
+          $dir));
+    }
   }
 }
