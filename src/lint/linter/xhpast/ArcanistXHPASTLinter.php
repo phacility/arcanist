@@ -45,6 +45,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_COMMENT_STYLE            = 18;
   const LINT_CLASS_FILENAME_MISMATCH  = 19;
   const LINT_TAUTOLOGICAL_EXPRESSION  = 20;
+  const LINT_PLUS_OPERATOR_ON_STRINGS = 21;
 
 
   public function getLintNameMap() {
@@ -69,6 +70,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_COMMENT_STYLE            => 'Comment Style',
       self::LINT_CLASS_FILENAME_MISMATCH  => 'Class-Filename Mismatch',
       self::LINT_TAUTOLOGICAL_EXPRESSION  => 'Tautological Expression',
+      self::LINT_PLUS_OPERATOR_ON_STRINGS => 'Not String Concatenation',
     );
   }
 
@@ -146,6 +148,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintHashComments($root);
     $this->lintPrimaryDeclarationFilenameMatch($root);
     $this->lintTautologicalExpressions($root);
+    $this->lintPlusOperatorOnStrings($root);
   }
 
   private function lintTautologicalExpressions($root) {
@@ -975,6 +978,27 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       "The name of this file differs from the name of the class or interface ".
       "it declares. Rename the file to '{$rename}'."
     );
+  }
+
+  private function lintPlusOperatorOnStrings($root) {
+    $binops = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+    foreach ($binops as $binop) {
+      $op = $binop->getChildByIndex(1);
+      if ($op->getConcreteString() != '+') {
+        continue;
+      }
+
+      $left = $binop->getChildByIndex(0);
+      $right = $binop->getChildByIndex(2);
+      if (($left->getTypeName() == 'n_STRING_SCALAR') ||
+          ($right->getTypeName() == 'n_STRING_SCALAR')) {
+        $this->raiseLintAtNode(
+          $binop,
+          self::LINT_PLUS_OPERATOR_ON_STRINGS,
+          "In PHP, '.' is the string concatenation operator, not '+'. This ".
+          "expression uses '+' with a string literal as an operand.");
+      }
+    }
   }
 
   protected function raiseLintAtToken(
