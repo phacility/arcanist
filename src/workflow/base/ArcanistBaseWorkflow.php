@@ -319,14 +319,36 @@ class ArcanistBaseWorkflow {
     $untracked = $api->getUntrackedChanges();
     if ($this->shouldRequireCleanUntrackedFiles()) {
       if (!empty($untracked)) {
-        throw new ArcanistUsageException(
-          "You have untracked files in this working copy:\n".
-          "    ".implode("\n    ", $untracked)."\n\n".
-          "Add or delete them before proceeding, or include them in your ".
-          "ignore rules. To bypass this check, use --allow-untracked.");
+
+        echo "You have untracked files in this working copy:\n\n".
+             "    ".implode("\n    ", $untracked)."\n\n";
+
+        if ($api instanceof ArcanistGitAPI) {
+          echo phutil_console_wrap(
+            "Since you don't have .gitignore rules for these files and have ".
+            "not listed them in .git/info/exclude, you may have forgotten ".
+            "to 'git add' them to your commit.");
+        } else if ($api instanceof ArcanistSubversionAPI) {
+          echo phutil_console_wrap(
+            "Since you don't have svn:ignore rules for these files, you may ".
+            "have forgotten to 'svn add' them.");
+        }
+
+        $prompt = "Do you want to continue without adding these files?";
+        if (!phutil_console_confirm($prompt, $default_no = false)) {
+          throw new ArcanistUserAbortException();
+        }
       }
     }
 
+    $incomplete = $api->getIncompleteChanges();
+    if ($incomplete) {
+      throw new ArcanistUsageException(
+        "You have incompletely checked out directories in this working copy. ".
+        "Fix them before proceeding: \n\n".
+        "    ".implode("\n    ", $incomplete)."\n\n".
+        "You can fix these paths by running 'svn update' on them.");
+    }
 
     if ($api->getMergeConflicts()) {
       throw new ArcanistUsageException(

@@ -203,6 +203,14 @@ EOTEXT
 
     $paths = $this->generateAffectedPaths();
 
+    // Do this before we start linting or running unit tests so we can detect
+    // things like a missing test plan or invalid reviewers immediately.
+    if ($this->shouldOnlyCreateDiff()) {
+      $commit_message = null;
+    } else {
+      $commit_message = $this->getGitCommitMessage();
+    }
+
     $lint_result = $this->runLint($paths);
     $unit_result = $this->runUnit($paths);
 
@@ -322,7 +330,7 @@ EOTEXT
         "        **Diff URI:** __%s__\n\n",
         $diff_info['uri']);
     } else {
-      $message = $this->getGitCommitMessage();
+      $message = $commit_message;
 
       $revision = array(
         'diffid' => $diff_info['diffid'],
@@ -353,6 +361,15 @@ EOTEXT
         }
 
         $should_edit = $this->getArgument('edit');
+
+/*
+
+  TODO: This is a complicated mess. We need to move to storing a checksum
+  of the non-auto-sync fields as they existed at original diff time and using
+  changes from that to detect user edits, not comparison of the client and
+  server values since they diverge without user edits (because of Herald
+  and explicit server-side user changes).
+
         if (!$should_edit) {
           $local_sum = $message->getChecksum();
           $remote_sum = $remote_message->getChecksum();
@@ -366,6 +383,7 @@ EOTEXT
               $default_no = false);
           }
         }
+*/
 
         $revision['fields'] = $remote_message->getFields();
 

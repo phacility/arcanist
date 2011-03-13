@@ -33,8 +33,12 @@ abstract class ArcanistRepositoryAPI {
   const FLAG_UNCOMMITTED  = 128;
   const FLAG_EXTERNALS    = 256;
 
-  // Occurs in SVN when you replace a file with a directory.
+  // Occurs in SVN when you replace a file with a directory without telling
+  // SVN about it.
   const FLAG_OBSTRUCTED   = 512;
+
+  // Occurs in SVN when an update was interrupted or failed, e.g. you ^C'd it.
+  const FLAG_INCOMPLETE   = 1024;
 
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
@@ -108,6 +112,10 @@ abstract class ArcanistRepositoryAPI {
 
   public function getMergeConflicts() {
     return $this->getWorkingCopyFilesWithMask(self::FLAG_CONFLICT);
+  }
+
+  public function getIncompleteChanges() {
+    return $this->getWorkingCopyFilesWithMask(self::FLAG_INCOMPLETE);
   }
 
   private function getWorkingCopyFilesWithMask($mask) {
