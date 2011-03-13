@@ -316,21 +316,26 @@ class ArcanistBaseWorkflow {
   protected function requireCleanWorkingCopy() {
     $api = $this->getRepositoryAPI();
 
+    $working_copy_desc = phutil_console_format(
+      "  Working copy: __%s__\n\n",
+      $api->getPath());
+
     $untracked = $api->getUntrackedChanges();
     if ($this->shouldRequireCleanUntrackedFiles()) {
       if (!empty($untracked)) {
-
-        echo "You have untracked files in this working copy:\n\n".
+        echo "You have untracked files in this working copy.\n\n".
+             $working_copy_desc.
+             "  Untracked files in working copy:\n".
              "    ".implode("\n    ", $untracked)."\n\n";
 
         if ($api instanceof ArcanistGitAPI) {
           echo phutil_console_wrap(
-            "Since you don't have .gitignore rules for these files and have ".
-            "not listed them in .git/info/exclude, you may have forgotten ".
+            "Since you don't have '.gitignore' rules for these files and have ".
+            "not listed them in '.git/info/exclude', you may have forgotten ".
             "to 'git add' them to your commit.");
         } else if ($api instanceof ArcanistSubversionAPI) {
           echo phutil_console_wrap(
-            "Since you don't have svn:ignore rules for these files, you may ".
+            "Since you don't have 'svn:ignore' rules for these files, you may ".
             "have forgotten to 'svn add' them.");
         }
 
@@ -345,27 +350,41 @@ class ArcanistBaseWorkflow {
     if ($incomplete) {
       throw new ArcanistUsageException(
         "You have incompletely checked out directories in this working copy. ".
-        "Fix them before proceeding: \n\n".
+        "Fix them before proceeding.\n\n".
+        $working_copy_desc.
+        "  Incomplete directories in working copy:\n".
         "    ".implode("\n    ", $incomplete)."\n\n".
         "You can fix these paths by running 'svn update' on them.");
     }
 
-    if ($api->getMergeConflicts()) {
+    $conflicts = $api->getMergeConflicts();
+    if ($conflicts) {
       throw new ArcanistUsageException(
         "You have merge conflicts in this working copy. Resolve merge ".
-        "conflicts before proceeding.");
+        "conflicts before proceeding.\n\n".
+        $working_copy_desc.
+        "  Conflicts in working copy:\n".
+        "    ".implode("\n    ", $conflicts)."\n");
     }
 
-    if ($api->getUnstagedChanges()) {
+    $unstaged = $api->getUnstagedChanges();
+    if ($unstaged) {
       throw new ArcanistUsageException(
-        "You have unstaged changes in this branch. Stage and commit (or ".
-        "revert) them before proceeding.");
+        "You have unstaged changes in this working copy. Stage and commit (or ".
+        "revert) them before proceeding.\n\n".
+        $working_copy_desc.
+        "  Unstaged changes in working copy:\n".
+        "    ".implode("\n    ", $unstaged)."\n");
     }
 
-    if ($api->getUncommittedChanges()) {
+    $uncommitted = $api->getUncommittedChanges();
+    if ($uncommitted) {
       throw new ArcanistUsageException(
         "You have uncommitted changes in this branch. Commit (or revert) them ".
-        "before proceeding.");
+        "before proceeding.\n\n".
+        $working_copy_desc.
+        "  Uncommitted changes in working copy\n".
+        "    ".implode("\n    ", $uncommitted)."\n");
     }
   }
 

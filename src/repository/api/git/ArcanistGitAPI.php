@@ -182,6 +182,9 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
         }
       }
 
+      // TODO: This doesn't list unstaged adds. It's not clear how to get that
+      // list other than "git status --porcelain" and then parsing it. :/
+
       // Find unstaged changes.
       list($stdout) = execx(
         '(cd %s; git ls-files -m)',
