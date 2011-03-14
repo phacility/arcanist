@@ -139,6 +139,16 @@ EOTEXT
         throw new ArcanistUsageException(
           "You must specify one or more files to lint when using '--lintall'.");
       }
+      foreach ($paths as $key => $path) {
+        $full_path = Filesystem::resolvePath($path);
+        if (!Filesystem::pathExists($full_path)) {
+          throw new ArcanistUsageException("Path '{$path}' does not exist!");
+        }
+        $relative_path = Filesystem::readablePath(
+          $full_path,
+          $working_copy->getProjectRoot());
+        $paths[$key] = $relative_path;
+      }
     }
 
     if (!$engine) {
