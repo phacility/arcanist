@@ -130,9 +130,15 @@ EOTEXT
         $mark_workflow->run();
       }
 
-      echo phutil_console_wrap(
-        "You may now push this commit upstream, as appropriate (e.g. with ".
-        "'git push', or 'git svn dcommit', or by printing and faxing it).\n");
+      $remote_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $message);
+      $remote_message->pullDataFromConduit($conduit);
+      if ($remote_message->getFieldValue('reviewedByGUIDs') ||
+          $remote_message->getFieldValue('reviewedByPHIDs')) {
+        echo phutil_console_wrap(
+          "You may now push this commit upstream, as appropriate (e.g. with ".
+          "'git push', or 'git svn dcommit', or by printing and faxing it).\n");
+      }
     }
 
     return 0;
