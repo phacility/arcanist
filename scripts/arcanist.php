@@ -166,15 +166,34 @@ try {
     $certificate = idx($host_config, 'cert');
 
     $description = implode(' ', $argv);
-    $connection = $conduit->callMethodSynchronous(
-      'conduit.connect',
-      array(
-        'client'            => 'arc',
-        'clientVersion'     => 2,
-        'clientDescription' => php_uname('n').':'.$description,
-        'user'              => $user_name,
-        'certificate'       => $certificate,
-      ));
+
+    try {
+      $connection = $conduit->callMethodSynchronous(
+        'conduit.connect',
+        array(
+          'client'            => 'arc',
+          'clientVersion'     => 2,
+          'clientDescription' => php_uname('n').':'.$description,
+          'user'              => $user_name,
+          'certificate'       => $certificate,
+        ));
+    } catch (ConduitClientException $ex) {
+      if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE') {
+        $no_cert_msg = "You don't have certificate for ".$conduit_uri.".\n";
+        $hosts_with_cert = ifilter($hosts_config, 'cert');
+        if (!empty($hosts_with_cert)) {
+          $no_cert_msg .= 'You have certificate(s) for '.
+            implode(array_keys($hosts_with_cert), ', ').".\n";
+        }
+        $no_cert_msg .= 'Please refer to page http://www.phabricator.com'.
+          '/docs/phabricator/article/Installing_Arcanist_Certificates.html '.
+          'for more info.';
+        throw new ArcanistUsageException($no_cert_msg);
+
+      } else {
+        throw $ex;
+      }
+    }
 
     $workflow->setUserName($user_name);
     $user_phid = idx($connection, 'userPHID');
