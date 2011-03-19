@@ -199,9 +199,12 @@ EOTEXT
             $path = $change->getCurrentPath();
             $fpath = $repository_api->getPath($path);
             if (!@file_exists($fpath)) {
-              $this->confirm(
+              $ok = phutil_console_confirm(
                 "Patch deletes file '{$path}', but the file does not exist in ".
                 "the working copy. Continue anyway?");
+              if (!$ok) {
+                throw new ArcanistUserAbortException();
+              }
             } else {
               $deletes[] = $change->getCurrentPath();
             }
@@ -218,9 +221,12 @@ EOTEXT
               } else {
                 $verbs = 'moves';
               }
-              $this->confirm(
+              $ok = phutil_console_confirm(
                 "Patch {$verbs} '{$path}' to '{$cpath}', but source path ".
                 "does not exist in the working copy. Continue anyway?");
+              if (!$ok) {
+                throw new ArcanistUserAbortException();
+              }
             } else {
               $copies[] = array(
                 $change->getOldPath(),
