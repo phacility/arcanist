@@ -132,6 +132,12 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
             throw new Exception("Unrecognized item status '{$item}'.");
         }
 
+        // This is new in or around Subversion 1.6.
+        $tree_conflicts = (string)($entry->{'wc-status'}[0]['tree-conflicted']);
+        if ($tree_conflicts) {
+          $mask |= self::FLAG_CONFLICT;
+        }
+
         $files[$path] = $mask;
       }
 
