@@ -110,6 +110,8 @@ EOTEXT
         ' <bg:red>** BROKEN **</bg>'),
       ArcanistUnitTestResult::RESULT_UNSOUND => phutil_console_format(
         ' <bg:yellow>** UNSOUND **</bg>'),
+      ArcanistUnitTestResult::RESULT_POSTPONED => phutil_console_format(
+        ' <bg:yellow>** POSTPONED **</bg>'),
       );
 
     $unresolved = array();
