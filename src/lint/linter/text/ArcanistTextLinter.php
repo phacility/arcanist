@@ -65,6 +65,12 @@ class ArcanistTextLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if (!strlen($this->getData($path))) {
+      // If the file is empty, don't bother; particularly, don't require
+      // the user to add a newline.
+      return;
+    }
+
     $this->lintNewlines($path);
     $this->lintTabs($path);
 
