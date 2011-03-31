@@ -30,6 +30,7 @@ class ArcanistDiffParser {
   protected $detectBinaryFiles = false;
 
   protected $changes = array();
+  private $forcePath;
 
   protected function setRepositoryAPI(ArcanistRepositoryAPI $api) {
     $this->api = $api;
@@ -42,6 +43,16 @@ class ArcanistDiffParser {
 
   public function setDetectBinaryFiles($detect) {
     $this->detectBinaryFiles = $detect;
+    return $this;
+  }
+
+  public function forcePath($path) {
+    $this->forcePath = $path;
+    return $this;
+  }
+
+  public function setChanges(array $changes) {
+    $this->changes = mpull($changes, null, 'getCurrentPath');
     return $this;
   }
 
@@ -730,6 +741,10 @@ class ArcanistDiffParser {
       if (!empty($this->changes[$path])) {
         return $this->changes[$path];
       }
+    }
+
+    if ($this->forcePath) {
+      return $this->changes[$this->forcePath];
     }
 
     $change = new ArcanistDiffChange();
