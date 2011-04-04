@@ -53,9 +53,11 @@ EOTEXT
         'help' =>
           "Show all lint warnings, not just those on changed lines."
       ),
-      'summary' => array(
+      'output' => array(
+        'param' => 'format',
         'help' =>
-          "Show lint warnings in a more compact format."
+          "With 'summary', show lint warnings in a more compact format. ".
+          "With 'json', show lint warnings in machine-readable JSON format."
       ),
       'advice' => array(
         'help' =>
@@ -193,10 +195,18 @@ EOTEXT
 
     $wrote_to_disk = false;
 
-    $renderer = new ArcanistLintRenderer();
-    if ($this->getArgument('summary')) {
-      $renderer->setSummaryMode(true);
+    switch ($this->getArgument('output')) {
+      case 'json':
+        $renderer = new ArcanistLintJSONRenderer();
+        break;
+      case 'summary':
+        $renderer = new ArcanistLintSummaryRenderer();
+        break;
+      default:
+        $renderer = new ArcanistLintRenderer();
+        break;
     }
+
     foreach ($results as $result) {
       if (!$result->getMessages()) {
         continue;

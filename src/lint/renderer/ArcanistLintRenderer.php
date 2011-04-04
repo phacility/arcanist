@@ -22,22 +22,7 @@
  * @group lint
  */
 class ArcanistLintRenderer {
-
-  private $summaryMode;
-
-  public function setSummaryMode($mode) {
-    $this->summaryMode = $mode;
-  }
-
   public function renderLintResult(ArcanistLintResult $result) {
-    if ($this->summaryMode) {
-      return $this->renderResultSummary($result);
-    } else {
-      return $this->renderResultFull($result);
-    }
-  }
-
-  protected function renderResultFull(ArcanistLintResult $result) {
     $messages = $result->getMessages();
     $path = $result->getPath();
     $lines = explode("\n", $result->getData());
@@ -75,26 +60,6 @@ class ArcanistLintRenderer {
 
     return implode("\n", $text);
   }
-
-  protected function renderResultSummary(ArcanistLintResult $result) {
-    $messages = $result->getMessages();
-    $path = $result->getPath();
-
-    $text = array();
-    $text[] = $path.":";
-    foreach ($messages as $message) {
-      $name = $message->getName();
-      $severity = ArcanistLintSeverity::getStringForSeverity(
-        $message->getSeverity());
-      $line = $message->getLine();
-
-      $text[] = "    {$severity} on line {$line}: {$name}";
-    }
-    $text[] = null;
-
-    return implode("\n", $text);
-  }
-
 
   protected function renderContext(
     ArcanistLintMessage $message,
@@ -191,5 +156,4 @@ class ArcanistLintRenderer {
       $line,
       $data);
   }
-
 }
