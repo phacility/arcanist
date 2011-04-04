@@ -89,7 +89,18 @@ try {
       if (Filesystem::pathExists($resolved_location)) {
         $location = $resolved_location;
       }
-      phutil_load_library($location);
+      try {
+        phutil_load_library($location);
+      } catch (PhutilBootloaderException $ex) {
+        $error_msg = sprintf(
+          'Failed to load library "%s" at location "%s". Please check the '.
+          '"phutil_libraries" setting in your .arcconfig file. Refer to page '.
+          'http://phabricator.com/docs/arcanist/article/'.
+          'Setting_Up_.arcconfig.html for more info.',
+          $name,
+          $location);
+        throw new ArcanistUsageException($error_msg);
+      }
     }
   }
 
