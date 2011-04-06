@@ -168,7 +168,14 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       list($stdout) = execx(
         '(cd %s; git diff --no-ext-diff --raw HEAD --)',
         $this->getPath());
-      $files += $this->parseGitStatus($stdout);
+      $uncommitted_files = $this->parseGitStatus($stdout);
+      foreach ($uncommitted_files as $path => $mask) {
+        $mask |= self::FLAG_UNCOMMITTED;
+        if (!isset($files[$path])) {
+          $files[$path] = 0;
+        }
+        $files[$path] |= $mask;
+      }
 
       // Find untracked files.
       list($stdout) = execx(
