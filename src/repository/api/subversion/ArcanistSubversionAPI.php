@@ -472,4 +472,9 @@ EODIFF;
     return null;
   }
 
+  public function getRepositorySVNUUID() {
+    $info = $this->getSVNInfo('/');
+    return $info['Repository UUID'];
+  }
+
 }

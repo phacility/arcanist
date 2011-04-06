@@ -253,6 +253,7 @@ EOTEXT
     // the SVN effective base revision.
     $base_revision = $repository_api->getSourceControlBaseRevision();
     $base_path     = $repository_api->getSourceControlPath();
+    $repo_uuid     = null;
     if ($repository_api instanceof ArcanistGitAPI) {
       $info = $this->getGitParentLogInfo();
       if ($info['parent']) {
@@ -264,7 +265,14 @@ EOTEXT
       if ($info['base_path']) {
         $base_path = $info['base_path'];
       }
+      if ($info['uuid']) {
+        $repo_uuid = $info['uuid'];
+      }
+    } else {
+      $repo_uuid = $repository_api->getRepositorySVNUUID();
     }
+
+    $working_copy = $this->getWorkingCopy();
 
     $diff = array(
       'changes'                   => $change_list,
@@ -278,6 +286,11 @@ EOTEXT
       'parentRevisionID'          => $parent,
       'lintStatus'                => $lint,
       'unitStatus'                => $unit,
+
+      'repositoryUUID'            => $repo_uuid,
+      'creationMethod'            => 'arc',
+      'arcanistProject'           => $working_copy->getProjectID(),
+      'authorPHID'                => $this->getUserGUID(),
     );
 
     $diff_info = $conduit->callMethodSynchronous(
@@ -878,6 +891,7 @@ EOTEXT
       'parent'        => null,
       'base_revision' => null,
       'base_path'     => null,
+      'uuid'          => null,
     );
 
     $conduit = $this->getConduit();
@@ -902,6 +916,9 @@ EOTEXT
             $info['base_revision'] === null) {
           $info['base_revision'] = $message->getGitSVNBaseRevision();
           $info['base_path']     = $message->getGitSVNBasePath();
+        }
+        if ($message->getGitSVNUUID()) {
+          $info['uuid'] = $message->getGitSVNUUID();
         }
         if ($info['parent'] && $info['base_revision']) {
           break;
