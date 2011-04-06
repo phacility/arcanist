@@ -270,6 +270,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         '/^(Last Changed Date): (.+) \(.+\)$/m',
         '/^(Copied From URL): (\S+)$/m',
         '/^(Copied From Rev): (\d+)$/m',
+        '/^(Repository UUID): (\S+)$/m',
       );
 
       $result = array();
