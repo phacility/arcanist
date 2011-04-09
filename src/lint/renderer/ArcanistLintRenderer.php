@@ -25,6 +25,7 @@ class ArcanistLintRenderer {
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();
     $path = $result->getPath();
+
     $lines = explode("\n", $result->getData());
 
     $text = array();
@@ -68,25 +69,75 @@ class ArcanistLintRenderer {
     $lines_of_context = 3;
     $out = array();
 
-    $line_num = min($message->getLine(), count($line_data));
+    $num_lines = count($line_data);
+     // make line numbers line up with array indexes
+    array_unshift($line_data, '');
+
+    $line_num = min($message->getLine(), $num_lines);
     $line_num = max(1, $line_num);
 
     // Print out preceding context before the impacted region.
     $cursor = max(1, $line_num - $lines_of_context);
     for (; $cursor < $line_num; $cursor++) {
-      $out[] = $this->renderLine($cursor, $line_data[$cursor - 1]);
+      $out[] = $this->renderLine($cursor, $line_data[$cursor]);
     }
 
+    $text = $message->getOriginalText();
+    // Refine original and replacement text to eliminate start and end in common
+    if ($message->isPatchable()) {
+      $start = $message->getChar() - 1;
+      $patch = $message->getReplacementText();
+      $text_strlen = strlen($text);
+      $patch_strlen = strlen($patch);
+      $min_length = min($text_strlen, $patch_strlen);
+
+      $same_at_front = 0;
+      for ($ii = 0; $ii < $min_length; $ii++) {
+        if ($text[$ii] !== $patch[$ii]) {
+          break;
+        }
+        $same_at_front++;
+        $start++;
+        if ($text[$ii] == "\n") {
+          $out[] = $this->renderLine($cursor, $line_data[$cursor]);
+          $cursor++;
+          $start = 0;
+          $line_num++;
+        }
+      }
+      // deal with shorter string '     ' longer string '     a     '
+      $min_length -= $same_at_front;
+
+      // And check the end of the string
+      $same_at_end = 0;
+      for ($ii = 1; $ii <= $min_length; $ii++) {
+        if ($text[$text_strlen - $ii] !== $patch[$patch_strlen - $ii]) {
+          break;
+        }
+        $same_at_end++;
+      }
+
+      $text = substr(
+        $text,
+        $same_at_front,
+        $text_strlen - $same_at_end - $same_at_front
+      );
+      $patch = substr(
+        $patch,
+        $same_at_front,
+        $patch_strlen - $same_at_end - $same_at_front
+      );
+    }
     // Print out the impacted region itself.
     $diff = $message->isPatchable() ? '-' : null;
-    $text = $message->getOriginalText();
+
     $text_lines = explode("\n", $text);
     $text_length = count($text_lines);
 
     for (; $cursor < $line_num + $text_length; $cursor++) {
       $chevron = ($cursor == $line_num);
       // We may not have any data if, e.g., the old file does not exist.
-      $data = idx($line_data, $cursor - 1, null);
+      $data = idx($line_data, $cursor, null);
 
       // Highlight the problem substring.
       $text_line = $text_lines[$cursor - $line_num];
@@ -103,44 +154,34 @@ class ArcanistLintRenderer {
       $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
     }
 
+    // Print out replacement text.
     if ($message->isPatchable()) {
-      $patch = $message->getReplacementText();
       $patch_lines = explode("\n", $patch);
-      $offset = 0;
-      foreach ($patch_lines as $patch_line) {
-        if (isset($line_data[$line_num - 1 + $offset])) {
-          $base = $line_data[$line_num - 1 + $offset];
-        } else {
-          $base = '';
-        }
+      $patch_length = count($patch_lines);
 
-        if ($offset == 0) {
-          $start = $message->getChar() - 1;
-        } else {
-          $start = 0;
-        }
+      $patch_line = $patch_lines[0];
 
-        if (isset($text_lines[$offset])) {
-          $len = strlen($text_lines[$offset]);
-        } else {
-          $len = 0;
-        }
+      $len = isset($text_lines[0]) ? strlen($text_lines[0]) : 0;
 
-        $patched = substr_replace(
-          $base,
-          phutil_console_format('##%s##', $patch_line),
-          $start,
-          $len);
-        $out[] = $this->renderLine(null, $patched, false, '+');
+      $patched = substr_replace(
+        $line_data[$line_num],
+        phutil_console_format('##%s##', $patch_line),
+        $start,
+        $len);
 
-        $offset++;
+      $out[] = $this->renderLine(null, $patched, false, '+');
+
+      foreach (array_slice($patch_lines, 1) as $patch_line) {
+        $out[] = $this->renderLine(
+          null,
+          phutil_console_format('##%s##', $patch_line), false, '+'
+        );
       }
     }
 
-    $lines_count = count($line_data);
-    $end = min($lines_count, $cursor + $lines_of_context);
+    $end = min($num_lines, $cursor + $lines_of_context);
     for (; $cursor < $end; $cursor++) {
-      $out[] = $this->renderLine($cursor, $line_data[$cursor - 1]);
+      $out[] = $this->renderLine($cursor, $line_data[$cursor]);
     }
     $out[] = null;
 
