@@ -190,17 +190,28 @@ try {
         ));
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE') {
-        $no_cert_msg = "You don't have certificate for ".$conduit_uri.".\n";
+        $message =
+          "\n\n".
+          phutil_console_format(
+            "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR").
+          "\n\n".
+          "The server '{$conduit_uri}' rejected your request:".
+          "\n\n".
+          $ex->getMessage().
+          "\n\n";
         $hosts_with_cert = ifilter($hosts_config, 'cert');
         if (!empty($hosts_with_cert)) {
-          $no_cert_msg .= 'You have certificate(s) for '.
-            implode(array_keys($hosts_with_cert), ', ').".\n";
+          if (count($hosts_with_cert) == 1) {
+            $message .=
+              "You currently have a certificate installed for one host:\n\n";
+          } else {
+            $message .=
+              "You currently have certificates installed for these hosts:\n\n";
+          }
+          $message .= '    '.implode("\n    ", array_keys($hosts_with_cert));
+          $message .= "\n";
         }
-        $no_cert_msg .= 'Please refer to page http://www.phabricator.com'.
-          '/docs/phabricator/article/Installing_Arcanist_Certificates.html '.
-          'for more info.';
-        throw new ArcanistUsageException($no_cert_msg);
-
+        throw new ArcanistUsageException($message);
       } else {
         throw $ex;
       }
