@@ -172,11 +172,16 @@ abstract class ArcanistLintEngine {
     }
 
     foreach ($this->results as $path => $result) {
-      $result->setFilePathOnDisk($this->getFilePathOnDisk($path));
+      $disk_path = $this->getFilePathOnDisk($path);
+      $result->setFilePathOnDisk($disk_path);
       if (isset($this->fileData[$path])) {
-        // Only set the data if any linter loaded it. The goal here is to
-        // avoid binaries when we don't actually care about their contents,
-        // for performance.
+        $result->setData($this->fileData[$path]);
+      } else if ($disk_path) {
+        // TODO: this may cause us to, e.g., load a large binary when we only
+        // raised an error about its filename. We could refine this by looking
+        // through the lint messages and doing this load only if any of them
+        // have original/replacement text or something like that.
+        $this->fileData[$path] = Filesystem::readFile($path);
         $result->setData($this->fileData[$path]);
       }
     }
