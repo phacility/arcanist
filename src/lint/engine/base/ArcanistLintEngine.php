@@ -176,7 +176,7 @@ abstract class ArcanistLintEngine {
       $result->setFilePathOnDisk($disk_path);
       if (isset($this->fileData[$path])) {
         $result->setData($this->fileData[$path]);
-      } else if ($disk_path) {
+      } else if ($disk_path && Filesystem::pathExists($disk_path)) {
         // TODO: this may cause us to, e.g., load a large binary when we only
         // raised an error about its filename. We could refine this by looking
         // through the lint messages and doing this load only if any of them
