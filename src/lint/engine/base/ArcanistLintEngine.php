@@ -181,8 +181,14 @@ abstract class ArcanistLintEngine {
         // raised an error about its filename. We could refine this by looking
         // through the lint messages and doing this load only if any of them
         // have original/replacement text or something like that.
-        $this->fileData[$path] = Filesystem::readFile($path);
-        $result->setData($this->fileData[$path]);
+        try {
+          $this->fileData[$path] = Filesystem::readFile($path);
+          $result->setData($this->fileData[$path]);
+        } catch (FilesystemException $ex) {
+          // Ignore this, it's noncritical that we access this data and it
+          // might be unreadable or a directory or whatever else for plenty
+          // of legitimate reasons.
+        }
       }
     }
 
