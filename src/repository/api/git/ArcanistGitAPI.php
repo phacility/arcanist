@@ -200,7 +200,9 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       if (strlen($stdout)) {
         $stdout = explode("\n", $stdout);
         foreach ($stdout as $file) {
-          $files[$file] = self::FLAG_UNSTAGED;
+          $files[$file] = isset($files[$file])
+            ? ($files[$file] | self::FLAG_UNSTAGED)
+            : self::FLAG_UNSTAGED;
         }
       }
 
