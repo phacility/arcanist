@@ -147,10 +147,20 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
-  public function getGitHeadRevision() {
+  /**
+   * Returns the sha1 of the HEAD revision
+   * @param boolean $short whether return the abbreviated or full hash.
+   */
+  public function getGitHeadRevision($short=false) {
+    if ($short) {
+      $flags = '--short';
+    } else {
+      $flags = '';
+    }
     list($stdout) = execx(
-      '(cd %s; git rev-parse HEAD)',
-      $this->getPath());
+      '(cd %s; git rev-parse %s HEAD)',
+      $this->getPath(),
+      $flags);
     return rtrim($stdout, "\n");
   }
 
