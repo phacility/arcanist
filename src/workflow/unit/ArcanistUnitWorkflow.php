@@ -115,14 +115,26 @@ EOTEXT
       );
 
     $unresolved = array();
+    $postponed_count = 0;
     foreach ($results as $result) {
       $result_code = $result->getResult();
-      echo $status_codes[$result_code].' '.$result->getName()."\n";
-      if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
-        echo $result->getUserData()."\n";
-        $unresolved[] = $result;
+      if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED) {
+        $postponed_count++;
+      } else {
+        echo $status_codes[$result_code].' '.$result->getName()."\n";
+        if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
+          echo $result->getUserData()."\n";
+          $unresolved[] = $result;
+        }
       }
     }
+    if ($postponed_count) {
+      echo sprintf("%s %d %s\n",
+         $status_codes[ArcanistUnitTestResult::RESULT_POSTPONED],
+         $postponed_count,
+         ($postponed_count > 1)?'tests':'test');
+    }
+
     $this->unresolvedTests = $unresolved;
 
     $overall_result = self::RESULT_OKAY;
