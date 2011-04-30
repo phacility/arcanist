@@ -23,12 +23,67 @@
  */
 class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
+  static $allTestsCounter = 0;
+  static $oneTestCounter = 0;
+  static $distinctWillRunTests = array();
+  static $distinctDidRunTests = array();
+
+  protected function willRunTests() {
+    self::$allTestsCounter++;
+  }
+
+  protected function didRunTests() {
+    $this->assertEqual(
+      1,
+      self::$allTestsCounter,
+      'Expect willRunTests() has been called once.');
+
+    self::$allTestsCounter--;
+
+    $actual_test_count = 2;
+
+    $this->assertEqual(
+      $actual_test_count,
+      count(self::$distinctWillRunTests),
+      'Expect willRunOneTest() was called once for each test.');
+    $this->assertEqual(
+      $actual_test_count,
+      count(self::$distinctDidRunTests),
+      'Expect didRunOneTest() was called once for each test.');
+    $this->assertEqual(
+      self::$distinctWillRunTests,
+      self::$distinctDidRunTests,
+      'Expect same tests had pre- and post-run callbacks invoked.');
+  }
+
+  public function __destruct() {
+    if (self::$allTestsCounter !== 0) {
+      throw new Exception(
+        "didRunTests() was not called correctly after tests completed!");
+    }
+  }
+
+  protected function willRunOneTest($test) {
+    self::$distinctWillRunTests[$test] = true;
+    self::$oneTestCounter++;
+  }
+
+  protected function didRunOneTest($test) {
+    $this->assertEqual(
+      1,
+      self::$oneTestCounter,
+      'Expect willRunOneTest depth to be one.');
+
+    self::$distinctDidRunTests[$test] = true;
+    self::$oneTestCounter--;
+  }
+
   public function testPass() {
     $this->assertEqual(1, 1, 'This test is expected to pass.');
   }
 
   public function testFail() {
-    $this->assertEqual(1, 2, 'This test is expected to fail.');
+    $this->assertFailure('This test is expected to fail.');
   }
 
 }
