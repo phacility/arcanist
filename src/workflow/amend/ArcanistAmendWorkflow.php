@@ -109,6 +109,7 @@ EOTEXT
       'differential.getcommitmessage',
       array(
         'revision_id' => $revision_id,
+        'edit'        => false,
       ));
 
     if ($this->getArgument('show')) {
