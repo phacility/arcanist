@@ -67,12 +67,17 @@ abstract class ArcanistLinter {
 
   protected function getData($path) {
     if (!array_key_exists($path, $this->data)) {
-      throw new Exception("Data is not provided for path '{$path}'!");
+      $disk_path = $this->getEngine()->getFilePathOnDisk($path);
+      if ($disk_path) {
+        $this->data[$path] = Filesystem::readFile($disk_path);
+      } else {
+        throw new Exception("Data is not provided for path '{$path}'!");
+      }
     }
     return $this->data[$path];
   }
 
-  public function setEngine($engine) {
+  public function setEngine(ArcanistLintEngine $engine) {
     $this->engine = $engine;
     return $this;
   }
