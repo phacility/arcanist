@@ -23,17 +23,21 @@
  */
 final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
 
-  const SOURCE_BUNDLE     = 'bundle';
-  const SOURCE_PATCH      = 'patch';
-  const SOURCE_REVISION   = 'revision';
-  const SOURCE_DIFF       = 'diff';
+  const SOURCE_BUNDLE         = 'bundle';
+  const SOURCE_PATCH          = 'patch';
+  const SOURCE_REVISION       = 'revision';
+  const SOURCE_DIFF           = 'diff';
 
   private $source;
   private $sourceParam;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **patch** __source__
+      **patch** __D12345__
+      **patch** __--revision__ __revision_id__
+      **patch** __--diff__ __diff_id__
+      **patch** __--patch__ __file__
+      **patch** __--arcbundle__ __bundlefile__
           Supports: git, svn
           Apply the changes in a Differential revision, patchfile, or arc
           bundle to the working copy.
@@ -48,7 +52,8 @@ EOTEXT
         'paramtype' => 'complete',
         'help' =>
           "Apply changes from a Differential revision, using the most recent ".
-          "diff that has been attached to it.",
+          "diff that has been attached to it. You can run 'arc patch D12345' ".
+          "as a shorthand for this.",
       ),
       'diff' => array(
         'param' => 'diff_id',
@@ -70,6 +75,7 @@ EOTEXT
         'help' =>
           "Apply changes from a git patchfile or unified patchfile.",
       ),
+      '*' => 'name',
     );
   }
 
@@ -93,21 +99,35 @@ EOTEXT
       $requested++;
     }
 
+    $use_revision_id = null;
+    if ($this->getArgument('name')) {
+      $namev = $this->getArgument('name');
+      if (count($namev) > 1) {
+        throw new ArcanistUsageException("Specify at most one revision name.");
+      }
+      $source = self::SOURCE_REVISION;
+      $requested++;
+
+      $use_revision_id = $this->normalizeRevisionID(head($namev));
+    }
+
     if ($requested === 0) {
       throw new ArcanistUsageException(
-        "Specify one of '--revision <revision_id>' (to select the current ".
-        "changes attached to a Differential revision), '--diff <diff_id>' ".
-        "(to select a specific, out-of-date diff or a diff which is not ".
-        "attached to a revision), '--arcbundle <file>' or '--patch <file>' ".
-        "to choose a patch source.");
+        "Specify one of 'D12345', '--revision <revision_id>' (to select the ".
+        "current changes attached to a Differential revision), ".
+        "'--diff <diff_id>' (to select a specific, out-of-date diff or a ".
+        "diff which is not attached to a revision), '--arcbundle <file>' ".
+        "or '--patch <file>' to choose a patch source.");
     } else if ($requested > 1) {
       throw new ArcanistUsageException(
-        "Options '--revision', '--diff', '--arcbundle' and '--patch' are ".
-        "not compatible. Choose exactly one patch source.");
+        "Options 'D12345', '--revision', '--diff', '--arcbundle' and ".
+        "'--patch' are not compatible. Choose exactly one patch source.");
     }
 
     $this->source = $source;
-    $this->sourceParam = $this->getArgument($source);
+    $this->sourceParam = nonempty(
+      $use_revision_id,
+      $this->getArgument($source));
   }
 
   public function requiresConduit() {
