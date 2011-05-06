@@ -368,7 +368,7 @@ EOTEXT
       return $patch_err;
     } else {
       $future = new ExecFuture(
-        '(cd %s; git apply --index)',
+        '(cd %s; git apply --index --reject)',
         $repository_api->getPath());
       $future->write($bundle->toGitPatch());
       $future->resolvex();
