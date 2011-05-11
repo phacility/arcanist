@@ -78,6 +78,9 @@ EOTEXT
         if ($argument == '*') {
           continue;
         }
+        if (!empty($spec['hide'])) {
+          continue;
+        }
         if (isset($spec['param'])) {
           if (isset($spec['short'])) {
             $optref[] = phutil_console_format(

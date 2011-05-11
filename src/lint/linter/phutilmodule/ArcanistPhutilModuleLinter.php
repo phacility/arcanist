@@ -159,7 +159,7 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
     }
 
     $requirements = array();
-    foreach (Futures($futures) as $key => $future) {
+    foreach (Futures($futures)->limit(16) as $key => $future) {
       $requirements[$key] = $future->resolveJSON();
     }
 
@@ -203,7 +203,7 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
       }
     }
 
-    foreach (Futures($futures) as $key => $future) {
+    foreach (Futures($futures)->limit(16) as $key => $future) {
       $dependencies[$key] = $future->resolveJSON();
     }
 
@@ -378,13 +378,17 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
         $need_functions,
         $drop_modules);
       $init_path = $this->getModulePathOnDisk($key).'/__init__.php';
-      $try_path = Filesystem::readablePath($init_path);
-      if (Filesystem::pathExists($try_path)) {
+
+      $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+      $try_path = Filesystem::readablePath($init_path, $root);
+      $full_path = Filesystem::resolvePath($try_path, $root);
+      if (Filesystem::pathExists($full_path)) {
         $init_path = $try_path;
-        $old_file = Filesystem::readFile($init_path);
+        $old_file = Filesystem::readFile($full_path);
       } else {
         $old_file = '';
       }
+
       $this->willLintPath($init_path);
       $message = $this->raiseLintAtOffset(
         null,

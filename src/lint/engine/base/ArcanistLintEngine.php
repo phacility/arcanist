@@ -182,7 +182,7 @@ abstract class ArcanistLintEngine {
         // through the lint messages and doing this load only if any of them
         // have original/replacement text or something like that.
         try {
-          $this->fileData[$path] = Filesystem::readFile($path);
+          $this->fileData[$path] = Filesystem::readFile($disk_path);
           $result->setData($this->fileData[$path]);
         } catch (FilesystemException $ex) {
           // Ignore this, it's noncritical that we access this data and it

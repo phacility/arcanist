@@ -33,6 +33,7 @@ $builtin = array(
     'print' => true,
     'exit'  => true,
     'die'   => true,
+    'phutil_load_library' => true,
   ),
   'interface' => array_fill_keys($builtin_interfaces, true),
 );

@@ -19,6 +19,16 @@
 
 require_once dirname(__FILE__).'/__init_script__.php';
 
+$liberate_mode = false;
+for ($ii = 0; $ii < $argc; $ii++) {
+  if ($argv[$ii] == '--find-paths-for-liberate') {
+    $liberate_mode = true;
+    unset($argv[$ii]);
+  }
+}
+$argv = array_values($argv);
+$argc = count($argv);
+
 if ($argc != 2) {
   $self = basename($argv[0]);
   echo "usage: {$self} <phutil_library_root>\n";
@@ -33,6 +43,10 @@ $root = Filesystem::resolvePath($argv[1]);
 
 if (!@file_exists($root.'/__phutil_library_init__.php')) {
   throw new Exception("Provided path is not a phutil library.");
+}
+
+if ($liberate_mode) {
+  ob_start();
 }
 
 echo "Finding phutil modules...\n";
@@ -81,17 +95,22 @@ if ($cache) {
 
 $specs = array();
 
-$futures = array();
+$need_update = array();
 foreach ($signatures as $module => $signature) {
   if (isset($signature_cache[$module]) &&
       $signature_cache[$module]['signature'] == $signature) {
     $specs[$module] = $signature_cache[$module];
   } else {
-    $futures[$module] = new ExecFuture(
-      '%s %s',
-      dirname(__FILE__).'/phutil_analyzer.php',
-      $root.'/'.$module);
+    $need_update[$module] = true;
   }
+}
+
+$futures = array();
+foreach ($need_update as $module => $ignored) {
+  $futures[$module] = new ExecFuture(
+    '%s %s',
+    dirname(__FILE__).'/phutil_analyzer.php',
+    $root.'/'.$module);
 }
 
 if ($futures) {
@@ -179,6 +198,12 @@ EOPHP;
 echo "Writing library map file...\n";
 
 Filesystem::writeFile($root.'/__phutil_library_map__.php', $map_file);
+
+if ($liberate_mode) {
+  ob_get_clean();
+  echo json_encode(array_keys($need_update))."\n";
+  return;
+}
 
 echo "Writing module cache...\n";
 
