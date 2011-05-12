@@ -405,7 +405,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       // ($declarations).
 
       foreach ($vars as $var) {
-        $concrete = $var->getConcreteString();
+        $concrete = $this->getConcreteVariableString($var);
         $declarations[$concrete] = min(
           idx($declarations, $concrete, PHP_INT_MAX),
           $var->getOffset());
@@ -445,7 +445,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
           // figure out.
           continue;
         }
-        $concrete = $var->getConcreteString();
+        $concrete = $this->getConcreteVariableString($var);
         if ($var->getOffset() >= idx($declarations, $concrete, PHP_INT_MAX)) {
           // The use appears after the variable is declared, so it's fine.
           continue;
@@ -464,6 +464,13 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         $issued_warnings[$concrete] = true;
       }
     }
+  }
+
+  private function getConcreteVariableString($var) {
+    $concrete = $var->getConcreteString();
+    // Strip off curly braces as in $obj->{$property}.
+    $concrete = trim($concrete, '{}');
+    return $concrete;
   }
 
   protected function lintPHPTagUse($root) {

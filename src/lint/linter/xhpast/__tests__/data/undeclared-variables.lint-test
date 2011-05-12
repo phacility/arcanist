@@ -155,7 +155,10 @@ class A {
     return 2;
   }
 }
-  
+
+function arrow($o, $x) {
+  echo $o->{$x->{$x->{$x.$x->{$x}}.$x}};
+}
 
 ~~~~~~~~~~
 error:30:3
