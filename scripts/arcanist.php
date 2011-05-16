@@ -65,7 +65,7 @@ $args = array_values($args);
 try {
 
   if ($config_trace_mode) {
-    ExecFuture::pushEchoMode(true);
+    PhutilServiceProfiler::installEchoListener();
   }
 
   if (!$args) {
@@ -168,7 +168,6 @@ try {
         "Specify the Conduit URI for the host Differential is running on.");
     }
     $conduit = new ConduitClient($conduit_uri);
-    $conduit->setTraceMode($config_trace_mode);
     $workflow->setConduit($conduit);
 
     $hosts_config = idx($user_config, 'hosts', array());
