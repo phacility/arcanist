@@ -96,6 +96,11 @@ EOTEXT
     $engine = $this->getArgument('engine');
     if (!$engine) {
       $engine = $working_copy->getConfig('lint_engine');
+      if (!$engine) {
+        throw new ArcanistNoEngineException(
+          "No lint engine configured for this project. Edit .arcconfig to ".
+          "specify a lint engine.");
+      }
     }
 
     $should_lint_all = $this->getArgument('lintall');
@@ -151,12 +156,6 @@ EOTEXT
           $working_copy->getProjectRoot());
         $paths[$key] = $relative_path;
       }
-    }
-
-    if (!$engine) {
-      throw new ArcanistNoEngineException(
-        "No lint engine configured for this project. Edit .arcconfig to ".
-        "specify a lint engine.");
     }
 
     PhutilSymbolLoader::loadClass($engine);
