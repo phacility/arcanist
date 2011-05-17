@@ -118,8 +118,6 @@ EOTEXT
           'advice'    => '--only suppresses lint.',
           'apply-patches' => '--only suppresses lint.',
           'never-apply-patches' => '--only suppresses lint.',
-          'nounit'    => '--only implies --nounit.',
-          'nolint'    => '--only implies --nolint.',
         ),
       ),
       'preview' => array(
