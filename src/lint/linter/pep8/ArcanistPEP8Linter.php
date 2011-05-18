@@ -45,11 +45,12 @@ class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    $pep8_bin = phutil_get_library_root('arcanist').'/externals/pep8/pep8.py';
+    $pep8_bin = phutil_get_library_root('arcanist').
+                  '/../externals/pep8/pep8.py';
 
     $options = $this->getPEP8Options();
 
-    list($stdout) = execx(
+    list($rc, $stdout) = exec_manual(
       "/usr/bin/env python2.6 %s {$options} %s",
       $pep8_bin,
       $this->getEngine()->getFilePathOnDisk($path));
