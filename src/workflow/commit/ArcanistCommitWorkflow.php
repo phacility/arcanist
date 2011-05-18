@@ -116,13 +116,14 @@ EOTEXT
     $message = escapeshellarg($message);
     $root = escapeshellarg($repository_api->getPath());
 
+    $lang = $this->getSVNLangEnvVar();
+
     // Specify LANG explicitly so that UTF-8 commit messages don't break
     // subversion.
     $command =
-      "(cd {$root} && LANG=en_US.utf8 svn commit {$files} -m {$message})";
+      "(cd {$root} && LANG={$lang} svn commit {$files} -m {$message})";
 
-    $err = null;
-    passthru($command, $err);
+    $err = phutil_passthru('%C', $command);
 
     if ($err) {
       throw new Exception("Executing 'svn commit' failed!");
@@ -256,6 +257,31 @@ EOTEXT
 
   protected function getSupportedRevisionControlSystems() {
     return array('svn');
+  }
+
+  /**
+   * On some systems, we need to specify "en_US.UTF-8" instead of "en_US.utf8",
+   * and SVN spews some bewildering warnings if we don't:
+   *
+   *   svn: warning: cannot set LC_CTYPE locale
+   *   svn: warning: environment variable LANG is en_US.utf8
+   *   svn: warning: please check that your locale name is correct
+   *
+   * For example, is happens on my 10.6.7 machine with Subversion 1.6.15.
+   */
+  private function getSVNLangEnvVar() {
+    $locale = 'en_US.utf8';
+    try {
+      list($locales) = execx('locale -a');
+      $locales = explode("\n", trim($locales));
+      $locales = array_fill_keys($locales, true);
+      if (isset($locales['en_US.UTF-8'])) {
+        $locale = 'en_US.UTF-8';
+      }
+    } catch (Exception $ex) {
+      // Ignore.
+    }
+    return $locale;
   }
 
 }
