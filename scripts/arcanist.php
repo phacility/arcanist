@@ -100,6 +100,20 @@ try {
           $name,
           $location);
         throw new ArcanistUsageException($error_msg);
+      } catch (PhutilLibraryConflictException $ex) {
+        if ($ex->getLibrary() != 'arcanist') {
+          throw $ex;
+        }
+
+        $arc_dir = dirname(dirname(__FILE__));
+        $error_msg =
+          "You are trying to run one copy of Arcanist on another copy of ".
+          "Arcanist. This operation is not supported. To execute Arcanist ".
+          "operations against this working copy, run './bin/arc' (from the ".
+          "current working copy) not some other copy of 'arc' (you ran one ".
+          "from '{$arc_dir}').";
+
+        throw new ArcanistUsageException($error_msg);
       }
     }
   }

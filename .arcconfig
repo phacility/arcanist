@@ -4,5 +4,8 @@
   "lint_engine" : "PhutilLintEngine",
   "unit_engine" : "PhutilUnitTestEngine",
   "remote_hooks_installed" : true,
-  "copyright_holder" : "Facebook, Inc."
+  "copyright_holder" : "Facebook, Inc.",
+  "phutil_libraries" : {
+    "arcanist" : "src/"
+  }
 }
