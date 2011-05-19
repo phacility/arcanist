@@ -75,7 +75,7 @@ class ArcanistPEP8Linter extends ArcanistLinter {
       if ($matches[4][0] == 'E') {
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
       } else {
-        $message->setSeveirty(ArcanistLintSeverity::SEVERITY_WARNING);
+        $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
       }
       $this->addLintMessage($message);
     }
