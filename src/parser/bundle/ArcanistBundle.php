@@ -24,6 +24,13 @@
 class ArcanistBundle {
 
   private $changes;
+  private $conduit;
+  private $blobs = array();
+  private $diskPath;
+
+  public function setConduit(ConduitClient $conduit) {
+    $this->conduit = $conduit;
+  }
 
   public static function newFromChanges(array $changes) {
     $obj = new ArcanistBundle();
@@ -47,12 +54,14 @@ class ArcanistBundle {
       }
     }
 
+
     foreach ($changes as $change_key => $change) {
       $changes[$change_key] = ArcanistDiffChange::newFromDictionary($change);
     }
 
     $obj = new ArcanistBundle();
     $obj->changes = $changes;
+    $obj->diskPath = $path;
 
     return $obj;
   }
@@ -87,6 +96,17 @@ class ArcanistBundle {
     }
 
     $blobs = array();
+    foreach ($change_list as $change) {
+      if (!empty($change['metadata']['old:binary-guid'])) {
+        $blobs[$change['metadata']['old:binary-guid']] = null;
+      }
+      if (!empty($change['metadata']['new:binary-guid'])) {
+        $blobs[$change['metadata']['new:binary-guid']] = null;
+      }
+    }
+    foreach ($blobs as $phid => $null) {
+      $blobs[$phid] = $this->getBlob($phid);
+    }
 
     $dir = Filesystem::createTemporaryDirectory();
     Filesystem::createDirectory($dir.'/hunks');
@@ -165,7 +185,13 @@ class ArcanistBundle {
       $old_mode = idx($change->getOldProperties(), 'unix:filemode', '100644');
       $new_mode = idx($change->getNewProperties(), 'unix:filemode', '100644');
 
-      $change_body = $this->buildHunkChanges($change->getHunks());
+      $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY);
+
+      if ($is_binary) {
+        $change_body = $this->buildBinaryChange($change);
+      } else {
+        $change_body = $this->buildHunkChanges($change->getHunks());
+      }
       if ($type == ArcanistDiffChangeType::TYPE_COPY_AWAY) {
         // TODO: This is only relevant when patching old Differential diffs
         // which were created prior to arc pruning TYPE_COPY_AWAY for files
@@ -223,8 +249,10 @@ class ArcanistBundle {
         }
       }
 
-      $result[] = "--- {$old_target}";
-      $result[] = "+++ {$cur_target}";
+      if (!$is_binary) {
+        $result[] = "--- {$old_target}";
+        $result[] = "+++ {$cur_target}";
+      }
       $result[] = $change_body;
     }
     return implode("\n", $result)."\n";
@@ -337,6 +365,142 @@ class ArcanistBundle {
       }
     }
     return implode("\n", $result);
+  }
+
+  private function getBlob($phid) {
+    if ($this->diskPath) {
+      list($blob_data) = execx('tar xfO %s blobs/%s', $this->diskPath, $phid);
+      return $blob_data;
+    }
+
+    if ($this->conduit) {
+      echo "Downloading binary data...\n";
+      $data_base64 = $this->conduit->callMethodSynchronous(
+        'file.download',
+        array(
+          'phid' => $phid,
+        ));
+      return base64_decode($data_base64);
+    }
+
+    throw new Exception("Nowhere to load blob '{$phid} from!");
+  }
+
+  private function buildBinaryChange(ArcanistDiffChange $change) {
+    $old_phid = $change->getMetadata('old:binary-guid', null);
+    $new_phid = $change->getMetadata('new:binary-guid', null);
+
+    $type = $change->getType();
+    if ($type == ArcanistDiffChangeType::TYPE_ADD) {
+      $old_null = true;
+    } else {
+      $old_null = false;
+    }
+
+    if ($type == ArcanistDiffChangeType::TYPE_DELETE) {
+      $new_null = true;
+    } else {
+      $new_null = false;
+    }
+
+    if ($old_null) {
+      $old_data = '';
+      $old_length = 0;
+      $old_sha1 = str_repeat('0', 40);
+    } else {
+      $old_data = $this->getBlob($old_phid);
+      $old_length = strlen($old_data);
+      $old_sha1 = sha1("blob {$old_length}\0{$old_data}");
+    }
+
+    if ($new_null) {
+      $new_data = '';
+      $new_length = 0;
+      $new_sha1 = str_repeat('0', 40);
+    } else {
+      $new_data = $this->getBlob($new_phid);
+      $new_length = strlen($new_data);
+      $new_sha1 = sha1("blob {$new_length}\0{$new_data}");
+    }
+
+    $content = array();
+    $content[] = "index {$old_sha1}..{$new_sha1}";
+    $content[] = "GIT binary patch";
+
+    $content[] = "literal {$new_length}";
+    $content[] = $this->emitBinaryDiffBody($new_data);
+
+    $content[] = "literal {$old_length}";
+    $content[] = $this->emitBinaryDiffBody($old_data);
+
+    return implode("\n", $content);
+  }
+
+  private function emitBinaryDiffBody($data) {
+    // See emit_binary_diff_body() in diff.c for git's implementation.
+
+    $buf = '';
+
+    $deflated = gzcompress($data);
+    $lines = str_split($deflated, 52);
+    foreach ($lines as $line) {
+      $len = strlen($line);
+      // The first character encodes the line length.
+      if ($len <= 26) {
+        $buf .= chr($len + ord('A') - 1);
+      } else {
+        $buf .= chr($len - 26 + ord('a') - 1);
+      }
+      $buf .= $this->encodeBase85($line);
+      $buf .= "\n";
+    }
+
+    $buf .= "\n";
+
+    return $buf;
+  }
+
+  private function encodeBase85($data) {
+    // This is implemented awkwardly in order to closely mirror git's
+    // implementation in base85.c
+
+    static $map = array(
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+      'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+      'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+      'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+      'u', 'v', 'w', 'x', 'y', 'z',
+      '!', '#', '$', '%', '&', '(', ')', '*', '+', '-',
+      ';', '<', '=', '>', '?', '@', '^', '_', '`', '{',
+      '|', '}', '~',
+    );
+
+    $buf = '';
+
+    $pos = 0;
+    $bytes = strlen($data);
+    while ($bytes) {
+      $accum = '0';
+      for ($count = 24; $count >= 0; $count -= 8) {
+        $val = ord($data[$pos++]);
+        $val = bcmul($val, (string)(1 << $count));
+        $accum = bcadd($accum, $val);
+        if (--$bytes == 0) {
+          break;
+        }
+      }
+      $slice = '';
+      for ($count = 4; $count >= 0; $count--) {
+        $val = bcmod($accum, 85);
+        $accum = bcdiv($accum, 85);
+        $slice .= $map[$val];
+      }
+      $buf .= strrev($slice);
+    }
+
+    return $buf;
   }
 
 }

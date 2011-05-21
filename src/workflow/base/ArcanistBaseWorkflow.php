@@ -485,6 +485,7 @@ class ArcanistBaseWorkflow {
       $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
     }
     $bundle = ArcanistBundle::newFromChanges($changes);
+    $bundle->setConduit($conduit);
     return $bundle;
   }
 

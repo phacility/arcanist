@@ -211,7 +211,7 @@ EOTEXT
         break;
       case self::FORMAT_BUNDLE:
         $path = $this->getArgument('arcbundle');
-        echo "Writing bundle to '{$path}'... ";
+        echo "Writing bundle to '{$path}'...\n";
         $bundle->writeToDisk($path);
         echo "done.\n";
         break;

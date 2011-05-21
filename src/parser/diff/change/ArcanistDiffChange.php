@@ -65,7 +65,7 @@ class ArcanistDiffChange {
     }
 
     $obj = new ArcanistDiffChange();
-    $obj->metdadata = $dict['metadata'];
+    $obj->metadata = $dict['metadata'];
     $obj->oldPath = $dict['oldPath'];
     $obj->currentPath = $dict['currentPath'];
     // TODO: The backend is shipping down some bogus data, e.g. diff 199453.
