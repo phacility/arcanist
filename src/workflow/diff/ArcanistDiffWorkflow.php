@@ -686,10 +686,55 @@ EOTEXT
       }
     }
 
+    $utf8_problems = array();
+    foreach ($changes as $change) {
+      foreach ($change->getHunks() as $hunk) {
+        if (!phutil_is_utf8($hunk->getCorpus())) {
+          $utf8_problems[] = $change;
+          break;
+        }
+      }
+    }
 
-    // TODO: Ideally, we should do this later, after validating commit message
-    // fields (i.e., test plan), in case there are large/slow file upload steps
-    // involved.
+    // If there are non-binary files which aren't valid UTF-8, warn the user
+    // and treat them as binary changes. See D327 for discussion of why Arcanist
+    // has this behavior.
+    if ($utf8_problems) {
+      if (count($utf8_problems) == 1) {
+        $utf8_warning =
+          "This diff includes a file which is not valid UTF-8 (it has invalid ".
+          "byte sequences). You can either stop this workflow and fix it, or ".
+          "continue. If you continue, this file will be marked as binary.\n\n".
+          "    AFFECTED FILE\n";
+
+        $confirm = "Do you want to mark this file as binary and continue?";
+      } else {
+        $utf8_warning =
+          "This diff includes files which are not valid UTF-8 (they contain ".
+          "invalid byte sequences). You can either stop this workflow and fix ".
+          "these files, or continue. If you continue, these files will be ".
+          "marked as binary.\n\n".
+          "    AFFECTED FILES\n";
+
+        $confirm = "Do you want to mark these files as binary and continue?";
+      }
+
+      echo phutil_console_format("**Invalid Content Encoding (Non-UTF8)**\n");
+      echo phutil_console_wrap($utf8_warning);
+
+      $file_list = mpull($utf8_problems, 'getCurrentPath');
+      $file_list = '    '.implode("\n    ", $file_list);
+      echo $file_list;
+
+      if (!phutil_console_confirm($confirm, $default_no = false)) {
+        throw new ArcanistUsageException("Aborted workflow to fix UTF-8.");
+      } else {
+        foreach ($utf8_problems as $change) {
+          $change->convertToBinaryChange();
+        }
+      }
+    }
+
     foreach ($changes as $change) {
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;
