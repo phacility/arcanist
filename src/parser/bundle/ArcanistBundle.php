@@ -185,7 +185,8 @@ class ArcanistBundle {
       $old_mode = idx($change->getOldProperties(), 'unix:filemode', '100644');
       $new_mode = idx($change->getNewProperties(), 'unix:filemode', '100644');
 
-      $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY);
+      $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY ||
+                    $file_type == ArcanistDiffChangeType::FILE_IMAGE);
 
       if ($is_binary) {
         $change_body = $this->buildBinaryChange($change);
