@@ -26,6 +26,7 @@ abstract class ArcanistBaseUnitTestEngine {
   private $workingCopy;
   private $paths;
   private $arguments = array();
+  protected $diffID;
 
   final public function __construct() {
 
@@ -62,4 +63,12 @@ abstract class ArcanistBaseUnitTestEngine {
 
   abstract public function run();
 
+  /**
+   * This function is called after run() when the diff is created
+   * Child classes should override this function if they want to
+   * do more with the diff ID.
+   */
+  public function setDifferentialDiffID($id) {
+    $this->diffID = $id;
+  }
 }

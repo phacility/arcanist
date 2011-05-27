@@ -29,6 +29,7 @@ class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
   const RESULT_SKIP     = 3;
 
   private $unresolvedTests;
+  private $engine;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
@@ -92,12 +93,12 @@ EOTEXT
 
 
     PhutilSymbolLoader::loadClass($engine_class);
-    $engine = newv($engine_class, array());
-    $engine->setWorkingCopy($working_copy);
-    $engine->setPaths($paths);
-    $engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
+    $this->engine = newv($engine_class, array());
+    $this->engine->setWorkingCopy($working_copy);
+    $this->engine->setPaths($paths);
+    $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
-    $results = $engine->run();
+    $results = $this->engine->run();
 
     $status_codes = array(
       ArcanistUnitTestResult::RESULT_PASS => phutil_console_format(
@@ -154,6 +155,12 @@ EOTEXT
 
   public function getUnresolvedTests() {
     return $this->unresolvedTests;
+  }
+
+  public function setDifferentialDiffID($id) {
+    if ($this->engine) {
+      $this->engine->setDifferentialDiffID($id);
+    }
   }
 
 }

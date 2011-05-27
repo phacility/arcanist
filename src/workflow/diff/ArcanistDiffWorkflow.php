@@ -27,6 +27,7 @@ class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $unresolvedLint;
   private $unresolvedTests;
   private $diffID;
+  private $unitWorkflow;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
@@ -294,6 +295,10 @@ EOTEXT
     $diff_info = $conduit->callMethodSynchronous(
       'differential.creatediff',
       $diff);
+
+    if ($this->unitWorkflow) {
+      $this->unitWorkflow->setDifferentialDiffID($diff_info['diffid']);
+    }
 
     if ($this->unresolvedLint) {
       $data = array();
@@ -1107,8 +1112,8 @@ EOTEXT
       if ($repository_api instanceof ArcanistSubversionAPI) {
         $argv = array_merge($argv, array_keys($paths));
       }
-      $unit_workflow = $this->buildChildWorkflow('unit', $argv);
-      $unit_result   = $unit_workflow->run();
+      $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $this->unitWorkflow->run();
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
           echo phutil_console_format(
@@ -1133,7 +1138,7 @@ EOTEXT
           break;
       }
 
-      $this->unresolvedTests = $unit_workflow->getUnresolvedTests();
+      $this->unresolvedTests = $this->unitWorkflow->getUnresolvedTests();
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
