@@ -26,15 +26,22 @@ $builtin = array(
   'class'     => array_fill_keys($builtin_classes, true) + array(
     'PhutilBootloader' => true,
   ),
-  'function'  => array_fill_keys($builtin_functions, true) + array(
-    'empty' => true,
-    'isset' => true,
-    'echo'  => true,
-    'print' => true,
-    'exit'  => true,
-    'die'   => true,
-    'phutil_load_library' => true,
-  ),
+  'function'  => array_filter(
+    array(
+      'empty' => true,
+      'isset' => true,
+      'echo'  => true,
+      'print' => true,
+      'exit'  => true,
+      'die'   => true,
+      'phutil_load_library' => true,
+
+      // HPHP/i defines these functions as 'internal', but they are NOT
+      // builtins and do not exist in vanilla PHP. Make sure we don't mark them
+      // as builtin since we need to add dependencies for them.
+      'idx'   => false,
+      'id'    => false,
+    ) + array_fill_keys($builtin_functions, true)),
   'interface' => array_fill_keys($builtin_interfaces, true),
 );
 
