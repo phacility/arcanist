@@ -60,11 +60,11 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->relativeCommit;
   }
 
-  private function getDiffOptions() {
+  private function getDiffFullOptions() {
     $options = array(
+      self::getDiffBaseOptions(),
       '-M',
       '-C',
-      '--no-ext-diff',
       '--no-color',
       '--src-prefix=a/',
       '--dst-prefix=b/',
@@ -73,8 +73,22 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return implode(' ', $options);
   }
 
+  private function getDiffBaseOptions() {
+    $options = array(
+      // Disable external diff drivers, like graphical differs, since Arcanist
+      // needs to capture the diff text.
+      '--no-ext-diff',
+      // Disable textconv so we treat binary files as binary, even if they have
+      // an alternative textual representation. TODO: Ideally, Differential
+      // would ship up the binaries for 'arc patch' but display the textconv
+      // output in the visual diff.
+      '--no-textconv',
+    );
+    return implode(' ', $options);
+  }
+
   public function getFullGitDiff() {
-    $options = $this->getDiffOptions();
+    $options = $this->getDiffFullOptions();
     list($stdout) = execx(
       "(cd %s; git diff {$options} %s --)",
       $this->getPath(),
@@ -84,7 +98,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getRawDiffText($path) {
     $relative_commit = $this->getRelativeCommit();
-    $options = $this->getDiffOptions();
+    $options = $this->getDiffFullOptions();
     list($stdout) = execx(
       "(cd %s; git diff {$options} %s -- %s)",
       $this->getPath(),
@@ -167,16 +181,18 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getWorkingCopyStatus() {
     if (!isset($this->status)) {
 
+      $options = $this->getDiffBaseOptions();
+
       // Find committed changes.
       list($stdout) = execx(
-        '(cd %s; git diff --no-ext-diff --raw %s --)',
+        "(cd %s; git diff {$options} --raw %s --)",
         $this->getPath(),
         $this->getRelativeCommit());
       $files = $this->parseGitStatus($stdout);
 
       // Find uncommitted changes.
       list($stdout) = execx(
-        '(cd %s; git diff --no-ext-diff --raw HEAD --)',
+        "(cd %s; git diff {$options} --raw HEAD --)",
         $this->getPath());
       $uncommitted_files = $this->parseGitStatus($stdout);
       foreach ($uncommitted_files as $path => $mask) {
@@ -230,8 +246,9 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getPreReceiveHookStatus($old_ref, $new_ref) {
+    $options = $this->getDiffBaseOptions();
     list($stdout) = execx(
-      '(cd %s && git diff --no-ext-diff --raw %s %s --)',
+      "(cd %s && git diff {$options} --raw %s %s --)",
       $this->getPath(),
       $old_ref,
       $new_ref);
