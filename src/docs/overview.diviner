@@ -3,29 +3,22 @@
 
 Overview of Arcanist, a code workflow tool.
 
-Arcanist (commonly, "arc") is the command-line frontend to Differential. A
-detailed command reference is available by running ##arc help##.
+Arcanist (commonly, "arc") is the command-line frontend to Phabricator and
+Differential. A detailed command reference is available by running ##arc help##.
 
-= Overview =
+= Documentation =
 
-Arcanist is the command-line interface to Differential, and supports some
-related revision control operations. Arcanist allows you to do things like:
+The Arcanist documentation is primarily focused at Arcanist developers and
+explains the project's internals. Arcanist user documentation which explains
+how to use the tool is available in the Phabricator project:
 
-  - send your code to Differential for review with ##arc diff##
-  - commit reviewed changes with ##arc commit## (svn) or ##arc amend## (git)
-  - check your code for syntax and style errors with ##arc lint##
-  - run unit tests that cover your changes with ##arc unit##
-  - export changes from Differential or the working copy with ##arc export##
-  - apply patches from Differential or patchfiles with ##arc patch##
-  - execute context-aware blame with ##arc cover##
-  - show Differential status with ##arc list##
-  
-In general, these workflows are agnostic to the underlying version control
-system and will work properly in git or svn repositories.
-
-= Configuring a New Project =
-
-Create a .arcconfig file.
-
-= SVN Basics =
-
+  - for an overview of Arcanist, see @{article@phabricator:Arcanist User
+    Guide}.
+  - for information on configuring a new project and setting up an
+    ##.arcconfig## file, see @{article@phabricator:Arcanist User Guide:
+    Configuring a New Project}.
+  - to install remote hooks in a repository, see @{article@phabricator:Arcanist
+    User Guide: Repository Hooks}.
+  - to integrate Arcanist with linters, unit tests and custom workflows, see
+    @{article@phabricator:Arcanist User Guide: Customizing Lint, Unit Tests and
+    Workflows}.
