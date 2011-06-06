@@ -71,4 +71,14 @@ abstract class ArcanistBaseUnitTestEngine {
   public function setDifferentialDiffID($id) {
     $this->diffID = $id;
   }
+
+  /**
+   * Modify the return value of this function in the child class, if
+   * you do not need to echo the test results after all the tests have
+   * been run. This is the case for example when the child class
+   * prints the tests results while the tests are running.
+   */
+  public function shouldEchoTestResults() {
+    return true;
+  }
 }

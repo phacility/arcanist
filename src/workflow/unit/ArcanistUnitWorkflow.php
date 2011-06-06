@@ -122,9 +122,13 @@ EOTEXT
       if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED) {
         $postponed_count++;
       } else {
-        echo '  '.$status_codes[$result_code].' '.$result->getName()."\n";
+        if ($this->engine->shouldEchoTestResults()) {
+          echo '  '.$status_codes[$result_code].' '.$result->getName()."\n";
+        }
         if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
-          echo $result->getUserData()."\n";
+          if ($this->engine->shouldEchoTestResults()) {
+            echo $result->getUserData()."\n";
+          }
           $unresolved[] = $result;
         }
       }
