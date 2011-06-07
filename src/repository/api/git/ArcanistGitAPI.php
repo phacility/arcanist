@@ -137,7 +137,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $this->getPath());
     } else {
       list($stdout) = execx(
-        '(cd %s; git log --format=medium %s..HEAD)',
+        '(cd %s; git log --first-parent --format=medium %s..HEAD)',
         $this->getPath(),
         $this->getRelativeCommit());
     }
