@@ -102,17 +102,17 @@ EOTEXT
 
     $status_codes = array(
       ArcanistUnitTestResult::RESULT_PASS => phutil_console_format(
-        '   <bg:green>** PASS **</bg>'),
+        '<bg:green>** PASS **</bg>'),
       ArcanistUnitTestResult::RESULT_FAIL => phutil_console_format(
-        '   <bg:red>** FAIL **</bg>'),
+        '<bg:red>** FAIL **</bg>'),
       ArcanistUnitTestResult::RESULT_SKIP => phutil_console_format(
-        '   <bg:yellow>** SKIP **</bg>'),
+        '<bg:yellow>** SKIP **</bg>'),
       ArcanistUnitTestResult::RESULT_BROKEN => phutil_console_format(
-        ' <bg:red>** BROKEN **</bg>'),
+        '<bg:red>** BROKEN **</bg>'),
       ArcanistUnitTestResult::RESULT_UNSOUND => phutil_console_format(
-        ' <bg:yellow>** UNSOUND **</bg>'),
+        '<bg:yellow>** UNSOUND **</bg>'),
       ArcanistUnitTestResult::RESULT_POSTPONED => phutil_console_format(
-        ' <bg:yellow>** POSTPONED **</bg>'),
+        '<bg:yellow>** POSTPONED **</bg>'),
       );
 
     $unresolved = array();
@@ -122,7 +122,7 @@ EOTEXT
       if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED) {
         $postponed_count++;
       } else {
-        echo $status_codes[$result_code].' '.$result->getName()."\n";
+        echo '  '.$status_codes[$result_code].' '.$result->getName()."\n";
         if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
           echo $result->getUserData()."\n";
           $unresolved[] = $result;
