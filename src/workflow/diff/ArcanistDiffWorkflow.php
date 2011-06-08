@@ -244,6 +244,8 @@ EOTEXT
       $unit = 'warn';
     } else if ($unit_result === ArcanistUnitWorkflow::RESULT_SKIP) {
       $unit = 'skip';
+    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_POSTPONED) {
+      $unit = 'postponed';
     } else {
       $unit = 'none';
     }

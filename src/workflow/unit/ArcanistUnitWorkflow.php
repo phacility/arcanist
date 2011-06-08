@@ -23,10 +23,11 @@
  */
 class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
 
-  const RESULT_OKAY     = 0;
-  const RESULT_UNSOUND  = 1;
-  const RESULT_FAIL     = 2;
-  const RESULT_SKIP     = 3;
+  const RESULT_OKAY      = 0;
+  const RESULT_UNSOUND   = 1;
+  const RESULT_FAIL      = 2;
+  const RESULT_SKIP      = 3;
+  const RESULT_POSTPONED = 4;
 
   private $unresolvedTests;
   private $engine;
@@ -121,6 +122,7 @@ EOTEXT
       $result_code = $result->getResult();
       if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED) {
         $postponed_count++;
+        $unresolved[] = $result;
       } else {
         if ($this->engine->shouldEchoTestResults()) {
           echo '  '.$status_codes[$result_code].' '.$result->getName()."\n";
@@ -151,6 +153,9 @@ EOTEXT
         break;
       } else if ($result_code == ArcanistUnitTestResult::RESULT_UNSOUND) {
         $overall_result = self::RESULT_UNSOUND;
+      } else if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED &&
+                 $overall_result != self::RESULT_UNSOUND) {
+        $overall_result = self::RESULT_POSTPONED;
       }
     }
 
