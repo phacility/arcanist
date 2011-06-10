@@ -27,6 +27,7 @@ abstract class ArcanistBaseUnitTestEngine {
   private $paths;
   private $arguments = array();
   protected $diffID;
+  private $enableAsyncTests;
 
   final public function __construct() {
 
@@ -59,6 +60,14 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getArgument($key, $default = null) {
     return idx($this->arguments, $key, $default);
+  }
+
+  final public function setEnableAsyncTests($enable_async_tests) {
+    $this->enableAsyncTests = $enable_async_tests;
+  }
+
+  final public function getEnableAsyncTests() {
+    return $this->enableAsyncTests;
   }
 
   abstract public function run();

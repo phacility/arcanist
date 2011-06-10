@@ -99,6 +99,13 @@ EOTEXT
     $this->engine->setPaths($paths);
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
+    // Enable possible async tests only for 'arc diff' not 'arc unit'
+    if ($this->getParentWorkflow()) {
+      $this->engine->setEnableAsyncTests(true);
+    } else {
+      $this->engine->setEnableAsyncTests(false);
+    }
+
     $results = $this->engine->run();
 
     $status_codes = array(
