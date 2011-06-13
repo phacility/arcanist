@@ -60,7 +60,7 @@ class PhutilLintEngine extends ArcanistLintEngine {
     $linters[] = $text_linter;
     foreach ($paths as $path) {
       $is_text = false;
-      if (preg_match('/\.(php|css|js)$/', $path)) {
+      if (preg_match('/\.(php|css|js|hpp|cpp|l|y)$/', $path)) {
         $is_text = true;
       }
       if ($is_text) {
