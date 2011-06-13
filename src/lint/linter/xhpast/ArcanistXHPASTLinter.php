@@ -172,24 +172,69 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       '>'   => true,
     );
 
+    static $logical = array(
+      '||'  => true,
+      '&&'  => true,
+    );
+
     foreach ($expressions as $expr) {
       $operator = $expr->getChildByIndex(1)->getConcreteString();
-      if (empty($operators[$operator])) {
-        continue;
+      if (!empty($operators[$operator])) {
+        $left = $expr->getChildByIndex(0)->getSemanticString();
+        $right = $expr->getChildByIndex(2)->getSemanticString();
+
+        if ($left == $right) {
+          $this->raiseLintAtNode(
+            $expr,
+            self::LINT_TAUTOLOGICAL_EXPRESSION,
+            'Both sides of this expression are identical, so it always '.
+            'evaluates to a constant.');
+        }
       }
 
-      $left = $expr->getChildByIndex(0)->getSemanticString();
-      $right = $expr->getChildByIndex(2)->getSemanticString();
+      if (!empty($logical[$operator])) {
+        $left = $expr->getChildByIndex(0)->getSemanticString();
+        $right = $expr->getChildByIndex(2)->getSemanticString();
 
-      if ($left == $right) {
-        $this->raiseLintAtNode(
-          $expr,
-          self::LINT_TAUTOLOGICAL_EXPRESSION,
-          'Both sides of this expression are identical, so it always '.
-          'evaluates to a constant.');
+        // NOTE: These will be null to indicate "could not evaluate".
+        $left = $this->evaluateStaticBoolean($left);
+        $right = $this->evaluateStaticBoolean($right);
+
+        if (($operator == '||' && ($left === true || $right === true)) ||
+            ($operator == '&&' && ($left === false || $right === false))) {
+          $this->raiseLintAtNode(
+            $expr,
+            self::LINT_TAUTOLOGICAL_EXPRESSION,
+            'The logical value of this expression is static. Did you forget '.
+            'to remove some debugging code?');
+        }
       }
     }
   }
+
+
+  /**
+   * Statically evaluate a boolean value from an XHP tree.
+   *
+   * TODO: Improve this and move it to XHPAST proper?
+   *
+   * @param  string The "semantic string" of a single value.
+   * @return mixed  ##true## or ##false## if the value could be evaluated
+   *                statically; ##null## if static evaluation was not possible.
+   */
+  private function evaluateStaticBoolean($string) {
+    switch (strtolower($string)) {
+      case '0':
+      case 'null':
+      case 'false':
+        return false;
+      case '1':
+      case 'true':
+        return true;
+    }
+    return null;
+  }
+
 
   protected function lintHashComments($root) {
     $tokens = $root->getTokens();
