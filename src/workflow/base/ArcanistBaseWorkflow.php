@@ -33,6 +33,7 @@ class ArcanistBaseWorkflow {
 
   private $arcanistConfiguration;
   private $parentWorkflow;
+  private $workingDirectory;
 
   private $changeCache = array();
 
@@ -89,6 +90,15 @@ class ArcanistBaseWorkflow {
 
   public function getArguments() {
     return array();
+  }
+
+  public function setWorkingDirectory($working_directory) {
+    $this->workingDirectory = $working_directory;
+    return $this;
+  }
+
+  public function getWorkingDirectory() {
+    return $this->workingDirectory;
   }
 
   private function setParentWorkflow($parent_workflow) {
@@ -625,6 +635,24 @@ class ArcanistBaseWorkflow {
       }
     }
     return $argv;
+  }
+
+  public static function getUserConfigurationFileLocation() {
+    return getenv('HOME').'/.arcrc';
+  }
+
+  public static function readUserConfigurationFile() {
+    $user_config = array();
+    $user_config_path = self::getUserConfigurationFileLocation();
+    if (Filesystem::pathExists($user_config_path)) {
+      $user_config_data = Filesystem::readFile($user_config_path);
+      $user_config = json_decode($user_config_data, true);
+      if (!is_array($user_config)) {
+        throw new ArcanistUsageException(
+          "Your '~/.arcrc' file is not a valid JSON file.");
+      }
+    }
+    return $user_config;
   }
 
 }

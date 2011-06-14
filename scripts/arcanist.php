@@ -61,6 +61,7 @@ if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
 }
 
 $args = array_values($args);
+$working_directory = $_SERVER['PWD'];
 
 try {
 
@@ -72,7 +73,7 @@ try {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
   }
 
-  $working_copy = ArcanistWorkingCopyIdentity::newFromPath($_SERVER['PWD']);
+  $working_copy = ArcanistWorkingCopyIdentity::newFromPath($working_directory);
   if ($load) {
     $libs = $load;
   } else {
@@ -118,16 +119,7 @@ try {
     }
   }
 
-  $user_config = array();
-  $user_config_path = getenv('HOME').'/.arcrc';
-  if (Filesystem::pathExists($user_config_path)) {
-    $user_config_data = Filesystem::readFile($user_config_path);
-    $user_config = json_decode($user_config_data, true);
-    if (!is_array($user_config)) {
-      throw new ArcanistUsageException(
-        "Your '~/.arcrc' file is not a valid JSON file.");
-    }
-  }
+  $user_config = ArcanistBaseWorkflow::readUserConfigurationFile();
 
   $config = $working_copy->getConfig('arcanist_configuration');
   if ($config) {
@@ -145,6 +137,7 @@ try {
   }
   $workflow->setArcanistConfiguration($config);
   $workflow->setCommand($command);
+  $workflow->setWorkingDirectory($working_directory);
   $workflow->parseArguments(array_slice($args, 1));
 
   $need_working_copy    = $workflow->requiresWorkingCopy();
