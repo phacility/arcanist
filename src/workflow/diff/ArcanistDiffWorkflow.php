@@ -915,11 +915,15 @@ EOTEXT
           "problems:\n\n".$desc."\n\nIf you only want to create a diff ".
           "(not a revision), use --preview to ignore commit messages.");
       } else if (count($problems) == 1) {
+        $user_guide = 'http://phabricator.com/docs/phabricator/'.
+                      'article/Arcanist_User_Guide.html';
         throw new ArcanistUsageException(
           "Commit message is not properly formatted:\n\n".$desc."\n\n".
           "You should use the standard git commit template to provide a ".
           "commit message. If you only want to create a diff (not a ".
-          "revision), use --preview to ignore commit messages.");
+          "revision), use --preview to ignore commit messages.\n\n".
+          "See this document for instructions on configuring the commit ".
+          "template:\n\n    {$user_guide}\n");
       }
     }
 
