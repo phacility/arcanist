@@ -755,10 +755,10 @@ EOTEXT
       $new_dict = $this->uploadFile($new_file, basename($path), 'new binary');
 
       if ($old_dict['guid']) {
-        $change->setMetadata('old:binary-guid', $old_dict['guid']);
+        $change->setMetadata('old:binary-phid', $old_dict['guid']);
       }
       if ($new_dict['guid']) {
-        $change->setMetadata('new:binary-guid', $new_dict['guid']);
+        $change->setMetadata('new:binary-phid', $new_dict['guid']);
       }
 
       $change->setMetadata('old:file:size',      strlen($old_file));
@@ -785,17 +785,11 @@ EOTEXT
       return $result;
     }
 
-    $future = new ExecFuture('file -ib -');
+    $future = new ExecFuture('file -b --mime -');
     $future->write($data);
     list($mime_type) = $future->resolvex();
 
     $mime_type = trim($mime_type);
-    if (strpos($mime_type, ',') !== false) {
-      // TODO: This is kind of silly, but 'file -ib' goes crazy on executables.
-      $mime_type = reset(explode(',', $mime_type));
-    }
-
-
     $result['mime'] = $mime_type;
 
     // TODO: Make this configurable.
