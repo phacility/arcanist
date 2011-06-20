@@ -197,26 +197,16 @@ try {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE') {
         $message =
-          "\n\n".
+          "\n".
           phutil_console_format(
             "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR").
           "\n\n".
-          "The server '{$conduit_uri}' rejected your request:".
+          phutil_console_format(
+            "    To do this, run: **arc install-certificate**").
           "\n\n".
-          $ex->getMessage().
-          "\n\n";
-        $hosts_with_cert = ifilter($hosts_config, 'cert');
-        if (!empty($hosts_with_cert)) {
-          if (count($hosts_with_cert) == 1) {
-            $message .=
-              "You currently have a certificate installed for one host:\n\n";
-          } else {
-            $message .=
-              "You currently have certificates installed for these hosts:\n\n";
-          }
-          $message .= '    '.implode("\n    ", array_keys($hosts_with_cert));
-          $message .= "\n";
-        }
+          "The server '{$conduit_uri}' rejected your request:".
+          "\n".
+          $ex->getMessage();
         throw new ArcanistUsageException($message);
       } else {
         throw $ex;
