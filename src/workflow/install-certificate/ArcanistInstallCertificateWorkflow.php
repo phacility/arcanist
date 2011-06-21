@@ -113,7 +113,7 @@ EOTEXT
     $json_encoder = new PhutilJSON();
     $json = $json_encoder->encodeFormatted($config);
 
-    echo "Writing ~/.arcconfig...\n";
+    echo "Writing ~/.arcrc...\n";
 
     $path = self::getUserConfigurationFileLocation();
     Filesystem::writeFile($path, $json);
