@@ -1,0 +1,58 @@
+<?php
+
+for ($ii = 0; $ii < $len; $ii++) {
+  foreach ($list as $ii => $jj) {
+    // Reuse of $ii.
+  }
+}
+
+for ($jj = 0; $jj < $len; $jj++) {
+  foreach ($list as $jj) {
+    // Reuse of $jj.
+  }
+}
+
+for ($ii = 0; $ii < $len; $ii++) {
+  foreach ($list as $ii => &$jj) {
+    // Reuse of $ii.
+  }
+}
+
+for ($jj = 0; $jj < $len; $jj++) {
+  foreach ($list as &$jj) {
+    // Reuse of $jj (by reference).
+  }
+}
+
+for ($ii = 0; $ii < $len; $ii++) {
+  for ($jj = 0; $jj < $len; $jj++) {
+    foreach ($list as $kk) {
+      // No reuse.
+    }
+  }
+}
+
+for ($ii = 0; $ii < $len; $ii++) {
+  for ($ii = 0; $ii < $len; $ii++) {
+    // Reuse of $ii, pure for loops.
+  }
+}
+
+for ($ii = 0; $ii < $len; $ii++) {
+  for ($jj = $ii; $jj < $jjlen; $jj++) {
+    // No reuse.
+  }
+}
+
+foreach ($list as $thing) {
+  for ($thing = 0; $thing < $len; $thing++) {
+    // Reuse of $thing, for within foreach.
+  }
+}
+~~~~~~~~~~
+error:4:11
+error:10:11
+error:16:11
+error:22:11
+error:36:7
+error:48:7

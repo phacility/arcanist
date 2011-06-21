@@ -47,6 +47,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_TAUTOLOGICAL_EXPRESSION  = 20;
   const LINT_PLUS_OPERATOR_ON_STRINGS = 21;
   const LINT_DUPLICATE_KEYS_IN_ARRAY  = 22;
+  const LINT_REUSED_ITERATORS         = 23;
 
 
   public function getLintNameMap() {
@@ -73,6 +74,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_TAUTOLOGICAL_EXPRESSION  => 'Tautological Expression',
       self::LINT_PLUS_OPERATOR_ON_STRINGS => 'Not String Concatenation',
       self::LINT_DUPLICATE_KEYS_IN_ARRAY  => 'Duplicate Keys in Array',
+      self::LINT_REUSED_ITERATORS         => 'Reuse of Iterator Variable',
     );
   }
 
@@ -152,6 +154,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintTautologicalExpressions($root);
     $this->lintPlusOperatorOnStrings($root);
     $this->lintDuplicateKeysInArray($root);
+    $this->lintReusedIterators($root);
   }
 
   private function lintTautologicalExpressions($root) {
@@ -248,6 +251,84 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
             'Use "//" single-line comments, not "#".',
             '#',
             '//');
+        }
+      }
+    }
+  }
+
+  /**
+   * Find cases where loops get nested inside each other but use the same
+   * iterator variable. For example:
+   *
+   *  COUNTEREXAMPLE
+   *  foreach ($list as $thing) {
+   *    foreach ($stuff as $thing) { // <-- Raises an error for reuse of $thing
+   *      // ...
+   *    }
+   *  }
+   *
+   */
+  private function lintReusedIterators($root) {
+    $used_vars = array();
+
+    $for_loops = $root->selectDescendantsOfType('n_FOR');
+    foreach ($for_loops as $for_loop) {
+      $var_map = array();
+
+      // Find all the variables that are assigned to in the for() expression.
+      $for_expr = $for_loop->getChildOfType(0, 'n_FOR_EXPRESSION');
+      $bin_exprs = $for_expr->selectDescendantsOfType('n_BINARY_EXPRESSION');
+      foreach ($bin_exprs as $bin_expr) {
+        if ($bin_expr->getChildByIndex(1)->getConcreteString() == '=') {
+          $var_map[$bin_expr->getChildByIndex(0)->getConcreteString()] = true;
+        }
+      }
+
+      $used_vars[$for_loop->getID()] = $var_map;
+    }
+
+    $foreach_loops = $root->selectDescendantsOfType('n_FOREACH');
+    foreach ($foreach_loops as $foreach_loop) {
+      $var_map = array();
+
+      $foreach_expr = $foreach_loop->getChildOftype(0, 'n_FOREACH_EXPRESSION');
+
+      // We might use one or two vars, i.e. "foreach ($x as $y => $z)" or
+      // "foreach ($x as $y)".
+      $possible_used_vars = array(
+        $foreach_expr->getChildByIndex(1),
+        $foreach_expr->getChildByIndex(2),
+      );
+      foreach ($possible_used_vars as $var) {
+        if ($var->getTypeName() == 'n_EMPTY') {
+          continue;
+        }
+        $name = $var->getConcreteString();
+        $name = trim($name, '&'); // Get rid of ref silliness.
+        $var_map[$name] = true;
+      }
+
+      $used_vars[$foreach_loop->getID()] = $var_map;
+    }
+
+    $all_loops = $for_loops->add($foreach_loops);
+    foreach ($all_loops as $loop) {
+      $child_for_loops = $loop->selectDescendantsOfType('n_FOR');
+      $child_foreach_loops = $loop->selectDescendantsOfType('n_FOREACH');
+      $child_loops = $child_for_loops->add($child_foreach_loops);
+
+      $outer_vars = $used_vars[$loop->getID()];
+      foreach ($child_loops as $inner_loop) {
+        $inner_vars = $used_vars[$inner_loop->getID()];
+        $shared = array_intersect_key($outer_vars, $inner_vars);
+        if ($shared) {
+          $shared_desc = implode(', ', array_keys($shared));
+          $this->raiseLintAtNode(
+            $inner_loop->getChildByIndex(0),
+            self::LINT_REUSED_ITERATORS,
+            "This loop reuses iterator variables ({$shared_desc}) from an ".
+            "outer loop. You might be clobbering the outer iterator. Change ".
+            "the inner loop to use a different iterator name.");
         }
       }
     }
