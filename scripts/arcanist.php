@@ -179,7 +179,7 @@ try {
 
     $hosts_config = idx($user_config, 'hosts', array());
     $host_config = idx($hosts_config, $conduit_uri, array());
-    $user_name = idx($host_config, 'user', getenv('USER'));
+    $user_name = idx($host_config, 'user');
     $certificate = idx($host_config, 'cert');
 
     $description = implode(' ', $argv);
