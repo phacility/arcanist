@@ -398,4 +398,71 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
+  /**
+   * Returns names of all the branches in the current repository.
+   *
+   * @return array where each element is a triple ('name', 'sha1', 'current')
+   */
+  public function getAllBranches() {
+    list($branch_info) = execx(
+      'cd %s && git branch --no-color', $this->getPath());
+    $lines = explode("\n", trim($branch_info));
+    $result = array();
+    foreach ($lines as $line) {
+      $match = array();
+      $branch = array();
+      preg_match('/^(\*?)\s*(\S+)/', $line, $match);
+      $branch['current'] = !empty($match[1]);
+      $branch['name'] = $match[2];
+      $result[] = $branch;
+    }
+    $all_names = ipull($result, 'name');
+    $names_list = implode(' ', $all_names);
+    // Calling 'git branch' first and then 'git rev-parse' is way faster than
+    // 'git branch -v' for some reason.
+    list($sha1s_string) = execx(
+      "cd %s && git rev-parse $names_list",
+      $this->path);
+    $sha1_map = array_combine($all_names, explode("\n", trim($sha1s_string)));
+    foreach ($result as &$branch) {
+      $branch['sha1'] = $sha1_map[$branch['name']];
+    }
+    return $result;
+  }
+
+  public function multigetRevForBranch($branch_names) {
+    $names_list = implode(' ', $branch_names);
+    list($sha1s_string) = execx(
+      "cd %s && git rev-parse $names_list",
+      $this->path);
+    return array_combine($branch_names, explode("\n", trim($sha1s_string)));
+  }
+
+  /**
+   * Returns git commit messages for the given revisions,
+   * in the specified format (see git show --help for options).
+   *
+   * @param array $revs a list of commit hashes
+   * @param string $format the format to show messages in
+   */
+  public function multigetCommitMessages($revs, $format) {
+    $delimiter = "%%x00";
+    $revs_list = implode(' ', $revs);
+    $show_command =
+      "git show -s --pretty=\"format:$format$delimiter\" $revs_list";
+    list($commits_string) = execx(
+      "cd %s && $show_command",
+      $this->getPath());
+    $commits_list = array_slice(explode("\0", $commits_string), 0, -1);
+    $commits_list = array_combine($revs, $commits_list);
+    return $commits_list;
+  }
+
+  public function getRepositoryOwner() {
+    list($owner) = execx(
+      'cd %s && git config --get user.name',
+      $this->getPath());
+    return trim($owner);
+  }
+
 }
