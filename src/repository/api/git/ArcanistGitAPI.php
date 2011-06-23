@@ -417,25 +417,17 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $result[] = $branch;
     }
     $all_names = ipull($result, 'name');
-    $names_list = implode(' ', $all_names);
     // Calling 'git branch' first and then 'git rev-parse' is way faster than
     // 'git branch -v' for some reason.
     list($sha1s_string) = execx(
-      "cd %s && git rev-parse $names_list",
-      $this->path);
+      "cd %s && git rev-parse %Ls",
+      $this->path,
+      $all_names);
     $sha1_map = array_combine($all_names, explode("\n", trim($sha1s_string)));
     foreach ($result as &$branch) {
       $branch['sha1'] = $sha1_map[$branch['name']];
     }
     return $result;
-  }
-
-  public function multigetRevForBranch($branch_names) {
-    $names_list = implode(' ', $branch_names);
-    list($sha1s_string) = execx(
-      "cd %s && git rev-parse $names_list",
-      $this->path);
-    return array_combine($branch_names, explode("\n", trim($sha1s_string)));
   }
 
   /**
