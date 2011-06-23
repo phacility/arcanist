@@ -173,6 +173,15 @@ try {
       throw new ArcanistUsageException(
         "No Conduit URI is specified in the .arcconfig file for this project. ".
         "Specify the Conduit URI for the host Differential is running on.");
+    } else {
+      // Set the URI path to '/api/'. TODO: Originally, I contemplated letting
+      // you deploy Phabricator somewhere other than the domain root, but ended
+      // up never pursuing that. We should get rid of all "/api/" silliness
+      // in things users are expected to configure. This is already happening
+      // to some degree, e.g. "arc install-certificate" does it for you.
+      $conduit_uri = new PhutilURI($conduit_uri);
+      $conduit_uri->setPath('/api/');
+      $conduit_uri = (string)$conduit_uri;
     }
     $conduit = new ConduitClient($conduit_uri);
     $workflow->setConduit($conduit);
