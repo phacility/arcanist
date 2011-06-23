@@ -184,6 +184,10 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'json' => array(
+        'help' =>
+          'Emit machine-readable JSON. EXPERIMENTAL! Probably does not work!',
+      ),
       '*' => 'paths',
     );
   }
@@ -193,6 +197,13 @@ EOTEXT
 
     if ($this->getArgument('less-context')) {
       $repository_api->setDiffLinesOfContext(3);
+    }
+
+    $output_json = $this->getArgument('json');
+    if ($output_json) {
+      // TODO: We should move this to a higher-level and put an indirection
+      // layer between echoing stuff and stdout.
+      ob_start();
     }
 
     $conduit = $this->getConduit();
@@ -343,10 +354,20 @@ EOTEXT
     }
 
     if ($this->shouldOnlyCreateDiff()) {
-      echo phutil_console_format(
-        "Created a new Differential diff:\n".
-        "        **Diff URI:** __%s__\n\n",
-        $diff_info['uri']);
+      if (!$output_json) {
+        echo phutil_console_format(
+          "Created a new Differential diff:\n".
+          "        **Diff URI:** __%s__\n\n",
+          $diff_info['uri']);
+      } else {
+        $human = ob_get_clean();
+        echo json_encode(array(
+          'diffURI' => $diff_info['uri'],
+          'diffID'  => $diff_info['diffid'],
+          'human'   => $human,
+        ))."\n";
+        ob_start();
+      }
     } else {
       $message = $commit_message;
 
@@ -498,6 +519,10 @@ EOTEXT
 
     $this->diffID = $diff_info['diffid'];
 
+    if ($output_json) {
+      ob_get_clean();
+    }
+
     return 0;
   }
 
@@ -595,13 +620,15 @@ EOTEXT
 
       if ($bases) {
         $rev = reset($bases);
+
+        $revlist = array();
+        foreach ($bases as $path => $baserev) {
+          $revlist[] = "    Revision {$baserev}, {$path}";
+        }
+        $revlist = implode("\n", $revlist);
+
         foreach ($bases as $path => $baserev) {
           if ($baserev !== $rev) {
-            $revlist = array();
-            foreach ($bases as $path => $baserev) {
-              $revlist[] = "    Revision {$baserev}, {$path}";
-            }
-            $revlist = implode("\n", $revlist);
             throw new ArcanistUsageException(
               "Base revisions of changed paths are mismatched. Update all ".
               "paths to the same base revision before creating a diff: ".
