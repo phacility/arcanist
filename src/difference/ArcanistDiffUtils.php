@@ -55,6 +55,16 @@ final class ArcanistDiffUtils {
       );
     }
 
+    // This algorithm is byte-oriented and thus not safe for UTF-8, so just
+    // mark all the text as changed if either string has multibyte characters
+    // in it. TODO: Fix this so that this algorithm is UTF-8 aware.
+    if (preg_match('/[\x80-\xFF]/', $o.$n)) {
+      return array(
+        array(array(1, strlen($o))),
+        array(array(1, strlen($n))),
+      );
+    }
+
     $result = self::buildLevenshteinDifferenceString($o, $n);
 
     do {
