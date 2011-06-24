@@ -57,6 +57,9 @@ EOTEXT
         'help' =>
           "Include committed and abandoned revisions",
       ),
+      'by-status' => array(
+        'help' => 'Group output by revision status.',
+      ),
     );
   }
 
@@ -78,6 +81,7 @@ EOTEXT
         $branch->setStatus('Not Yours');
         continue;
       }
+
       $rev_id = $branch->getRevisionId();
       if ($rev_id) {
         $status = idx($revision_status, $rev_id, 'Unknown Status');
@@ -137,16 +141,35 @@ EOTEXT
       $longest_name = max(strlen($branch->getFormattedName()), $longest_name);
       $longest_status = max(strlen($branch->getStatus()), $longest_status);
     }
-    foreach ($this->branches as $branch) {
-      $name_markdown = $branch->getFormattedName();
-      $status_markdown = $branch->getFormattedStatus();
-      $subject = $branch->getCommitSubject();
-      $subject_pad = $longest_status - strlen($branch->getStatus()) + 4;
-      $name_markdown =
-        str_pad($name_markdown, $longest_name + 4, ' ');
-      $subject =
-        str_pad($subject, strlen($subject) + $subject_pad, ' ', STR_PAD_LEFT);
-      echo "$name_markdown $status_markdown $subject\n";
+
+    if ($this->getArgument('by-status')) {
+      $by_status = mgroup($this->branches, 'getStatus');
+      foreach (array('Accepted', 'Needs Revision',
+                     'Needs Review', 'No Revision') as $status) {
+        $branches = idx($by_status, $status);
+        if (!$branches) {
+          continue;
+        }
+        echo reset($branches)->getFormattedStatus()."\n";
+        foreach ($branches as $branch) {
+          $name_markdown = $branch->getFormattedName();
+          $subject = $branch->getCommitSubject();
+          $name_markdown = str_pad($name_markdown, $longest_name + 4, ' ');
+          echo "  $name_markdown $subject\n";
+        }
+      }
+    } else {
+      foreach ($this->branches as $branch) {
+        $name_markdown = $branch->getFormattedName();
+        $status_markdown = $branch->getFormattedStatus();
+        $subject = $branch->getCommitSubject();
+        $subject_pad = $longest_status - strlen($branch->getStatus()) + 4;
+        $name_markdown =
+          str_pad($name_markdown, $longest_name + 4, ' ');
+        $subject =
+          str_pad($subject, strlen($subject) + $subject_pad, ' ', STR_PAD_LEFT);
+        echo "$name_markdown $status_markdown $subject\n";
+      }
     }
   }
 }
