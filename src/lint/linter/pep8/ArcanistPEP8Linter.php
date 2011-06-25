@@ -41,7 +41,9 @@ class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function getPEP8Options() {
-    return null;
+    // W293 (blank line contains whitespace) is redundant when used
+    // alongside TXT6, causing pain to python programmers.
+    return '--ignore=W293';
   }
 
   public function lintPath($path) {
