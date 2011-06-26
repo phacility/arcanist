@@ -645,6 +645,20 @@ class ArcanistBaseWorkflow {
     $user_config = array();
     $user_config_path = self::getUserConfigurationFileLocation();
     if (Filesystem::pathExists($user_config_path)) {
+      $mode = fileperms($user_config_path);
+      if (!$mode) {
+        throw new Exception("Unable to get perms of '{$user_config_path}'!");
+      }
+      if ($mode & 0177) {
+        // Mode should allow only owner access.
+        $prompt = "File permissions on your ~/.arcrc are too open. ".
+                  "Fix them by chmod'ing to 600?";
+        if (!phutil_console_confirm($prompt, $default_no = false)) {
+          throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
+        }
+        execx('chmod 600 %s', $user_config_path);
+      }
+
       $user_config_data = Filesystem::readFile($user_config_path);
       $user_config = json_decode($user_config_data, true);
       if (!is_array($user_config)) {
