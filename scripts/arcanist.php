@@ -191,6 +191,16 @@ try {
     $user_name = idx($host_config, 'user');
     $certificate = idx($host_config, 'cert');
 
+    if (!$user_name || !$certificate) {
+      throw new ArcanistUsageException(
+        phutil_console_format(
+          "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR\n\n".
+          "You are trying to connect to '{$conduit_uri}' but do not have ".
+          "a certificate installed for this host. Run:\n\n".
+          "      $ **arc install-certificate**\n\n".
+          "...to install one."));
+    }
+
     $description = implode(' ', $argv);
 
     try {
@@ -204,7 +214,8 @@ try {
           'certificate'       => $certificate,
         ));
     } catch (ConduitClientException $ex) {
-      if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE') {
+      if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
+          $ex->getErrorCode() == 'ERR-INVALID-USER') {
         $message =
           "\n".
           phutil_console_format(
