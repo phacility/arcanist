@@ -259,23 +259,32 @@ EOTEXT
     }
 
     $unresolved = array();
-    $result_code = self::RESULT_OKAY;
+    $has_warnings = false;
+    $has_errors = false;
+
     foreach ($results as $result) {
       foreach ($result->getMessages() as $message) {
         if (!$message->isPatchApplied()) {
           if ($message->isError()) {
-            $result_code = self::RESULT_ERRORS;
-            break;
+            $has_errors = true;
           } else if ($message->isWarning()) {
-            if ($result_code != self::RESULT_ERRORS) {
-              $result_code = self::RESULT_WARNINGS;
-            }
-            $unresolved[] = $message;
+            $has_warnings = true;
           }
+          $unresolved[] = $message;
         }
       }
     }
     $this->unresolvedMessages = $unresolved;
+
+    // Take the most severe lint message severity and use that
+    // as the result code.
+    if ($has_errors) {
+      $result_code = self::RESULT_ERRORS;
+    } else if ($has_warnings) {
+      $result_code = self::RESULT_WARNINGS;
+    } else {
+      $result_code = self::RESULT_OKAY;
+    }
 
     if (!$this->getParentWorkflow()) {
       if ($result_code == self::RESULT_OKAY) {
