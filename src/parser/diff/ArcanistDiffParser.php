@@ -151,6 +151,10 @@ class ArcanistDiffParser {
       switch ($type) {
         case ArcanistDiffChangeType::TYPE_MULTICOPY:
         case ArcanistDiffChangeType::TYPE_COPY_AWAY:
+        // "Add" is possible if you do some bizarre tricks with svn:ignore and
+        // "svn copy"'ing URLs straight from the repository; you can end up with
+        // a file that is a copy of itself. See T271.
+        case ArcanistDiffChangeType::TYPE_ADD:
           break;
         case ArcanistDiffChangeType::TYPE_DELETE:
           $origin->setType(ArcanistDiffChangeType::TYPE_MOVE_AWAY);
@@ -171,6 +175,7 @@ class ArcanistDiffParser {
         case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
           $change->setType(ArcanistDiffChangeType::TYPE_MOVE_HERE);
           break;
+        case ArcanistDiffChangeType::TYPE_ADD:
         case ArcanistDiffChangeType::TYPE_COPY_AWAY:
           $change->setType(ArcanistDiffChangeType::TYPE_COPY_HERE);
           break;
