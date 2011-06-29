@@ -92,7 +92,7 @@ class BranchInfo {
     return $this->status;
   }
 
-  public function getRevisionId() {
+  public function getRevisionID() {
     return $this->revisionID;
   }
 
@@ -102,6 +102,14 @@ class BranchInfo {
 
   public function getCommitSubject() {
     return $this->commitSubject;
+  }
+
+  public function getCommitDisplayName() {
+    if ($this->revisionID) {
+      return 'D'.$this->revisionID.': '.$this->commitSubject;
+    } else {
+      return $this->commitSubject;
+    }
   }
 
   public function getCommitAuthor() {

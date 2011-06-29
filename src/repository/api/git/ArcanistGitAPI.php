@@ -410,11 +410,17 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = array();
     foreach ($lines as $line) {
       $match = array();
-      $branch = array();
-      preg_match('/^(\*?)\s*(\S+)/', $line, $match);
-      $branch['current'] = !empty($match[1]);
-      $branch['name'] = $match[2];
-      $result[] = $branch;
+      preg_match('/^(\*?)\s*(.*)$/', $line, $match);
+      $name = $match[2];
+      if ($name == '(no branch)') {
+        // Just ignore this, we could theoretically try to figure out the ref
+        // and treat it like a real branch but that's sort of ridiculous.
+        continue;
+      }
+      $result[] = array(
+        'current' => !empty($match[1]),
+        'name'    => $name,
+      );
     }
     $all_names = ipull($result, 'name');
     // Calling 'git branch' first and then 'git rev-parse' is way faster than
