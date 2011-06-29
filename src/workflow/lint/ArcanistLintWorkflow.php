@@ -74,7 +74,8 @@ EOTEXT
         'param' => 'format',
         'help' =>
           "With 'summary', show lint warnings in a more compact format. ".
-          "With 'json', show lint warnings in machine-readable JSON format."
+          "With 'json', show lint warnings in machine-readable JSON format. ".
+          "With 'compiler', show lint warnings in suitable for your editor."
       ),
       'advice' => array(
         'help' =>
@@ -195,6 +196,11 @@ EOTEXT
         break;
       case 'summary':
         $renderer = new ArcanistLintSummaryRenderer();
+        break;
+      case 'compiler':
+        $renderer = new ArcanistLintLikeCompilerRenderer();
+        $prompt_patches = false;
+        $apply_patches = $this->getArgument('apply-patches');
         break;
       default:
         $renderer = new ArcanistLintRenderer();
