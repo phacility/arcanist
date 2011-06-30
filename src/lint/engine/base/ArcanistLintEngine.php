@@ -17,7 +17,43 @@
  */
 
 /**
- * Manages lint execution.
+ * Manages lint execution. When you run 'arc lint' or 'arc diff', Arcanist
+ * checks your .arcconfig to see if you have specified a lint engine in the
+ * key "lint_engine". The engine must extend this class. For example:
+ *
+ *  lang=js
+ *  {
+ *    // ...
+ *    "lint_engine" : "ExampleLintEngine",
+ *    // ...
+ *  }
+ *
+ * The lint engine is given a list of paths (generally, the paths that you
+ * modified in your change) and determines which linters to run on them. The
+ * linters themselves are responsible for actually analyzing file text and
+ * finding warnings and errors. For example, if the modified paths include some
+ * JS files and some Python files, you might want to run JSLint on the JS files
+ * and PyLint on the Python files.
+ *
+ * You can also run multiple linters on a single file. For instance, you might
+ * run one linter on all text files to make sure they don't have trailing
+ * whitespace, or enforce tab vs space rules, or make sure there are enough
+ * curse words in them.
+ *
+ * Because lint engines are pretty custom to the rules of a project, you will
+ * generally need to build your own. Fortunately, it's pretty easy (and you
+ * can use the prebuilt //linters//, you just need to write a little glue code
+ * to tell Arcanist which linters to run). For a simple example of how to build
+ * a lint engine, see @{class:ExampleLintEngine}.
+ *
+ * You can test an engine like this:
+ *
+ *   arc lint --engine ExampleLintEngine --lintall some_file.py
+ *
+ * ...which will show you all the lint issues raised in the file.
+ *
+ * See @{article@phabricator:Arcanist User Guide: Customizing Lint, Unit Tests
+ * and Workflows} for more information about configuring lint engines.
  *
  * @group lint
  */

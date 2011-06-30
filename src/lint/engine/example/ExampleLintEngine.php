@@ -1,0 +1,72 @@
+<?php
+
+/*
+ * Copyright 2011 Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * This a simple example lint engine which just applies the
+ * @{class:ArcanistPyLintLinter} to any Python files. For a more complex
+ * example, see @{class:PhutilLintEngine}.
+ *
+ * @group linter
+ */
+class ExampleLintEngine extends ArcanistLintEngine {
+
+  public function buildLinters() {
+
+    // This is a list of paths which the user wants to lint. Either they
+    // provided them explicitly, or arc figured them out from a commit or set
+    // of changes. The engine needs to return a list of ArcanistLinter objects,
+    // representing the linters which should be run on these files.
+    $paths = $this->getPaths();
+
+    // The ArcanistPyLintLinter runs "PyLint" (an open source python linter) on
+    // files you give it. There are several linters available by default like
+    // this one which you can use out of the box, or you can write your own.
+    // Linters are responsible for actually analyzing the contents of a file
+    // and raising warnings and errors.
+    $pylint_linter = new ArcanistPyLintLinter();
+
+    foreach ($paths as $path) {
+      if (!preg_match('/\.py$/', $path)) {
+        // This isn't a python file, so don't try to apply the PyLint linter
+        // to it.
+        continue;
+      }
+
+      if (preg_match('@^externals/@', $path)) {
+        // This is just an example of how to exclude a path so it doesn't get
+        // linted. If you put third-party code in an externals/ directory, you
+        // can just have your lint engine ignore it.
+        continue;
+      }
+
+      // Add the path, to tell the linter it should examine the source code
+      // to try to find problems.
+      $pylint_linter->addPath($path);
+    }
+
+    // We only built one linter, but you can build more than one (e.g., a
+    // Javascript linter for JS), and return a list of linters to execute. You
+    // can also add a path to more than one linter (for example, if you want
+    // to run a Python linter and a more general text linter on every .py file).
+
+    return array(
+      $pylint_linter,
+    );
+  }
+
+}
