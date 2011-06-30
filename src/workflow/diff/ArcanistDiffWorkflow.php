@@ -886,7 +886,7 @@ EOTEXT
 
       // TODO: Move this all behind Conduit.
       if (!$message->getRevisionID()) {
-        if ($message->getFieldValue('reviewedByGUIDs')) {
+        if ($message->getFieldValue('reviewedByPHIDs')) {
           $problems[$key][] = new ArcanistUsageException(
             "When creating or updating a revision, use the 'Reviewers:' ".
             "field to specify reviewers, not 'Reviewed By:'. After the ".
@@ -949,12 +949,15 @@ EOTEXT
     }
 
     if ($blessed) {
-      if (!$blessed->getFieldValue('reviewerGUIDs') &&
-          !$blessed->getFieldValue('reviewerPHIDs')) {
+      $reviewers = $blessed->getFieldValue('reviewerPHIDs');
+      if (!$reviewers) {
         $message = "You have not specified any reviewers. Continue anyway?";
         if (!phutil_console_confirm($message)) {
           throw new ArcanistUsageException('Specify reviewers and retry.');
         }
+      } else if (in_array($this->getUserGUID(), $reviewers)) {
+        throw new ArcanistUsageException(
+          "You can not be a reviewer for your own revision.");
       }
     }
 
