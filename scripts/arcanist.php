@@ -81,15 +81,47 @@ try {
   }
   if ($libs) {
     foreach ($libs as $name => $location) {
-      if ($config_trace_mode) {
-        echo "Loading phutil library '{$name}' from '{$location}'...\n";
-      }
+
+      // Try to resolve the library location. We look in several places, in
+      // order:
+      //
+      //  1. Inside the working copy. This is for phutil libraries within the
+      //     project. For instance "library/src" will resolve to
+      //     "./library/src" if it exists.
+      //  2. In the same directory as the working copy. This allows you to
+      //     check out a library alongside a working copy and reference it.
+      //     If we haven't resolved yet, "library/src" will try to resolve to
+      //     "../library/src" if it exists.
+      //  3. Using normal libphutil resolution rules. Generally, this means
+      //     that it checks for libraries next to libphutil, then libraries
+      //     in the PHP include_path.
+
+      $resolved = false;
+
+      // Check inside the working copy.
       $resolved_location = Filesystem::resolvePath(
         $location,
         $working_copy->getProjectRoot());
       if (Filesystem::pathExists($resolved_location)) {
         $location = $resolved_location;
+        $resolved = true;
       }
+
+      // If we didn't find anything, check alongside the working copy.
+      if (!$resolved) {
+        $resolved_location = Filesystem::resolvePath(
+          $location,
+          dirname($working_copy->getProjectRoot()));
+        if (Filesystem::pathExists($resolved_location)) {
+          $location = $resolved_location;
+          $resolved = true;
+        }
+      }
+
+      if ($config_trace_mode) {
+        echo "Loading phutil library '{$name}' from '{$location}'...\n";
+      }
+
       try {
         phutil_load_library($location);
       } catch (PhutilBootloaderException $ex) {
