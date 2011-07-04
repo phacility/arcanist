@@ -28,6 +28,7 @@
 abstract class ArcanistPhutilTestCase {
 
   private $runningTest;
+  private $testStartTime;
   private $results = array();
 
 
@@ -162,6 +163,7 @@ abstract class ArcanistPhutilTestCase {
     $result = new ArcanistUnitTestResult();
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
+    $result->setDuration(microtime(true) - $this->testStartTime);
     $result->setUserData($reason);
     $this->results[] = $result;
   }
@@ -179,6 +181,7 @@ abstract class ArcanistPhutilTestCase {
     $result = new ArcanistUnitTestResult();
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
+    $result->setDuration(microtime(true) - $this->testStartTime);
     $result->setUserData($reason);
     $this->results[] = $result;
   }
@@ -206,6 +209,7 @@ abstract class ArcanistPhutilTestCase {
       $name = $method->getName();
       if (preg_match('/^test/', $name)) {
         $this->runningTest = $name;
+        $this->testStartTime = microtime(true);
 
         try {
           $this->willRunOneTest($name);

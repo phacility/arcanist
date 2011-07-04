@@ -33,6 +33,7 @@ class ArcanistUnitTestResult {
   private $namespace;
   private $name;
   private $result;
+  private $duration;
   private $userData;
 
   public function setName($name) {
@@ -51,6 +52,15 @@ class ArcanistUnitTestResult {
 
   public function getResult() {
     return $this->result;
+  }
+
+  public function setDuration($duration) {
+    $this->duration = $duration;
+    return $this;
+  }
+
+  public function getDuration() {
+    return $this->duration;
   }
 
   public function setUserData($user_data) {
