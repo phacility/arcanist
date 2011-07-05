@@ -183,17 +183,47 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       $options = $this->getDiffBaseOptions();
 
+      // -- parallelize these slow cpu bound git calls.
+
       // Find committed changes.
-      list($stdout) = execx(
+      $committed_future = new ExecFuture(
         "(cd %s; git diff {$options} --raw %s --)",
         $this->getPath(),
         $this->getRelativeCommit());
-      $files = $this->parseGitStatus($stdout);
 
       // Find uncommitted changes.
-      list($stdout) = execx(
+      $uncommitted_future = new ExecFuture(
         "(cd %s; git diff {$options} --raw HEAD --)",
         $this->getPath());
+
+      // Untracked files
+      $untracked_future = new ExecFuture(
+        '(cd %s; git ls-files --others --exclude-standard)',
+        $this->getPath());
+
+      // TODO: This doesn't list unstaged adds. It's not clear how to get that
+      // list other than "git status --porcelain" and then parsing it. :/
+
+      // Unstaged changes
+      $unstaged_future = new ExecFuture(
+        '(cd %s; git ls-files -m)',
+        $this->getPath());
+
+      $futures = array(
+        $committed_future,
+        $uncommitted_future,
+        $untracked_future,
+        $unstaged_future
+      );
+      Futures($futures)->resolveAll();
+
+
+      // -- read back and process the results
+
+      list($stdout, $stderr) = $committed_future->resolvex();
+      $files = $this->parseGitStatus($stdout);
+
+      list($stdout, $stderr) = $uncommitted_future->resolvex();
       $uncommitted_files = $this->parseGitStatus($stdout);
       foreach ($uncommitted_files as $path => $mask) {
         $mask |= self::FLAG_UNCOMMITTED;
@@ -203,10 +233,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $files[$path] |= $mask;
       }
 
-      // Find untracked files.
-      list($stdout) = execx(
-        '(cd %s; git ls-files --others --exclude-standard)',
-        $this->getPath());
+      list($stdout, $stderr) = $untracked_future->resolvex();
       $stdout = rtrim($stdout, "\n");
       if (strlen($stdout)) {
         $stdout = explode("\n", $stdout);
@@ -215,13 +242,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
         }
       }
 
-      // TODO: This doesn't list unstaged adds. It's not clear how to get that
-      // list other than "git status --porcelain" and then parsing it. :/
-
-      // Find unstaged changes.
-      list($stdout) = execx(
-        '(cd %s; git ls-files -m)',
-        $this->getPath());
+      list($stdout, $stderr) = $unstaged_future->resolvex();
       $stdout = rtrim($stdout, "\n");
       if (strlen($stdout)) {
         $stdout = explode("\n", $stdout);
