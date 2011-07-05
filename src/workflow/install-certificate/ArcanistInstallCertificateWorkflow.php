@@ -101,6 +101,7 @@ EOTEXT
       'conduit.getcertificate',
       array(
         'token' => $token,
+        'host'  => $uri,
       ));
 
     $user = $info['username'];

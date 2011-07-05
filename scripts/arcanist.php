@@ -244,6 +244,7 @@ try {
           'clientDescription' => php_uname('n').':'.$description,
           'user'              => $user_name,
           'certificate'       => $certificate,
+          'host'              => $conduit_uri,
         ));
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
