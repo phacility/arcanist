@@ -97,11 +97,11 @@ class ArcanistBundle {
 
     $blobs = array();
     foreach ($change_list as $change) {
-      if (!empty($change['metadata']['old:binary-guid'])) {
-        $blobs[$change['metadata']['old:binary-guid']] = null;
+      if (!empty($change['metadata']['old:binary-phid'])) {
+        $blobs[$change['metadata']['old:binary-phid']] = null;
       }
-      if (!empty($change['metadata']['new:binary-guid'])) {
-        $blobs[$change['metadata']['new:binary-guid']] = null;
+      if (!empty($change['metadata']['new:binary-phid'])) {
+        $blobs[$change['metadata']['new:binary-phid']] = null;
       }
     }
     foreach ($blobs as $phid => $null) {
@@ -388,8 +388,8 @@ class ArcanistBundle {
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change) {
-    $old_phid = $change->getMetadata('old:binary-guid', null);
-    $new_phid = $change->getMetadata('new:binary-guid', null);
+    $old_phid = $change->getMetadata('old:binary-phid', null);
+    $new_phid = $change->getMetadata('new:binary-phid', null);
 
     $type = $change->getType();
     if ($type == ArcanistDiffChangeType::TYPE_ADD) {
