@@ -103,7 +103,8 @@ class ArcanistConfiguration {
     // This is a hook.
   }
 
-  public function didRunWorkflow($command, ArcanistBaseWorkflow $workflow) {
+  public function didRunWorkflow($command, ArcanistBaseWorkflow $workflow,
+                                 $err) {
     // This is a hook.
   }
 

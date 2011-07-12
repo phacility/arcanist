@@ -303,9 +303,7 @@ try {
   $config->willRunWorkflow($command, $workflow);
   $workflow->willRunWorkflow();
   $err = $workflow->run();
-  if ($err == 0) {
-    $config->didRunWorkflow($command, $workflow);
-  }
+  $config->didRunWorkflow($command, $workflow, $err);
   exit($err);
 
 } catch (ArcanistUsageException $ex) {
