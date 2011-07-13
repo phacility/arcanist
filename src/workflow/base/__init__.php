@@ -15,9 +15,11 @@ phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'parser/diff/change');
 phutil_require_module('arcanist', 'repository/api/git');
 
+phutil_require_module('phutil', 'conduit/client');
 phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'future/exec');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistBaseWorkflow.php');

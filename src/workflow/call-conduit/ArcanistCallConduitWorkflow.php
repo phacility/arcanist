@@ -57,6 +57,10 @@ EOTEXT
     return true;
   }
 
+  public function requiresAuthentication() {
+    return true;
+  }
+
   public function run() {
     $method = $this->getArgument('method', array());
     if (count($method) !== 1) {

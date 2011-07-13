@@ -19,11 +19,34 @@
 /**
  * Implements a runnable command, like "arc diff" or "arc help".
  *
+ * = Managing Conduit =
+ *
+ * Workflows have the builtin ability to open a Conduit connection to a
+ * Phabricator installation, so methods can be invoked over the API. Workflows
+ * may either not need this (e.g., "help"), or may need a Conduit but not
+ * authentication (e.g., calling only public APIs), or may need a Conduit and
+ * authentication (e.g., "arc diff").
+ *
+ * To specify that you need an //unauthenticated// conduit, override
+ * @{method:requiresConduit} to return ##true##. To specify that you need an
+ * //authenticated// conduit, override @{method:requiresAuthentication} to
+ * return ##true##. You can also manually invoke @{method:establishConduit}
+ * and/or @{method:authenticateConduit} later in a workflow to upgrade it.
+ * Once a conduit is open, you can access the client by calling
+ * @{method:getConduit}, which allows you to invoke methods. You can get
+ * verified information about the user identity by calling @{method:getUserGUID}
+ * or @{method:getUserName} after authentication occurs.
+ *
+ * @task  conduit   Conduit
  * @group workflow
  */
 class ArcanistBaseWorkflow {
 
   private $conduit;
+  private $conduitURI;
+  private $conduitCredentials;
+  private $conduitAuthenticated;
+
   private $userGUID;
   private $userName;
   private $repositoryAPI;
@@ -40,6 +63,270 @@ class ArcanistBaseWorkflow {
   public function __construct() {
 
   }
+
+
+/* -(  Conduit  )------------------------------------------------------------ */
+
+
+  /**
+   * Set the URI which the workflow will open a conduit connection to when
+   * @{method:establishConduit} is called. Arcanist makes an effort to set
+   * this by default for all workflows (by reading ##.arcconfig## and/or the
+   * value of ##--conduit-uri##) even if they don't need Conduit, so a workflow
+   * can generally upgrade into a conduit workflow later by just calling
+   * @{method:establishConduit}.
+   *
+   * You generally should not need to call this method unless you are
+   * specifically overriding the default URI. It is normally sufficient to
+   * just invoke @{method:establishConduit}.
+   *
+   * NOTE: You can not call this after a conduit has been established.
+   *
+   * @param string  The URI to open a conduit to when @{method:establishConduit}
+   *                is called.
+   * @return this
+   * @task conduit
+   */
+  final public function setConduitURI($conduit_uri) {
+    if ($this->conduit) {
+      throw new Exception(
+        "You can not change the Conduit URI after a conduit is already open.");
+    }
+    $this->conduitURI = $conduit_uri;
+    return $this;
+  }
+
+
+  /**
+   * Open a conduit channel to the server which was previously configured by
+   * calling @{method:setConduitURI}. Arcanist will do this automatically if
+   * the workflow returns ##true## from @{method:requiresConduit}, or you can
+   * later upgrade a workflow and build a conduit by invoking it manually.
+   *
+   * You must establish a conduit before you can make conduit calls.
+   *
+   * NOTE: You must call @{method:setConduitURI} before you can call this
+   * method.
+   *
+   * @return this
+   * @task conduit
+   */
+  final public function establishConduit() {
+    if ($this->conduit) {
+      return $this;
+    }
+
+    if (!$this->conduitURI) {
+      throw new Exception(
+        "You must specify a Conduit URI with setConduitURI() before you can ".
+        "establish a conduit.");
+    }
+
+    $this->conduit = new ConduitClient($this->conduitURI);
+
+    return $this;
+  }
+
+
+  /**
+   * Set credentials which will be used to authenticate against Conduit. These
+   * credentials can then be used to establish an authenticated connection to
+   * conduit by calling @{method:authenticateConduit}. Arcanist sets some
+   * defaults for all workflows regardless of whether or not they return true
+   * from @{method:requireAuthentication}, based on the ##~/.arcrc## and
+   * ##.arcconf## files if they are present. Thus, you can generally upgrade a
+   * workflow which does not require authentication into an authenticated
+   * workflow by later invoking @{method:requireAuthentication}. You should not
+   * normally need to call this method unless you are specifically overriding
+   * the defaults.
+   *
+   * NOTE: You can not call this method after calling
+   * @{method:authenticateConduit}.
+   *
+   * @param dict  A credential dictionary, see @{method:authenticateConduit}.
+   * @return this
+   * @task conduit
+   */
+  final public function setConduitCredentials(array $credentials) {
+    if ($this->conduitAuthenticated) {
+      throw new Exception(
+        "You may not set new credentials after authenticating conduit.");
+    }
+
+    $this->conduitCredentials = $credentials;
+    return $this;
+  }
+
+
+  /**
+   * Open and authenticate a conduit connection to a Phabricator server using
+   * provided credentials. Normally, Arcanist does this for you automatically
+   * when you return true from @{method:requiresAuthentication}, but you can
+   * also upgrade an existing workflow to one with an authenticated conduit
+   * by invoking this method manually.
+   *
+   * You must authenticate the conduit before you can make authenticated conduit
+   * calls (almost all calls require authentication).
+   *
+   * This method uses credentials provided via @{method:setConduitCredentials}
+   * to authenticate to the server:
+   *
+   *    - ##user## (required) The username to authenticate with.
+   *    - ##certificate## (required) The Conduit certificate to use.
+   *    - ##description## (optional) Description of the invoking command.
+   *
+   * Successful authentication allows you to call @{method:getUserGUID} and
+   * @{method:getUserName}, as well as use the client you access with
+   * @{method:getConduit} to make authenticated calls.
+   *
+   * NOTE: You must call @{method:setConduitURI} and
+   * @{method:setConduitCredentials} before you invoke this method.
+   *
+   * @return this
+   * @task conduit
+   */
+  final public function authenticateConduit() {
+    if ($this->conduitAuthenticated) {
+      return $this;
+    }
+
+    $this->establishConduit();
+
+    $credentials = $this->conduitCredentials;
+    if (!$credentials) {
+      throw new Exception(
+        "Set conduit credentials with setConduitCredentials() before ".
+        "authenticating conduit!");
+    }
+
+    if (empty($credentials['user']) || empty($credentials['certificate'])) {
+      throw new Exception(
+        "Credentials must include a 'user' and a 'certificate'.");
+    }
+
+    $description = idx($credentials, 'description', '');
+    $user        = $credentials['user'];
+    $certificate = $credentials['certificate'];
+
+    try {
+      $connection = $this->getConduit()->callMethodSynchronous(
+        'conduit.connect',
+        array(
+          'client'              => 'arc',
+          'clientVersion'       => 2,
+          'clientDescription'   => php_uname('n').':'.$description,
+          'user'                => $user,
+          'certificate'         => $certificate,
+          'host'                => $this->conduitURI,
+        ));
+    } catch (ConduitClientException $ex) {
+      if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
+          $ex->getErrorCode() == 'ERR-INVALID-USER') {
+        $message =
+          "\n".
+          phutil_console_format(
+            "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR").
+          "\n\n".
+          phutil_console_format(
+            "    To do this, run: **arc install-certificate**").
+          "\n\n".
+          "The server '{$conduit_uri}' rejected your request:".
+          "\n".
+          $ex->getMessage();
+        throw new ArcanistUsageException($message);
+      } else {
+        throw $ex;
+      }
+    }
+
+    $this->userName = $user;
+    $this->userGUID = $connection['userPHID'];
+
+    $this->conduitAuthenticated = true;
+
+    return $this;
+  }
+
+
+  /**
+   * Override this to return true if your workflow requires a conduit channel.
+   * Arc will build the channel for you before your workflow executes. This
+   * implies that you only need an unauthenticated channel; if you need
+   * authentication, override @{method:requiresAuthentication}.
+   *
+   * @return bool True if arc should build a conduit channel before running
+   *              the workflow.
+   * @task conduit
+   */
+  public function requiresConduit() {
+    return false;
+  }
+
+
+  /**
+   * Override this to return true if your workflow requires an authenticated
+   * conduit channel. This implies that it requires a conduit. Arc will build
+   * and authenticate the channel for you before the workflow executes.
+   *
+   * @return bool True if arc should build an authenticated conduit channel
+   *              before running the workflow.
+   * @task conduit
+   */
+  public function requiresAuthentication() {
+    return false;
+  }
+
+
+  /**
+   * Returns the PHID for the user once they've authenticated via Conduit.
+   *
+   * NOTE: This method will be deprecated and renamed to ##getUserPHID()## at
+   * some point.
+   *
+   * @return phid Authenticated user PHID.
+   * @task conduit
+   */
+  final public function getUserGUID() {
+    if (!$this->userGUID) {
+      $workflow = get_class($this);
+      throw new Exception(
+        "This workflow ('{$workflow}') requires authentication, override ".
+        "requiresAuthentication() to return true.");
+    }
+    return $this->userGUID;
+  }
+
+  /**
+   * Return the username for the user once they've authenticated via Conduit.
+   *
+   * @return string Authenticated username.
+   * @task conduit
+   */
+  final public function getUserName() {
+    return $this->userName;
+  }
+
+
+  /**
+   * Get the established @{class@libphutil:ConduitClient} in order to make
+   * Conduit method calls. Before the client is available it must be connected,
+   * either implicitly by making @{method:requireConduit} or
+   * @{method:requireAuthentication} return true, or explicitly by calling
+   * @{method:establishConduit} or @{method:authenticateConduit}.
+   *
+   * @return @{class@libphutil:ConduitClient} Live conduit client.
+   * @task conduit
+   */
+  final public function getConduit() {
+    if (!$this->conduit) {
+      $workflow = get_class($this);
+      throw new Exception(
+        "This workflow ('{$workflow}') requires a Conduit, override ".
+        "requiresConduit() to return true.");
+    }
+    return $this->conduit;
+  }
+
 
   public function setArcanistConfiguration($arcanist_configuration) {
     $this->arcanistConfiguration = $arcanist_configuration;
@@ -58,13 +345,6 @@ class ArcanistBaseWorkflow {
     return false;
   }
 
-  public function requiresConduit() {
-    return false;
-  }
-
-  public function requiresAuthentication() {
-    return false;
-  }
 
   public function requiresRepositoryAPI() {
     return false;
@@ -77,15 +357,6 @@ class ArcanistBaseWorkflow {
 
   public function getCommand() {
     return $this->command;
-  }
-
-  public function setUserName($user_name) {
-    $this->userName = $user_name;
-    return $this;
-  }
-
-  public function getUserName() {
-    return $this->userName;
   }
 
   public function getArguments() {
@@ -121,12 +392,12 @@ class ArcanistBaseWorkflow {
     }
 
     if ($this->userGUID) {
-      $workflow->setUserGUID($this->getUserGUID());
-      $workflow->setUserName($this->getUserName());
+      $workflow->userGUID = $this->getUserGUID();
+      $workflow->userName = $this->getUserName();
     }
 
     if ($this->conduit) {
-      $workflow->setConduit($this->conduit);
+      $workflow->conduit = $this->conduit;
     }
 
     if ($this->workingCopy) {
@@ -271,36 +542,6 @@ class ArcanistBaseWorkflow {
   public function setWorkingCopy(
     ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
-    return $this;
-  }
-
-  public function getConduit() {
-    if (!$this->conduit) {
-      $workflow = get_class($this);
-      throw new Exception(
-        "This workflow ('{$workflow}') requires a Conduit, override ".
-        "requiresConduit() to return true.");
-    }
-    return $this->conduit;
-  }
-
-  public function setConduit(ConduitClient $conduit) {
-    $this->conduit = $conduit;
-    return $this;
-  }
-
-  public function getUserGUID() {
-    if (!$this->userGUID) {
-      $workflow = get_class($this);
-      throw new Exception(
-        "This workflow ('{$workflow}') requires authentication, override ".
-        "requiresAuthentication() to return true.");
-    }
-    return $this->userGUID;
-  }
-
-  public function setUserGUID($guid) {
-    $this->userGUID = $guid;
     return $this;
   }
 

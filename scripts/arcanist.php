@@ -193,36 +193,47 @@ try {
     $workflow->setWorkingCopy($working_copy);
   }
 
-  $set_guid = false;
-  if ($need_conduit) {
 
-    if ($force_conduit) {
-      $conduit_uri = $force_conduit;
-    } else {
-      $conduit_uri = $working_copy->getConduitURI();
-    }
+  if ($force_conduit) {
+    $conduit_uri = $force_conduit;
+  } else {
+    $conduit_uri = $working_copy->getConduitURI();
+  }
+  if ($conduit_uri) {
+    // Set the URI path to '/api/'. TODO: Originally, I contemplated letting
+    // you deploy Phabricator somewhere other than the domain root, but ended
+    // up never pursuing that. We should get rid of all "/api/" silliness
+    // in things users are expected to configure. This is already happening
+    // to some degree, e.g. "arc install-certificate" does it for you.
+    $conduit_uri = new PhutilURI($conduit_uri);
+    $conduit_uri->setPath('/api/');
+    $conduit_uri = (string)$conduit_uri;
+  }
+  $workflow->setConduitURI($conduit_uri);
+
+  if ($need_conduit) {
     if (!$conduit_uri) {
       throw new ArcanistUsageException(
         "No Conduit URI is specified in the .arcconfig file for this project. ".
         "Specify the Conduit URI for the host Differential is running on.");
-    } else {
-      // Set the URI path to '/api/'. TODO: Originally, I contemplated letting
-      // you deploy Phabricator somewhere other than the domain root, but ended
-      // up never pursuing that. We should get rid of all "/api/" silliness
-      // in things users are expected to configure. This is already happening
-      // to some degree, e.g. "arc install-certificate" does it for you.
-      $conduit_uri = new PhutilURI($conduit_uri);
-      $conduit_uri->setPath('/api/');
-      $conduit_uri = (string)$conduit_uri;
     }
-    $conduit = new ConduitClient($conduit_uri);
-    $workflow->setConduit($conduit);
+    $workflow->establishConduit();
+  }
 
-    $hosts_config = idx($user_config, 'hosts', array());
-    $host_config = idx($hosts_config, $conduit_uri, array());
-    $user_name = idx($host_config, 'user');
-    $certificate = idx($host_config, 'cert');
+  $hosts_config = idx($user_config, 'hosts', array());
+  $host_config = idx($hosts_config, $conduit_uri, array());
+  $user_name = idx($host_config, 'user');
+  $certificate = idx($host_config, 'cert');
 
+  $description = implode(' ', $argv);
+  $credentials = array(
+    'user'        => $user_name,
+    'certificate' => $certificate,
+    'description' => $description,
+  );
+  $workflow->setConduitCredentials($credentials);
+
+  if ($need_auth) {
     if (!$user_name || !$certificate) {
       throw new ArcanistUsageException(
         phutil_console_format(
@@ -232,72 +243,13 @@ try {
           "      $ **arc install-certificate**\n\n".
           "...to install one."));
     }
-
-    $description = implode(' ', $argv);
-
-    try {
-      $connection = $conduit->callMethodSynchronous(
-        'conduit.connect',
-        array(
-          'client'            => 'arc',
-          'clientVersion'     => 2,
-          'clientDescription' => php_uname('n').':'.$description,
-          'user'              => $user_name,
-          'certificate'       => $certificate,
-          'host'              => $conduit_uri,
-        ));
-    } catch (ConduitClientException $ex) {
-      if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
-          $ex->getErrorCode() == 'ERR-INVALID-USER') {
-        $message =
-          "\n".
-          phutil_console_format(
-            "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR").
-          "\n\n".
-          phutil_console_format(
-            "    To do this, run: **arc install-certificate**").
-          "\n\n".
-          "The server '{$conduit_uri}' rejected your request:".
-          "\n".
-          $ex->getMessage();
-        throw new ArcanistUsageException($message);
-      } else {
-        throw $ex;
-      }
-    }
-
-    $workflow->setUserName($user_name);
-    $user_phid = idx($connection, 'userPHID');
-    if ($user_phid) {
-      $set_guid = true;
-      $workflow->setUserGUID($user_phid);
-    }
+    $workflow->authenticateConduit();
   }
 
   if ($need_repository_api) {
     $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
       $working_copy);
     $workflow->setRepositoryAPI($repository_api);
-  }
-
-  if ($need_auth && !$set_guid) {
-    $user_name = getenv('USER');
-    $user_find_future = $conduit->callMethod(
-      'user.find',
-      array(
-        'aliases' => array(
-          $user_name,
-        ),
-      ));
-    $user_guids = $user_find_future->resolve();
-    if (empty($user_guids[$user_name])) {
-      throw new ArcanistUsageException(
-        "Username '{$user_name}' is not recognized.");
-    }
-
-    $user_guid = $user_guids[$user_name];
-    $workflow->setUserGUID($user_guid);
-    $workflow->setUserName($user_name);
   }
 
   $config->willRunWorkflow($command, $workflow);
