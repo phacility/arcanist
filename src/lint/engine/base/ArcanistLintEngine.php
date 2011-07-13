@@ -65,7 +65,7 @@ abstract class ArcanistLintEngine {
   protected $charToLine = array();
   protected $lineToFirstChar = array();
   private $results = array();
-  private $minimumSeverity = null;
+  private $minimumSeverity = ArcanistLintSeverity::SEVERITY_DISABLED;
 
   private $changedLines = array();
   private $commitHookMode = false;
