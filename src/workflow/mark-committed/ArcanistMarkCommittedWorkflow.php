@@ -69,7 +69,7 @@ EOTEXT
       array(
         'query' => 'committable',
         'guids' => array(
-          $this->getUserGUID(),
+          $this->getUserPHID(),
         ),
       ));
 

@@ -302,7 +302,7 @@ EOTEXT
       'repositoryUUID'            => $repo_uuid,
       'creationMethod'            => 'arc',
       'arcanistProject'           => $working_copy->getProjectID(),
-      'authorPHID'                => $this->getUserGUID(),
+      'authorPHID'                => $this->getUserPHID(),
     );
 
     $diff_info = $conduit->callMethodSynchronous(
@@ -493,7 +493,7 @@ EOTEXT
         $result = $future->resolve();
         echo "Updated an existing Differential revision:\n";
       } else {
-        $revision['user'] = $this->getUserGUID();
+        $revision['user'] = $this->getUserPHID();
         $future = $conduit->callMethod(
           'differential.createrevision',
           $revision);
@@ -955,7 +955,7 @@ EOTEXT
         if (!phutil_console_confirm($message)) {
           throw new ArcanistUsageException('Specify reviewers and retry.');
         }
-      } else if (in_array($this->getUserGUID(), $reviewers)) {
+      } else if (in_array($this->getUserPHID(), $reviewers)) {
         throw new ArcanistUsageException(
           "You can not be a reviewer for your own revision.");
       }

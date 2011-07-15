@@ -52,7 +52,7 @@ EOTEXT
     $revision_future = $conduit->callMethod(
       'differential.find',
       array(
-        'guids' => array($this->getUserGUID()),
+        'guids' => array($this->getUserPHID()),
         'query' => 'open',
       ));
 

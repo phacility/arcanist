@@ -34,7 +34,7 @@
  * and/or @{method:authenticateConduit} later in a workflow to upgrade it.
  * Once a conduit is open, you can access the client by calling
  * @{method:getConduit}, which allows you to invoke methods. You can get
- * verified information about the user identity by calling @{method:getUserGUID}
+ * verified information about the user identity by calling @{method:getUserPHID}
  * or @{method:getUserName} after authentication occurs.
  *
  * @task  conduit   Conduit
@@ -47,7 +47,7 @@ class ArcanistBaseWorkflow {
   private $conduitCredentials;
   private $conduitAuthenticated;
 
-  private $userGUID;
+  private $userPHID;
   private $userName;
   private $repositoryAPI;
   private $workingCopy;
@@ -175,7 +175,7 @@ class ArcanistBaseWorkflow {
    *    - ##certificate## (required) The Conduit certificate to use.
    *    - ##description## (optional) Description of the invoking command.
    *
-   * Successful authentication allows you to call @{method:getUserGUID} and
+   * Successful authentication allows you to call @{method:getUserPHID} and
    * @{method:getUserName}, as well as use the client you access with
    * @{method:getConduit} to make authenticated calls.
    *
@@ -240,7 +240,7 @@ class ArcanistBaseWorkflow {
     }
 
     $this->userName = $user;
-    $this->userGUID = $connection['userPHID'];
+    $this->userPHID = $connection['userPHID'];
 
     $this->conduitAuthenticated = true;
 
@@ -280,20 +280,29 @@ class ArcanistBaseWorkflow {
   /**
    * Returns the PHID for the user once they've authenticated via Conduit.
    *
-   * NOTE: This method will be deprecated and renamed to ##getUserPHID()## at
-   * some point.
-   *
    * @return phid Authenticated user PHID.
    * @task conduit
    */
-  final public function getUserGUID() {
-    if (!$this->userGUID) {
+  final public function getUserPHID() {
+    if (!$this->userPHID) {
       $workflow = get_class($this);
       throw new Exception(
         "This workflow ('{$workflow}') requires authentication, override ".
         "requiresAuthentication() to return true.");
     }
-    return $this->userGUID;
+    return $this->userPHID;
+  }
+
+  /**
+   * Deprecated. See @{method:getUserPHID}.
+   *
+   * @deprecated
+   */
+  final public function getUserGUID() {
+    phutil_deprecated(
+      'ArcanistBaseWorkflow::getUserGUID',
+      'This method has been renamed to getUserPHID().');
+    return $this->getUserPHID();
   }
 
   /**
@@ -391,8 +400,8 @@ class ArcanistBaseWorkflow {
       $workflow->setRepositoryAPI($this->repositoryAPI);
     }
 
-    if ($this->userGUID) {
-      $workflow->userGUID = $this->getUserGUID();
+    if ($this->userPHID) {
+      $workflow->userPHID = $this->getUserPHID();
       $workflow->userName = $this->getUserName();
     }
 
