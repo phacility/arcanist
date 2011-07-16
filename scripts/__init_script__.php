@@ -26,3 +26,9 @@ if (!@constant('__LIBPHUTIL__')) {
 }
 
 phutil_load_library(dirname(__FILE__).'/../src/');
+
+// There may be some kind of auto-prepend script configured which starts an
+// output buffer. Discard any such output buffers.
+while (ob_get_level() > 0) {
+  ob_end_clean();
+}
