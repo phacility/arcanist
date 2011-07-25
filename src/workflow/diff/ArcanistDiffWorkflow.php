@@ -819,12 +819,6 @@ EOTEXT
     $mime_type = trim($mime_type);
     $result['mime'] = $mime_type;
 
-    // TODO: Make this configurable.
-    $bin_limit = 1024 * 1024; // 1 MB limit
-    if (strlen($data) > $bin_limit) {
-      return $result;
-    }
-
     $bytes = strlen($data);
     echo "Uploading {$desc} '{$name}' ({$mime_type}, {$bytes} bytes)...\n";
 
