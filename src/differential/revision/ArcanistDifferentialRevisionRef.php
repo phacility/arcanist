@@ -28,7 +28,7 @@ class ArcanistDifferentialRevisionRef {
   protected $statusName;
   protected $sourcePath;
 
-  public function newFromDictionary(array $dictionary) {
+  public static function newFromDictionary(array $dictionary) {
     $ref = new ArcanistDifferentialRevisionRef();
     $ref->id         = $dictionary['id'];
     $ref->name       = $dictionary['name'];
