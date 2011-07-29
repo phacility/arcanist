@@ -168,7 +168,8 @@ class ArcanistLintMessage {
   }
 
   public function isPatchable() {
-    return ($this->getReplacementText() !== null);
+    return ($this->getReplacementText() !== null) &&
+           ($this->getReplacementText() !== $this->getOriginalText());
   }
 
   public function didApplyPatch() {
