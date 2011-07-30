@@ -919,4 +919,15 @@ class ArcanistBaseWorkflow {
     return $user_config;
   }
 
+  /**
+   * Write a message to stderr so that '--json' flags or stdout which is meant
+   * to be piped somewhere aren't disrupted.
+   *
+   * @param string  Message to write to stderr.
+   * @return void
+   */
+  protected function writeStatusMessage($msg) {
+    file_put_contents('php://stderr', $msg);
+  }
+
 }

@@ -137,7 +137,7 @@ EOTEXT
     $conduit = $this->getConduit();
 
     // Avoid confusion when people type "arc paste" with nothing else.
-    file_put_contents('php://stderr', "Reading paste from stdin...\n");
+    $this->writeStatusMessage("Reading paste from stdin...\n");
 
     $info = $conduit->callMethodSynchronous(
       'paste.create',

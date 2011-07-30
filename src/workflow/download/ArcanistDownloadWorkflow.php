@@ -83,7 +83,7 @@ EOTEXT
 
     $conduit = $this->getConduit();
 
-    $this->writeStatus("Getting file information...\n");
+    $this->writeStatusMessage("Getting file information...\n");
     $info = $conduit->callMethodSynchronous(
       'file.info',
       array(
@@ -96,7 +96,7 @@ EOTEXT
       $desc = "'".$info['name']."' ".$desc;
     }
 
-    $this->writeStatus("Downloading file {$desc}...\n");
+    $this->writeStatusMessage("Downloading file {$desc}...\n");
     $data = $conduit->callMethodSynchronous(
       'file.download',
       array(
@@ -111,16 +111,10 @@ EOTEXT
       $path = Filesystem::writeUniqueFile(
         nonempty($this->saveAs, $info['name'], 'file'),
         $data);
-      $this->writeStatus("Saved file as '{$path}'.\n");
+      $this->writeStatusMessage("Saved file as '{$path}'.\n");
     }
 
     return 0;
-  }
-
-  private function writeStatus($msg) {
-    // Use stderr instead of stdout since we may echo file contents to
-    // stdout with --show.
-    file_put_contents('php://stderr', $msg);
   }
 
 }

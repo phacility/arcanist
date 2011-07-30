@@ -24,10 +24,11 @@
 final class ArcanistUploadWorkflow extends ArcanistBaseWorkflow {
 
   private $paths;
+  private $json;
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **upload** __file__ [__file__]
+      **upload** __file__ [__file__ ...] [--json]
           Supports: filesystems
           Upload a file from local disk.
 
@@ -37,6 +38,9 @@ EOTEXT
 
   public function getArguments() {
     return array(
+      'json' => array(
+        'help' => 'Output upload information in JSON format.',
+      ),
       '*' => 'paths',
     );
   }
@@ -47,6 +51,7 @@ EOTEXT
     }
 
     $this->paths = $this->getArgument('paths');
+    $this->json = $this->getArgument('json');
   }
 
   public function requiresAuthentication() {
@@ -57,17 +62,25 @@ EOTEXT
     return $this->paths;
   }
 
+  private function getJSON() {
+    return $this->json;
+  }
+
   public function run() {
 
     $conduit = $this->getConduit();
 
+    $results = array();
+
     foreach ($this->paths as $path) {
       $name = basename($path);
-      echo "Uploading '{$name}'...\n";
+      $this->writeStatusMessage("Uploading '{$name}'...\n");
       try {
         $data = Filesystem::readFile($path);
       } catch (FilesystemException $ex) {
-        echo "Unable to upload file: ".$ex->getMessage()."\n";
+        $this->writeStatusMessage(
+          "Unable to upload file: ".$ex->getMessage()."\n");
+        $results[$path] = null;
         continue;
       }
 
@@ -83,10 +96,18 @@ EOTEXT
           'phid'        => $phid,
         ));
 
-      echo "  {$name}: ".$info['uri']."\n\n";
+      $results[$path] = $info;
+
+      if (!$this->getJSON()) {
+        echo "  {$name}: ".$info['uri']."\n\n";
+      }
     }
 
-    echo "Done.\n";
+    if ($this->getJSON()) {
+      echo json_encode($results)."\n";
+    } else {
+      $this->writeStatusMessage("Done.\n");
+    }
 
     return 0;
   }
