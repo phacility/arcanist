@@ -155,6 +155,30 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPlusOperatorOnStrings($root);
     $this->lintDuplicateKeysInArray($root);
     $this->lintReusedIterators($root);
+    $this->lintBraceFormatting($root);
+  }
+
+  private function lintBraceFormatting($root) {
+
+    foreach ($root->selectDescendantsOfType('n_STATEMENT_LIST') as $list) {
+      $tokens = $list->getTokens();
+      if (!$tokens || head($tokens)->getValue() != '{') {
+        continue;
+      }
+      list($before, $after) = $list->getSurroundingNonsemanticTokens();
+      if (count($before) == 1) {
+        $before = reset($before);
+        if ($before->getValue() != ' ') {
+          $this->raiseLintAtToken(
+            $before,
+            self::LINT_FORMATTING_CONVENTIONS,
+            'Put opening braces on the same line as control statements and '.
+            'declarations, with a single space before them.',
+            ' ');
+        }
+      }
+    }
+
   }
 
   private function lintTautologicalExpressions($root) {
