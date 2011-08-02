@@ -34,7 +34,7 @@ class ArcanistLiberateWorkflow extends ArcanistBaseWorkflow {
       **liberate** [__path__]
           Supports: libphutil
           Create or update a libphutil library, generating required metadata
-          files like __init__.php.
+          files like \__init__.php.
 EOTEXT
       );
   }
