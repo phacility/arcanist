@@ -222,6 +222,7 @@ class ArcanistBaseWorkflow {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
           $ex->getErrorCode() == 'ERR-INVALID-USER') {
+        $conduit_uri = $this->conduitURI;
         $message =
           "\n".
           phutil_console_format(
