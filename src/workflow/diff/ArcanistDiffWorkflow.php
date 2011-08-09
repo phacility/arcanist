@@ -280,8 +280,12 @@ EOTEXT
       if ($info['uuid']) {
         $repo_uuid = $info['uuid'];
       }
-    } else {
+    } else if ($repository_api instanceof ArcanistSubversionAPI) {
       $repo_uuid = $repository_api->getRepositorySVNUUID();
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      // TODO: Provide this information.
+    } else {
+      throw new Exception("Unsupported repository API!");
     }
 
     $working_copy = $this->getWorkingCopy();
@@ -527,10 +531,18 @@ EOTEXT
   }
 
   protected function shouldOnlyCreateDiff() {
+
     $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistSubversionAPI) {
       return true;
     }
+
+    if ($repository_api instanceof ArcanistMercurialAPI) {
+      // TODO: This is unlikely to be correct since it excludes using local
+      // branching in Mercurial.
+      return true;
+    }
+
     return $this->getArgument('preview') ||
            $this->getArgument('only');
   }
@@ -580,11 +592,19 @@ EOTEXT
         }
       }
 
-    } else {
+    } else if ($repository_api instanceof ArcanistGitAPI) {
       $this->parseGitRelativeCommit(
         $repository_api,
         $this->getArgument('paths', array()));
       $paths = $repository_api->getWorkingCopyStatus();
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      // TODO: Unify this and the previous block.
+
+      // TODO: Parse the relative commit.
+
+      $paths = $repository_api->getWorkingCopyStatus();
+    } else {
+      throw new Exception("Unknown VCS!");
     }
 
     foreach ($paths as $path => $mask) {
@@ -669,6 +689,9 @@ EOTEXT
       }
       $changes = $parser->parseDiff($diff);
 
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      $diff = $repository_api->getFullMercurialDiff();
+      $changes = $parser->parseDiff($diff);
     } else {
       throw new Exception("Repository API is not supported.");
     }

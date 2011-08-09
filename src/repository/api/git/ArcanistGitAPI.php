@@ -97,7 +97,6 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRawDiffText($path) {
-    $relative_commit = $this->getRelativeCommit();
     $options = $this->getDiffFullOptions();
     list($stdout) = execx(
       "(cd %s; git diff {$options} %s -- %s)",

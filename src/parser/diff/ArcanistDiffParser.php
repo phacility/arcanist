@@ -27,6 +27,7 @@ class ArcanistDiffParser {
   protected $text;
   protected $line;
   protected $isGit;
+  protected $isMercurial;
   protected $detectBinaryFiles = false;
 
   protected $changes = array();
@@ -209,6 +210,9 @@ class ArcanistDiffParser {
         '(?P<binary>Binary) files '.
           '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
           '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
+
+        // This is a normal Mercurial text change, probably from "hg diff".
+        '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?P<cur>.+)',
       );
 
       $ok = false;
@@ -273,6 +277,10 @@ class ArcanistDiffParser {
           $change->setCurrentPath($match[1]);
           $line = $this->nextLine();
           $this->parseChangeset($change);
+          break;
+        case 'diff -r':
+          $this->setIsMercurial(true);
+          $this->parseIndexHunk($change);
           break;
         default:
           $this->didFailParse("Unknown diff type.");
@@ -432,8 +440,19 @@ class ArcanistDiffParser {
     return $this->isGit;
   }
 
+  public function setIsMercurial($is_mercurial) {
+    $this->isMercurial = $is_mercurial;
+    return $this;
+  }
+
+  public function getIsMercurial() {
+    return $this->isMercurial;
+  }
+
   protected function parseIndexHunk(ArcanistDiffChange $change) {
     $is_git = $this->getIsGit();
+    $is_mercurial = $this->getIsMercurial();
+    $is_svn = (!$is_git && !$is_mercurial);
 
     $line = $this->getLine();
     if ($is_git) {
@@ -532,19 +551,27 @@ class ArcanistDiffParser {
     }
 
     $line = $this->getLine();
-    $ok = preg_match('/^=+$/', $line) ||
-          ($is_git && preg_match('/^index .*$/', $line));
-    if (!$ok) {
-      if ($is_git) {
-        $this->didFailParse(
-          "Expected 'index af23f...a98bc' header line.");
+
+    if ($is_svn) {
+      $ok = preg_match('/^=+$/', $line);
+      if (!$ok) {
+        $this->didFailParse("Expected '=======================' divider line.");
       } else {
-        $this->didFailParse(
-          "Expected '==========================' divider line.");
+        // Adding an empty file in SVN can produce an empty line here.
+        $line = $this->nextNonemptyLine();
+      }
+    } else if ($is_git) {
+      $ok = preg_match('/^index .*$/', $line);
+      if (!$ok) {
+        // TODO: "hg diff -g" diffs ("mercurial git-style diffs") do not include
+        // this line, so we can't parse them if we fail on it. Maybe introduce
+        // a flag saying "parse this diff using relaxed git-style diff rules"?
+
+        // $this->didFailParse("Expected 'index af23f...a98bc' header line.");
+      } else {
+        $line = $this->nextLine();
       }
     }
-    // Adding an empty file in SVN can produce an empty line here.
-    $line = $this->nextNonemptyLine();
 
     // If there are files with only whitespace changes and -b or -w are
     // supplied as command-line flags to `diff', svn and git both produce
@@ -596,14 +623,23 @@ class ArcanistDiffParser {
   protected function parseHunkTarget() {
     $line = $this->getLine();
     $matches = null;
+
+    $remainder = '(?:\s*\(.*\))?';
+    if ($this->getIsMercurial()) {
+      // Something like "Fri Aug 26 01:20:50 2005 -0700", don't bother trying
+      // to parse it.
+      $remainder = '\t.*';
+    }
+
     $ok = preg_match(
-      '@^[-+]{3} (?:[ab]/)?(?P<path>.*?)(?:\s*\(.*\))?$@',
+      '@^[-+]{3} (?:[ab]/)?(?P<path>.*?)'.$remainder.'$@',
       $line,
       $matches);
     if (!$ok) {
       $this->didFailParse(
         "Expected hunk target '+++ path/to/file.ext (revision N)'.");
     }
+
     $this->nextLine();
     return $matches['path'];
   }
