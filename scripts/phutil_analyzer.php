@@ -303,7 +303,7 @@ foreach (Futures($futures) as $file => $future) {
       $extends = $interface->getChildByIndex(2);
       foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
         $requirements->addInterfaceDependency(
-          $class_name->getConcreteString(),
+          $interface_name->getConcreteString(),
           $parent,
           $parent->getConcreteString());
       }
