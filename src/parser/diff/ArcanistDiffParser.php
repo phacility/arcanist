@@ -751,7 +751,7 @@ class ArcanistDiffParser {
 
       $is_binary = false;
       if ($this->detectBinaryFiles) {
-        $is_binary = preg_match('/([^\x09\x0A\x20-\x7E]+)/', $corpus);
+        $is_binary = !phutil_is_utf8($corpus);
       }
 
       if ($is_binary) {
