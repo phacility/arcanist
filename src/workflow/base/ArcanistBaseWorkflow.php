@@ -598,6 +598,10 @@ class ArcanistBaseWorkflow {
           echo phutil_console_wrap(
             "Since you don't have 'svn:ignore' rules for these files, you may ".
             "have forgotten to 'svn add' them.");
+        } else if ($api instanceof ArcanistMercurialAPI) {
+          echo phutil_console_wrap(
+            "Since you don't have '.hgignore' rules for these files, you ".
+            "may have forgotten to 'hg add' them to your commit.");
         }
 
         $prompt = "Do you want to continue without adding these files?";

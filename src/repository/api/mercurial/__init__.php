@@ -6,9 +6,13 @@
 
 
 
+phutil_require_module('arcanist', 'exception/usage');
+phutil_require_module('arcanist', 'parser/diff');
+phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'repository/api/base');
 
 phutil_require_module('phutil', 'future/exec');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistMercurialAPI.php');

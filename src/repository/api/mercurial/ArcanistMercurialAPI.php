@@ -25,6 +25,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $base;
+  private $relativeCommit;
 
   public function getSourceControlSystemName() {
     return 'hg';
@@ -50,9 +51,35 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
+  public function setRelativeCommit($commit) {
+    list($err) = exec_manual(
+      '(cd %s && hg id -ir %s)',
+      $this->getPath(),
+      $commit);
+
+    if ($err) {
+      throw new ArcanistUsageException(
+        "Commit '{$commit}' is not a valid Mercurial commit identifier.");
+    }
+
+    $this->relativeCommit = $commit;
+    return $this;
+  }
+
   public function getRelativeCommit() {
-    // TODO: This is hardcoded.
-    return 'tip~1';
+    if (empty($this->relativeCommit)) {
+      list($stdout) = execx(
+        '(cd %s && hg outgoing --limit 1)',
+        $this->getPath());
+      $logs = $this->parseMercurialLog($stdout);
+      if (!count($logs)) {
+        throw new ArcanistUsageException("You have no outgoing changes!");
+      }
+      $oldest_log = head($logs);
+
+      $this->relativeCommit = $oldest_log['rev'].'~1';
+    }
+    return $this->relativeCommit;
   }
 
   public function getBlame($path) {
@@ -85,9 +112,52 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getWorkingCopyStatus() {
 
-    // TODO: This is critical and not yet implemented.
+    // A reviewable revision spans multiple local commits in Mercurial, but
+    // there is no way to get file change status across multiple commits, so
+    // just take the entire diff and parse it to figure out what's changed.
 
-    return array();
+    $diff = $this->getFullMercurialDiff();
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($diff);
+
+    $status_map = array();
+
+    foreach ($changes as $change) {
+      $flags = 0;
+      switch ($change->getType()) {
+        case ArcanistDiffChangeType::TYPE_ADD:
+        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+        case ArcanistDiffChangeType::TYPE_COPY_HERE:
+          $flags |= self::FLAG_ADDED;
+          break;
+        case ArcanistDiffChangeType::TYPE_CHANGE:
+        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
+          $flags |= self::FLAG_MODIFIED;
+          break;
+        case ArcanistDiffChangeType::TYPE_DELETE:
+        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
+        case ArcanistDiffChangeType::TYPE_MULTICOPY:
+          $flags |= self::FLAG_DELETED;
+          break;
+      }
+      $status_map[$change->getCurrentPath()] = $flags;
+    }
+
+    list($stdout) = execx(
+      '(cd %s && hg status)',
+      $this->getPath());
+
+    $working_status = $this->parseMercurialStatus($stdout);
+    foreach ($working_status as $path => $status) {
+      $status |= self::FLAG_UNCOMMITTED;
+      if (!empty($status_map[$path])) {
+        $status_map[$path] |= $status;
+      } else {
+        $status_map[$path] = $status;
+      }
+    }
+
+    return $status_map;
   }
 
   private function getDiffOptions() {
@@ -137,6 +207,91 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getPath(),
       $path);
     return $stdout;
+  }
+
+  private function parseMercurialStatus($status) {
+    $result = array();
+
+    $status = trim($status);
+    if (!strlen($status)) {
+      return $result;
+    }
+
+    $lines = explode("\n", $status);
+    foreach ($lines as $line) {
+      $flags = 0;
+      list($code, $path) = explode(' ', $line, 2);
+      switch ($code) {
+        case 'A':
+          $flags |= self::FLAG_ADDED;
+          break;
+        case 'R':
+          $flags |= self::FLAG_REMOVED;
+          break;
+        case 'M':
+          $flags |= self::FLAG_MODIFIED;
+          break;
+        case 'C':
+          // This is "clean" and included only for completeness, these files
+          // have not been changed.
+          break;
+        case '!':
+          $flags |= self::FLAG_MISSING;
+          break;
+        case '?':
+          $flags |= self::FLAG_UNTRACKED;
+          break;
+        case 'I':
+          // This is "ignored" and included only for completeness.
+          break;
+        default:
+          throw new Exception("Unknown Mercurial status '{$code}'.");
+      }
+
+      $result[$path] = $flags;
+    }
+
+    return $result;
+  }
+
+  private function parseMercurialLog($log) {
+    $result = array();
+
+    $chunks = explode("\n\n", trim($log));
+    foreach ($chunks as $chunk) {
+      $commit = array();
+      $lines = explode("\n", $chunk);
+      foreach ($lines as $line) {
+        if (preg_match('/^(comparing with|searching for changes)/', $line)) {
+          // These are sent to stdout when you run "hg outgoing" although the
+          // format is otherwise identical to "hg log".
+          continue;
+        }
+        list($name, $value) = explode(':', $line, 2);
+        $value = trim($value);
+        switch ($name) {
+          case 'user':
+            $commit['user'] = $value;
+            break;
+          case 'date':
+            $commit['date'] = strtotime($value);
+            break;
+          case 'summary':
+            $commit['summary'] = $value;
+            break;
+          case 'changeset':
+            list($local, $rev) = explode(':', $value, 2);
+            $commit['local'] = $local;
+            $commit['rev'] = $rev;
+            break;
+          default:
+            throw new Exception("Unknown Mercurial log field '{$name}'!");
+        }
+      }
+      $result[] = $commit;
+    }
+
+    return $result;
   }
 
 }
