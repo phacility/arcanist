@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('arcanist', 'difference');
 phutil_require_module('arcanist', 'differential/commitmessage');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');

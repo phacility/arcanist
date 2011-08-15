@@ -749,10 +749,43 @@ EOTEXT
       }
     }
 
+    $try_encoding = null;
+
     $utf8_problems = array();
     foreach ($changes as $change) {
       foreach ($change->getHunks() as $hunk) {
-        if (!phutil_is_utf8($hunk->getCorpus())) {
+        $corpus = $hunk->getCorpus();
+        if (!phutil_is_utf8($corpus)) {
+
+          // If this corpus is heuristically binary, don't try to convert it.
+          // mb_check_encoding() and mb_convert_encoding() are both very very
+          // liberal about what they're willing to process.
+          $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
+          if (!$is_binary) {
+            if ($try_encoding === null) {
+              // Make a call to check if there's an encoding specified for this
+              // project.
+              $project_info = $this->getConduit()->callMethodSynchronous(
+                  'arcanist.projectinfo',
+                  array(
+                    'name' => $this->getWorkingCopy()->getProjectID(),
+                  ));
+              $try_encoding = nonempty($project_info['encoding'], false);
+            }
+            if ($try_encoding) {
+              // NOTE: This feature is HIGHLY EXPERIMENTAL and will cause a lot
+              // of issues. Use it at your own risk.
+              $corpus = mb_convert_encoding($corpus, 'UTF-8', $try_encoding);
+              $name = $change->getCurrentPath();
+              if (phutil_is_utf8($corpus)) {
+                $this->writeStatusMessage(
+                  "[Experimental] Converted a '{$name}' hunk from ".
+                  "'{$try_encoding}' to UTF-8.\n");
+                $hunk->setCorpus($corpus);
+                continue;
+              }
+            }
+          }
           $utf8_problems[] = $change;
           break;
         }
@@ -763,11 +796,17 @@ EOTEXT
     // and treat them as binary changes. See D327 for discussion of why Arcanist
     // has this behavior.
     if ($utf8_problems) {
+      $learn_more =
+        "You can learn more about how Phabricator handles character encodings ".
+        "(and how to configure encoding settings and detect and correct ".
+        "encoding problems) by reading 'User Guide: UTF-8 and Character ".
+        "Encoding' in the Phabricator documentation.\n\n";
       if (count($utf8_problems) == 1) {
         $utf8_warning =
           "This diff includes a file which is not valid UTF-8 (it has invalid ".
           "byte sequences). You can either stop this workflow and fix it, or ".
           "continue. If you continue, this file will be marked as binary.\n\n".
+          $learn_more.
           "    AFFECTED FILE\n";
 
         $confirm = "Do you want to mark this file as binary and continue?";
@@ -777,6 +816,7 @@ EOTEXT
           "invalid byte sequences). You can either stop this workflow and fix ".
           "these files, or continue. If you continue, these files will be ".
           "marked as binary.\n\n".
+          $learn_more.
           "    AFFECTED FILES\n";
 
         $confirm = "Do you want to mark these files as binary and continue?";
