@@ -82,6 +82,16 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->relativeCommit;
   }
 
+  public function getLocalCommitInformation() {
+    list($info) = execx(
+      '(cd %s && hg log --rev %s..%s --)',
+      $this->getPath(),
+      $this->getRelativeCommit(),
+      'tip');
+    return $this->parseMercurialLog($info);
+  }
+
+
   public function getBlame($path) {
     list($stdout) = execx(
       '(cd %s && hg blame -u -v -c --rev %s -- %s)',
@@ -283,6 +293,16 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             list($local, $rev) = explode(':', $value, 2);
             $commit['local'] = $local;
             $commit['rev'] = $rev;
+            break;
+          case 'parent':
+            if (empty($commit['parents'])) {
+              $commit['parents'] = array();
+            }
+            list($local, $rev) = explode(':', $value, 2);
+            $commit['parents'][] = array(
+              'local' => $local,
+              'rev'   => $rev,
+            );
             break;
           default:
             throw new Exception("Unknown Mercurial log field '{$name}'!");

@@ -46,6 +46,35 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
+  public function getLocalCommitInformation() {
+    list($info) = execx(
+      '(cd %s && git log %s..%s --format=%s --)',
+      $this->getPath(),
+      $this->getRelativeCommit(),
+      'HEAD',
+      '%H%x00%T%x00%P%x00%at%x00%an%x00%s');
+
+    $commits = array();
+
+    $info = trim($info);
+    $info = explode("\n", $info);
+    foreach ($info as $line) {
+      list($commit, $tree, $parents, $time, $author, $title)
+        = explode("\0", $line, 6);
+
+      $commits[] = array(
+        'commit'  => $commit,
+        'tree'    => $tree,
+        'parents' => array_filter(explode(' ', $parents)),
+        'time'    => $time,
+        'author'  => $author,
+        'summary' => $title,
+      );
+    }
+
+    return $commits;
+  }
+
   public function getRelativeCommit() {
     if ($this->relativeCommit === null) {
       list($err) = exec_manual(

@@ -478,4 +478,8 @@ EODIFF;
     return $info['Repository UUID'];
   }
 
+  public function getLocalCommitInformation() {
+    return null;
+  }
+
 }

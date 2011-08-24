@@ -339,6 +339,17 @@ EOTEXT
         ));
     }
 
+    $local_info = $repository_api->getLocalCommitInformation();
+    if ($local_info) {
+      $conduit->callMethodSynchronous(
+        'differential.setdiffproperty',
+        array(
+          'diff_id' => $diff_info['diffid'],
+          'name'    => 'local:commits',
+          'data'    => json_encode($local_info),
+        ));
+    }
+
     if ($this->unresolvedTests) {
       $data = array();
       foreach ($this->unresolvedTests as $test) {

@@ -157,5 +157,6 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getRawDiffText($path);
   abstract public function getOriginalFileData($path);
   abstract public function getCurrentFileData($path);
+  abstract public function getLocalCommitInformation();
 
 }
