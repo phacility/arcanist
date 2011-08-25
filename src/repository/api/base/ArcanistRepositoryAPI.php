@@ -163,11 +163,21 @@ abstract class ArcanistRepositoryAPI {
   abstract public function supportsRelativeLocalCommits();
 
   public function parseRelativeLocalCommit(array $argv) {
-    throw new Exception("This VCS does not support relative local commits.");
+    throw new ArcanistCapabilityNotSupportedException($this);
   }
 
   public function getAllLocalChanges() {
-    throw new Exception("This VCS does not support getting all local changes.");
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  abstract public function supportsLocalBranchMerge();
+
+  public function performLocalBranchMerge($branch, $message) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function getFinalizedRevisionMessage() {
+    throw new ArcanistCapabilityNotSupportedException($this);
   }
 
 }

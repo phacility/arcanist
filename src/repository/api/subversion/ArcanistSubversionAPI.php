@@ -486,4 +486,8 @@ EODIFF;
     return false;
   }
 
+  public function supportsLocalBranchMerge() {
+    return false;
+  }
+
 }

@@ -396,4 +396,32 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $parser->parseDiff($diff);
   }
 
+  public function supportsLocalBranchMerge() {
+    return true;
+  }
+
+  public function performLocalBranchMerge($branch, $message) {
+    if ($branch) {
+      $err = phutil_passthru(
+        '(cd %s && hg merge --rev %s && hg commit -m %s)',
+        $this->getPath(),
+        $branch,
+        $message);
+    } else {
+      $err = phutil_passthru(
+        '(cd %s && hg merge && hg commit -m %s)',
+        $this->getPath(),
+        $message);
+    }
+
+    if ($err) {
+      throw new ArcanistUsageException("Merge failed!");
+    }
+  }
+
+  public function getFinalizedRevisionMessage() {
+    return "You may now push this commit upstream, as appropriate (e.g. with ".
+           "'hg push' or by printing and faxing it).";
+  }
+
 }

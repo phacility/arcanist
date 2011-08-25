@@ -545,4 +545,29 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $parser->parseDiff($diff);
   }
 
+  public function supportsLocalBranchMerge() {
+    return true;
+  }
+
+  public function performLocalBranchMerge($branch, $message) {
+    if (!$branch) {
+      throw new ArcanistUsageException(
+        "Under git, you must specify the branch you want to merge.");
+    }
+    $err = phutil_passthru(
+      '(cd %s && git merge --no-ff -m %s %s)',
+      $this->getPath(),
+      $message,
+      $branch);
+
+    if ($err) {
+      throw new ArcanistUsageException("Merge failed!");
+    }
+  }
+
+  public function getFinalizedRevisionMessage() {
+    return "You may now push this commit upstream, as appropriate (e.g. with ".
+           "'git push', or 'git svn dcommit', or by printing and faxing it).";
+  }
+
 }
