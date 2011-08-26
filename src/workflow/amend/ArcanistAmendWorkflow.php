@@ -65,6 +65,14 @@ EOTEXT
   }
 
   public function run() {
+    if ($this->isHistoryImmutable()) {
+      throw new ArcanistUsageException(
+        "This project is marked as adhering to a conservative history ".
+        "mutability doctrine (having an immutable local history), which ".
+        "precludes amending commit messages. You can use 'arc merge' to ".
+        "merge feature branches instead.");
+    }
+
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException(

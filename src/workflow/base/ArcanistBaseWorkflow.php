@@ -913,4 +913,9 @@ class ArcanistBaseWorkflow {
     file_put_contents('php://stderr', $msg);
   }
 
+  protected function isHistoryImmutable() {
+    $working_copy = $this->getWorkingCopy();
+    return ($working_copy->getConfig('immutable_history') === true);
+  }
+
 }

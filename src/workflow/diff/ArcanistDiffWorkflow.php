@@ -549,8 +549,10 @@ EOTEXT
     }
 
     if ($repository_api instanceof ArcanistMercurialAPI) {
-      // TODO: This is unlikely to be correct since it excludes using local
-      // branching in Mercurial.
+      return true;
+    }
+
+    if ($this->isHistoryImmutable()) {
       return true;
     }
 
@@ -1110,7 +1112,10 @@ EOTEXT
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
 
-      $lint_workflow->setShouldAmendChanges(true);
+      if (!$this->isHistoryImmutable()) {
+        // TODO: We should offer to create a checkpoint commit.
+        $lint_workflow->setShouldAmendChanges(true);
+      }
 
       $lint_result = $lint_workflow->run();
 
