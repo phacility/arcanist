@@ -80,6 +80,7 @@ phutil_register_library_map(array(
     'ArcanistUsageException' => 'exception/usage',
     'ArcanistUserAbortException' => 'exception/usage/userabort',
     'ArcanistWorkingCopyIdentity' => 'workingcopyidentity',
+    'ArcanistXHPASTLintNamingHook' => 'lint/linter/xhpast/naminghook',
     'ArcanistXHPASTLinter' => 'lint/linter/xhpast',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/xhpast/__tests__',
     'BranchInfo' => 'branch',
