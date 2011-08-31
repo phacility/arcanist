@@ -88,7 +88,13 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getPath(),
       $this->getRelativeCommit(),
       'tip');
-    return $this->parseMercurialLog($info);
+    $logs = $this->parseMercurialLog($info);
+
+    // Get rid of the first log, it's not actually part of the diff. "hg log"
+    // is inclusive, while "hg diff" is exclusive.
+    array_shift($logs);
+
+    return $logs;
   }
 
 
@@ -303,6 +309,12 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
               'local' => $local,
               'rev'   => $rev,
             );
+            break;
+          case 'branch':
+            $commit['branch'] = $value;
+            break;
+          case 'tag':
+            $commit['tag'] = $value;
             break;
           default:
             throw new Exception("Unknown Mercurial log field '{$name}'!");
