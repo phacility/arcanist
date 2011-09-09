@@ -573,7 +573,7 @@ class ArcanistBaseWorkflow {
     return empty($this->arguments['allow-untracked']);
   }
 
-  protected function requireCleanWorkingCopy() {
+  public function requireCleanWorkingCopy() {
     $api = $this->getRepositoryAPI();
 
     $working_copy_desc = phutil_console_format(

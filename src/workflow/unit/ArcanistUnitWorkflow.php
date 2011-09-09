@@ -60,6 +60,10 @@ EOTEXT
     return true;
   }
 
+  public function getEngine() {
+    return $this->engine;
+  }
+
   public function run() {
 
     $working_copy = $this->getWorkingCopy();
