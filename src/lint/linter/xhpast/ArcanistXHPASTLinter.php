@@ -155,6 +155,30 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPlusOperatorOnStrings($root);
     $this->lintDuplicateKeysInArray($root);
     $this->lintReusedIterators($root);
+    $this->lintBraceFormatting($root);
+  }
+
+  private function lintBraceFormatting($root) {
+
+    foreach ($root->selectDescendantsOfType('n_STATEMENT_LIST') as $list) {
+      $tokens = $list->getTokens();
+      if (!$tokens || head($tokens)->getValue() != '{') {
+        continue;
+      }
+      list($before, $after) = $list->getSurroundingNonsemanticTokens();
+      if (count($before) == 1) {
+        $before = reset($before);
+        if ($before->getValue() != ' ') {
+          $this->raiseLintAtToken(
+            $before,
+            self::LINT_FORMATTING_CONVENTIONS,
+            'Put opening braces on the same line as control statements and '.
+            'declarations, with a single space before them.',
+            ' ');
+        }
+      }
+    }
+
   }
 
   private function lintTautologicalExpressions($root) {
@@ -641,27 +665,37 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   protected function lintNamingConventions($root) {
+
+    // We're going to build up a list of <type, name, token, error> tuples
+    // and then try to instantiate a hook class which has the opportunity to
+    // override us.
+    $names = array();
+
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
     foreach ($classes as $class) {
       $name_token = $class->getChildByIndex(1);
       $name_string = $name_token->getConcreteString();
       $is_xhp = ($name_string[0] == ':');
       if ($is_xhp) {
-        if (!$this->isLowerCaseWithXHP($name_string)) {
-          $this->raiseLintAtNode(
-            $name_token,
-            self::LINT_NAMING_CONVENTIONS,
-            'Follow naming conventions: xhp elements should be named using '.
-            'lower case.');
-        }
+        $names[] = array(
+          'xhp-class',
+          $name_string,
+          $name_token,
+          $this->isLowerCaseWithXHP($name_string)
+            ? null
+            : 'Follow naming conventions: XHP elements should be named using '.
+              'lower case.',
+        );
       } else {
-        if (!$this->isUpperCamelCase($name_string)) {
-          $this->raiseLintAtNode(
-            $name_token,
-            self::LINT_NAMING_CONVENTIONS,
-            'Follow naming conventions: classes should be named using '.
-            'UpperCamelCase.');
-        }
+        $names[] = array(
+          'class',
+          $name_string,
+          $name_token,
+          $this->isUpperCamelCase($name_string)
+            ? null
+            : 'Follow naming conventions: classes should be named using '.
+              'UpperCamelCase.',
+        );
       }
     }
 
@@ -669,13 +703,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     foreach ($ifaces as $iface) {
       $name_token = $iface->getChildByIndex(1);
       $name_string = $name_token->getConcreteString();
-      if (!$this->isUpperCamelCase($name_string)) {
-        $this->raiseLintAtNode(
-          $name_token,
-          self::LINT_NAMING_CONVENTIONS,
-          'Follow naming conventions: interfaces should be named using '.
-          'UpperCamelCase.');
-      }
+      $names[] = array(
+        'interface',
+        $name_string,
+        $name_token,
+        $this->isUpperCamelCase($name_string)
+          ? null
+          : 'Follow naming conventions: interfaces should be named using '.
+            'UpperCamelCase.',
+      );
     }
 
 
@@ -687,13 +723,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         continue;
       }
       $name_string = $name_token->getConcreteString();
-      if (!$this->isLowercaseWithUnderscores($name_string)) {
-        $this->raiseLintAtNode(
-          $name_token,
-          self::LINT_NAMING_CONVENTIONS,
-          'Follow naming conventions: functions should be named using '.
-          'lowercase_with_underscores.');
-      }
+      $names[] = array(
+        'function',
+        $name_string,
+        $name_token,
+        $this->isLowercaseWithUnderscores($name_string)
+          ? null
+          : 'Follow naming conventions: functions should be named using '.
+            'lowercase_with_underscores.',
+      );
     }
 
 
@@ -701,13 +739,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     foreach ($methods as $method) {
       $name_token = $method->getChildByIndex(2);
       $name_string = $name_token->getConcreteString();
-      if (!$this->isLowerCamelCase($name_string)) {
-        $this->raiseLintAtNode(
-          $name_token,
-          self::LINT_NAMING_CONVENTIONS,
-          'Follow naming conventions: methods should be named using '.
-          'lowerCamelCase.');
-      }
+      $names[] = array(
+        'method',
+        $name_string,
+        $name_token,
+        $this->isLowerCamelCase($name_string)
+          ? null
+          : 'Follow naming conventions: methods should be named using '.
+            'lowerCamelCase.',
+      );
     }
 
 
@@ -716,13 +756,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       foreach ($param_list->getChildren() as $param) {
         $name_token = $param->getChildByIndex(1);
         $name_string = $name_token->getConcreteString();
-        if (!$this->isLowercaseWithUnderscores($name_string)) {
-          $this->raiseLintAtNode(
-            $name_token,
-            self::LINT_NAMING_CONVENTIONS,
-            'Follow naming conventions: parameters should be named using '.
-            'lowercase_with_underscores.');
-        }
+        $names[] = array(
+          'parameter',
+          $name_string,
+          $name_token,
+          $this->isLowercaseWithUnderscores($name_string)
+            ? null
+            : 'Follow naming conventions: parameters should be named using '.
+              'lowercase_with_underscores.',
+        );
       }
     }
 
@@ -733,13 +775,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       foreach ($constant_list->getChildren() as $constant) {
         $name_token = $constant->getChildByIndex(0);
         $name_string = $name_token->getConcreteString();
-        if (!$this->isUppercaseWithUnderscores($name_string)) {
-          $this->raiseLintAtNode(
-            $name_token,
-            self::LINT_NAMING_CONVENTIONS,
-            'Follow naming conventions: class constants should be named using '.
-            'UPPERCASE_WITH_UNDERSCORES.');
-        }
+        $names[] = array(
+          'constant',
+          $name_string,
+          $name_token,
+          $this->isUppercaseWithUnderscores($name_string)
+            ? null
+            : 'Follow naming conventions: class constants should be named '.
+              'using UPPERCASE_WITH_UNDERSCORES.',
+        );
       }
     }
 
@@ -751,13 +795,43 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         }
         $name_token = $prop->getChildByIndex(0);
         $name_string = $name_token->getConcreteString();
-        if (!$this->isLowerCamelCase($name_string)) {
-          $this->raiseLintAtNode(
-            $name_token,
-            self::LINT_NAMING_CONVENTIONS,
-            'Follow naming conventions: class properties should be named '.
-            'using lowerCamelCase.');
+        $names[] = array(
+          'member',
+          $name_string,
+          $name_token,
+          $this->isLowerCamelCase($name_string)
+            ? null
+            : 'Follow naming conventions: class properties should be named '.
+              'using lowerCamelCase.',
+        );
+      }
+    }
+
+    $engine = $this->getEngine();
+    $working_copy = $engine->getWorkingCopy();
+
+    if ($working_copy) {
+      // If a naming hook is configured, give it a chance to override the
+      // default results for all the symbol names.
+      $hook_class = $working_copy->getConfig('lint.xhpast.naminghook');
+      if ($hook_class) {
+        $hook_obj = newv($hook_class, array());
+        foreach ($names as $k => $name_attrs) {
+          list($type, $name, $token, $default) = $name_attrs;
+          $result = $hook_obj->lintSymbolName($type, $name, $default);
+          $names[$k][3] = $result;
         }
+      }
+    }
+
+    // Raise anything we're left with.
+    foreach ($names as $k => $name_attrs) {
+      list($type, $name, $token, $result) = $name_attrs;
+      if ($result) {
+        $this->raiseLintAtNode(
+          $token,
+          self::LINT_NAMING_CONVENTIONS,
+          $result);
       }
     }
   }

@@ -65,10 +65,20 @@ abstract class ArcanistRepositoryAPI {
         "any parent directory. Create an '.arcconfig' file to configure arc.");
     }
 
-    if (@file_exists($root.'/.svn')) {
-      phutil_require_module('arcanist', 'repository/api/subversion');
-      return new ArcanistSubversionAPI($root);
+    if (Filesystem::pathExists($root.'/.svn')) {
+      return newv('ArcanistSubversionAPI', array($root));
     }
+
+    if (Filesystem::pathExists($root.'/.hg')) {
+      // TODO: Stabilize and remove.
+      file_put_contents(
+        'php://stderr',
+        phutil_console_format(
+          "**WARNING:** Mercurial support is largely imaginary right now.\n"));
+
+      return newv('ArcanistMercurialAPI', array($root));
+    }
+
 
     $git_root = self::discoverGitBaseDirectory($root);
     if ($git_root) {
@@ -77,16 +87,16 @@ abstract class ArcanistRepositoryAPI {
           "'.arcconfig' file is located at '{$root}', but working copy root ".
           "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
       }
-      phutil_require_module('arcanist', 'repository/api/git');
-      return new ArcanistGitAPI($root);
+
+      return newv('ArcanistGitAPI', array($root));
     }
 
     throw new ArcanistUsageException(
       "The current working directory is not part of a working copy for a ".
-      "supported version control system (svn or git).");
+      "supported version control system (svn, git or mercurial).");
   }
 
-  protected function __construct($path) {
+  public function __construct($path) {
     $this->path = $path;
   }
 
@@ -147,5 +157,6 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getRawDiffText($path);
   abstract public function getOriginalFileData($path);
   abstract public function getCurrentFileData($path);
+  abstract public function getLocalCommitInformation();
 
 }

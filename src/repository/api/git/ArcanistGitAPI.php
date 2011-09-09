@@ -46,6 +46,35 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
+  public function getLocalCommitInformation() {
+    list($info) = execx(
+      '(cd %s && git log %s..%s --format=%s --)',
+      $this->getPath(),
+      $this->getRelativeCommit(),
+      'HEAD',
+      '%H%x00%T%x00%P%x00%at%x00%an%x00%s');
+
+    $commits = array();
+
+    $info = trim($info);
+    $info = explode("\n", $info);
+    foreach ($info as $line) {
+      list($commit, $tree, $parents, $time, $author, $title)
+        = explode("\0", $line, 6);
+
+      $commits[] = array(
+        'commit'  => $commit,
+        'tree'    => $tree,
+        'parents' => array_filter(explode(' ', $parents)),
+        'time'    => $time,
+        'author'  => $author,
+        'summary' => $title,
+      );
+    }
+
+    return $commits;
+  }
+
   public function getRelativeCommit() {
     if ($this->relativeCommit === null) {
       list($err) = exec_manual(
@@ -97,7 +126,6 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRawDiffText($path) {
-    $relative_commit = $this->getRelativeCommit();
     $options = $this->getDiffFullOptions();
     list($stdout) = execx(
       "(cd %s; git diff {$options} %s -- %s)",
@@ -317,7 +345,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getBlame($path) {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = execx(
-      '(cd %s; git blame -w -C %s -- %s)',
+      '(cd %s; git blame --date=iso -w -C %s -- %s)',
       $this->getPath(),
       $this->getRelativeCommit(),
       $path);

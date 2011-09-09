@@ -222,6 +222,7 @@ class ArcanistBaseWorkflow {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
           $ex->getErrorCode() == 'ERR-INVALID-USER') {
+        $conduit_uri = $this->conduitURI;
         $message =
           "\n".
           phutil_console_format(
@@ -597,6 +598,10 @@ class ArcanistBaseWorkflow {
           echo phutil_console_wrap(
             "Since you don't have 'svn:ignore' rules for these files, you may ".
             "have forgotten to 'svn add' them.");
+        } else if ($api instanceof ArcanistMercurialAPI) {
+          echo phutil_console_wrap(
+            "Since you don't have '.hgignore' rules for these files, you ".
+            "may have forgotten to 'hg add' them to your commit.");
         }
 
         $prompt = "Do you want to continue without adding these files?";
@@ -917,6 +922,17 @@ class ArcanistBaseWorkflow {
       }
     }
     return $user_config;
+  }
+
+  /**
+   * Write a message to stderr so that '--json' flags or stdout which is meant
+   * to be piped somewhere aren't disrupted.
+   *
+   * @param string  Message to write to stderr.
+   * @return void
+   */
+  protected function writeStatusMessage($msg) {
+    file_put_contents('php://stderr', $msg);
   }
 
 }

@@ -150,6 +150,17 @@ class ArcanistBundle {
         $cur_path = '/dev/null';
       }
 
+      // When the diff is used by `patch`, `patch` ignores what is listed as the
+      // current path and just makes changes to the file at the old path (unless
+      // the current path is '/dev/null'.
+      // If the old path and the current path aren't the same (and neither is
+      // /dev/null), this indicates the file was moved or copied. By listing
+      // both paths as the new file, `patch` will apply the diff to the new
+      // file.
+      if ($cur_path !== '/dev/null' && $old_path !== '/dev/null') {
+        $old_path = $cur_path;
+      }
+
       $result[] = '--- '.$old_path;
       $result[] = '+++ '.$cur_path;
 

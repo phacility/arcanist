@@ -122,7 +122,7 @@ foreach (Futures($futures) as $file => $future) {
         }
         $requirements->addSourceDependency($name, $value);
       } else if ($call_name == 'phutil_require_module') {
-        analyze_phutil_require_module($call, $requirements);
+        analyze_phutil_require_module($call, $requirements, true);
       }
     }
   } else {
@@ -154,7 +154,7 @@ foreach (Futures($futures) as $file => $future) {
 
       $call_name = $name->getConcreteString();
       if ($call_name == 'phutil_require_module') {
-        analyze_phutil_require_module($call, $requirements);
+        analyze_phutil_require_module($call, $requirements, false);
       } else if ($call_name == 'call_user_func' ||
                  $call_name == 'call_user_func_array') {
         $params = $call->getChildByIndex(1)->getChildren();
@@ -303,7 +303,7 @@ foreach (Futures($futures) as $file => $future) {
       $extends = $interface->getChildByIndex(2);
       foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
         $requirements->addInterfaceDependency(
-          $class_name->getConcreteString(),
+          $interface_name->getConcreteString(),
           $parent,
           $parent->getConcreteString());
       }
@@ -327,7 +327,8 @@ echo json_encode($requirements->toDictionary());
  */
 function analyze_phutil_require_module(
   XHPASTNode $call,
-  PhutilModuleRequirements $requirements) {
+  PhutilModuleRequirements $requirements,
+  $create_dependency) {
 
   $name = $call->getChildByIndex(0);
   $params = $call->getChildByIndex(1)->getChildren();
@@ -363,7 +364,9 @@ function analyze_phutil_require_module(
     return;
   }
 
-  $requirements->addModuleDependency(
-    $name,
-    $library_value.':'.$module_value);
+  if ($create_dependency) {
+    $requirements->addModuleDependency(
+      $name,
+      $library_value.':'.$module_value);
+  }
 }

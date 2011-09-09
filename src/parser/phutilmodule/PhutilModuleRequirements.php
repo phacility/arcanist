@@ -65,6 +65,7 @@ class PhutilModuleRequirements {
   }
 
   public function addClassDeclaration(XHPASTNode $where, $name) {
+    $name = self::mungeXHPClassName($name);
     return $this->addDeclaration('class', $where, $name);
   }
 
@@ -98,8 +99,10 @@ class PhutilModuleRequirements {
   }
 
   public function addClassDependency($child, XHPASTNode $where, $name) {
+    $name = self::mungeXHPClassName($name);
     if ($child !== null) {
       if (empty($this->builtins['class'][$name])) {
+        $child = self::mungeXHPClassName($child);
         $this->chain['class'][$child] = $name;
       }
     }
@@ -172,5 +175,14 @@ class PhutilModuleRequirements {
       'chain'    => $this->chain,
       'messages' => $this->messages,
     );
+  }
+
+  private static function mungeXHPClassName($name) {
+    if (strlen($name) && $name[0] == ':') {
+      // XHP's semantic actions munge element names without a preceding colon.
+      $name = substr($name, 1);
+      return 'xhp_'.str_replace(array(':', '-'), array('__', '_'), $name);
+    }
+    return $name;
   }
 }
