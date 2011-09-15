@@ -69,7 +69,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
       list($stdout) = execx(
-        '(cd %s && hg outgoing --limit 1)',
+        '(cd %s && hg outgoing --branch `hg branch` --limit 1)',
         $this->getPath());
       $logs = $this->parseMercurialLog($stdout);
       if (!count($logs)) {
@@ -87,7 +87,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       '(cd %s && hg log --rev %s..%s --)',
       $this->getPath(),
       $this->getRelativeCommit(),
-      'tip');
+      $this->getWorkingCopyRevision());
     $logs = $this->parseMercurialLog($info);
 
     // Get rid of the first log, it's not actually part of the diff. "hg log"
@@ -188,10 +188,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $options = $this->getDiffOptions();
 
     list($stdout) = execx(
-      '(cd %s && hg diff %C --rev %s --rev tip -- %s)',
+      '(cd %s && hg diff %C --rev %s --rev %s -- %s)',
       $this->getPath(),
       $options,
       $this->getRelativeCommit(),
+      $this->getWorkingCopyRevision(),
       $path);
 
     return $stdout;
@@ -201,10 +202,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $options = $this->getDiffOptions();
 
     list($stdout) = execx(
-      '(cd %s && hg diff %C --rev %s --rev tip --)',
+      '(cd %s && hg diff %C --rev %s --rev %s --)',
       $this->getPath(),
       $options,
-      $this->getRelativeCommit());
+      $this->getRelativeCommit(),
+      $this->getWorkingCopyRevision());
 
     return $stdout;
   }
@@ -214,7 +216,9 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCurrentFileData($path) {
-    return $this->getFileDataAtRevision($path, 'tip');
+    return $this->getFileDataAtRevision(
+      $path,
+      $this->getWorkingCopyRevision());
   }
 
   private function getFileDataAtRevision($path, $revision) {
@@ -324,6 +328,28 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     return $result;
+  }
+
+  private function getWorkingCopyRevision() {
+    // In Mercurial, "tip" means the tip of the current branch, not what's in
+    // the working copy. The tip may be ahead of the working copy. We need to
+    // use "hg summary" to figure out what is actually in the working copy.
+    // For instance, "hg up 4 && arc diff" should not show commits 5 and above.
+
+    // The output of "hg summary" is different from the output of other hg
+    // commands so just parse it manually.
+    list($stdout) = execx(
+      '(cd %s && hg summary)',
+      $this->getPath());
+    $lines = explode("\n", $stdout);
+
+    $first = head($lines);
+    $match = null;
+    if (!preg_match('/^parent: \d+:([^ ]+)( |$)/', $first, $match)) {
+      throw new Exception("Unable to parse 'hg summary'.");
+    }
+
+    return trim($match[1]);
   }
 
 }
