@@ -69,22 +69,40 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
       list($stdout) = execx(
-        '(cd %s && hg outgoing --branch `hg branch` --limit 1)',
+        '(cd %s && hg outgoing --branch `hg branch` --limit 1 --style default)',
         $this->getPath());
       $logs = $this->parseMercurialLog($stdout);
       if (!count($logs)) {
         throw new ArcanistUsageException("You have no outgoing changes!");
       }
       $oldest_log = head($logs);
+      $oldest_rev = $oldest_log['rev'];
 
-      $this->relativeCommit = $oldest_log['rev'].'~1';
+      // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is new
+      // as of July 2011, so do this in a compatible way. Also, "hg log" and
+      // "hg outgoing" don't necessarily show parents (even if given an explicit
+      // template consisting of just the parents token) so we need to separately
+      // execute "hg parents".
+
+      list($stdout) = execx(
+        '(cd %s && hg parents --style default --rev %s)',
+        $this->getPath(),
+        $oldest_rev);
+      $parents_logs = $this->parseMercurialLog($stdout);
+      $first_parent = head($parents_logs);
+      if (!$first_parent) {
+        throw new ArcanistUsageException(
+          "Oldest outgoing change has no parent revision!");
+      }
+
+      $this->relativeCommit = $first_parent['rev'];
     }
     return $this->relativeCommit;
   }
 
   public function getLocalCommitInformation() {
     list($info) = execx(
-      '(cd %s && hg log --rev %s..%s --)',
+      '(cd %s && hg log --style default --rev %s..%s --)',
       $this->getPath(),
       $this->getRelativeCommit(),
       $this->getWorkingCopyRevision());
@@ -128,57 +146,61 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getWorkingCopyStatus() {
 
-    // A reviewable revision spans multiple local commits in Mercurial, but
-    // there is no way to get file change status across multiple commits, so
-    // just take the entire diff and parse it to figure out what's changed.
+    if (!isset($this->status)) {
+      // A reviewable revision spans multiple local commits in Mercurial, but
+      // there is no way to get file change status across multiple commits, so
+      // just take the entire diff and parse it to figure out what's changed.
 
-    $diff = $this->getFullMercurialDiff();
-    $parser = new ArcanistDiffParser();
-    $changes = $parser->parseDiff($diff);
+      $diff = $this->getFullMercurialDiff();
+      $parser = new ArcanistDiffParser();
+      $changes = $parser->parseDiff($diff);
 
-    $status_map = array();
+      $status_map = array();
 
-    foreach ($changes as $change) {
-      $flags = 0;
-      switch ($change->getType()) {
-        case ArcanistDiffChangeType::TYPE_ADD:
-        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
-        case ArcanistDiffChangeType::TYPE_COPY_HERE:
-          $flags |= self::FLAG_ADDED;
-          break;
-        case ArcanistDiffChangeType::TYPE_CHANGE:
-        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
-          $flags |= self::FLAG_MODIFIED;
-          break;
-        case ArcanistDiffChangeType::TYPE_DELETE:
-        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
-        case ArcanistDiffChangeType::TYPE_MULTICOPY:
-          $flags |= self::FLAG_DELETED;
-          break;
+      foreach ($changes as $change) {
+        $flags = 0;
+        switch ($change->getType()) {
+          case ArcanistDiffChangeType::TYPE_ADD:
+          case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+          case ArcanistDiffChangeType::TYPE_COPY_HERE:
+            $flags |= self::FLAG_ADDED;
+            break;
+          case ArcanistDiffChangeType::TYPE_CHANGE:
+          case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
+            $flags |= self::FLAG_MODIFIED;
+            break;
+          case ArcanistDiffChangeType::TYPE_DELETE:
+          case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
+          case ArcanistDiffChangeType::TYPE_MULTICOPY:
+            $flags |= self::FLAG_DELETED;
+            break;
+        }
+        $status_map[$change->getCurrentPath()] = $flags;
       }
-      $status_map[$change->getCurrentPath()] = $flags;
+
+      list($stdout) = execx(
+        '(cd %s && hg status)',
+        $this->getPath());
+
+      $working_status = $this->parseMercurialStatus($stdout);
+      foreach ($working_status as $path => $status) {
+        $status |= self::FLAG_UNCOMMITTED;
+        if (!empty($status_map[$path])) {
+          $status_map[$path] |= $status;
+        } else {
+          $status_map[$path] = $status;
+        }
+      }
+
+      $this->status = $status_map;
     }
 
-    list($stdout) = execx(
-      '(cd %s && hg status)',
-      $this->getPath());
-
-    $working_status = $this->parseMercurialStatus($stdout);
-    foreach ($working_status as $path => $status) {
-      $status |= self::FLAG_UNCOMMITTED;
-      if (!empty($status_map[$path])) {
-        $status_map[$path] |= $status;
-      } else {
-        $status_map[$path] = $status;
-      }
-    }
-
-    return $status_map;
+    return $this->status;
   }
 
   private function getDiffOptions() {
     $options = array(
-      '-g',
+      '--git',
       '-U'.$this->getDiffLinesOfContext(),
     );
     return implode(' ', $options);
