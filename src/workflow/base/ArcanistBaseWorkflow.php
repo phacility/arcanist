@@ -768,6 +768,8 @@ class ArcanistBaseWorkflow {
     $repository_api = $this->getRepositoryAPI();
 
     if ($repository_api instanceof ArcanistSubversionAPI) {
+      // NOTE: In SVN, we don't currently support a "get all local changes"
+      // operation, so special case it.
       if (empty($this->changeCache[$path])) {
         $diff = $repository_api->getRawDiffText($path);
         $parser = new ArcanistDiffParser();
@@ -777,15 +779,15 @@ class ArcanistBaseWorkflow {
         }
         $this->changeCache[$path] = reset($changes);
       }
-    } else {
+    } else if ($repository_api->supportsRelativeLocalCommits()) {
       if (empty($this->changeCache)) {
-        $diff = $repository_api->getFullGitDiff();
-        $parser = new ArcanistDiffParser();
-        $changes = $parser->parseDiff($diff);
+        $changes = $repository_api->getAllLocalChanges();
         foreach ($changes as $change) {
           $this->changeCache[$change->getCurrentPath()] = $change;
         }
       }
+    } else {
+      throw new Exception("Missing VCS support.");
     }
 
     if (empty($this->changeCache[$path])) {
@@ -825,30 +827,6 @@ class ArcanistBaseWorkflow {
         }
       }
     }
-  }
-
-  protected function parseGitRelativeCommit(ArcanistGitAPI $api, array $argv) {
-    if (count($argv) == 0) {
-      return;
-    }
-    if (count($argv) != 1) {
-      throw new ArcanistUsageException(
-        "Specify exactly one commit.");
-    }
-    $base = reset($argv);
-    if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
-      $merge_base = $base;
-    } else {
-      list($err, $merge_base) = exec_manual(
-        '(cd %s; git merge-base %s HEAD)',
-        $api->getPath(),
-        $base);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "Unable to parse git commit name '{$base}'.");
-      }
-    }
-    $api->setRelativeCommit(trim($merge_base));
   }
 
   protected function normalizeRevisionID($revision_id) {

@@ -13,7 +13,6 @@ phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/bundle');
 phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'parser/diff/change');
-phutil_require_module('arcanist', 'repository/api/git');
 
 phutil_require_module('phutil', 'conduit/client');
 phutil_require_module('phutil', 'console');

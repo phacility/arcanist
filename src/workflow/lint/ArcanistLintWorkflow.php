@@ -125,11 +125,12 @@ EOTEXT
             unset($paths[$path]);
           }
         }
-      } else {
-        $this->parseGitRelativeCommit(
-          $repository_api,
-          $this->getArgument('paths'));
+      } else if ($repository_api->supportsRelativeLocalCommits()) {
+        $repository_api->parseRelativeLocalCommit(
+          $this->getArgument('paths', array()));
         $paths = $repository_api->getWorkingCopyStatus();
+      } else {
+        throw new Exception("Unknown VCS!");
       }
 
       foreach ($paths as $path => $flags) {
@@ -139,7 +140,6 @@ EOTEXT
       }
 
       $paths = array_keys($paths);
-
     } else {
       $paths = $this->getArgument('paths');
       if (empty($paths)) {

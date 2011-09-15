@@ -374,4 +374,26 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return trim($match[1]);
   }
 
+  public function supportsRelativeLocalCommits() {
+    return true;
+  }
+
+  public function parseRelativeLocalCommit(array $argv) {
+    if (count($argv) == 0) {
+      return;
+    }
+    if (count($argv) != 1) {
+      throw new ArcanistUsageException("Specify only one commit.");
+    }
+    // This does the "hg id" call we need to normalize/validate the revision
+    // identifier.
+    $this->setRelativeCommit(reset($argv));
+  }
+
+  public function getAllLocalChanges() {
+    $diff = $this->getFullMercurialDiff();
+    $parser = new ArcanistDiffParser();
+    return $parser->parseDiff($diff);
+  }
+
 }

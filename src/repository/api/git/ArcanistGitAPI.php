@@ -512,4 +512,37 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return trim($owner);
   }
 
+  public function supportsRelativeLocalCommits() {
+    return true;
+  }
+
+  public function parseRelativeLocalCommit(array $argv) {
+    if (count($argv) == 0) {
+      return;
+    }
+    if (count($argv) != 1) {
+      throw new ArcanistUsageException("Specify only one commit.");
+    }
+    $base = reset($argv);
+    if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      $merge_base = $base;
+    } else {
+      list($err, $merge_base) = exec_manual(
+        '(cd %s; git merge-base %s HEAD)',
+        $this->getPath(),
+        $base);
+      if ($err) {
+        throw new ArcanistUsageException(
+          "Unable to parse git commit name '{$base}'.");
+      }
+    }
+    $this->setRelativeCommit(trim($merge_base));
+  }
+
+  public function getAllLocalChanges() {
+    $diff = $this->getFullGitDiff();
+    $parser = new ArcanistDiffParser();
+    return $parser->parseDiff($diff);
+  }
+
 }

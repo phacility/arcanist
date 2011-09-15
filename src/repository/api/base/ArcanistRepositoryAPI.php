@@ -159,4 +159,15 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getCurrentFileData($path);
   abstract public function getLocalCommitInformation();
 
+
+  abstract public function supportsRelativeLocalCommits();
+
+  public function parseRelativeLocalCommit(array $argv) {
+    throw new Exception("This VCS does not support relative local commits.");
+  }
+
+  public function getAllLocalChanges() {
+    throw new Exception("This VCS does not support getting all local changes.");
+  }
+
 }

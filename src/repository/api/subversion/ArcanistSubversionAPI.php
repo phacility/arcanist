@@ -482,4 +482,8 @@ EODIFF;
     return null;
   }
 
+  public function supportsRelativeCommits() {
+    return false;
+  }
+
 }
