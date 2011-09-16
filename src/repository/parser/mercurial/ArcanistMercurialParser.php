@@ -1,0 +1,192 @@
+<?php
+
+/*
+ * Copyright 2011 Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Parses output from various "hg" commands into structured data. This class
+ * provides low-level APIs for reading "hg" output.
+ *
+ * @task  parse Parsing "hg" Output
+ * @group workingcopy
+ */
+final class ArcanistMercurialParser {
+
+
+/* -(  Parsing "hg" Output  )------------------------------------------------ */
+
+
+  /**
+   * Parse the output of "hg status".
+   *
+   * @param string The stdout from running an "hg status" command.
+   * @return dict Map of paths to ArcanistRepositoryAPI status flags.
+   * @task parse
+   */
+  public static function parseMercurialStatus($stdout) {
+    $result = array();
+
+    $stdout = trim($stdout);
+    if (!strlen($stdout)) {
+      return $result;
+    }
+
+    $lines = explode("\n", $stdout);
+    foreach ($lines as $line) {
+      $flags = 0;
+      list($code, $path) = explode(' ', $line, 2);
+      switch ($code) {
+        case 'A':
+          $flags |= ArcanistRepositoryAPI::FLAG_ADDED;
+          break;
+        case 'R':
+          $flags |= ArcanistRepositoryAPI::FLAG_REMOVED;
+          break;
+        case 'M':
+          $flags |= ArcanistRepositoryAPI::FLAG_MODIFIED;
+          break;
+        case 'C':
+          // This is "clean" and included only for completeness, these files
+          // have not been changed.
+          break;
+        case '!':
+          $flags |= ArcanistRepositoryAPI::FLAG_MISSING;
+          break;
+        case '?':
+          $flags |= ArcanistRepositoryAPI::FLAG_UNTRACKED;
+          break;
+        case 'I':
+          // This is "ignored" and included only for completeness.
+          break;
+        default:
+          throw new Exception("Unknown Mercurial status '{$code}'.");
+      }
+
+      $result[$path] = $flags;
+    }
+
+    return $result;
+  }
+
+
+  /**
+   * Parse the output of "hg log". This also parses "hg outgoing", "hg parents",
+   * and other similar commands. This assumes "--style default".
+   *
+   * @param string The stdout from running an "hg log" command.
+   * @return list List of dictionaries with commit information.
+   * @task parse
+   */
+  public static function parseMercurialLog($stdout) {
+    $result = array();
+
+    $stdout = trim($stdout);
+    if (!strlen($stdout)) {
+      return $result;
+    }
+
+    $chunks = explode("\n\n", $stdout);
+    foreach ($chunks as $chunk) {
+      $commit = array();
+      $lines = explode("\n", $chunk);
+      foreach ($lines as $line) {
+        if (preg_match('/^(comparing with|searching for changes)/', $line)) {
+          // These are sent to stdout when you run "hg outgoing" although the
+          // format is otherwise identical to "hg log".
+          continue;
+        }
+        list($name, $value) = explode(':', $line, 2);
+        $value = trim($value);
+        switch ($name) {
+          case 'user':
+            $commit['user'] = $value;
+            break;
+          case 'date':
+            $commit['date'] = strtotime($value);
+            break;
+          case 'summary':
+            $commit['summary'] = $value;
+            break;
+          case 'changeset':
+            list($local, $rev) = explode(':', $value, 2);
+            $commit['local'] = $local;
+            $commit['rev'] = $rev;
+            break;
+          case 'parent':
+            if (empty($commit['parents'])) {
+              $commit['parents'] = array();
+            }
+            list($local, $rev) = explode(':', $value, 2);
+            $commit['parents'][] = array(
+              'local' => $local,
+              'rev'   => $rev,
+            );
+            break;
+          case 'branch':
+            $commit['branch'] = $value;
+            break;
+          case 'tag':
+            $commit['tag'] = $value;
+            break;
+          default:
+            throw new Exception("Unknown Mercurial log field '{$name}'!");
+        }
+      }
+      $result[] = $commit;
+    }
+
+    return $result;
+  }
+
+
+  /**
+   * Parse the output of "hg branches".
+   *
+   * @param string The stdout from running an "hg branches" command.
+   * @return list A list of dictionaries with branch information.
+   * @task parse
+   */
+  public static function parseMercurialBranches($stdout) {
+    $lines = explode("\n", trim($stdout));
+
+    $branches = array();
+    foreach ($lines as $line) {
+      $matches = null;
+
+      // Output of "hg branches" normally looks like:
+      //
+      //  default                    15101:a21ccf4412d5
+      //
+      // ...but may also have human-readable cues like:
+      //
+      //  stable                     15095:ec222a29bdf0 (inactive)
+      //
+      // See the unit tests for more examples.
+      $regexp = '/^([^ ]+)\s+(\d+):([a-f0-9]+)(\s|$)/';
+
+      if (!preg_match($regexp, $line, $matches)) {
+        throw new Exception("Failed to parse 'hg branches' output: {$line}");
+      }
+      $branches[$matches[1]] = array(
+        'local'   => $matches[2],
+        'rev'     => $matches[3],
+      );
+    }
+
+    return $branches;
+  }
+
+}

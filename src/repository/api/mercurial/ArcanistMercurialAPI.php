@@ -71,7 +71,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       list($stdout) = execx(
         '(cd %s && hg outgoing --branch `hg branch` --limit 1 --style default)',
         $this->getPath());
-      $logs = $this->parseMercurialLog($stdout);
+      $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
       if (!count($logs)) {
         throw new ArcanistUsageException("You have no outgoing changes!");
       }
@@ -88,7 +88,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         '(cd %s && hg parents --style default --rev %s)',
         $this->getPath(),
         $oldest_rev);
-      $parents_logs = $this->parseMercurialLog($stdout);
+      $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
       $first_parent = head($parents_logs);
       if (!$first_parent) {
         throw new ArcanistUsageException(
@@ -106,7 +106,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getPath(),
       $this->getRelativeCommit(),
       $this->getWorkingCopyRevision());
-    $logs = $this->parseMercurialLog($info);
+    $logs = ArcanistMercurialParser::parseMercurialLog($info);
 
     // Get rid of the first log, it's not actually part of the diff. "hg log"
     // is inclusive, while "hg diff" is exclusive.
@@ -182,7 +182,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         '(cd %s && hg status)',
         $this->getPath());
 
-      $working_status = $this->parseMercurialStatus($stdout);
+      $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
       foreach ($working_status as $path => $status) {
         $status |= self::FLAG_UNCOMMITTED;
         if (!empty($status_map[$path])) {
@@ -249,107 +249,6 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getPath(),
       $path);
     return $stdout;
-  }
-
-  private function parseMercurialStatus($status) {
-    $result = array();
-
-    $status = trim($status);
-    if (!strlen($status)) {
-      return $result;
-    }
-
-    $lines = explode("\n", $status);
-    foreach ($lines as $line) {
-      $flags = 0;
-      list($code, $path) = explode(' ', $line, 2);
-      switch ($code) {
-        case 'A':
-          $flags |= self::FLAG_ADDED;
-          break;
-        case 'R':
-          $flags |= self::FLAG_REMOVED;
-          break;
-        case 'M':
-          $flags |= self::FLAG_MODIFIED;
-          break;
-        case 'C':
-          // This is "clean" and included only for completeness, these files
-          // have not been changed.
-          break;
-        case '!':
-          $flags |= self::FLAG_MISSING;
-          break;
-        case '?':
-          $flags |= self::FLAG_UNTRACKED;
-          break;
-        case 'I':
-          // This is "ignored" and included only for completeness.
-          break;
-        default:
-          throw new Exception("Unknown Mercurial status '{$code}'.");
-      }
-
-      $result[$path] = $flags;
-    }
-
-    return $result;
-  }
-
-  private function parseMercurialLog($log) {
-    $result = array();
-
-    $chunks = explode("\n\n", trim($log));
-    foreach ($chunks as $chunk) {
-      $commit = array();
-      $lines = explode("\n", $chunk);
-      foreach ($lines as $line) {
-        if (preg_match('/^(comparing with|searching for changes)/', $line)) {
-          // These are sent to stdout when you run "hg outgoing" although the
-          // format is otherwise identical to "hg log".
-          continue;
-        }
-        list($name, $value) = explode(':', $line, 2);
-        $value = trim($value);
-        switch ($name) {
-          case 'user':
-            $commit['user'] = $value;
-            break;
-          case 'date':
-            $commit['date'] = strtotime($value);
-            break;
-          case 'summary':
-            $commit['summary'] = $value;
-            break;
-          case 'changeset':
-            list($local, $rev) = explode(':', $value, 2);
-            $commit['local'] = $local;
-            $commit['rev'] = $rev;
-            break;
-          case 'parent':
-            if (empty($commit['parents'])) {
-              $commit['parents'] = array();
-            }
-            list($local, $rev) = explode(':', $value, 2);
-            $commit['parents'][] = array(
-              'local' => $local,
-              'rev'   => $rev,
-            );
-            break;
-          case 'branch':
-            $commit['branch'] = $value;
-            break;
-          case 'tag':
-            $commit['tag'] = $value;
-            break;
-          default:
-            throw new Exception("Unknown Mercurial log field '{$name}'!");
-        }
-      }
-      $result[] = $commit;
-    }
-
-    return $result;
   }
 
   private function getWorkingCopyRevision() {

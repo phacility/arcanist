@@ -1,0 +1,16 @@
+changeset:   15101:a21ccf4412d5
+tag:         tip
+user:        Greg Ward <greg@gerg.ca>
+date:        Wed Sep 14 22:28:27 2011 -0400
+summary:     share: allow trailing newline on .hg/sharedpath.
+
+changeset:   15100:a051f8a6a7cc
+user:        Ben Hockey <neonstalwart@gmail.com>
+date:        Wed Sep 07 10:24:26 2011 -0400
+summary:     contrib: some support for named branches in zsh_completion (issue2988)
+
+changeset:   15099:b1f49efeab65
+user:        Simon Heimberg <simohe@besonet.ch>
+date:        Wed Sep 14 17:06:33 2011 +0200
+summary:     test: test for options duplicate with global options
+
