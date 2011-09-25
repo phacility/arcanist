@@ -482,7 +482,7 @@ EODIFF;
     return null;
   }
 
-  public function supportsRelativeCommits() {
+  public function supportsRelativeLocalCommits() {
     return false;
   }
 
