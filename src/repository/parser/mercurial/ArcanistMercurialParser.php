@@ -30,13 +30,15 @@ final class ArcanistMercurialParser {
 
 
   /**
-   * Parse the output of "hg status".
+   * Parse the output of "hg status". This provides detailed information, you
+   * can get less detailed information with @{method:parseMercurialStatus}. In
+   * particular, this will parse copy sources as per "hg status -C".
    *
    * @param string The stdout from running an "hg status" command.
-   * @return dict Map of paths to ArcanistRepositoryAPI status flags.
+   * @return dict Map of paths to status dictionaries.
    * @task parse
    */
-  public static function parseMercurialStatus($stdout) {
+  public static function parseMercurialStatusDetails($stdout) {
     $result = array();
 
     $stdout = trim($stdout);
@@ -44,16 +46,21 @@ final class ArcanistMercurialParser {
       return $result;
     }
 
+    $last_path = null;
     $lines = explode("\n", $stdout);
     foreach ($lines as $line) {
       $flags = 0;
-      list($code, $path) = explode(' ', $line, 2);
+      if ($line[1] !== ' ') {
+        throw new Exception("Unparsable Mercurial status line '{$line}'.");
+      }
+      $code = $line[0];
+      $path = substr($line, 2);
       switch ($code) {
         case 'A':
           $flags |= ArcanistRepositoryAPI::FLAG_ADDED;
           break;
         case 'R':
-          $flags |= ArcanistRepositoryAPI::FLAG_REMOVED;
+          $flags |= ArcanistRepositoryAPI::FLAG_DELETED;
           break;
         case 'M':
           $flags |= ArcanistRepositoryAPI::FLAG_MODIFIED;
@@ -71,14 +78,42 @@ final class ArcanistMercurialParser {
         case 'I':
           // This is "ignored" and included only for completeness.
           break;
+        case ' ':
+          // This shows the source of a file move, so update the last file we
+          // parsed to set its source.
+          if ($last_path === null) {
+            throw new Exception(
+              "Unexpected copy source in hg status, '{$line}'.");
+          }
+          $result[$last_path]['from'] = $path;
+          continue 2;
         default:
           throw new Exception("Unknown Mercurial status '{$code}'.");
       }
 
-      $result[$path] = $flags;
+      $result[$path] = array(
+        'flags' => $flags,
+        'from'  => null,
+      );
+      $last_path = $path;
     }
 
     return $result;
+  }
+
+
+  /**
+   * Parse the output of "hg status". This provides only basic information, you
+   * can get more detailed information by invoking
+   * @{method:parseMercurialStatusDetails}.
+   *
+   * @param string The stdout from running an "hg status" command.
+   * @return dict Map of paths to ArcanistRepositoryAPI status flags.
+   * @task parse
+   */
+  public static function parseMercurialStatus($stdout) {
+    $result = self::parseMercurialStatusDetails($stdout);
+    return ipull($result, 'flags');
   }
 
 

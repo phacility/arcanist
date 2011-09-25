@@ -20,7 +20,7 @@ final class ArcanistMercurialParserTestCase extends ArcanistPhutilTestCase {
 
   public function testParseAll() {
     $root = dirname(__FILE__).'/data/';
-    foreach (Filesystem::listDirectory($root) as $file) {
+    foreach (Filesystem::listDirectory($root, $hidden = false) as $file) {
       $this->parseData(
         basename($file),
         Filesystem::readFile($root.'/'.$file));
@@ -63,6 +63,21 @@ final class ArcanistMercurialParserTestCase extends ArcanistPhutilTestCase {
         $this->assertEqual(
           array('changed', 'added', 'removed', 'untracked'),
           array_keys($output));
+        break;
+      case 'status-moves.txt':
+        $output = ArcanistMercurialParser::parseMercurialStatusDetails($data);
+        $this->assertEqual(
+          'move_source',
+          $output['moved_file']['from']);
+        $this->assertEqual(
+          null,
+          $output['changed_file']['from']);
+        $this->assertEqual(
+          'copy_source',
+          $output['copied_file']['from']);
+        $this->assertEqual(
+          null,
+          idx($output, 'copy_source'));
         break;
       default:
         throw new Exception("No test information for test data '{$name}'!");
