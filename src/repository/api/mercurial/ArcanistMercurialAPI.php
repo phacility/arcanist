@@ -112,6 +112,27 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // is inclusive, while "hg diff" is exclusive.
     array_shift($logs);
 
+    // Expand short hashes (12 characters) to full hashes (40 characters) by
+    // issuing a big "hg log" command. Possibly we should do this with parents
+    // too, but nothing uses them directly at the moment.
+    if ($logs) {
+      $cmd = array();
+      foreach (ipull($logs, 'rev') as $rev) {
+        $cmd[] = csprintf('--rev %s', $rev);
+      }
+
+      list($full) = execx(
+        '(cd %s && hg log --template %s %C --)',
+        $this->getPath(),
+        '{node}\\n',
+        implode(' ', $cmd));
+
+      $full = explode("\n", trim($full));
+      foreach ($logs as $key => $dict) {
+        $logs[$key]['rev'] = array_pop($full);
+      }
+    }
+
     return $logs;
   }
 
@@ -257,20 +278,12 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // use "hg summary" to figure out what is actually in the working copy.
     // For instance, "hg up 4 && arc diff" should not show commits 5 and above.
 
-    // The output of "hg summary" is different from the output of other hg
-    // commands so just parse it manually.
+    // Without arguments, "hg id" shows the current working directory's commit,
+    // and "--debug" expands it to a 40-character hash.
     list($stdout) = execx(
-      '(cd %s && hg summary)',
+      '(cd %s && hg --debug id --id)',
       $this->getPath());
-    $lines = explode("\n", $stdout);
-
-    $first = head($lines);
-    $match = null;
-    if (!preg_match('/^parent: \d+:([^ ]+)( |$)/', $first, $match)) {
-      throw new Exception("Unable to parse 'hg summary'.");
-    }
-
-    return trim($match[1]);
+    return trim($stdout);
   }
 
   public function supportsRelativeLocalCommits() {
