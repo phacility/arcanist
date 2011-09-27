@@ -490,4 +490,10 @@ EODIFF;
     return false;
   }
 
+  public function getFinalizedRevisionMessage() {
+    // In other VCSes we give push instructions here, but it never makes sense
+    // in SVN.
+    return "Done.";
+  }
+
 }

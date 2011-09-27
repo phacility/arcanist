@@ -144,15 +144,20 @@ EOTEXT
       $repository_api->performLocalBranchMerge($branch, $message);
       echo "Merged '{$branch}'.\n";
 
-      $done_message = $repository_api->getFinalizedRevisionMessage();
-      echo phutil_console_wrap($done_message."\n");
+      $mark_workflow = $this->buildChildWorkflow(
+        'mark-committed',
+        array(
+          '--finalize',
+          $revision_id,
+        ));
+      $mark_workflow->run();
     }
 
     return 0;
   }
 
   protected function getSupportedRevisionControlSystems() {
-    return array('git');
+    return array('git', 'hg');
   }
 
 }

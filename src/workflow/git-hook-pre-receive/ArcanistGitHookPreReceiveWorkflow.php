@@ -57,19 +57,6 @@ EOTEXT
         ".arcconfig.");
     }
 
-    if (!$working_copy->getConfig('remote_hooks_installed')) {
-      echo phutil_console_wrap(
-        "\n".
-        "NOTE: Arcanist is installed as a git pre-receive hook in the git ".
-        "remote you are pushing to, but the project's '.arcconfig' does not ".
-        "have the 'remote_hooks_installed' flag set. Until you set the flag, ".
-        "some code will run needlessly in both the local and remote, and ".
-        "revisions will be marked 'committed' in Differential when they are ".
-        "amended rather than when they are actually pushed to the remote ".
-        "origin.".
-        "\n\n");
-    }
-
     // Git repositories have special rules in pre-receive hooks. We need to
     // construct the API against the .git directory instead of the project
     // root or commands don't work properly.

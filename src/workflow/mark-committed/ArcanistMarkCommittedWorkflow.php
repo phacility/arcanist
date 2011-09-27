@@ -28,16 +28,23 @@ class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
       **mark-committed** __revision__
           Supports: git, svn
           Manually mark a revision as committed. You should not normally need
-          to do this; arc commit (svn), arc amend (git) or commit hooks in the
-          master remote repository should do it for you. However, if these
-          mechanisms have failed for some reason you can use this command to
-          manually change a revision status from "Accepted" to "Committed".
+          to do this; arc commit (svn), arc amend (git), arc merge (git, hg) or
+          repository tracking on the master remote repository should do it for
+          you. However, if these mechanisms have failed for some reason you can
+          use this command to manually change a revision status from "Accepted"
+          to "Committed".
 EOTEXT
       );
   }
 
   public function getArguments() {
     return array(
+      'finalize' => array(
+        'help' =>
+          "Mark committed only if the repository is untracked and the ".
+          "revision is accepted. Continue even if the mark can't happen. This ".
+          "is a soft version of 'mark-committed' used by other workflows.",
+      ),
       '*' => 'revision',
     );
   }
@@ -50,7 +57,16 @@ EOTEXT
     return true;
   }
 
+  public function requiresRepositoryAPI() {
+    // NOTE: Technically we only use this to generate the right message at
+    // the end, and you can even get the wrong message (e.g., if you run
+    // "arc mark-committed D123" from a git repository, but D123 is an SVN
+    // revision). We could be smarter about this, but it's just display fluff.
+    return true;
+  }
+
   public function run() {
+    $is_finalize = $this->getArgument('finalize');
 
     $conduit = $this->getConduit();
 
@@ -73,6 +89,7 @@ EOTEXT
         ),
       ));
 
+    $revision = null;
     try {
       $revision_id = reset($revision_list);
       $revision_id = $this->normalizeRevisionID($revision_id);
@@ -80,23 +97,61 @@ EOTEXT
         $revision_data,
         $revision_id);
     } catch (ArcanistChooseInvalidRevisionException $ex) {
-      throw new ArcanistUsageException(
-        "Revision D{$revision_id} is not committable. You can only mark ".
-        "revisions which have been 'accepted' as committed.");
+      if (!$is_finalize) {
+        throw new ArcanistUsageException(
+          "Revision D{$revision_id} is not committable. You can only mark ".
+          "revisions which have been 'accepted' as committed.");
+      }
     }
 
-    $revision_id = $revision->getID();
-    $revision_name = $revision->getName();
+    if ($revision) {
+      $actually_mark = true;
+      if ($is_finalize) {
+        $project_info = $conduit->callMethodSynchronous(
+          'arcanist.projectinfo',
+          array(
+            'name' => $this->getWorkingCopy()->getProjectID(),
+          ));
+        if ($project_info['tracked']) {
+          $actually_mark = false;
+        }
+      }
+      if ($actually_mark) {
+        $revision_id = $revision->getID();
+        $revision_name = $revision->getName();
 
-    echo "Marking revision D{$revision_id} '{$revision_name}' committed...\n";
+        echo "Marking revision D{$revision_id} '{$revision_name}' ".
+             "committed...\n";
 
-    $conduit->callMethodSynchronous(
-      'differential.markcommitted',
+        $conduit->callMethodSynchronous(
+          'differential.markcommitted',
+          array(
+            'revision_id' => $revision_id,
+          ));
+      }
+    }
+
+    $revision_info = $conduit->callMethodSynchronous(
+      'differential.getrevision',
       array(
         'revision_id' => $revision_id,
       ));
+    $status = $revision_info['statusName'];
+    if ($status == 'Accepted' || $status == 'Committed') {
+      // If this has already been attached to commits, don't show the
+      // "you can push this commit" message since we know it's been committed
+      // already.
+      $is_finalized = empty($revision_info['commits']);
+    } else {
+      $is_finalized = false;
+    }
 
-    echo "Done.\n";
+    if ($is_finalized) {
+      $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
+      echo phutil_console_wrap($message)."\n";
+    } else {
+      echo "Done.\n";
+    }
 
     return 0;
   }
