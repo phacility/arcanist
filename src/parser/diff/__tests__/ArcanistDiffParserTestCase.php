@@ -412,6 +412,12 @@ EOTEXT
           $change->getNewProperties()
         );
         break;
+      case 'git-empty-files.gitdiff':
+        $this->assertEqual(2, count($changes));
+        while ($change = array_shift($changes)) {
+          $this->assertEqual(0, count($change->getHunks()));
+        }
+        break;
       case 'git-commit.gitdiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);

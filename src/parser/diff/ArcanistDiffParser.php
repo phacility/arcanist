@@ -569,7 +569,11 @@ class ArcanistDiffParser {
 
         // $this->didFailParse("Expected 'index af23f...a98bc' header line.");
       } else {
-        $line = $this->nextLine();
+        // NOTE: In the git case, where this patch is the last change in the
+        // file, we may have a final terminal newline. Skip over it so that
+        // we'll hit the '$line === null' block below. This is covered by the
+        // 'git-empty-file.gitdiff' test case.
+        $line = $this->nextNonemptyLine();
       }
     }
 
