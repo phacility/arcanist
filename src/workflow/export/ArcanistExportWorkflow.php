@@ -173,8 +173,7 @@ EOTEXT
         $parser = new ArcanistDiffParser();
 
         if ($repository_api instanceof ArcanistGitAPI) {
-          $this->parseGitRelativeCommit(
-            $repository_api,
+          $repository_api->parseRelativeLocalCommit(
             $this->getArgument('paths'));
           $diff = $repository_api->getFullGitDiff();
           $changes = $parser->parseDiff($diff);
