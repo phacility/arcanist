@@ -204,7 +204,7 @@ class ArcanistDiffParser {
         // This is a git commit message, probably from "git show".
         '(?P<type>commit) (?P<hash>[a-f0-9]+)',
         // This is a git diff, probably from "git show" or "git diff".
-        '(?P<type>diff --git) a/(?P<old>.+) b/(?P<cur>.+)',
+        '(?P<type>diff --git) [abicwo12]/(?P<old>.+) [abicwo12]/(?P<cur>.+)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
         '(?P<binary>Binary) files '.
