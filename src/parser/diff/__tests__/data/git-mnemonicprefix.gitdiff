@@ -1,0 +1,7 @@
+diff --git i/FILE w/FILE
+index e8b5482..2a42638 100644
+--- i/FILE
++++ w/FILE
+@@ -1 +1,2 @@
+ TEXT
++MORE TEXT
