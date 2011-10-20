@@ -418,6 +418,12 @@ EOTEXT
           $this->assertEqual(0, count($change->getHunks()));
         }
         break;
+      case 'git-mnemonicprefix.gitdiff':
+        // Check parsing of diffs created with `diff.mnemonicprefix`
+        // configuration option set to `true`.
+        $this->assertEqual(1, count($changes));
+        $this->assertEqual(1, count(reset($changes)->getHunks()));
+        break;
       case 'git-commit.gitdiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
