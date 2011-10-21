@@ -487,6 +487,13 @@ EOTEXT
           ArcanistDiffChangeType::FILE_BINARY,
           $change->getFileType());
         break;
+      case 'git-replace-symlink.gitdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

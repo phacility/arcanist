@@ -1,0 +1,15 @@
+diff --git a/derp b/derp
+deleted file mode 120000
+index d6d9d34..0000000
+--- a/derp
++++ /dev/null
+@@ -1 +0,0 @@
+-blah
+\ No newline at end of file
+diff --git a/derp b/derp
+new file mode 100644
+index 0000000..54a5dbc
+--- /dev/null
++++ b/derp
+@@ -0,0 +1 @@
++derp derp

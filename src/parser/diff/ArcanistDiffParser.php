@@ -503,7 +503,14 @@ class ArcanistDiffParser {
         }
 
         if (!empty($match['new'])) {
-          $change->setType(ArcanistDiffChangeType::TYPE_ADD);
+          // If you replace a symlink with a normal file, git renders the change
+          // as a "delete" of the symlink plus an "add" of the new file. We
+          // prefer to represent this as a change.
+          if ($change->getType() == ArcanistDiffChangeType::TYPE_DELETE) {
+            $change->setType(ArcanistDiffChangeType::TYPE_CHANGE);
+          } else {
+            $change->setType(ArcanistDiffChangeType::TYPE_ADD);
+          }
         }
 
         if (!empty($match['old'])) {
