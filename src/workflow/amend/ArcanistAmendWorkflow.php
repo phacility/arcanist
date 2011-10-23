@@ -53,7 +53,7 @@ EOTEXT
     return array(
       'show' => array(
         'help' =>
-          "Show the amended commit message."
+          "Show the amended commit message, without modifying the working copy."
       ),
       'revision' => array(
         'param' => 'revision_id',
@@ -65,13 +65,7 @@ EOTEXT
   }
 
   public function run() {
-    if ($this->isHistoryImmutable()) {
-      throw new ArcanistUsageException(
-        "This project is marked as adhering to a conservative history ".
-        "mutability doctrine (having an immutable local history), which ".
-        "precludes amending commit messages. You can use 'arc merge' to ".
-        "merge feature branches instead.");
-    }
+    $is_show = $this->getArgument('show');
 
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
@@ -79,10 +73,20 @@ EOTEXT
         "You may only run 'arc amend' in a git working copy.");
     }
 
-    if ($repository_api->getUncommittedChanges()) {
-      throw new ArcanistUsageException(
-        "You have uncommitted changes in this branch. Stage and commit (or ".
-        "revert) them before proceeding.");
+    if (!$is_show) {
+      if ($this->isHistoryImmutable()) {
+        throw new ArcanistUsageException(
+          "This project is marked as adhering to a conservative history ".
+          "mutability doctrine (having an immutable local history), which ".
+          "precludes amending commit messages. You can use 'arc merge' to ".
+          "merge feature branches instead.");
+      }
+
+      if ($repository_api->getUncommittedChanges()) {
+        throw new ArcanistUsageException(
+          "You have uncommitted changes in this branch. Stage and commit (or ".
+          "revert) them before proceeding.");
+      }
     }
 
     if ($this->getArgument('revision')) {
@@ -120,7 +124,7 @@ EOTEXT
         'edit'        => false,
       ));
 
-    if ($this->getArgument('show')) {
+    if ($is_show) {
       echo $message."\n";
     } else {
       $repository_api->amendGitHeadCommit($message);
