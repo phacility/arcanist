@@ -23,6 +23,20 @@
  */
 final class ArcanistDiffUtils {
 
+  /**
+   * Make a best-effort attempt to determine if a file is definitely binary.
+   *
+   * @return bool If true, the file is almost certainly binary. If false, the
+   *              file might still be binary but is subtle about it.
+   */
+  public static function isHeuristicBinaryFile($data) {
+    // Detect if a file is binary according to the Git heuristic, which is the
+    // presence of NULL ("\0") bytes. Git only examines the first "few" bytes of
+    // each file (8KB or so) as an optimization, but we don't have a reasonable
+    // equivalent in PHP, so just look at all of it.
+    return (strpos($data, "\0") !== false);
+  }
+
   public static function renderDifferences(
     $old,
     $new,
