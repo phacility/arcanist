@@ -32,6 +32,10 @@
  * You can specify additional command-line options to pass to PyLint by
  * setting ##lint.pylint.options##.
 
+ * If you have a PyLint rcfile, specify its path with
+ * ##lint.pylint.rcfile##. It can be absolute or relative to the project
+ * root. Be sure not to define ##output-format##, or if you do, set it to
+ * ##text##.
  *
  * Specify which PyLint messages map to which Arcanist messages by defining
  * the following regular expressions:
@@ -156,8 +160,20 @@ class ArcanistPyLintLinter extends ArcanistLinter {
     // '-iy': show message codes for lint warnings/errors
     $options = array('-rn',  '-iy');
 
-    // Add any options defined in the config file for PyLint
     $working_copy = $this->getEngine()->getWorkingCopy();
+
+    // Specify an --rcfile, either absolute or relative to the project root.
+    // Stupidly, the command line args above are overridden by rcfile, so be
+    // careful.
+    $rcfile = $working_copy->getConfig('lint.pylint.rcfile');
+    if ($rcfile !== null) {
+      $rcfile = Filesystem::resolvePath(
+                   $rcfile,
+                   $working_copy->getProjectRoot());
+      $options[] = csprintf('--rcfile=%s', $rcfile);
+    }
+
+    // Add any options defined in the config file for PyLint
     $config_options = $working_copy->getConfig('lint.pylint.options');
     if ($config_options !== null) {
       $options = array_merge($options, $config_options);
