@@ -663,12 +663,14 @@ class ArcanistDiffParser {
     }
     do {
       $line = $this->nextLine();
-      if ($line === '') {
+      if ($line === '' || $line === null) {
+        // Some versions of Mercurial apparently omit the terminal newline,
+        // although it's unclear if Git will ever do this. In either case,
+        // rely on the base85 check for sanity.
         $this->nextNonemptyLine();
         return;
-      } else if ($line === null) {
-        throw new Exception(
-          "Expected empty line to terminate binary patch.");
+      } else if (!preg_match('/^[a-zA-Z]/', $line)) {
+        $this->didFailParse("Expected base85 line length character (a-zA-Z).");
       }
     } while (true);
   }

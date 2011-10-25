@@ -478,6 +478,7 @@ EOTEXT
           $change->getFileType());
         break;
       case 'hg-binary-change.hgdiff':
+      case 'hg-solo-binary-change.hgdiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
         $this->assertEqual(
