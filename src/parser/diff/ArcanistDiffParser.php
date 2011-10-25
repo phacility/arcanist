@@ -608,6 +608,26 @@ class ArcanistDiffParser {
       return;
     }
 
+    // With "git diff --binary" (not a normal mode, but one users may explicitly
+    // invoke and then, e.g., copy-paste into the web console) or "hg diff
+    // --git" (normal under hg workflows), we may encounter a literal binary
+    // patch.
+    $is_git_binary_patch = preg_match(
+      '/^GIT binary patch$/',
+      $line);
+    if ($is_git_binary_patch) {
+      $this->nextLine();
+      $this->parseGitBinaryPatch();
+      $line = $this->getLine();
+      if (preg_match('/^literal/', $line)) {
+        // We may have old/new binaries (change) or just a new binary (hg add).
+        // If there are two blocks, parse both.
+        $this->parseGitBinaryPatch();
+      }
+      $this->markBinary($change);
+      return;
+    }
+
     if ($is_git) {
       // "git diff -b" ignores whitespace, but has an empty hunk target
       if (preg_match('@^diff --git a/.*$@', $line)) {
@@ -622,6 +642,28 @@ class ArcanistDiffParser {
     $change->setOldPath($old_file);
 
     $this->parseChangeset($change);
+  }
+
+  private function parseGitBinaryPatch() {
+
+    // TODO: We could decode the patches, but it's a giant mess so don't bother
+    // for now. We'll pick up the data from the working copy in the common
+    // case ("arc diff").
+
+    $line = $this->getLine();
+    if (!preg_match('/^literal /', $line)) {
+      $this->didFailParse("Expected 'literal NNNN' to start git binary patch.");
+    }
+    do {
+      $line = $this->nextLine();
+      if ($line === '') {
+        $this->nextNonemptyLine();
+        return;
+      } else if ($line === null) {
+        throw new Exception(
+          "Expected empty line to terminate binary patch.");
+      }
+    } while (true);
   }
 
   protected function parseHunkTarget() {

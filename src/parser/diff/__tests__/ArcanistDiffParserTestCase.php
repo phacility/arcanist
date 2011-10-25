@@ -467,6 +467,26 @@ EOTEXT
           , $change->getMetadata('message')
         );
         break;
+      case 'git-binary.gitdiff':
+        $this->assertEqual(1, count($changes));
+        $change = reset($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $change->getFileType());
+        break;
+      case 'hg-binary-change.hgdiff':
+        $this->assertEqual(1, count($changes));
+        $change = reset($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $change->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $change->getFileType());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
