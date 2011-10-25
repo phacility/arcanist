@@ -30,8 +30,10 @@
  *   lint.pylint.logilab_common.prefix
  *
  * You can specify additional command-line options to pass to PyLint by
- * setting ##lint.pylint.options##.
-
+ * setting ##lint.pylint.options##. You may also specify a list of additional
+ * entries for PYTHONPATH with ##lint.pylint.pythonpath##. Those can be
+ * absolute or relative to the project root.
+ *
  * If you have a PyLint rcfile, specify its path with
  * ##lint.pylint.rcfile##. It can be absolute or relative to the project
  * root. Be sure not to define ##output-format##, or if you do, set it to
@@ -148,6 +150,17 @@ class ArcanistPyLintLinter extends ArcanistLinter {
     foreach ($prefixes as $prefix) {
       if ($prefix !== null) {
         $python_path[] = $prefix.'/lib/python2.6/site-packages';
+      }
+    }
+
+    $config_paths = $working_copy->getConfig('lint.pylint.pythonpath');
+    if ($config_paths !== null) {
+      foreach ($config_paths as $config_path) {
+        if ($config_path !== null) {
+          $python_path[] =
+            Filesystem::resolvePath($config_path,
+                                    $working_copy->getProjectRoot());
+        }
       }
     }
 
