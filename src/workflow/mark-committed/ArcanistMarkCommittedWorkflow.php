@@ -79,32 +79,41 @@ EOTEXT
       throw new ArcanistUsageException(
         "mark-committed requires exactly one revision.");
     }
-
-    $revision_data = $conduit->callMethodSynchronous(
-      'differential.find',
-      array(
-        'query' => 'committable',
-        'guids' => array(
-          $this->getUserPHID(),
-        ),
-      ));
+    $revision_id = reset($revision_list);
+    $revision_id = $this->normalizeRevisionID($revision_id);
 
     $revision = null;
     try {
-      $revision_id = reset($revision_list);
-      $revision_id = $this->normalizeRevisionID($revision_id);
-      $revision = $this->chooseRevision(
-        $revision_data,
-        $revision_id);
-    } catch (ArcanistChooseInvalidRevisionException $ex) {
+      $revision = $conduit->callMethodSynchronous(
+        'differential.getrevision',
+        array(
+          'revision_id' => $revision_id,
+        )
+      );
+    } catch (Exception $ex) {
       if (!$is_finalize) {
         throw new ArcanistUsageException(
-          "Revision D{$revision_id} is not committable. You can only mark ".
-          "revisions which have been 'accepted' as committed.");
+          "Revision D{$revision_id} does not exist."
+        );
       }
     }
 
+    if (!$is_finalize && $revision['statusName'] != 'Accepted') {
+      throw new ArcanistUsageException(
+        "Revision D{$revision_id} is not committable. You can only mark ".
+        "revisions which have been 'accepted' as committed."
+      );
+    }
+
     if ($revision) {
+      if ($revision['authorPHID'] != $this->getUserPHID()) {
+        $prompt = "You are not the author of revision D{$revision_id}, ".
+          'are you sure you want to mark it committed?';
+        if (!phutil_console_confirm($prompt)) {
+          throw new ArcanistUserAbortException();
+        }
+      }
+
       $actually_mark = true;
       if ($is_finalize) {
         $project_info = $conduit->callMethodSynchronous(
@@ -117,8 +126,7 @@ EOTEXT
         }
       }
       if ($actually_mark) {
-        $revision_id = $revision->getID();
-        $revision_name = $revision->getName();
+        $revision_name = $revision['title'];
 
         echo "Marking revision D{$revision_id} '{$revision_name}' ".
              "committed...\n";
@@ -131,17 +139,12 @@ EOTEXT
       }
     }
 
-    $revision_info = $conduit->callMethodSynchronous(
-      'differential.getrevision',
-      array(
-        'revision_id' => $revision_id,
-      ));
-    $status = $revision_info['statusName'];
+    $status = $revision['statusName'];
     if ($status == 'Accepted' || $status == 'Committed') {
       // If this has already been attached to commits, don't show the
       // "you can push this commit" message since we know it's been committed
       // already.
-      $is_finalized = empty($revision_info['commits']);
+      $is_finalized = empty($revision['commits']);
     } else {
       $is_finalized = false;
     }
