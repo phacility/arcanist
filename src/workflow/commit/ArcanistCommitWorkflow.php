@@ -68,33 +68,63 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     $conduit = $this->getConduit();
 
-    $revision_data = $conduit->callMethodSynchronous(
-      'differential.find',
-      array(
-        'query' => 'committable',
-        'guids' => array(
-          $this->getUserPHID(),
-        ),
-      ));
+    $revision_id = $this->getArgument('revision');
 
-    try {
-      $revision_id = $this->getArgument('revision');
-      $revision = $this->chooseRevision(
-        $revision_data,
-        $revision_id,
-        'Which revision do you want to commit?');
-    } catch (ArcanistChooseInvalidRevisionException $ex) {
-      throw new ArcanistUsageException(
-        "Revision D{$revision_id} is not committable. You can only commit ".
-        "revisions you own which have been 'accepted'.");
-    } catch (ArcanistChooseNoRevisionsException $ex) {
-      throw new ArcanistUsageException(
-        "You have no committable Differential revisions. You can only commit ".
-        "revisions you own which have been 'accepted'.");
+    if (!$revision_id) {
+      $revision_data = $conduit->callMethodSynchronous(
+        'differential.find',
+        array(
+          'query' => 'committable',
+          'guids' => array(
+            $this->getUserPHID(),
+          ),
+        )
+      );
+
+      try {
+        $revision = $this->chooseRevision(
+          $revision_data,
+          null,
+          'Which revision do you want to commit?'
+        );
+        $revision_id = $revision->getID();
+      } catch (ArcanistChooseNoRevisionsException $ex) {
+        throw new ArcanistUsageException(
+          "You have no committable Differential revisions. You can only ".
+          "commit revisions which have been 'accepted'.");
+      }
     }
 
-    $revision_id    = $revision->getID();
-    $revision_name  = $revision->getName();
+    $revision = null;
+    try {
+      $revision = $conduit->callMethodSynchronous(
+        'differential.getrevision',
+        array(
+          'revision_id' => $revision_id,
+        )
+      );
+    } catch (Exception $ex) {
+      throw new ArcanistUsageException(
+        "Revision D{$revision_id} does not exist."
+      );
+    }
+
+    if ($revision['statusName'] != 'Accepted') {
+      throw new ArcanistUsageException(
+        "Revision D{$revision_id} is not committable. You can only commit ".
+        "revisions which have been 'accepted'."
+      );
+    }
+
+    if ($revision['authorPHID'] != $this->getUserPHID()) {
+      $prompt = "You are not the author of revision D{$revision_id}, ".
+        'are you sure you want to commit it?';
+      if (!phutil_console_confirm($prompt)) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+    $revision_name  = $revision['title'];
 
     $message = $conduit->callMethodSynchronous(
       'differential.getcommitmessage',
@@ -140,8 +170,7 @@ EOTEXT
     return $err;
   }
 
-  protected function getCommitFileList(
-    ArcanistDifferentialRevisionRef $revision) {
+  protected function getCommitFileList(array $revision) {
     $repository_api = $this->getRepositoryAPI();
 
     if (!($repository_api instanceof ArcanistSubversionAPI)) {
@@ -151,9 +180,22 @@ EOTEXT
 
     $conduit = $this->getConduit();
 
-    $revision_id = $revision->getID();
+    $revision_id = $revision['id'];
 
-    $revision_source = $revision->getSourcePath();
+    $revision = reset($conduit->callMethodSynchronous(
+      'differential.find',
+      array(
+        'query' => 'revision-ids',
+        'guids' => array($revision_id,)
+      )
+    ));
+    if (!$revision) {
+      throw new ArcanistUsageException(
+        "Revision D{$revision_id} does not exist."
+      );
+    }
+    $revision_source = $revision['sourcePath'];
+
     $working_copy = $repository_api->getPath();
     if ($revision_source != $working_copy) {
       $prompt =

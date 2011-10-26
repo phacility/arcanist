@@ -106,7 +106,7 @@ EOTEXT
     }
 
     if ($revision) {
-      if ($revision['authorPHID'] != $this->getUserPHID()) {
+      if (!$is_finalize && $revision['authorPHID'] != $this->getUserPHID()) {
         $prompt = "You are not the author of revision D{$revision_id}, ".
           'are you sure you want to mark it committed?';
         if (!phutil_console_confirm($prompt)) {
