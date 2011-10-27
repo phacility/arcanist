@@ -68,6 +68,7 @@ abstract class ArcanistLintEngine {
   private $minimumSeverity = ArcanistLintSeverity::SEVERITY_DISABLED;
 
   private $changedLines = array();
+  private $textChanges = array();
   private $commitHookMode = false;
 
   public function __construct() {
@@ -99,6 +100,15 @@ abstract class ArcanistLintEngine {
 
   public function getPathChangedLines($path) {
     return idx($this->changedLines, $path);
+  }
+
+  public function setTextChange($path) {
+    $this->textChanges[$path] = true;
+    return $this;
+  }
+
+  public function isTextChange($path) {
+    return idx($this->textChanges, $path, false);
   }
 
   public function setFileData($data) {
@@ -193,11 +203,14 @@ abstract class ArcanistLintEngine {
         if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
           continue;
         }
-        // When a user runs "arc diff", we default to raising only warnings on
+        // When a user runs "arc lint", we default to raising only warnings on
         // lines they have changed (errors are still raised anywhere in the
         // file).
+        $text_change = $this->isTextChange($message->getPath());
         $changed = $this->getPathChangedLines($message->getPath());
-        if ($changed !== null && !$message->isError()) {
+        if ($text_change === true &&
+            $changed !== null &&
+            !$message->isError()) {
           if (empty($changed[$message->getLine()])) {
             continue;
           }

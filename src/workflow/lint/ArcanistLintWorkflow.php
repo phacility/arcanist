@@ -169,12 +169,20 @@ EOTEXT
       $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
     }
 
+    // Propagate information about which lines changed to the lint engine.
+    // This is used so that the lint engine can drop messages concerning
+    // lines that weren't in the change.
     $engine->setPaths($paths);
     if (!$should_lint_all) {
       foreach ($paths as $path) {
-        $engine->setPathChangedLines(
-          $path,
-          $this->getChangedLines($path, 'new'));
+        // Explicitly flag text changes, as line information doesn't apply
+        // to non-text files.
+        if ($this->isTextChange($path)) {
+          $engine->setTextChange($path);
+          $engine->setPathChangedLines(
+            $path,
+            $this->getChangedLines($path, 'new'));
+        }
       }
     }
 

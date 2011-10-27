@@ -754,6 +754,11 @@ class ArcanistBaseWorkflow {
     return $bundle;
   }
 
+  protected function isTextChange($path) {
+    $change = $this->getChange($path);
+    return $change->getFileType() == ArcanistDiffChangeType::FILE_TEXT;
+  }
+
   protected function getChangedLines($path, $mode) {
     if (is_dir($path)) {
       return array();
