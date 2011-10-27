@@ -238,7 +238,9 @@ class ArcanistPyLintLinter extends ArcanistLinter {
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
-      if (!preg_match('/([A-Z]\d+): *(\d+): *(.*)$/', $line, $matches)) {
+      if (!preg_match(
+              '/([A-Z]\d+): *(\d+)(?:|,\d*): *(.*)$/',
+              $line, $matches)) {
         continue;
       }
       foreach ($matches as $key => $match) {
