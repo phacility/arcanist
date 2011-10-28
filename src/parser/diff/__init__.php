@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('arcanist', 'difference');
 phutil_require_module('arcanist', 'parser/diff/change');
 phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'parser/diff/hunk');

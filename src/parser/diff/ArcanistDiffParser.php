@@ -29,6 +29,7 @@ class ArcanistDiffParser {
   protected $isGit;
   protected $isMercurial;
   protected $detectBinaryFiles = false;
+  protected $tryEncoding;
 
   protected $changes = array();
   private $forcePath;
@@ -45,6 +46,10 @@ class ArcanistDiffParser {
   public function setDetectBinaryFiles($detect) {
     $this->detectBinaryFiles = $detect;
     return $this;
+  }
+
+  public function setTryEncoding($encoding) {
+    $this->tryEncoding = $encoding;
   }
 
   public function forcePath($path) {
@@ -807,6 +812,21 @@ class ArcanistDiffParser {
       $is_binary = false;
       if ($this->detectBinaryFiles) {
         $is_binary = !phutil_is_utf8($corpus);
+
+        if ($is_binary && $this->tryEncoding) {
+          $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
+          if (!$is_binary) {
+              // NOTE: This feature is HIGHLY EXPERIMENTAL and will cause a lot
+              // of issues. Use it at your own risk.
+              $corpus = mb_convert_encoding(
+                  $corpus, 'UTF-8', $this->tryEncoding);
+              if (!phutil_is_utf8($corpus)) {
+                  throw new Exception(
+                      'Failed converting hunk to '.$this->tryEncoding);
+              }
+          }
+        }
+
       }
 
       if ($is_binary) {
