@@ -283,7 +283,12 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     list($stdout) = execx(
       '(cd %s && hg --debug id --id)',
       $this->getPath());
-    return trim($stdout);
+
+    // Even with "--id", "hg id" will print a trailing "+" after the hash
+    // if the working copy is dirty (has uncommitted changes). We'll explicitly
+    // detect this later by calling getWorkingCopyStatus(); ignore it for now.
+    $stdout = trim($stdout);
+    return rtrim($stdout, '+');
   }
 
   public function supportsRelativeLocalCommits() {
