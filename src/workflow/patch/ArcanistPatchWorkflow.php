@@ -135,10 +135,6 @@ EOTEXT
            ($this->getSource() == self::SOURCE_DIFF);
   }
 
-  public function requiresAuthentication() {
-    return $this->requiresConduit();
-  }
-
   public function requiresRepositoryAPI() {
     return true;
   }
@@ -159,33 +155,44 @@ EOTEXT
 
     $source = $this->getSource();
     $param = $this->getSourceParam();
-    switch ($source) {
-      case self::SOURCE_PATCH:
-        if ($param == '-') {
-          $patch = @file_get_contents('php://stdin');
-          if (!strlen($patch)) {
-            throw new ArcanistUsageException(
-              "Failed to read patch from stdin!");
+    try {
+      switch ($source) {
+        case self::SOURCE_PATCH:
+          if ($param == '-') {
+            $patch = @file_get_contents('php://stdin');
+            if (!strlen($patch)) {
+              throw new ArcanistUsageException(
+                "Failed to read patch from stdin!");
+            }
+          } else {
+            $patch = Filesystem::readFile($param);
           }
-        } else {
-          $patch = Filesystem::readFile($param);
-        }
-        $bundle = ArcanistBundle::newFromDiff($patch);
-        break;
-      case self::SOURCE_BUNDLE:
-        $path = $this->getArgument('arcbundle');
-        $bundle = ArcanistBundle::newFromArcBundle($path);
-        break;
-      case self::SOURCE_REVISION:
-        $bundle = $this->loadRevisionBundleFromConduit(
-          $this->getConduit(),
-          $param);
-        break;
-      case self::SOURCE_DIFF:
-        $bundle = $this->loadDiffBundleFromConduit(
-          $this->getConduit(),
-          $param);
-        break;
+          $bundle = ArcanistBundle::newFromDiff($patch);
+          break;
+        case self::SOURCE_BUNDLE:
+          $path = $this->getArgument('arcbundle');
+          $bundle = ArcanistBundle::newFromArcBundle($path);
+          break;
+        case self::SOURCE_REVISION:
+          $bundle = $this->loadRevisionBundleFromConduit(
+            $this->getConduit(),
+            $param);
+          break;
+        case self::SOURCE_DIFF:
+          $bundle = $this->loadDiffBundleFromConduit(
+            $this->getConduit(),
+            $param);
+          break;
+      }
+    } catch (Exception $ex) {
+      if ($ex->getErrorCode() == 'ERR-INVALID-SESSION') {
+        // Phabricator is not configured to allow anonymos access to
+        // Differential.
+        $this->authenticateConduit();
+        return $this->run();
+      } else {
+        throw $ex;
+      }
     }
 
     $repository_api = $this->getRepositoryAPI();
