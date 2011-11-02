@@ -269,11 +269,17 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   private function getFileDataAtRevision($path, $revision) {
-    list($stdout) = execx(
+    list($err, $stdout) = exec_manual(
       '(cd %s && hg cat --rev %s -- %s)',
       $this->getPath(),
+      $revision,
       $path);
-    return $stdout;
+    if ($err) {
+      // Assume this is "no file at revision", i.e. a deleted or added file.
+      return null;
+    } else {
+      return $stdout;
+    }
   }
 
   private function getWorkingCopyRevision() {
