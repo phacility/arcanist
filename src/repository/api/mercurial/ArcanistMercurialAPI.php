@@ -205,6 +205,10 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
       foreach ($working_status as $path => $status) {
+        if ($status & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+          // If the file is untracked, don't mark it uncommitted.
+          continue;
+        }
         $status |= self::FLAG_UNCOMMITTED;
         if (!empty($status_map[$path])) {
           $status_map[$path] |= $status;
