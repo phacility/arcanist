@@ -230,7 +230,13 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   public function buildDiffFuture($path) {
     // The "--depth empty" flag prevents us from picking up changes in
-    // children when we run 'diff' against a directory.
+    // children when we run 'diff' against a directory. Specifically, when a
+    // user has added or modified some directory "example/", we want to return
+    // ONLY changes to that directory when given it as a path. If we run
+    // without "--depth empty", svn will give us changes to the directory
+    // itself (such as property changes) and also give us changes to any
+    // files within the directory (basically, implicit recursion). We don't
+    // want that, so prevent recursive diffing.
     return new ExecFuture(
       '(cd %s; svn diff --depth empty --diff-cmd diff -x -U%d %s)',
       $this->getPath(),

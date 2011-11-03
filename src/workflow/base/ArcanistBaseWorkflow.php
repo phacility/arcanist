@@ -754,17 +754,29 @@ class ArcanistBaseWorkflow {
     return $bundle;
   }
 
-  protected function isTextChange($path) {
-    $change = $this->getChange($path);
-    return $change->getFileType() == ArcanistDiffChangeType::FILE_TEXT;
-  }
-
+  /**
+   * Return a list of lines changed by the current diff, or ##null## if the
+   * change list is meaningless (for example, because the path is a directory
+   * or binary file).
+   *
+   * @param string      Path within the repository.
+   * @param string      Change selection mode (see ArcanistDiffHunk).
+   * @return list|null  List of changed line numbers, or null to indicate that
+   *                    the path is not a line-oriented text file.
+   */
   protected function getChangedLines($path, $mode) {
-    if (is_dir($path)) {
-      return array();
+    $repository_api = $this->getRepositoryAPI();
+    $full_path = $repository_api->getPath($path);
+    if (is_dir($full_path)) {
+      return null;
     }
 
     $change = $this->getChange($path);
+
+    if ($change->getFileType() !== ArcanistDiffChangeType::FILE_TEXT) {
+      return null;
+    }
+
     $lines = $change->getChangedLines($mode);
     return array_keys($lines);
   }

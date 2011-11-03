@@ -170,19 +170,16 @@ EOTEXT
     }
 
     // Propagate information about which lines changed to the lint engine.
-    // This is used so that the lint engine can drop messages concerning
-    // lines that weren't in the change.
+    // This is used so that the lint engine can drop warning messages
+    // concerning lines that weren't in the change.
     $engine->setPaths($paths);
     if (!$should_lint_all) {
       foreach ($paths as $path) {
-        // Explicitly flag text changes, as line information doesn't apply
-        // to non-text files.
-        if ($this->isTextChange($path)) {
-          $engine->setTextChange($path);
-          $engine->setPathChangedLines(
-            $path,
-            $this->getChangedLines($path, 'new'));
-        }
+        // Note that getChangedLines() returns null to indicate that a file
+        // is binary or a directory (i.e., changed lines are not relevant).
+        $engine->setPathChangedLines(
+          $path,
+          $this->getChangedLines($path, 'new'));
       }
     }
 

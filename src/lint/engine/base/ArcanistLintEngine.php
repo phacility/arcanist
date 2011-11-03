@@ -68,7 +68,6 @@ abstract class ArcanistLintEngine {
   private $minimumSeverity = ArcanistLintSeverity::SEVERITY_DISABLED;
 
   private $changedLines = array();
-  private $textChanges = array();
   private $commitHookMode = false;
 
   public function __construct() {
@@ -93,22 +92,17 @@ abstract class ArcanistLintEngine {
     return $this->paths;
   }
 
-  public function setPathChangedLines($path, array $changed) {
-    $this->changedLines[$path] = array_fill_keys($changed, true);
+  public function setPathChangedLines($path, $changed) {
+    if ($changed === null) {
+      $this->changedLines[$path] = null;
+    } else {
+      $this->changedLines[$path] = array_fill_keys($changed, true);
+    }
     return $this;
   }
 
   public function getPathChangedLines($path) {
     return idx($this->changedLines, $path);
-  }
-
-  public function setTextChange($path) {
-    $this->textChanges[$path] = true;
-    return $this;
-  }
-
-  public function isTextChange($path) {
-    return idx($this->textChanges, $path, false);
   }
 
   public function setFileData($data) {
@@ -205,12 +199,11 @@ abstract class ArcanistLintEngine {
         }
         // When a user runs "arc lint", we default to raising only warnings on
         // lines they have changed (errors are still raised anywhere in the
-        // file).
-        $text_change = $this->isTextChange($message->getPath());
+        // file). The list of $changed lines may be null, to indicate that the
+        // path is a directory or a binary file so we should not exclude
+        // warnings.
         $changed = $this->getPathChangedLines($message->getPath());
-        if ($text_change === true &&
-            $changed !== null &&
-            !$message->isError()) {
+        if ($changed !== null && !$message->isError() && $message->getLine()) {
           if (empty($changed[$message->getLine()])) {
             continue;
           }
