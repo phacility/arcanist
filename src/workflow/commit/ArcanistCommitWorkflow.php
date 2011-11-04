@@ -23,6 +23,8 @@
  */
 class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
+  private $revisionID;
+
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **commit** [--revision __revision_id__] [--show]
@@ -46,6 +48,10 @@ EOTEXT
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+
+  public function getRevisionID() {
+    return $this->revisionID;
   }
 
   public function getArguments() {
@@ -166,6 +172,8 @@ EOTEXT
         $revision_id,
       ));
     $mark_workflow->run();
+
+    $this->revisionID = $revision_id;
 
     return $err;
   }
