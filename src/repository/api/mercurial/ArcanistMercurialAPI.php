@@ -226,6 +226,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function getDiffOptions() {
     $options = array(
       '--git',
+      '--color never',
       '-U'.$this->getDiffLinesOfContext(),
     );
     return implode(' ', $options);
