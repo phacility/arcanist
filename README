@@ -1,11 +1,12 @@
-PROJECT STATUS: CAVEAT EMPTOR
-
-This is an unstable preview release. I'm open sourcing some of Facebook's
-internal tools, but they'll be unstable for at least a couple months.
--epriestley
-
-
 WHAT IS ARCANIST?
 
-Arcanist is the CLI for Facebook's code review tool, Differential. Since
-Differential isn't released yet, it may not be terribly useful on its own.
+Arcanist is the command-line tool for Phabricator. It allows you to interact
+with Phabricator installs to send code for review, download patches, transfer
+files, view status, make API calls, and various other things. You can find
+a complete user guide here:
+
+  http://www.phabricator.com/docs/phabricator/article/Arcanist_User_Guide.html
+
+For more information about Phabricator, see:
+
+  http://phabricator.org/
