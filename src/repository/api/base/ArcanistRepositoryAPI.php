@@ -70,15 +70,8 @@ abstract class ArcanistRepositoryAPI {
     }
 
     if (Filesystem::pathExists($root.'/.hg')) {
-      // TODO: Stabilize and remove.
-      file_put_contents(
-        'php://stderr',
-        phutil_console_format(
-          "**WARNING:** Mercurial support is largely imaginary right now.\n"));
-
       return newv('ArcanistMercurialAPI', array($root));
     }
-
 
     $git_root = self::discoverGitBaseDirectory($root);
     if ($git_root) {
