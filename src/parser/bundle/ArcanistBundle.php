@@ -301,14 +301,14 @@ class ArcanistBundle {
       $last_change = $jj;
       for (; $jj < $n; ++$jj) {
         if ($lines[$jj][0] == ' ') {
-          // NOTE: We must use "context * 2" or we may generate overlapping
-          // hunks. For instance, if we have "context = 3" and four unchanged
-          // lines between hunks, we'll include unchanged lines 1, 2, 3 in
-          // the first hunk and 2, 3, and 4 in the second hunk -- that is, lines
-          // 2 and 3 will appear twice in the patch. Some time after 1.7.3.4,
-          // Git stopped cleanly applying patches with overlapping hunks, so be
-          // careful to avoid generating them.
-          if ($jj - $last_change > ($context * 2)) {
+          // NOTE: We must look past the context size or we may generate
+          // overlapping hunks. For instance, if we have "context = 3" and four
+          // unchanged lines between hunks, we'll include unchanged lines 1, 2,
+          // 3 in the first hunk and 2, 3, and 4 in the second hunk -- that is,
+          // lines 2 and 3 will appear twice in the patch. Some time after
+          // 1.7.3.4, Git stopped cleanly applying patches with overlapping
+          // hunks, so be careful to avoid generating them.
+          if ($jj - $last_change > (($context + 1) * 2)) {
             break;
           }
         } else {
