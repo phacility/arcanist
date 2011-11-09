@@ -226,7 +226,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function getDiffOptions() {
     $options = array(
       '--git',
-      '--color never',
+      // NOTE: We can't use "--color never" because that flag is provided
+      // by the color extension, which may or may not be enabled. Instead,
+      // set the color mode configuration so that color is disabled regardless
+      // of whether the extension is present or not.
+      '--config color.mode=off',
       '-U'.$this->getDiffLinesOfContext(),
     );
     return implode(' ', $options);
