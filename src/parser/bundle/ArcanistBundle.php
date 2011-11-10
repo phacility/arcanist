@@ -296,22 +296,39 @@ class ArcanistBundle {
 
       $hunk_start = max($jj - $context, 0);
 
+
+      // NOTE: There are two tricky considerations here.
+      // We can not generate a patch with overlapping hunks, or 'git apply'
+      // rejects it after 1.7.3.4.
+      // We can not generate a patch with too much trailing context, or
+      // 'patch' rejects it.
+      // So we need to ensure that we generate disjoint hunks, but don't
+      // generate any hunks with too much context.
+
       $old_lines = 0;
       $new_lines = 0;
       $last_change = $jj;
+      $break_here = null;
       for (; $jj < $n; ++$jj) {
         if ($lines[$jj][0] == ' ') {
-          // NOTE: We must look past the context size or we may generate
-          // overlapping hunks. For instance, if we have "context = 3" and four
-          // unchanged lines between hunks, we'll include unchanged lines 1, 2,
-          // 3 in the first hunk and 2, 3, and 4 in the second hunk -- that is,
-          // lines 2 and 3 will appear twice in the patch. Some time after
-          // 1.7.3.4, Git stopped cleanly applying patches with overlapping
-          // hunks, so be careful to avoid generating them.
+
+          if ($jj - $last_change > $context) {
+            if ($break_here === null) {
+              // We haven't seen a change in $context lines, so this is a
+              // potential place to break the hunk. However, we need to keep
+              // looking in case there is another change fewer than $context
+              // lines away, in which case we have to merge the hunks.
+              $break_here = $jj;
+            }
+          }
+
           if ($jj - $last_change > (($context + 1) * 2)) {
+            // We definitely aren't going to merge this with the next hunk, so
+            // break out of the loop. We'll end the hunk at $break_here.
             break;
           }
         } else {
+          $break_here = null;
           $last_change = $jj;
           if ($lines[$jj][0] == '-') {
             ++$old_lines;
@@ -319,6 +336,10 @@ class ArcanistBundle {
             ++$new_lines;
           }
         }
+      }
+
+      if ($break_here !== null) {
+        $jj = $break_here;
       }
 
       $hunk_length = min($jj, $n) - $hunk_start;
