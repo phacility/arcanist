@@ -844,29 +844,28 @@ EOTEXT
       }
 
       $path = $change->getCurrentPath();
+      $name = basename($path);
+
       $old_file = $repository_api->getOriginalFileData($path);
-      $new_file = $repository_api->getCurrentFileData($path);
-
-      $old_dict = $this->uploadFile($old_file, basename($path), 'old binary');
-      $new_dict = $this->uploadFile($new_file, basename($path), 'new binary');
-
+      $old_dict = $this->uploadFile($old_file, $name, 'old binary');
       if ($old_dict['guid']) {
         $change->setMetadata('old:binary-phid', $old_dict['guid']);
       }
+      $change->setMetadata('old:file:size',      $old_dict['size']);
+      $change->setMetadata('old:file:mime-type', $old_dict['mime']);
+
+      $new_file = $repository_api->getCurrentFileData($path);
+      $new_dict = $this->uploadFile($new_file, $name, 'new binary');
       if ($new_dict['guid']) {
         $change->setMetadata('new:binary-phid', $new_dict['guid']);
       }
-
-      $change->setMetadata('old:file:size',      strlen($old_file));
-      $change->setMetadata('new:file:size',      strlen($new_file));
-      $change->setMetadata('old:file:mime-type', $old_dict['mime']);
+      $change->setMetadata('new:file:size',      $new_dict['size']);
       $change->setMetadata('new:file:mime-type', $new_dict['mime']);
 
       if (preg_match('@^image/@', $new_dict['mime'])) {
         $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
       }
     }
-
 
     return $changes;
   }
@@ -875,9 +874,11 @@ EOTEXT
     $result = array(
       'guid' => null,
       'mime' => null,
+      'size' => null
     );
 
-    if (!strlen($data)) {
+    $result['size'] = $size = strlen($data);
+    if (!$size) {
       return $result;
     }
 
@@ -888,17 +889,25 @@ EOTEXT
     $mime_type = trim($mime_type);
     $result['mime'] = $mime_type;
 
-    $bytes = strlen($data);
-    echo "Uploading {$desc} '{$name}' ({$mime_type}, {$bytes} bytes)...\n";
+    echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
 
-    $guid = $this->getConduit()->callMethodSynchronous(
-      'file.upload',
-      array(
-        'data_base64' => base64_encode($data),
-        'name'        => $name,
+    try {
+      $guid = $this->getConduit()->callMethodSynchronous(
+        'file.upload',
+        array(
+          'data_base64' => base64_encode($data),
+          'name'        => $name,
       ));
 
-    $result['guid'] = $guid;
+      $result['guid'] = $guid;
+    } catch (ConduitClientException $e) {
+      $message = "Failed to upload {$desc} '{$name}'.  Continue?";
+      if (!phutil_console_confirm($message, $default_no = false)) {
+        throw new ArcanistUsageException(
+          'Aborted due to file upload failure.'
+        );
+      }
+    }
     return $result;
   }
 
