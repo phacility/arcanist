@@ -252,6 +252,13 @@ try {
     $workflow->setRepositoryAPI($repository_api);
   }
 
+  $listeners = $working_copy->getConfig('events.listeners');
+  if ($listeners) {
+    foreach ($listeners as $listener) {
+      id(new $listener())->register();
+    }
+  }
+
   $config->willRunWorkflow($command, $workflow);
   $workflow->willRunWorkflow();
   $err = $workflow->run();
