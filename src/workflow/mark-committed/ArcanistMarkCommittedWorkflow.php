@@ -121,7 +121,7 @@ EOTEXT
           array(
             'name' => $this->getWorkingCopy()->getProjectID(),
           ));
-        if ($project_info['tracked']) {
+        if ($project_info['tracked'] || $revision['statusName'] != 'Accepted') {
           $actually_mark = false;
         }
       }
