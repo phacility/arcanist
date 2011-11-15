@@ -204,7 +204,7 @@ final class ArcanistDiffUtils {
     return array_values($runs);
   }
 
-  private static function buildLevenshteinDifferenceString($o, $n) {
+  public static function buildLevenshteinDifferenceString($o, $n) {
     $olt = strlen($o);
     $nlt = strlen($n);
 
@@ -256,25 +256,27 @@ final class ArcanistDiffUtils {
     $ol = strlen($o);
     $nl = strlen($n);
 
-    $m = array_fill(0, strlen($o) + 1, array_fill(0, strlen($n) + 1, array()));
+    $m = array_fill(0, $ol + 1, array_fill(0, $nl + 1, array()));
 
     $T_D = 'd';
     $T_I = 'i';
     $T_S = 's';
     $T_X = 'x';
 
-    $path = 0;
-    for ($ii = 0; $ii <= $ol; $ii++) {
-      $m[$ii][0][0] = $ii;
-      $m[$ii][0][1] = ($path += $ii);
-      $m[$ii][0][2] = $T_D;
+    $m[0][0] = array(
+      0,
+      null);
+
+    for ($ii = 1; $ii <= $ol; $ii++) {
+      $m[$ii][0] = array(
+        $ii * 1000,
+        $T_D);
     }
 
-    $path = 0;
-    for ($jj = 0; $jj <= $nl; $jj++) {
-      $m[0][$jj][0] = $jj;
-      $m[0][$jj][1] = ($path += $jj);
-      $m[0][$jj][2] = $T_I;
+    for ($jj = 1; $jj <= $nl; $jj++) {
+      $m[0][$jj] = array(
+        $jj * 1000,
+        $T_I);
     }
 
     $ii = 1;
@@ -285,31 +287,35 @@ final class ArcanistDiffUtils {
           $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 0;
           $sub_t      = $T_S;
         } else {
-          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 2;
+          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 2000;
           $sub_t      = $T_X;
         }
-        $sub_p_cost = $m[$ii - 1][$jj - 1][1] + $sub_t_cost;
 
-        $del_t_cost = $m[$ii - 1][$jj][0] + 1;
-        $del_p_cost = $m[$ii - 1][$jj][1] + $del_t_cost;
+        if ($m[$ii - 1][$jj - 1][1] != $sub_t) {
+          $sub_t_cost += 1;
+        }
 
-        $ins_t_cost = $m[$ii][$jj - 1][0] + 1;
-        $ins_p_cost = $m[$ii][$jj - 1][1] + $ins_t_cost;
+        $del_t_cost = $m[$ii - 1][$jj][0] + 1000;
+        if ($m[$ii - 1][$jj][1] != $T_D) {
+          $del_t_cost += 1;
+        }
 
-        if ($sub_p_cost <= $del_p_cost && $sub_p_cost <= $ins_p_cost) {
+        $ins_t_cost = $m[$ii][$jj - 1][0] + 1000;
+        if ($m[$ii][$jj - 1][1] != $T_I) {
+          $ins_t_cost += 1;
+        }
+
+        if ($sub_t_cost <= $del_t_cost && $sub_t_cost <= $ins_t_cost) {
           $m[$ii][$jj] = array(
             $sub_t_cost,
-            $sub_p_cost,
             $sub_t);
-        } else if ($ins_p_cost <= $del_p_cost) {
+        } else if ($ins_t_cost <= $del_t_cost) {
           $m[$ii][$jj] = array(
             $ins_t_cost,
-            $ins_p_cost,
             $T_I);
         } else {
           $m[$ii][$jj] = array(
             $del_t_cost,
-            $del_p_cost,
             $T_D);
         }
       } while ($jj++ < $nl);
@@ -319,18 +325,18 @@ final class ArcanistDiffUtils {
     $ii = $ol;
     $jj = $nl;
     do {
-      $r = $m[$ii][$jj][2];
+      $r = $m[$ii][$jj][1];
       $result .= $r;
       switch ($r) {
-        case 's':
-        case 'x':
+        case $T_S:
+        case $T_X:
           $ii--;
           $jj--;
           break;
-        case 'i':
+        case $T_I:
           $jj--;
           break;
-        case 'd':
+        case $T_D:
           $ii--;
           break;
       }
