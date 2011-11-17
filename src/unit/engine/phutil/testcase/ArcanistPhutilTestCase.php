@@ -231,7 +231,11 @@ abstract class ArcanistPhutilTestCase {
         } catch (ArcanistPhutilTestTerminatedException $ex) {
           // Continue with the next test.
         } catch (Exception $ex) {
-          $this->failTest($ex->getMessage());
+          $ex_class = get_class($ex);
+          $ex_message = $ex->getMessage();
+          $ex_trace = $ex->getTraceAsString();
+          $message = "EXCEPTION ({$ex_class}): {$ex_message}\n{$ex_trace}";
+          $this->failTest($message);
         }
       }
     }
