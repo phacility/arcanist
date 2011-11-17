@@ -104,6 +104,11 @@ abstract class ArcanistLinter {
     return ArcanistLintSeverity::SEVERITY_ERROR;
   }
 
+  public function isMessageEnabled($code) {
+    return ($this->getLintMessageSeverity($code) !==
+            ArcanistLintSeverity::SEVERITY_DISABLED);
+  }
+
   public function getLintMessageName($code) {
     $map = $this->getLintNameMap();
     if (isset($map[$code])) {

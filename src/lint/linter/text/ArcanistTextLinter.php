@@ -101,7 +101,9 @@ class ArcanistTextLinter extends ArcanistLinter {
         self::LINT_DOS_NEWLINE,
         'You must use ONLY Unix linebreaks ("\n") in source code.',
         "\r");
-      $this->stopAllLinters();
+      if ($this->isMessageEnabled(self::LINT_DOS_NEWLINE)) {
+        $this->stopAllLinters();
+      }
     }
   }
 
@@ -170,7 +172,9 @@ class ArcanistTextLinter extends ArcanistLinter {
         $string);
     }
 
-    $this->stopAllLinters();
+    if ($this->isMessageEnabled(self::LINT_BAD_CHARSET)) {
+      $this->stopAllLinters();
+    }
   }
 
   protected function lintTrailingWhitespace($path) {
