@@ -6,12 +6,15 @@
 
 
 
+phutil_require_module('arcanist', 'events/constant/type');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'repository/api/base');
 phutil_require_module('arcanist', 'workflow/base');
 
 phutil_require_module('phutil', 'console');
+phutil_require_module('phutil', 'events/engine');
+phutil_require_module('phutil', 'events/event');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'utils');

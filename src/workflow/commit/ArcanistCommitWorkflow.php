@@ -101,6 +101,8 @@ EOTEXT
       }
     }
 
+    $this->revisionID = $revision_id;
+
     $revision = null;
     try {
       $revision = $conduit->callMethodSynchronous(
@@ -139,6 +141,17 @@ EOTEXT
         'edit'        => false,
       ));
 
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_COMMIT_WILLCOMMITSVN,
+      array(
+        'message' => $message,
+        'workflow' => $this
+      )
+    );
+    PhutilEventEngine::dispatchEvent($event);
+
+    $message = $event->getValue('message');
+
     if ($this->getArgument('show')) {
       echo $message;
       return 0;
@@ -172,8 +185,6 @@ EOTEXT
         $revision_id,
       ));
     $mark_workflow->run();
-
-    $this->revisionID = $revision_id;
 
     return $err;
   }

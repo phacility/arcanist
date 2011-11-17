@@ -17,4 +17,7 @@
  */
 
 final class ArcanistEventType extends PhutilEventType {
+
+  const TYPE_COMMIT_WILLCOMMITSVN = 'commit.willCommitSVN';
+
 }
