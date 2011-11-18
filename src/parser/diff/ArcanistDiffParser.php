@@ -620,6 +620,19 @@ class ArcanistDiffParser {
       return;
     }
 
+    // This occurs under "hg diff --git" when a binary file is removed. See
+    // test case "hg-binary-delete.hgdiff". (I believe it never occurs under
+    // git, which reports the "files X and /dev/null differ" string above. Git
+    // can not apply these patches.)
+    $is_hg_binary_delete = preg_match(
+      '/^Binary file .* has changed$/',
+      $line);
+    if ($is_hg_binary_delete) {
+      $this->nextNonemptyLine();
+      $this->markBinary($change);
+      return;
+    }
+
     // With "git diff --binary" (not a normal mode, but one users may explicitly
     // invoke and then, e.g., copy-paste into the web console) or "hg diff
     // --git" (normal under hg workflows), we may encounter a literal binary

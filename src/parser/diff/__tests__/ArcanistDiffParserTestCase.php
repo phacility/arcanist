@@ -488,6 +488,16 @@ EOTEXT
           ArcanistDiffChangeType::FILE_BINARY,
           $change->getFileType());
         break;
+      case 'hg-binary-delete.hgdiff':
+        $this->assertEqual(1, count($changes));
+        $change = reset($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $change->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $change->getFileType());
+        break;
       case 'git-replace-symlink.gitdiff':
         $this->assertEqual(1, count($changes));
         $change = array_shift($changes);
