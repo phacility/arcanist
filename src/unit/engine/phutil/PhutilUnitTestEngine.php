@@ -27,7 +27,7 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $bootloader = PhutilBootloader::getInstance();
 
-    $tests = array();
+    $affected_modules = array();
     foreach ($this->getPaths() as $path) {
       $library_root = phutil_get_library_root_for_path($path);
       if (!$library_root) {
@@ -45,35 +45,52 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       }
 
       $library_path = Filesystem::readablePath($path, $library_root);
-      if (basename($library_path) == '__tests__') {
+      do {
+        // Add the module and all parent modules as affected modules, which
+        // means we'll look for __tests__ to run here and in any containing
+        // module.
+        $affected_modules[$library_name.':'.$library_path] = array(
+          'name' => $library_name,
+          'root' => $library_root,
+          'path' => $library_path,
+        );
+        $library_path = dirname($library_path);
+      } while ($library_path != '.');
+    }
+
+    $tests = array();
+    foreach ($affected_modules as $library_info) {
+      $library_name = $library_info['name'];
+      $library_root = $library_info['root'];
+      $module = $library_info['path'];
+
+      if (basename($module) == '__tests__') {
         // Okay, this is a __tests__ module.
       } else {
         $exists = $bootloader->moduleExists(
           $library_name,
-          $library_path.'/__tests__');
+          $module.'/__tests__');
         if ($exists) {
           // This is a module which has a __tests__ module in it.
-          $path .= '/__tests__';
+          $module .= '/__tests__';
         } else {
           // Look for a parent named __tests__.
-          $rpos = strrpos($library_path, '/__tests__');
+          $rpos = strrpos($module, '/__tests__');
           if ($rpos === false) {
             // No tests to run since there is no child or parent module named
             // __tests__.
             continue;
           }
           // Select the parent named __tests__.
-          $path = substr($path, 0, $rpos + strlen('/__tests__'));
+          $module = substr($module, 0, $rpos + strlen('/__tests__'));
         }
       }
 
-
-      $module_name = Filesystem::readablePath($path, $library_root);
-      $module_key = $library_name.':'.$module_name;
+      $module_key = $library_name.':'.$module;
       $tests[$module_key] = array(
         'library' => $library_name,
         'root'    => $library_root,
-        'module'  => $module_name,
+        'module'  => $module,
       );
     }
 
