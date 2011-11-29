@@ -23,7 +23,7 @@
  */
 class ArcanistXHPASTLinter extends ArcanistLinter {
 
-  private $trees = array();
+  protected $trees = array();
 
   const LINT_PHP_SYNTAX_ERROR         = 1;
   const LINT_UNABLE_TO_PARSE          = 2;
