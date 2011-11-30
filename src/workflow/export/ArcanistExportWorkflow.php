@@ -186,6 +186,7 @@ EOTEXT
         }
 
         $bundle = ArcanistBundle::newFromChanges($changes);
+        $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
         break;
       case self::SOURCE_REVISION:
         $bundle = $this->loadRevisionBundleFromConduit(

@@ -75,6 +75,10 @@ EOTEXT
         'help' =>
           "Apply changes from a git patchfile or unified patchfile.",
       ),
+      'force' => array(
+        'help' =>
+          "Do not run any sanity checks.",
+      ),
       '*' => 'name',
     );
   }
@@ -186,13 +190,20 @@ EOTEXT
       }
     } catch (Exception $ex) {
       if ($ex->getErrorCode() == 'ERR-INVALID-SESSION') {
-        // Phabricator is not configured to allow anonymos access to
+        // Phabricator is not configured to allow anonymous access to
         // Differential.
         $this->authenticateConduit();
         return $this->run();
       } else {
         throw $ex;
       }
+    }
+
+    $force = $this->getArgument('force', false);
+    if ($force) {
+      // force means don't do any sanity checks about the patch
+    } else {
+      $this->sanityCheckPatch($bundle);
     }
 
     $repository_api = $this->getRepositoryAPI();
@@ -410,6 +421,33 @@ EOTEXT
   public function getShellCompletions(array $argv) {
     // TODO: Pull open diffs from 'arc list'?
     return array('ARGUMENT');
+  }
+
+  /**
+   * Do the best we can to prevent PEBKAC and id10t issues.
+   */
+  private function sanityCheckPatch(ArcanistBundle $bundle) {
+
+    // Check to see if the bundle project id matches the working copy
+    // project id
+    $bundle_project_id = $bundle->getProjectID();
+    $working_copy_project_id = $this->getWorkingCopy()->getProjectID();
+    if (empty($bundle_project_id)) {
+      // this means $source is SOURCE_PATCH || SOURCE_BUNDLE
+      // they don't come with a project id so just do nothing
+    } else if ($bundle_project_id != $working_copy_project_id) {
+      $ok = phutil_console_confirm(
+        "This diff is for the '{$bundle_project_id}' project but the working ".
+        "copy belongs to the '{$working_copy_project_id}' project. ".
+        "Still try to apply it?",
+        $default_no = false
+      );
+      if (!$ok) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+    // TODO -- more sanity checks here
   }
 
   /**

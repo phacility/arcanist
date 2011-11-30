@@ -751,6 +751,7 @@ class ArcanistBaseWorkflow {
     }
     $bundle = ArcanistBundle::newFromChanges($changes);
     $bundle->setConduit($conduit);
+    $bundle->setProjectID($diff['projectName']);
     return $bundle;
   }
 

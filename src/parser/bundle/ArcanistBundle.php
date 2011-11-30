@@ -27,9 +27,18 @@ class ArcanistBundle {
   private $conduit;
   private $blobs = array();
   private $diskPath;
+  private $projectID;
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
+  }
+
+  public function setProjectID($project_id) {
+    $this->projectID = $project_id;
+  }
+
+  public function getProjectID() {
+    return $this->projectID;
   }
 
   public static function newFromChanges(array $changes) {
@@ -40,6 +49,27 @@ class ArcanistBundle {
 
   public static function newFromArcBundle($path) {
     $path = Filesystem::resolvePath($path);
+
+    $future = new ExecFuture(
+      csprintf(
+        'tar tfO %s',
+        $path));
+    list($stdout, $file_list) = $future->resolvex();
+    $file_list = explode("\n", trim($file_list));
+
+    if (in_array('meta.json', $file_list)) {
+      $future = new ExecFuture(
+        csprintf(
+          'tar xfO %s meta.json',
+          $path));
+      $meta_info = $future->resolveJSON();
+      $version = idx($meta_info, 'version', 0);
+      $project_name = idx($meta_info, 'projectName');
+    // this arc bundle was probably made before we started storing meta info
+    } else {
+      $version = 0;
+      $project_name = null;
+    }
 
     $future = new ExecFuture(
       csprintf(
@@ -54,7 +84,6 @@ class ArcanistBundle {
       }
     }
 
-
     foreach ($changes as $change_key => $change) {
       $changes[$change_key] = ArcanistDiffChange::newFromDictionary($change);
     }
@@ -62,6 +91,7 @@ class ArcanistBundle {
     $obj = new ArcanistBundle();
     $obj->changes = $changes;
     $obj->diskPath = $path;
+    $obj->setProjectID($project_name);
 
     return $obj;
   }
@@ -108,10 +138,14 @@ class ArcanistBundle {
       $blobs[$phid] = $this->getBlob($phid);
     }
 
+    $meta_info = array('version' => 1,
+                       'projectName' => $this->getProjectID());
+
     $dir = Filesystem::createTemporaryDirectory();
     Filesystem::createDirectory($dir.'/hunks');
     Filesystem::createDirectory($dir.'/blobs');
     Filesystem::writeFile($dir.'/changes.json', json_encode($change_list));
+    Filesystem::writeFile($dir.'/meta.json', json_encode($meta_info));
     foreach ($hunks as $key => $hunk) {
       Filesystem::writeFile($dir.'/hunks/'.$key, $hunk);
     }
