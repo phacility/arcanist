@@ -678,23 +678,12 @@ EOTEXT
         $repository_api,
         $paths);
     } else if ($repository_api instanceof ArcanistGitAPI) {
-
       $diff = $repository_api->getFullGitDiff();
       if (!strlen($diff)) {
-        list($base, $tip) = $repository_api->getCommitRange();
-        if ($tip == 'HEAD') {
-          if (preg_match('/\^+HEAD/', $base)) {
-            $more = 'Did you mean HEAD^ instead of ^HEAD?';
-          } else {
-            $more = 'Did you specify the wrong relative commit?';
-          }
-        } else {
-          $more = 'Did you specify the wrong commit range?';
-        }
-        throw new ArcanistUsageException("No changes found. ({$more})");
+        throw new ArcanistUsageException(
+          "No changes found. (Did you specify the wrong commit range?)");
       }
       $changes = $parser->parseDiff($diff);
-
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $diff = $repository_api->getFullMercurialDiff();
       $changes = $parser->parseDiff($diff);
@@ -937,6 +926,19 @@ EOTEXT
 
     $parser = new ArcanistDiffParser();
     $commit_messages = $repository_api->getGitCommitLog();
+
+    if (!strlen($commit_messages)) {
+      if (!$repository_api->getHasCommits()) {
+        throw new ArcanistUsageException(
+          "This git repository doesn't have any commits yet. You need to ".
+          "commit something before you can diff against it.");
+      } else {
+        throw new ArcanistUsageException(
+          "The commit range doesn't include any commits. (Did you diff ".
+          "against the wrong commit?)");
+      }
+    }
+
     $commit_messages = $parser->parseDiff($commit_messages);
 
     $problems = array();
