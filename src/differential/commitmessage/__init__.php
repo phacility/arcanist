@@ -6,6 +6,8 @@
 
 
 
+phutil_require_module('phutil', 'utils');
+
 
 phutil_require_source('ArcanistDifferentialCommitMessage.php');
 phutil_require_source('ArcanistDifferentialCommitMessageParserException.php');

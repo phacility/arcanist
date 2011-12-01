@@ -66,9 +66,9 @@ class ArcanistDifferentialCommitMessage {
         'corpus' => $this->rawCorpus,
       ));
     $result = $result->resolve();
-    if (!empty($result['error'])) {
+    if (!empty($result['errors'])) {
       throw new ArcanistDifferentialCommitMessageParserException(
-        $result['error']);
+        $result['errors']);
     }
     $this->fields = $result['fields'];
   }

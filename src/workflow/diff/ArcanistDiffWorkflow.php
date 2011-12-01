@@ -972,31 +972,10 @@ EOTEXT
 
         $parsed[$key] = $message;
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
-        $problems[$key][] = $ex;
+        foreach ($ex->getParserErrors() as $problem) {
+          $problems[$key][] = $problem;
+        }
         continue;
-      }
-
-      // TODO: Move this all behind Conduit.
-      if (!$message->getRevisionID()) {
-        if ($message->getFieldValue('reviewedByPHIDs')) {
-          $problems[$key][] = new ArcanistUsageException(
-            "When creating or updating a revision, use the 'Reviewers:' ".
-            "field to specify reviewers, not 'Reviewed By:'. After the ".
-            "revision is accepted, run 'arc amend' to update the commit ".
-            "message.");
-        }
-
-        if (!$message->getFieldValue('title')) {
-          $problems[$key][] = new ArcanistUsageException(
-            "Commit message has no title. You must provide a title for this ".
-            "revision.");
-        }
-
-        if (!$message->getFieldValue('testPlan')) {
-          $problems[$key][] = new ArcanistUsageException(
-            "Commit message has no 'Test Plan:'. You must provide a test ".
-            "plan.");
-        }
       }
     }
 
@@ -1020,8 +999,7 @@ EOTEXT
     }
 
     if ($revision_id === -1) {
-      $all_problems = call_user_func_array('array_merge', $problems);
-      $desc = implode("\n", mpull($all_problems, 'getMessage'));
+      $desc = implode("\n", array_mergev($problems));
       if (count($problems) > 1) {
         throw new ArcanistUsageException(
           "All changes between the specified commits have template parsing ".
