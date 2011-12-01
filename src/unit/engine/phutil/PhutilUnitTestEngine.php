@@ -36,12 +36,13 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       $library_name = phutil_get_library_name_for_root($library_root);
 
       $path = Filesystem::resolvePath($path);
-      if ($path == $library_root) {
-        continue;
-      }
 
       if (!is_dir($path)) {
         $path = dirname($path);
+      }
+
+      if ($path == $library_root) {
+        continue;
       }
 
       $library_path = Filesystem::readablePath($path, $library_root);
