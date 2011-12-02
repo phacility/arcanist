@@ -19,6 +19,7 @@ phutil_require_module('arcanist', 'workflow/unit');
 
 phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'console/editor');
+phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'filesystem/filelist');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'utils');

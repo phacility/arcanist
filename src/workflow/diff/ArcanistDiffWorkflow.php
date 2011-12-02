@@ -32,8 +32,8 @@ class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **diff** [__paths__] (svn)
-      **diff** [__commit__] (git)
-          Supports: git, svn
+      **diff** [__commit__] (git, hg)
+          Supports: git, svn, hg
           Generate a Differential diff or revision from local changes.
 
           Under git, you can specify a commit (like __HEAD^^^__ or __master__)
@@ -82,6 +82,13 @@ EOTEXT
           "When updating a revision under git, use the specified message ".
           "instead of prompting.",
       ),
+      'message-file' => array(
+        'short' => 'F',
+        'param' => 'file',
+        'paramtype' => 'file',
+        'help' => 'When creating a revision, read revision information '.
+                  'from this file.',
+      ),
       'edit' => array(
         'supports'    => array(
           'git',
@@ -92,6 +99,12 @@ EOTEXT
         'help' =>
           "When updating a revision under git, edit revision information ".
           "before updating.",
+      ),
+      'create' => array(
+        'help' => "(EXPERIMENTAL) Create a new revision.",
+        'conflicts' => array(
+          'edit'    => '--create can not be used with --edit.',
+        ),
       ),
       'nounit' => array(
         'help' =>
@@ -211,6 +224,8 @@ EOTEXT
       ob_start();
     }
 
+    $is_create = $this->getArgument('create');
+
     $conduit = $this->getConduit();
     $this->requireCleanWorkingCopy();
 
@@ -220,7 +235,14 @@ EOTEXT
 
     // Do this before we start linting or running unit tests so we can detect
     // things like a missing test plan or invalid reviewers immediately.
-    if ($this->shouldOnlyCreateDiff()) {
+    if ($is_create) {
+      $message_file = $this->getArgument('message-file');
+      if ($message_file) {
+        $commit_message = $this->getCommitMessageFromFile($message_file);
+      } else {
+        $commit_message = $this->getCommitMessageFromUser();
+      }
+    } else if ($this->shouldOnlyCreateDiff()) {
       $commit_message = null;
     } else {
       $commit_message = $this->getGitCommitMessage();
@@ -411,8 +433,6 @@ EOTEXT
           $remote_corpus);
         $remote_message->pullDataFromConduit($conduit);
 
-        // TODO: We should throw here if you deleted the 'testPlan'.
-
         $sync = array('title', 'summary', 'testPlan');
         foreach ($sync as $field) {
           $local = $message->getFieldValue($field);
@@ -460,45 +480,6 @@ EOTEXT
           $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
             $new_text);
           $new_message->pullDataFromConduit($conduit);
-/*
-          TODO: restore these checks
-
-
-          try { // <<< this try goes right after the edit
-
-            if (!$new_message->getTitle()) {
-              throw new UsageException(
-                "You can not remove the Revision title.");
-            }
-            if (!$new_message->getTestPlan()) {
-              throw new UsageException(
-                "You can not remove the 'Test Plan'.");
-            }
-            if ($new_message->getRevisionID() != $revision->getID()) {
-              throw new UsageException(
-                "You changed or deleted the Differential revision ID! Why ".
-                "would you do that?!");
-            }
-
-          } catch (Exception $ex) {
-            $ii = 0;
-            do {
-              $name = $ii
-                ? 'differential-message-'.$ii.'.txt'
-                : 'differential-message.txt';
-              if (!file_exists($name)) {
-                break;
-              }
-              ++$ii;
-            } while(true);
-            require_module_lazy('resource/filesystem');
-            Filesystem::writeFile($name, $new_text);
-            echo "Exception! Message was saved to '{$name}'.\n";
-            throw $ex;
-          }
-*/
-
-
 
           $revision['fields'] = $new_message->getFields();
         }
@@ -1251,6 +1232,53 @@ EOTEXT
     }
 
     return null;
+  }
+
+  private function getCommitMessageFromUser() {
+    $conduit = $this->getConduit();
+
+    $template = $conduit->callMethodSynchronous(
+      'differential.getcommitmessage',
+      array(
+        'revision_id' => null,
+        'edit' => true,
+      ));
+
+    $template =
+      $template.
+      "\n\n".
+      "# Describe this revision.".
+      "\n";
+    $template = id(new PhutilInteractiveEditor($template))
+      ->setName('new-commit')
+      ->editInteractively();
+    $template = preg_replace('/^\s*#.*$/m', '', $template);
+
+    try {
+      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $template);
+      $message->pullDataFromConduit($conduit);
+    } catch (Exception $ex) {
+      $path = Filesystem::writeUniqueFile('arc-commit-message', $template);
+
+      echo phutil_console_wrap(
+        "\n".
+        "Exception while parsing commit message! Message saved to ".
+        "'{$path}'. Use -F <file> to specify a commit message file.\n");
+
+      throw $ex;
+    }
+
+    return $message;
+  }
+
+  private function getCommitMessageFromFile($file) {
+    $conduit = $this->getConduit();
+
+    $data = Filesystem::readFile($file);
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($data);
+    $message->pullDataFromConduit($conduit);
+    return $message;
   }
 
 }
