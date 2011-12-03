@@ -91,6 +91,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_NAMING_CONVENTIONS
         => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_PREG_QUOTE_MISUSE
+        => ArcanistLintSeverity::SEVERITY_WARNING,
     );
   }
 
@@ -1054,8 +1056,9 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
 
   /**
    * preg_quote() takes two arguments, but the second one is optional because
-   * PHP is awesome.  If you don't pass a second argument, you're probably
-   * going to get something wrong.
+   * it is possible to use (), [] or {} as regular expression delimiters.  If
+   * you don't pass a second argument, you're probably going to get something
+   * wrong.
    */
   protected function lintPregQuote($root) {
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');

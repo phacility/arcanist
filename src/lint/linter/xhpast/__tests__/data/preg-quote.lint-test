@@ -8,5 +8,5 @@ function foo($bar) {
 }
 
 ~~~~~~~~~~
-error:4:3 Wrong number of arguments to preg_quote()
-error:6:3 Wrong number of arguments to preg_quote()
+warning:4:3 Wrong number of arguments to preg_quote()
+warning:6:3 Wrong number of arguments to preg_quote()
