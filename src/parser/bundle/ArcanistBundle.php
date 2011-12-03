@@ -28,6 +28,7 @@ class ArcanistBundle {
   private $blobs = array();
   private $diskPath;
   private $projectID;
+  private $baseRevision;
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
@@ -39,6 +40,14 @@ class ArcanistBundle {
 
   public function getProjectID() {
     return $this->projectID;
+  }
+
+  public function setBaseRevision($base_revision) {
+    $this->baseRevision = $base_revision;
+  }
+
+  public function getBaseRevision() {
+    return $this->baseRevision;
   }
 
   public static function newFromChanges(array $changes) {
@@ -65,10 +74,12 @@ class ArcanistBundle {
       $meta_info = $future->resolveJSON();
       $version = idx($meta_info, 'version', 0);
       $project_name = idx($meta_info, 'projectName');
+      $base_revision = idx($meta_info, 'baseRevision');
     // this arc bundle was probably made before we started storing meta info
     } else {
       $version = 0;
       $project_name = null;
+      $base_revision = null;
     }
 
     $future = new ExecFuture(
@@ -92,6 +103,7 @@ class ArcanistBundle {
     $obj->changes = $changes;
     $obj->diskPath = $path;
     $obj->setProjectID($project_name);
+    $obj->setBaseRevision($base_revision);
 
     return $obj;
   }
@@ -138,8 +150,11 @@ class ArcanistBundle {
       $blobs[$phid] = $this->getBlob($phid);
     }
 
-    $meta_info = array('version' => 1,
-                       'projectName' => $this->getProjectID());
+    $meta_info = array(
+      'version'      => 2,
+      'projectName'  => $this->getProjectID(),
+      'baseRevision' => $this->getBaseRevision(),
+    );
 
     $dir = Filesystem::createTemporaryDirectory();
     Filesystem::createDirectory($dir.'/hunks');

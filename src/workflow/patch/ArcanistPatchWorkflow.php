@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,8 +135,7 @@ EOTEXT
   }
 
   public function requiresConduit() {
-    return ($this->getSource() == self::SOURCE_REVISION) ||
-           ($this->getSource() == self::SOURCE_DIFF);
+    return ($this->getSource() != self::SOURCE_PATCH);
   }
 
   public function requiresRepositoryAPI() {
@@ -428,12 +427,12 @@ EOTEXT
    */
   private function sanityCheckPatch(ArcanistBundle $bundle) {
 
-    // Check to see if the bundle project id matches the working copy
+    // Check to see if the bundle's project id matches the working copy
     // project id
     $bundle_project_id = $bundle->getProjectID();
     $working_copy_project_id = $this->getWorkingCopy()->getProjectID();
     if (empty($bundle_project_id)) {
-      // this means $source is SOURCE_PATCH || SOURCE_BUNDLE
+      // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version = 0
       // they don't come with a project id so just do nothing
     } else if ($bundle_project_id != $working_copy_project_id) {
       $ok = phutil_console_confirm(
@@ -444,6 +443,69 @@ EOTEXT
       );
       if (!$ok) {
         throw new ArcanistUserAbortException();
+      }
+    }
+
+    // Check to see if the bundle's base revision matches the working copy
+    // base revision
+    $bundle_base_rev = $bundle->getBaseRevision();
+    if (empty($bundle_base_rev)) {
+      // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version < 2
+      // they don't have a base rev so just do nothing
+    } else {
+      $repository_api = $this->getRepositoryAPI();
+      $source_base_rev = $repository_api->getWorkingCopyRevision();
+
+      if ($source_base_rev != $bundle_base_rev) {
+        // we have a problem...! lots of work because we need to ask
+        // differential for revision information for these base revisions
+        // to improve our error message.
+        $bundle_base_rev_str = null;
+        $source_base_rev_str = null;
+
+        // SVN doesn't store these hashes, so we're basically done already
+        // and will have a relatively "lame" error message
+        if ($repository_api instanceof ArcanistSubversionAPI) {
+          $hash_type = null;
+        } else if ($repository_api instanceof ArcanistGitAPI) {
+          $hash_type = ArcanistDifferentialRevisionHash::HASH_GIT_COMMIT;
+        } else if ($repository_api instanceof ArcanistMercurialAPI) {
+          $hash_type = ArcanistDifferentialRevisionHash::HASH_MERCURIAL_COMMIT;
+        } else {
+          $hash_type = null;
+        }
+
+        if ($hash_type) {
+          // 2 round trips because even though we could send off one query
+          // we wouldn't be able to tell which revisions were for which hash
+          $hash = array($hash_type, $bundle_base_rev);
+          $bundle_revision = $this->loadRevisionFromHash($hash);
+          $hash = array($hash_type, $source_base_rev);
+          $source_revision = $this->loadRevisionFromHash($hash);
+
+          if ($bundle_revision) {
+            $bundle_base_rev_str = $bundle_base_rev .
+                                   ' \ D' . $bundle_revision['id'];
+          }
+          if ($source_revision) {
+            $source_base_rev_str = $source_base_rev .
+                                   ' \ D' . $source_revision['id'];
+          }
+        }
+        $bundle_base_rev_str = nonempty($bundle_base_rev_str,
+                                        $bundle_base_rev);
+        $source_base_rev_str = nonempty($source_base_rev_str,
+                                        $source_base_rev);
+
+        $ok = phutil_console_confirm(
+          "This diff is against commit {$bundle_base_rev_str}, but the ".
+          "working copy is at {$source_base_rev_str}.  ".
+          "Still try to apply it?",
+          $default_no = false
+        );
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
       }
     }
 
@@ -472,5 +534,28 @@ EOTEXT
           $repository_api->getPath(),
           $dir));
     }
+  }
+
+  private function loadRevisionFromHash($hash) {
+    $conduit = $this->getConduit();
+
+    $revisions = $conduit->callMethodSynchronous(
+      'differential.query',
+      array(
+        'commitHashes' => array($hash),
+      )
+    );
+
+
+    // grab the latest committed revision only
+    $found_revision = null;
+    $revisions = isort($revisions, 'dateModified');
+    foreach ($revisions as $revision) {
+      if ($revision['status'] ==
+          ArcanistDifferentialRevisionStatus::COMMITTED) {
+        $found_revision = $revision;
+      }
+    }
+    return $found_revision;
   }
 }

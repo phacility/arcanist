@@ -304,7 +304,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
-  private function getWorkingCopyRevision() {
+  public function getWorkingCopyRevision() {
     // In Mercurial, "tip" means the tip of the current branch, not what's in
     // the working copy. The tip may be ahead of the working copy. We need to
     // use "hg summary" to figure out what is actually in the working copy.

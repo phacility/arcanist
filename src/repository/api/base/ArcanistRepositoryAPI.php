@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,9 +151,9 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getOriginalFileData($path);
   abstract public function getCurrentFileData($path);
   abstract public function getLocalCommitInformation();
-
-
+  abstract public function getSourceControlBaseRevision();
   abstract public function supportsRelativeLocalCommits();
+  abstract public function getWorkingCopyRevision();
 
   public function parseRelativeLocalCommit(array $argv) {
     throw new ArcanistCapabilityNotSupportedException($this);
