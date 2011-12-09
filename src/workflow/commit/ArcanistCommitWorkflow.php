@@ -230,12 +230,23 @@ EOTEXT
       array(
         'revision_id' => $revision_id,
       ));
+    $dir_paths = array();
+    foreach ($commit_paths as $path) {
+      $path = dirname($path);
+      while ($path != '.') {
+        $dir_paths[$path] = true;
+        $path = dirname($path);
+      }
+    }
     $commit_paths = array_fill_keys($commit_paths, true);
 
     $status = $repository_api->getSVNStatus();
 
     $modified_but_not_included = array();
     foreach ($status as $path => $mask) {
+      if (!empty($dir_paths[$path])) {
+        $commit_paths[$path] = true;
+      }
       if (!empty($commit_paths[$path])) {
         continue;
       }
