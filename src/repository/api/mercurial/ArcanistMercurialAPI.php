@@ -136,10 +136,9 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $logs;
   }
 
-
-  public function getBlame($path) {
+  public function getBlame($path, $mode) {
     list($stdout) = execx(
-      '(cd %s && hg blame -u -v -c --rev %s -- %s)',
+      '(cd %s && hg annotate -u -v -c --rev %s -- %s)',
       $this->getPath(),
       $this->getRelativeCommit(),
       $path);
@@ -151,7 +150,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       }
 
       $matches = null;
-      $ok = preg_match('^/\s*([^:]+?) [a-f0-9]{12}: (.*)$/', $line, $matches);
+      $ok = preg_match('/^\s*([^:]+?) [a-f0-9]{12}: (.*)$/', $line, $matches);
 
       if (!$ok) {
         throw new Exception("Unable to parse Mercurial blame line: {$line}");
