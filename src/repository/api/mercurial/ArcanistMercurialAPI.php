@@ -136,7 +136,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $logs;
   }
 
-  public function getBlame($path, $mode) {
+  public function getBlame($path) {
     list($stdout) = execx(
       '(cd %s && hg annotate -u -v -c --rev %s -- %s)',
       $this->getPath(),
