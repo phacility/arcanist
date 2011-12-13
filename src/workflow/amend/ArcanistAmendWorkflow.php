@@ -90,7 +90,7 @@ EOTEXT
     }
 
     if ($this->getArgument('revision')) {
-      $revision_id = $this->getArgument('revision');
+      $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     } else {
       $log = $repository_api->getGitCommitLog();
       $parser = new ArcanistDiffParser();
@@ -117,12 +117,23 @@ EOTEXT
     // revision in it. Maybe this is worth restoring?
 
     $conduit = $this->getConduit();
-    $message = $conduit->callMethodSynchronous(
-      'differential.getcommitmessage',
-      array(
-        'revision_id' => $revision_id,
-        'edit'        => false,
-      ));
+    try {
+      $message = $conduit->callMethodSynchronous(
+        'differential.getcommitmessage',
+        array(
+          'revision_id' => $revision_id,
+          'edit'        => false,
+        )
+      );
+    } catch (ConduitClientException $ex) {
+      if (strpos($ex->getMessage(), 'ERR_NOT_FOUND') === false) {
+        throw $ex;
+      } else {
+        throw new ArcanistUsageException(
+          "Revision D{$revision_id} does not exist."
+        );
+      }
+    }
 
     if ($is_show) {
       echo $message."\n";
