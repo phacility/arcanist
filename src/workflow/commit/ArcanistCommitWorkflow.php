@@ -74,7 +74,7 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     $conduit = $this->getConduit();
 
-    $revision_id = $this->getArgument('revision');
+    $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
 
     if (!$revision_id) {
       $revision_data = $conduit->callMethodSynchronous(
