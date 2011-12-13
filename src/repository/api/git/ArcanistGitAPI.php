@@ -377,7 +377,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getBlame($path) {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = execx(
-      '(cd %s; git blame --date=iso -w -C %s -- %s)',
+      '(cd %s; git blame --date=iso -w -M %s -- %s)',
       $this->getPath(),
       $this->getRelativeCommit(),
       $path);
