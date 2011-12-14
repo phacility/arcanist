@@ -44,6 +44,7 @@ class ArcanistLintJSONRenderer {
           $message->getLine() - self::LINES_OF_CONTEXT,
           self::LINES_OF_CONTEXT * 2 + 1
         )),
+        'description' => $message->getDescription(),
       );
     }
 
