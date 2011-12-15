@@ -202,6 +202,15 @@ EOTEXT
     switch ($this->getArgument('output')) {
       case 'json':
         $renderer = new ArcanistLintJSONRenderer();
+        $prompt_patches = false;
+        $apply_patches = false;
+        if ($this->getArgument('never-apply-patches') ||
+            $this->getArgument('apply-patches')) {
+          throw new ArcanistUsageException(
+            "Automatic patch suggestion is disabled when using JSON output. ".
+            "Remove --never-apply-patches or --apply-patches."
+          );
+        }
         break;
       case 'summary':
         $renderer = new ArcanistLintSummaryRenderer();
@@ -293,8 +302,7 @@ EOTEXT
 
     if (!$this->getParentWorkflow()) {
       if ($result_code == self::RESULT_OKAY) {
-        echo phutil_console_format(
-          "<bg:green>** OKAY **</bg> No lint warnings.\n");
+        echo $renderer->renderOkayResult();
       }
     }
 

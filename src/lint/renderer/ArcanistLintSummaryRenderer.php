@@ -40,4 +40,9 @@ class ArcanistLintSummaryRenderer {
 
     return implode("\n", $text);
   }
+
+  public function renderOkayResult() {
+    return
+      phutil_console_format("<bg:green>** OKAY **</bg> No lint warnings.\n");
+  }
 }

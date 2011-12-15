@@ -197,4 +197,9 @@ class ArcanistLintRenderer {
       $line,
       $data);
   }
+
+  public function renderOkayResult() {
+    return
+      phutil_console_format("<bg:green>** OKAY **</bg> No lint warnings.\n");
+  }
 }

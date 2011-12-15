@@ -50,4 +50,8 @@ class ArcanistLintJSONRenderer {
 
     return json_encode($output)."\n";
   }
+
+  public function renderOkayResult() {
+    return "\n";
+  }
 }
