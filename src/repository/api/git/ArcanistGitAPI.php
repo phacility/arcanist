@@ -321,7 +321,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function amendGitHeadCommit($message) {
     execx(
-      '(cd %s; git commit --amend --message %s)',
+      '(cd %s; git commit --amend --allow-empty --message %s)',
       $this->getPath(),
       $message);
   }
