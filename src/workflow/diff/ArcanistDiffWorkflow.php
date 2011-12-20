@@ -499,11 +499,16 @@ EOTEXT
           'differential.createrevision',
           $revision);
         $result = $future->resolve();
-        echo "Updating commit message to include Differential revision ID...\n";
-        $repository_api->amendGitHeadCommit(
-          $message->getRawCorpus().
-          "\n\n".
-          "Differential Revision: ".$result['revisionid']."\n");
+
+        $revised_message = $conduit->callMethodSynchronous(
+          'differential.getcommitmessage',
+          array(
+            'revision_id' => $result['revisionid'],
+          ));
+
+        echo "Updating commit message...\n";
+        $repository_api->amendGitHeadCommit($revised_message);
+
         echo "Created a new Differential revision:\n";
       }
 

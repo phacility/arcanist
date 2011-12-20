@@ -35,10 +35,29 @@ class ArcanistDifferentialCommitMessage {
     $obj = new ArcanistDifferentialCommitMessage();
     $obj->rawCorpus = $corpus;
 
-    // TODO: Remove "Diffcamp" backward compatibility.
+    // Parse older-style "123" fields, or newer-style full-URI fields.
+    // TODO: Remove support for older-style fields.
+
     $match = null;
-    if (preg_match('/^(?:Differential|DiffCamp) Revision:\s*D?(\d+)/im', $corpus, $match)) {
-      $obj->revisionID = (int)$match[1];
+    if (preg_match('/^Differential Revision:\s*(.*)/im', $corpus, $match)) {
+      $revision_id = trim($match[1]);
+      if (strlen($revision_id)) {
+        if (preg_match('/^D?\d+$/', $revision_id)) {
+          $obj->revisionID = (int)trim($revision_id, 'D');
+        } else {
+          $uri = new PhutilURI($revision_id);
+          $path = $uri->getPath();
+          $path = trim($path, '/');
+          if (preg_match('/^D\d+$/', $path)) {
+            $obj->revisionID = (int)trim($path, 'D');
+          } else {
+            throw new ArcanistUsageException(
+              "Invalid 'Differential Revision' field. The field should have a ".
+              "Phabricator URI like 'http://phabricator.example.com/D123', ".
+              "but has '{$match[1]}'.");
+          }
+        }
+      }
     }
 
     $pattern = '/^git-svn-id:\s*([^@]+)@(\d+)\s+(.*)$/m';
