@@ -159,6 +159,11 @@ EOTEXT
     }
 
     PhutilSymbolLoader::loadClass($engine);
+    if (!is_subclass_of($engine, 'ArcanistLintEngine')) {
+      throw new ArcanistUsageException(
+        "Configured lint engine '{$engine}' is not a subclass of ".
+        "'ArcanistLintEngine'.");
+    }
 
     $engine = newv($engine, array());
     $engine->setWorkingCopy($working_copy);

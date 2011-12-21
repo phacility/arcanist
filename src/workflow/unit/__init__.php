@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/noengine');
 phutil_require_module('arcanist', 'repository/api/base');
 phutil_require_module('arcanist', 'unit/result');
