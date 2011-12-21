@@ -9,6 +9,7 @@
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'lint/renderer');
 phutil_require_module('arcanist', 'lint/severity');
+phutil_require_module('arcanist', 'repository/hookapi/subversion');
 phutil_require_module('arcanist', 'workflow/base');
 phutil_require_module('arcanist', 'workingcopyidentity');
 

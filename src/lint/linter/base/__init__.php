@@ -9,7 +9,5 @@
 phutil_require_module('arcanist', 'lint/message');
 phutil_require_module('arcanist', 'lint/severity');
 
-phutil_require_module('phutil', 'filesystem');
-
 
 phutil_require_source('ArcanistLinter.php');

@@ -69,6 +69,7 @@ abstract class ArcanistLintEngine {
 
   private $changedLines = array();
   private $commitHookMode = false;
+  private $hookAPI;
 
   public function __construct() {
 
@@ -115,10 +116,23 @@ abstract class ArcanistLintEngine {
     return $this;
   }
 
-  protected function loadData($path) {
+  public function setHookAPI(ArcanistHookAPI $hook_api) {
+    $this->hookAPI  = $hook_api;
+  }
+
+  public function getHookAPI() {
+    return $this->hookAPI;
+  }
+
+  public function loadData($path) {
     if (!isset($this->fileData[$path])) {
-      $disk_path = $this->getFilePathOnDisk($path);
-      $this->fileData[$path] = Filesystem::readFile($disk_path);
+      if ($this->getCommitHookMode()) {
+        $this->fileData[$path] = $this->getHookAPI()
+          ->getCurrentFileData($path);
+      } else {
+        $disk_path = $this->getFilePathOnDisk($path);
+        $this->fileData[$path] = Filesystem::readFile($disk_path);
+      }
     }
     return $this->fileData[$path];
   }
