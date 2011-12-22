@@ -207,6 +207,50 @@ class ArcanistBundle {
   public function toGitPatch() {
     $result = array();
     $changes = $this->getChanges();
+
+    foreach (array_keys($changes) as $multicopy_key) {
+      $multicopy_change = $changes[$multicopy_key];
+
+      $type = $multicopy_change->getType();
+      if ($type != ArcanistDiffChangeType::TYPE_MULTICOPY) {
+        continue;
+      }
+
+      // Decompose MULTICOPY into one MOVE_HERE and several COPY_HERE because
+      // we need more information than we have in order to build a delete patch
+      // and represent it as a bunch of COPY_HERE plus a delete. For details,
+      // see T419.
+
+      // Basically, MULTICOPY means there are 2 or more corresponding COPY_HERE
+      // changes, so find one of them arbitrariy and turn it into a MOVE_HERE.
+
+      // TODO: We might be able to do this more cleanly after T230 is resolved.
+
+      $decompose_okay = false;
+      foreach ($changes as $change_key => $change) {
+        if ($change->getType() != ArcanistDiffChangeType::TYPE_COPY_HERE) {
+          continue;
+        }
+        if ($change->getOldPath() != $multicopy_change->getCurrentPath()) {
+          continue;
+        }
+        $decompose_okay = true;
+        $change = clone $change;
+        $change->setType(ArcanistDiffChangeType::TYPE_MOVE_HERE);
+        $changes[$change_key] = $change;
+
+        // The multicopy is now fully represented by MOVE_HERE plus one or more
+        // COPY_HERE, so throw it away.
+        unset($changes[$multicopy_key]);
+        break;
+      }
+
+      if (!$decompose_okay) {
+        throw new Exception(
+          "Failed to decompose multicopy changeset in order to generate diff.");
+      }
+    }
+
     foreach ($changes as $change) {
       $type = $change->getType();
       $file_type = $change->getFileType();
