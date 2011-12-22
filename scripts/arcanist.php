@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+sanity_check_environment();
+
 require_once dirname(__FILE__).'/__init_script__.php';
 
 phutil_require_module('phutil', 'conduit/client');
@@ -285,5 +287,75 @@ try {
     $ex->getMessage(),
     "(Run with --trace for a full exception trace.)");
 
+  exit(1);
+}
+
+
+/**
+ * Perform some sanity checks against the possible diversity of PHP builds in
+ * the wild, like very old versions and builds that were compiled with flags
+ * that exclude core functionality.
+ */
+function sanity_check_environment() {
+  $min_version = '5.2.0';
+  $cur_version = phpversion();
+  if (version_compare($cur_version, $min_version, '<')) {
+    die_with_bad_php(
+      "You are running PHP version '{$cur_version}', which is older than ".
+      "the minimum version, '{$min_version}'. Update to at least ".
+      "'{$min_version}'.");
+  }
+
+  $need_functions = array(
+    'json_decode' => '--without-json',
+  );
+
+  $problems = array();
+
+  $config = null;
+  $show_config = false;
+  foreach ($need_functions as $fname => $flag) {
+    if (function_exists($fname)) {
+      continue;
+    }
+
+    static $info;
+    if ($info === null) {
+      ob_start();
+      phpinfo(INFO_GENERAL);
+      $info = ob_get_clean();
+      $matches = null;
+      if (preg_match('/^Configure Command =>\s*(.*?)$/m', $info, $matches)) {
+        $config = $matches[1];
+      }
+    }
+
+    if (strpos($config, $flag) !== false) {
+      $show_config = true;
+      $problems[] =
+        "This build of PHP was compiled with the configure flag '{$flag}', ".
+        "which means it does not have the function '{$fname}()'. This ".
+        "function is required for arc to run. Rebuild PHP without this flag. ".
+        "You may also be able to build or install the relevant extension ".
+        "separately.";
+    } else {
+      $problems[] =
+        "This build of PHP is missing the required function '{$fname}()'. ".
+        "Rebuild PHP or install the extension which provides '{$fname}()'.";
+    }
+  }
+
+  if ($problems) {
+    if ($show_config) {
+      $problems[] = "PHP was built with this configure command:\n\n{$config}";
+    }
+    die_with_bad_php(implode("\n\n", $problems));
+  }
+}
+
+function die_with_bad_php($message) {
+  echo "\nPHP CONFIGURATION ERRORS\n\n";
+  echo $message;
+  echo "\n\n";
   exit(1);
 }
