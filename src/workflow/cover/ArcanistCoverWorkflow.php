@@ -26,7 +26,6 @@ class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **cover**
-      **cover** [__against_commit__] (git)
           Supports: svn, git
           Cover your... professional reputation. Show blame for the lines you
           changed in your working copy. This will take a minute because blame
