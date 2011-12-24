@@ -64,7 +64,7 @@ EOTEXT
     // We have to build our own because if we requiresWorkingCopy() we'll throw
     // if we aren't in a .arcconfig directory. We probably still can't do much,
     // but commands can raise more detailed errors.
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($_SERVER['PWD']);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
     if ($working_copy->getProjectRoot()) {
       $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
         $working_copy);

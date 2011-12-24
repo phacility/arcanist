@@ -63,7 +63,7 @@ if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
 }
 
 $args = array_values($args);
-$working_directory = $_SERVER['PWD'];
+$working_directory = getcwd();
 
 try {
 
