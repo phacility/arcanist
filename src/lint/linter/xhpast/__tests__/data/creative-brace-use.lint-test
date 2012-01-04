@@ -25,6 +25,8 @@ try
 {}
 catch (Exception $x)
 {}
+
+function h(){}
 ~~~~~~~~~~
 warning:7:13
 warning:12:7
@@ -33,6 +35,7 @@ warning:18:10
 warning:21:11
 warning:24:4
 warning:26:21
+warning:29:13
 ~~~~~~~~~~
 <?php
 
@@ -54,3 +57,5 @@ switch (1) {}
 
 try {}
 catch (Exception $x) {}
+
+function h() {}

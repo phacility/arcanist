@@ -168,7 +168,24 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         continue;
       }
       list($before, $after) = $list->getSurroundingNonsemanticTokens();
-      if (count($before) == 1) {
+      if (!$before) {
+        $first = head($tokens);
+
+        // Only insert the space if we're after a closing parenthesis. If
+        // we're in a construct like "else{}", other rules will insert space
+        // after the 'else' correctly.
+        $prev = $first->getPrevToken();
+        if (!$prev || $prev->getValue() != ')') {
+          continue;
+        }
+
+        $this->raiseLintAtToken(
+          $first,
+          self::LINT_FORMATTING_CONVENTIONS,
+          'Put opening braces on the same line as control statements and '.
+          'declarations, with a single space before them.',
+          ' '.$first->getValue());
+      } else if (count($before) == 1) {
         $before = reset($before);
         if ($before->getValue() != ' ') {
           $this->raiseLintAtToken(
