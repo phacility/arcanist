@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -954,6 +954,15 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
               self::LINT_FORMATTING_CONVENTIONS,
               'Convention: put a space after control statements.',
               $token->getValue().' ');
+          } else if (count($after) == 1) {
+            $space = head($after);
+            if ($space->isAnyWhitespace() && $space->getValue() != ' ') {
+              $this->raiseLintAtToken(
+                $space,
+                self::LINT_FORMATTING_CONVENTIONS,
+                'Convention: put a single space after control statements.',
+                ' ');
+            }
           }
           break;
       }

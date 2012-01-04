@@ -10,6 +10,10 @@ if ($x) {}
 else if ($y) {}
 else if ($z) {}
 <strong>if</strong>;
+if  ($x) {}
+if
+
+($x) {}
 ~~~~~~~~~~
 warning:2:1
 warning:3:1
@@ -19,6 +23,8 @@ warning:6:1
 warning:7:1
 warning:7:6
 warning:8:1
+warning:13:3
+warning:14:3
 ~~~~~~~~~~
 <?php
 if ($x) {}
@@ -32,3 +38,5 @@ if ($x) {}
 else if ($y) {}
 else if ($z) {}
 <strong>if</strong>;
+if ($x) {}
+if ($x) {}
