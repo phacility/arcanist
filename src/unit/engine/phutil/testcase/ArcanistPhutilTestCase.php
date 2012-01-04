@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,17 +57,36 @@ abstract class ArcanistPhutilTestCase {
       return;
     }
 
-    if (is_array($expect)) {
-      $expect = print_r($expect, true);
+    $expect = PhutilReadableSerializer::printableValue($expect);
+    $result = PhutilReadableSerializer::printableValue($result);
+
+    $where = debug_backtrace();
+    $where = array_shift($where);
+
+    $line = idx($where, 'line');
+    $file = basename(idx($where, 'file'));
+
+    $output = "Assertion failed at line {$line} in {$file}";
+
+    if ($message) {
+      $output .= ": {$message}";
     }
 
-    if (is_array($result)) {
-      $result = print_r($result, true);
+    $output .= "\n";
+
+    if (strpos($expect, "\n") !== false) {
+      $expect = "\n{$expect}";
     }
 
-    $message = "Values {$expect} and {$result} differ: {$message}";
-    $this->failTest($message);
-    throw new ArcanistPhutilTestTerminatedException($message);
+    if (strpos($result, "\n") !== false) {
+      $result = "\n{$result}";
+    }
+
+    $output .= "Expected: {$expect}\n";
+    $output .= "Actual: {$result}";
+
+    $this->failTest($output);
+    throw new ArcanistPhutilTestTerminatedException($output);
   }
 
 
