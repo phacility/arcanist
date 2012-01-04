@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,15 +75,13 @@ EOTEXT
         "You're covered, you didn't change anything.");
     }
 
-    $changed = array();
-    foreach ($paths as $path) {
-      $changed[$path] = $this->getChangedLines($path, 'cover');
-    }
-
     $covers = array();
     foreach ($paths as $path) {
+      $lines = $this->getChangedLines($path, 'cover');
+      if (!$lines) {
+        continue;
+      }
       $blame = $repository_api->getBlame($path);
-      $lines = $changed[$path];
       foreach ($lines as $line) {
         list($author, $revision) = idx($blame, $line, array(null, null));
         if (!$author) {
