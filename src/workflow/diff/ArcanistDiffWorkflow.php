@@ -53,7 +53,7 @@ EOTEXT
       );
   }
   public function requiresWorkingCopy() {
-    return true;
+    return !$this->isRawDiffSource();
   }
 
   public function requiresConduit() {
@@ -65,7 +65,7 @@ EOTEXT
   }
 
   public function requiresRepositoryAPI() {
-    return true;
+    return !$this->isRawDiffSource();
   }
 
   public function getDiffID() {
@@ -105,6 +105,39 @@ EOTEXT
           "When updating a revision under git, edit revision information ".
           "before updating.",
       ),
+      'raw' => array(
+        'help' =>
+          "Read diff from stdin, not from the working copy. This disables ".
+          "many Arcanist/Phabricator features which depend on having access ".
+          "to the working copy.",
+        'conflicts' => array(
+          'less-context'        => null,
+          'apply-patches'       => '--raw disables lint.',
+          'never-apply-patches' => '--raw disables lint.',
+          'advice'              => '--raw disables lint.',
+          'lintall'             => '--raw disables lint.',
+
+          'create'              => '--raw and --create both need stdin. '.
+                                   'Use --raw-command.',
+          'edit'                => '--raw and --edit both need stdin. '.
+                                   'Use --raw-command.',
+          'raw-command'         => null,
+        ),
+      ),
+      'raw-command' => array(
+        'param' => 'command',
+        'help' =>
+          "Generate diff by executing a specified command, not from the ".
+          "working copy. This disables many Arcanist/Phabricator features ".
+          "which depend on having access to the working copy.",
+        'conflicts' => array(
+          'less-context'        => null,
+          'apply-patches'       => '--raw-command disables lint.',
+          'never-apply-patches' => '--raw-command disables lint.',
+          'advice'              => '--raw-command disables lint.',
+          'lintall'             => '--raw-command disables lint.',
+        ),
+      ),
       'create' => array(
         'help' => "(EXPERIMENTAL) Create a new revision.",
         'conflicts' => array(
@@ -130,7 +163,7 @@ EOTEXT
       'only' => array(
         'help' =>
           "Only generate a diff, without running lint, unit tests, or other ".
-          "auxiliary steps.",
+          "auxiliary steps. See also --preview.",
         'conflicts' => array(
           'preview'   => null,
           'message'   => '--only does not affect revisions.',
@@ -217,11 +250,17 @@ EOTEXT
     );
   }
 
-  public function run() {
-    $repository_api = $this->getRepositoryAPI();
+  public function isRawDiffSource() {
+    return $this->getArgument('raw') || $this->getArgument('raw-command');
+  }
 
-    if ($this->getArgument('less-context')) {
-      $repository_api->setDiffLinesOfContext(3);
+  public function run() {
+
+    if ($this->requiresRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+      if ($this->getArgument('less-context')) {
+        $repository_api->setDiffLinesOfContext(3);
+      }
     }
 
     $output_json = $this->getArgument('json');
@@ -232,7 +271,10 @@ EOTEXT
     }
 
     $conduit = $this->getConduit();
-    $this->requireCleanWorkingCopy();
+
+    if ($this->requiresWorkingCopy()) {
+      $this->requireCleanWorkingCopy();
+    }
 
     $paths = $this->generateAffectedPaths();
 
@@ -249,13 +291,8 @@ EOTEXT
         "There are no changes to generate a diff from!");
     }
 
-    $change_list = array();
-    foreach ($changes as $change) {
-      $change_list[] = $change->toDictionary();
-    }
-
     $diff_spec = array(
-      'changes'                   => $change_list,
+      'changes'                   => mpull($changes, 'toDictionary'),
       'lintStatus'                => $this->getLintStatus($lint_result),
       'unitStatus'                => $this->getUnitStatus($unit_result),
     ) + $this->buildDiffSpecification();
@@ -386,8 +423,14 @@ EOTEXT
             'revision_id' => $result['revisionid'],
           ));
 
-        echo "Updating commit message...\n";
-        $repository_api->amendGitHeadCommit($revised_message);
+        if ($this->requiresRepositoryAPI()) {
+          $repository_api = $this->getRepositoryAPI();
+          if (($repository_api instanceof ArcanistGitAPI) &&
+              !$this->isHistoryImmutable()) {
+            echo "Updating commit message...\n";
+            $repository_api->amendGitHeadCommit($revised_message);
+          }
+        }
 
         echo "Created a new Differential revision:\n";
       }
@@ -403,8 +446,6 @@ EOTEXT
       echo '  '.$change->renderTextSummary()."\n";
     }
 
-    $this->diffID = $diff_info['diffid'];
-
     if ($output_json) {
       ob_get_clean();
     }
@@ -416,6 +457,10 @@ EOTEXT
 
     if ($this->getArgument('create')) {
       return false;
+    }
+
+    if ($this->isRawDiffSource()) {
+      return true;
     }
 
     $repository_api = $this->getRepositoryAPI();
@@ -436,6 +481,10 @@ EOTEXT
   }
 
   private function generateAffectedPaths() {
+    if ($this->isRawDiffSource()) {
+      return array();
+    }
+
     $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistSubversionAPI) {
       $file_list = new FileList($this->getArgument('paths', array()));
@@ -495,9 +544,32 @@ EOTEXT
 
 
   protected function generateChanges() {
+    $parser = new ArcanistDiffParser();
+
+    $is_raw = $this->isRawDiffSource();
+    if ($is_raw) {
+
+      if ($this->getArgument('raw')) {
+        file_put_contents('php://stderr', "Reading diff from stdin...\n");
+        $raw_diff = file_get_contents('php://stdin');
+      } else if ($this->getArgument('raw-command')) {
+        list($raw_diff) = execx($this->getArgument('raw-command'));
+      } else {
+        throw new Exception("Unknown raw diff source.");
+      }
+
+      $changes = $parser->parseDiff($raw_diff);
+      foreach ($changes as $key => $change) {
+        // Remove "message" changes, e.g. from "git show".
+        if ($change->getType() == ArcanistDiffChangeType::TYPE_MESSAGE) {
+          unset($changes[$key]);
+        }
+      }
+      return $changes;
+    }
+
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser();
     if ($repository_api instanceof ArcanistSubversionAPI) {
       $paths = $this->generateAffectedPaths();
       $this->primeSubversionWorkingCopyData($paths);
@@ -864,7 +936,8 @@ EOTEXT
    */
   private function runLint($paths) {
     if ($this->getArgument('nolint') ||
-        $this->getArgument('only')) {
+        $this->getArgument('only') ||
+        $this->isRawDiffSource()) {
       return ArcanistLintWorkflow::RESULT_SKIP;
     }
 
@@ -928,7 +1001,8 @@ EOTEXT
    */
   private function runUnit($paths) {
     if ($this->getArgument('nounit') ||
-        $this->getArgument('only')) {
+        $this->getArgument('only') ||
+        $this->isRawDiffSource()) {
       return ArcanistUnitWorkflow::RESULT_SKIP;
     }
 
@@ -987,6 +1061,7 @@ EOTEXT
    */
   private function buildCommitMessage() {
     $is_create = $this->getArgument('create');
+    $is_raw = $this->isRawDiffSource();
 
     $message = null;
     if ($is_create) {
@@ -996,7 +1071,13 @@ EOTEXT
       } else {
         return $this->getCommitMessageFromUser();
       }
-    } else if (!$this->shouldOnlyCreateDiff()) {
+    }
+
+    if ($is_raw) {
+      return null;
+    }
+
+    if (!$this->shouldOnlyCreateDiff()) {
       return $this->getGitCommitMessage();
     }
 
@@ -1098,9 +1179,11 @@ EOTEXT
     //  $ arc diff
     //
     // ...you shouldn't have to retype the update message.
-    $repository_api = $this->getRepositoryAPI();
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $comments = $this->getGitUpdateMessage();
+    if ($this->requiresRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $comments = $this->getGitUpdateMessage();
+      }
     }
 
     $template =
@@ -1275,47 +1358,62 @@ EOTEXT
    */
   private function buildDiffSpecification() {
 
-    $repository_api = $this->getRepositoryAPI();
-    $working_copy = $this->getWorkingCopy();
-
-    $base_revision  = $repository_api->getSourceControlBaseRevision();
-    $base_path      = $repository_api->getSourceControlPath();
-    $vcs            = $repository_api->getSourceControlSystemName();
+    $base_revision  = null;
+    $base_path      = null;
+    $vcs            = null;
     $repo_uuid      = null;
     $parent         = null;
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $info = $this->getGitParentLogInfo();
-      if ($info['parent']) {
-        $parent = $info['parent'];
+    $source_path    = null;
+    $branch         = null;
+
+    if ($this->requiresRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+
+      $base_revision  = $repository_api->getSourceControlBaseRevision();
+      $base_path      = $repository_api->getSourceControlPath();
+      $vcs            = $repository_api->getSourceControlSystemName();
+      $source_path    = $repository_api->getPath();
+      $branch         = $repository_api->getBranchName();
+
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $info = $this->getGitParentLogInfo();
+        if ($info['parent']) {
+          $parent = $info['parent'];
+        }
+        if ($info['base_revision']) {
+          $base_revision = $info['base_revision'];
+        }
+        if ($info['base_path']) {
+          $base_path = $info['base_path'];
+        }
+        if ($info['uuid']) {
+          $repo_uuid = $info['uuid'];
+        }
+      } else if ($repository_api instanceof ArcanistSubversionAPI) {
+        $repo_uuid = $repository_api->getRepositorySVNUUID();
+      } else if ($repository_api instanceof ArcanistMercurialAPI) {
+        // TODO: Provide this information.
+      } else {
+        throw new Exception("Unsupported repository API!");
       }
-      if ($info['base_revision']) {
-        $base_revision = $info['base_revision'];
-      }
-      if ($info['base_path']) {
-        $base_path = $info['base_path'];
-      }
-      if ($info['uuid']) {
-        $repo_uuid = $info['uuid'];
-      }
-    } else if ($repository_api instanceof ArcanistSubversionAPI) {
-      $repo_uuid = $repository_api->getRepositorySVNUUID();
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      // TODO: Provide this information.
-    } else {
-      throw new Exception("Unsupported repository API!");
+    }
+
+    $project_id = null;
+    if ($this->requiresWorkingCopy()) {
+      $project_id = $this->getWorkingCopy()->getProjectID();
     }
 
     return array(
       'sourceMachine'             => php_uname('n'),
-      'sourcePath'                => $repository_api->getPath(),
-      'branch'                    => $repository_api->getBranchName(),
+      'sourcePath'                => $source_path,
+      'branch'                    => $branch,
       'sourceControlSystem'       => $vcs,
       'sourceControlPath'         => $base_path,
       'sourceControlBaseRevision' => $base_revision,
       'parentRevisionID'          => $parent,
       'repositoryUUID'            => $repo_uuid,
       'creationMethod'            => 'arc',
-      'arcanistProject'           => $working_copy->getProjectID(),
+      'arcanistProject'           => $project_id,
       'authorPHID'                => $this->getUserPHID(),
     );
   }
@@ -1384,6 +1482,10 @@ EOTEXT
    * @task diffprop
    */
   private function updateLocalDiffProperty() {
+    if ($this->isRawDiffSource()) {
+      return;
+    }
+
     $local_info = $this->getRepositoryAPI()->getLocalCommitInformation();
     if (!$local_info) {
       return;
