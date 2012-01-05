@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,11 @@
 
 /**
  * Sends changes from your working copy to Differential for code review.
+ *
+ * @task lintunit   Lint and Unit Tests
+ * @task message    Commit and Update Messages
+ * @task diffspec   Diff Specification
+ * @task diffprop   Diff Properties
  *
  * @group workflow
  */
@@ -104,6 +109,8 @@ EOTEXT
         'help' => "(EXPERIMENTAL) Create a new revision.",
         'conflicts' => array(
           'edit'    => '--create can not be used with --edit.',
+          'only'    => '--create can not be used with --only.',
+          'preview' => '--create can not be used with --preview.',
         ),
       ),
       'nounit' => array(
@@ -224,29 +231,14 @@ EOTEXT
       ob_start();
     }
 
-    $is_create = $this->getArgument('create');
-
     $conduit = $this->getConduit();
     $this->requireCleanWorkingCopy();
-
-    $parent = null;
 
     $paths = $this->generateAffectedPaths();
 
     // Do this before we start linting or running unit tests so we can detect
     // things like a missing test plan or invalid reviewers immediately.
-    if ($is_create) {
-      $message_file = $this->getArgument('message-file');
-      if ($message_file) {
-        $commit_message = $this->getCommitMessageFromFile($message_file);
-      } else {
-        $commit_message = $this->getCommitMessageFromUser();
-      }
-    } else if ($this->shouldOnlyCreateDiff()) {
-      $commit_message = null;
-    } else {
-      $commit_message = $this->getGitCommitMessage();
-    }
+    $commit_message = $this->buildCommitMessage();
 
     $lint_result = $this->runLint($paths);
     $unit_result = $this->runUnit($paths);
@@ -262,138 +254,25 @@ EOTEXT
       $change_list[] = $change->toDictionary();
     }
 
-    if ($lint_result === ArcanistLintWorkflow::RESULT_OKAY) {
-      $lint = 'okay';
-    } else if ($lint_result === ArcanistLintWorkflow::RESULT_ERRORS) {
-      $lint = 'fail';
-    } else if ($lint_result === ArcanistLintWorkflow::RESULT_WARNINGS) {
-      $lint = 'warn';
-    } else if ($lint_result === ArcanistLintWorkflow::RESULT_SKIP) {
-      $lint = 'skip';
-    } else {
-      $lint = 'none';
-    }
-
-    if ($unit_result === ArcanistUnitWorkflow::RESULT_OKAY) {
-      $unit = 'okay';
-    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_FAIL) {
-      $unit = 'fail';
-    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_UNSOUND) {
-      $unit = 'warn';
-    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_SKIP) {
-      $unit = 'skip';
-    } else if ($unit_result === ArcanistUnitWorkflow::RESULT_POSTPONED) {
-      $unit = 'postponed';
-    } else {
-      $unit = 'none';
-    }
-
-    // NOTE: This has to happen after generateChanges(), since it may overwrite
-    // the SVN effective base revision.
-    $base_revision = $repository_api->getSourceControlBaseRevision();
-    $base_path     = $repository_api->getSourceControlPath();
-    $repo_uuid     = null;
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $info = $this->getGitParentLogInfo();
-      if ($info['parent']) {
-        $parent = $info['parent'];
-      }
-      if ($info['base_revision']) {
-        $base_revision = $info['base_revision'];
-      }
-      if ($info['base_path']) {
-        $base_path = $info['base_path'];
-      }
-      if ($info['uuid']) {
-        $repo_uuid = $info['uuid'];
-      }
-    } else if ($repository_api instanceof ArcanistSubversionAPI) {
-      $repo_uuid = $repository_api->getRepositorySVNUUID();
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      // TODO: Provide this information.
-    } else {
-      throw new Exception("Unsupported repository API!");
-    }
-
-    $working_copy = $this->getWorkingCopy();
-
-    $diff = array(
+    $diff_spec = array(
       'changes'                   => $change_list,
-      'sourceMachine'             => php_uname('n'),
-      'sourcePath'                => $repository_api->getPath(),
-      'branch'                    => $repository_api->getBranchName(),
-      'sourceControlSystem'       =>
-        $repository_api->getSourceControlSystemName(),
-      'sourceControlPath'         => $base_path,
-      'sourceControlBaseRevision' => $base_revision,
-      'parentRevisionID'          => $parent,
-      'lintStatus'                => $lint,
-      'unitStatus'                => $unit,
-
-      'repositoryUUID'            => $repo_uuid,
-      'creationMethod'            => 'arc',
-      'arcanistProject'           => $working_copy->getProjectID(),
-      'authorPHID'                => $this->getUserPHID(),
-    );
+      'lintStatus'                => $this->getLintStatus($lint_result),
+      'unitStatus'                => $this->getUnitStatus($unit_result),
+    ) + $this->buildDiffSpecification();
 
     $diff_info = $conduit->callMethodSynchronous(
       'differential.creatediff',
-      $diff);
+      $diff_spec);
+
+    $this->diffID = $diff_info['diffid'];
 
     if ($this->unitWorkflow) {
       $this->unitWorkflow->setDifferentialDiffID($diff_info['diffid']);
     }
 
-    if ($this->unresolvedLint) {
-      $data = array();
-      foreach ($this->unresolvedLint as $message) {
-        $data[] = array(
-          'path'        => $message->getPath(),
-          'line'        => $message->getLine(),
-          'char'        => $message->getChar(),
-          'code'        => $message->getCode(),
-          'severity'    => $message->getSeverity(),
-          'name'        => $message->getName(),
-          'description' => $message->getDescription(),
-        );
-      }
-      $conduit->callMethodSynchronous(
-        'differential.setdiffproperty',
-        array(
-          'diff_id' => $diff_info['diffid'],
-          'name'    => 'arc:lint',
-          'data'    => json_encode($data),
-        ));
-    }
-
-    $local_info = $repository_api->getLocalCommitInformation();
-    if ($local_info) {
-      $conduit->callMethodSynchronous(
-        'differential.setdiffproperty',
-        array(
-          'diff_id' => $diff_info['diffid'],
-          'name'    => 'local:commits',
-          'data'    => json_encode($local_info),
-        ));
-    }
-
-    if ($this->unresolvedTests) {
-      $data = array();
-      foreach ($this->unresolvedTests as $test) {
-        $data[] = array(
-          'name'      => $test->getName(),
-          'result'    => $test->getResult(),
-          'userdata'  => $test->getUserData(),
-        );
-      }
-      $conduit->callMethodSynchronous(
-        'differential.setdiffproperty',
-        array(
-          'diff_id' => $diff_info['diffid'],
-          'name'    => 'arc:unit',
-          'data'    => json_encode($data),
-        ));
-    }
+    $this->updateLintDiffProperty();
+    $this->updateUnitDiffProperty();
+    $this->updateLocalDiffProperty();
 
     if ($this->shouldOnlyCreateDiff()) {
       if (!$output_json) {
@@ -405,16 +284,17 @@ EOTEXT
         $human = ob_get_clean();
         echo json_encode(array(
           'diffURI' => $diff_info['uri'],
-          'diffID'  => $diff_info['diffid'],
+          'diffID'  => $this->getDiffID(),
           'human'   => $human,
         ))."\n";
         ob_start();
       }
     } else {
+
       $message = $commit_message;
 
       $revision = array(
-        'diffid' => $diff_info['diffid'],
+        'diffid' => $this->getDiffID(),
         'fields' => $message->getFields(),
       );
 
@@ -534,6 +414,10 @@ EOTEXT
 
   protected function shouldOnlyCreateDiff() {
 
+    if ($this->getArgument('create')) {
+      return false;
+    }
+
     $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistSubversionAPI) {
       return true;
@@ -549,10 +433,6 @@ EOTEXT
 
     return $this->getArgument('preview') ||
            $this->getArgument('only');
-  }
-
-  protected function findRevisionInformation() {
-    return array(null, null);
   }
 
   private function generateAffectedPaths() {
@@ -904,26 +784,349 @@ EOTEXT
     return $result;
   }
 
-  /**
-   * Retrieve the git message in HEAD if it isn't a primary template message.
-   */
-  private function getGitUpdateMessage() {
+  private function getGitParentLogInfo() {
+    $info = array(
+      'parent'        => null,
+      'base_revision' => null,
+      'base_path'     => null,
+      'uuid'          => null,
+    );
+
+    $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
     $parser = new ArcanistDiffParser();
-    $commit_messages = $repository_api->getGitCommitLog();
-    $commit_messages = $parser->parseDiff($commit_messages);
+    $history_messages = $repository_api->getGitHistoryLog();
+    if (!$history_messages) {
+      // This can occur on the initial commit.
+      return $info;
+    }
+    $history_messages = $parser->parseDiff($history_messages);
 
-    $head = reset($commit_messages);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-      $head->getMetadata('message'));
-    if ($message->getRevisionID()) {
-      return null;
+    foreach ($history_messages as $key => $change) {
+      try {
+        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+          $change->getMetadata('message'));
+        if ($message->getRevisionID() && $info['parent'] === null) {
+          $info['parent'] = $message->getRevisionID();
+        }
+        if ($message->getGitSVNBaseRevision() &&
+            $info['base_revision'] === null) {
+          $info['base_revision'] = $message->getGitSVNBaseRevision();
+          $info['base_path']     = $message->getGitSVNBasePath();
+        }
+        if ($message->getGitSVNUUID()) {
+          $info['uuid'] = $message->getGitSVNUUID();
+        }
+        if ($info['parent'] && $info['base_revision']) {
+          break;
+        }
+      } catch (ArcanistDifferentialCommitMessageParserException $ex) {
+        // Ignore.
+      }
     }
 
-    return trim($message->getRawCorpus());
+    return $info;
   }
 
+  protected function primeSubversionWorkingCopyData($paths) {
+    $repository_api = $this->getRepositoryAPI();
+
+    $futures = array();
+    $targets = array();
+    foreach ($paths as $path => $mask) {
+      $futures[] = $repository_api->buildDiffFuture($path);
+      $targets[] = array('command' => 'diff', 'path' => $path);
+      $futures[] = $repository_api->buildInfoFuture($path);
+      $targets[] = array('command' => 'info', 'path' => $path);
+    }
+
+    foreach ($futures as $key => $future) {
+      $target = $targets[$key];
+      if ($target['command'] == 'diff') {
+        $repository_api->primeSVNDiffResult(
+          $target['path'],
+          $future->resolve());
+      } else {
+        $repository_api->primeSVNInfoResult(
+          $target['path'],
+          $future->resolve());
+      }
+    }
+  }
+
+
+/* -(  Lint and Unit Tests  )------------------------------------------------ */
+
+
+  /**
+   * @task lintunit
+   */
+  private function runLint($paths) {
+    if ($this->getArgument('nolint') ||
+        $this->getArgument('only')) {
+      return ArcanistLintWorkflow::RESULT_SKIP;
+    }
+
+    $repository_api = $this->getRepositoryAPI();
+
+    echo "Linting...\n";
+    try {
+      $argv = $this->getPassthruArgumentsAsArgv('lint');
+      if ($repository_api instanceof ArcanistSubversionAPI) {
+        $argv = array_merge($argv, array_keys($paths));
+      } else {
+        $argv[] = $repository_api->getRelativeCommit();
+      }
+      $lint_workflow = $this->buildChildWorkflow('lint', $argv);
+
+      if (!$this->isHistoryImmutable()) {
+        // TODO: We should offer to create a checkpoint commit.
+        $lint_workflow->setShouldAmendChanges(true);
+      }
+
+      $lint_result = $lint_workflow->run();
+
+      switch ($lint_result) {
+        case ArcanistLintWorkflow::RESULT_OKAY:
+          echo phutil_console_format(
+            "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
+          break;
+        case ArcanistLintWorkflow::RESULT_WARNINGS:
+          $continue = phutil_console_confirm(
+            "Lint issued unresolved warnings. Ignore them?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+        case ArcanistLintWorkflow::RESULT_ERRORS:
+          echo phutil_console_format(
+            "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
+          $continue = phutil_console_confirm(
+            "Lint issued unresolved errors! Ignore lint errors?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+      }
+
+      $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
+
+      return $lint_result;
+    } catch (ArcanistNoEngineException $ex) {
+      echo "No lint engine configured for this project.\n";
+    } catch (ArcanistNoEffectException $ex) {
+      echo "No paths to lint.\n";
+    }
+
+    return null;
+  }
+
+
+  /**
+   * @task lintunit
+   */
+  private function runUnit($paths) {
+    if ($this->getArgument('nounit') ||
+        $this->getArgument('only')) {
+      return ArcanistUnitWorkflow::RESULT_SKIP;
+    }
+
+    $repository_api = $this->getRepositoryAPI();
+
+    echo "Running unit tests...\n";
+    try {
+      $argv = $this->getPassthruArgumentsAsArgv('unit');
+      if ($repository_api instanceof ArcanistSubversionAPI) {
+        $argv = array_merge($argv, array_keys($paths));
+      }
+      $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $this->unitWorkflow->run();
+      switch ($unit_result) {
+        case ArcanistUnitWorkflow::RESULT_OKAY:
+          echo phutil_console_format(
+            "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
+          break;
+        case ArcanistUnitWorkflow::RESULT_UNSOUND:
+          $continue = phutil_console_confirm(
+            "Unit test results included failures, but all failing tests ".
+            "are known to be unsound. Ignore unsound test failures?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+        case ArcanistUnitWorkflow::RESULT_FAIL:
+          echo phutil_console_format(
+            "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
+          $continue = phutil_console_confirm(
+            "Unit test results include failures! Ignore test failures?");
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+      }
+
+      $this->unresolvedTests = $this->unitWorkflow->getUnresolvedTests();
+
+      return $unit_result;
+    } catch (ArcanistNoEngineException $ex) {
+      echo "No unit test engine is configured for this project.\n";
+    } catch (ArcanistNoEffectException $ex) {
+      echo "No tests to run.\n";
+    }
+
+    return null;
+  }
+
+
+/* -(  Commit and Update Messages  )----------------------------------------- */
+
+
+  /**
+   * @task message
+   */
+  private function buildCommitMessage() {
+    $is_create = $this->getArgument('create');
+
+    $message = null;
+    if ($is_create) {
+      $message_file = $this->getArgument('message-file');
+      if ($message_file) {
+        return $this->getCommitMessageFromFile($message_file);
+      } else {
+        return $this->getCommitMessageFromUser();
+      }
+    } else if (!$this->shouldOnlyCreateDiff()) {
+      return $this->getGitCommitMessage();
+    }
+
+    return null;
+  }
+
+
+  /**
+   * @task message
+   */
+  private function getCommitMessageFromUser() {
+    $conduit = $this->getConduit();
+
+    $template = $conduit->callMethodSynchronous(
+      'differential.getcommitmessage',
+      array(
+        'revision_id' => null,
+        'edit' => true,
+      ));
+
+    $template =
+      $template.
+      "\n\n".
+      "# Describe this revision.".
+      "\n";
+    $template = id(new PhutilInteractiveEditor($template))
+      ->setName('new-commit')
+      ->editInteractively();
+    $template = preg_replace('/^\s*#.*$/m', '', $template);
+
+    try {
+      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $template);
+      $message->pullDataFromConduit($conduit);
+      $this->validateCommitMessage($message);
+    } catch (Exception $ex) {
+      $path = Filesystem::writeUniqueFile('arc-commit-message', $template);
+
+      echo phutil_console_wrap(
+        "\n".
+        "Exception while parsing commit message! Message saved to ".
+        "'{$path}'. Use -F <file> to specify a commit message file.\n");
+
+      throw $ex;
+    }
+
+    return $message;
+  }
+
+
+  /**
+   * @task message
+   */
+  private function getCommitMessageFromFile($file) {
+    $conduit = $this->getConduit();
+
+    $data = Filesystem::readFile($file);
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($data);
+    $message->pullDataFromConduit($conduit);
+
+    $this->validateCommitMessage($message);
+
+    return $message;
+  }
+
+
+  /**
+   * @task message
+   */
+  private function validateCommitMessage(
+    ArcanistDifferentialCommitMessage $message) {
+    $reviewers = $message->getFieldValue('reviewerPHIDs');
+    if (!$reviewers) {
+      $confirm = "You have not specified any reviewers. Continue anyway?";
+      if (!phutil_console_confirm($confirm)) {
+        throw new ArcanistUsageException('Specify reviewers and retry.');
+      }
+    } else if (in_array($this->getUserPHID(), $reviewers)) {
+      throw new ArcanistUsageException(
+        "You can not be a reviewer for your own revision.");
+    }
+  }
+
+
+  /**
+   * @task message
+   */
+  private function getUpdateMessage() {
+    $comments = $this->getArgument('message');
+    if (strlen($comments)) {
+      return $comments;
+    }
+
+    // When updating a revision using git without specifying '--message', try
+    // to prefill with the message in HEAD if it isn't a template message. The
+    // idea is that if you do:
+    //
+    //  $ git commit -a -m 'fix some junk'
+    //  $ arc diff
+    //
+    // ...you shouldn't have to retype the update message.
+    $repository_api = $this->getRepositoryAPI();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      $comments = $this->getGitUpdateMessage();
+    }
+
+    $template =
+      $comments.
+      "\n\n".
+      "# Enter a brief description of the changes included in this update.".
+      "\n";
+
+    $comments = id(new PhutilInteractiveEditor($template))
+      ->setName('differential-update-comments')
+      ->editInteractively();
+
+    $comments = preg_replace('/^\s*#.*$/m', '', $comments);
+    $comments = rtrim($comments);
+
+    if (!strlen($comments)) {
+      throw new ArcanistUserAbortException();
+    }
+
+    return $comments;
+  }
+
+
+  /**
+   * @task message
+   */
   private function getGitCommitMessage() {
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
@@ -1005,285 +1208,208 @@ EOTEXT
     }
 
     if ($blessed) {
-      $reviewers = $blessed->getFieldValue('reviewerPHIDs');
-      if (!$reviewers) {
-        $message = "You have not specified any reviewers. Continue anyway?";
-        if (!phutil_console_confirm($message)) {
-          throw new ArcanistUsageException('Specify reviewers and retry.');
-        }
-      } else if (in_array($this->getUserPHID(), $reviewers)) {
-        throw new ArcanistUsageException(
-          "You can not be a reviewer for your own revision.");
-      }
+      $this->validateCommitMessage($blessed);
     }
 
     return $blessed;
   }
 
-  private function getGitParentLogInfo() {
-    $info = array(
-      'parent'        => null,
-      'base_revision' => null,
-      'base_path'     => null,
-      'uuid'          => null,
-    );
 
-    $conduit = $this->getConduit();
+  /**
+   * Retrieve the git message in HEAD if it isn't a primary template message.
+   *
+   * @task message
+   */
+  private function getGitUpdateMessage() {
     $repository_api = $this->getRepositoryAPI();
 
     $parser = new ArcanistDiffParser();
-    $history_messages = $repository_api->getGitHistoryLog();
-    if (!$history_messages) {
-      // This can occur on the initial commit.
-      return $info;
-    }
-    $history_messages = $parser->parseDiff($history_messages);
+    $commit_messages = $repository_api->getGitCommitLog();
+    $commit_messages = $parser->parseDiff($commit_messages);
 
-    foreach ($history_messages as $key => $change) {
-      try {
-        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-          $change->getMetadata('message'));
-        if ($message->getRevisionID() && $info['parent'] === null) {
-          $info['parent'] = $message->getRevisionID();
-        }
-        if ($message->getGitSVNBaseRevision() &&
-            $info['base_revision'] === null) {
-          $info['base_revision'] = $message->getGitSVNBaseRevision();
-          $info['base_path']     = $message->getGitSVNBasePath();
-        }
-        if ($message->getGitSVNUUID()) {
-          $info['uuid'] = $message->getGitSVNUUID();
-        }
-        if ($info['parent'] && $info['base_revision']) {
-          break;
-        }
-      } catch (ArcanistDifferentialCommitMessageParserException $ex) {
-        // Ignore.
-      }
+    $head = reset($commit_messages);
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+      $head->getMetadata('message'));
+    if ($message->getRevisionID()) {
+      return null;
     }
 
-    return $info;
+    return trim($message->getRawCorpus());
   }
 
-  protected function primeSubversionWorkingCopyData($paths) {
-    $repository_api = $this->getRepositoryAPI();
 
-    $futures = array();
-    $targets = array();
-    foreach ($paths as $path => $mask) {
-      $futures[] = $repository_api->buildDiffFuture($path);
-      $targets[] = array('command' => 'diff', 'path' => $path);
-      $futures[] = $repository_api->buildInfoFuture($path);
-      $targets[] = array('command' => 'info', 'path' => $path);
-    }
+/* -(  Diff Specification  )------------------------------------------------- */
 
-    foreach ($futures as $key => $future) {
-      $target = $targets[$key];
-      if ($target['command'] == 'diff') {
-        $repository_api->primeSVNDiffResult(
-          $target['path'],
-          $future->resolve());
-      } else {
-        $repository_api->primeSVNInfoResult(
-          $target['path'],
-          $future->resolve());
-      }
-    }
+
+  /**
+   * @task diffspec
+   */
+  private function getLintStatus($lint_result) {
+    $map = array(
+      ArcanistLintWorkflow::RESULT_OKAY       => 'okay',
+      ArcanistLintWorkflow::RESULT_ERRORS     => 'fail',
+      ArcanistLintWorkflow::RESULT_WARNINGS   => 'warn',
+      ArcanistLintWorkflow::RESULT_SKIP       => 'skip',
+    );
+    return idx($map, $lint_result, 'none');
   }
 
-  private function getUpdateMessage() {
-    $comments = $this->getArgument('message');
-    if (!strlen($comments)) {
 
-      // When updating a revision using git without specifying '--message', try
-      // to prefill with the message in HEAD if it isn't a template message. The
-      // idea is that if you do:
-      //
-      //  $ git commit -a -m 'fix some junk'
-      //  $ arc diff
-      //
-      // ...you shouldn't have to retype the update message.
-      $repository_api = $this->getRepositoryAPI();
-      if ($repository_api instanceof ArcanistGitAPI) {
-        $comments = $this->getGitUpdateMessage();
-      }
-
-      $template =
-        $comments.
-        "\n\n".
-        "# Enter a brief description of the changes included in this update.".
-        "\n";
-      $comments = id(new PhutilInteractiveEditor($template))
-        ->setName('differential-update-comments')
-        ->editInteractively();
-      $comments = preg_replace('/^\s*#.*$/m', '', $comments);
-
-      $comments = rtrim($comments);
-      if (!strlen($comments)) {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
-    return $comments;
+  /**
+   * @task diffspec
+   */
+  private function getUnitStatus($unit_result) {
+    $map = array(
+      ArcanistUnitWorkflow::RESULT_OKAY       => 'okay',
+      ArcanistUnitWorkflow::RESULT_FAIL       => 'fail',
+      ArcanistUnitWorkflow::RESULT_UNSOUND    => 'warn',
+      ArcanistUnitWorkflow::RESULT_SKIP       => 'skip',
+      ArcanistUnitWorkflow::RESULT_POSTPONED  => 'postponed',
+    );
+    return idx($map, $unit_result, 'none');
   }
 
-  private function runLint($paths) {
-    if ($this->getArgument('nolint') ||
-        $this->getArgument('only')) {
-      return ArcanistLintWorkflow::RESULT_SKIP;
-    }
+
+  /**
+   * @task diffspec
+   */
+  private function buildDiffSpecification() {
 
     $repository_api = $this->getRepositoryAPI();
+    $working_copy = $this->getWorkingCopy();
 
-    echo "Linting...\n";
-    try {
-      $argv = $this->getPassthruArgumentsAsArgv('lint');
-      if ($repository_api instanceof ArcanistSubversionAPI) {
-        $argv = array_merge($argv, array_keys($paths));
-      } else {
-        $argv[] = $repository_api->getRelativeCommit();
+    $base_revision  = $repository_api->getSourceControlBaseRevision();
+    $base_path      = $repository_api->getSourceControlPath();
+    $vcs            = $repository_api->getSourceControlSystemName();
+    $repo_uuid      = null;
+    $parent         = null;
+    if ($repository_api instanceof ArcanistGitAPI) {
+      $info = $this->getGitParentLogInfo();
+      if ($info['parent']) {
+        $parent = $info['parent'];
       }
-      $lint_workflow = $this->buildChildWorkflow('lint', $argv);
-
-      if (!$this->isHistoryImmutable()) {
-        // TODO: We should offer to create a checkpoint commit.
-        $lint_workflow->setShouldAmendChanges(true);
+      if ($info['base_revision']) {
+        $base_revision = $info['base_revision'];
       }
-
-      $lint_result = $lint_workflow->run();
-
-      switch ($lint_result) {
-        case ArcanistLintWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
-            "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
-          break;
-        case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $continue = phutil_console_confirm(
-            "Lint issued unresolved warnings. Ignore them?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
-          break;
-        case ArcanistLintWorkflow::RESULT_ERRORS:
-          echo phutil_console_format(
-            "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
-          $continue = phutil_console_confirm(
-            "Lint issued unresolved errors! Ignore lint errors?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
-          break;
+      if ($info['base_path']) {
+        $base_path = $info['base_path'];
       }
-
-      $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
-
-      return $lint_result;
-    } catch (ArcanistNoEngineException $ex) {
-      echo "No lint engine configured for this project.\n";
-    } catch (ArcanistNoEffectException $ex) {
-      echo "No paths to lint.\n";
+      if ($info['uuid']) {
+        $repo_uuid = $info['uuid'];
+      }
+    } else if ($repository_api instanceof ArcanistSubversionAPI) {
+      $repo_uuid = $repository_api->getRepositorySVNUUID();
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      // TODO: Provide this information.
+    } else {
+      throw new Exception("Unsupported repository API!");
     }
 
-    return null;
+    return array(
+      'sourceMachine'             => php_uname('n'),
+      'sourcePath'                => $repository_api->getPath(),
+      'branch'                    => $repository_api->getBranchName(),
+      'sourceControlSystem'       => $vcs,
+      'sourceControlPath'         => $base_path,
+      'sourceControlBaseRevision' => $base_revision,
+      'parentRevisionID'          => $parent,
+      'repositoryUUID'            => $repo_uuid,
+      'creationMethod'            => 'arc',
+      'arcanistProject'           => $working_copy->getProjectID(),
+      'authorPHID'                => $this->getUserPHID(),
+    );
   }
 
-  private function runUnit($paths) {
-    if ($this->getArgument('nounit') ||
-        $this->getArgument('only')) {
-      return ArcanistUnitWorkflow::RESULT_SKIP;
+
+/* -(  Diff Properties  )---------------------------------------------------- */
+
+
+  /**
+   * Update lint information for the diff.
+   *
+   * @return void
+   *
+   * @task diffprop
+   */
+  private function updateLintDiffProperty() {
+    if (!$this->unresolvedLint) {
+      return;
     }
 
-    $repository_api = $this->getRepositoryAPI();
-
-    echo "Running unit tests...\n";
-    try {
-      $argv = $this->getPassthruArgumentsAsArgv('unit');
-      if ($repository_api instanceof ArcanistSubversionAPI) {
-        $argv = array_merge($argv, array_keys($paths));
-      }
-      $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
-      $unit_result = $this->unitWorkflow->run();
-      switch ($unit_result) {
-        case ArcanistUnitWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
-            "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
-          break;
-        case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          $continue = phutil_console_confirm(
-            "Unit test results included failures, but all failing tests ".
-            "are known to be unsound. Ignore unsound test failures?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
-          break;
-        case ArcanistUnitWorkflow::RESULT_FAIL:
-          echo phutil_console_format(
-            "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
-          $continue = phutil_console_confirm(
-            "Unit test results include failures! Ignore test failures?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
-          break;
-      }
-
-      $this->unresolvedTests = $this->unitWorkflow->getUnresolvedTests();
-
-      return $unit_result;
-    } catch (ArcanistNoEngineException $ex) {
-      echo "No unit test engine is configured for this project.\n";
-    } catch (ArcanistNoEffectException $ex) {
-      echo "No tests to run.\n";
+    $data = array();
+    foreach ($this->unresolvedLint as $message) {
+      $data[] = array(
+        'path'        => $message->getPath(),
+        'line'        => $message->getLine(),
+        'char'        => $message->getChar(),
+        'code'        => $message->getCode(),
+        'severity'    => $message->getSeverity(),
+        'name'        => $message->getName(),
+        'description' => $message->getDescription(),
+      );
     }
 
-    return null;
+    $this->updateDiffProperty('arc:lint', json_encode($data));
   }
 
-  private function getCommitMessageFromUser() {
-    $conduit = $this->getConduit();
 
-    $template = $conduit->callMethodSynchronous(
-      'differential.getcommitmessage',
+  /**
+   * Update unit test information for the diff.
+   *
+   * @return void
+   *
+   * @task diffprop
+   */
+  private function updateUnitDiffProperty() {
+    if (!$this->unresolvedTests) {
+      return;
+    }
+
+    $data = array();
+    foreach ($this->unresolvedTests as $test) {
+      $data[] = array(
+        'name'      => $test->getName(),
+        'result'    => $test->getResult(),
+        'userdata'  => $test->getUserData(),
+      );
+    }
+
+    $this->updateDiffProperty('arc:unit', json_encode($data));
+  }
+
+
+  /**
+   * Update local commit information for the diff.
+   *
+   * @task diffprop
+   */
+  private function updateLocalDiffProperty() {
+    $local_info = $this->getRepositoryAPI()->getLocalCommitInformation();
+    if (!$local_info) {
+      return;
+    }
+
+    $this->updateDiffProperty('local:commits', json_encode($local_info));
+  }
+
+
+  /**
+   * Update an arbitrary diff property.
+   *
+   * @param string Diff property name.
+   * @param string Diff property value.
+   * @return void
+   *
+   * @task diffprop
+   */
+  private function updateDiffProperty($name, $data) {
+    $this->getConduit()->callMethodSynchronous(
+      'differential.setdiffproperty',
       array(
-        'revision_id' => null,
-        'edit' => true,
+        'diff_id' => $this->getDiffID(),
+        'name'    => $name,
+        'data'    => $data,
       ));
-
-    $template =
-      $template.
-      "\n\n".
-      "# Describe this revision.".
-      "\n";
-    $template = id(new PhutilInteractiveEditor($template))
-      ->setName('new-commit')
-      ->editInteractively();
-    $template = preg_replace('/^\s*#.*$/m', '', $template);
-
-    try {
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $template);
-      $message->pullDataFromConduit($conduit);
-    } catch (Exception $ex) {
-      $path = Filesystem::writeUniqueFile('arc-commit-message', $template);
-
-      echo phutil_console_wrap(
-        "\n".
-        "Exception while parsing commit message! Message saved to ".
-        "'{$path}'. Use -F <file> to specify a commit message file.\n");
-
-      throw $ex;
-    }
-
-    return $message;
-  }
-
-  private function getCommitMessageFromFile($file) {
-    $conduit = $this->getConduit();
-
-    $data = Filesystem::readFile($file);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($data);
-    $message->pullDataFromConduit($conduit);
-    return $message;
   }
 
 }
