@@ -7,7 +7,7 @@ class a {
 
 interface i { }
 
-class :XhpStuff { }
+
 
 function YY($ZZ) { }
 
@@ -17,9 +17,9 @@ class Quack {
   public function vV($w_w) { }
 }
 
-<div class="protected function">const $y;</div>;
 
-class :ui:lol-whatever:omg { }
+
+
 
 function () use ($this_is_a_closure) { };
 
@@ -35,7 +35,6 @@ warning:5:19
 warning:5:21
 warning:5:25
 warning:8:11
-warning:10:7
 warning:12:10
 warning:12:13
 warning:26:12

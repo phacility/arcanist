@@ -3,7 +3,6 @@ define('pony', 'cute');
 define($pony, 'cute');
 define('pony', $cute);
 define($pony, $cute);
-<div>define($pony, $cute)</div>;
 ~~~~~~~~~~
 error:3:8 dynamic define
 error:5:8 dynamic define

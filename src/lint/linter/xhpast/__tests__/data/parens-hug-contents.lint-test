@@ -5,7 +5,7 @@ q(                      );
 g();
 if ($x) { }
 else if ( $y ) { }
-<div>( a b c )</div>;
+
 $obj->m(
   $x,
   $y,
@@ -48,7 +48,7 @@ q();
 g();
 if ($x) { }
 else if ($y) { }
-<div>( a b c )</div>;
+
 $obj->m(
   $x,
   $y,

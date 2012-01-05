@@ -9,7 +9,7 @@ switch($x) {}
 if ($x) {}
 else if ($y) {}
 else if ($z) {}
-<strong>if</strong>;
+
 if  ($x) {}
 if
 
@@ -37,6 +37,6 @@ switch ($x) {}
 if ($x) {}
 else if ($y) {}
 else if ($z) {}
-<strong>if</strong>;
+
 if ($x) {}
 if ($x) {}
