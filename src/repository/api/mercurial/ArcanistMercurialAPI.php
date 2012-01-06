@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,33 +69,51 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
       list($stdout) = execx(
-        '(cd %s && hg outgoing --branch `hg branch` --limit 1 --style default)',
+        '(cd %s && hg outgoing --branch `hg branch` --style default)',
         $this->getPath());
       $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
       if (!count($logs)) {
         throw new ArcanistUsageException("You have no outgoing changes!");
       }
-      $oldest_log = head($logs);
-      $oldest_rev = $oldest_log['rev'];
 
-      // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is new
-      // as of July 2011, so do this in a compatible way. Also, "hg log" and
-      // "hg outgoing" don't necessarily show parents (even if given an explicit
-      // template consisting of just the parents token) so we need to separately
-      // execute "hg parents".
+      $outgoing_revs = ipull($logs, 'rev');
 
-      list($stdout) = execx(
-        '(cd %s && hg parents --style default --rev %s)',
-        $this->getPath(),
-        $oldest_rev);
-      $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-      $first_parent = head($parents_logs);
-      if (!$first_parent) {
-        throw new ArcanistUsageException(
-          "Oldest outgoing change has no parent revision!");
+      // This is essentially an implementation of a theoretical `hg merge-base`
+      // command.
+      $against = 'tip';
+      while (true) {
+        // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
+        // new as of July 2011, so do this in a compatible way. Also, "hg log"
+        // and "hg outgoing" don't necessarily show parents (even if given an
+        // explicit template consisting of just the parents token) so we need
+        // to separately execute "hg parents".
+
+        list($stdout) = execx(
+          '(cd %s && hg parents --style default --rev %s)',
+          $this->getPath(),
+          $against);
+        $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+
+        list($p1, $p2) = array_merge($parents_logs, array(null, null));
+
+        if ($p1 && !in_array($p1['rev'], $outgoing_revs)) {
+          $against = $p1['rev'];
+          break;
+        } else if ($p2 && !in_array($p2['rev'], $outgoing_revs)) {
+          $against = $p2['rev'];
+          break;
+        } else if ($p1) {
+          $against = $p1['rev'];
+        } else {
+          // This is the case where you have a new repository and the entire
+          // thing is outgoing; Mercurial literally accepts "--rev null" as
+          // meaning "diff against the empty state".
+          $against = 'null';
+          break;
+        }
       }
 
-      $this->relativeCommit = $first_parent['rev'];
+      $this->relativeCommit = $against;
     }
     return $this->relativeCommit;
   }
