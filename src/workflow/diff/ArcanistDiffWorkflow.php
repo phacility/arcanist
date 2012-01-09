@@ -139,12 +139,18 @@ EOTEXT
         ),
       ),
       'create' => array(
-        'help' => "(EXPERIMENTAL) Create a new revision.",
+        'help' => "Always create a new revision.",
         'conflicts' => array(
           'edit'    => '--create can not be used with --edit.',
           'only'    => '--create can not be used with --only.',
           'preview' => '--create can not be used with --preview.',
+
+          'update'  => '--create can not be used with --update.',
         ),
+      ),
+      'update' => array(
+        'param' => 'revision_id',
+        'help'  => "Always update a specific revision.",
       ),
       'nounit' => array(
         'help' =>
@@ -456,6 +462,10 @@ EOTEXT
   protected function shouldOnlyCreateDiff() {
 
     if ($this->getArgument('create')) {
+      return false;
+    }
+
+    if ($this->getArgument('update')) {
       return false;
     }
 
@@ -1061,6 +1071,7 @@ EOTEXT
    */
   private function buildCommitMessage() {
     $is_create = $this->getArgument('create');
+    $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
 
     $message = null;
@@ -1071,6 +1082,10 @@ EOTEXT
       } else {
         return $this->getCommitMessageFromUser();
       }
+    }
+
+    if ($is_update) {
+      return $this->getCommitMessageFromRevision($is_update);
     }
 
     if ($is_raw) {
@@ -1141,6 +1156,45 @@ EOTEXT
     $this->validateCommitMessage($message);
 
     return $message;
+  }
+
+
+  /**
+   * @task message
+   */
+  private function getCommitMessageFromRevision($revision_id) {
+    $id = $this->normalizeRevisionID($revision_id);
+
+    $revision = $this->getConduit()->callMethodSynchronous(
+      'differential.query',
+      array(
+        'ids' => array($id),
+      ));
+    $revision = head($revision);
+
+    if (!$revision) {
+      throw new ArcanistUsageException(
+        "Revision '{$revision_id}' does not exist!");
+    }
+
+    if ($revision['authorPHID'] != $this->getUserPHID()) {
+      $rev_title = $revision['title'];
+      throw new ArcanistUsageException(
+        "You don't own revision D{$id} '{$rev_title}'. You can only update ".
+        "revisions you own.");
+    }
+
+    $message = $this->getConduit()->callMethodSynchronous(
+      'differential.getcommitmessage',
+      array(
+        'revision_id' => $id,
+        'edit'        => false,
+      ));
+
+    $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($message);
+    $obj->pullDataFromConduit($this->getConduit());
+
+    return $obj;
   }
 
 

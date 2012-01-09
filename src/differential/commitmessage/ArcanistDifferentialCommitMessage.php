@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,12 +79,11 @@ class ArcanistDifferentialCommitMessage {
   }
 
   public function pullDataFromConduit(ConduitClient $conduit) {
-    $result = $conduit->callMethod(
+    $result = $conduit->callMethodSynchronous(
       'differential.parsecommitmessage',
       array(
         'corpus' => $this->rawCorpus,
       ));
-    $result = $result->resolve();
     if (!empty($result['errors'])) {
       throw new ArcanistDifferentialCommitMessageParserException(
         $result['errors']);
