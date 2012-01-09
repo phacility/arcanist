@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,9 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **lint** [__options__] [__paths__] (svn)
-      **lint** [__options__] [__commit_range__] (git)
-          Supports: git, svn
+      **lint** [__options__] [__paths__]
+      **lint** [__options__] --rev [__rev__]
+          Supports: git, svn, hg
           Run static analysis on changes to check for mistakes. If no files
           are specified, lint will be run on all files which have been modified.
 EOTEXT
@@ -52,6 +52,17 @@ EOTEXT
       'lintall' => array(
         'help' =>
           "Show all lint warnings, not just those on changed lines."
+      ),
+      'rev' => array(
+        'param' => 'revision',
+        'help' => "Lint changes since a specific revision.",
+        'supports' => array(
+          'git',
+          'hg',
+        ),
+        'nosupport' => array(
+          'svn' => "Lint does not currently support --rev in SVN.",
+        ),
       ),
       'output' => array(
         'param' => 'format',
@@ -90,6 +101,10 @@ EOTEXT
     return true;
   }
 
+  public function requiresRepositoryAPI() {
+    return true;
+  }
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
 
@@ -103,60 +118,22 @@ EOTEXT
       }
     }
 
-    $should_lint_all = $this->getArgument('lintall');
+    $rev = $this->getArgument('rev');
+    $paths = $this->getArgument('paths');
 
-    $repository_api = null;
-    if (!$should_lint_all) {
-      try {
-        $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-          $working_copy);
-        $this->setRepositoryAPI($repository_api);
-      } catch (ArcanistUsageException $ex) {
-        throw new ArcanistUsageException(
-          $ex->getMessage()."\n\n".
-          "Use '--lintall' to ignore working copy changes when running lint.");
-      }
-
-      if ($repository_api instanceof ArcanistSubversionAPI) {
-        $paths = $repository_api->getWorkingCopyStatus();
-        $list  = new FileList($this->getArgument('paths'));
-        foreach ($paths as $path => $flags) {
-          if (!$list->contains($path)) {
-            unset($paths[$path]);
-          }
-        }
-      } else if ($repository_api->supportsRelativeLocalCommits()) {
-        $repository_api->parseRelativeLocalCommit(
-          $this->getArgument('paths', array()));
-        $paths = $repository_api->getWorkingCopyStatus();
-      } else {
-        throw new Exception("Unknown VCS!");
-      }
-
-      foreach ($paths as $path => $flags) {
-        if ($flags & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          unset($paths[$path]);
-        }
-      }
-
-      $paths = array_keys($paths);
-    } else {
-      $paths = $this->getArgument('paths');
-      if (empty($paths)) {
-        throw new ArcanistUsageException(
-          "You must specify one or more files to lint when using '--lintall'.");
-      }
-      foreach ($paths as $key => $path) {
-        $full_path = Filesystem::resolvePath($path);
-        if (!Filesystem::pathExists($full_path)) {
-          throw new ArcanistUsageException("Path '{$path}' does not exist!");
-        }
-        $relative_path = Filesystem::readablePath(
-          $full_path,
-          $working_copy->getProjectRoot());
-        $paths[$key] = $relative_path;
-      }
+    if ($rev && $paths) {
+      throw new ArcanistUsageException("Specify either --rev or paths.");
     }
+
+    $should_lint_all = $this->getArgument('lintall');
+    if ($paths) {
+      // NOTE: When the user specifies paths, we imply --lintall and show all
+      // warnings for the paths in question. This is easier to deal with for
+      // us and less confusing for users.
+      $should_lint_all = true;
+    }
+
+    $paths = $this->selectPathsForWorkflow($paths, $rev);
 
     PhutilSymbolLoader::loadClass($engine);
     if (!is_subclass_of($engine, 'ArcanistLintEngine')) {
@@ -262,6 +239,7 @@ EOTEXT
       }
     }
 
+    $repository_api = $this->getRepositoryAPI();
     if ($wrote_to_disk &&
         ($repository_api instanceof ArcanistGitAPI) &&
         $this->shouldAmendChanges) {

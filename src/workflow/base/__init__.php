@@ -14,6 +14,7 @@ phutil_require_module('arcanist', 'parser/bundle');
 phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'parser/diff/change');
 phutil_require_module('arcanist', 'parser/diff/changetype');
+phutil_require_module('arcanist', 'repository/api/base');
 
 phutil_require_module('phutil', 'conduit/client');
 phutil_require_module('phutil', 'console');

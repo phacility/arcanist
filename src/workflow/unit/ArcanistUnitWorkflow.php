@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,9 @@ class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **unit** [__paths__]
-          Supports: git, svn
+      **unit** [__options__] [__paths__]
+      **unit** [__options__] --rev [__rev__]
+          Supports: git, svn, hg
           Run unit tests that cover specified paths. If no paths are specified,
           unit tests covering all modified files will be run.
 EOTEXT
@@ -44,6 +45,17 @@ EOTEXT
 
   public function getArguments() {
     return array(
+      'rev' => array(
+        'param' => 'revision',
+        'help' => "Run unit tests covering changes since a specific revision.",
+        'supports' => array(
+          'git',
+          'hg',
+        ),
+        'nosupport' => array(
+          'svn' => "Arc unit does not currently support --rev in SVN.",
+        ),
+      ),
       'engine' => array(
         'param' => 'classname',
         'help' =>
@@ -79,23 +91,10 @@ EOTEXT
         "to specify a unit test engine.");
     }
 
-    $repository_api = $this->getRepositoryAPI();
+    $paths = $this->getArgument('paths');
+    $rev = $this->getArgument('rev');
 
-    if ($this->getArgument('paths')) {
-      // TODO: deal with git stuff
-      $paths = $this->getArgument('paths');
-    } else {
-      $paths = $repository_api->getWorkingCopyStatus();
-
-      // TODO: clean this up
-      foreach ($paths as $path => $mask) {
-        if ($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          unset($paths[$path]);
-        }
-      }
-
-      $paths = array_keys($paths);
-    }
+    $paths = $this->selectPathsForWorkflow($paths, $rev);
 
     PhutilSymbolLoader::loadClass($engine_class);
     if (!is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {

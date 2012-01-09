@@ -956,9 +956,8 @@ EOTEXT
     echo "Linting...\n";
     try {
       $argv = $this->getPassthruArgumentsAsArgv('lint');
-      if ($repository_api instanceof ArcanistSubversionAPI) {
-        $argv = array_merge($argv, array_keys($paths));
-      } else {
+      if ($repository_api->supportsRelativeLocalCommits()) {
+        $argv[] = '--rev';
         $argv[] = $repository_api->getRelativeCommit();
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
@@ -1021,8 +1020,9 @@ EOTEXT
     echo "Running unit tests...\n";
     try {
       $argv = $this->getPassthruArgumentsAsArgv('unit');
-      if ($repository_api instanceof ArcanistSubversionAPI) {
-        $argv = array_merge($argv, array_keys($paths));
+      if ($repository_api->supportsRelativeLocalCommits()) {
+        $argv[] = '--rev';
+        $argv[] = $repository_api->getRelativeCommit();
       }
       $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $this->unitWorkflow->run();

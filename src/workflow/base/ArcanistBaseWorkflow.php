@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -934,6 +934,51 @@ class ArcanistBaseWorkflow {
   protected function isHistoryImmutable() {
     $working_copy = $this->getWorkingCopy();
     return ($working_copy->getConfig('immutable_history') === true);
+  }
+
+  /**
+   * Workflows like 'lint' and 'unit' operate on a list of working copy paths.
+   * The user can either specify the paths explicitly ("a.js b.php"), or by
+   * specfifying a revision ("--rev a3f10f1f") to select all paths modified
+   * since that revision, or by omitting both and letting arc choose the
+   * default relative revision.
+   *
+   * This method takes the user's selections and returns the paths that the
+   * workflow should act upon.
+   *
+   * @param   list          List of explicitly provided paths.
+   * @param   string|null   Revision name, if provided.
+   * @return  list          List of paths the workflow should act on.
+   */
+  protected function selectPathsForWorkflow(array $paths, $rev) {
+    if ($paths) {
+      $working_copy = $this->getWorkingCopy();
+      foreach ($paths as $key => $path) {
+        $full_path = Filesystem::resolvePath($path);
+        if (!Filesystem::pathExists($full_path)) {
+          throw new ArcanistUsageException("Path '{$path}' does not exist!");
+        }
+        $relative_path = Filesystem::readablePath(
+          $full_path,
+          $working_copy->getProjectRoot());
+        $paths[$key] = $relative_path;
+      }
+    } else {
+      $repository_api = $this->getRepositoryAPI();
+      if ($rev) {
+        $repository_api->parseRelativeLocalCommit(array($rev));
+      }
+
+      $paths = $repository_api->getWorkingCopyStatus();
+      foreach ($paths as $path => $flags) {
+        if ($flags & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+          unset($paths[$path]);
+        }
+      }
+      $paths = array_keys($paths);
+    }
+
+    return array_values($paths);
   }
 
 }
