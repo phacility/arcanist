@@ -2,7 +2,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ if ($argc != 2) {
 phutil_require_module('phutil', 'filesystem');
 $dir = Filesystem::resolvePath($argv[1]);
 
+phutil_require_module('phutil', 'parser/docblock');
 phutil_require_module('phutil', 'parser/xhpast/bin');
 phutil_require_module('phutil', 'parser/xhpast/api/tree');
 
@@ -77,6 +78,8 @@ foreach (Filesystem::listDirectory($dir, $hidden_files = false) as $file) {
 
 $requirements = new PhutilModuleRequirements();
 $requirements->addBuiltins($builtin);
+
+$doc_parser = new PhutilDocblockParser();
 
 $has_init = false;
 $has_files = false;
@@ -130,6 +133,28 @@ foreach (Futures($futures) as $file => $future) {
 
     $requirements->addSourceDeclaration(basename($file));
 
+    // Find symbols declared as "@phutil-external-symbol function example",
+    // and ignore these in building dependency lists.
+
+    $externals = array();
+    foreach ($root->getTokens() as $token) {
+      if ($token->getTypeName() == 'T_DOC_COMMENT') {
+        list($block, $special) = $doc_parser->parse($token->getValue());
+
+        $ext_list = idx($special, 'phutil-external-symbol');
+        $ext_list = explode("\n", $ext_list);
+        $ext_list = array_filter($ext_list);
+
+        foreach ($ext_list as $ext_ref) {
+          $matches = null;
+          if (preg_match('/^\s*(\S+)\s+(\S+)/', $ext_ref, $matches)) {
+            $externals[$matches[1]][$matches[2]] = true;
+          }
+        }
+      }
+    }
+
+
     // Function uses:
     //  - Explicit call
     //  TODO?: String literal in ReflectionFunction().
@@ -180,7 +205,7 @@ foreach (Futures($futures) as $file => $future) {
             "from being checked statically. This module may have undetectable ".
             "errors.");
         }
-      } else {
+      } else if (empty($externals['function'][$name->getConcreteString()])) {
         $requirements->addFunctionDependency(
           $name,
           $name->getConcreteString());
@@ -219,18 +244,22 @@ foreach (Futures($futures) as $file => $future) {
         $class_name->getConcreteString());
       $extends = $class->getChildByIndex(2);
       foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
-        $requirements->addClassDependency(
-          $class_name->getConcreteString(),
-          $parent,
-          $parent->getConcreteString());
+        if (empty($externals['class'][$parent->getConcreteString()])) {
+          $requirements->addClassDependency(
+            $class_name->getConcreteString(),
+            $parent,
+            $parent->getConcreteString());
+        }
       }
       $implements = $class->getChildByIndex(3);
       $interfaces = $implements->selectDescendantsOfType('n_CLASS_NAME');
       foreach ($interfaces as $interface) {
-        $requirements->addInterfaceDependency(
-          $class_name->getConcreteString(),
-          $interface,
-          $interface->getConcreteString());
+        if (empty($externals['interface'][$interface->getConcreteString()])) {
+          $requirements->addInterfaceDependency(
+            $class_name->getConcreteString(),
+            $interface,
+            $interface->getConcreteString());
+        }
       }
     }
 
@@ -262,10 +291,12 @@ foreach (Futures($futures) as $file => $future) {
           "errors.");
         continue;
       }
-      $requirements->addClassDependency(
-        null,
-        $name,
-        $name->getConcreteString());
+      if (empty($externals['class'][$name->getConcreteString()])) {
+        $requirements->addClassDependency(
+          null,
+          $name,
+          $name->getConcreteString());
+      }
     }
 
     $static_uses = $root->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
@@ -284,10 +315,12 @@ foreach (Futures($futures) as $file => $future) {
       if (isset($magic_names[$name_concrete])) {
         continue;
       }
-      $requirements->addClassDependency(
-        null,
-        $name,
-        $name_concrete);
+      if (empty($externals['class'][$name_concrete])) {
+        $requirements->addClassDependency(
+          null,
+          $name,
+          $name_concrete);
+      }
     }
 
     // Interface uses:
@@ -302,10 +335,12 @@ foreach (Futures($futures) as $file => $future) {
         $interface_name->getConcreteString());
       $extends = $interface->getChildByIndex(2);
       foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
-        $requirements->addInterfaceDependency(
-          $interface_name->getConcreteString(),
-          $parent,
-          $parent->getConcreteString());
+        if (empty($externals['interface'][$parent->getConcreteString()])) {
+          $requirements->addInterfaceDependency(
+            $interface_name->getConcreteString(),
+            $parent,
+            $parent->getConcreteString());
+        }
       }
     }
 
