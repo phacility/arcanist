@@ -155,6 +155,10 @@ abstract class ArcanistRepositoryAPI {
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
 
+  public function getCommitMessageForRevision($revision) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function parseRelativeLocalCommit(array $argv) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
