@@ -610,4 +610,13 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
            "'git push', or 'git svn dcommit', or by printing and faxing it).";
   }
 
+  public function getCommitMessageForRevision($rev) {
+    list($message) = execx(
+      '(cd %s && git log -n1 %s)',
+      $this->getPath(),
+      $rev);
+    $parser = new ArcanistDiffParser();
+    return head($parser->parseDiff($message));
+  }
+
 }

@@ -94,6 +94,20 @@ EOTEXT
         'help' => 'When creating a revision, read revision information '.
                   'from this file.',
       ),
+      'use-commit-message' => array(
+        'supports' => array(
+          'git',
+          // TODO: Support mercurial.
+        ),
+        'short' => 'C',
+        'param' => 'commit',
+        'help' => 'Read revision information from a specific commit.',
+        'conflicts' => array(
+          'only'    => null,
+          'preview' => null,
+          'update'  => null,
+        ),
+      ),
       'edit' => array(
         'supports'    => array(
           'git',
@@ -144,7 +158,6 @@ EOTEXT
           'edit'    => '--create can not be used with --edit.',
           'only'    => '--create can not be used with --only.',
           'preview' => '--create can not be used with --preview.',
-
           'update'  => '--create can not be used with --update.',
         ),
       ),
@@ -466,6 +479,10 @@ EOTEXT
     }
 
     if ($this->getArgument('update')) {
+      return false;
+    }
+
+    if ($this->getArgument('use-commit-message')) {
       return false;
     }
 
@@ -1073,6 +1090,11 @@ EOTEXT
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
+    $is_message = $this->getArgument('use-commit-message');
+
+    if ($is_message) {
+      return $this->getCommitMessageFromCommit($is_message);
+    }
 
     $message = null;
     if ($is_create) {
@@ -1097,6 +1119,19 @@ EOTEXT
     }
 
     return null;
+  }
+
+
+  /**
+   * @task message
+   */
+  private function getCommitMessageFromCommit($rev) {
+    $change = $this->getRepositoryAPI()->getCommitMessageForRevision($rev);
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+      $change->getMetadata('message'));
+    $message->pullDataFromConduit($this->getConduit());
+    $this->validateCommitMessage($message);
+    return $message;
   }
 
 
@@ -1287,8 +1322,10 @@ EOTEXT
 
     $problems = array();
     $parsed = array();
+    $hashes = array();
     foreach ($commit_messages as $key => $change) {
       $problems[$key] = array();
+      $hashes[$key] = $change->getCommitHash();
 
       try {
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
@@ -1305,26 +1342,47 @@ EOTEXT
       }
     }
 
-    $blessed = null;
-    $revision_id = -1;
+    $valid = array();
     foreach ($problems as $key => $problem_list) {
       if ($problem_list) {
         continue;
       }
-      if ($revision_id === -1) {
-        $revision_id = $parsed[$key]->getRevisionID();
-        $blessed = $parsed[$key];
-      } else {
-        throw new ArcanistUsageException(
-          "Changes in the specified commit range include more than one ".
-          "commit with a valid template commit message. This is ambiguous, ".
-          "your commit range should contain only one template commit ".
-          "message. Alternatively, use --preview to ignore commit ".
-          "messages.");
-      }
+      $valid[$key] = $parsed[$key];
     }
 
-    if ($revision_id === -1) {
+    $blessed = null;
+    if (count($valid) == 1) {
+      $blessed = head($valid);
+    } else if (count($valid) > 1) {
+      echo phutil_console_wrap(
+        "Changes in the specified commit range include more than one commit ".
+        "with a valid template commit message. Choose the message you want ".
+        "to use (you can also use the -C flag).\n\n");
+      foreach ($valid as $key => $message) {
+        $hash = substr($hashes[$key], 0, 7);
+        $title = $commit_messages[$key]->getMetadata('message');
+        $title = head(explode("\n", trim($title)));
+        $title = phutil_utf8_shorten($title, 64);
+        echo "    {$hash}  {$title}\n";
+      }
+      echo "    none     Edit a blank template.";
+
+      do {
+        $choose = phutil_console_prompt('Use which commit message [none]?');
+        if ($choose == 'none' || $choose == '') {
+          return $this->getCommitMessageFromUser();
+        } else {
+          foreach ($valid as $key => $message) {
+            if (!strncmp($hashes[$key], $choose, strlen($choose))) {
+              $blessed = $valid[$key];
+              break;
+            }
+          }
+        }
+      } while (!$blessed);
+    }
+
+    if (!$blessed) {
       $desc = implode("\n", array_mergev($problems));
       if (count($problems) > 1) {
         throw new ArcanistUsageException(
