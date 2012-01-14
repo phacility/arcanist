@@ -67,7 +67,9 @@ class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function getLintNameMap() {
-    return array();
+    return array(
+      self::JSHINT_ERROR => "JSHint Error"
+    );
   }
 
   public function getJSHintOptions() {
@@ -76,6 +78,8 @@ class ArcanistJSHintLinter extends ArcanistLinter {
     $config = $working_copy->getConfig('lint.jshint.config');
 
     if ($config !== null) {
+      $config = Filesystem::resolvePath($config, $working_copy->getProjectRoot());
+
       if (!Filesystem::pathExists($config)) {
         throw new ArcanistUsageException(
           "Unable to find custom options file defined by 'lint.jshint.config'. ".
@@ -125,38 +129,42 @@ class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
-    return;
+    $jshint_bin = $this->getJSHintPath();
+    $jshint_options = $this->getJSHintOptions();
+    $futures = array();
+
+    foreach ($paths as $path) {
+      $filepath = $this->getEngine()->getFilePathOnDisk($path);
+      $futures[$path] = new ExecFuture("{$jshint_bin} {$filepath} ${jshint_options}");
+    }
+
+    foreach (Futures($futures)->limit(8) as $path => $future) {
+      $this->results[$path] = $future->resolve();
+    }
   }
 
   public function lintPath($path) {
-    $jshint_bin = $this->getJSHintPath();
-    $jshint_options = $this->getJSHintOptions();
-
-    list($rc, $stdout) = exec_manual("{$jshint_bin} %s ${jshint_options}",
-      $this->getEngine()->getFilePathOnDisk($path));
+    list($rc, $stdout) = $this->results[$path];
 
     if ($rc === 0) {
       return;
     }
 
     $errors = json_decode($stdout);
-    if (is_null($errors)) {
-      // Something went wrong and we can't decoded the output. Exit abnormally.
+    if (!is_array($errors)) {
+      // Something went wrong and we can't decode the output. Exit abnormally.
       throw new ArcanistUsageException(
-        "JSHint returned output we can't parse. Check that your JSHint installation. ".
-        "Output:".
+        "JSHint returned output we can't parse. Check that your JSHint installation.\n".
+        "Output:\n".
         $stdout);
     }
 
-    $severity_map = $this->getLintSeverityMap();
     foreach ($errors as $err) {
-      $message = new ArcanistLintMessage();
-      $message->setPath($path);
-      $message->setLine($err->line);
-      $message->setCode($this->getLinterName());
-      $message->setDescription($err->reason);
-      $message->setSeverity($severity_map[self::JSHINT_ERROR]);
-      $this->addLintMessage($message);
+      $this->raiseLintAtLine(
+        $err->line,
+        $err->col,
+        self::JSHINT_ERROR,
+        $err->reason);
     }
   }
 }
