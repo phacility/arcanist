@@ -12,6 +12,7 @@ phutil_require_module('arcanist', 'lint/linter/filename');
 phutil_require_module('arcanist', 'lint/linter/generated');
 phutil_require_module('arcanist', 'lint/linter/nolint');
 phutil_require_module('arcanist', 'lint/linter/phutilmodule');
+phutil_require_module('arcanist', 'lint/linter/spelling');
 phutil_require_module('arcanist', 'lint/linter/text');
 phutil_require_module('arcanist', 'lint/linter/xhpast');
 

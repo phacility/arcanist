@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,9 @@ class PhutilLintEngine extends ArcanistLintEngine {
 
     $text_linter = new ArcanistTextLinter();
     $linters[] = $text_linter;
+
+    $spelling_linter = new ArcanistSpellingLinter();
+    $linters[] = $spelling_linter;
     foreach ($paths as $path) {
       $is_text = false;
       if (preg_match('/\.(php|css|js|hpp|cpp|l|y)$/', $path)) {
@@ -72,6 +75,9 @@ class PhutilLintEngine extends ArcanistLintEngine {
 
         $text_linter->addPath($path);
         $text_linter->addData($path, $this->loadData($path));
+
+        $spelling_linter->addPath($path);
+        $spelling_linter->addData($path, $this->loadData($path));
       }
     }
 
