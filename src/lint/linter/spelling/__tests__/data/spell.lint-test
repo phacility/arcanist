@@ -1,0 +1,25 @@
+Hello
+teh
+word
+$y = $x->recieveData();
+for (i=0; i<y.lenght; i++) {
+}
+Check uFT8 ufT8 (<-- repeated)
+removed accout d
+didn't remove acording
+Added ZZZZsupermnZZZZ
+Added full batmn batmnZZZZ
+~~~~~~~~~~
+error:2:1
+error:4:10
+error:5:15
+error:7:7
+error:7:12
+warning:9:15
+error:10:11
+error:11:12
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "hook" : true
+}
