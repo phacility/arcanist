@@ -38,7 +38,7 @@ final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
       **patch** __--diff__ __diff_id__
       **patch** __--patch__ __file__
       **patch** __--arcbundle__ __bundlefile__
-          Supports: git, svn
+          Supports: git, svn, hg
           Apply the changes in a Differential revision, patchfile, or arc
           bundle to the working copy.
 EOTEXT
@@ -74,6 +74,14 @@ EOTEXT
         'paramtype' => 'file',
         'help' =>
           "Apply changes from a git patchfile or unified patchfile.",
+      ),
+      'nocommit' => array(
+        'supports' => array(
+          'git'
+        ),
+        'help' =>
+          "Normally under git if the patch is successful the changes are ".
+          "committed to the working copy. This flag prevents the commit.",
       ),
       'force' => array(
         'help' =>
@@ -152,6 +160,15 @@ EOTEXT
 
   private function getSourceParam() {
     return $this->sourceParam;
+  }
+
+  private function shouldCommit() {
+    $no_commit = $this->getArgument('nocommit', false);
+    if ($no_commit) {
+      return false;
+    }
+
+    return true;
   }
 
   public function run() {
@@ -404,14 +421,31 @@ EOTEXT
 
       return $patch_err;
     } else if ($repository_api instanceof ArcanistGitAPI) {
+      // if we're going to commit, we should make sure the working copy
+      // is clean
+      if ($this->shouldCommit()) {
+        $this->requireCleanWorkingCopy();
+      }
+
       $future = new ExecFuture(
         '(cd %s; git apply --index --reject)',
         $repository_api->getPath());
       $future->write($bundle->toGitPatch());
       $future->resolvex();
 
+      if ($this->shouldCommit()) {
+        $commit_message = $this->getCommitMessage($bundle);
+        $future = new ExecFuture(
+          '(cd %s; git commit -a -F -)',
+          $repository_api->getPath());
+        $future->write($commit_message);
+        $future->resolvex();
+        $verb = 'committed';
+      } else {
+        $verb = 'applied';
+      }
       echo phutil_console_format(
-        "<bg:green>** OKAY **</bg> Successfully applied patch.\n");
+        "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $future = new ExecFuture(
         '(cd %s; hg import --no-commit -)',
@@ -426,6 +460,50 @@ EOTEXT
     }
 
     return 0;
+  }
+
+  private function getCommitMessage(ArcanistBundle $bundle) {
+    $revision_id    = $bundle->getRevisionID();
+    $commit_message = null;
+    $prompt_message = null;
+
+    // if we have a revision id the commit message is in differential
+    if ($revision_id) {
+      $conduit        = $this->getConduit();
+      $commit_message = $conduit->callMethodSynchronous(
+        'differential.getcommitmessage',
+        array(
+          'revision_id' => $revision_id,
+        ));
+      $prompt_message = "  Note arcanist failed to load the commit message ".
+                        "from differential for revision D{$revision_id}.";
+    }
+
+    // no revision id or failed to fetch commit message so get it from the
+    // user on the command line
+    if (!$commit_message) {
+      $template =
+        "\n\n".
+        "# Enter a commit message for this patch.  If you just want to apply ".
+        "the patch to the working copy without committing, re-run arc patch ".
+        "with the --nocommit flag.".
+        $prompt_message.
+        "\n";
+
+      $commit_message = id(new PhutilInteractiveEditor($template))
+        ->setName('arcanist-patch-commit-message')
+        ->editInteractively();
+
+      $commit_message = preg_replace('/^\s*#.*$/m',
+                                     '',
+                                     $commit_message);
+      $commit_message = rtrim($commit_message);
+      if (!strlen($commit_message)) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+    return $commit_message;
   }
 
   public function getShellCompletions(array $argv) {

@@ -189,6 +189,7 @@ EOTEXT
         $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
         $bundle->setBaseRevision(
           $repository_api->getSourceControlBaseRevision());
+        // note we can't get a revision ID for SOURCE_LOCAL
         break;
       case self::SOURCE_REVISION:
         $bundle = $this->loadRevisionBundleFromConduit(

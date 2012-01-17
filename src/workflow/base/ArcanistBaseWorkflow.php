@@ -753,6 +753,7 @@ class ArcanistBaseWorkflow {
     $bundle->setConduit($conduit);
     $bundle->setProjectID($diff['projectName']);
     $bundle->setBaseRevision($diff['sourceControlBaseRevision']);
+    $bundle->setRevisionID($diff['revisionID']);
     return $bundle;
   }
 
