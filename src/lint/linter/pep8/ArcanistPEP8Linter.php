@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,25 +36,73 @@ class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function getLintNameMap() {
-    return array(
-    );
+    return array();
   }
 
   public function getPEP8Options() {
-    // W293 (blank line contains whitespace) is redundant when used
-    // alongside TXT6, causing pain to python programmers.
-    return '--ignore=W293';
+    $working_copy = $this->getEngine()->getWorkingCopy();
+    $options = $working_copy->getConfig('lint.pep8.options');
+
+    if ($options === null) {
+      // W293 (blank line contains whitespace) is redundant when used
+      // alongside TXT6, causing pain to python programmers.
+      return '--ignore=W293';
+    }
+
+    return $options;
+  }
+
+  public function getPEP8Path() {
+    $working_copy = $this->getEngine()->getWorkingCopy();
+    $prefix = $working_copy->getConfig('lint.pep8.prefix');
+    $bin = $working_copy->getConfig('lint.pep8.bin');
+
+    if ($bin === null && $prefix === null) {
+      $bin = csprintf('/usr/bin/env python2.6 %s',
+               phutil_get_library_root('arcanist').
+               '/../externals/pep8/pep8.py');
+    }
+    else {
+      if ($bin === null) {
+        $bin = 'pep8';
+      }
+
+      if ($prefix !== null) {
+        if (!Filesystem::pathExists($prefix.'/'.$bin)) {
+          throw new ArcanistUsageException(
+            "Unable to find PEP8 binary in a specified directory. Make sure ".
+            "that 'lint.pep8.prefix' and 'lint.pep8.bin' keys are set ".
+            "correctly. If you'd rather use a copy of PEP8 installed ".
+            "globally, you can just remove these keys from your .arcconfig");
+        }
+
+        $bin = csprintf("%s/%s", $prefix, $bin);
+
+        return $bin;
+      }
+
+      // Look for globally installed PEP8
+      list($err) = exec_manual('which %s', $bin);
+      if ($err) {
+        throw new ArcanistUsageException(
+          "PEP8 does not appear to be installed on this system. Install it ".
+          "(e.g., with 'easy_install pep8') or configure ".
+          "'lint.pep8.prefix' in your .arcconfig to point to the directory ".
+          "where it resides.");
+      }
+    }
+
+    return $bin;
   }
 
   public function lintPath($path) {
-    $pep8_bin = phutil_get_library_root('arcanist').
-                  '/../externals/pep8/pep8.py';
-
+    $pep8_bin = $this->getPEP8Path();
     $options = $this->getPEP8Options();
 
     list($rc, $stdout) = exec_manual(
-      "/usr/bin/env python2.6 %s {$options} %s",
+      "%C %C %s",
       $pep8_bin,
+      $options,
       $this->getEngine()->getFilePathOnDisk($path));
 
     $lines = explode("\n", $stdout);
