@@ -403,7 +403,7 @@ EOTEXT
       }
 
       return $patch_err;
-    } else {
+    } else if ($repository_api instanceof ArcanistGitAPI) {
       $future = new ExecFuture(
         '(cd %s; git apply --index --reject)',
         $repository_api->getPath());
@@ -412,6 +412,17 @@ EOTEXT
 
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully applied patch.\n");
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      $future = new ExecFuture(
+        '(cd %s; hg import --no-commit -)',
+        $repository_api->getPath());
+      $future->write($bundle->toGitPatch());
+      $future->resolvex();
+
+      echo phutil_console_format(
+        "<bg:green>** OKAY **</bg> Successfully applied patch.\n");
+    } else {
+      throw new Exception('Unknown version control system.');
     }
 
     return 0;

@@ -33,10 +33,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getSourceControlBaseRevision() {
     list($stdout) = execx(
-      '(cd %s && hg id -ir %s)',
+      '(cd %s && hg log -l 1 --template %s -r %s)',
       $this->getPath(),
+      '{node}\\n',
       $this->getRelativeCommit());
-    return $stdout;
+    return rtrim($stdout, "\n");
   }
 
   public function getSourceControlPath() {
