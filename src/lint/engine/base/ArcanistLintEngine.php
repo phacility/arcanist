@@ -183,6 +183,9 @@ abstract class ArcanistLintEngine {
 
     foreach ($linters as $linter) {
       $linter->setEngine($this);
+      if (!$linter->canRun()) {
+        continue;
+      }
       $paths = $linter->getPaths();
 
       foreach ($paths as $key => $path) {
