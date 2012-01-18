@@ -186,6 +186,10 @@ abstract class ArcanistLinter {
     $this->activePath = $path;
   }
 
+  public function canRun() {
+    return true;
+  }
+
   abstract public function willLintPaths(array $paths);
   abstract public function lintPath($path);
   abstract public function getLinterName();
