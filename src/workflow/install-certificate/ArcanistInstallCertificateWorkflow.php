@@ -132,17 +132,11 @@ EOTEXT
     } else if (count($uri) == 1) {
       $uri = reset($uri);
     } else {
-      $working_copy = ArcanistWorkingCopyIdentity::newFromPath(
-        $this->getWorkingDirectory());
-      if (!$working_copy->getProjectRoot()) {
+      $conduit_uri = $this->getConduitURI();
+      if (!$conduit_uri) {
         throw new ArcanistUsageException(
           "Specify an explicit URI or run this command from within a project ".
           "which is configured with a .arcconfig.");
-      }
-      $conduit_uri = $working_copy->getConduitURI();
-      if (!$conduit_uri) {
-        throw new ArcanistUsageException(
-          "This project's .arcconfig does not specify a Conduit URI.");
       }
       $uri = $conduit_uri;
     }
