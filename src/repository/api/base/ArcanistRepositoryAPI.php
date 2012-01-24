@@ -154,6 +154,9 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getSourceControlBaseRevision();
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
+  abstract public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query);
 
   public function getCommitMessageForRevision($revision) {
     throw new ArcanistCapabilityNotSupportedException($this);

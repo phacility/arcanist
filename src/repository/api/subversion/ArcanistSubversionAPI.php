@@ -506,4 +506,24 @@ EODIFF;
     return "Done.";
   }
 
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    // We don't have much to go on in SVN, look for revisions that came from
+    // this directory.
+
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query);
+
+    foreach ($results as $key => $result) {
+      if ($result['sourcePath'] != $this->getPath()) {
+        unset($results[$key]);
+      }
+    }
+
+    return $results;
+  }
+
 }

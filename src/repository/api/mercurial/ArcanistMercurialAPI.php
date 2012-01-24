@@ -45,11 +45,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranchName() {
-    // TODO: I have nearly no idea how hg local branches work.
+    // TODO: I have nearly no idea how hg branches work.
     list($stdout) = execx(
       '(cd %s && hg branch)',
       $this->getPath());
-    return $stdout;
+    return trim($stdout);
   }
 
   public function setRelativeCommit($commit) {
@@ -372,6 +372,36 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getFinalizedRevisionMessage() {
     return "You may now push this commit upstream, as appropriate (e.g. with ".
            "'hg push' or by printing and faxing it).";
+  }
+
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    // Try to find revisions by hash.
+    $hashes = array();
+    foreach ($this->getLocalCommitInformation() as $commit) {
+      $hashes[] = array('hgcm', $commit['rev']);
+    }
+
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'commitHashes' => $hashes,
+      ));
+
+    if ($results) {
+      return $results;
+    }
+
+    // If we still didn't succeed, try to find revisions by branch name.
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'branches' => array($this->getBranchName()),
+      ));
+
+    return $results;
   }
 
 }
