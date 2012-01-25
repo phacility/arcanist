@@ -992,4 +992,12 @@ class ArcanistBaseWorkflow {
     return array_values($paths);
   }
 
+  protected function renderRevisionList(array $revisions) {
+    $list = array();
+    foreach ($revisions as $revision) {
+      $list[] = '     - D'.$revision['id'].': '.$revision['title']."\n";
+    }
+    return implode('', $list);
+  }
+
 }
