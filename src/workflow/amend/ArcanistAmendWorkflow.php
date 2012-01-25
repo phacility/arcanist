@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,6 @@ EOTEXT
           "precludes amending commit messages. You can use 'arc merge' to ".
           "merge feature branches instead.");
       }
-
       if ($repository_api->getUncommittedChanges()) {
         throw new ArcanistUsageException(
           "You have uncommitted changes in this branch. Stage and commit (or ".
@@ -89,32 +88,35 @@ EOTEXT
       }
     }
 
+    $revision_id = null;
     if ($this->getArgument('revision')) {
       $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
-    } else {
-      $log = $repository_api->getGitCommitLog();
-      $parser = new ArcanistDiffParser();
-      $changes = $parser->parseDiff($log);
-      if (count($changes) != 1) {
-        throw new Exception("Expected one log.");
-      }
-      $change = reset($changes);
-      if ($change->getType() != ArcanistDiffChangeType::TYPE_MESSAGE) {
-        throw new Exception("Expected message change.");
-      }
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $change->getMetadata('message'));
-      $revision_id = $message->getRevisionID();
-      if (!$revision_id) {
-        throw new ArcanistUsageException(
-          "No revision specified with '--revision', and no Differential ".
-          "revision marker in HEAD.");
-      }
     }
 
-    // TODO: The old 'arc amend' had a check here to see if you were running
-    // 'arc amend' with an explicit revision but HEAD already had another
-    // revision in it. Maybe this is worth restoring?
+    $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(
+      $this->getConduit(),
+      array(
+        'authors'   => array($this->getUserPHID()),
+        'status'    => 'status-any',
+      ));
+    $in_working_copy = ipull($in_working_copy, null, 'id');
+
+    if (!$revision_id) {
+      if (count($in_working_copy) == 0) {
+        throw new ArcanistUsageException(
+          "No revision specified with '--revision', and no revisions found ".
+          "in the working copy. Use '--revision <id>' to specify which ".
+          "revision you want to amend.");
+      } else if (count($in_working_copy) > 1) {
+        $message = "More than one revisionw as found in the working copy:\n".
+          $this->renderRevisionList($in_working_copy)."\n".
+          "Use '--revision <id>' to specify which revision you want to ".
+          "amend.";
+        throw new ArcanistUsageException($message);
+      } else {
+        $revision_id = key($in_working_copy);
+      }
+    }
 
     $conduit = $this->getConduit();
     try {
@@ -135,11 +137,37 @@ EOTEXT
       }
     }
 
+    $revision = $conduit->callMethodSynchronous(
+      'differential.query',
+      array(
+        'ids' => array($revision_id),
+      ));
+    if (empty($revision)) {
+      throw new Exception(
+        "Failed to lookup information for 'D{$revision_id}'!");
+    }
+    $revision = head($revision);
+    $revision_title = $revision['title'];
+
+    if (!$is_show) {
+      if ($revision_id && empty($in_working_copy[$revision_id])) {
+        $ok = phutil_console_confirm(
+          "The revision 'D{$revision_id}' does not appear to be in the ".
+          "working copy. Are you sure you want to amend HEAD with the ".
+          "commit message for 'D{$revision_id}: {$revision_title}'?");
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
+      }
+    }
+
     if ($is_show) {
       echo $message."\n";
     } else {
+      echo phutil_console_format(
+        "Amending commit message to reflect revision **%s**.\n",
+        "D{$revision_id}: {$revision_title}");
       $repository_api->amendGitHeadCommit($message);
-      echo "Amended commit message.\n";
 
       $mark_workflow = $this->buildChildWorkflow(
         'mark-committed',
@@ -152,6 +180,7 @@ EOTEXT
 
     return 0;
   }
+
 
   protected function getSupportedRevisionControlSystems() {
     return array('git');
