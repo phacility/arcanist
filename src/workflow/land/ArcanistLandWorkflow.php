@@ -25,7 +25,7 @@ class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **land** __branch__ [--interactive] [--onto __master__]
+      **land** __branch__ [--onto __master__]
           Supports: git
 
           Land an accepted change (currently sitting in local feature branch

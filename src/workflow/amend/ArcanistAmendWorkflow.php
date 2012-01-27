@@ -108,7 +108,7 @@ EOTEXT
           "in the working copy. Use '--revision <id>' to specify which ".
           "revision you want to amend.");
       } else if (count($in_working_copy) > 1) {
-        $message = "More than one revisionw as found in the working copy:\n".
+        $message = "More than one revision was found in the working copy:\n".
           $this->renderRevisionList($in_working_copy)."\n".
           "Use '--revision <id>' to specify which revision you want to ".
           "amend.";
