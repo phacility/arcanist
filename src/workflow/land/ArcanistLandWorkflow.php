@@ -261,7 +261,18 @@ EOTEXT
     }
 
     if (!$this->getArgument('keep-branch')) {
+      list($ref) = execx(
+        '(cd %s && git rev-parse --verify %s)',
+        $repository_api->getPath(),
+        $branch);
+      $ref = trim($ref);
+      $recovery_command = csprintf(
+        'git checkout -b %s %s',
+        $branch,
+        $ref);
+
       echo "Cleaning up feature branch...\n";
+      echo "(Use `{$recovery_command}` if you want it back.)\n";
       execx(
         '(cd %s && git branch -D %s)',
         $repository_api->getPath(),
