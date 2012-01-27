@@ -256,7 +256,16 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     $base_revision  = $bundle->getBaseRevision();
 
-    if ($base_revision) {
+    // verify the base revision is valid
+    // in a working copy that uses the git-svn bridge, the base revision might
+    // be a svn uri instead of a git ref
+    list($err) = exec_manual(
+      '(cd %s; git rev-parse --verify %s)',
+      $repository_api->getPath(),
+      $base_revision
+    );
+
+    if ($base_revision && !$err) {
       execx(
         '(cd %s; git checkout -b %s %s)',
         $repository_api->getPath(),
