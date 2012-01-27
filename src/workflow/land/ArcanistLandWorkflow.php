@@ -217,11 +217,17 @@ EOTEXT
     if ($is_immutable) {
       // In immutable histories, do a --no-ff merge to force a merge commit with
       // the right message.
-      execx(
+      $err = phutil_passthru(
         '(cd %s && git merge --no-ff -m %s %s)',
         $repository_api->getPath(),
         $message,
         $branch);
+      if ($err) {
+        throw new ArcanistUsageException(
+          "'git merge' failed. Your working copy has been left in a partially ".
+          "merged state. You can: abort with 'git merge --abort'; or follow ".
+          "the instructions to complete the merge, and then push.");
+      }
     } else {
       // In mutable histories, do a --squash merge.
       execx(
