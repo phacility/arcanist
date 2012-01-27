@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,69 +72,53 @@ EOTEXT
 
   public function run() {
     $repository_api = $this->getRepositoryAPI();
-    $conduit = $this->getConduit();
+
+    if (!($repository_api instanceof ArcanistSubversionAPI)) {
+      throw new ArcanistUsageException(
+        "'arc commit' is only supported under svn.");
+    }
+
 
     $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
-
     if (!$revision_id) {
-      $revision_data = $conduit->callMethodSynchronous(
-        'differential.find',
+      $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
+        $this->getConduit(),
         array(
-          'query' => 'committable',
-          'guids' => array(
-            $this->getUserPHID(),
-          ),
-        )
-      );
+          'authors' => array($this->getUserPHID()),
+          'status'  => 'status-accepted',
+        ));
 
-      try {
-        $revision = $this->chooseRevision(
-          $revision_data,
-          null,
-          'Which revision do you want to commit?'
-        );
-        $revision_id = $revision->getID();
-      } catch (ArcanistChooseNoRevisionsException $ex) {
+      if (count($revisions) == 0) {
         throw new ArcanistUsageException(
-          "You have no committable Differential revisions. You can only ".
-          "commit revisions which have been 'accepted'.");
+          "Unable to identify the revision in the working copy. Use ".
+          "'--revision <revision_id>' to select a revision.");
+      } else if (count($revisions) > 1) {
+        throw new ArcanistUsageException(
+          "More than one revision exists in the working copy:\n\n".
+          $this->renderRevisionList($revisions)."\n".
+          "Use '--revision <revision_id>' to select a revision.");
       }
-    }
 
-    $this->revisionID = $revision_id;
-
-    $revision = null;
-    try {
-      $revision = $conduit->callMethodSynchronous(
-        'differential.getrevision',
+    } else {
+      $revisions = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
         array(
-          'revision_id' => $revision_id,
-        )
-      );
-    } catch (Exception $ex) {
-      throw new ArcanistUsageException(
-        "Revision D{$revision_id} does not exist."
-      );
-    }
+          'ids' => array($revision_id),
+        ));
 
-    if ($revision['statusName'] != 'Accepted') {
-      throw new ArcanistUsageException(
-        "Revision D{$revision_id} is not committable. You can only commit ".
-        "revisions which have been 'accepted'."
-      );
-    }
-
-    if ($revision['authorPHID'] != $this->getUserPHID()) {
-      $prompt = "You are not the author of revision D{$revision_id}, ".
-        'are you sure you want to commit it?';
-      if (!phutil_console_confirm($prompt)) {
-        throw new ArcanistUserAbortException();
+      if (count($revisions) == 0) {
+        throw new ArcanistUsageException(
+          "Revision 'D{$revision_id}' does not exist.");
       }
     }
 
-    $revision_name  = $revision['title'];
+    $revision = head($revisions);
+    $this->revisionID = $revision['id'];
+    $revision_id = $revision['id'];
 
-    $message = $conduit->callMethodSynchronous(
+    $this->runSanityChecks($revision);
+
+    $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
       array(
         'revision_id' => $revision_id,
@@ -144,8 +128,8 @@ EOTEXT
     $event = new PhutilEvent(
       ArcanistEventType::TYPE_COMMIT_WILLCOMMITSVN,
       array(
-        'message' => $message,
-        'workflow' => $this
+        'message'   => $message,
+        'workflow'  => $this,
       )
     );
     PhutilEventEngine::dispatchEvent($event);
@@ -157,7 +141,8 @@ EOTEXT
       return 0;
     }
 
-    echo "Committing D{$revision_id} '{$revision_name}'...\n";
+    $revision_title = $revision['title'];
+    echo "Committing 'D{$revision_id}: {$revision_title}'...\n";
 
     $files = $this->getCommitFileList($revision);
 
@@ -169,8 +154,7 @@ EOTEXT
 
     // Specify LANG explicitly so that UTF-8 commit messages don't break
     // subversion.
-    $command =
-      "(cd {$root} && LANG={$lang} svn commit {$files} -m {$message})";
+    $command = "(cd {$root} && LANG={$lang} svn commit {$files} -m {$message})";
 
     $err = phutil_passthru('%C', $command);
 
@@ -191,41 +175,9 @@ EOTEXT
 
   protected function getCommitFileList(array $revision) {
     $repository_api = $this->getRepositoryAPI();
-
-    if (!($repository_api instanceof ArcanistSubversionAPI)) {
-      throw new ArcanistUsageException(
-        "arc commit is only supported under SVN. Use arc amend under git.");
-    }
-
-    $conduit = $this->getConduit();
-
     $revision_id = $revision['id'];
 
-    $revision = reset($conduit->callMethodSynchronous(
-      'differential.find',
-      array(
-        'query' => 'revision-ids',
-        'guids' => array($revision_id,)
-      )
-    ));
-    if (!$revision) {
-      throw new ArcanistUsageException(
-        "Revision D{$revision_id} does not exist."
-      );
-    }
-    $revision_source = $revision['sourcePath'];
-
-    $working_copy = $repository_api->getPath();
-    if ($revision_source != $working_copy) {
-      $prompt =
-        "Revision was generated from '{$revision_source}', but the current ".
-        "working copy root is '{$working_copy}'. Commit anyway?";
-      if (!phutil_console_confirm($prompt)) {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
-    $commit_paths = $conduit->callMethodSynchronous(
+    $commit_paths = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitpaths',
       array(
         'revision_id' => $revision_id,
@@ -350,5 +302,41 @@ EOTEXT
     }
     return $locale;
   }
+
+  private function runSanityChecks(array $revision) {
+    $repository_api = $this->getRepositoryAPI();
+    $revision_id = $revision['id'];
+    $revision_title = $revision['title'];
+
+    $confirm = array();
+
+    if ($revision['status'] != ArcanistDifferentialRevisionStatus::ACCEPTED) {
+      $confirm[] =
+        "Revision 'D{$revision_id}: {$revision_title}' has not been accepted. ".
+        "Commit this revision anyway?";
+    }
+
+    if ($revision['authorPHID'] != $this->getUserPHID()) {
+      $confirm[] =
+        "You are not the author of 'D{$revision_id}: {$revision_title}'. ".
+        "Commit this revision anyway?";
+    }
+
+    $revision_source = $revision['sourcePath'];
+    $current_source = $repository_api->getPath();
+    if ($revision_source != $current_source) {
+      $confirm[] =
+        "Revision 'D{$revision_id}: {$revision_title}' was generated from ".
+        "'{$revision_source}', but current working copy root is ".
+        "'{$current_source}'. Commit this revision anyway?";
+    }
+
+    foreach ($confirm as $thing) {
+      if (!phutil_console_confirm($thing)) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+  }
+
 
 }
