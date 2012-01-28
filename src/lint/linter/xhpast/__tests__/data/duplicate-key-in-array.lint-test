@@ -23,8 +23,8 @@ $d = array(
 $e = array(
   self::B => 'bee',
   self::B => 'bea',
-  self::B() => 'ehh',
-  self::$B => 'weh',
+  self::b() => 'ehh',
+  self::$b => 'weh',
   B => 'b',
   C::B => 'cb',
 );

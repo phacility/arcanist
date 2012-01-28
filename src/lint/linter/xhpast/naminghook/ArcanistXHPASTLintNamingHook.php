@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,36 @@
  */
 
 /**
- * You can extend this class and set "lint.xhpast.naminghook" in your
- * .arcconfig to have an opportunity to override lint results for symbol names.
+ * You can extend this class and set ##"lint.xhpast.naminghook"## in your
+ * ##.arcconfig## to have an opportunity to override lint results for symbol
+ * names.
  *
- * @task override Overriding Symbol Name Lint
+ * @task override   Overriding Symbol Name Lint Messages
+ * @task util       Name Utilities
+ * @task internal   Internals
  * @group lint
+ * @stable
  */
 abstract class ArcanistXHPASTLintNamingHook {
 
+
+/* -(  Internals  )---------------------------------------------------------- */
+
+
+  /**
+   * The constructor is final because @{class:ArcanistXHPASTLinter} is
+   * responsible for hook instantiation.
+   *
+   * @return this
+   * @task internals
+   */
   final public function __construct() {
     // <empty>
   }
+
+
+/* -(  Overriding Symbol Name Lint Messages  )------------------------------- */
+
 
   /**
    * Callback invoked for each symbol, which can override the default
@@ -56,5 +75,86 @@ abstract class ArcanistXHPASTLintNamingHook {
    * @task override
    */
   abstract public function lintSymbolName($type, $name, $default);
+
+
+/* -(  Name Utilities  )----------------------------------------------------- */
+
+
+  /**
+   * Returns true if a symbol name is UpperCamelCase.
+   *
+   * @param string Symbol name.
+   * @return bool True if the symbol is UpperCamelCase.
+   * @task util
+   */
+  public static function isUpperCamelCase($symbol) {
+    return preg_match('/^[A-Z][A-Za-z0-9]*$/', $symbol);
+  }
+
+
+  /**
+   * Returns true if a symbol name is lowerCamelCase.
+   *
+   * @param string Symbol name.
+   * @return bool True if the symbol is lowerCamelCase.
+   * @task util
+   */
+  public static function isLowerCamelCase($symbol) {
+    return preg_match('/^[a-z][A-Za-z0-9]*$/', $symbol);
+  }
+
+
+  /**
+   * Returns true if a symbol name is UPPERCASE_WITH_UNDERSCORES.
+   *
+   * @param string Symbol name.
+   * @return bool True if the symbol is UPPERCASE_WITH_UNDERSCORES.
+   * @task util
+   */
+  public static function isUppercaseWithUnderscores($symbol) {
+    return preg_match('/^[A-Z0-9_]+$/', $symbol);
+  }
+
+
+  /**
+   * Returns true if a symbol name is lowercase_with_underscores.
+   *
+   * @param string Symbol name.
+   * @return bool True if the symbol is lowercase_with_underscores.
+   * @task util
+   */
+  public static function isLowercaseWithUnderscores($symbol) {
+    return preg_match('/^[a-z0-9_]+$/', $symbol);
+  }
+
+
+  /**
+   * Strip non-name components from PHP function symbols. Notably, this discards
+   * the "__" magic-method signifier, to make a symbol appropriate for testing
+   * with methods like @{method:isLowerCamelCase}.
+   *
+   * @param   string Symbol name.
+   * @return  string Stripped symbol.
+   * @task util
+   */
+  public static function stripPHPFunction($symbol) {
+    //  Allow initial "__" for magic methods like __construct; we could also
+    //  enumerate these explicitly.
+    return preg_replace('/^__/', '', $symbol);
+  }
+
+
+  /**
+   * Strip non-name components from PHP variable symbols. Notably, this discards
+   * the "$", to make a symbol appropriate for testing with methods like
+   * @{method:isLowercaseWithUnderscores}.
+   *
+   * @param string Symbol name.
+   * @return bool True if the symbol is UpperCamelCase.
+   * @task util
+   */
+  public static function stripPHPVariable($symbol) {
+    return preg_replace('/^\$/', '', $symbol);
+  }
 
 }

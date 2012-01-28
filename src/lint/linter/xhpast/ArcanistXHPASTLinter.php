@@ -455,16 +455,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
 
       $declarations = array(
         '$this'     => 0,
-        '$GLOBALS'  => 0,
-        '$_SERVER'  => 0,
-        '$_GET'     => 0,
-        '$_POST'    => 0,
-        '$_FILES'   => 0,
-        '$_COOKIE'  => 0,
-        '$_SESSION' => 0,
-        '$_REQUEST' => 0,
-        '$_ENV'     => 0,
-      );
+      ) + array_fill_keys($this->getSuperGlobalNames(), 0);
       $declaration_tokens = array();
       $exclude_tokens = array();
       $vars = array();
@@ -711,28 +702,16 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     foreach ($classes as $class) {
       $name_token = $class->getChildByIndex(1);
       $name_string = $name_token->getConcreteString();
-      $is_xhp = ($name_string[0] == ':');
-      if ($is_xhp) {
-        $names[] = array(
-          'xhp-class',
-          $name_string,
-          $name_token,
-          $this->isLowerCaseWithXHP($name_string)
-            ? null
-            : 'Follow naming conventions: XHP elements should be named using '.
-              'lower case.',
-        );
-      } else {
-        $names[] = array(
-          'class',
-          $name_string,
-          $name_token,
-          $this->isUpperCamelCase($name_string)
-            ? null
-            : 'Follow naming conventions: classes should be named using '.
-              'UpperCamelCase.',
-        );
-      }
+
+      $names[] = array(
+        'class',
+        $name_string,
+        $name_token,
+        ArcanistXHPASTLintNamingHook::isUpperCamelCase($name_string)
+          ? null
+          : 'Follow naming conventions: classes should be named using '.
+            'UpperCamelCase.',
+      );
     }
 
     $ifaces = $root->selectDescendantsOfType('n_INTERFACE_DECLARATION');
@@ -743,7 +722,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         'interface',
         $name_string,
         $name_token,
-        $this->isUpperCamelCase($name_string)
+        ArcanistXHPASTLintNamingHook::isUpperCamelCase($name_string)
           ? null
           : 'Follow naming conventions: interfaces should be named using '.
             'UpperCamelCase.',
@@ -763,7 +742,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         'function',
         $name_string,
         $name_token,
-        $this->isLowercaseWithUnderscores($name_string)
+        ArcanistXHPASTLintNamingHook::isLowercaseWithUnderscores(
+          ArcanistXHPASTLintNamingHook::stripPHPFunction($name_string))
           ? null
           : 'Follow naming conventions: functions should be named using '.
             'lowercase_with_underscores.',
@@ -779,24 +759,32 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
         'method',
         $name_string,
         $name_token,
-        $this->isLowerCamelCase($name_string)
+        ArcanistXHPASTLintNamingHook::isLowerCamelCase(
+          ArcanistXHPASTLintNamingHook::stripPHPFunction($name_string))
           ? null
           : 'Follow naming conventions: methods should be named using '.
             'lowerCamelCase.',
       );
     }
 
+    $param_tokens = array();
 
     $params = $root->selectDescendantsOfType('n_DECLARATION_PARAMETER_LIST');
     foreach ($params as $param_list) {
       foreach ($param_list->getChildren() as $param) {
         $name_token = $param->getChildByIndex(1);
+        if ($name_token->getTypeName() == 'n_VARIABLE_REFERENCE') {
+          $name_token = $name_token->getChildOfType(0, 'n_VARIABLE');
+        }
+        $param_tokens[$name_token->getID()] = true;
         $name_string = $name_token->getConcreteString();
+
         $names[] = array(
           'parameter',
           $name_string,
           $name_token,
-          $this->isLowercaseWithUnderscores($name_string)
+          ArcanistXHPASTLintNamingHook::isLowercaseWithUnderscores(
+            ArcanistXHPASTLintNamingHook::stripPHPVariable($name_string))
             ? null
             : 'Follow naming conventions: parameters should be named using '.
               'lowercase_with_underscores.',
@@ -815,7 +803,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
           'constant',
           $name_string,
           $name_token,
-          $this->isUppercaseWithUnderscores($name_string)
+          ArcanistXHPASTLintNamingHook::isUppercaseWithUnderscores($name_string)
             ? null
             : 'Follow naming conventions: class constants should be named '.
               'using UPPERCASE_WITH_UNDERSCORES.',
@@ -823,22 +811,106 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+    $member_tokens = array();
+
     $props = $root->selectDescendantsOfType('n_CLASS_MEMBER_DECLARATION_LIST');
     foreach ($props as $prop_list) {
-      foreach ($prop_list->getChildren() as $prop) {
+      foreach ($prop_list->getChildren() as $token_id => $prop) {
         if ($prop->getTypeName() == 'n_CLASS_MEMBER_MODIFIER_LIST') {
           continue;
         }
+
         $name_token = $prop->getChildByIndex(0);
+        $member_tokens[$name_token->getID()] = true;
+
         $name_string = $name_token->getConcreteString();
         $names[] = array(
           'member',
           $name_string,
           $name_token,
-          $this->isLowerCamelCase($name_string)
+          ArcanistXHPASTLintNamingHook::isLowerCamelCase(
+            ArcanistXHPASTLintNamingHook::stripPHPVariable($name_string))
             ? null
             : 'Follow naming conventions: class properties should be named '.
               'using lowerCamelCase.',
+        );
+      }
+    }
+
+    $superglobal_map = array_fill_keys(
+      $this->getSuperGlobalNames(),
+      true);
+
+
+    $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+    $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
+    $defs = $fdefs->add($mdefs);
+
+    foreach ($defs as $def) {
+      $globals = $def->selectDescendantsOfType('n_GLOBAL_DECLARATION_LIST');
+      $globals = $globals->selectDescendantsOfType('n_VARIABLE');
+
+      $globals_map = array();
+      foreach ($globals as $global) {
+        $global_string = $global->getConcreteString();
+        $globals_map[$global_string] = true;
+        $names[] = array(
+          'global',
+          $global_string,
+          $global,
+
+          // No advice for globals, but hooks have an option to provide some.
+          null);
+      }
+
+      // Exclude access of static properties, since lint will be raised at
+      // their declaration if they're invalid and they may not conform to
+      // variable rules. This is slightly overbroad (includes the entire
+      // rhs of a "Class::..." token) to cover cases like "Class:$x[0]". These
+      // varaibles are simply made exempt from naming conventions.
+      $exclude_tokens = array();
+      $statics = $def->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+      foreach ($statics as $static) {
+        $rhs = $static->getChildByIndex(1);
+        $rhs_vars = $def->selectDescendantsOfType('n_VARIABLE');
+        foreach ($rhs_vars as $var) {
+          $exclude_tokens[$var->getID()] = true;
+        }
+      }
+
+      $vars = $def->selectDescendantsOfType('n_VARIABLE');
+      foreach ($vars as $token_id => $var) {
+        if (isset($member_tokens[$token_id])) {
+          continue;
+        }
+        if (isset($param_tokens[$token_id])) {
+          continue;
+        }
+        if (isset($exclude_tokens[$token_id])) {
+          continue;
+        }
+
+        $var_string = $var->getConcreteString();
+
+        // Awkward artifact of "$o->{$x}".
+        $var_string = trim($var_string, '{}');
+
+        if (isset($superglobal_map[$var_string])) {
+          continue;
+        }
+        if (isset($globals_map[$var_string])) {
+          continue;
+        }
+
+        $names[] = array(
+          'variable',
+          $var_string,
+          $var,
+          ArcanistXHPASTLintNamingHook::isLowercaseWithUnderscores(
+            ArcanistXHPASTLintNamingHook::stripPHPVariable($var_string))
+              ? null
+              : 'Follow naming conventions: variables should be named using '.
+                'lowercase_with_underscores.',
         );
       }
     }
@@ -870,28 +942,6 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
           $result);
       }
     }
-  }
-
-  protected function isUpperCamelCase($str) {
-    return preg_match('/^[A-Z][A-Za-z0-9]*$/', $str);
-  }
-
-  protected function isLowerCamelCase($str) {
-    //  Allow initial "__" for magic methods like __construct; we could also
-    //  enumerate these explicitly.
-    return preg_match('/^\$?(?:__)?[a-z][A-Za-z0-9]*$/', $str);
-  }
-
-  protected function isUppercaseWithUnderscores($str) {
-    return preg_match('/^[A-Z0-9_]+$/', $str);
-  }
-
-  protected function isLowercaseWithUnderscores($str) {
-    return preg_match('/^[&]?\$?[a-z0-9_]+$/', $str);
-  }
-
-  protected function isLowercaseWithXHP($str) {
-    return preg_match('/^:[a-z0-9_:-]+$/', $str);
   }
 
   protected function lintSurpriseConstructors($root) {
@@ -1350,6 +1400,20 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       $desc,
       $node->getConcreteString(),
       $replace);
+  }
+
+  public function getSuperGlobalNames() {
+    return array(
+      '$GLOBALS',
+      '$_SERVER',
+      '$_GET',
+      '$_POST',
+      '$_FILES',
+      '$_COOKIE',
+      '$_SESSION',
+      '$_REQUEST',
+      '$_ENV',
+    );
   }
 
 }

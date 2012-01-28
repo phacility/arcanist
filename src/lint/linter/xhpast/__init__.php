@@ -7,10 +7,11 @@
 
 
 phutil_require_module('arcanist', 'lint/linter/base');
+phutil_require_module('arcanist', 'lint/linter/xhpast/naminghook');
 phutil_require_module('arcanist', 'lint/severity');
+
 phutil_require_module('phutil', 'parser/xhpast/api/tree');
 phutil_require_module('phutil', 'parser/xhpast/bin');
-
 phutil_require_module('phutil', 'utils');
 
 
