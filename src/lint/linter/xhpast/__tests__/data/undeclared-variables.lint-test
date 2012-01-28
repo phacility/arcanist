@@ -39,7 +39,7 @@ function g($q) {
   $r = y();
 }
 
-class C {
+final class C {
   public function m() {
     $a++;
     x($b);
@@ -135,7 +135,7 @@ function more_exceptions() {
   }
 }
 
-class P {
+abstract class P {
   abstract public function q();
 }
 
@@ -146,7 +146,7 @@ function x() {
   f(((($lub))));
 }
 
-class A {
+final class A {
   public function foo($a) {
     $im_service = foo($a);
     if ($im_servce === false) {

@@ -1,5 +1,5 @@
 <?php
-class a {
+final class a {
   const b = 1, c = d;
   protected $E, $H;
   public function F($G, $GG) { }
@@ -11,7 +11,7 @@ interface i { }
 
 function YY($ZZ) { }
 
-class Quack {
+final class Quack {
   const R = 1, S = 2;
   protected $tX, $uY;
   public function vV($w_w) { }
@@ -50,7 +50,7 @@ function i() {
   parent::$Z_z[0];
 }
 ~~~~~~~~~~
-warning:2:7
+warning:2:13
 warning:3:9
 warning:3:16
 warning:4:13

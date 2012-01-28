@@ -13,7 +13,7 @@ $obj->m(
 for ( $ii = 0; $ii < 1; $ii++ ) { }
 foreach ( $x as $y ) { }
 function q( $x ) { }
-class X {
+final class X {
   public function f( $y ) {
   }
 }
@@ -35,7 +35,7 @@ warning:14:10
 warning:14:19
 warning:15:12
 warning:15:15
-error:16:7 XHP19 Class-Filename Mismatch
+error:16:13 XHP19 Class-Filename Mismatch
 warning:17:21
 warning:17:24
 warning:20:10
@@ -56,7 +56,7 @@ $obj->m(
 for ($ii = 0; $ii < 1; $ii++) { }
 foreach ($x as $y) { }
 function q($x) { }
-class X {
+final class X {
   public function f($y) {
   }
 }

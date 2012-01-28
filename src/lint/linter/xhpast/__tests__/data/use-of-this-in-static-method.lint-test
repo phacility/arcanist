@@ -1,6 +1,6 @@
 <?php
 
-class A {
+final class A {
   public function u() {
     $this->f();
   }
@@ -10,5 +10,5 @@ class A {
 }
 
 ~~~~~~~~~~
-error:3:7 XHP19 Class-Filename Mismatch
+error:3:13 XHP19 Class-Filename Mismatch
 error:8:5 Use of $this in a static method.

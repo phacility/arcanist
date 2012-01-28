@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,13 @@ class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
 
   public function testXHPASTLint() {
     $linter = new ArcanistXHPASTLinter();
+
+    $linter->setCustomSeverityMap(
+      array(
+        ArcanistXHPASTLinter::LINT_RAGGED_CLASSTREE_EDGE
+          => ArcanistLintSeverity::SEVERITY_WARNING,
+      ));
+
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/data/',

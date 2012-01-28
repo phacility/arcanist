@@ -8,6 +8,7 @@
 
 phutil_require_module('arcanist', 'lint/linter/base/test');
 phutil_require_module('arcanist', 'lint/linter/xhpast');
+phutil_require_module('arcanist', 'lint/severity');
 phutil_require_module('arcanist', 'workingcopyidentity');
 
 

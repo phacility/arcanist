@@ -51,7 +51,8 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_PARENTHESES_SPACING       = 25;
   const LINT_CONTROL_STATEMENT_SPACING = 26;
   const LINT_BINARY_EXPRESSION_SPACING = 27;
-  const LINT_ARRAY_INDEX_SPACING       = 27;
+  const LINT_ARRAY_INDEX_SPACING       = 28;
+  const LINT_RAGGED_CLASSTREE_EDGE     = 29;
 
 
   public function getLintNameMap() {
@@ -83,6 +84,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_CONTROL_STATEMENT_SPACING => 'Space After Control Statement',
       self::LINT_BINARY_EXPRESSION_SPACING => 'Space Around Binary Operator',
       self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
+      self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
     );
   }
 
@@ -110,6 +112,10 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_ARRAY_INDEX_SPACING
         => ArcanistLintSeverity::SEVERITY_WARNING,
 
+      // This is disabled by default because it implies a very strict policy
+      // which isn't necessary in the general case.
+      self::LINT_RAGGED_CLASSTREE_EDGE
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
   }
 
@@ -175,6 +181,7 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintDuplicateKeysInArray($root);
     $this->lintReusedIterators($root);
     $this->lintBraceFormatting($root);
+    $this->lintRaggedClasstreeEdges($root);
   }
 
   private function lintBraceFormatting($root) {
@@ -1372,6 +1379,42 @@ class ArcanistXHPASTLinter extends ArcanistLinter {
             "Duplicate key in array initializer. PHP will ignore all ".
             "but the last entry.");
         }
+      }
+    }
+  }
+
+  private function lintRaggedClasstreeEdges($root) {
+    $parser = new PhutilDocblockParser();
+
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+    foreach ($classes as $class) {
+
+      $is_final = false;
+      $is_abstract = false;
+      $is_concrete_extensible = false;
+
+      $attributes = $class->getChildOfType(0, 'n_CLASS_ATTRIBUTES');
+      foreach ($attributes->getChildren() as $child) {
+        if ($child->getConcreteString() == 'final') {
+          $is_final = true;
+        }
+        if ($child->getConcreteString() == 'abstract') {
+          $is_abstract = true;
+        }
+      }
+
+      $docblock = $class->getDocblockToken();
+      if ($docblock) {
+        list($text, $specials) = $parser->parse($docblock->getValue());
+        $is_concrete_extensible = idx($specials, 'concrete-extensible');
+      }
+
+      if (!$is_final && !$is_abstract && !$is_concrete_extensible) {
+        $this->raiseLintAtNode(
+          $class->getChildOfType(1, 'n_CLASS_NAME'),
+          self::LINT_RAGGED_CLASSTREE_EDGE,
+          "This class is neither 'final' nor 'abstract', and does not have ".
+          "a docblock marking it '@concrete-extensible'.");
       }
     }
   }
