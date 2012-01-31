@@ -17,7 +17,7 @@
  */
 
 /**
- * Uses XHPAST to apply lint rules to PHP or PHP+XHP.
+ * Uses XHPAST to apply lint rules to PHP.
  *
  * @group linter
  */

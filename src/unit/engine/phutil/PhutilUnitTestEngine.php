@@ -118,16 +118,33 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         "No tests to run. You may need to rebuild the phutil library map.");
     }
 
+    $enable_coverage = $this->getEnableCoverage();
+    if ($enable_coverage !== false) {
+      if (!function_exists('xdebug_start_code_coverage')) {
+        if ($enable_coverage === true) {
+          throw new ArcanistUsageException(
+            "You specified --coverage but xdebug is not available, so ".
+            "coverage can not be enabled for PhutilUnitTestEngine.");
+        }
+      } else {
+        $enable_coverage = true;
+      }
+    }
+
     $results = array();
     foreach ($run_tests as $test_class) {
       PhutilSymbolLoader::loadClass($test_class);
       $test_case = newv($test_class, array());
+      $test_case->setEnableCoverage($enable_coverage);
+      $test_case->setProjectRoot($this->getWorkingCopy()->getProjectRoot());
+      $test_case->setPaths($this->getPaths());
       $results[] = $test_case->run();
     }
+
+
     if ($results) {
       $results = call_user_func_array('array_merge', $results);
     }
-
 
     return $results;
   }

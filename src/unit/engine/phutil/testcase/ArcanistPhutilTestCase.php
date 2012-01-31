@@ -30,6 +30,10 @@ abstract class ArcanistPhutilTestCase {
   private $runningTest;
   private $testStartTime;
   private $results = array();
+  private $enableCoverage;
+  private $coverage = array();
+  private $projectRoot;
+  private $paths;
 
 
 /* -(  Making Test Assertions  )--------------------------------------------- */
@@ -179,7 +183,10 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function failTest($reason) {
+    $coverage = $this->endCoverage();
+
     $result = new ArcanistUnitTestResult();
+    $result->setCoverage($coverage);
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
     $result->setDuration(microtime(true) - $this->testStartTime);
@@ -197,7 +204,10 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function passTest($reason) {
+    $coverage = $this->endCoverage();
+
     $result = new ArcanistUnitTestResult();
+    $result->setCoverage($coverage);
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
     $result->setDuration(microtime(true) - $this->testStartTime);
@@ -233,6 +243,7 @@ abstract class ArcanistPhutilTestCase {
         try {
           $this->willRunOneTest($name);
 
+          $this->beginCoverage();
           $test_exception = null;
           try {
             call_user_func_array(
@@ -261,6 +272,78 @@ abstract class ArcanistPhutilTestCase {
     $this->didRunTests();
 
     return $this->results;
+  }
+
+  final public function setEnableCoverage($enable_coverage) {
+    $this->enableCoverage = $enable_coverage;
+    return $this;
+  }
+
+  final private function beginCoverage() {
+    if (!$this->enableCoverage) {
+      return;
+    }
+
+    $this->assertCoverageAvailable();
+    xdebug_start_code_coverage(XDEBUG_CC_UNUSED | XDEBUG_CC_DEAD_CODE);
+  }
+
+  final private function endCoverage() {
+    if (!$this->enableCoverage) {
+      return;
+    }
+
+    $result = xdebug_get_code_coverage();
+    xdebug_stop_code_coverage($cleanup = false);
+
+    $coverage = array();
+
+    foreach ($result as $file => $report) {
+      if (strncmp($file, $this->projectRoot, strlen($this->projectRoot))) {
+        continue;
+      }
+
+      $max = max(array_keys($report));
+      $str = '';
+      for ($ii = 1; $ii <= $max; $ii++) {
+        $c = idx($report, $ii);
+        if ($c === -1) {
+          $str .= 'U'; // Un-covered.
+        } else if ($c === -2) {
+          // TODO: This indicates "unreachable", but it flags the closing braces
+          // of functions which end in "return", which is super ridiculous. Just
+          // ignore it for now.
+          $str .= 'N'; // Not executable.
+        } else if ($c === 1) {
+          $str .= 'C'; // Covered.
+        } else {
+          $str .= 'N'; // Not executable.
+        }
+      }
+      $coverage[substr($file, strlen($this->projectRoot) + 1)] = $str;
+    }
+
+    // Only keep coverage information for files modified by the change.
+    $coverage = array_select_keys($coverage, $this->paths);
+
+    return $coverage;
+  }
+
+  final private function assertCoverageAvailable() {
+    if (!function_exists('xdebug_start_code_coverage')) {
+      throw new Exception(
+        "You've enabled code coverage but XDebug is not installed.");
+    }
+  }
+
+  final public function setProjectRoot($project_root) {
+    $this->projectRoot = $project_root;
+    return $this;
+  }
+
+  final public function setPaths(array $paths) {
+    $this->paths = $paths;
+    return $this;
   }
 
 }

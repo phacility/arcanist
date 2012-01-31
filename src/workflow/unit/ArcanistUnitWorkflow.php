@@ -30,6 +30,7 @@ final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
   const RESULT_POSTPONED = 4;
 
   private $unresolvedTests;
+  private $testResults;
   private $engine;
 
   public function getCommandHelp() {
@@ -60,6 +61,19 @@ EOTEXT
         'param' => 'classname',
         'help' =>
           "Override configured unit engine for this project."
+      ),
+      'coverage' => array(
+        'help' => 'Always enable coverage information.',
+        'conflicts' => array(
+          'no-coverage' => null,
+        ),
+      ),
+      'no-coverage' => array(
+        'help' => 'Always disable coverage information.',
+      ),
+      'detailed-coverage' => array(
+        'help' => "Show a detailed coverage report on the CLI. Implies ".
+                  "--coverage.",
       ),
       '*' => 'paths',
     );
@@ -108,6 +122,15 @@ EOTEXT
     $this->engine->setPaths($paths);
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
+    $enable_coverage = null; // Means "default".
+    if ($this->getArgument('coverage') ||
+        $this->getArgument('detailed-coverage')) {
+      $enable_coverage = true;
+    } else if ($this->getArgument('no-coverage')) {
+      $enable_coverage = false;
+    }
+    $this->engine->setEnableCoverage($enable_coverage);
+
     // Enable possible async tests only for 'arc diff' not 'arc unit'
     if ($this->getParentWorkflow()) {
       $this->engine->setEnableAsyncTests(true);
@@ -116,6 +139,7 @@ EOTEXT
     }
 
     $results = $this->engine->run();
+    $this->testResults = $results;
 
     $status_codes = array(
       ArcanistUnitTestResult::RESULT_PASS => phutil_console_format(
@@ -133,6 +157,7 @@ EOTEXT
       );
 
     $unresolved = array();
+    $coverage = array();
     $postponed_count = 0;
     foreach ($results as $result) {
       $result_code = $result->getResult();
@@ -154,12 +179,51 @@ EOTEXT
           $unresolved[] = $result;
         }
       }
+      if ($result->getCoverage()) {
+        foreach ($result->getCoverage() as $file => $report) {
+          $coverage[$file][] = $report;
+        }
+      }
     }
     if ($postponed_count) {
       echo sprintf("%s %d %s\n",
          $status_codes[ArcanistUnitTestResult::RESULT_POSTPONED],
          $postponed_count,
          ($postponed_count > 1)?'tests':'test');
+    }
+
+    if ($coverage) {
+      $file_coverage = array();
+      $file_reports = array();
+      foreach ($coverage as $file => $reports) {
+        $report = ArcanistUnitTestResult::mergeCoverage($reports);
+        $cov = substr_count($report, 'C');
+        $uncov = substr_count($report, 'U');
+        if ($cov + $uncov) {
+          $coverage = $cov / ($cov + $uncov);
+        } else {
+          $coverage = 0;
+        }
+        $file_coverage[$file] = $coverage;
+        $file_reports[$file] = $report;
+      }
+      echo "\n";
+      echo phutil_console_format('__COVERAGE REPORT__');
+      echo "\n";
+
+      asort($file_coverage);
+      foreach ($file_coverage as $file => $coverage) {
+        echo phutil_console_format(
+          "    **%s%%**     %s\n",
+          sprintf('% 3d', (int)(100 * $coverage)),
+          $file);
+
+        if ($this->getArgument('detailed-coverage')) {
+          echo $this->renderDetailedCoverageReport(
+            $file,
+            $file_reports[$file]);
+        }
+      }
     }
 
     $this->unresolvedTests = $unresolved;
@@ -184,6 +248,10 @@ EOTEXT
 
   public function getUnresolvedTests() {
     return $this->unresolvedTests;
+  }
+
+  public function getTestResults() {
+    return $this->testResults;
   }
 
   public function setDifferentialDiffID($id) {
@@ -228,5 +296,47 @@ EOTEXT
     }
 
     return ' <1ms';
+  }
+
+  private function renderDetailedCoverageReport($file, $report) {
+    $data = $this->getRepositoryAPI()->getCurrentFileData($file);
+    $data = explode("\n", $data);
+
+    $out = '';
+
+    $n = 0;
+    foreach ($data as $line) {
+      $out .= sprintf('% 5d  ', $n + 1);
+      $line = str_pad($line, 80, ' ');
+      if (empty($report[$n])) {
+        $c = 'N';
+      } else {
+        $c = $report[$n];
+      }
+      switch ($c) {
+        case 'C':
+          $out .= phutil_console_format(
+            '<bg:green> %s </bg>',
+            $line);
+          break;
+        case 'U':
+          $out .= phutil_console_format(
+            '<bg:red> %s </bg>',
+            $line);
+          break;
+        case 'X':
+          $out .= phutil_console_format(
+            '<bg:magenta> %s </bg>',
+            $line);
+          break;
+        default:
+          $out .= ' '.$line.' ';
+          break;
+      }
+      $out .= "\n";
+      $n++;
+    }
+
+    return $out;
   }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ abstract class ArcanistBaseUnitTestEngine {
   private $arguments = array();
   protected $diffID;
   private $enableAsyncTests;
+  private $enableCoverage;
 
   final public function __construct() {
 
@@ -68,6 +69,15 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getEnableAsyncTests() {
     return $this->enableAsyncTests;
+  }
+
+  final public function setEnableCoverage($enable_coverage) {
+    $this->enableCoverage = $enable_coverage;
+    return $this;
+  }
+
+  final public function getEnableCoverage() {
+    return $this->enableCoverage;
   }
 
   abstract public function run();

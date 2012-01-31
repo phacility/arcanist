@@ -35,6 +35,7 @@ final class ArcanistUnitTestResult {
   private $result;
   private $duration;
   private $userData;
+  private $coverage;
 
   public function setName($name) {
     $this->name = $name;
@@ -70,6 +71,34 @@ final class ArcanistUnitTestResult {
 
   public function getUserData() {
     return $this->userData;
+  }
+
+  public function setCoverage($coverage) {
+    $this->coverage = $coverage;
+    return $this;
+  }
+
+  public function getCoverage() {
+    return $this->coverage;
+  }
+
+  /**
+   * Merge several coverage reports into a comprehensive coverage report.
+   *
+   * @param list List of coverage report strings.
+   * @return string Cumulative coverage report.
+   */
+  public static function mergeCoverage(array $coverage) {
+    $base = reset($coverage);
+    foreach ($coverage as $more_coverage) {
+      $len = min(strlen($base), strlen($more_coverage));
+      for ($ii = 0; $ii < $len; $ii++) {
+        if ($more_coverage[$ii] == 'C') {
+          $base[$ii] = 'C';
+        }
+      }
+    }
+    return $base;
   }
 
 }

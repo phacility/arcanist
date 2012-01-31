@@ -30,7 +30,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $unresolvedTests;
+  private $testResults;
   private $diffID;
   private $unitWorkflow;
 
@@ -1067,7 +1067,7 @@ EOTEXT
           break;
       }
 
-      $this->unresolvedTests = $this->unitWorkflow->getUnresolvedTests();
+      $this->testResults = $this->unitWorkflow->getTestResults();
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1571,16 +1571,17 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (!$this->unresolvedTests) {
+    if (!$this->testResults) {
       return;
     }
 
     $data = array();
-    foreach ($this->unresolvedTests as $test) {
+    foreach ($this->testResults as $test) {
       $data[] = array(
         'name'      => $test->getName(),
         'result'    => $test->getResult(),
         'userdata'  => $test->getUserData(),
+        'coverage'  => $test->getCoverage(),
       );
     }
 
