@@ -21,7 +21,7 @@
  *
  * @group linter
  */
-class ArcanistXHPASTLinter extends ArcanistLinter {
+final class ArcanistXHPASTLinter extends ArcanistLinter {
 
   protected $trees = array();
 

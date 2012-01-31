@@ -21,7 +21,7 @@
  *
  * @group differential
  */
-class ArcanistDifferentialCommitMessage {
+final class ArcanistDifferentialCommitMessage {
 
   private $rawCorpus;
   private $revisionID;

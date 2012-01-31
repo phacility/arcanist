@@ -21,7 +21,7 @@
  *
  * @group diff
  */
-class ArcanistBundle {
+final class ArcanistBundle {
 
   private $changes;
   private $conduit;

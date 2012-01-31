@@ -21,7 +21,7 @@
  *
  * @group workflow
  */
-class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
 
   const RESULT_OKAY      = 0;
   const RESULT_UNSOUND   = 1;

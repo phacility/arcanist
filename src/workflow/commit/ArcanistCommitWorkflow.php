@@ -21,7 +21,7 @@
  *
  * @group workflow
  */
-class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
   private $revisionID;
 

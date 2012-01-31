@@ -39,8 +39,9 @@
  *
  * @task  conduit   Conduit
  * @group workflow
+ * @stable
  */
-class ArcanistBaseWorkflow {
+abstract class ArcanistBaseWorkflow {
 
   private $conduit;
   private $conduitURI;

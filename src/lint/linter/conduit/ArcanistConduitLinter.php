@@ -49,7 +49,7 @@
  * This class is intended for customization via instantiation, not via
  * subclassing.
  */
-class ArcanistConduitLinter extends ArcanistLinter {
+final class ArcanistConduitLinter extends ArcanistLinter {
   const CONDUIT_METHOD = 'lint.getalllint';
 
   private $conduitURI;

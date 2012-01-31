@@ -20,6 +20,7 @@
  * Implements lint rules, like syntax checks for a specific language.
  *
  * @group linter
+ * @stable
  */
 abstract class ArcanistLinter {
 

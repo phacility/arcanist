@@ -21,7 +21,7 @@
  *
  * @group workingcopy
  */
-class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
+final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $base;

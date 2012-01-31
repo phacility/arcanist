@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group lint
  */
-class ArcanistLintSeverity {
+final class ArcanistLintSeverity {
 
   const SEVERITY_ADVICE       = 'advice';
   const SEVERITY_WARNING      = 'warning';

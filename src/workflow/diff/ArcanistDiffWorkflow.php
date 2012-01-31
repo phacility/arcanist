@@ -26,7 +26,7 @@
  *
  * @group workflow
  */
-class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;
   private $unresolvedLint;

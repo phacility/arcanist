@@ -21,7 +21,7 @@
  *
  * @group linter
  */
-class ArcanistPEP8Linter extends ArcanistLinter {
+final class ArcanistPEP8Linter extends ArcanistLinter {
 
   public function willLintPaths(array $paths) {
     return;

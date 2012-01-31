@@ -21,7 +21,7 @@
  *
  * @group workingcopy
  */
-class ArcanistGitAPI extends ArcanistRepositoryAPI {
+final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $relativeCommit = null;

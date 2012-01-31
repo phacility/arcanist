@@ -19,6 +19,8 @@
 /**
  * Lint engine which enforces libphutil rules.
  *
+ * TODO: Deal with PhabricatorLintEngine extending this and then finalize it.
+ *
  * @group linter
  */
 class PhutilLintEngine extends ArcanistLintEngine {

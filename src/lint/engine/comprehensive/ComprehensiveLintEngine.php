@@ -21,7 +21,7 @@
  *
  * @group linter
  */
-class ComprehensiveLintEngine extends ArcanistLintEngine {
+final class ComprehensiveLintEngine extends ArcanistLintEngine {
 
   public function buildLinters() {
     $linters = array();

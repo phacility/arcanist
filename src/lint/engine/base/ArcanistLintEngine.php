@@ -56,6 +56,7 @@
  * and Workflows} for more information about configuring lint engines.
  *
  * @group lint
+ * @stable
  */
 abstract class ArcanistLintEngine {
 

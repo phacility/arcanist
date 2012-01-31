@@ -21,7 +21,7 @@
  *
  * @group module
  */
-class PhutilModuleRequirements {
+final class PhutilModuleRequirements {
 
   protected $builtins = array(
     'class'       => array(),

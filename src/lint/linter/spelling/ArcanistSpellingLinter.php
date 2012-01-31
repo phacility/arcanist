@@ -24,7 +24,7 @@
  *
  * @group linter
  */
-class ArcanistSpellingLinter extends ArcanistLinter {
+final class ArcanistSpellingLinter extends ArcanistLinter {
 
   const LINT_SPELLING_PICKY = 0;
   const LINT_SPELLING_IMPORTANT = 1;

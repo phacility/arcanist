@@ -21,7 +21,7 @@
  *
  * @group workingcopy
  */
-class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
+final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   protected $svnStatus;
   protected $svnBaseRevisions;

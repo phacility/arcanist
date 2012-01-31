@@ -21,7 +21,7 @@
  *
  * @group workflow
  */
-class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT

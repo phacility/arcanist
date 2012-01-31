@@ -21,7 +21,7 @@
  *
  * @group workflow
  */
-class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT

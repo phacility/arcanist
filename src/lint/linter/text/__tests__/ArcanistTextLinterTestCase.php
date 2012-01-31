@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-class ArcanistTextLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistTextLinterTestCase extends ArcanistLinterTestCase {
 
   public function testTextLint() {
     $linter = new ArcanistTextLinter();

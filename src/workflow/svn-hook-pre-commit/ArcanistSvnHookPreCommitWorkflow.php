@@ -21,7 +21,7 @@
  *
  * @group workflow
  */
-class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
