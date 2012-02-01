@@ -265,6 +265,9 @@ EOTEXT
         'help' =>
           'Emit machine-readable JSON. EXPERIMENTAL! Probably does not work!',
       ),
+      'no-amend' => array(
+        'help' => 'Never amend commits in the working copy.',
+      ),
       '*' => 'paths',
     );
   }
@@ -445,7 +448,7 @@ EOTEXT
         if ($this->requiresRepositoryAPI()) {
           $repository_api = $this->getRepositoryAPI();
           if (($repository_api instanceof ArcanistGitAPI) &&
-              !$this->isHistoryImmutable()) {
+              $this->shouldAmend()) {
             echo "Updating commit message...\n";
             $repository_api->amendGitHeadCommit($revised_message);
           }
@@ -954,6 +957,10 @@ EOTEXT
     }
   }
 
+  private function shouldAmend() {
+    return !$this->isHistoryImmutable() && !$this->getArgument('no-amend');
+  }
+
 
 /* -(  Lint and Unit Tests  )------------------------------------------------ */
 
@@ -979,7 +986,7 @@ EOTEXT
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
 
-      if (!$this->isHistoryImmutable()) {
+      if (!$this->shouldAmend()) {
         // TODO: We should offer to create a checkpoint commit.
         $lint_workflow->setShouldAmendChanges(true);
       }
