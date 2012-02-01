@@ -81,10 +81,6 @@ EOTEXT
   }
 
   public function run() {
-    $this->writeStatusMessage(
-      phutil_console_format(
-        "**WARNING:** 'arc land' is new and experimental.\n"));
-
     $branch = $this->getArgument('branch');
     if (count($branch) !== 1) {
       throw new ArcanistUsageException(
@@ -256,6 +252,15 @@ EOTEXT
       if ($err) {
         throw new ArcanistUsageException("'git push' failed.");
       }
+
+      $mark_workflow = $this->buildChildWorkflow(
+        'mark-committed',
+        array(
+          '--finalize',
+          '--quiet',
+          $revision['id'],
+        ));
+      $mark_workflow->run();
 
       echo "\n";
     }

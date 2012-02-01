@@ -45,6 +45,9 @@ EOTEXT
           "revision is accepted. Continue even if the mark can't happen. This ".
           "is a soft version of 'mark-committed' used by other workflows.",
       ),
+      'quiet' => array(
+        'help' =>  'Do not print a success message.',
+      ),
       '*' => 'revision',
     );
   }
@@ -149,11 +152,13 @@ EOTEXT
       $is_finalized = false;
     }
 
-    if ($is_finalized) {
-      $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
-      echo phutil_console_wrap($message)."\n";
-    } else {
-      echo "Done.\n";
+    if (!$this->getArgument('quiet')) {
+      if ($is_finalized) {
+        $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
+        echo phutil_console_wrap($message)."\n";
+      } else {
+        echo "Done.\n";
+      }
     }
 
     return 0;
