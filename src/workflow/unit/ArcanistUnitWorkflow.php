@@ -193,7 +193,9 @@ EOTEXT
     }
 
     if ($coverage) {
-      $file_coverage = array();
+      $file_coverage = array_fill_keys(
+        $paths,
+        0);
       $file_reports = array();
       foreach ($coverage as $file => $reports) {
         $report = ArcanistUnitTestResult::mergeCoverage($reports);
@@ -218,9 +220,12 @@ EOTEXT
           sprintf('% 3d', (int)(100 * $coverage)),
           $file);
 
-        if ($this->getArgument('detailed-coverage')) {
+        $full_path = $working_copy->getProjectRoot().'/'.$file;
+        if ($this->getArgument('detailed-coverage') &&
+            Filesystem::pathExists($full_path) &&
+            is_file($full_path)) {
           echo $this->renderDetailedCoverageReport(
-            $file,
+            Filesystem::readFile($full_path),
             $file_reports[$file]);
         }
       }
@@ -298,8 +303,7 @@ EOTEXT
     return ' <1ms';
   }
 
-  private function renderDetailedCoverageReport($file, $report) {
-    $data = $this->getRepositoryAPI()->getCurrentFileData($file);
+  private function renderDetailedCoverageReport($data, $report) {
     $data = explode("\n", $data);
 
     $out = '';
