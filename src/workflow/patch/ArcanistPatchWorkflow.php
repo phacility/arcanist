@@ -232,7 +232,7 @@ EOTEXT
       // no error means git rev-parse found a branch
       if (!$err) {
         echo phutil_console_format(
-          "Branch name {$proposed_name} alread exists; trying a new name.\n"
+          "Branch name {$proposed_name} already exists; trying a new name.\n"
         );
         continue;
       } else {
@@ -354,6 +354,12 @@ EOTEXT
         throw $ex;
       }
     }
+    $force = $this->getArgument('force', false);
+    if ($force) {
+      // force means don't do any sanity checks about the patch
+    } else {
+      $this->sanityCheck($bundle);
+    }
 
     // we should update the working copy before we do ANYTHING else
     if ($this->shouldUpdateWorkingCopy()) {
@@ -362,13 +368,6 @@ EOTEXT
 
     if ($this->shouldBranch()) {
       $this->createBranch($bundle);
-    }
-
-    $force = $this->getArgument('force', false);
-    if ($force) {
-      // force means don't do any sanity checks about the patch
-    } else {
-      $this->sanityCheckPatch($bundle);
     }
 
     $repository_api = $this->getRepositoryAPI();
@@ -570,12 +569,6 @@ EOTEXT
 
       return $patch_err;
     } else if ($repository_api instanceof ArcanistGitAPI) {
-      // if we're going to commit, we should make sure the working copy
-      // is clean
-      if ($this->shouldCommit()) {
-        $this->requireCleanWorkingCopy();
-      }
-
       $future = new ExecFuture(
         '(cd %s; git apply --index --reject)',
         $repository_api->getPath());
@@ -663,7 +656,10 @@ EOTEXT
   /**
    * Do the best we can to prevent PEBKAC and id10t issues.
    */
-  private function sanityCheckPatch(ArcanistBundle $bundle) {
+  private function sanityCheck(ArcanistBundle $bundle) {
+
+    // Require clean working copy
+    $this->requireCleanWorkingCopy();
 
     // Check to see if the bundle's project id matches the working copy
     // project id
