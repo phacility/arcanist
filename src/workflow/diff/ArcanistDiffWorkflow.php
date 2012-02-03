@@ -986,7 +986,7 @@ EOTEXT
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
 
-      if (!$this->shouldAmend()) {
+      if ($this->shouldAmend()) {
         // TODO: We should offer to create a checkpoint commit.
         $lint_workflow->setShouldAmendChanges(true);
       }
