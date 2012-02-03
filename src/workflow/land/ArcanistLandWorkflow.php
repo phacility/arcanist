@@ -109,6 +109,8 @@ EOTEXT
     $this->requireCleanWorkingCopy();
     $repository_api->parseRelativeLocalCommit(array($remote.'/'.$onto));
 
+    $old_branch = $repository_api->getBranchName();
+
     execx(
       '(cd %s && git checkout %s)',
       $repository_api->getPath(),
@@ -282,6 +284,18 @@ EOTEXT
         '(cd %s && git branch -D %s)',
         $repository_api->getPath(),
         $branch);
+    }
+
+    // If we were on some branch A and the user ran "arc land B", switch back
+    // to A.
+    if (($old_branch != $branch) && ($old_branch != $onto)) {
+      execx(
+        '(cd %s && git checkout %s)',
+        $repository_api->getPath(),
+        $old_branch);
+      echo phutil_console_format(
+        "Switched back to branch **%s**.\n",
+        $old_branch);
     }
 
     echo "Done.\n";
