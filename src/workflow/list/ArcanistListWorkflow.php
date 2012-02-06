@@ -26,7 +26,7 @@ final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **list**
-          Supports: git, svn
+          Supports: git, svn, hg
           List your open Differential revisions.
 EOTEXT
       );
@@ -45,40 +45,55 @@ EOTEXT
   }
 
   public function run() {
-
-    $conduit = $this->getConduit();
-    $repository_api = $this->getRepositoryAPI();
-
-    $revision_future = $conduit->callMethod(
-      'differential.find',
+    $revisions = $this->getConduit()->callMethodSynchronous(
+      'differential.query',
       array(
-        'guids' => array($this->getUserPHID()),
-        'query' => 'open',
+        'authors' => array($this->getUserPHID()),
+        'status'  => 'status-open',
       ));
-
-    $revisions = array();
-    foreach ($revision_future->resolve() as $revision_dict) {
-      $revisions[] = ArcanistDifferentialRevisionRef::newFromDictionary(
-        $revision_dict);
-    }
 
     if (!$revisions) {
       echo "You have no open Differential revisions.\n";
       return 0;
     }
 
+    $repository_api = $this->getRepositoryAPI();
 
-    foreach ($revisions as $revision) {
-      $revision_path = Filesystem::resolvePath($revision->getSourcePath());
+    $info = array();
+
+    $status_len = 0;
+    foreach ($revisions as $key => $revision) {
+      $revision_path = Filesystem::resolvePath($revision['sourcePath']);
       $current_path  = Filesystem::resolvePath($repository_api->getPath());
-      $from_here = ($revision_path == $current_path);
+      if ($revision_path == $current_path) {
+        $info[$key]['here'] = 1;
+      } else {
+        $info[$key]['here'] = 0;
+      }
+      $info[$key]['sort'] = sprintf(
+        '%d%04d%08d',
+        $info[$key]['here'],
+        $revision['status'],
+        $revision['id']);
+      $info[$key]['statusColorized'] =
+        BranchInfo::renderColorizedRevisionStatus(
+          $revision['statusName']);
+      $status_len = max(
+        $status_len,
+        strlen($info[$key]['statusColorized']));
+    }
 
+    $info = isort($info, 'sort');
+    foreach ($info as $key => $spec) {
+      $revision = $revisions[$key];
       printf(
-        "  %15s | %s | D%d | %s\n",
-        $revision->getStatusName(),
-        $from_here ? '*' : ' ',
-        $revision->getID(),
-        $revision->getName());
+        "%s %-".($status_len + 4)."s D%d: %s\n",
+        $spec['here']
+          ? phutil_console_format('**%s**', '*')
+          : ' ',
+        $spec['statusColorized'],
+        $revision['id'],
+        $revision['title']);
     }
 
     return 0;
