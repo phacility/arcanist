@@ -19,9 +19,10 @@
 /**
  * Base test case for the very simple libphutil test framework.
  *
- * @task assert   Making Test Assertions
- * @task hook     Hooks for Setup and Teardown
- * @task internal Internals
+ * @task assert       Making Test Assertions
+ * @task exceptions   Exception Handling
+ * @task hook         Hooks for Setup and Teardown
+ * @task internal     Internals
  *
  * @group unitrun
  */
@@ -106,6 +107,137 @@ abstract class ArcanistPhutilTestCase {
   final protected function assertFailure($message) {
     $this->failTest($message);
     throw new ArcanistPhutilTestTerminatedException($message);
+  }
+
+
+/* -(  Exception Handling  )------------------------------------------------- */
+
+
+  /**
+   * Straightforward method for writing unit tests which check if some block of
+   * code throws an exception. For example, this allows you to test the
+   * exception behavior of ##is_a_fruit()## on various inputs:
+   *
+   *    public function testFruit() {
+   *      $this->tryTestCases(
+   *        array(
+   *          'apple is a fruit'    => new Apple(),
+   *          'rock is not a fruit' => new Rock(),
+   *        ),
+   *        array(
+   *          true,
+   *          false,
+   *        ),
+   *        array($this, 'tryIsAFruit'),
+   *        'NotAFruitException');
+   *    }
+   *
+   *    protected function tryIsAFruit($input) {
+   *      is_a_fruit($input);
+   *    }
+   *
+   * @param map       Map of test case labels to test case inputs.
+   * @param list      List of expected results, true to indicate that the case
+   *                  is expected to succeed and false to indicate that the case
+   *                  is expected to throw.
+   * @param callable  Callback to invoke for each test case.
+   * @param string    Optional exception class to catch, defaults to
+   *                  'Exception'.
+   * @return void
+   * @task exceptions
+   */
+  final protected function tryTestCases(
+    array $inputs,
+    array $expect,
+    $callable,
+    $exception_class = 'Exception') {
+
+    if (count($inputs) !== count($expect)) {
+      $this->assertFailure(
+        "Input and expectations must have the same number of values.");
+    }
+
+    $labels = array_keys($inputs);
+    $inputs = array_values($inputs);
+    $expecting = array_values($expect);
+    foreach ($inputs as $idx => $input) {
+      $expect = $expecting[$idx];
+      $label  = $labels[$idx];
+
+      $caught = null;
+      try {
+        call_user_func($callable, $input);
+      } catch (Exception $ex) {
+        if ($ex instanceof ArcanistPhutilTestTerminatedException) {
+          throw $ex;
+        }
+        if (!($ex instanceof $exception_class)) {
+          throw $ex;
+        }
+        $caught = $ex;
+      }
+
+      $actual = !($caught instanceof Exception);
+
+      if ($expect === $actual) {
+        if ($expect) {
+          $message = "Test case '{$label}' did not throw, as expected.";
+        } else {
+          $message = "Test case '{$label}' threw, as expected.";
+        }
+      } else {
+        if ($expect) {
+          $message = "Test case '{$label}' was expected to succeed, but it ".
+                     "raised an exception of class ".get_class($ex)." with ".
+                     "message: ".$ex->getMessage();
+        } else {
+          $message = "Test case '{$label}' was expected to raise an ".
+                     "exception, but it did not throw anything.";
+        }
+      }
+
+      $this->assertEqual($expect, $actual, $message);
+    }
+  }
+
+
+  /**
+   * Convenience wrapper around @{method:tryTestCases} for cases where your
+   * inputs are scalar. For example:
+   *
+   *    public function testFruit() {
+   *      $this->tryTestCaseMap(
+   *        array(
+   *          'apple' => true,
+   *          'rock'  => false,
+   *        ),
+   *        array($this, 'tryIsAFruit'),
+   *        'NotAFruitException');
+   *    }
+   *
+   *    protected function tryIsAFruit($input) {
+   *      is_a_fruit($input);
+   *    }
+   *
+   * For cases where your inputs are not scalar, use @{method:tryTestCases}.
+   *
+   * @param map       Map of scalar test inputs to expected success (true
+   *                  expects success, false expects an exception).
+   * @param callable  Callback to invoke for each test case.
+   * @param string    Optional exception class to catch, defaults to
+   *                  'Exception'.
+   * @return void
+   * @task exceptions
+   */
+  final protected function tryTestCaseMap(
+    array $map,
+    $callable,
+    $exception_class = 'Exception') {
+    return $this->tryTestCases(
+      array_combine(array_keys($map), array_keys($map)),
+      array_values($map),
+      $callable,
+      $exception_class);
   }
 
 
@@ -279,6 +411,9 @@ abstract class ArcanistPhutilTestCase {
     return $this;
   }
 
+  /**
+   * @phutil-external-symbol function xdebug_start_code_coverage
+   */
   final private function beginCoverage() {
     if (!$this->enableCoverage) {
       return;
@@ -288,6 +423,10 @@ abstract class ArcanistPhutilTestCase {
     xdebug_start_code_coverage(XDEBUG_CC_UNUSED | XDEBUG_CC_DEAD_CODE);
   }
 
+  /**
+   * @phutil-external-symbol function xdebug_get_code_coverage
+   * @phutil-external-symbol function xdebug_stop_code_coverage
+   */
   final private function endCoverage() {
     if (!$this->enableCoverage) {
       return;

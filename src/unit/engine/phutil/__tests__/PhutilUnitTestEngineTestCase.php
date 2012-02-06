@@ -40,7 +40,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
     self::$allTestsCounter--;
 
-    $actual_test_count = 2;
+    $actual_test_count = 4;
 
     $this->assertEqual(
       $actual_test_count,
@@ -84,6 +84,34 @@ final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
   public function testFail() {
     $this->assertFailure('This test is expected to fail.');
+  }
+
+  public function testTryTestCases() {
+    $this->tryTestCases(
+      array(
+        true,
+        false,
+      ),
+      array(
+        true,
+        false,
+      ),
+      array($this, 'throwIfFalsey'));
+  }
+
+  public function testTryTestMap() {
+    $this->tryTestCaseMap(
+      array(
+        1 => true,
+        0 => false,
+      ),
+      array($this, 'throwIfFalsey'));
+  }
+
+  protected function throwIfFalsey($input) {
+    if (!$input) {
+      throw new Exception("This is a negative test case!");
+    }
   }
 
 }
