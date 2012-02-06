@@ -688,14 +688,7 @@ abstract class ArcanistBaseWorkflow {
 
     $repository_api = $this->getRepositoryAPI();
 
-    $candidates = array();
-    $cur_path = $repository_api->getPath();
-    foreach ($revisions as $revision) {
-      $source_path = $revision->getSourcePath();
-      if ($source_path == $cur_path) {
-        $candidates[] = $revision;
-      }
-    }
+    $candidates = $revisions;
 
     if (count($candidates) == 1) {
       $candidate = reset($candidates);

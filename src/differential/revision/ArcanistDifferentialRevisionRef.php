@@ -26,14 +26,12 @@ final class ArcanistDifferentialRevisionRef {
   protected $id;
   protected $name;
   protected $statusName;
-  protected $sourcePath;
 
   public static function newFromDictionary(array $dictionary) {
     $ref = new ArcanistDifferentialRevisionRef();
     $ref->id         = $dictionary['id'];
     $ref->name       = $dictionary['name'];
     $ref->statusName = $dictionary['statusName'];
-    $ref->sourcePath = $dictionary['sourcePath'];
     return $ref;
   }
 
@@ -51,10 +49,6 @@ final class ArcanistDifferentialRevisionRef {
 
   public function getStatusName() {
     return $this->statusName;
-  }
-
-  public function getSourcePath() {
-    return $this->sourcePath;
   }
 
 }
