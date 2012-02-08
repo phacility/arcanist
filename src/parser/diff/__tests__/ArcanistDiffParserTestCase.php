@@ -477,6 +477,16 @@ EOTEXT
           ArcanistDiffChangeType::FILE_BINARY,
           $change->getFileType());
         break;
+      case 'git-odd-filename.gitdiff':
+        $this->assertEqual(2, count($changes));
+        $change = reset($changes);
+        $this->assertEqual(
+          'old/'."\342\210\206".'.jpg',
+          $change->getOldPath());
+        $this->assertEqual(
+          'new/'."\342\210\206".'.jpg',
+          $change->getCurrentPath());
+        break;
       case 'hg-binary-change.hgdiff':
       case 'hg-solo-binary-change.hgdiff':
         $this->assertEqual(1, count($changes));
