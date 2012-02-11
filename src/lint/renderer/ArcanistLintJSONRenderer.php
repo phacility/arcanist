@@ -52,6 +52,6 @@ final class ArcanistLintJSONRenderer {
   }
 
   public function renderOkayResult() {
-    return "\n";
+    return "";
   }
 }

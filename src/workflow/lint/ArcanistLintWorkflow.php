@@ -185,14 +185,7 @@ EOTEXT
       case 'json':
         $renderer = new ArcanistLintJSONRenderer();
         $prompt_patches = false;
-        $apply_patches = false;
-        if ($this->getArgument('never-apply-patches') ||
-            $this->getArgument('apply-patches')) {
-          throw new ArcanistUsageException(
-            "Automatic patch suggestion is disabled when using JSON output. ".
-            "Remove --never-apply-patches or --apply-patches."
-          );
-        }
+        $apply_patches = $this->getArgument('apply-patches');
         break;
       case 'summary':
         $renderer = new ArcanistLintSummaryRenderer();
