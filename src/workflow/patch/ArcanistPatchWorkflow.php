@@ -213,10 +213,9 @@ EOTEXT
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
+    $base_name      = "arcpatch";
     if ($revision_id) {
-      $base_name = "D{$revision_id}";
-    } else {
-      $base_name = "Arcanist-created-branch";
+      $base_name .= "-D{$revision_id}";
     }
 
     $suffixes = array(null, '-1', '-2', '-3');
