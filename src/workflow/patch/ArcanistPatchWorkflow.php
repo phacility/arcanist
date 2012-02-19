@@ -770,6 +770,12 @@ EOTEXT
   }
 
   private function loadRevisionFromHash($hash) {
+    // TODO -- de-hack this as permissions become more clear with things
+    // like T848 (add scope to OAuth)
+    if (!$this->isConduitAuthenticated()) {
+      return null;
+    }
+
     $conduit = $this->getConduit();
 
     $revisions = $conduit->callMethodSynchronous(

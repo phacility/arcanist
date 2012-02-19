@@ -158,7 +158,7 @@ abstract class ArcanistBaseWorkflow {
    * @task conduit
    */
   final public function setConduitCredentials(array $credentials) {
-    if ($this->conduitAuthenticated) {
+    if ($this->isConduitAuthenticated()) {
       throw new Exception(
         "You may not set new credentials after authenticating conduit.");
     }
@@ -196,7 +196,7 @@ abstract class ArcanistBaseWorkflow {
    * @task conduit
    */
   final public function authenticateConduit() {
-    if ($this->conduitAuthenticated) {
+    if ($this->isConduitAuthenticated()) {
       return $this;
     }
 
@@ -256,6 +256,14 @@ abstract class ArcanistBaseWorkflow {
     $this->conduitAuthenticated = true;
 
     return $this;
+  }
+
+  /**
+   * @return bool True if conduit is authenticated, false otherwise.
+   * @task conduit
+   */
+  final protected function isConduitAuthenticated() {
+    return (bool) $this->conduitAuthenticated;
   }
 
 
