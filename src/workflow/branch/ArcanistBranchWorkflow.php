@@ -104,18 +104,12 @@ EOTEXT
    */
   private function loadDifferentialStatuses($rev_ids) {
     $conduit = $this->getConduit();
-    $revision_future = $conduit->callMethod(
-      'differential.find',
+    $revisions = $conduit->callMethodSynchronous(
+      'differential.query',
       array(
-        'guids' => $rev_ids,
-        'query' => 'revision-ids',
+        'ids'   => $rev_ids,
       ));
-    $revisions = array();
-    foreach ($revision_future->resolve() as $revision_dict) {
-      $revisions[] = ArcanistDifferentialRevisionRef::newFromDictionary(
-        $revision_dict);
-    }
-    $statuses = mpull($revisions, 'getStatusName', 'getId');
+    $statuses = ipull($revisions, 'statusName', 'id');
     return $statuses;
   }
 
