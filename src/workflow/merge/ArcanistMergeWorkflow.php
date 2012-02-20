@@ -27,19 +27,15 @@ final class ArcanistMergeWorkflow extends ArcanistBaseWorkflow {
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
       **merge** [__branch__] [--revision __revision_id__] [--show]
-          Supports: git, hg
-          Execute a "git merge <branch>" or "hg merge --rev <branch>" of a
-          reviewed branch, but give the merge commit a useful commit message
-          with information from Differential.
+          Supports: hg
+          Execute a "hg merge --rev <branch>" of a reviewed branch, but give the
+          merge commit a useful commit message with information from
+          Differential.
 
-          In Git, this operates like "git merge <branch>" and should be executed
-          from the branch you want to merge __into__, just like "git merge".
-          Branch is required.
-
-          In Mercurial, this operates like "hg merge" (default) or
-          "hg merge --rev <branch>" and should be executed from the branch you
-          want to merge __from__, just like "hg merge". It will also effect an
-          "hg commit" with a rich commit message.
+          Tthis operates like "hg merge" (default) or "hg merge --rev <branch>"
+          and should be executed from the branch you want to merge __from__,
+          just like "hg merge". It will also effect an "hg commit" with a rich
+          commit message if possible.
 
 EOTEXT
       );
@@ -78,11 +74,19 @@ EOTEXT
   }
 
   public function run() {
+    $repository_api = $this->getRepositoryAPI();
+
+    if ($repository_api instanceof ArcanistGitAPI) {
+      throw new ArcanistUsageException(
+        "'arc merge' no longer supports git. Use ".
+        "'arc land --keep-branch --hold --merge <feature_branch>' instead.");
+    }
+
     $this->writeStatusMessage(
       phutil_console_format(
         "**WARNING:** 'arc merge' is new and experimental.\n"));
 
-    $repository_api = $this->getRepositoryAPI();
+
     if (!$repository_api->supportsLocalBranchMerge()) {
       $name = $repository_api->getSourceControlSystemName();
       throw new ArcanistUsageException(
@@ -157,7 +161,7 @@ EOTEXT
   }
 
   protected function getSupportedRevisionControlSystems() {
-    return array('git', 'hg');
+    return array('hg');
   }
 
 }

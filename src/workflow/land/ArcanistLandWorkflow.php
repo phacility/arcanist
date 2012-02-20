@@ -25,7 +25,7 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **land** __branch__ [--onto __master__]
+      **land** [__options__] __branch__ [--onto __master__]
           Supports: git
 
           Land an accepted change (currently sitting in local feature branch
@@ -34,8 +34,9 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
           In mutable repositories, this will perform a --squash merge (the
           entire branch will be represented by one commit on __master__). In
-          immutable repositories, it will perform a --no-ff merge (the branch
-          will always be merged into __master__ with a merge commit).
+          immutable repositories (or when --merge is provided), it will perform
+          a --no-ff merge (the branch will always be merged into __master__ with
+          a merge commit).
 
 EOTEXT
       );
@@ -76,6 +77,11 @@ EOTEXT
         'param' => 'origin',
         'help' => "Push to a remote other than 'origin' (default).",
       ),
+      'merge' => array(
+        'help' => 'Perform a --no-ff merge, not a --squash merge. If the '.
+                  'project is marked as having an immutable history, this is '.
+                  'the default behavior.',
+      ),
       '*' => 'branch',
     );
   }
@@ -90,7 +96,8 @@ EOTEXT
 
     $remote = $this->getArgument('remote', 'origin');
     $onto = $this->getArgument('onto', 'master');
-    $is_immutable = $this->isHistoryImmutable();
+    $is_immutable = $this->isHistoryImmutable() ||
+      $this->getArgument('merge');
 
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
@@ -192,7 +199,7 @@ EOTEXT
 
     if ($revision['status'] != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(
-        "Revision 'D{$id}: {$rev_title}' has not been accepted. Continue ".
+        "Revision 'D{$rev_id}: {$rev_title}' has not been accepted. Continue ".
         "anyway?");
       if (!$ok) {
         throw new ArcanistUserAbortException();
@@ -224,7 +231,7 @@ EOTEXT
         throw new ArcanistUsageException(
           "'git merge' failed. Your working copy has been left in a partially ".
           "merged state. You can: abort with 'git merge --abort'; or follow ".
-          "the instructions to complete the merge, and then push.");
+          "the instructions to complete the merge.");
       }
     } else {
       // In mutable histories, do a --squash merge.
