@@ -165,6 +165,13 @@ EOTEXT
         'param' => 'revision_id',
         'help'  => "Always update a specific revision.",
       ),
+      'auto' => array(
+        'help' => "(Unstable!) Heuristically select --create or --update. ".
+                  "This may become the default behvaior of arc.",
+        'conflicts' => array(
+          'raw',
+        ),
+      ),
       'nounit' => array(
         'help' =>
           "Do not run unit tests.",
@@ -277,26 +284,7 @@ EOTEXT
   }
 
   public function run() {
-
-    if ($this->requiresRepositoryAPI()) {
-      $repository_api = $this->getRepositoryAPI();
-      if ($this->getArgument('less-context')) {
-        $repository_api->setDiffLinesOfContext(3);
-      }
-    }
-
-    $output_json = $this->getArgument('json');
-    if ($output_json) {
-      // TODO: We should move this to a higher-level and put an indirection
-      // layer between echoing stuff and stdout.
-      ob_start();
-    }
-
-    $conduit = $this->getConduit();
-
-    if ($this->requiresWorkingCopy()) {
-      $this->requireCleanWorkingCopy();
-    }
+    $this->runDiffSetupBasics();
 
     $paths = $this->generateAffectedPaths();
 
@@ -319,6 +307,7 @@ EOTEXT
       'unitStatus'                => $this->getUnitStatus($unit_result),
     ) + $this->buildDiffSpecification();
 
+    $conduit = $this->getConduit();
     $diff_info = $conduit->callMethodSynchronous(
       'differential.creatediff',
       $diff_spec);
@@ -332,6 +321,8 @@ EOTEXT
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
     $this->updateLocalDiffProperty();
+
+    $output_json = $this->getArgument('json');
 
     if ($this->shouldOnlyCreateDiff()) {
       if (!$output_json) {
@@ -475,6 +466,26 @@ EOTEXT
     return 0;
   }
 
+  private function runDiffSetupBasics() {
+    if ($this->requiresRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+      if ($this->getArgument('less-context')) {
+        $repository_api->setDiffLinesOfContext(3);
+      }
+    }
+
+    $output_json = $this->getArgument('json');
+    if ($output_json) {
+      // TODO: We should move this to a higher-level and put an indirection
+      // layer between echoing stuff and stdout.
+      ob_start();
+    }
+
+    if ($this->requiresWorkingCopy()) {
+      $this->requireCleanWorkingCopy();
+    }
+  }
+
   protected function shouldOnlyCreateDiff() {
 
     if ($this->getArgument('create')) {
@@ -482,6 +493,10 @@ EOTEXT
     }
 
     if ($this->getArgument('update')) {
+      return false;
+    }
+
+    if ($this->getArgument('auto')) {
       return false;
     }
 
@@ -1096,11 +1111,33 @@ EOTEXT
   private function buildCommitMessage() {
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
+    $is_auto   = $this->getArgument('auto');
     $is_raw = $this->isRawDiffSource();
     $is_message = $this->getArgument('use-commit-message');
 
     if ($is_message) {
       return $this->getCommitMessageFromCommit($is_message);
+    }
+
+    if ($is_auto) {
+      $repository_api = $this->getRepositoryAPI();
+      $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
+        $this->getConduit(),
+        array(
+          'authors' => array($this->getUserPHID()),
+        ));
+      if (!$revisions) {
+        $is_create = true;
+      } else if (count($revisions) == 1) {
+        $revision = head($revisions);
+        $is_update = $revision['id'];
+      } else {
+        throw new ArcanistUsageException(
+          "There are several revisions in the specified commit range:\n\n".
+          $this->renderRevisionList($revisions)."\n".
+          "Use '--update' to choose one, or '--create' to create a new ".
+          "revision.");
+      }
     }
 
     $message = null;
