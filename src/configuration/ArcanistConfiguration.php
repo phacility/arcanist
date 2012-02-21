@@ -100,6 +100,10 @@ class ArcanistConfiguration {
     return $workflows;
   }
 
+  final public function isValidWorkflow($workflow) {
+    return (bool)$this->buildWorkflow($workflow);
+  }
+
   public function willRunWorkflow($command, ArcanistBaseWorkflow $workflow) {
     // This is a hook.
   }

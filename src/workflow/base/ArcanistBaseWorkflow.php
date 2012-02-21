@@ -952,6 +952,17 @@ abstract class ArcanistBaseWorkflow {
     return $user_config;
   }
 
+
+  public static function writeUserConfigurationFile($config) {
+    $json_encoder = new PhutilJSON();
+    $json = $json_encoder->encodeFormatted($config);
+
+    $path = self::getUserConfigurationFileLocation();
+    Filesystem::writeFile($path, $json);
+    execx('chmod 600 %s', $path);
+  }
+
+
   /**
    * Write a message to stderr so that '--json' flags or stdout which is meant
    * to be piped somewhere aren't disrupted.

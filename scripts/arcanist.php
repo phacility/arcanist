@@ -164,15 +164,40 @@ try {
   }
 
   $command = strtolower($args[0]);
+  $args = array_slice($args, 1);
   $workflow = $config->buildWorkflow($command);
   if (!$workflow) {
-    throw new ArcanistUsageException(
-      "Unknown command '{$command}'. Try 'arc help'.");
+
+    // If the user has an alias, like 'arc alias dhelp diff help', look it up
+    // and substitute it. We do this only after trying to resolve the workflow
+    // normally to prevent you from doing silly things like aliasing 'alias'
+    // to something else.
+
+    list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
+      $command,
+      $config,
+      $args);
+
+    if ($new_command) {
+      $workflow = $config->buildWorkflow($new_command);
+    }
+
+    if (!$workflow) {
+      throw new ArcanistUsageException(
+        "Unknown command '{$command}'. Try 'arc help'.");
+    } else {
+      if ($config_trace_mode) {
+        $aliases = ArcanistAliasWorkflow::getAliases();
+        $target = implode(' ', idx($aliases, $command, array()));
+        echo "[alias: 'arc {$command}' -> 'arc {$target}']\n";
+      }
+      $command = $new_command;
+    }
   }
   $workflow->setArcanistConfiguration($config);
   $workflow->setCommand($command);
   $workflow->setWorkingDirectory($working_directory);
-  $workflow->parseArguments(array_slice($args, 1));
+  $workflow->parseArguments($args);
 
   $need_working_copy    = $workflow->requiresWorkingCopy();
   $need_conduit         = $workflow->requiresConduit();

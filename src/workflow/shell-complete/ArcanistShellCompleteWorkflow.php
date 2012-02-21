@@ -93,13 +93,33 @@ EOTEXT
         $complete[] = $name;
       }
 
+      // Also permit autocompletion of "arc alias" commands.
+      foreach (ArcanistAliasWorkflow::getAliases() as $key => $value) {
+        $complete[] = $key;
+      }
+
       echo implode(' ', $complete)."\n";
       return 0;
     } else {
       $workflow = $arc_config->buildWorkflow($argv[1]);
       if (!$workflow) {
-        return 1;
+        list($new_command, $new_args) = ArcanistAliasWorkflow::resolveAliases(
+          $argv[1],
+          $arc_config,
+          array_slice($argv, 2));
+        if ($new_command) {
+          $workflow = $arc_config->buildWorkflow($new_command);
+        }
+        if (!$workflow) {
+          return 1;
+        } else {
+          $argv = array_merge(
+            array($argv[0]),
+            array($new_command),
+            $new_args);
+        }
       }
+
       $arguments = $workflow->getArguments();
 
       $prev = idx($argv, $pos - 1, null);

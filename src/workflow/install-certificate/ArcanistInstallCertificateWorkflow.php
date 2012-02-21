@@ -110,14 +110,8 @@ EOTEXT
       'cert' => $info['certificate'],
     );
 
-    $json_encoder = new PhutilJSON();
-    $json = $json_encoder->encodeFormatted($config);
-
     echo "Writing ~/.arcrc...\n";
-
-    $path = self::getUserConfigurationFileLocation();
-    Filesystem::writeFile($path, $json);
-    execx('chmod 600 %s', $path);
+    self::writeUserConfigurationFile($config);
 
     echo phutil_console_format(
       "<bg:green>** SUCCESS! **</bg> Certificate installed.\n");

@@ -8,6 +8,7 @@
 phutil_register_library_map(array(
   'class' =>
   array(
+    'ArcanistAliasWorkflow' => 'workflow/alias',
     'ArcanistAmendWorkflow' => 'workflow/amend',
     'ArcanistApacheLicenseLinter' => 'lint/linter/apachelicense',
     'ArcanistApacheLicenseLinterTestCase' => 'lint/linter/apachelicense/__tests__',
@@ -116,6 +117,7 @@ phutil_register_library_map(array(
   ),
   'requires_class' =>
   array(
+    'ArcanistAliasWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistAmendWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistApacheLicenseLinter' => 'ArcanistLicenseLinter',
     'ArcanistApacheLicenseLinterTestCase' => 'ArcanistLinterTestCase',
