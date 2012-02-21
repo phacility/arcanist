@@ -37,7 +37,16 @@
  * verified information about the user identity by calling @{method:getUserPHID}
  * or @{method:getUserName} after authentication occurs.
  *
+ * = Scratch Files =
+ *
+ * Arcanist workflows can read and write 'scratch files', which are temporary
+ * files stored in the project that persist across commands. They can be useful
+ * if you want to save some state, or keep a copy of a long message the user
+ * entered in something goes wrong..
+ *
+ *
  * @task  conduit   Conduit
+ * @task  scratch   Scratch Files
  * @group workflow
  * @stable
  */
@@ -601,6 +610,16 @@ abstract class ArcanistBaseWorkflow {
 
     $untracked = $api->getUntrackedChanges();
     if ($this->shouldRequireCleanUntrackedFiles()) {
+
+      // Exempt ".arc/" scratch files from this warning so that things work
+      // a little more smoothly if no one has gotten around to adding .arc to
+      // the ignore list.
+      foreach ($untracked as $key => $path) {
+        if (preg_match('@\.arc/@', $path)) {
+          unset($untracked[$key]);
+        }
+      }
+
       if (!empty($untracked)) {
         echo "You have untracked files in this working copy.\n\n".
              $working_copy_desc.
@@ -1000,6 +1019,127 @@ abstract class ArcanistBaseWorkflow {
       $list[] = '     - D'.$revision['id'].': '.$revision['title']."\n";
     }
     return implode('', $list);
+  }
+
+/* -(  Scratch Files  )------------------------------------------------------ */
+
+
+  /**
+   * Try to read a scratch file, if it exists and is readable.
+   *
+   * @param string Scratch file name.
+   * @return mixed String for file contents, or false for failure.
+   * @task scratch
+   */
+  protected function readScratchFile($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if (!$full_path) {
+      return false;
+    }
+
+    if (!Filesystem::pathExists($full_path)) {
+      return false;
+    }
+
+    try {
+      $result = Filesystem::readFile($full_path);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return $result;
+  }
+
+
+  /**
+   * Try to write a scratch file, if there's somewhere to put it and we can
+   * write there.
+   *
+   * @param  string Scratch file name to write.
+   * @param  string Data to write.
+   * @return bool   True on success, false on failure.
+   * @task scratch
+   */
+  protected function writeScratchFile($path, $data) {
+    $dir = $this->getScratchFilePath('');
+    if (!$dir) {
+      return false;
+    }
+
+    if (!Filesystem::pathExists($dir)) {
+      try {
+        execx('mkdir %s', $dir);
+      } catch (Exception $ex) {
+        return false;
+      }
+    }
+
+    try {
+      Filesystem::writeFile($this->getScratchFilePath($path), $data);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  /**
+   * Try to remove a scratch file.
+   *
+   * @param   string  Scratch file name to remove.
+   * @return  bool    True if the file was removed successfully.
+   * @task scratch
+   */
+  protected function removeScratchFile($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if (!$full_path) {
+      return false;
+    }
+
+    try {
+      Filesystem::remove($full_path);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  /**
+   * Get a human-readable description of the scratch file location.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  String, or false on failure.
+   * @task scratch
+   */
+  protected function getReadableScratchFilePath($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if ($full_path) {
+      return Filesystem::readablePath(
+        $full_path,
+        $this->getRepositoryAPI()->getPath());
+    } else {
+      return false;
+    }
+  }
+
+
+  /**
+   * Get the path to a scratch file, if possible.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  File path, or false on failure.
+   * @task scratch
+   */
+  protected function getScratchFilePath($path) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+
+    $repository_api = $this->getRepositoryAPI();
+    return $repository_api->getPath('.arc/'.$path);
   }
 
 }

@@ -463,6 +463,8 @@ EOTEXT
       ob_get_clean();
     }
 
+    $this->removeScratchFile('create-message');
+
     return 0;
   }
 
@@ -1185,37 +1187,109 @@ EOTEXT
   private function getCommitMessageFromUser() {
     $conduit = $this->getConduit();
 
-    $template = $conduit->callMethodSynchronous(
-      'differential.getcommitmessage',
-      array(
-        'revision_id' => null,
-        'edit' => true,
-      ));
+    $template = null;
 
-    $template =
-      $template.
-      "\n\n".
-      "# Describe this revision.".
-      "\n";
-    $template = id(new PhutilInteractiveEditor($template))
-      ->setName('new-commit')
-      ->editInteractively();
-    $template = preg_replace('/^\s*#.*$/m', '', $template);
+    $saved = $this->readScratchFile('create-message');
+    if ($saved) {
+      $where = $this->getReadableScratchFilePath('create-message');
 
-    try {
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $template);
-      $message->pullDataFromConduit($conduit);
-      $this->validateCommitMessage($message);
-    } catch (Exception $ex) {
-      $path = Filesystem::writeUniqueFile('arc-commit-message', $template);
+      $preview = explode("\n", $saved);
+      $preview = array_shift($preview);
+      $preview = trim($preview);
+      $preview = phutil_utf8_shorten($preview, 64);
 
-      echo phutil_console_wrap(
-        "\n".
-        "Exception while parsing commit message! Message saved to ".
-        "'{$path}'. Use -F <file> to specify a commit message file.\n");
+      if ($preview) {
+        $preview = "Message begins:\n\n       {$preview}\n\n";
+      } else {
+        $preview = null;
+      }
 
-      throw $ex;
+      echo
+        "You have a saved revision message in '{$where}'.\n".
+        "{$preview}".
+        "You can use this message, or discard it.";
+
+      $use = phutil_console_confirm(
+        "Do you want to use this message?",
+        $default_no = false);
+      if ($use) {
+        $template = $saved;
+      } else {
+        $this->removeScratchFile('create-message');
+      }
+    }
+
+    $template_is_default = false;
+
+    if (!$template) {
+      $template = $conduit->callMethodSynchronous(
+        'differential.getcommitmessage',
+        array(
+          'revision_id' => null,
+          'edit' => true,
+        ));
+      $template_is_default = true;
+    }
+
+    $issues = array('Describe this revision.');
+
+    $done = false;
+    while (!$done) {
+      $template = rtrim($template)."\n\n";
+      foreach ($issues as $issue) {
+        $template .= '# '.$issue."\n";
+      }
+      $template .= "\n";
+
+      $new_template = id(new PhutilInteractiveEditor($template))
+        ->setName('new-commit')
+        ->editInteractively();
+
+      if ($template_is_default && ($new_template == $template)) {
+        throw new ArcanistUsageException(
+          "Template not edited.");
+      }
+
+      $template = preg_replace('/^\s*#.*$/m', '', $new_template);
+      $template = rtrim($template)."\n";
+      $wrote = $this->writeScratchFile('create-message', $template);
+      $where = $this->getReadableScratchFilePath('create-message');
+
+      try {
+
+        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+          $template);
+        $message->pullDataFromConduit($conduit);
+        $this->validateCommitMessage($message);
+        $done = true;
+      } catch (ArcanistDifferentialCommitMessageParserException $ex) {
+        echo "Commit message has errors:\n\n";
+        $issues = array('Resolve these errors:');
+        foreach ($ex->getParserErrors() as $error) {
+          echo "      - ".$error."\n";
+          $issues[] = '  - '.$error;
+        }
+        echo "\n";
+        echo "You must resolve these errors to continue.";
+        $again = phutil_console_confirm(
+          "Do you want to edit the message?",
+          $default_no = false);
+        if ($again) {
+          // Keep going.
+        } else {
+          $saved = null;
+          if ($wrote) {
+            $saved = "A copy was saved to '{$where}'.";
+          }
+          throw new ArcanistUsageException(
+            'Message has unresolved errrors. {$saved}');
+        }
+      } catch (Exception $ex) {
+        if ($wrote) {
+          echo phutil_console_wrap("(Commit messaged saved to '{$where}'.)");
+        }
+        throw $ex;
+      }
     }
 
     return $message;
