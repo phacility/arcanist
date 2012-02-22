@@ -1127,6 +1127,7 @@ EOTEXT
         $this->getConduit(),
         array(
           'authors' => array($this->getUserPHID()),
+          'status'  => 'status-open',
         ));
       if (!$revisions) {
         $is_create = true;
