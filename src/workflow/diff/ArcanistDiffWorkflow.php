@@ -30,6 +30,8 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
   private $hasWarnedExternals = false;
   private $unresolvedLint;
+  private $lintExcuse;
+  private $unitExcuse;
   private $testResults;
   private $diffID;
   private $unitWorkflow;
@@ -1010,6 +1012,7 @@ EOTEXT
 
       $lint_result = $lint_workflow->run();
 
+      $continue = false;
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
           echo phutil_console_format(
@@ -1017,7 +1020,8 @@ EOTEXT
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
           $continue = phutil_console_confirm(
-            "Lint issued unresolved warnings. Ignore them?");
+            "Lint issued unresolved warnings.".
+            "Provide explanation and continue?");
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
@@ -1026,7 +1030,7 @@ EOTEXT
           echo phutil_console_format(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
           $continue = phutil_console_confirm(
-            "Lint issued unresolved errors! Ignore lint errors?");
+            "Lint issued unresolved errors! Provide explanation and continue?");
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
@@ -1034,6 +1038,17 @@ EOTEXT
       }
 
       $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
+      if ($continue) {
+        $template = "\n\n# Provide an explanation for these lint failures:\n";
+        foreach ($this->unresolvedLint as $message) {
+          $template = $template."# ".
+            $message->getPath().":".
+            $message->getLine()." ".
+            $message->getCode()." :: ".
+            $message->getDescription()."\n";
+        }
+        $this->lintExcuse = $this->getErrorExcuse($template);
+      }
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1067,6 +1082,7 @@ EOTEXT
       }
       $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $this->unitWorkflow->run();
+      $explain = false;
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
           echo phutil_console_format(
@@ -1084,14 +1100,34 @@ EOTEXT
           echo phutil_console_format(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
           $continue = phutil_console_confirm(
-            "Unit test results include failures! Ignore test failures?");
+            "Unit test results include failures!".
+            " Explain test failures and continue?");
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
+          $explain = true;
           break;
       }
 
       $this->testResults = $this->unitWorkflow->getTestResults();
+      if ($explain) {
+        $template = "\n\n".
+          "# Provide an explanation for these unit test failures:\n";
+        foreach ($this->testResults as $test) {
+          $testResult = $test->getResult();
+          switch ($testResult) {
+            case ArcanistUnitTestResult::RESULT_FAIL:
+            case ArcanistUnitTestResult::RESULT_BROKEN:
+              $template = $template."# ".
+                $test->getName()." :: ".
+                $test->getResult()."\n";
+              break;
+            default:
+              break;
+          }
+        }
+        $this->unitExcuse = $this->getErrorExcuse($template);
+      }
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1101,6 +1137,22 @@ EOTEXT
     }
 
     return null;
+  }
+
+  private function getErrorExcuse($template) {
+    $new_template = id(new PhutilInteractiveEditor($template))
+      ->setName('error-excuse')
+      ->editInteractively();
+
+    if ($new_template == $template) {
+      throw new ArcanistUsageException(
+        "No explanation provided.");
+    }
+
+    $template = preg_replace('/^\s*#.*$/m', '', $new_template);
+    $template = rtrim($template)."\n";
+
+    return $template;
   }
 
 
@@ -1679,6 +1731,10 @@ EOTEXT
     }
 
     $this->updateDiffProperty('arc:lint', json_encode($data));
+    if (strlen($this->lintExcuse)) {
+      $this->updateDiffProperty('arc:lint-excuse',
+        json_encode($this->lintExcuse));
+    }
   }
 
 
@@ -1705,6 +1761,10 @@ EOTEXT
     }
 
     $this->updateDiffProperty('arc:unit', json_encode($data));
+    if (strlen($this->unitExcuse)) {
+      $this->updateDiffProperty('arc:unit-excuse',
+        json_encode($this->unitExcuse));
+    }
   }
 
 
