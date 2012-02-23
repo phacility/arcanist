@@ -32,6 +32,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $unresolvedLint;
   private $testResults;
   private $diffID;
+  private $revisionID;
   private $unitWorkflow;
 
   public function getCommandHelp() {
@@ -414,9 +415,11 @@ EOTEXT
           $revision['fields'] = $new_message->getFields();
         }
 
+        $revision['id'] = $message->getRevisionID();
+        $this->revisionID = $revision['id'];
+
         $update_message = $this->getUpdateMessage();
 
-        $revision['id'] = $message->getRevisionID();
         $revision['message'] = $update_message;
         $future = $conduit->callMethod(
           'differential.updaterevision',
@@ -1386,16 +1389,13 @@ EOTEXT
     //  $ git commit -a -m 'fix some junk'
     //  $ arc diff
     //
-    // ...you shouldn't have to retype the update message.
-    if ($this->requiresRepositoryAPI()) {
-      $repository_api = $this->getRepositoryAPI();
-      if ($repository_api instanceof ArcanistGitAPI) {
-        $comments = $this->getGitUpdateMessage();
-      }
-    }
+    // ...you shouldn't have to retype the update message. Similar things apply
+    // to Mercurial.
+
+    $comments = $this->getDefaultUpdateMessage();
 
     $template =
-      $comments.
+      rtrim($comments).
       "\n\n".
       "# Enter a brief description of the changes included in this update.".
       "\n";
@@ -1528,6 +1528,18 @@ EOTEXT
     return $blessed;
   }
 
+  private function getDefaultUpdateMessage() {
+    if (!$this->requiresRepositoryAPI()) {
+      return null;
+    }
+
+    $repository_api = $this->getRepositoryAPI();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      return $this->getGitUpdateMessage();
+    }
+
+    return null;
+  }
 
   /**
    * Retrieve the git message in HEAD if it isn't a primary template message.
@@ -1541,14 +1553,71 @@ EOTEXT
     $commit_messages = $repository_api->getGitCommitLog();
     $commit_messages = $parser->parseDiff($commit_messages);
 
-    $head = reset($commit_messages);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-      $head->getMetadata('message'));
-    if ($message->getRevisionID()) {
+    if (count($commit_messages) == 1) {
+      // If there's only one message, assume this is an amend-based workflow and
+      // that using it to prefill doesn't make sense.
       return null;
     }
 
-    return trim($message->getRawCorpus());
+    // We have more than one message, so figure out which ones are new. We
+    // do this by pulling the current diff and comparing commit hashes in the
+    // working copy with attached commit hashes. It's not super important that
+    // we always get this 100% right, we're just trying to do something
+    // reasonable.
+
+    $current_diff = $this->getConduit()->callMethodSynchronous(
+      'differential.getdiff',
+      array(
+        'revision_id' => $this->revisionID,
+      ));
+
+    $properties = idx($current_diff, 'properties', array());
+    $local = idx($properties, 'local:commits', array());
+    $hashes = ipull($local, null, 'commit');
+
+    $usable = array();
+    foreach ($commit_messages as $message) {
+      $text = $message->getMetadata('message');
+
+      $parsed = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
+      if ($parsed->getRevisionID()) {
+        // If this is an amended commit message with a revision ID, it's
+        // certainly not new. Stop marking commits as usable and break out.
+        break;
+      }
+
+      if (isset($hashes[$message->getCommitHash()])) {
+        // If this commit is currently part of the diff, stop using commit
+        // messages, since anything older than this isn't new.
+        break;
+      }
+
+      // Otherwise, this looks new, so it's a usable commit message.
+      $usable[] = $message;
+    }
+
+    if (!$usable) {
+      // No new commit messages, so we don't have anywhere to start from.
+      return null;
+    }
+
+    // Flip messages so they'll read chronologically (oldest-first) in the
+    // template, e.g.:
+    //
+    //   - Added foobar.
+    //   - Fixed foobar bug.
+    //   - Documented foobar.
+
+    $usable = array_reverse($usable);
+    $default = array();
+    foreach ($usable as $message) {
+      // Pick the first line out of each message.
+      $text = trim($message->getMetadata('message'));
+      $text = head(explode("\n", $text));
+      $default[] = '  - '.$text."\n";
+    }
+
+    return implode('', $default);
   }
 
 
