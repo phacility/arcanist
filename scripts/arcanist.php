@@ -50,7 +50,7 @@ foreach ($args as $key => $arg) {
     PhutilConsoleFormatter::disableANSI(true);
   } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
-    $load['?'] = $matches[1];
+    $load[] = $matches[1];
   } else if (preg_match('/^--conduit-uri=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $force_conduit = $matches[1];
