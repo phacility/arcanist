@@ -1023,7 +1023,7 @@ EOTEXT
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
           $continue = phutil_console_confirm(
-            "Lint issued unresolved warnings.".
+            "Lint issued unresolved warnings. ".
             "Provide explanation and continue?");
           if (!$continue) {
             throw new ArcanistUserAbortException();
