@@ -134,28 +134,35 @@ final class ArcanistLintRenderer {
     $text_lines = explode("\n", $text);
     $text_length = count($text_lines);
 
-    for (; $cursor < $line_num + $text_length; $cursor++) {
-      $chevron = ($cursor == $line_num);
-      // We may not have any data if, e.g., the old file does not exist.
-      $data = idx($line_data, $cursor, null);
+    if ($text) {
+      for (; $cursor < $line_num + $text_length; $cursor++) {
+        $chevron = ($cursor == $line_num);
+        // We may not have any data if, e.g., the old file does not exist.
+        $data = idx($line_data, $cursor, null);
 
-      // Highlight the problem substring.
-      $text_line = $text_lines[$cursor - $line_num];
-      if (strlen($text_line)) {
-        $data = substr_replace(
-          $data,
-          phutil_console_format('##%s##', $text_line),
-          ($cursor == $line_num)
-            ? $message->getChar() - 1
-            : 0,
-          strlen($text_line));
+        // Highlight the problem substring.
+        $text_line = $text_lines[$cursor - $line_num];
+        if (strlen($text_line)) {
+          $data = substr_replace(
+            $data,
+            phutil_console_format('##%s##', $text_line),
+            ($cursor == $line_num)
+              ? $message->getChar() - 1
+              : 0,
+            strlen($text_line));
+        }
+
+        $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
       }
-
-      $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
     }
 
     // Print out replacement text.
     if ($message->isPatchable()) {
+      // Strip trailing newlines, since "explode" will create an extra patch
+      // line for these.
+      if (idx($patch, strlen($patch) - 1, null) === "\n") {
+        $patch = substr($patch, 0, -1);
+      }
       $patch_lines = explode("\n", $patch);
       $patch_length = count($patch_lines);
 
@@ -163,11 +170,15 @@ final class ArcanistLintRenderer {
 
       $len = isset($text_lines[0]) ? strlen($text_lines[0]) : 0;
 
-      $patched = substr_replace(
-        $line_data[$line_num],
-        phutil_console_format('##%s##', $patch_line),
-        $start,
-        $len);
+      $patched = phutil_console_format('##%s##', $patch_line);
+
+      if ($text) {
+        $patched = substr_replace(
+          $line_data[$line_num],
+          $patched,
+          $start,
+          $len);
+      }
 
       $out[] = $this->renderLine(null, $patched, false, '+');
 
