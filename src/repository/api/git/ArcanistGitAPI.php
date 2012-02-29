@@ -581,6 +581,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getAllLocalChanges() {
     $diff = $this->getFullGitDiff();
+    if (!strlen(trim($diff))) {
+      return array();
+    }
     $parser = new ArcanistDiffParser();
     return $parser->parseDiff($diff);
   }

@@ -362,6 +362,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAllLocalChanges() {
     $diff = $this->getFullMercurialDiff();
+    if (!strlen(trim($diff))) {
+      return array();
+    }
     $parser = new ArcanistDiffParser();
     return $parser->parseDiff($diff);
   }
