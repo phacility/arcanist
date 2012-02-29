@@ -1276,18 +1276,32 @@ EOTEXT
     }
 
     $template_is_default = false;
+    $notes = array();
 
     if (!$template) {
+      list($fields, $notes) = $this->getDefaultCreateFields();
+      if (!$fields) {
+        $template_is_default = true;
+      }
+
       $template = $conduit->callMethodSynchronous(
         'differential.getcommitmessage',
         array(
           'revision_id' => null,
-          'edit' => true,
+          'edit'        => 'create',
+          'fields'      => $fields,
         ));
-      $template_is_default = true;
     }
 
-    $issues = array('Describe this revision.');
+    $issues = array(
+      'Describe this revision.',
+      '',
+      'If you intended to update a existing revision, use ',
+      '`arc diff --update <revision>`.',
+    );
+    if ($notes) {
+      $issues = array_merge($issues, array(''), $notes);
+    }
 
     $done = false;
     while (!$done) {
@@ -1312,7 +1326,6 @@ EOTEXT
       $where = $this->getReadableScratchFilePath('create-message');
 
       try {
-
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
           $template);
         $message->pullDataFromConduit($conduit);
@@ -1338,11 +1351,11 @@ EOTEXT
             $saved = "A copy was saved to '{$where}'.";
           }
           throw new ArcanistUsageException(
-            'Message has unresolved errrors. {$saved}');
+            "Message has unresolved errrors. {$saved}");
         }
       } catch (Exception $ex) {
         if ($wrote) {
-          echo phutil_console_wrap("(Commit messaged saved to '{$where}'.)");
+          echo phutil_console_wrap("(Commit messaged saved to '{$where}'.)\n");
         }
         throw $ex;
       }
@@ -1474,22 +1487,7 @@ EOTEXT
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser();
-    $commit_messages = $repository_api->getGitCommitLog();
-
-    if (!strlen($commit_messages)) {
-      if (!$repository_api->getHasCommits()) {
-        throw new ArcanistUsageException(
-          "This git repository doesn't have any commits yet. You need to ".
-          "commit something before you can diff against it.");
-      } else {
-        throw new ArcanistUsageException(
-          "The commit range doesn't include any commits. (Did you diff ".
-          "against the wrong commit?)");
-      }
-    }
-
-    $commit_messages = $parser->parseDiff($commit_messages);
+    $commit_messages = $this->getLocalGitCommitMessages();
 
     $problems = array();
     $parsed = array();
@@ -1536,18 +1534,13 @@ EOTEXT
         $title = phutil_utf8_shorten($title, 64);
         echo "    {$hash}  {$title}\n";
       }
-      echo "    none     Edit a blank template.";
 
       do {
-        $choose = phutil_console_prompt('Use which commit message [none]?');
-        if ($choose == 'none' || $choose == '') {
-          return $this->getCommitMessageFromUser();
-        } else {
-          foreach ($valid as $key => $message) {
-            if (!strncmp($hashes[$key], $choose, strlen($choose))) {
-              $blessed = $valid[$key];
-              break;
-            }
+        $choose = phutil_console_prompt('Use which commit message?');
+        foreach ($valid as $key => $message) {
+          if (!strncmp($hashes[$key], $choose, strlen($choose))) {
+            $blessed = $valid[$key];
+            break;
           }
         }
       } while (!$blessed);
@@ -1578,6 +1571,76 @@ EOTEXT
     }
 
     return $blessed;
+  }
+
+  private function getLocalGitCommitMessages() {
+    $repository_api = $this->getRepositoryAPI();
+    $parser = new ArcanistDiffParser();
+    $commit_messages = $repository_api->getGitCommitLog();
+
+    if (!strlen($commit_messages)) {
+      if (!$repository_api->getHasCommits()) {
+        throw new ArcanistUsageException(
+          "This git repository doesn't have any commits yet. You need to ".
+          "commit something before you can diff against it.");
+      } else {
+        throw new ArcanistUsageException(
+          "The commit range doesn't include any commits. (Did you diff ".
+          "against the wrong commit?)");
+      }
+    }
+
+    return $parser->parseDiff($commit_messages);
+  }
+
+  private function getDefaultCreateFields() {
+    $empty = array(array(), array());
+
+    if (!$this->requiresRepositoryAPI()) {
+      return $empty;
+    }
+
+    $repository_api = $this->getRepositoryAPI();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      return $this->getGitCreateFields();
+    }
+
+    return $empty;
+  }
+
+  private function getGitCreateFields() {
+    $conduit = $this->getConduit();
+    $changes = $this->getLocalGitCommitMessages();
+
+    $commits = array();
+    foreach ($changes as $key => $change) {
+      $commits[$change->getCommitHash()] = $change->getMetadata('message');
+    }
+
+    $messages = array();
+    foreach ($commits as $hash => $text) {
+      $messages[$hash] = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $text);
+    }
+
+    $fields = array();
+    $notes = array();
+    foreach ($messages as $hash => $message) {
+      try {
+        $message->pullDataFromConduit($conduit, $partial = true);
+        $fields += $message->getFields();
+      } catch (ArcanistDifferentialCommitMessageParserException $ex) {
+        $fields += $message->getFields();
+
+        $frev = substr($hash, 0, 8);
+        $notes[] = "NOTE: commit {$frev} could not be completely parsed:";
+        foreach ($ex->getParserErrors() as $error) {
+          $notes[] = "  - {$error}";
+        }
+      }
+    }
+
+    return array($fields, $notes);
   }
 
   private function getDefaultUpdateMessage() {

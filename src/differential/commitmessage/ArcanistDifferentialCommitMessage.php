@@ -25,7 +25,7 @@ final class ArcanistDifferentialCommitMessage {
 
   private $rawCorpus;
   private $revisionID;
-  private $fields;
+  private $fields = array();
 
   private $gitSVNBaseRevision;
   private $gitSVNBasePath;
@@ -78,17 +78,25 @@ final class ArcanistDifferentialCommitMessage {
     return $this->revisionID;
   }
 
-  public function pullDataFromConduit(ConduitClient $conduit) {
+  public function pullDataFromConduit(
+    ConduitClient $conduit,
+    $partial = false) {
+
     $result = $conduit->callMethodSynchronous(
       'differential.parsecommitmessage',
       array(
-        'corpus' => $this->rawCorpus,
+        'corpus'  => $this->rawCorpus,
+        'partial' => $partial,
       ));
+
+    $this->fields = $result['fields'];
+
     if (!empty($result['errors'])) {
       throw new ArcanistDifferentialCommitMessageParserException(
         $result['errors']);
     }
-    $this->fields = $result['fields'];
+
+    return $this;
   }
 
   public function getFieldValue($key) {
