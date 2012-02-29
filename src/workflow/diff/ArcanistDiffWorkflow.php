@@ -1590,11 +1590,15 @@ EOTEXT
       return $this->getGitUpdateMessage();
     }
 
+    if ($repository_api instanceof ArcanistMercurialAPI) {
+      return $this->getMercurialUpdateMessage();
+    }
+
     return null;
   }
 
   /**
-   * Retrieve the git message in HEAD if it isn't a primary template message.
+   * Retrieve the git messages between HEAD and the last update.
    *
    * @task message
    */
@@ -1617,14 +1621,7 @@ EOTEXT
     // we always get this 100% right, we're just trying to do something
     // reasonable.
 
-    $current_diff = $this->getConduit()->callMethodSynchronous(
-      'differential.getdiff',
-      array(
-        'revision_id' => $this->revisionID,
-      ));
-
-    $properties = idx($current_diff, 'properties', array());
-    $local = idx($properties, 'local:commits', array());
+    $local = $this->loadActiveLocalCommitInfo();
     $hashes = ipull($local, null, 'commit');
 
     $usable = array();
@@ -1653,6 +1650,49 @@ EOTEXT
       return null;
     }
 
+    return $this->formatUsableLogs($usable);
+  }
+
+  /**
+   * Retrieve the hg messages between tip and the last update.
+   *
+   * @task message
+   */
+  private function getMercurialUpdateMessage() {
+    $repository_api = $this->getRepositoryAPI();
+
+    $messages = $repository_api->getCommitMessageLog();
+
+    $local = $this->loadActiveLocalCommitInfo();
+    $hashes = ipull($local, null, 'rev');
+
+    $usable = array();
+    foreach ($messages as $rev => $message) {
+      if (isset($hashes[$rev])) {
+        // If this commit is currently part of the active diff on the revision,
+        // stop using commit messages, since anything older than this isn't new.
+        break;
+      }
+
+      // Otherwise, this looks new, so it's a usable commit message.
+      $usable[] = $message;
+    }
+
+    if (!$usable) {
+      // No new commit messages, so we don't have anywhere to start from.
+      return null;
+    }
+
+    return $this->formatUsableLogs($usable);
+  }
+
+
+  /**
+   * Format log messages to prefill a diff update.
+   *
+   * @task message
+   */
+  private function formatUsableLogs(array $usable) {
     // Flip messages so they'll read chronologically (oldest-first) in the
     // template, e.g.:
     //
@@ -1664,12 +1704,23 @@ EOTEXT
     $default = array();
     foreach ($usable as $message) {
       // Pick the first line out of each message.
-      $text = trim($message->getMetadata('message'));
+      $text = trim($message);
       $text = head(explode("\n", $text));
       $default[] = '  - '.$text."\n";
     }
 
     return implode('', $default);
+  }
+
+  private function loadActiveLocalCommitInfo() {
+    $current_diff = $this->getConduit()->callMethodSynchronous(
+      'differential.getdiff',
+      array(
+        'revision_id' => $this->revisionID,
+      ));
+
+    $properties = idx($current_diff, 'properties', array());
+    return idx($properties, 'local:commits', array());
   }
 
 

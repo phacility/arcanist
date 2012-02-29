@@ -26,6 +26,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $status;
   private $base;
   private $relativeCommit;
+  private $workingCopyRevision;
+  private $localCommitInfo;
 
   public function execxLocal($pattern /*, ... */) {
     $args = func_get_args();
@@ -140,37 +142,40 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getLocalCommitInformation() {
-    list($info) = $this->execxLocal(
-      'log --style default --rev %s..%s --',
-      $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision());
-    $logs = ArcanistMercurialParser::parseMercurialLog($info);
+    if ($this->localCommitInfo === null) {
+      list($info) = $this->execxLocal(
+        'log --style default --rev %s..%s --',
+        $this->getRelativeCommit(),
+        $this->getWorkingCopyRevision());
+      $logs = ArcanistMercurialParser::parseMercurialLog($info);
 
-    // Get rid of the first log, it's not actually part of the diff. "hg log"
-    // is inclusive, while "hg diff" is exclusive.
-    array_shift($logs);
+      // Get rid of the first log, it's not actually part of the diff. "hg log"
+      // is inclusive, while "hg diff" is exclusive.
+      array_shift($logs);
 
-    // Expand short hashes (12 characters) to full hashes (40 characters) by
-    // issuing a big "hg log" command. Possibly we should do this with parents
-    // too, but nothing uses them directly at the moment.
-    if ($logs) {
-      $cmd = array();
-      foreach (ipull($logs, 'rev') as $rev) {
-        $cmd[] = csprintf('--rev %s', $rev);
+      // Expand short hashes (12 characters) to full hashes (40 characters) by
+      // issuing a big "hg log" command. Possibly we should do this with parents
+      // too, but nothing uses them directly at the moment.
+      if ($logs) {
+        $cmd = array();
+        foreach (ipull($logs, 'rev') as $rev) {
+          $cmd[] = csprintf('--rev %s', $rev);
+        }
+
+        list($full) = $this->execxLocal(
+          'log --template %s %C --',
+          '{node}\\n',
+          implode(' ', $cmd));
+
+        $full = explode("\n", trim($full));
+        foreach ($logs as $key => $dict) {
+          $logs[$key]['rev'] = array_pop($full);
+        }
       }
-
-      list($full) = $this->execxLocal(
-        'log --template %s %C --',
-        '{node}\\n',
-        implode(' ', $cmd));
-
-      $full = explode("\n", trim($full));
-      foreach ($logs as $key => $dict) {
-        $logs[$key]['rev'] = array_pop($full);
-      }
+      $this->localCommitInfo = $logs;
     }
 
-    return $logs;
+    return $this->localCommitInfo;
   }
 
   public function getBlame($path) {
@@ -318,20 +323,25 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyRevision() {
-    // In Mercurial, "tip" means the tip of the current branch, not what's in
-    // the working copy. The tip may be ahead of the working copy. We need to
-    // use "hg summary" to figure out what is actually in the working copy.
-    // For instance, "hg up 4 && arc diff" should not show commits 5 and above.
+    if ($this->workingCopyRevision === null) {
+      // In Mercurial, "tip" means the tip of the current branch, not what's in
+      // the working copy. The tip may be ahead of the working copy. We need to
+      // use "hg summary" to figure out what is actually in the working copy.
+      // For instance, "hg up 4 && arc diff" should not show commits 5 and
+      // above.
 
-    // Without arguments, "hg id" shows the current working directory's commit,
-    // and "--debug" expands it to a 40-character hash.
-    list($stdout) = $this->execxLocal('--debug id --id');
+      // Without arguments, "hg id" shows the current working directory's
+      // commit, and "--debug" expands it to a 40-character hash.
+      list($stdout) = $this->execxLocal('--debug id --id');
 
-    // Even with "--id", "hg id" will print a trailing "+" after the hash
-    // if the working copy is dirty (has uncommitted changes). We'll explicitly
-    // detect this later by calling getWorkingCopyStatus(); ignore it for now.
-    $stdout = trim($stdout);
-    return rtrim($stdout, '+');
+      // Even with "--id", "hg id" will print a trailing "+" after the hash
+      // if the working copy is dirty (has uncommitted changes). We'll
+      // explicitly detect this later by calling getWorkingCopyStatus(); ignore
+      // it for now.
+      $stdout = trim($stdout);
+      $this->workingCopyRevision = rtrim($stdout, '+');
+    }
+    return $this->workingCopyRevision;
   }
 
   public function supportsRelativeLocalCommits() {
@@ -384,6 +394,23 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
            "'hg push' or by printing and faxing it).";
   }
 
+  public function getCommitMessageLog() {
+    list($stdout) = $this->execxLocal(
+      "log --template '{node}\\1{desc}\\0' --rev %s..%s --",
+      $this->getRelativeCommit(),
+      $this->getWorkingCopyRevision());
+
+    $map = array();
+
+    $logs = explode("\0", trim($stdout));
+    foreach (array_filter($logs) as $log) {
+      list($node, $desc) = explode("\1", $log);
+      $map[$node] = $desc;
+    }
+
+    return array_reverse($map);
+  }
+
   public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query) {
@@ -398,17 +425,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'differential.query',
       $query + array(
         'commitHashes' => $hashes,
-      ));
-
-    if ($results) {
-      return $results;
-    }
-
-    // If we still didn't succeed, try to find revisions by branch name.
-    $results = $conduit->callMethodSynchronous(
-      'differential.query',
-      $query + array(
-        'branches' => array($this->getBranchName()),
       ));
 
     return $results;
