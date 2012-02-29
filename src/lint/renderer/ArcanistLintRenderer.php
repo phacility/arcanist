@@ -160,7 +160,7 @@ final class ArcanistLintRenderer {
     if ($message->isPatchable()) {
       // Strip trailing newlines, since "explode" will create an extra patch
       // line for these.
-      if (idx($patch, strlen($patch) - 1, null) === "\n") {
+      if (strlen($patch) && ($patch[strlen($patch) - 1] === "\n")) {
         $patch = substr($patch, 0, -1);
       }
       $patch_lines = explode("\n", $patch);
