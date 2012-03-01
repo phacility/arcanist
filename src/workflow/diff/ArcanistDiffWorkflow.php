@@ -229,6 +229,11 @@ EOTEXT
         'help' =>
           "Skip checks for untracked files in the working copy.",
       ),
+      'excuse' => array(
+        'param' => 'excuse',
+        'help' => 'Provide a prepared in advance excuse for any lints/tests'.
+          ' shall they fail.',
+      ),
       'less-context' => array(
         'help' =>
           "Normally, files are diffed with full context: the entire file is ".
@@ -1022,9 +1027,11 @@ EOTEXT
             "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $continue = phutil_console_confirm(
-            "Lint issued unresolved warnings. ".
-            "Provide explanation and continue?");
+          $msg = "Lint issued unresolved warnings. ";
+          $msg .= $this->getArgument('excuse')
+            ? "Ignore them?"
+            : "Provide explanation and continue?";
+          $continue = phutil_console_confirm($msg);
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
@@ -1032,8 +1039,11 @@ EOTEXT
         case ArcanistLintWorkflow::RESULT_ERRORS:
           echo phutil_console_format(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
-          $continue = phutil_console_confirm(
-            "Lint issued unresolved errors! Provide explanation and continue?");
+          $msg = "Lint issued unresolved errors! ";
+          $msg .= $this->getArgument('excuse')
+            ? "Ignore lint errors?"
+            : "Provide explanation and continue?";
+          $continue = phutil_console_confirm($msg);
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
@@ -1042,15 +1052,19 @@ EOTEXT
 
       $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
       if ($continue) {
-        $template = "\n\n# Provide an explanation for these lint failures:\n";
-        foreach ($this->unresolvedLint as $message) {
-          $template = $template."# ".
-            $message->getPath().":".
-            $message->getLine()." ".
-            $message->getCode()." :: ".
-            $message->getDescription()."\n";
+        if ($this->getArgument('excuse')) {
+          $this->unitExcuse = $this->getArgument('excuse');
+        } else {
+          $template = "\n\n# Provide an explanation for these lint failures:\n";
+          foreach ($this->unresolvedLint as $message) {
+            $template = $template."# ".
+              $message->getPath().":".
+              $message->getLine()." ".
+              $message->getCode()." :: ".
+              $message->getDescription()."\n";
+          }
+          $this->lintExcuse = $this->getErrorExcuse($template);
         }
-        $this->lintExcuse = $this->getErrorExcuse($template);
       }
 
       return $lint_result;
@@ -1102,9 +1116,11 @@ EOTEXT
         case ArcanistUnitWorkflow::RESULT_FAIL:
           echo phutil_console_format(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
-          $continue = phutil_console_confirm(
-            "Unit test results include failures!".
-            " Explain test failures and continue?");
+          $msg = "Unit test results include failures! ";
+          $msg .= $this->getArgument('excuse')
+            ? "Ignore test failures?"
+            : "Explain test failures and continue?";
+          $continue = phutil_console_confirm($msg);
           if (!$continue) {
             throw new ArcanistUserAbortException();
           }
@@ -1114,22 +1130,26 @@ EOTEXT
 
       $this->testResults = $this->unitWorkflow->getTestResults();
       if ($explain) {
-        $template = "\n\n".
-          "# Provide an explanation for these unit test failures:\n";
-        foreach ($this->testResults as $test) {
-          $testResult = $test->getResult();
-          switch ($testResult) {
-            case ArcanistUnitTestResult::RESULT_FAIL:
-            case ArcanistUnitTestResult::RESULT_BROKEN:
-              $template = $template."# ".
-                $test->getName()." :: ".
-                $test->getResult()."\n";
-              break;
-            default:
-              break;
+        if ($this->getArgument('excuse')) {
+          $this->unitExcuse = $this->getArgument('excuse');
+        } else {
+          $template = "\n\n".
+            "# Provide an explanation for these unit test failures:\n";
+          foreach ($this->testResults as $test) {
+            $testResult = $test->getResult();
+            switch ($testResult) {
+              case ArcanistUnitTestResult::RESULT_FAIL:
+              case ArcanistUnitTestResult::RESULT_BROKEN:
+                $template = $template."# ".
+                  $test->getName()." :: ".
+                  $test->getResult()."\n";
+                break;
+              default:
+                break;
+            }
           }
+          $this->unitExcuse = $this->getErrorExcuse($template);
         }
-        $this->unitExcuse = $this->getErrorExcuse($template);
       }
 
       return $unit_result;
