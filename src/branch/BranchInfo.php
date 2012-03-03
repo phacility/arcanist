@@ -52,7 +52,7 @@ final class BranchInfo {
     $name_sha1_map = mpull($branches, 'getSha1', 'getName');
     $commits_list = $api->multigetCommitMessages(
       array_unique(array_values($name_sha1_map)),
-      "%%ct%%n%%an%%n%%s%%n%%b"); //don't ask
+      "%ct%n%an%n%s%n%b");
     foreach ($branches as $branch) {
       $sha1 = $name_sha1_map[$branch->getName()];
       $branch->setSha1($sha1);

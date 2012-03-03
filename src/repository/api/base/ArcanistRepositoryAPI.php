@@ -180,4 +180,16 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  public function execxLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args)->resolvex();
+  }
+
+  public function execManualLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args)->resolve();
+  }
+
+  abstract protected function buildLocalFuture(array $argv);
+
 }

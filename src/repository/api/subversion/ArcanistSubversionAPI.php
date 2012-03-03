@@ -36,6 +36,16 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return 'svn';
   }
 
+  protected function buildLocalFuture(array $argv) {
+
+    $argv[0] = 'svn '.$argv[0];
+
+    $future = newv('ExecFuture', $argv);
+    $future->setCWD($this->getPath());
+    return $future;
+  }
+
+
   public function hasMergeConflicts() {
     foreach ($this->getSVNStatus() as $path => $mask) {
       if ($mask & self::FLAG_CONFLICT) {
