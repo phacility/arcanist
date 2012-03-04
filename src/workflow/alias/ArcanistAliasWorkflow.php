@@ -59,7 +59,7 @@ EOTEXT
 
   public static function getAliases() {
     $config = self::readUserConfigurationFile();
-    return idx($config, 'aliases');
+    return idx($config, 'aliases', array());
   }
 
   private function writeAliases(array $aliases) {
