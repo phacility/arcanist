@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ EOTEXT
     }
 
     $file = reset($argv);
-    if (!preg_match('/^F?\d+/', $file)) {
+    if (!preg_match('/^F?\d+$/', $file)) {
       throw new ArcanistUsageException("Specify file by ID, e.g. F123.");
     }
 
