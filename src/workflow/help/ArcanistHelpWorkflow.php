@@ -160,16 +160,13 @@ EOTEXT
     }
 
     $self = 'arc';
-    $description = ($this->getArgument('full') ?
-      "This help file provides a detailed command reference." :
-      "Run 'arc help --full' to get detailed command reference.");
     echo phutil_console_format(<<<EOTEXT
 **NAME**
       **{$self}** - arcanist, a code review and revision management utility
 
 **SYNOPSIS**
       **{$self}** __command__ [__options__] [__args__]
-      {$description}
+      This help file provides a detailed command reference.
 
 **COMMAND REFERENCE**
 
@@ -180,6 +177,7 @@ EOTEXT
     );
 
     if (!$this->getArgument('full')) {
+      echo "Run 'arc help --full' to get commands and options descriptions.\n";
       return;
     }
 
