@@ -23,9 +23,15 @@
  */
 final class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **amend** [--revision __revision_id__] [--show]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git
           Amend the working copy after a revision has been accepted, so commits
           can be marked 'committed' and pushed upstream.

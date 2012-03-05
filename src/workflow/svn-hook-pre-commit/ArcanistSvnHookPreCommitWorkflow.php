@@ -23,9 +23,15 @@
  */
 final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **svn-hook-pre-commit** __repository__ __transaction__
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: svn
           You can install this as an SVN pre-commit hook. For more information,
           see the article "Installing Arcanist SVN Hooks" in the Arcanist

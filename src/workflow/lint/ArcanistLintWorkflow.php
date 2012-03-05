@@ -36,10 +36,16 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
     return $this;
   }
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **lint** [__options__] [__paths__]
       **lint** [__options__] --rev [__rev__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn, hg
           Run static analysis on changes to check for mistakes. If no files
           are specified, lint will be run on all files which have been modified.

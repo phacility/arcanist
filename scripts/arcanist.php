@@ -331,15 +331,23 @@ function sanity_check_environment() {
       "'{$min_version}'.");
   }
 
-  $need_functions = array(
-    'json_decode' => '--without-json',
-  );
+  // NOTE: We don't have phutil_is_windows() yet here.
+
+  if (DIRECTORY_SEPARATOR != '/') {
+    $need_functions = array(
+      'curl_init'     => array('builtin-dll', 'php_curl.dll'),
+    );
+  } else {
+    $need_functions = array(
+      'json_decode'   => array('flag',        '--without-json'),
+    );
+  }
 
   $problems = array();
 
   $config = null;
   $show_config = false;
-  foreach ($need_functions as $fname => $flag) {
+  foreach ($need_functions as $fname => $resolution) {
     if (function_exists($fname)) {
       continue;
     }
@@ -355,15 +363,29 @@ function sanity_check_environment() {
       }
     }
 
-    if (strpos($config, $flag) !== false) {
+    $generic = true;
+    list($what, $which) = $resolution;
+
+    if ($what == 'flag' && strpos($config, $which) !== false) {
       $show_config = true;
+      $generic = false;
       $problems[] =
-        "This build of PHP was compiled with the configure flag '{$flag}', ".
+        "This build of PHP was compiled with the configure flag '{$which}', ".
         "which means it does not have the function '{$fname}()'. This ".
         "function is required for arc to run. Rebuild PHP without this flag. ".
         "You may also be able to build or install the relevant extension ".
         "separately.";
-    } else {
+    }
+
+    if ($what == 'builtin-dll') {
+      $generic = false;
+      $problems[] =
+        "Your install of PHP does not have the '{$which}' extension enabled. ".
+        "Edit your php.ini file and uncomment the line which reads ".
+        "'extension={$which}'.";
+    }
+
+    if ($generic) {
       $problems[] =
         "This build of PHP is missing the required function '{$fname}()'. ".
         "Rebuild PHP or install the extension which provides '{$fname}()'.";

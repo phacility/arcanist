@@ -23,9 +23,15 @@
  */
 final class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **git-hook-pre-receive**
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git
           You can install this as a git pre-receive hook.
 EOTEXT

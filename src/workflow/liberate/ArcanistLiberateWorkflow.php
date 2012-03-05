@@ -29,9 +29,15 @@
  */
 final class ArcanistLiberateWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **liberate** [__path__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: libphutil
           Create or update a libphutil library, generating required metadata
           files like \__init__.php.

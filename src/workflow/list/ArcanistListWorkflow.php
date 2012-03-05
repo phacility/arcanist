@@ -23,9 +23,15 @@
  */
 final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **list**
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn, hg
           List your open Differential revisions.
 EOTEXT

@@ -26,11 +26,16 @@
  */
 final class ArcanistMergeWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **merge**
-          Deprecated.
+EOTEXT
+      );
+  }
 
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
+          Deprecated.
 EOTEXT
       );
   }

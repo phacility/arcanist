@@ -27,14 +27,19 @@ final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
   private $saveAs;
   private $show;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **download** __file__ [--as __name__] [--show]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: filesystems
           Download a file to local disk, e.g.:
 
             $ arc download F33              # Download file 'F33'
-
 EOTEXT
       );
   }

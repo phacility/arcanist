@@ -37,10 +37,16 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $revisionID;
   private $unitWorkflow;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **diff** [__paths__] (svn)
       **diff** [__commit__] (git, hg)
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn, hg
           Generate a Differential diff or revision from local changes.
 
@@ -51,7 +57,6 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
           Under svn, you can choose to include only some of the modified files
           in the working copy in the diff by specifying their paths. If you
           omit paths, all changes are included in the diff.
-
 EOTEXT
       );
   }

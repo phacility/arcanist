@@ -31,13 +31,19 @@ final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
   private $source;
   private $sourceParam;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **patch** __D12345__
       **patch** __--revision__ __revision_id__
       **patch** __--diff__ __diff_id__
       **patch** __--patch__ __file__
       **patch** __--arcbundle__ __bundlefile__
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn, hg
           Apply the changes in a Differential revision, patchfile, or arc
           bundle to the working copy.

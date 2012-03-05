@@ -25,9 +25,15 @@ final class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
 
   private $branches;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **branch**
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git
           A wrapper on 'git branch'. It pulls data from Differential and
           displays the revision status next to the branch name.

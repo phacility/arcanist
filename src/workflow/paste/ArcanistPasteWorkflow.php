@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,16 @@ final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
   private $title;
   private $json;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **paste** [--title __title__] [--lang __language__] [--json]
       **paste** __id__ [--json]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: text
           Share and grab text using the Paste application. To create a paste,
           use stdin to provide the text:
@@ -41,7 +47,6 @@ final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
           To retrieve a paste, specify the paste ID:
 
             $ arc paste P123
-
 EOTEXT
       );
   }

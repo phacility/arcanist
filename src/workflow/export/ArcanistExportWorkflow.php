@@ -35,12 +35,18 @@ final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
   private $sourceID;
   private $format;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **export** [__paths__] __format__ (svn)
       **export** [__commit_range__] __format__ (git)
       **export** __--revision__ __revision_id__ __format__
       **export** __--diff__ __diff_id__ __format__
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn
           Export the local changeset (or a Differential changeset) to a file,
           in some __format__: git diff (__--git__), unified diff

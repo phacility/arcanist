@@ -25,9 +25,15 @@ final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
   private $revisionID;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **commit** [--revision __revision_id__] [--show]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: svn
           Commit a revision which has been accepted by a reviewer.
 EOTEXT

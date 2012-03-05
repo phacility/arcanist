@@ -23,9 +23,15 @@
  */
 final class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **mark-committed** __revision__
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn
           Manually mark a revision as committed. You should not normally need
           to do this; arc commit (svn), arc amend (git), arc merge (git, hg) or

@@ -23,9 +23,15 @@
  */
 final class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **install-certificate** [uri]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: http, https
           Installs Conduit credentials into your ~/.arcrc for the given install
           of Phabricator. You need to do this before you can use 'arc', as it

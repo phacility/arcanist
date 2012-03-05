@@ -23,9 +23,15 @@
  */
 final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **shell-complete** __--current__ __N__ -- [__argv__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: bash, etc.
           Implements shell completion. To use shell completion, source the
           appropriate script from 'resources/shell/' in your .shellrc.

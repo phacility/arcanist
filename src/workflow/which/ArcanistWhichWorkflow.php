@@ -23,10 +23,16 @@
  */
 final class ArcanistWhichWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **which** (svn)
       **which** [commit] (hg, git)
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: svn, git, hg
           Shows which revision is in the working copy (or which revisions, if
           more than one matches).

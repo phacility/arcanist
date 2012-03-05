@@ -17,7 +17,10 @@
  */
 
 $include_path = ini_get('include_path');
-ini_set('include_path', $include_path.':'.dirname(__FILE__).'/../../');
+
+$parent_dir = dirname(dirname(dirname(__FILE__)));
+
+ini_set('include_path', $include_path.PATH_SEPARATOR.$parent_dir);
 @include_once 'libphutil/src/__phutil_library_init__.php';
 if (!@constant('__LIBPHUTIL__')) {
   echo "ERROR: Unable to load libphutil. Update your PHP 'include_path' to ".
@@ -25,7 +28,7 @@ if (!@constant('__LIBPHUTIL__')) {
   exit(1);
 }
 
-phutil_load_library(dirname(__FILE__).'/../src/');
+phutil_load_library(dirname(dirname(__FILE__)).'/src/');
 
 // There may be some kind of auto-prepend script configured which starts an
 // output buffer. Discard any such output buffers.

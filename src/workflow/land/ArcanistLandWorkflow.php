@@ -23,9 +23,15 @@
  */
 final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **land** [__options__] __branch__ [--onto __master__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git
 
           Land an accepted change (currently sitting in local feature branch
@@ -37,7 +43,6 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
           immutable repositories (or when --merge is provided), it will perform
           a --no-ff merge (the branch will always be merged into __master__ with
           a merge commit).
-
 EOTEXT
       );
   }

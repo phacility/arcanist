@@ -23,11 +23,17 @@
  */
 final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **alias**
       **alias** __command__
       **alias** __command__ __target__ -- [__options__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: cli
           Create an alias from __command__ to __target__ (optionally, with
           __options__). For example:
@@ -46,7 +52,6 @@ final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
             arc alias fpatch
 
           Without any arguments, 'arc alias' will list aliases.
-
 EOTEXT
       );
   }

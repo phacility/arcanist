@@ -34,7 +34,7 @@ $builtin = array(
       'print' => true,
       'exit'  => true,
       'die'   => true,
-      'phutil_load_library' => true,
+      'phutil_is_windows'   => true,
 
       // HPHP/i defines these functions as 'internal', but they are NOT
       // builtins and do not exist in vanilla PHP. Make sure we don't mark them

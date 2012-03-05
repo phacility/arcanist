@@ -33,10 +33,16 @@ final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
   private $testResults;
   private $engine;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **unit** [__options__] [__paths__]
       **unit** [__options__] --rev [__rev__]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn, hg
           Run unit tests that cover specified paths. If no paths are specified,
           unit tests covering all modified files will be run.
