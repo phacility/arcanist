@@ -75,10 +75,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $against = $this->getRelativeCommit().'..HEAD';
     }
 
+    // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
+    // when passed throuhgh escapeshellarg() they are replaced with spaces.
+
+    // TODO: Learn how cmd.exe works and find some clever workaround?
+
+    // NOTE: If we use "%x00", output is truncated in Windows.
+
     list($info) = $this->execxLocal(
-      'log %s --format=%s --',
+      phutil_is_windows()
+        ? 'log %s --format=%C --'
+        : 'log %s --format=%s --',
       $against,
-      '%H%x00%T%x00%P%x00%at%x00%an%x00%s');
+      '%H%x01%T%x01%P%x01%at%x01%an%x01%s');
 
     $commits = array();
 
@@ -86,7 +95,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $info = explode("\n", $info);
     foreach ($info as $line) {
       list($commit, $tree, $parents, $time, $author, $title)
-        = explode("\0", $line, 6);
+        = explode("\1", $line, 6);
 
       $commits[] = array(
         'commit'  => $commit,
