@@ -73,7 +73,15 @@ EOTEXT
   }
 
   public function requiresRepositoryAPI() {
-    return !$this->isRawDiffSource();
+    if (!$this->isRawDiffSource()) {
+      return true;
+    }
+
+    if ($this->getArgument('use-commit-message')) {
+      return true;
+    }
+
+    return false;
   }
 
   public function getDiffID() {
@@ -451,7 +459,7 @@ EOTEXT
             'revision_id' => $result['revisionid'],
           ));
 
-        if ($this->requiresRepositoryAPI()) {
+        if (!$this->isRawDiffSource()) {
           $repository_api = $this->getRepositoryAPI();
           if (($repository_api instanceof ArcanistGitAPI) &&
               $this->shouldAmend()) {
@@ -1621,7 +1629,7 @@ EOTEXT
   private function getDefaultCreateFields() {
     $empty = array(array(), array());
 
-    if (!$this->requiresRepositoryAPI()) {
+    if ($this->isRawDiffSource()) {
       return $empty;
     }
 
@@ -1669,7 +1677,7 @@ EOTEXT
   }
 
   private function getDefaultUpdateMessage() {
-    if (!$this->requiresRepositoryAPI()) {
+    if ($this->isRawDiffSource()) {
       return null;
     }
 
@@ -1857,7 +1865,7 @@ EOTEXT
     $source_path    = null;
     $branch         = null;
 
-    if ($this->requiresRepositoryAPI()) {
+    if (!$this->isRawDiffSource()) {
       $repository_api = $this->getRepositoryAPI();
 
       $base_revision  = $repository_api->getSourceControlBaseRevision();
