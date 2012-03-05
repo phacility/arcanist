@@ -35,6 +35,18 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       }
       $library_name = phutil_get_library_name_for_root($library_root);
 
+      if (!$library_name) {
+        throw new Exception(
+          "Attempting to run unit tests on a libphutil library which has not ".
+          "been loaded, at:\n\n".
+          "    {$library_root}\n\n".
+          "This probably means one of two things:\n\n".
+          "    - You may need to add this library to .arcconfig.\n".
+          "    - You may be running tests on a copy of libphutil or arcanist\n".
+          "      using a different copy of libphutil or arcanist. This\n".
+          "      operation is not supported.");
+      }
+
       $path = Filesystem::resolvePath($path);
 
       if (!is_dir($path)) {
