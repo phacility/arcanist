@@ -133,9 +133,12 @@ abstract class ArcanistRepositoryAPI {
 
   private static function discoverGitBaseDirectory($root) {
     try {
-      list($stdout) = execx(
-        '(cd %s; git rev-parse --show-cdup)',
-        $root);
+
+      // NOTE: This awkward construction is to make sure things work on Windows.
+      $future = new ExecFuture('git rev-parse --show-cdup');
+      $future->setCWD($root);
+      list($stdout) = $future->resolvex();
+
       return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
     } catch (CommandException $ex) {
       if (preg_match('/^fatal: Not a git repository/', $ex->getStdErr())) {
