@@ -71,12 +71,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function setRelativeCommit($commit) {
-    list($err) = $this->execManualLocal('id -ir %s', $commit);
-    if ($err) {
+    if (!$this->hasLocalCommit($commit)) {
       throw new ArcanistUsageException(
         "Commit '{$commit}' is not a valid Mercurial commit identifier.");
     }
-
     $this->relativeCommit = $commit;
     return $this;
   }
@@ -336,6 +334,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function supportsRelativeLocalCommits() {
     return true;
+  }
+
+  public function hasLocalCommit($commit) {
+    list($err) = $this->execManualLocal('id -ir %s', $commit);
+    return !$err;
   }
 
   public function parseRelativeLocalCommit(array $argv) {

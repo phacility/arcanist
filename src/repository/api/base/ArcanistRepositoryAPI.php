@@ -161,6 +161,10 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
 
+  public function hasLocalCommit($commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function getCommitMessageForRevision($revision) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

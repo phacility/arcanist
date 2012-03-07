@@ -502,6 +502,10 @@ EODIFF;
     return false;
   }
 
+  public function hasLocalCommit($commit) {
+    return false;
+  }
+
   public function getWorkingCopyRevision() {
     return $this->getSourceControlBaseRevision();
   }

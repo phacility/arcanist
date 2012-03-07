@@ -551,6 +551,13 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function hasLocalCommit($commit) {
+    list($err) = $this->execManualLocal(
+      'merge-base %s HEAD',
+      $commit);
+    return !$err;
+  }
+
   public function parseRelativeLocalCommit(array $argv) {
     if (count($argv) == 0) {
       return;
