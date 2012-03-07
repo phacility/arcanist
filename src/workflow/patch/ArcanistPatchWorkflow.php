@@ -349,7 +349,7 @@ EOTEXT
             $param);
           break;
       }
-    } catch (Exception $ex) {
+    } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-INVALID-SESSION') {
         // Phabricator is not configured to allow anonymous access to
         // Differential.
