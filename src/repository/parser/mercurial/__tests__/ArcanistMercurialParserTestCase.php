@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,20 @@ final class ArcanistMercurialParserTestCase extends ArcanistPhutilTestCase {
           array_keys($output));
         $this->assertEqual(
           array('a21ccf4412d5', 'ec222a29bdf0'),
+          array_values(ipull($output, 'rev')));
+        break;
+      case 'branches-with-spaces.txt':
+        $output = ArcanistMercurialParser::parseMercurialBranches($data);
+        $this->assertEqual(
+          array(
+            'm m m m m 2:ffffffffffff (inactive)',
+            'xxx yyy zzz',
+            'default',
+            "'",
+          ),
+          array_keys($output));
+        $this->assertEqual(
+          array('0b9d8290c4e0', '78963faacfc7', '5db03c5500c6', 'ffffffffffff'),
           array_values(ipull($output, 'rev')));
         break;
       case 'log-basic.txt':
