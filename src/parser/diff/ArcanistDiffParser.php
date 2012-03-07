@@ -793,8 +793,10 @@ final class ArcanistDiffParser {
                 "Expected '\ No newline at end of file'.");
             }
             if ($new_len) {
+              $real[] = $line;
               $hunk->setIsMissingOldNewline(true);
             } else {
+              $real[] = $line;
               $hunk->setIsMissingNewNewline(true);
             }
             if (!$new_len) {
