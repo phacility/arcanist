@@ -114,6 +114,25 @@ abstract class ArcanistPhutilTestCase {
 
 
   /**
+   * This simplest way to assert exceptions are thrown.
+   *
+   * @param exception   The expected exception.
+   * @param callable    The thing which throws the exception.
+   *
+   * @return void
+   * @task exceptions
+   */
+  final protected function assertException($expected_exception_class,
+                                           $callable) {
+    $this->tryTestCases(
+      array('assertException' => array()),
+      array(false),
+      $callable,
+      $expected_exception_class
+    );
+  }
+
+  /**
    * Straightforward method for writing unit tests which check if some block of
    * code throws an exception. For example, this allows you to test the
    * exception behavior of ##is_a_fruit()## on various inputs:
