@@ -164,6 +164,9 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
     $root = $this->trees[$path]->getRootNode();
 
+    $root->buildSelectCache();
+    $root->buildTokenCache();
+
     $this->lintUseOfThisInStaticMethods($root);
     $this->lintDynamicDefines($root);
     $this->lintSurpriseConstructors($root);
@@ -406,19 +409,18 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
 
   protected function lintHashComments($root) {
-    $tokens = $root->getTokens();
-    foreach ($tokens as $token) {
-      if ($token->getTypeName() == 'T_COMMENT') {
-        $value = $token->getValue();
-        if ($value[0] == '#') {
-          $this->raiseLintAtOffset(
-            $token->getOffset(),
-            self::LINT_COMMENT_STYLE,
-            'Use "//" single-line comments, not "#".',
-            '#',
-            '//');
-        }
+    foreach ($root->selectTokensOfType('T_COMMENT') as $comment) {
+      $value = $comment->getValue();
+      if ($value[0] != '#') {
+        continue;
       }
+
+      $this->raiseLintAtOffset(
+        $comment->getOffset(),
+        self::LINT_COMMENT_STYLE,
+        'Use "//" single-line comments, not "#".',
+        '#',
+        '//');
     }
   }
 
@@ -788,13 +790,12 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         break;
       }
     }
-    foreach ($tokens as $token) {
-      if ($token->getTypeName() == 'T_CLOSE_TAG') {
-        $this->raiseLintAtToken(
-          $token,
-          self::LINT_PHP_CLOSE_TAG,
-          'Do not use the PHP closing tag, "?>".');
-      }
+
+    foreach ($root->selectTokensOfType('T_CLOSE_TAG') as $token) {
+      $this->raiseLintAtToken(
+        $token,
+        self::LINT_PHP_CLOSE_TAG,
+        'Do not use the PHP closing tag, "?>".');
     }
   }
 
@@ -1341,12 +1342,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   protected function lintTODOComments($root) {
-    $tokens = $root->getTokens();
-    foreach ($tokens as $token) {
-      if (!$token->isComment()) {
-        continue;
-      }
+    $comments = $root->selectTokensOfType('T_COMMENT') +
+                $root->selectTokensOfType('T_DOC_COMMENT');
 
+    foreach ($comments as $token) {
       $value = $token->getValue();
       $matches = null;
       $preg = preg_match_all(
