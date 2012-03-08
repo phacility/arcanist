@@ -686,6 +686,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
             'PHP files should start with "<?php", which may be preceded by '.
             'a "#!" line for scripts.');
         }
+        break;
       }
     }
     foreach ($tokens as $token) {
