@@ -34,20 +34,20 @@ phutil_require_module('arcanist', 'repository/api/base');
 
 ini_set('memory_limit', -1);
 
-$config_trace_mode = false;
+$original_argv = $argv;
+$args = new PhutilArgumentParser($argv);
+$args->parseStandardArguments();
+
+$argv = $args->getUnconsumedArgumentVector();
+$config_trace_mode = $args->getArg('trace');
+
 $force_conduit = null;
-$args = array_slice($argv, 1);
+$args = $argv;
 $load = array();
 $matches = null;
 foreach ($args as $key => $arg) {
   if ($arg == '--') {
     break;
-  } else if ($arg == '--trace') {
-    unset($args[$key]);
-    $config_trace_mode = true;
-  } else if ($arg == '--no-ansi') {
-    unset($args[$key]);
-    PhutilConsoleFormatter::disableANSI(true);
   } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $load[] = $matches[1];
@@ -57,19 +57,10 @@ foreach ($args as $key => $arg) {
   }
 }
 
-// The POSIX extension is not available by default in some PHP installs.
-if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
-  PhutilConsoleFormatter::disableANSI(true);
-}
-
 $args = array_values($args);
 $working_directory = getcwd();
 
 try {
-
-  if ($config_trace_mode) {
-    PhutilServiceProfiler::installEchoListener();
-  }
 
   if (!$args) {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
@@ -252,7 +243,7 @@ try {
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
 
-  $description = implode(' ', $argv);
+  $description = implode(' ', $original_argv);
   $credentials = array(
     'user'        => $user_name,
     'certificate' => $certificate,
