@@ -53,6 +53,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_BINARY_EXPRESSION_SPACING = 27;
   const LINT_ARRAY_INDEX_SPACING       = 28;
   const LINT_RAGGED_CLASSTREE_EDGE     = 29;
+  const LINT_IMPLICIT_FALLTHROUGH      = 30;
 
 
   public function getLintNameMap() {
@@ -85,6 +86,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_BINARY_EXPRESSION_SPACING => 'Space Around Binary Operator',
       self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
       self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
+      self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
     );
   }
 
@@ -110,6 +112,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_BINARY_EXPRESSION_SPACING
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_ARRAY_INDEX_SPACING
+        => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_IMPLICIT_FALLTHROUGH
         => ArcanistLintSeverity::SEVERITY_WARNING,
 
       // This is disabled by default because it implies a very strict policy
@@ -182,6 +186,101 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintReusedIterators($root);
     $this->lintBraceFormatting($root);
     $this->lintRaggedClasstreeEdges($root);
+    $this->lintImplicitFallthrough($root);
+  }
+
+  private function lintImplicitFallthrough($root) {
+    $switches = $root->selectDescendantsOfType('n_SWITCH');
+    foreach ($switches as $switch) {
+      $blocks = array();
+
+      $cases = $switch->selectDescendantsOfType('n_CASE');
+      foreach ($cases as $case) {
+        $blocks[] = $case;
+      }
+
+      $defaults = $switch->selectDescendantsOfType('n_DEFAULT');
+      foreach ($defaults as $default) {
+        $blocks[] = $default;
+      }
+
+
+      foreach ($blocks as $key => $block) {
+        $tokens = $block->getTokens();
+
+        // Get all the trailing nonsemantic tokens, since we need to look for
+        // "fallthrough" comments past the end of the semantic block.
+
+        $last = end($tokens);
+        while ($last && $last = $last->getNextToken()) {
+          if (!$last->isSemantic()) {
+            $tokens[] = $last;
+          }
+        }
+
+        $blocks[$key] = $tokens;
+      }
+
+      foreach ($blocks as $tokens) {
+
+        // Test each block (case or default statement) to see if it's OK. It's
+        // OK if:
+        //
+        //  - it is empty; or
+        //  - it ends in break, return, throw, continue or exit; or
+        //  - it has a comment with "fallthrough" in its text.
+
+        // Empty blocks are OK, so we start this at `true` and only set it to
+        // false if we find a statement.
+        $block_ok = true;
+
+        // Keeps track of whether the current statement is one that validates
+        // the block (break, return, throw, continue) or something else.
+        $statement_ok = false;
+
+        foreach ($tokens as $token) {
+          if (!$token->isSemantic()) {
+            // Liberally match "fall" in the comment text so that comments like
+            // "fallthru", "fall through", "fallthrough", etc., are accepted.
+            if (preg_match('/fall/i', $token->getValue())) {
+              $block_ok = true;
+              break;
+            }
+            continue;
+          }
+
+          $tok_type = $token->getTypeName();
+
+          if ($tok_type == ';') {
+            if ($statement_ok) {
+              $statment_ok = false;
+            } else {
+              $block_ok = false;
+            }
+            continue;
+          }
+
+          if ($tok_type == 'T_RETURN'   ||
+              $tok_type == 'T_BREAK'    ||
+              $tok_type == 'T_CONTINUE' ||
+              $tok_type == 'T_THROW'    ||
+              $tok_type == 'T_EXIT') {
+            $statement_ok = true;
+            $block_ok = true;
+          }
+        }
+
+        if (!$block_ok) {
+          $this->raiseLintAtToken(
+            head($tokens),
+            self::LINT_IMPLICIT_FALLTHROUGH,
+            "This 'case' or 'default' has a nonempty block which does not ".
+            "end with 'break', 'continue', 'return', 'throw' or 'exit'. Did ".
+            "you forget to add one of those? If you intend to fall through, ".
+            "add a '// fallthrough' comment to silence this warning.");
+        }
+      }
+    }
   }
 
   private function lintBraceFormatting($root) {
