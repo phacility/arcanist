@@ -94,6 +94,8 @@ class PhutilLintEngine extends ArcanistLintEngine {
       array(
         ArcanistXHPASTLinter::LINT_RAGGED_CLASSTREE_EDGE
           => ArcanistLintSeverity::SEVERITY_WARNING,
+        ArcanistXHPASTLinter::LINT_PHP_53_FEATURES
+          => ArcanistLintSeverity::SEVERITY_ERROR,
       ));
     $license_linter = new ArcanistApacheLicenseLinter();
     $linters[] = $xhpast_linter;

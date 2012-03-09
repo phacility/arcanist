@@ -54,6 +54,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_ARRAY_INDEX_SPACING       = 28;
   const LINT_RAGGED_CLASSTREE_EDGE     = 29;
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
+  const LINT_PHP_53_FEATURES           = 31;
 
 
   public function getLintNameMap() {
@@ -87,6 +88,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
       self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
+      self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
     );
   }
 
@@ -119,6 +121,11 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
       self::LINT_RAGGED_CLASSTREE_EDGE
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
+
+      // This is disabled by default because projects don't necessarily target
+      // a specific minimum version.
+      self::LINT_PHP_53_FEATURES
         => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
   }
@@ -190,6 +197,56 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintBraceFormatting($root);
     $this->lintRaggedClasstreeEdges($root);
     $this->lintImplicitFallthrough($root);
+    $this->lintPHP53Features($root);
+  }
+
+  public function lintPHP53Features($root) {
+
+    $functions = $root->selectTokensOfType('T_FUNCTION');
+    foreach ($functions as $function) {
+
+      $next = $function->getNextToken();
+      while ($next) {
+        if ($next->isSemantic()) {
+          break;
+        }
+        $next = $next->getNextToken();
+      }
+
+      if ($next) {
+        if ($next->getTypeName() == '(') {
+          $this->raiseLintAtToken(
+            $function,
+            self::LINT_PHP_53_FEATURES,
+            'This codebase targets PHP 5.2, but anonymous functions were '.
+            'not introduced until PHP 5.3.');
+        }
+      }
+    }
+
+    $namespaces = $root->selectTokensOfType('T_NAMESPACE');
+    foreach ($namespaces as $namespace) {
+      $this->raiseLintAtToken(
+        $namespace,
+        self::LINT_PHP_53_FEATURES,
+        'This codebase targets PHP 5.2, but namespaces were not introduced '.
+        'until PHP 5.3.');
+    }
+
+    // NOTE: This is only "use x;", in anonymous functions the node type is
+    // n_LEXICAL_VARIABLE_LIST even though both tokens are T_USE.
+
+    // TODO: We parse n_USE in a slightly crazy way right now; that would be
+    // a better selector once it's fixed.
+
+    $uses = $root->selectDescendantsOfType('n_USE_LIST');
+    foreach ($uses as $use) {
+      $this->raiseLintAtNode(
+        $use,
+        self::LINT_PHP_53_FEATURES,
+        'This codebase targets PHP 5.2, but namespaces were not introduced '.
+        'until PHP 5.3.');
+    }
   }
 
   private function lintImplicitFallthrough($root) {

@@ -1,0 +1,13 @@
+<?php
+
+namespace a;
+use b, c;
+f(function() {});
+g(function() use ($c) {});
+h(function /* ! */ () use ($c) {});
+~~~~~~~~~~
+disabled:3:1
+disabled:4:5
+disabled:5:3
+disabled:6:3
+disabled:7:3
