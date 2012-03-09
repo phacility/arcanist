@@ -191,6 +191,10 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $info['URL'].'@'.$this->getSVNBaseRevisionNumber();
   }
 
+  public function getCanonicalRevisionName($string) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function getSVNBaseRevisionNumber() {
     if ($this->svnBaseRevisionNumber) {
       return $this->svnBaseRevisionNumber;

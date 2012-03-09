@@ -223,20 +223,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
-  /**
-   * Returns the sha1 of the HEAD revision
-   * @param boolean $short whether return the abbreviated or full hash.
-   */
-  public function getGitHeadRevision($short=false) {
-    if ($short) {
-      $flags = '--short';
-    } else {
-      $flags = '';
-    }
-    list($stdout) = $this->execxLocal(
-      'rev-parse %s HEAD',
-      $flags);
-    return rtrim($stdout, "\n");
+  public function getCanonicalRevisionName($string) {
+    list($stdout) = $this->execxLocal('show -s --format=%C %s',
+      '%H', $string);
+    return rtrim($stdout);
   }
 
   public function getWorkingCopyStatus() {
@@ -552,10 +542,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function hasLocalCommit($commit) {
-    list($err) = $this->execManualLocal(
-      'merge-base %s HEAD',
-      $commit);
-    return !$err;
+    try {
+      $this->getCanonicalRevisionName($commit);
+    } catch (CommandException $exception) {
+      return false;
+    }
+    return true;
   }
 
   public function parseRelativeLocalCommit(array $argv) {

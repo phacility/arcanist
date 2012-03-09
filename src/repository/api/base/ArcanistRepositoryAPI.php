@@ -157,6 +157,7 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getCurrentFileData($path);
   abstract public function getLocalCommitInformation();
   abstract public function getSourceControlBaseRevision();
+  abstract public function getCanonicalRevisionName($string);
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
   abstract public function loadWorkingCopyDifferentialRevisions(

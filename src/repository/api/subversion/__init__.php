@@ -7,6 +7,7 @@
 
 
 phutil_require_module('arcanist', 'repository/api/base');
+phutil_require_module('arcanist', 'workflow/exception/notsupported');
 
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'filesystem/tempfile');

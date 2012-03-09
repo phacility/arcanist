@@ -60,6 +60,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
+  public function getCanonicalRevisionName($string) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function getSourceControlPath() {
     return '/';
   }
