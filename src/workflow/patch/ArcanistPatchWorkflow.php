@@ -615,7 +615,10 @@ EOTEXT
     $prompt_message = null;
 
     // if we have a revision id the commit message is in differential
-    if ($revision_id) {
+
+    // TODO: See T848 for the authenticated stuff.
+    if ($revision_id && $this->isConduitAuthenticated()) {
+
       $conduit        = $this->getConduit();
       $commit_message = $conduit->callMethodSynchronous(
         'differential.getcommitmessage',
