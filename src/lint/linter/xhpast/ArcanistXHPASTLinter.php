@@ -1460,6 +1460,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
           default:
             $key = null;
+            break;
         }
 
         if ($key !== null) {

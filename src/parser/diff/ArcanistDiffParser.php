@@ -305,6 +305,7 @@ final class ArcanistDiffParser {
           break;
         default:
           $this->didFailParse("Unknown diff type.");
+          break;
       }
     } while ($this->getLine() !== null);
 
