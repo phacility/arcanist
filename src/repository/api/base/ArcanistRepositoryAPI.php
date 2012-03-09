@@ -65,7 +65,9 @@ abstract class ArcanistRepositoryAPI {
         "any parent directory. Create an '.arcconfig' file to configure arc.");
     }
 
-    if (Filesystem::pathExists($root.'/.svn')) {
+    // check if we're in an svn working copy
+    list($err) = exec_manual('svn info');
+    if (!$err) {
       return newv('ArcanistSubversionAPI', array($root));
     }
 
