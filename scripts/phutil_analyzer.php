@@ -219,9 +219,14 @@ foreach (Futures($futures) as $file => $future) {
     $functions = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
     foreach ($functions as $function) {
       $name = $function->getChildByIndex(2);
-      $requirements->addFunctionDeclaration(
-        $name,
-        $name->getConcreteString());
+      if ($name->getTypeName() == 'n_EMPTY') {
+        // This is an anonymous function; don't record it into the symbol
+        // index.
+      } else {
+        $requirements->addFunctionDeclaration(
+          $name,
+          $name->getConcreteString());
+      }
     }
 
 
