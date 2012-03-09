@@ -122,6 +122,9 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       $message->setCode($matches[4]);
       $message->setName('PEP8 '.$matches[4]);
       $message->setDescription($matches[5]);
+      if (!$this->isMessageEnabled($matches[4])) {
+        continue;
+      }
       if ($matches[4][0] == 'E') {
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
       } else {
