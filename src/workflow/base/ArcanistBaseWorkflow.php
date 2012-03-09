@@ -694,61 +694,6 @@ abstract class ArcanistBaseWorkflow {
     }
   }
 
-  protected function chooseRevision(
-    array $revision_data,
-    $revision_id,
-    $prompt = null) {
-
-    $revisions = array();
-    foreach ($revision_data as $data) {
-      $ref = ArcanistDifferentialRevisionRef::newFromDictionary($data);
-      $revisions[$ref->getID()] = $ref;
-    }
-
-    if ($revision_id) {
-      $revision_id = $this->normalizeRevisionID($revision_id);
-      if (empty($revisions[$revision_id])) {
-        throw new ArcanistChooseInvalidRevisionException();
-      }
-      return $revisions[$revision_id];
-    }
-
-    if (!count($revisions)) {
-      throw new ArcanistChooseNoRevisionsException();
-    }
-
-    $repository_api = $this->getRepositoryAPI();
-
-    $candidates = $revisions;
-
-    if (count($candidates) == 1) {
-      $candidate = reset($candidates);
-      $revision_id = $candidate->getID();
-    }
-
-    if ($revision_id) {
-      return $revisions[$revision_id];
-    }
-
-    $revision_indexes = array_keys($revisions);
-
-    echo "\n";
-    $ii = 1;
-    foreach ($revisions as $revision) {
-      echo '  ['.$ii++.'] D'.$revision->getID().' '.$revision->getName()."\n";
-    }
-
-    while (true) {
-      $id = phutil_console_prompt($prompt);
-      $id = trim(strtoupper($id), 'D');
-      if (isset($revisions[$id])) {
-        return $revisions[$id];
-      }
-      if (isset($revision_indexes[$id - 1])) {
-        return $revisions[$revision_indexes[$id - 1]];
-      }
-    }
-  }
 
   protected function loadDiffBundleFromConduit(
     ConduitClient $conduit,

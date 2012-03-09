@@ -6,8 +6,6 @@
 
 
 
-phutil_require_module('arcanist', 'differential/revision');
-phutil_require_module('arcanist', 'exception');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/bundle');

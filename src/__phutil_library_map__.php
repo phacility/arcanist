@@ -36,7 +36,6 @@ phutil_register_library_map(array(
     'ArcanistDifferentialCommitMessage' => 'differential/commitmessage',
     'ArcanistDifferentialCommitMessageParserException' => 'differential/commitmessage',
     'ArcanistDifferentialRevisionHash' => 'differential/constants/revisionhash',
-    'ArcanistDifferentialRevisionRef' => 'differential/revision',
     'ArcanistDifferentialRevisionStatus' => 'differential/constants/revisionstatus',
     'ArcanistDownloadWorkflow' => 'workflow/download',
     'ArcanistEventType' => 'events/constant/type',
