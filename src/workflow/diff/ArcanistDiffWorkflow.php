@@ -652,7 +652,7 @@ EOTEXT
 
       // Remove all files with baserev "0"; these files are new.
       foreach ($bases as $path => $baserev) {
-        if ($bases[$path] == 0) {
+        if ($bases[$path] <= 0) {
           unset($bases[$path]);
         }
       }
