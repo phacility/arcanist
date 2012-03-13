@@ -89,6 +89,10 @@ final class ArcanistUnitTestResult {
    * @return string Cumulative coverage report.
    */
   public static function mergeCoverage(array $coverage) {
+    if (empty($coverage)) {
+      return null;
+    }
+
     $base = reset($coverage);
     foreach ($coverage as $more_coverage) {
       $len = min(strlen($base), strlen($more_coverage));
