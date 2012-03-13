@@ -402,19 +402,28 @@ final class ArcanistDiffParser {
       if ($done) {
         break;
       }
+      $prop_index = 2;
       $trimline = ltrim($line);
+      if ($trimline && $trimline[0] == '#') {
+        // in svn1.7, a line like ## -0,0 +1 ## is put between the Added: line
+        // and the line with the property change. If we have such a line, we'll
+        // just ignore it (:
+        $line = $this->nextLine();
+        $prop_index = 1;
+        $trimline = ltrim($line);
+      }
       if ($trimline && $trimline[0] == '+') {
         if ($op == 'Deleted') {
           $this->didFailParse('Unexpected "+" section in property deletion.');
         }
         $target = 'new';
-        $line = substr($trimline, 2);
+        $line = substr($trimline, $prop_index);
       } else if ($trimline && $trimline[0] == '-') {
         if ($op == 'Added') {
           $this->didFailParse('Unexpected "-" section in property addition.');
         }
         $target = 'old';
-        $line = substr($trimline, 2);
+        $line = substr($trimline, $prop_index);
       } else if (!strncmp($trimline, 'Merged', 6)) {
         if ($op == 'Added') {
           $target = 'new';
@@ -758,6 +767,18 @@ final class ArcanistDiffParser {
         $matches);
 
       if (!$ok) {
+        // It's possible we hit the style of an svn1.7 property change.
+        // This is a 4-line Index block, followed by an empty line, followed
+        // by a "Property changes on:" section similar to svn1.6.
+        if ($line == '') {
+          $line = $this->nextNonemptyLine();
+          $ok = preg_match('/^Property changes on:/', $line);
+          if (!$ok) {
+            $this->didFailParse("Confused by empty line");
+          }
+          $line = $this->nextLine();
+          return $this->parsePropertyHunk($change);
+        }
         $this->didFailParse("Expected hunk header '@@ -NN,NN +NN,NN @@'.");
       }
 

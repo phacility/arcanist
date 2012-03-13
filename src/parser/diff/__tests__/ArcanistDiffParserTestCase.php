@@ -515,6 +515,15 @@ EOTEXT
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
         break;
+      case 'svn-1.7-property-added.svndiff':
+        $this->assertEqual(1, count($changes));
+        $change = head($changes);
+        $new_properties = $change->getNewProperties();
+        $this->assertEqual(2, count($new_properties));
+        $this->assertEqual('*', idx($new_properties, 'svn:executable'));
+        $this->assertEqual('text/html', idx($new_properties, 'svn:mime-type'));
+        print_r($changes);
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

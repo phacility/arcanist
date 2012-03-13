@@ -1,0 +1,23 @@
+Index: test/testing
+===================================================================
+--- test/testing        (revision 0)
++++ test/testing        (working copy)
+@@ -0,0 +1,4 @@
++This
++is
++a
++test
+Index: test/testing
+===================================================================
+--- test/testing        (revision 0)
++++ test/testing        (working copy)
+
+Property changes on: test/testing
+___________________________________________________________________
+Added: svn:executable
+## -0,0 +1 ##
++*
+Added: svn:mime-type
+## -0,0 +1 ##
++text/html
+
