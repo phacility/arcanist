@@ -131,6 +131,8 @@ EOTEXT
     $readable = Filesystem::readablePath($path);
     echo "Using library root at '{$readable}'...\n";
 
+    $this->checkForLooseFiles($path);
+
     if ($this->getArgument('all')) {
       echo "Dropping module cache...\n";
       Filesystem::remove($path.'/.phutil_module_cache');
@@ -337,6 +339,27 @@ EOTEXT
     }
 
     return (int)$unresolved;
+  }
+
+  /**
+   * Sanity check to catch people putting class files in the root of a libphutil
+   * library.
+   */
+  private function checkForLooseFiles($path) {
+    foreach (Filesystem::listDirectory($path) as $item) {
+      if (!preg_match('/\.php$/', $item)) {
+        // Not a ".php" file.
+        continue;
+      }
+      if (preg_match('/^__/', $item)) {
+        // Has magic '__' prefix.
+        continue;
+      }
+
+      echo phutil_console_wrap(
+        "WARNING: File '{$item}' is not in a module and won't be loaded. ".
+        "Put source files in subdirectories, not the top level directory.\n");
+    }
   }
 
 }
