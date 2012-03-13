@@ -84,6 +84,25 @@ final class ArcanistDiffUtilsTestCase extends ArcanistPhutilTestCase {
         'public function and($b, $c) {',
         'siixsdddxsssssssssssiissxsssxsss'
       ),
+      array(
+
+        // This is a test that we correctly detect shared prefixes and suffixes
+        // and don't trigger "give up, too long" mode if there's a small text
+        // change in an ocean of similar text.
+
+        '        if ('.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx) {',
+        '        if('.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx) {',
+        'ssssssssssds'.
+          'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss'.
+          'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss'.
+          'sssssssssssssssssssssssssssssssssssssss',
+      ),
     );
 
     foreach ($tests as $test) {
