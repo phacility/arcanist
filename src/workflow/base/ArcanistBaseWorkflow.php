@@ -950,9 +950,19 @@ abstract class ArcanistBaseWorkflow {
    *
    * @param   list          List of explicitly provided paths.
    * @param   string|null   Revision name, if provided.
+   * @param   mask          Mask of ArcanistRepositoryAPI flags to exclude.
+   *                        Defaults to ArcanistRepositoryAPI::FLAG_UNTRACKED.
    * @return  list          List of paths the workflow should act on.
    */
-  protected function selectPathsForWorkflow(array $paths, $rev) {
+  protected function selectPathsForWorkflow(
+    array $paths,
+    $rev,
+    $omit_mask = null) {
+
+    if ($omit_mask === null) {
+      $omit_mask = ArcanistRepositoryAPI::FLAG_UNTRACKED;
+    }
+
     if ($paths) {
       $working_copy = $this->getWorkingCopy();
       foreach ($paths as $key => $path) {
@@ -973,7 +983,7 @@ abstract class ArcanistBaseWorkflow {
 
       $paths = $repository_api->getWorkingCopyStatus();
       foreach ($paths as $path => $flags) {
-        if ($flags & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+        if ($flags & $omit_mask) {
           unset($paths[$path]);
         }
       }

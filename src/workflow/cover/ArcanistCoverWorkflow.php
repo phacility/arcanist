@@ -25,7 +25,7 @@ final class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **cover**
+      **cover** [--rev __revision__] [__path__ ...]
 EOTEXT
       );
   }
@@ -34,10 +34,28 @@ EOTEXT
     return phutil_console_format(<<<EOTEXT
           Supports: svn, git
           Cover your... professional reputation. Show blame for the lines you
-          changed in your working copy. This will take a minute because blame
-          takes a minute, especially under SVN.
+          changed in your working copy (svn) or since some commit (hg, git).
+          This will take a minute because blame takes a minute, especially under
+          SVN.
 EOTEXT
       );
+  }
+
+  public function getArguments() {
+    return array(
+      'rev' => array(
+        'param'     => 'revision',
+        'help'      => 'Cover changes since a specific revision.',
+        'supports'  => array(
+          'git',
+          'hg',
+        ),
+        'nosupport' => array(
+          'svn' => "cover does not currently support --rev in svn.",
+        ),
+      ),
+      '*' => 'paths',
+    );
   }
 
   public function requiresWorkingCopy() {
@@ -60,21 +78,20 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    $paths = $repository_api->getWorkingCopyStatus();
+    $in_paths = $this->getArgument('paths');
+    $in_rev = $this->getArgument('rev');
 
-    foreach ($paths as $path => $status) {
-      if (is_dir($path)) {
-        unset($paths[$path]);
-      }
-      if ($status & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-        unset($paths[$path]);
-      }
-      if ($status & ArcanistRepositoryAPI::FLAG_ADDED) {
-        unset($paths[$path]);
-      }
+    if ($in_rev) {
+      // Although selectPathsForWorkflow() may set this, we want to set it
+      // explicitly so we blame against the correct relative commit.
+      $repository_api->parseRelativeLocalCommit(array($in_rev));
     }
 
-    $paths = array_keys($paths);
+    $paths = $this->selectPathsForWorkflow(
+      $in_paths,
+      $in_rev,
+      ArcanistRepositoryAPI::FLAG_UNTRACKED |
+      ArcanistRepositoryAPI::FLAG_ADDED);
 
     if (!$paths) {
       throw new ArcanistNoEffectException(
@@ -83,10 +100,15 @@ EOTEXT
 
     $covers = array();
     foreach ($paths as $path) {
+      if (is_dir($repository_api->getPath($path))) {
+        continue;
+      }
+
       $lines = $this->getChangedLines($path, 'cover');
       if (!$lines) {
         continue;
       }
+
       $blame = $repository_api->getBlame($path);
       foreach ($lines as $line) {
         list($author, $revision) = idx($blame, $line, array(null, null));
