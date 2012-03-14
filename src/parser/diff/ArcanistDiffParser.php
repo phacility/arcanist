@@ -936,11 +936,36 @@ final class ArcanistDiffParser {
   }
 
   protected function didStartParse($text) {
-    // TODO: Removed an fb_utf8ize() call here. -epriestley
 
     // Eat leading whitespace. This may happen if the first change in the diff
     // is an SVN property change.
     $text = ltrim($text);
+
+    // Try to strip ANSI color codes from colorized diffs. ANSI color codes
+    // might be present in two cases:
+    //
+    //   - You piped a colorized diff into 'arc --raw' or similar (normally
+    //     we're able to disable colorization on diffs we control the generation
+    //     of).
+    //   - You're diffing a file which actually contains ANSI color codes.
+    //
+    // The former is vastly more likely, but we try to distinguish between the
+    // two cases by testing for a color code at the beginning of a line. If
+    // we find one, we know it's a colorized diff (since the beginning of the
+    // line should be "+", "-" or " " if the code is in the diff text).
+    //
+    // While it's possible a diff might be colorized and fail this test, it's
+    // unlikely, and it covers hg's color extension which seems to be the most
+    // stubborn about colorizing text despite stdout not being a TTY.
+    //
+    // We might incorrectly strip color codes from a colorized diff of a text
+    // file with color codes inside it, but this case is stupid and pathological
+    // and you've dug your own grave.
+
+    $ansi_color_pattern = '\x1B\[[\d;]*m';
+    if (preg_match('/^'.$ansi_color_pattern.'/m', $text)) {
+      $text = preg_replace('/'.$ansi_color_pattern.'/', '', $text);
+    }
 
     $this->text = explode("\n", $text);
     $this->line = 0;
@@ -981,8 +1006,9 @@ final class ArcanistDiffParser {
     $context = '';
     for ($ii = $min; $ii <= $max; $ii++) {
       $context .= sprintf(
-        "%8.8s %s\n",
+        "%8.8s %6.6s   %s\n",
         ($ii == $this->line) ? '>>>  ' : '',
+        $ii + 1,
         $this->text[$ii]);
     }
 

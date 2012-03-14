@@ -38,6 +38,9 @@ final class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
     $changes = $parser->parseDiff($contents);
 
     switch ($file) {
+      case 'colorized.hggitdiff':
+        $this->assertEqual(1, count($changes));
+        break;
       case 'basic-missing-both-newlines-plus.udiff':
       case 'basic-missing-both-newlines.udiff':
       case 'basic-missing-new-newline-plus.udiff':
