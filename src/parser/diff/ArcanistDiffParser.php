@@ -132,6 +132,12 @@ final class ArcanistDiffParser {
 
         $from[$path] = $cpath;
       }
+      $type = $change->getType();
+      if (($type === ArcanistDiffChangeType::TYPE_MOVE_AWAY ||
+           $type === ArcanistDiffChangeType::TYPE_DELETE) &&
+          idx($info, 'Node Kind') === 'directory') {
+        $change->setFileType(ArcanistDiffChangeType::FILE_DIRECTORY);
+      }
     }
 
     foreach ($paths as $path => $status) {

@@ -753,6 +753,10 @@ abstract class ArcanistBaseWorkflow {
       return null;
     }
 
+    if (!file_exists($full_path)) {
+      return null;
+    }
+
     $change = $this->getChange($path);
 
     if ($change->getFileType() !== ArcanistDiffChangeType::FILE_TEXT) {

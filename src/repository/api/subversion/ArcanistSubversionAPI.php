@@ -291,6 +291,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         '/^(Copied From URL): (\S+)$/m',
         '/^(Copied From Rev): (\d+)$/m',
         '/^(Repository UUID): (\S+)$/m',
+        '/^(Node Kind): (\S+)$/m',
       );
 
       $result = array();
@@ -423,6 +424,10 @@ EODIFF;
   protected function buildSyntheticUnchangedDiff($path) {
     $full_path = $this->getPath($path);
     if (is_dir($full_path)) {
+      return null;
+    }
+
+    if (!file_exists($full_path)) {
       return null;
     }
 
