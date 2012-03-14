@@ -751,7 +751,7 @@ EOTEXT
       }
     }
 
-    $try_encoding = null;
+    $try_encoding = nonempty($this->getArgument('encoding'), null);
 
     $utf8_problems = array();
     foreach ($changes as $change) {
@@ -764,29 +764,21 @@ EOTEXT
           // liberal about what they're willing to process.
           $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
           if (!$is_binary) {
-            $try_encoding = nonempty($this->getArgument('encoding'), null);
-            if ($try_encoding === null) {
-              // Make a call to check if there's an encoding specified for this
-              // project.
+
+            if (!$try_encoding) {
               try {
-                  $project_info = $this->getConduit()->callMethodSynchronous(
-                      'arcanist.projectinfo',
-                      array(
-                          'name' => $this->getWorkingCopy()->getProjectID(),
-                      ));
-                  $try_encoding = nonempty($project_info['encoding'], false);
+                $try_encoding = $this->getRepositoryEncoding();
               } catch (ConduitClientException $e) {
-                  if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
-                      echo phutil_console_wrap(
-                          "Lookup of encoding in arcanist project failed\n".
-                          $e->getMessage()
-                      );
-                      $try_encoding = false;
-                  } else {
-                      throw $e;
-                  }
+                if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
+                  echo phutil_console_wrap(
+                    "Lookup of encoding in arcanist project failed\n".
+                    $e->getMessage());
+                } else {
+                  throw $e;
+                }
               }
             }
+
             if ($try_encoding) {
               // NOTE: This feature is HIGHLY EXPERIMENTAL and will cause a lot
               // of issues. Use it at your own risk.

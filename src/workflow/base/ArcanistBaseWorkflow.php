@@ -64,6 +64,8 @@ abstract class ArcanistBaseWorkflow {
   private $arguments;
   private $command;
 
+  private $repositoryEncoding;
+
   private $arcanistConfiguration;
   private $parentWorkflow;
   private $workingDirectory;
@@ -1124,6 +1126,20 @@ abstract class ArcanistBaseWorkflow {
 
     $repository_api = $this->getRepositoryAPI();
     return $repository_api->getPath('.arc/'.$path);
+  }
+
+  protected function getRepositoryEncoding() {
+    if ($this->repositoryEncoding) {
+      return $this->repositoryEncoding;
+    }
+
+    $project_info = $this->getConduit()->callMethodSynchronous(
+      'arcanist.projectinfo',
+      array(
+        'name' => $this->getWorkingCopy()->getProjectID(),
+      ));
+    $this->repositoryEncoding = nonempty($project_info['encoding'], 'UTF-8');
+    return $this->repositoryEncoding;
   }
 
 }

@@ -12,6 +12,7 @@ phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'workflow/base');
 
 phutil_require_module('phutil', 'console');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistExportWorkflow.php');

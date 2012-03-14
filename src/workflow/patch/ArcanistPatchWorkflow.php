@@ -81,6 +81,11 @@ EOTEXT
         'help' =>
           "Apply changes from a git patchfile or unified patchfile.",
       ),
+      'encoding' => array(
+        'param' => 'encoding',
+        'help' =>
+          "Attempt to convert non UTF-8 patch into specified encoding.",
+      ),
       'update' => array(
         'supports' => array(
           'git', 'svn', 'hg'
@@ -359,6 +364,20 @@ EOTEXT
         throw $ex;
       }
     }
+
+    $try_encoding = nonempty($this->getArgument('encoding'), null);
+    if (!$try_encoding) {
+      try {
+        $try_encoding = $this->getRepositoryEncoding();
+      } catch (ConduitClientException $e) {
+        $try_encoding = null;
+      }
+    }
+
+    if ($try_encoding) {
+      $bundle->setEncoding($try_encoding);
+    }
+
     $force = $this->getArgument('force', false);
     if ($force) {
       // force means don't do any sanity checks about the patch
