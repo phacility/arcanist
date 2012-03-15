@@ -525,7 +525,6 @@ EOTEXT
         $this->assertEqual(2, count($new_properties));
         $this->assertEqual('*', idx($new_properties, 'svn:executable'));
         $this->assertEqual('text/html', idx($new_properties, 'svn:mime-type'));
-        print_r($changes);
         break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
