@@ -298,27 +298,9 @@ EOTEXT
   }
 
   private function updateWorkingCopy() {
-    $repository_api = $this->getRepositoryAPI();
-    if ($repository_api instanceof ArcanistSubversionAPI) {
-      execx(
-        '(cd %s; svn up)',
-        $repository_api->getPath());
-      $message = "Updated to HEAD.  ";
-    } else if ($repository_api instanceof ArcanistGitAPI) {
-      execx(
-        '(cd %s; git pull)',
-        $repository_api->getPath());
-      $message = "Updated to HEAD.  ";
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      execx(
-        '(cd %s; hg up)',
-        $repository_api->getPath());
-      $message = "Updated to tip.  ";
-    } else {
-      throw new Exception('Unknown version control system.');
-    }
-
-    echo phutil_console_format($message."\n");
+    echo "Updating working copy...\n";
+    $this->getRepositoryAPI()->updateWorkingCopy();
+    echo "Done.\n";
   }
 
   public function run() {
@@ -367,10 +349,12 @@ EOTEXT
 
     $try_encoding = nonempty($this->getArgument('encoding'), null);
     if (!$try_encoding) {
-      try {
-        $try_encoding = $this->getRepositoryEncoding();
-      } catch (ConduitClientException $e) {
-        $try_encoding = null;
+      if ($this->requiresConduit()) {
+        try {
+          $try_encoding = $this->getRepositoryEncoding();
+        } catch (ConduitClientException $e) {
+          $try_encoding = null;
+        }
       }
     }
 

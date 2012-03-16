@@ -160,6 +160,7 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getCanonicalRevisionName($string);
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
+  abstract public function updateWorkingCopy();
   abstract public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query);

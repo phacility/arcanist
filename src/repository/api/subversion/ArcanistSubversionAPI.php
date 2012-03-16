@@ -549,4 +549,8 @@ EODIFF;
     return $results;
   }
 
+  public function updateWorkingCopy() {
+    $this->execxLocal('up');
+  }
+
 }

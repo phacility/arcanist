@@ -672,4 +672,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $results;
   }
 
+  public function updateWorkingCopy() {
+    $this->execxLocal('pull');
+  }
+
 }

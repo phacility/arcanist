@@ -430,4 +430,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $results;
   }
 
+  public function updateWorkingCopy() {
+    $this->execxLocal('up');
+  }
+
 }
