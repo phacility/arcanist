@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,14 @@ final class ArcanistBundleTestCase extends ArcanistPhutilTestCase {
         'disjoint-hunks.new')->toUnifiedDiff());
   }
 
-
-
+  public function testNonlocalTrailingNewline() {
+    // Diffs without changes near the end of the file should not generate a
+    // bogus, change-free hunk if the file has no trailing newline.
+    $this->assertEqual(
+      $this->loadResource('trailing-newline.diff'),
+      $this->loadOneChangeBundle(
+        'trailing-newline.old',
+        'trailing-newline.new')->toUnifiedDiff());
+  }
 
 }

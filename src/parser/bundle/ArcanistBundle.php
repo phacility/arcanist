@@ -426,8 +426,18 @@ final class ArcanistBundle {
     $ii = 0;
     $jj = 0;
     while ($ii < $n) {
-      for ($jj = $ii; $jj < $n && $lines[$jj][0] == ' '; ++$jj) {
-        // Skip lines until we find the first line with changes.
+      // Skip lines until we find the next line with changes. Note: this skips
+      // both ' ' (no changes) and '\' (no newline at end of file) lines. If we
+      // don't skip the latter, we may incorrectly generate a terminal hunk
+      // that has no actual change information when a file doesn't have a
+      // terminal newline and not changed near the end of the file. 'patch' will
+      // fail to apply the diff if we generate a hunk that does not actually
+      // contain changes.
+      for ($jj = $ii; $jj < $n; ++$jj) {
+        $char = $lines[$jj][0];
+        if ($char == '-' || $char == '+') {
+          break;
+        }
       }
       if ($jj >= $n) {
         break;
