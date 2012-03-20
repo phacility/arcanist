@@ -92,16 +92,10 @@ EOTEXT
     return array(
       'message' => array(
         'short'       => 'm',
-        'supports'    => array(
-          'git',
-        ),
-        'nosupport'   => array(
-          'svn' => 'Edit revisions via the web interface when using SVN.',
-        ),
         'param'       => 'message',
         'help' =>
-          "When updating a revision under git, use the specified message ".
-          "instead of prompting.",
+          "When updating a revision, use the specified message instead of ".
+          "prompting.",
       ),
       'message-file' => array(
         'short' => 'F',
@@ -1470,6 +1464,13 @@ EOTEXT
     $comments = $this->getArgument('message');
     if (strlen($comments)) {
       return $comments;
+    }
+
+    if ($this->getArgument('raw')) {
+      throw new ArcanistUsageException(
+        "When using '--raw' to update a revision, specify an update message ".
+        "with '--message'. (Normally, we'd launch an editor to ask you for a ".
+        "message, but can not do that because stdin is a diff source.)");
     }
 
     // When updating a revision using git without specifying '--message', try
