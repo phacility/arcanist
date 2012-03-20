@@ -7,6 +7,7 @@
 
 
 phutil_require_module('arcanist', 'exception/usage');
+phutil_require_module('arcanist', 'exception/usage/uncommittedchanges');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/bundle');
 phutil_require_module('arcanist', 'parser/diff');

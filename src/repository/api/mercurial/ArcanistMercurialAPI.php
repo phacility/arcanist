@@ -28,6 +28,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $relativeCommit;
   private $workingCopyRevision;
   private $localCommitInfo;
+  private $includeDirectoryStateInDiffs;
 
   protected function buildLocalFuture(array $argv) {
 
@@ -53,15 +54,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getSourceControlBaseRevision() {
-    list($stdout) = $this->execxLocal(
-      'log -l 1 --template %s -r %s',
-      '{node}\\n',
-      $this->getRelativeCommit());
-    return rtrim($stdout, "\n");
+    return $this->getCanonicalRevisionName($this->getRelativeCommit());
   }
 
   public function getCanonicalRevisionName($string) {
-    throw new ArcanistCapabilityNotSupportedException($this);
+    list($stdout) = $this->execxLocal(
+      'log -l 1 --template %s -r %s --',
+      '{node}',
+      $this->getRelativeCommit());
+
+    return $stdout;
   }
 
   public function getSourceControlPath() {
@@ -75,28 +77,40 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function setRelativeCommit($commit) {
-    if (!$this->hasLocalCommit($commit)) {
+    try {
+      $commit = $this->getCanonicalRevisionName($commit);
+    } catch (Exception $ex) {
       throw new ArcanistUsageException(
         "Commit '{$commit}' is not a valid Mercurial commit identifier.");
     }
+
     $this->relativeCommit = $commit;
     return $this;
   }
 
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
-      list($stdout) = $this->execxLocal(
+      list($err, $stdout) = $this->execManualLocal(
         'outgoing --branch `hg branch` --style default');
-      $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-      if (!count($logs)) {
-        throw new ArcanistUsageException("You have no outgoing changes!");
+
+      if (!$err) {
+        $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+      } else {
+        // Mercurial (in some versions?) raises an error when there's nothing
+        // outgoing.
+        $logs = array();
+      }
+
+      if (!$logs) {
+        // In Mercurial, we support operations against uncommitted changes.
+        return $this->getWorkingCopyRevision();
       }
 
       $outgoing_revs = ipull($logs, 'rev');
 
       // This is essentially an implementation of a theoretical `hg merge-base`
       // command.
-      $against = 'tip';
+      $against = $this->getWorkingCopyRevision();
       while (true) {
         // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
         // new as of July 2011, so do this in a compatible way. Also, "hg log"
@@ -128,7 +142,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         }
       }
 
-      $this->relativeCommit = $against;
+      $this->setRelativeCommit($against);
     }
     return $this->relativeCommit;
   }
@@ -205,6 +219,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       // just take the entire diff and parse it to figure out what's changed.
 
       $diff = $this->getFullMercurialDiff();
+
+      if (!$diff) {
+        $this->status = array();
+        return $this->status;
+      }
+
       $parser = new ArcanistDiffParser();
       $changes = $parser->parseDiff($diff);
 
@@ -273,7 +293,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'diff %C --rev %s --rev %s -- %s',
       $options,
       $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision(),
+      $this->getDiffToRevision(),
       $path);
 
     return $stdout;
@@ -286,7 +306,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'diff %C --rev %s --rev %s --',
       $options,
       $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision());
+      $this->getDiffToRevision());
 
     return $stdout;
   }
@@ -341,8 +361,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function hasLocalCommit($commit) {
-    list($err) = $this->execManualLocal('id -ir %s', $commit);
-    return !$err;
+    try {
+      $this->getCanonicalRevisionName($commit);
+      return true;
+    } catch (Exception $ex) {
+      return false;
+    }
   }
 
   public function parseRelativeLocalCommit(array $argv) {
@@ -432,6 +456,25 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('up');
+  }
+
+  public function setIncludeDirectoryStateInDiffs($include) {
+    $this->includeDirectoryStateInDiffs = $include;
+    return $this;
+  }
+
+  private function getDiffToRevision() {
+
+    // Clear status cache since it's now bogus.
+    $this->status = null;
+
+    if ($this->includeDirectoryStateInDiffs) {
+      // This is a magic Mercurial revision name which means "current
+      // directory state"; see lookup() in localrepo.py.
+      return '.';
+    } else {
+      return $this->getWorkingCopyRevision();
+    }
   }
 
 }

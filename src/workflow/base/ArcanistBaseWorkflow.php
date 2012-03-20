@@ -687,9 +687,9 @@ abstract class ArcanistBaseWorkflow {
 
     $uncommitted = $api->getUncommittedChanges();
     if ($uncommitted) {
-      throw new ArcanistUsageException(
-        "You have uncommitted changes in this branch. Commit (or revert) them ".
-        "before proceeding.\n\n".
+      throw new ArcanistUncommittedChangesException(
+        "You have uncommitted changes in this working copy. Commit (or ".
+        "revert) them before proceeding.\n\n".
         $working_copy_desc.
         "  Uncommitted changes in working copy\n".
         "    ".implode("\n    ", $uncommitted)."\n");

@@ -290,6 +290,12 @@ EOTEXT
       'no-amend' => array(
         'help' => 'Never amend commits in the working copy.',
       ),
+      'uncommitted' => array(
+        'help' => 'Include uncommitted changes without prompting.',
+        'supports' => array(
+          'hg',
+        ),
+      ),
       '*' => 'paths',
     );
   }
@@ -501,7 +507,33 @@ EOTEXT
     }
 
     if ($this->requiresWorkingCopy()) {
-      $this->requireCleanWorkingCopy();
+      try {
+        $this->requireCleanWorkingCopy();
+      } catch (ArcanistUncommittedChangesException $ex) {
+        if ($repository_api instanceof ArcanistMercurialAPI) {
+
+          // Some Mercurial users prefer to use it like SVN, where they don't
+          // commit changes before sending them for review. This would be a
+          // pretty bad workflow in Git, but Mercurial users are significantly
+          // more expert at change management.
+
+          $use_dirty_changes = false;
+          if ($this->getArgument('uncommitted')) {
+            // OK.
+          } else {
+            $ok = phutil_console_confirm(
+              "You have uncommitted changes in your working copy. You can ".
+              "include them in the diff, or abort and deal with them. (Use ".
+              "'--uncommitted' to include them and skip this prompt.) ".
+              "Do you want to include uncommitted changes in the diff?");
+            if (!$ok) {
+              throw $ex;
+            }
+          }
+
+          $repository_api->setIncludeDirectoryStateInDiffs(true);
+        }
+      }
     }
   }
 
@@ -693,6 +725,10 @@ EOTEXT
       $changes = $parser->parseDiff($diff);
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $diff = $repository_api->getFullMercurialDiff();
+      if (!strlen($diff)) {
+        throw new ArcanistUsageException(
+          "No changes found. (Did you specify the wrong commit range?)");
+      }
       $changes = $parser->parseDiff($diff);
     } else {
       throw new Exception("Repository API is not supported.");
