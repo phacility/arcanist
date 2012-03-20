@@ -1470,7 +1470,7 @@ EOTEXT
       throw new ArcanistUsageException(
         "When using '--raw' to update a revision, specify an update message ".
         "with '--message'. (Normally, we'd launch an editor to ask you for a ".
-        "message, but can not do that because stdin is a diff source.)");
+        "message, but can not do that because stdin is the diff source.)");
     }
 
     // When updating a revision using git without specifying '--message', try
