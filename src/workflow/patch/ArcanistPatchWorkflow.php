@@ -269,11 +269,14 @@ EOTEXT
     // verify the base revision is valid
     // in a working copy that uses the git-svn bridge, the base revision might
     // be a svn uri instead of a git ref
+
+    // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
+    // always "verifies" any properly-formatted commit even if it does not
+    // exist.
     list($err) = exec_manual(
-      '(cd %s; git rev-parse --verify %s)',
+      '(cd %s; git cat-file -t %s)',
       $repository_api->getPath(),
-      $base_revision
-    );
+      $base_revision);
 
     if ($base_revision && !$err) {
       execx(
@@ -289,8 +292,8 @@ EOTEXT
     }
 
     echo phutil_console_format(
-      "Created and checked out branch {$branch_name}.\n"
-    );
+      "Created and checked out branch %s.\n",
+      $branch_name);
   }
 
   private function shouldUpdateWorkingCopy() {
