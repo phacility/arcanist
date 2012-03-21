@@ -61,8 +61,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'log -l 1 --template %s -r %s --',
       '{node}',
-      $this->getRelativeCommit());
-
+      $string);
     return $stdout;
   }
 
