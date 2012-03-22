@@ -120,9 +120,10 @@ try {
       } catch (PhutilBootloaderException $ex) {
         $error_msg = sprintf(
           'Failed to load library "%s" at location "%s". Please check the '.
-          '"phutil_libraries" setting in your .arcconfig file. Refer to page '.
-          'http://phabricator.com/docs/arcanist/article/'.
-          'Setting_Up_.arcconfig.html for more info.',
+          '"phutil_libraries" setting in your .arcconfig file. Refer to '.
+          '<http://phabricator.com/docs/phabricator/article/'.
+          'Arcanist_User_Guide:_Configuring_a_New_Project.html> '.
+          'for more information.',
           $name,
           $location);
         throw new ArcanistUsageException($error_msg);
