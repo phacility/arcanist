@@ -1,7 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
 # NOTE: This file is a wrapper script instead of a symlink so it will work in
 # the Git Bash environment in Windows.
 
-exec `dirname $0`/../scripts/arcanist.php $@
+# Do bash magic to resolve the real location of this script through aliases,
+# symlinks, etc.
+SOURCE="${BASH_SOURCE[0]}";
+while [ -h "$SOURCE" ]; do
+  SOURCE="$(readlink "$SOURCE")";
+done;
+DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+exec $DIR/../scripts/arcanist.php $@
 
