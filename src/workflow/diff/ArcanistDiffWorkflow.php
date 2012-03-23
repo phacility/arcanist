@@ -497,6 +497,18 @@ EOTEXT
       if ($this->getArgument('less-context')) {
         $repository_api->setDiffLinesOfContext(3);
       }
+
+      if ($repository_api->supportsRelativeLocalCommits()) {
+
+        // Parse the relative commit as soon as we can, to avoid generating
+        // caches we need to drop later and expensive discovery operations
+        // (particularly in Mercurial).
+
+        $relative = $this->getArgument('paths');
+        if ($relative) {
+          $repository_api->parseRelativeLocalCommit($relative);
+        }
+      }
     }
 
     $output_json = $this->getArgument('json');
@@ -622,8 +634,6 @@ EOTEXT
       }
 
     } else if ($repository_api->supportsRelativeLocalCommits()) {
-      $repository_api->parseRelativeLocalCommit(
-        $this->getArgument('paths', array()));
       $paths = $repository_api->getWorkingCopyStatus();
     } else {
       throw new Exception("Unknown VCS!");
