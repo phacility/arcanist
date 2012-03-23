@@ -128,6 +128,8 @@ EOTEXT
       $use_squash = !$this->isHistoryImmutable();
     }
 
+    var_dump($use_squash);
+
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException("'arc land' only supports git.");
@@ -248,7 +250,7 @@ EOTEXT
 
     $repository_api->execxLocal('checkout %s', $onto);
 
-    if ($use_squash) {
+    if (!$use_squash) {
       // In immutable histories, do a --no-ff merge to force a merge commit with
       // the right message.
       chdir($repository_api->getPath());
