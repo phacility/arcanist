@@ -68,7 +68,8 @@ EOTEXT
       'onto' => array(
         'param' => 'master',
         'help' => "Land feature branch onto a branch other than ".
-                  "'master' (default).",
+                  "'master' (default). You can change the default by setting ".
+                  "'arc.land.onto.default' in your .arcconfig.",
       ),
       'hold' => array(
         'help' => "Prepare the change to be pushed, but do not actually ".
@@ -87,6 +88,14 @@ EOTEXT
                   'project is marked as having an immutable history, this is '.
                   'the default behavior.',
       ),
+      'squash' => array(
+        'help' => 'Perform a --squash merge, not a --no-ff merge. If the '.
+                  'project is marked as having a mutable history, this is '.
+                  'the default behavior.',
+        'conflicts' => array(
+          'merge' => '--merge and --squash are conflicting merge strategies.',
+        ),
+      ),
       'revision' => array(
         'param' => 'id',
         'help'  => 'Use the message from a specific revision, rather than '.
@@ -104,19 +113,28 @@ EOTEXT
     }
     $branch = head($branch);
 
+    $onto_default = nonempty(
+      $this->getWorkingCopy()->getConfig('arc.land.onto.default'),
+      'master');
+
     $remote = $this->getArgument('remote', 'origin');
-    $onto = $this->getArgument('onto', 'master');
-    $is_immutable = $this->isHistoryImmutable() ||
-      $this->getArgument('merge');
+    $onto = $this->getArgument('onto', $onto_default);
+
+    if ($this->getArgument('merge')) {
+      $use_squash = false;
+    } else if ($this->getArgument('squash')) {
+      $use_squash = true;
+    } else {
+      $use_squash = !$this->isHistoryImmutable();
+    }
 
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException("'arc land' only supports git.");
     }
 
-    list($err) = exec_manual(
-      '(cd %s && git rev-parse --verify %s)',
-      $repository_api->getPath(),
+    list($err) = $repository_api->execManualLocal(
+      'rev-parse --verify %s',
       $branch);
 
     if ($err) {
@@ -128,22 +146,16 @@ EOTEXT
 
     $old_branch = $repository_api->getBranchName();
 
-    execx(
-      '(cd %s && git checkout %s)',
-      $repository_api->getPath(),
-      $onto);
+    $repository_api->execxLocal('checkout %s', $onto);
 
     echo phutil_console_format(
       "Switched to branch **%s**. Updating branch...\n",
       $onto);
 
-    execx(
-      '(cd %s && git pull --ff-only)',
-      $repository_api->getPath());
+    $repository_api->execxLocal('pull --ff-only');
 
-    list($out) = execx(
-      '(cd %s && git log %s/%s..%s)',
-      $repository_api->getPath(),
+    list($out) = $repository_api->execxLocal(
+      'log %s/%s..%s',
       $remote,
       $onto,
       $onto);
@@ -154,20 +166,17 @@ EOTEXT
         "changes in '{$onto}' before running 'arc land'.");
     }
 
-    execx(
-      '(cd %s && git checkout %s)',
-      $repository_api->getPath(),
+    $repository_api->execxLocal(
+      'checkout %s',
       $branch);
 
     echo phutil_console_format(
       "Switched to branch **%s**. Identifying and merging...\n",
       $branch);
 
-    if (!$is_immutable) {
-      $err = phutil_passthru(
-        '(cd %s && git rebase %s)',
-        $repository_api->getPath(),
-        $onto);
+    if ($use_squash) {
+      chdir($repository_api->getPath());
+      $err = phutil_passthru('git rebase %s', $onto);
       if ($err) {
         throw new ArcanistUsageException(
           "'git rebase {$onto}' failed. You can abort with 'git rebase ".
@@ -237,17 +246,14 @@ EOTEXT
         'revision_id' => $revision['id'],
       ));
 
-    execx(
-      '(cd %s && git checkout %s)',
-      $repository_api->getPath(),
-      $onto);
+    $repository_api->execxLocal('checkout %s', $onto);
 
-    if ($is_immutable) {
+    if ($use_squash) {
       // In immutable histories, do a --no-ff merge to force a merge commit with
       // the right message.
+      chdir($repository_api->getPath());
       $err = phutil_passthru(
-        '(cd %s && git merge --no-ff -m %s %s)',
-        $repository_api->getPath(),
+        'git merge --no-ff -m %s %s',
         $message,
         $branch);
       if ($err) {
@@ -258,13 +264,11 @@ EOTEXT
       }
     } else {
       // In mutable histories, do a --squash merge.
-      execx(
-        '(cd %s && git merge --squash --ff-only %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'merge --squash --ff-only %s',
         $branch);
-      execx(
-        '(cd %s && git commit -m %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'commit -m %s',
         $message);
     }
 
@@ -275,9 +279,9 @@ EOTEXT
     } else {
       echo "Pushing change...\n\n";
 
+      chdir($repository_api->getPath());
       $err = phutil_passthru(
-        '(cd %s && git push %s %s)',
-        $repository_api->getPath(),
+        'git push %s %s',
         $remote,
         $onto);
 
@@ -298,9 +302,8 @@ EOTEXT
     }
 
     if (!$this->getArgument('keep-branch')) {
-      list($ref) = execx(
-        '(cd %s && git rev-parse --verify %s)',
-        $repository_api->getPath(),
+      list($ref) = $repository_api->execxLocal(
+        'rev-parse --verify %s',
         $branch);
       $ref = trim($ref);
       $recovery_command = csprintf(
@@ -310,18 +313,16 @@ EOTEXT
 
       echo "Cleaning up feature branch...\n";
       echo "(Use `{$recovery_command}` if you want it back.)\n";
-      execx(
-        '(cd %s && git branch -D %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'branch -D %s',
         $branch);
     }
 
     // If we were on some branch A and the user ran "arc land B", switch back
     // to A.
     if (($old_branch != $branch) && ($old_branch != $onto)) {
-      execx(
-        '(cd %s && git checkout %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'checkout %s',
         $old_branch);
       echo phutil_console_format(
         "Switched back to branch **%s**.\n",
