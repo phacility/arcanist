@@ -128,8 +128,6 @@ EOTEXT
       $use_squash = !$this->isHistoryImmutable();
     }
 
-    var_dump($use_squash);
-
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException("'arc land' only supports git.");
