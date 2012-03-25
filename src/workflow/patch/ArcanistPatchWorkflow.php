@@ -233,11 +233,9 @@ EOTEXT
     foreach ($suffixes as $suffix) {
       $proposed_name = $base_name.$suffix;
 
-      list($err) = exec_manual(
-        '(cd %s; git rev-parse --verify %s)',
-        $repository_api->getPath(),
-        $proposed_name
-      );
+      list($err) = $repository_api->execManualLocal(
+        'rev-parse --verify %s',
+        $proposed_name);
 
       // no error means git rev-parse found a branch
       if (!$err) {
@@ -273,21 +271,18 @@ EOTEXT
     // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
     // always "verifies" any properly-formatted commit even if it does not
     // exist.
-    list($err) = exec_manual(
-      '(cd %s; git cat-file -t %s)',
-      $repository_api->getPath(),
+    list($err) = $repository_api->execManualLocal(
+      'cat-file -t %s',
       $base_revision);
 
     if ($base_revision && !$err) {
-      execx(
-        '(cd %s; git checkout -b %s %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'checkout -b %s %s',
         $branch_name,
         $base_revision);
     } else {
-      execx(
-        '(cd %s; git checkout -b %s)',
-        $repository_api->getPath(),
+      $repository_api->execxLocal(
+        'checkout -b %s',
         $branch_name);
     }
 
@@ -481,6 +476,9 @@ EOTEXT
         $this->createParentDirectoryOf($add);
       }
 
+      // TODO: The SVN patch workflow likely does not work on windows because
+      // of the (cd ...) stuff.
+
       foreach ($copies as $copy) {
         list($src, $dst) = $copy;
         passthru(
@@ -580,17 +578,15 @@ EOTEXT
 
       return $patch_err;
     } else if ($repository_api instanceof ArcanistGitAPI) {
-      $future = new ExecFuture(
-        '(cd %s; git apply --index --reject)',
-        $repository_api->getPath());
+      $future = $repository_api->execFutureLocal(
+        'apply --index --reject');
       $future->write($bundle->toGitPatch());
       $future->resolvex();
 
       if ($this->shouldCommit()) {
         $commit_message = $this->getCommitMessage($bundle);
-        $future = new ExecFuture(
-          '(cd %s; git commit -a -F -)',
-          $repository_api->getPath());
+        $future = $repository_api->execFutureLocal(
+          'commit -a -F -');
         $future->write($commit_message);
         $future->resolvex();
         $verb = 'committed';
@@ -600,9 +596,8 @@ EOTEXT
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      $future = new ExecFuture(
-        '(cd %s; hg import --no-commit -)',
-        $repository_api->getPath());
+      $future = $repository_api->execFutureLocal(
+        'import --no-commit -');
       $future->write($bundle->toGitPatch());
       $future->resolvex();
 

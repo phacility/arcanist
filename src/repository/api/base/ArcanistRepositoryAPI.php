@@ -97,9 +97,10 @@ abstract class ArcanistRepositoryAPI {
 
   public function getPath($to_file = null) {
     if ($to_file !== null) {
-      return $this->path.'/'.ltrim($to_file, '/');
+      return $this->path.DIRECTORY_SEPARATOR.
+             ltrim($to_file, DIRECTORY_SEPARATOR);
     } else {
-      return $this->path.'/';
+      return $this->path.DIRECTORY_SEPARATOR;
     }
   }
 
@@ -199,6 +200,11 @@ abstract class ArcanistRepositoryAPI {
   public function execManualLocal($pattern /*, ... */) {
     $args = func_get_args();
     return $this->buildLocalFuture($args)->resolve();
+  }
+
+  public function execFutureLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args);
   }
 
   abstract protected function buildLocalFuture(array $argv);
