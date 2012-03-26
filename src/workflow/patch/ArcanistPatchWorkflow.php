@@ -581,7 +581,24 @@ EOTEXT
       $future = $repository_api->execFutureLocal(
         'apply --index --reject');
       $future->write($bundle->toGitPatch());
-      $future->resolvex();
+
+      try {
+        $future->resolvex();
+      } catch (CommandException $ex) {
+        echo phutil_console_format(
+          "\n<bg:red>** Patch Failed! **</bg>\n");
+        $stderr = $ex->getStdErr();
+        if (preg_match('/already exists in working directory/', $stderr)) {
+          echo phutil_console_wrap(
+            phutil_console_format(
+              "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
+              "because it attempts to change the case of a filename (for ".
+              "instance, from 'example.c' to 'Example.c'). Git can not apply ".
+              "patches like this on case-insensitive filesystems. You must ".
+              "apply this patch manually.\n"));
+        }
+        throw $ex;
+      }
 
       if ($this->shouldCommit()) {
         $commit_message = $this->getCommitMessage($bundle);
