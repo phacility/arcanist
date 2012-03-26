@@ -57,7 +57,7 @@ EOTEXT
 
     $target = null;
     if ($this->getArgument('command')) {
-      $target = reset($this->getArgument('command'));
+      $target = head($this->getArgument('command'));
       if (empty($workflows[$target])) {
         throw new ArcanistUsageException(
           "Unrecognized command '{$target}'. Try 'arc help'.");
