@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('arcanist', 'difference');
 phutil_require_module('arcanist', 'unit/engine/phutil/testcase/exception');
 phutil_require_module('arcanist', 'unit/result');
 

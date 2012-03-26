@@ -79,16 +79,16 @@ abstract class ArcanistPhutilTestCase {
 
     $output .= "\n";
 
-    if (strpos($expect, "\n") !== false) {
-      $expect = "\n{$expect}";
+    if (strpos($expect, "\n") === false && strpos($result, "\n") === false) {
+      $output .= "Expected: {$expect}\n";
+      $output .= "Actual: {$result}";
+    } else {
+      $output .= "Expected vs Actual Output Diff\n";
+      $output .= ArcanistDiffUtils::renderDifferences(
+        $expect,
+        $result,
+        $lines = 0xFFFF);
     }
-
-    if (strpos($result, "\n") !== false) {
-      $result = "\n{$result}";
-    }
-
-    $output .= "Expected: {$expect}\n";
-    $output .= "Actual: {$result}";
 
     $this->failTest($output);
     throw new ArcanistPhutilTestTerminatedException($output);
