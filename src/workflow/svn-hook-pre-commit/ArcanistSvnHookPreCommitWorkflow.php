@@ -161,8 +161,8 @@ EOTEXT
     }
     if (count($groups) > 1) {
       $message = array();
-      foreach ($groups as $config => $group) {
-        $message[] = "Files underneath '{$config}':\n\n";
+      foreach ($groups as $project => $group) {
+        $message[] = "Files underneath '{$project}':\n\n";
         $message[] = "        ".implode("\n        ", $group)."\n\n";
       }
       $message = implode('', $message);

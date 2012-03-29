@@ -137,7 +137,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $expect = array();
     }
     foreach ($expect as $key => $expected) {
-      $expect[$key] = reset(explode(' ', $expected));
+      $expect[$key] = head(explode(' ', $expected));
     }
 
     $expect = array_fill_keys($expect, true);

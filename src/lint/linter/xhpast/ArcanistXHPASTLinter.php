@@ -55,6 +55,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_RAGGED_CLASSTREE_EDGE     = 29;
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
   const LINT_PHP_53_FEATURES           = 31;
+  const LINT_REUSED_AS_ITERATOR        = 32;
 
 
   public function getLintNameMap() {
@@ -89,6 +90,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
+      self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
     );
   }
 
@@ -677,25 +679,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         $vars[] = $var;
       }
 
-      $foreaches = $body->selectDescendantsOfType('n_FOREACH_EXPRESSION');
-      foreach ($foreaches as $foreach_expr) {
-        $key_var = $foreach_expr->getChildByIndex(1);
-        if ($key_var->getTypeName() == 'n_VARIABLE') {
-          $vars[] = $key_var;
-        }
-
-        $value_var = $foreach_expr->getChildByIndex(2);
-        if ($value_var->getTypeName() == 'n_VARIABLE') {
-          $vars[] = $value_var;
-        } else {
-          // The root-level token may be a reference, as in:
-          //    foreach ($a as $b => &$c) { ... }
-          // Reach into the n_VARIABLE_REFERENCE node to grab the n_VARIABLE
-          // node.
-          $vars[] = $value_var->getChildOfType(0, 'n_VARIABLE');
-        }
-      }
-
       $binary = $body->selectDescendantsOfType('n_BINARY_EXPRESSION');
       foreach ($binary as $expr) {
         if ($expr->getChildByIndex(1)->getConcreteString() != '=') {
@@ -744,10 +727,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           'Avoid extract(). It is confusing and hinders static analysis.');
       }
 
-      // Now we have every declaration. Build two maps, one which just keeps
-      // track of which tokens are part of declarations ($declaration_tokens)
-      // and one which has the first offset where a variable is declared
-      // ($declarations).
+      // Now we have every declaration except foreach(), handled below. Build
+      // two maps, one which just keeps track of which tokens are part of
+      // declarations ($declaration_tokens) and one which has the first offset
+      // where a variable is declared ($declarations).
 
       foreach ($vars as $var) {
         $concrete = $this->getConcreteVariableString($var);
@@ -768,13 +751,26 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         $exclude_tokens[$var->getID()] = true;
       }
 
-      // Issue a warning for every variable token, unless it appears in a
-      // declaration, we know about a prior declaration, we have explicitly
-      // exlcuded it, or scope has been made unknowable before it appears.
+
+      // Find all the variables in scope, and figure out where they are used.
+      // We want to find foreach() iterators which are both declared before and
+      // used after the foreach() loop.
+
+      $uses = array();
 
       $all_vars = $body->selectDescendantsOfType('n_VARIABLE');
-      $issued_warnings = array();
+      $all = array();
+
+      // NOTE: $all_vars is not a real array so we can't unset() it.
       foreach ($all_vars as $var) {
+
+        // Be strict since it's easier; we don't let you reuse an iterator you
+        // declared before a loop after the loop, even if you're just assigning
+        // to it.
+
+        $concrete = $var->getConcreteString();
+        $uses[$concrete][$var->getID()] = $var->getOffset();
+
         if (isset($declaration_tokens[$var->getID()])) {
           // We know this is part of a declaration, so it's fine.
           continue;
@@ -783,6 +779,109 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           // We know this is part of isset() or similar, so it's fine.
           continue;
         }
+
+        $all[$var->getID()] = $var;
+      }
+
+
+      // Do foreach() last, we want to handle implicit redeclaration of a
+      // variable already in scope since this probably means we're ovewriting a
+      // local.
+
+      // NOTE: Processing foreach expressions in order allows programs which
+      // reuse iterator variables in other foreach() loops -- this is fine. We
+      // have a separate warning to prevent nested loops from reusing the same
+      // iterators.
+
+      $foreaches = $body->selectDescendantsOfType('n_FOREACH');
+      $all_foreach_vars = array();
+      foreach ($foreaches as $foreach) {
+        $foreach_expr = $foreach->getChildOfType(0, 'n_FOREACH_EXPRESSION');
+
+        $foreach_vars = array();
+
+        // Determine the end of the foreach() loop.
+        $foreach_tokens = $foreach->getTokens();
+        $last_token = end($foreach_tokens);
+        $foreach_end = $last_token->getOffset();
+
+        $key_var = $foreach_expr->getChildByIndex(1);
+        if ($key_var->getTypeName() == 'n_VARIABLE') {
+          $foreach_vars[] = $key_var;
+        }
+
+        $value_var = $foreach_expr->getChildByIndex(2);
+        if ($value_var->getTypeName() == 'n_VARIABLE') {
+          $foreach_vars[] = $value_var;
+        } else {
+          // The root-level token may be a reference, as in:
+          //    foreach ($a as $b => &$c) { ... }
+          // Reach into the n_VARIABLE_REFERENCE node to grab the n_VARIABLE
+          // node.
+          $foreach_vars[] = $value_var->getChildOfType(0, 'n_VARIABLE');
+        }
+
+        // Remove all uses of the iterators inside of the foreach() loop from
+        // the $uses map.
+
+        foreach ($foreach_vars as $var) {
+          $concrete = $this->getConcreteVariableString($var);
+          $offset = $var->getOffset();
+
+          foreach ($uses[$concrete] as $id => $use_offset) {
+            if (($use_offset >= $offset) && ($use_offset < $foreach_end)) {
+              unset($uses[$concrete][$id]);
+            }
+          }
+
+          $all_foreach_vars[] = $var;
+        }
+      }
+
+      foreach ($all_foreach_vars as $var) {
+        $concrete = $this->getConcreteVariableString($var);
+        $offset = $var->getOffset();
+
+        // If a variable was declared before a foreach() and is used after
+        // it, raise a message.
+
+        if (isset($declarations[$concrete])) {
+          if ($declarations[$concrete] < $offset) {
+            if (!empty($uses[$concrete]) &&
+                max($uses[$concrete]) > $offset) {
+              $this->raiseLintAtNode(
+                $var,
+                self::LINT_REUSED_AS_ITERATOR,
+                'This iterator variable is a previously declared local '.
+                'variable. To avoid overwriting locals, do not reuse them '.
+                'as iterator variables.');
+            }
+          }
+        }
+
+        // This is a declration, exclude it from the "declare variables prior
+        // to use" check below.
+        unset($all[$var->getID()]);
+
+        $vars[] = $var;
+      }
+
+      // Now rebuild declarations to include foreach().
+
+      foreach ($vars as $var) {
+        $concrete = $this->getConcreteVariableString($var);
+        $declarations[$concrete] = min(
+          idx($declarations, $concrete, PHP_INT_MAX),
+          $var->getOffset());
+        $declaration_tokens[$var->getID()] = true;
+      }
+
+      // Issue a warning for every variable token, unless it appears in a
+      // declaration, we know about a prior declaration, we have explicitly
+      // exlcuded it, or scope has been made unknowable before it appears.
+
+      $issued_warnings = array();
+      foreach ($all as $id => $var) {
         if ($var->getOffset() >= $scope_destroyed_at) {
           // This appears after an extract() or $$var so we have no idea
           // whether it's legitimate or not. We raised a harshly-worded warning
