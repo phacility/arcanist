@@ -202,6 +202,7 @@ EOTEXT
   }
 
   private function liberateWritePatches(array $results) {
+    assert_instances_of($results, 'ArcanistLintResult');
     $wrote = array();
 
     foreach ($results as $result) {

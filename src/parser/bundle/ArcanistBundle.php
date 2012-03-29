@@ -546,7 +546,7 @@ final class ArcanistBundle {
   }
 
   private function buildHunkChanges(array $hunks) {
-
+    assert_instances_of($hunks, 'ArcanistDiffHunk');
     $result = array();
     foreach ($hunks as $hunk) {
       $small_hunks = $this->breakHunkIntoSmallHunks($hunk);

@@ -188,6 +188,7 @@ final class ArcanistLintMessage {
   }
 
   public function setDependentMessages(array $messages) {
+    assert_instances_of($messages, 'ArcanistLintMessage');
     $this->dependentMessages = $messages;
     return $this;
   }

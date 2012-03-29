@@ -58,6 +58,7 @@ final class ArcanistDiffParser {
   }
 
   public function setChanges(array $changes) {
+    assert_instances_of($changes, 'ArcanistDiffChange');
     $this->changes = mpull($changes, null, 'getCurrentPath');
     return $this;
   }
