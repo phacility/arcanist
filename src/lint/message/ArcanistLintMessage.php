@@ -33,7 +33,6 @@ final class ArcanistLintMessage {
   protected $originalText;
   protected $replacementText;
   protected $appliedToDisk;
-  protected $generateFile;
   protected $dependentMessages = array();
   protected $obsolete;
 
@@ -147,15 +146,6 @@ final class ArcanistLintMessage {
 
   public function hasFileContext() {
     return ($this->getLine() !== null);
-  }
-
-  public function setGenerateFile($generate_file) {
-    $this->generateFile = $generate_file;
-    return $this;
-  }
-
-  public function getGenerateFile() {
-    return $this->generateFile;
   }
 
   public function setObsolete($obsolete) {
