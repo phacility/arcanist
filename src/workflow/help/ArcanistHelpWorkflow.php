@@ -138,7 +138,7 @@ EOTEXT
           $docs = 'This option is not documented.';
         }
         $docs = phutil_console_wrap($docs, 14);
-        $optref[] = "              {$docs}\n";
+        $optref[] = "{$docs}\n";
       }
       if ($optref) {
         $optref = implode("\n", $optref);

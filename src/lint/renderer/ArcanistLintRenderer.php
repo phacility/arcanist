@@ -45,8 +45,7 @@ final class ArcanistLintRenderer {
       $description = phutil_console_wrap($message->getDescription(), 4);
 
       $text[] = phutil_console_format(
-        "  **<bg:{$color}> %s </bg>** (%s) __%s__\n".
-        "    %s\n",
+        "  **<bg:{$color}> %s </bg>** (%s) __%s__\n%s\n",
         $severity,
         $code,
         $name,

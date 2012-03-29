@@ -624,7 +624,7 @@ EOTEXT
           "\n\n".
           "Modified 'svn:externals' files:".
           "\n\n".
-          '        '.phutil_console_wrap(implode("\n", $warn_externals), 8));
+          phutil_console_wrap(implode("\n", $warn_externals), 8));
         $prompt = "Generate a diff (with just local changes) anyway?";
         if (!phutil_console_confirm($prompt)) {
           throw new ArcanistUserAbortException();
