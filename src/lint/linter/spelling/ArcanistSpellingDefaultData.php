@@ -517,7 +517,7 @@ class ArcanistSpellingDefaultData {
        "wierd" => "weird",
        "yur" => "your",
 
-// Variable common_cpan
+        // Variable common_cpan
        "refering" => "referring",
        "writeable" => "writable",
        "nineth" => "ninth",
@@ -536,8 +536,8 @@ class ArcanistSpellingDefaultData {
 
   public static function getPartialWordRules() {
     return array(
-      array (),
-      array (
+      array(),
+      array(
         'recieve'  => 'receive',
         'uft8'     => 'utf8',
         'lenght'   => 'length',
