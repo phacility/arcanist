@@ -7,9 +7,15 @@
 # symlinks, etc.
 SOURCE="${BASH_SOURCE[0]}";
 while [ -h "$SOURCE" ]; do
-  SOURCE="$(readlink "$SOURCE")";
+  LINK="$(readlink "$SOURCE")";
+  if [ "${LINK:0:1}" == "/" ]; then
+    # absolute symlink
+    SOURCE="$LINK"
+  else
+    # relative symlink
+    SOURCE="$(cd -P "$(dirname "$SOURCE")" && pwd)/$LINK"
+  fi
 done;
 DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
 exec $DIR/../scripts/arcanist.php "$@"
-
