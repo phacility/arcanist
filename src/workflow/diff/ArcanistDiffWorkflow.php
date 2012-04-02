@@ -52,7 +52,7 @@ EOTEXT
 
           Under git, you can specify a commit (like __HEAD^^^__ or __master__)
           and Differential will generate a diff against the merge base of that
-          commit and HEAD. If you omit the commit, the default is __HEAD^__.
+          commit and HEAD.
 
           Under svn, you can choose to include only some of the modified files
           in the working copy in the diff by specifying their paths. If you

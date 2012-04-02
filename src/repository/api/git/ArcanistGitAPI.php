@@ -112,18 +112,80 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getRelativeCommit() {
     if ($this->relativeCommit === null) {
+
+      // Detect zero-commit or one-commit repositories. There is only one
+      // relative-commit value that makes any sense in these repositories: the
+      // empty tree.
       list($err) = $this->execManualLocal('rev-parse --verify HEAD^');
       if ($err) {
         list($err) = $this->execManualLocal('rev-parse --verify HEAD');
         if ($err) {
           $this->repositoryHasNoCommits = true;
         }
+
         $this->relativeCommit = self::GIT_MAGIC_ROOT_COMMIT;
 
-      } else {
-        $this->relativeCommit = 'HEAD^';
+        return $this->relativeCommit;
       }
+
+      $default_relative = $this->readScratchFile('default-relative-commit');
+      $do_write = false;
+      if (!$default_relative) {
+
+        // TODO: Remove the history lesson soon.
+
+        echo phutil_console_format(
+          "<bg:green>** Select a Default Commit Range **</bg>\n\n");
+        echo phutil_console_wrap(
+          "You're running a command which operates on a range of revisions ".
+          "(usually, from some revision to HEAD) but have not specified the ".
+          "revision that should determine the start of the range.\n\n".
+          "Previously, arc assumed you meant 'HEAD^' when you did not specify ".
+          "a start revision, but this behavior does not make much sense in ".
+          "most workflows outside of Facebook's historic git-svn workflow.\n\n".
+          "arc no longer assumes 'HEAD^'. You must specify a relative commit ".
+          "explicitly when you invoke a command (e.g., `arc diff HEAD^`, not ".
+          "just `arc diff`) or select a default for this working copy.\n\n".
+          "In most cases, the best default is 'origin/master'. You can also ".
+          "select 'HEAD^' to preserve the old behavior, or some other remote ".
+          "or branch. But you almost certainly want to select ".
+          "'origin/master'.\n\n".
+          "(Technically: the merge-base of the selected revision and HEAD is ".
+          "used to determine the start of the commit range.)");
+
+        $prompt = "What default do you want to use? [origin/master]";
+        $default = phutil_console_prompt($prompt);
+
+        if (!strlen(trim($default))) {
+          $default = 'origin/master';
+        }
+
+        $default_relative = $default;
+        $do_write = true;
+      }
+
+      list($object_type) = $this->execxLocal(
+        'cat-file -t %s',
+        $default_relative);
+
+      if (trim($object_type) !== 'commit') {
+        throw new Exception(
+          "Relative commit '{$relative}' is not the name of a commit!");
+      }
+
+      if ($do_write) {
+        // Don't perform this write until we've verified that the object is a
+        // valid commit name.
+        $this->writeScratchFile('default-relative-commit', $default_relative);
+      }
+
+      list($merge_base) = $this->execxLocal(
+        'merge-base %s HEAD',
+        $default_relative);
+
+      $this->relativeCommit = trim($merge_base);
     }
+
     return $this->relativeCommit;
   }
 
