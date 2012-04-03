@@ -42,6 +42,7 @@ abstract class ArcanistRepositoryAPI {
 
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
+  private $workingCopyIdentity;
 
   abstract public function getSourceControlSystemName();
 
@@ -52,6 +53,10 @@ abstract class ArcanistRepositoryAPI {
   public function setDiffLinesOfContext($lines) {
     $this->diffLinesOfContext = $lines;
     return $this;
+  }
+
+  public function getWorkingCopyIdentity() {
+    return $this->workingCopyIdentity;
   }
 
   public static function newAPIFromWorkingCopyIdentity(
@@ -68,11 +73,15 @@ abstract class ArcanistRepositoryAPI {
     // check if we're in an svn working copy
     list($err) = exec_manual('svn info');
     if (!$err) {
-      return newv('ArcanistSubversionAPI', array($root));
+      $api = newv('ArcanistSubversionAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     if (Filesystem::pathExists($root.'/.hg')) {
-      return newv('ArcanistMercurialAPI', array($root));
+      $api = newv('ArcanistMercurialAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     $git_root = self::discoverGitBaseDirectory($root);
@@ -83,7 +92,9 @@ abstract class ArcanistRepositoryAPI {
           "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
       }
 
-      return newv('ArcanistGitAPI', array($root));
+      $api = newv('ArcanistGitAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     throw new ArcanistUsageException(

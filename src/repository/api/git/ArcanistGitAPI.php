@@ -130,6 +130,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       $default_relative = $this->readScratchFile('default-relative-commit');
       $do_write = false;
+
+      if (!$default_relative) {
+        $working_copy = $this->getWorkingCopyIdentity();
+        if ($working_copy) {
+          $default_relative = $working_copy->getConfig(
+            'git.default-relative-commit');
+        }
+      }
+
       if (!$default_relative) {
 
         // TODO: Remove the history lesson soon.
