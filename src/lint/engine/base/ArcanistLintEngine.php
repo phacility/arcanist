@@ -119,6 +119,7 @@ abstract class ArcanistLintEngine {
 
   public function setHookAPI(ArcanistHookAPI $hook_api) {
     $this->hookAPI  = $hook_api;
+    return $this;
   }
 
   public function getHookAPI() {

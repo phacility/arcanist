@@ -50,6 +50,7 @@ final class ArcanistDiffParser {
 
   public function setTryEncoding($encoding) {
     $this->tryEncoding = $encoding;
+    return $this;
   }
 
   public function forcePath($path) {

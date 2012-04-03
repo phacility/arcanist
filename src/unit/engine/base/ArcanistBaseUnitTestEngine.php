@@ -65,6 +65,7 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function setEnableAsyncTests($enable_async_tests) {
     $this->enableAsyncTests = $enable_async_tests;
+    return $this;
   }
 
   final public function getEnableAsyncTests() {
@@ -89,6 +90,7 @@ abstract class ArcanistBaseUnitTestEngine {
    */
   public function setDifferentialDiffID($id) {
     $this->diffID = $id;
+    return $this;
   }
 
   /**

@@ -77,6 +77,7 @@ final class BranchInfo {
 
   public function setCurrent() {
     $this->currentHead = true;
+    return $this;
   }
 
   public function isCurrentHead() {
@@ -86,6 +87,7 @@ final class BranchInfo {
 
   public function setStatus($status) {
     $this->status = $status;
+    return $this;
   }
 
   public function getStatus() {

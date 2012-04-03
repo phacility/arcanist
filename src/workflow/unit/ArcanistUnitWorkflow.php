@@ -269,6 +269,7 @@ EOTEXT
     if ($this->engine) {
       $this->engine->setDifferentialDiffID($id);
     }
+    return $this;
   }
 
   private static function formatTestDuration($seconds) {

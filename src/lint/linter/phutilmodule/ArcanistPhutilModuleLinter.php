@@ -73,6 +73,7 @@ final class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
   private function setModuleInfo($key, array $info) {
     $this->moduleInfo[$key] = $info;
+    return $this;
   }
 
   private function getModulePathOnDisk($key) {
