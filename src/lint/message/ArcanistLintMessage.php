@@ -164,7 +164,7 @@ final class ArcanistLintMessage {
 
   public function didApplyPatch() {
     if ($this->appliedToDisk) {
-      return;
+      return $this;
     }
     $this->appliedToDisk = true;
     foreach ($this->dependentMessages as $message) {
