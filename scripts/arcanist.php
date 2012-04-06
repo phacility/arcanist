@@ -314,7 +314,7 @@ try {
  * that exclude core functionality.
  */
 function sanity_check_environment() {
-  $min_version = '5.2.0';
+  $min_version = '5.2.3';
   $cur_version = phpversion();
   if (version_compare($cur_version, $min_version, '<')) {
     die_with_bad_php(
