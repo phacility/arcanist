@@ -30,9 +30,21 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
 
   private $unresolvedMessages;
   private $shouldAmendChanges = false;
+  private $shouldAmendWithoutPrompt = false;
+  private $shouldAmendAutofixesWithoutPrompt = false;
 
   public function setShouldAmendChanges($should_amend) {
     $this->shouldAmendChanges = $should_amend;
+    return $this;
+  }
+
+  public function setShouldAmendWithoutPrompt($should_amend) {
+    $this->shouldAmendWithoutPrompt = $should_amend;
+    return $this;
+  }
+
+  public function setShouldAmendAutofixesWithoutPrompt($should_amend) {
+    $this->shouldAmendAutofixesWithoutPrompt = $should_amend;
     return $this;
   }
 
@@ -100,6 +112,16 @@ EOTEXT
           'apply-patches' => true,
         ),
       ),
+      'amend-all' => array(
+        'help' =>
+        'When linting git repositories, amend HEAD with all patches '.
+        'suggested by lint without prompting.',
+      ),
+      'amend-autofixes' => array(
+        'help' =>
+        'When linting git repositories, amend HEAD with autofix '.
+        'patches suggested by lint without prompting.',
+      ),
       '*' => 'paths',
     );
   }
@@ -155,7 +177,7 @@ EOTEXT
     if ($this->getArgument('advice')) {
       $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
     } else {
-      $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_AUTOFIX);
     }
 
     // Propagate information about which lines changed to the lint engine.
@@ -186,6 +208,19 @@ EOTEXT
       $prompt_patches = true;
     }
 
+    if ($this->getArgument('amend-all')) {
+      $this->shouldAmendChanges = true;
+      $this->shouldAmendWithoutPrompt = true;
+    }
+
+    if ($this->getArgument('amend-autofixes')) {
+      $prompt_autofix_patches = false;
+      $this->shouldAmendChanges = true;
+      $this->shouldAmendAutofixesWithoutPrompt = true;
+    } else {
+      $prompt_autofix_patches = true;
+    }
+
     $wrote_to_disk = false;
 
     switch ($this->getArgument('output')) {
@@ -204,22 +239,35 @@ EOTEXT
         break;
       default:
         $renderer = new ArcanistLintRenderer();
+        $renderer->setShowAutofixPatches($prompt_autofix_patches);
         break;
     }
 
+    $all_autofix = true;
+
     foreach ($results as $result) {
-      if (!$result->getMessages()) {
+      $result_all_autofix = $result->isAllAutofix();
+
+      if (!$result->getMessages() && !$result_all_autofix) {
         continue;
       }
 
-      echo $renderer->renderLintResult($result);
+      if (!$result_all_autofix) {
+        $all_autofix = false;
+      }
+
+      $lint_result = $renderer->renderLintResult($result);
+      if ($lint_result) {
+        echo $lint_result;
+      }
 
       if ($apply_patches && $result->isPatchable()) {
         $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
         $old = $patcher->getUnmodifiedFileContent();
         $new = $patcher->getModifiedFileContent();
 
-        if ($prompt_patches) {
+        if ($prompt_patches &&
+            !($result_all_autofix && !$prompt_autofix_patches)) {
           $old_file = $result->getFilePathOnDisk();
           if (!Filesystem::pathExists($old_file)) {
             $old_file = '/dev/null';
@@ -248,7 +296,17 @@ EOTEXT
     if ($wrote_to_disk &&
         ($repository_api instanceof ArcanistGitAPI) &&
         $this->shouldAmendChanges) {
-      $amend = phutil_console_confirm("Amend HEAD with lint patches?");
+
+      if ($this->shouldAmendWithoutPrompt ||
+          ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
+        echo phutil_console_format(
+          "<bg:yellow>** LINT NOTICE **</bg> Automatically amending HEAD ".
+          "with lint patches.\n");
+        $amend = true;
+      } else {
+        $amend = phutil_console_confirm("Amend HEAD with lint patches?");
+      }
+
       if ($amend) {
         execx(
           '(cd %s; git commit -a --amend -C HEAD)',

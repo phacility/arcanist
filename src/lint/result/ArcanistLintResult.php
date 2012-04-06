@@ -79,6 +79,15 @@ final class ArcanistLintResult {
     return false;
   }
 
+  public function isAllAutofix() {
+    foreach ($this->messages as $message) {
+      if (!$message->isAutofix()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private function sortAndFilterMessages() {
     $messages = $this->messages;
 

@@ -22,6 +22,13 @@
  * @group lint
  */
 final class ArcanistLintRenderer {
+  private $showAutofixPatches = false;
+
+  public function setShowAutofixPatches($show_autofix_patches) {
+    $this->showAutofixPatches = $show_autofix_patches;
+    return $this;
+  }
+
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();
     $path = $result->getPath();
@@ -29,9 +36,12 @@ final class ArcanistLintRenderer {
     $lines = explode("\n", $result->getData());
 
     $text = array();
-    $text[] = phutil_console_format('**>>>** Lint for __%s__:', $path);
-    $text[] = null;
+
     foreach ($messages as $message) {
+      if (!$this->showAutofixPatches && $message->isAutofix()) {
+        continue;
+      }
+
       if ($message->isError()) {
         $color = 'red';
       } else {
@@ -55,10 +65,13 @@ final class ArcanistLintRenderer {
         $text[] = $this->renderContext($message, $lines);
       }
     }
-    $text[] = null;
-    $text[] = null;
 
-    return implode("\n", $text);
+    if ($text) {
+      $prefix = phutil_console_format("**>>>** Lint for __%s__:\n\n\n", $path);
+      return $prefix . implode("\n", $text);
+    } else {
+      return null;
+    }
   }
 
   protected function renderContext(

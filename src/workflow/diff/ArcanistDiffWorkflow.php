@@ -276,6 +276,22 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'amend-all' => array(
+        'help' =>
+          'When linting git repositories, amend HEAD with all patches '.
+          'suggested by lint without prompting.',
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
+      'amend-autofixes' => array(
+        'help' =>
+          'When linting git repositories, amend HEAD with autofix '.
+          'patches suggested by lint without prompting.',
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
       'json' => array(
         'help' =>
           'Emit machine-readable JSON. EXPERIMENTAL! Probably does not work!',

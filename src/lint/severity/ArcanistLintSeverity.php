@@ -24,6 +24,7 @@
 final class ArcanistLintSeverity {
 
   const SEVERITY_ADVICE       = 'advice';
+  const SEVERITY_AUTOFIX      = 'autofix';
   const SEVERITY_WARNING      = 'warning';
   const SEVERITY_ERROR        = 'error';
   const SEVERITY_DISABLED     = 'disabled';
@@ -31,6 +32,7 @@ final class ArcanistLintSeverity {
   public static function getStringForSeverity($severity_code) {
     static $map = array(
       self::SEVERITY_ADVICE   => 'Advice',
+      self::SEVERITY_AUTOFIX  => 'Auto-Fix',
       self::SEVERITY_WARNING  => 'Warning',
       self::SEVERITY_ERROR    => 'Error',
       self::SEVERITY_DISABLED => 'Disabled',
@@ -50,6 +52,7 @@ final class ArcanistLintSeverity {
     static $map = array(
       self::SEVERITY_DISABLED => 10,
       self::SEVERITY_ADVICE   => 20,
+      self::SEVERITY_AUTOFIX  => 25,
       self::SEVERITY_WARNING  => 30,
       self::SEVERITY_ERROR    => 40,
     );

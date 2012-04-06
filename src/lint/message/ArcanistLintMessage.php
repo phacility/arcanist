@@ -144,6 +144,10 @@ final class ArcanistLintMessage {
     return $this->getSeverity() == ArcanistLintSeverity::SEVERITY_WARNING;
   }
 
+  public function isAutofix() {
+    return $this->getSeverity() == ArcanistLintSeverity::SEVERITY_AUTOFIX;
+  }
+
   public function hasFileContext() {
     return ($this->getLine() !== null);
   }

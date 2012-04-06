@@ -49,6 +49,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
   public function getLintSeverityMap() {
     return array(
       self::LINT_LINE_WRAP => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_TRAILING_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
     );
   }
 
