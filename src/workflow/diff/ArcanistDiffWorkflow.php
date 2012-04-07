@@ -1777,7 +1777,7 @@ EOTEXT
       }
 
       // Otherwise, this looks new, so it's a usable commit message.
-      $usable[] = $message;
+      $usable[] = $text;
     }
 
     if (!$usable) {
