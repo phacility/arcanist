@@ -1333,35 +1333,56 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   protected function lintSpaceAroundBinaryOperators($root) {
+
+    // NOTE: '.' is parsed as n_CONCATENATION_LIST, not n_BINARY_EXPRESSION,
+    // so we don't select it here.
+
     $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
     foreach ($expressions as $expression) {
       $operator = $expression->getChildByIndex(1);
       $operator_value = $operator->getConcreteString();
-      if ($operator_value == '.') {
-        // TODO: implement this check
-        continue;
-      } else {
-        list($before, $after) = $operator->getSurroundingNonsemanticTokens();
+      list($before, $after) = $operator->getSurroundingNonsemanticTokens();
 
-        $replace = null;
-        if (empty($before) && empty($after)) {
-          $replace = " {$operator_value} ";
-        } else if (empty($before)) {
-          $replace = " {$operator_value}";
-        } else if (empty($after)) {
-          $replace = "{$operator_value} ";
-        }
+      $replace = null;
+      if (empty($before) && empty($after)) {
+        $replace = " {$operator_value} ";
+      } else if (empty($before)) {
+        $replace = " {$operator_value}";
+      } else if (empty($after)) {
+        $replace = "{$operator_value} ";
+      }
 
-        if ($replace !== null) {
-          $this->raiseLintAtNode(
-            $operator,
-            self::LINT_BINARY_EXPRESSION_SPACING,
-            'Convention: logical and arithmetic operators should be '.
-            'surrounded by whitespace.',
-            $replace);
-        }
+      if ($replace !== null) {
+        $this->raiseLintAtNode(
+          $operator,
+          self::LINT_BINARY_EXPRESSION_SPACING,
+          'Convention: logical and arithmetic operators should be '.
+          'surrounded by whitespace.',
+          $replace);
       }
     }
+
+    $tokens = $root->selectTokensOfType(',');
+    foreach ($tokens as $token) {
+      $next = $token->getNextToken();
+      switch ($next->getTypeName()) {
+        case ')':
+        case 'T_WHITESPACE':
+          break;
+          break;
+        default:
+          $this->raiseLintAtToken(
+            $token,
+            self::LINT_BINARY_EXPRESSION_SPACING,
+            'Convention: comma should be followed by space.',
+            ', ');
+          break;
+      }
+    }
+
+    // TODO: Spacing around ".".
+    // TODO: Spacing around default parameter assignment in function/method
+    // declarations (which is not n_BINARY_EXPRESSION).
   }
 
   protected function lintDynamicDefines($root) {

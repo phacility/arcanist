@@ -21,6 +21,7 @@ $prev = ($total == 1) ? $navids[0] : $navids[$total-1];
 $next = ($total == 1) ? $navids[0] : $navids[$current+1];
 if ($x instanceof z &&$w) { }
 if ($x instanceof z && $w) { }
+f(1,2);
 ~~~~~~~~~~
 warning:3:3
 warning:4:4
@@ -33,6 +34,7 @@ warning:11:3
 warning:20:52
 warning:21:54
 warning:22:21
+warning:24:4
 ~~~~~~~~~~
 <?php
 $a + $b;
@@ -57,3 +59,4 @@ $prev = ($total == 1) ? $navids[0] : $navids[$total - 1];
 $next = ($total == 1) ? $navids[0] : $navids[$current + 1];
 if ($x instanceof z && $w) { }
 if ($x instanceof z && $w) { }
+f(1, 2);
