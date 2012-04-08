@@ -20,7 +20,6 @@ phutil_require_module('phutil', 'filesystem/filefinder');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'moduleutils');
 phutil_require_module('phutil', 'utils');
-phutil_require_module('phutil', 'xsprintf/csprintf');
 
 
 phutil_require_source('ArcanistLiberateWorkflow.php');

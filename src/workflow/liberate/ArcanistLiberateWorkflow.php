@@ -162,9 +162,7 @@ EOTEXT
 
     echo "Verifying library...\n";
 
-    $err = 0;
-    $cmd = csprintf('%s liberate --verify -- %s', $arc_bin, $path);
-    passthru($cmd, $err);
+    $err = phutil_passthru('%s liberate --verify -- %s', $arc_bin, $path);
 
     $do_update = (!$err || $this->getArgument('force-update'));
 
