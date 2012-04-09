@@ -121,7 +121,7 @@ try {
         $error_msg = sprintf(
           'Failed to load library "%s" at location "%s". Please check the '.
           '"phutil_libraries" setting in your .arcconfig file. Refer to '.
-          '<http://phabricator.com/docs/phabricator/article/'.
+          '<http://www.phabricator.com/docs/phabricator/article/'.
           'Arcanist_User_Guide:_Configuring_a_New_Project.html> '.
           'for more information.',
           $name,
