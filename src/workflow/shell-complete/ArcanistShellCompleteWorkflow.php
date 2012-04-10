@@ -100,7 +100,8 @@ EOTEXT
       }
 
       // Also permit autocompletion of "arc alias" commands.
-      foreach (ArcanistAliasWorkflow::getAliases() as $key => $value) {
+      foreach (
+        ArcanistAliasWorkflow::getAliases($working_copy) as $key => $value) {
         $complete[] = $key;
       }
 
@@ -112,7 +113,8 @@ EOTEXT
         list($new_command, $new_args) = ArcanistAliasWorkflow::resolveAliases(
           $argv[1],
           $arc_config,
-          array_slice($argv, 2));
+          array_slice($argv, 2),
+          $working_copy);
         if ($new_command) {
           $workflow = $arc_config->buildWorkflow($new_command);
         }

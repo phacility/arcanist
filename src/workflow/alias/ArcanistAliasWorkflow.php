@@ -17,7 +17,7 @@
  */
 
 /**
- * Show which revision or revisions are in the working copy.
+ * Manages aliases for commands with options.
  *
  * @group workflow
  */
@@ -62,9 +62,14 @@ EOTEXT
     );
   }
 
-  public static function getAliases() {
-    $config = self::readUserConfigurationFile();
-    return idx($config, 'aliases', array());
+  public static function getAliases($working_copy) {
+    $working_copy_config_aliases = $working_copy->getConfig('aliases');
+    if (!$working_copy_config_aliases) {
+      $working_copy_config_aliases = array();
+    }
+    $user_config_aliases =
+      idx(self::readUserConfigurationFile(), 'aliases', array());
+    return $user_config_aliases + $working_copy_config_aliases;
   }
 
   private function writeAliases(array $aliases) {
@@ -74,8 +79,10 @@ EOTEXT
   }
 
   public function run() {
-
-    $aliases = self::getAliases();
+    // We might not be in a working directory, so we don't want to require a
+    // working copy identity here.
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
+    $aliases = self::getAliases($working_copy);
 
     $argv = $this->getArgument('argv');
     if (count($argv) == 0) {
@@ -132,9 +139,10 @@ EOTEXT
   public static function resolveAliases(
     $command,
     ArcanistConfiguration $config,
-    array $argv) {
+    array $argv,
+    ArcanistWorkingCopyIdentity $working_copy) {
 
-    $aliases = ArcanistAliasWorkflow::getAliases();
+    $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
     if (!isset($aliases[$command])) {
       return array(null, $argv);
     }

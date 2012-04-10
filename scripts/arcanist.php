@@ -168,7 +168,8 @@ try {
     list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
       $command,
       $config,
-      $args);
+      $args,
+      $working_copy);
 
     if ($new_command) {
       $workflow = $config->buildWorkflow($new_command);
@@ -179,7 +180,7 @@ try {
         "Unknown command '{$command}'. Try 'arc help'.");
     } else {
       if ($config_trace_mode) {
-        $aliases = ArcanistAliasWorkflow::getAliases();
+        $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
         $target = implode(' ', idx($aliases, $command, array()));
         echo "[alias: 'arc {$command}' -> 'arc {$target}']\n";
       }
