@@ -1,9 +1,10 @@
 {
   "name" : "Arcanist",
-  "src_base" : "https://github.com/facebook/arcanist/blob/master",
+  "src_link" :
+    "https://secure.phabricator.com/diffusion/ARC/browse/master/%f$%l",
   "groups" : {
     "intro" : "Introduction",
-    "config" : "Setup & Configuration",    
+    "config" : "Setup & Configuration",
     "workflow" : "Workflows",
     "lint" : "Lint Integration",
     "linter" : "Linters",

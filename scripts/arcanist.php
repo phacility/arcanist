@@ -122,7 +122,7 @@ try {
           'Failed to load library "%s" at location "%s". Please check the '.
           '"phutil_libraries" setting in your .arcconfig file. Refer to '.
           '<http://www.phabricator.com/docs/phabricator/article/'.
-          'Arcanist_User_Guide:_Configuring_a_New_Project.html> '.
+          'Arcanist_User_Guide_Configuring_a_New_Project.html> '.
           'for more information.',
           $name,
           $location);
