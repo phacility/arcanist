@@ -289,6 +289,24 @@ EOTEXT
           'hg',
         ),
       ),
+      'verbatim' => array(
+        'help' => 'Try to use the working copy commit message verbatim when '.
+                  'creating a revision, without prompting to edit it.',
+        'supports' => array(
+          'hg',
+          'git',
+        ),
+        'conflicts' => array(
+          'use-commit-message'  => true,
+          'update'              => true,
+          'only'                => true,
+          'preview'             => true,
+          'raw'                 => true,
+          'raw-command'         => true,
+          'message'             => true,
+          'message-file'        => true,
+        ),
+      ),
       '*' => 'paths',
     );
   }
@@ -518,15 +536,6 @@ EOTEXT
     }
 
     if ($this->isRawDiffSource()) {
-      return true;
-    }
-
-    $repository_api = $this->getRepositoryAPI();
-    if ($repository_api instanceof ArcanistSubversionAPI) {
-      return true;
-    }
-
-    if ($repository_api instanceof ArcanistMercurialAPI) {
       return true;
     }
 
@@ -1205,7 +1214,7 @@ EOTEXT
         $is_update = $revision['id'];
       } else {
         throw new ArcanistUsageException(
-          "There are several revisions in the specified commit range:\n\n".
+          "There are several revisions which match the working copy:\n\n".
           $this->renderRevisionList($revisions)."\n".
           "Use '--update' to choose one, or '--create' to create a new ".
           "revision.");
@@ -1313,6 +1322,7 @@ EOTEXT
     }
 
     $done = false;
+    $first = true;
     while (!$done) {
       $template = rtrim($template)."\n\n";
       foreach ($issues as $issue) {
@@ -1320,13 +1330,17 @@ EOTEXT
       }
       $template .= "\n";
 
-      $new_template = id(new PhutilInteractiveEditor($template))
-        ->setName('new-commit')
-        ->editInteractively();
+      if ($first && $this->getArgument('verbatim') && !$template_is_default) {
+        $new_template = $template;
+      } else {
+        $new_template = id(new PhutilInteractiveEditor($template))
+          ->setName('new-commit')
+          ->editInteractively();
+      }
+      $first = false;
 
       if ($template_is_default && ($new_template == $template)) {
-        throw new ArcanistUsageException(
-          "Template not edited.");
+        throw new ArcanistUsageException("Template not edited.");
       }
 
       $template = preg_replace('/^\s*#.*$/m', '', $new_template);
