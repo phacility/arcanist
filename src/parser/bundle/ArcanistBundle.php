@@ -31,6 +31,7 @@ final class ArcanistBundle {
   private $baseRevision;
   private $revisionID;
   private $encoding;
+  private $loadFileDataCallback;
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
@@ -583,7 +584,16 @@ final class ArcanistBundle {
     return implode("\n", $result);
   }
 
+  public function setLoadFileDataCallback($callback) {
+    $this->loadFileDataCallback = $callback;
+    return $this;
+  }
+
   private function getBlob($phid) {
+    if ($this->loadFileDataCallback) {
+      return call_user_func($this->loadFileDataCallback, $phid);
+    }
+
     if ($this->diskPath) {
       list($blob_data) = execx('tar xfO %s blobs/%s', $this->diskPath, $phid);
       return $blob_data;
@@ -599,7 +609,7 @@ final class ArcanistBundle {
       return base64_decode($data_base64);
     }
 
-    throw new Exception("Nowhere to load blob '{$phid} from!");
+    throw new Exception("Nowhere to load blob '{$phid}' from!");
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change) {
