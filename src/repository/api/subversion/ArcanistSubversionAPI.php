@@ -534,11 +534,14 @@ EODIFF;
     array $query) {
 
     // We don't have much to go on in SVN, look for revisions that came from
-    // this directory.
+    // this directory and belong to the same project.
 
+    $project = $this->getWorkingCopyIdentity()->getProjectID();
     $results = $conduit->callMethodSynchronous(
       'differential.query',
-      $query);
+      $query + array(
+        'arcanistProjects' => $project,
+      ));
 
     foreach ($results as $key => $result) {
       if ($result['sourcePath'] != $this->getPath()) {
