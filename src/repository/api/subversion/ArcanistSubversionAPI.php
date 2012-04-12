@@ -540,7 +540,7 @@ EODIFF;
     $results = $conduit->callMethodSynchronous(
       'differential.query',
       $query + array(
-        'arcanistProjects' => $project,
+        'arcanistProjects' => array($project),
       ));
 
     foreach ($results as $key => $result) {

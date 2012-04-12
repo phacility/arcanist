@@ -204,12 +204,6 @@ EOTEXT
         ),
       ),
       'preview' => array(
-        'supports'    => array(
-          'git',
-        ),
-        'nosupport'   => array(
-          'svn' => 'Revisions are never created directly when using SVN.',
-        ),
         'help' =>
           "Instead of creating or updating a revision, only create a diff, ".
           "which you may later attach to a revision. This still runs lint ".
@@ -552,10 +546,6 @@ EOTEXT
     }
 
     if ($this->isRawDiffSource()) {
-      return true;
-    }
-
-    if ($this->isHistoryImmutable()) {
       return true;
     }
 
@@ -1206,6 +1196,10 @@ EOTEXT
    * @task message
    */
   private function buildCommitMessage() {
+    if ($this->getArgument('preview') || $this->getArgument('only')) {
+      return null;
+    }
+
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
