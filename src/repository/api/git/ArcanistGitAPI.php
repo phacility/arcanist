@@ -140,6 +140,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       if (!$default_relative) {
         $default_relative = $this->readScratchFile('default-relative-commit');
+        $default_relative = trim($default_relative);
       }
 
       if (!$default_relative) {
