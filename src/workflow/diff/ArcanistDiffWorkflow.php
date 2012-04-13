@@ -733,8 +733,12 @@ EOTEXT
         $change_size = number_format($size);
         $byte_warning =
           "Diff for '{$file_name}' with context is {$change_size} bytes in ".
-          "length. Generally, source changes should not be this large. If ".
-          "this file is a huge text file, try using the '--less-context' flag.";
+          "length. Generally, source changes should not be this large.";
+        if (!$this->getArgument('less-context')) {
+          $byte_warning .=
+            " If this file is a huge text file, try using the ".
+            "'--less-context' flag.";
+        }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           throw new ArcanistUsageException(
             "{$byte_warning} If the file is not a text file, mark it as ".
