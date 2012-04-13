@@ -35,12 +35,18 @@ final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
   private $sourceID;
   private $format;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **export** [__paths__] __format__ (svn)
       **export** [__commit_range__] __format__ (git)
       **export** __--revision__ __revision_id__ __format__
       **export** __--diff__ __diff_id__ __format__
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git, svn
           Export the local changeset (or a Differential changeset) to a file,
           in some __format__: git diff (__--git__), unified diff
@@ -68,6 +74,11 @@ EOTEXT
         'help' =>
           "Export change as an arc bundle. This format can represent all ".
           "changes. These bundles can be applied with 'arc patch'.",
+      ),
+      'encoding' => array(
+        'param' => 'encoding',
+        'help' =>
+          "Attempt to convert non UTF-8 patch into specified encoding.",
       ),
       'revision' => array(
         'param' => 'revision_id',
@@ -189,6 +200,7 @@ EOTEXT
         $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
         $bundle->setBaseRevision(
           $repository_api->getSourceControlBaseRevision());
+        // note we can't get a revision ID for SOURCE_LOCAL
         break;
       case self::SOURCE_REVISION:
         $bundle = $this->loadRevisionBundleFromConduit(
@@ -200,6 +212,19 @@ EOTEXT
           $this->getConduit(),
           $this->getSourceID());
         break;
+    }
+
+    $try_encoding = nonempty($this->getArgument('encoding'), null);
+    if (!$try_encoding) {
+      try {
+        $try_encoding = $this->getRepositoryEncoding();
+      } catch (ConduitClientException $e) {
+        $try_encoding = null;
+      }
+    }
+
+    if ($try_encoding) {
+      $bundle->setEncoding($try_encoding);
     }
 
     $format = $this->getFormat();

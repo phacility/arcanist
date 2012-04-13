@@ -42,6 +42,7 @@ abstract class ArcanistRepositoryAPI {
 
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
+  private $workingCopyIdentity;
 
   abstract public function getSourceControlSystemName();
 
@@ -52,6 +53,10 @@ abstract class ArcanistRepositoryAPI {
   public function setDiffLinesOfContext($lines) {
     $this->diffLinesOfContext = $lines;
     return $this;
+  }
+
+  public function getWorkingCopyIdentity() {
+    return $this->workingCopyIdentity;
   }
 
   public static function newAPIFromWorkingCopyIdentity(
@@ -65,12 +70,18 @@ abstract class ArcanistRepositoryAPI {
         "any parent directory. Create an '.arcconfig' file to configure arc.");
     }
 
-    if (Filesystem::pathExists($root.'/.svn')) {
-      return newv('ArcanistSubversionAPI', array($root));
+    // check if we're in an svn working copy
+    list($err) = exec_manual('svn info');
+    if (!$err) {
+      $api = newv('ArcanistSubversionAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     if (Filesystem::pathExists($root.'/.hg')) {
-      return newv('ArcanistMercurialAPI', array($root));
+      $api = newv('ArcanistMercurialAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     $git_root = self::discoverGitBaseDirectory($root);
@@ -81,7 +92,9 @@ abstract class ArcanistRepositoryAPI {
           "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
       }
 
-      return newv('ArcanistGitAPI', array($root));
+      $api = newv('ArcanistGitAPI', array($root));
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
     }
 
     throw new ArcanistUsageException(
@@ -95,9 +108,10 @@ abstract class ArcanistRepositoryAPI {
 
   public function getPath($to_file = null) {
     if ($to_file !== null) {
-      return $this->path.'/'.ltrim($to_file, '/');
+      return $this->path.DIRECTORY_SEPARATOR.
+             ltrim($to_file, DIRECTORY_SEPARATOR);
     } else {
-      return $this->path.'/';
+      return $this->path.DIRECTORY_SEPARATOR;
     }
   }
 
@@ -133,9 +147,12 @@ abstract class ArcanistRepositoryAPI {
 
   private static function discoverGitBaseDirectory($root) {
     try {
-      list($stdout) = execx(
-        '(cd %s; git rev-parse --show-cdup)',
-        $root);
+
+      // NOTE: This awkward construction is to make sure things work on Windows.
+      $future = new ExecFuture('git rev-parse --show-cdup');
+      $future->setCWD($root);
+      list($stdout) = $future->resolvex();
+
       return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
     } catch (CommandException $ex) {
       if (preg_match('/^fatal: Not a git repository/', $ex->getStdErr())) {
@@ -152,8 +169,17 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getCurrentFileData($path);
   abstract public function getLocalCommitInformation();
   abstract public function getSourceControlBaseRevision();
+  abstract public function getCanonicalRevisionName($string);
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
+  abstract public function updateWorkingCopy();
+  abstract public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query);
+
+  public function hasLocalCommit($commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
 
   public function getCommitMessageForRevision($revision) {
     throw new ArcanistCapabilityNotSupportedException($this);
@@ -175,6 +201,140 @@ abstract class ArcanistRepositoryAPI {
 
   public function getFinalizedRevisionMessage() {
     throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function execxLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args)->resolvex();
+  }
+
+  public function execManualLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args)->resolve();
+  }
+
+  public function execFutureLocal($pattern /*, ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args);
+  }
+
+  abstract protected function buildLocalFuture(array $argv);
+
+
+/* -(  Scratch Files  )------------------------------------------------------ */
+
+
+  /**
+   * Try to read a scratch file, if it exists and is readable.
+   *
+   * @param string Scratch file name.
+   * @return mixed String for file contents, or false for failure.
+   * @task scratch
+   */
+  public function readScratchFile($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if (!$full_path) {
+      return false;
+    }
+
+    if (!Filesystem::pathExists($full_path)) {
+      return false;
+    }
+
+    try {
+      $result = Filesystem::readFile($full_path);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return $result;
+  }
+
+
+  /**
+   * Try to write a scratch file, if there's somewhere to put it and we can
+   * write there.
+   *
+   * @param  string Scratch file name to write.
+   * @param  string Data to write.
+   * @return bool   True on success, false on failure.
+   * @task scratch
+   */
+  public function writeScratchFile($path, $data) {
+    $dir = $this->getScratchFilePath('');
+    if (!$dir) {
+      return false;
+    }
+
+    if (!Filesystem::pathExists($dir)) {
+      try {
+        Filesystem::createDirectory($dir);
+      } catch (Exception $ex) {
+        return false;
+      }
+    }
+
+    try {
+      Filesystem::writeFile($this->getScratchFilePath($path), $data);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  /**
+   * Try to remove a scratch file.
+   *
+   * @param   string  Scratch file name to remove.
+   * @return  bool    True if the file was removed successfully.
+   * @task scratch
+   */
+  public function removeScratchFile($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if (!$full_path) {
+      return false;
+    }
+
+    try {
+      Filesystem::remove($full_path);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  /**
+   * Get a human-readable description of the scratch file location.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  String, or false on failure.
+   * @task scratch
+   */
+  public function getReadableScratchFilePath($path) {
+    $full_path = $this->getScratchFilePath($path);
+    if ($full_path) {
+      return Filesystem::readablePath(
+        $full_path,
+        $this->getPath());
+    } else {
+      return false;
+    }
+  }
+
+
+  /**
+   * Get the path to a scratch file, if possible.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  File path, or false on failure.
+   * @task scratch
+   */
+  public function getScratchFilePath($path) {
+    return $this->getPath('.arc/'.$path);
   }
 
 }

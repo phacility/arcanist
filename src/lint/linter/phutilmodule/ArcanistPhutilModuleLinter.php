@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group linter
  */
-class ArcanistPhutilModuleLinter extends ArcanistLinter {
+final class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
   const LINT_UNDECLARED_CLASS       = 1;
   const LINT_UNDECLARED_FUNCTION    = 2;
@@ -73,6 +73,7 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
 
   private function setModuleInfo($key, array $info) {
     $this->moduleInfo[$key] = $info;
+    return $this;
   }
 
   private function getModulePathOnDisk($key) {
@@ -398,10 +399,9 @@ class ArcanistPhutilModuleLinter extends ArcanistLinter {
         $old_file,
         $new_file);
       $message->setDependentMessages($resolvable);
-      foreach ($resolvable as $message) {
-        $message->setObsolete(true);
+      foreach ($resolvable as $resolvable_message) {
+        $resolvable_message->setObsolete(true);
       }
-      $message->setGenerateFile(true);
     }
   }
 

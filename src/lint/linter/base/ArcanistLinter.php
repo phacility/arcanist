@@ -20,6 +20,7 @@
  * Implements lint rules, like syntax checks for a specific language.
  *
  * @group linter
+ * @stable
  */
 abstract class ArcanistLinter {
 
@@ -113,6 +114,11 @@ abstract class ArcanistLinter {
   }
 
   protected function addLintMessage(ArcanistLintMessage $message) {
+    if (!$this->getEngine()->getCommitHookMode()) {
+      $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+      $path = Filesystem::resolvePath($message->getPath(), $root);
+      $message->setPath(Filesystem::readablePath($path, $root));
+    }
     $this->messages[] = $message;
     return $message;
   }
@@ -184,6 +190,10 @@ abstract class ArcanistLinter {
   public function willLintPath($path) {
     $this->stopAllLinters = false;
     $this->activePath = $path;
+  }
+
+  public function canRun() {
+    return true;
   }
 
   abstract public function willLintPaths(array $paths);

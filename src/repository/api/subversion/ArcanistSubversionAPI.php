@@ -21,7 +21,7 @@
  *
  * @group workingcopy
  */
-class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
+final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   protected $svnStatus;
   protected $svnBaseRevisions;
@@ -35,6 +35,16 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   public function getSourceControlSystemName() {
     return 'svn';
   }
+
+  protected function buildLocalFuture(array $argv) {
+
+    $argv[0] = 'svn '.$argv[0];
+
+    $future = newv('ExecFuture', $argv);
+    $future->setCWD($this->getPath());
+    return $future;
+  }
+
 
   public function hasMergeConflicts() {
     foreach ($this->getSVNStatus() as $path => $mask) {
@@ -181,6 +191,10 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $info['URL'].'@'.$this->getSVNBaseRevisionNumber();
   }
 
+  public function getCanonicalRevisionName($string) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function getSVNBaseRevisionNumber() {
     if ($this->svnBaseRevisionNumber) {
       return $this->svnBaseRevisionNumber;
@@ -277,6 +291,7 @@ class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         '/^(Copied From URL): (\S+)$/m',
         '/^(Copied From Rev): (\d+)$/m',
         '/^(Repository UUID): (\S+)$/m',
+        '/^(Node Kind): (\S+)$/m',
       );
 
       $result = array();
@@ -412,6 +427,10 @@ EODIFF;
       return null;
     }
 
+    if (!file_exists($full_path)) {
+      return null;
+    }
+
     $data = Filesystem::readFile($full_path);
     $lines = explode("\n", $data);
     $len = count($lines);
@@ -492,6 +511,10 @@ EODIFF;
     return false;
   }
 
+  public function hasLocalCommit($commit) {
+    return false;
+  }
+
   public function getWorkingCopyRevision() {
     return $this->getSourceControlBaseRevision();
   }
@@ -504,6 +527,33 @@ EODIFF;
     // In other VCSes we give push instructions here, but it never makes sense
     // in SVN.
     return "Done.";
+  }
+
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    // We don't have much to go on in SVN, look for revisions that came from
+    // this directory and belong to the same project.
+
+    $project = $this->getWorkingCopyIdentity()->getProjectID();
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'arcanistProjects' => array($project),
+      ));
+
+    foreach ($results as $key => $result) {
+      if ($result['sourcePath'] != $this->getPath()) {
+        unset($results[$key]);
+      }
+    }
+
+    return $results;
+  }
+
+  public function updateWorkingCopy() {
+    $this->execxLocal('up');
   }
 
 }

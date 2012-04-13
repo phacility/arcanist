@@ -21,7 +21,7 @@
  *
  * @group workingcopy
  */
-class ArcanistGitAPI extends ArcanistRepositoryAPI {
+final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $relativeCommit = null;
@@ -37,6 +37,16 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public static function newHookAPI($root) {
     return new ArcanistGitAPI($root);
   }
+
+  protected function buildLocalFuture(array $argv) {
+
+    $argv[0] = 'git '.$argv[0];
+
+    $future = newv('ExecFuture', $argv);
+    $future->setCWD($this->getPath());
+    return $future;
+  }
+
 
   public function getSourceControlSystemName() {
     return 'git';
@@ -65,11 +75,19 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $against = $this->getRelativeCommit().'..HEAD';
     }
 
-    list($info) = execx(
-      '(cd %s && git log %s --format=%s --)',
-      $this->getPath(),
+    // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
+    // when passed throuhgh escapeshellarg() they are replaced with spaces.
+
+    // TODO: Learn how cmd.exe works and find some clever workaround?
+
+    // NOTE: If we use "%x00", output is truncated in Windows.
+
+    list($info) = $this->execxLocal(
+      phutil_is_windows()
+        ? 'log %s --format=%C --'
+        : 'log %s --format=%s --',
       $against,
-      '%H%x00%T%x00%P%x00%at%x00%an%x00%s');
+      '%H%x01%T%x01%P%x01%at%x01%an%x01%s');
 
     $commits = array();
 
@@ -77,7 +95,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $info = explode("\n", $info);
     foreach ($info as $line) {
       list($commit, $tree, $parents, $time, $author, $title)
-        = explode("\0", $line, 6);
+        = explode("\1", $line, 6);
 
       $commits[] = array(
         'commit'  => $commit,
@@ -94,22 +112,101 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getRelativeCommit() {
     if ($this->relativeCommit === null) {
-      list($err) = exec_manual(
-        '(cd %s; git rev-parse --verify HEAD^)',
-        $this->getPath());
+
+      // Detect zero-commit or one-commit repositories. There is only one
+      // relative-commit value that makes any sense in these repositories: the
+      // empty tree.
+      list($err) = $this->execManualLocal('rev-parse --verify HEAD^');
       if ($err) {
-        list($err) = exec_manual(
-          '(cd %s; git rev-parse --verify HEAD)',
-          $this->getPath());
+        list($err) = $this->execManualLocal('rev-parse --verify HEAD');
         if ($err) {
           $this->repositoryHasNoCommits = true;
         }
+
         $this->relativeCommit = self::GIT_MAGIC_ROOT_COMMIT;
 
-      } else {
-        $this->relativeCommit = 'HEAD^';
+        return $this->relativeCommit;
       }
+
+      $do_write = false;
+      $default_relative = null;
+
+      list($err, $upstream) = $this->execManualLocal(
+        "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+
+      if (!$err) {
+        $default_relative = trim($upstream);
+      }
+
+      if (!$default_relative) {
+        $default_relative = $this->readScratchFile('default-relative-commit');
+        $default_relative = trim($default_relative);
+      }
+
+      if (!$default_relative) {
+        $working_copy = $this->getWorkingCopyIdentity();
+        if ($working_copy) {
+          $default_relative = $working_copy->getConfig(
+            'git.default-relative-commit');
+        }
+      }
+
+      if (!$default_relative) {
+
+        // TODO: Remove the history lesson soon.
+
+        echo phutil_console_format(
+          "<bg:green>** Select a Default Commit Range **</bg>\n\n");
+        echo phutil_console_wrap(
+          "You're running a command which operates on a range of revisions ".
+          "(usually, from some revision to HEAD) but have not specified the ".
+          "revision that should determine the start of the range.\n\n".
+          "Previously, arc assumed you meant 'HEAD^' when you did not specify ".
+          "a start revision, but this behavior does not make much sense in ".
+          "most workflows outside of Facebook's historic git-svn workflow.\n\n".
+          "arc no longer assumes 'HEAD^'. You must specify a relative commit ".
+          "explicitly when you invoke a command (e.g., `arc diff HEAD^`, not ".
+          "just `arc diff`) or select a default for this working copy.\n\n".
+          "In most cases, the best default is 'origin/master'. You can also ".
+          "select 'HEAD^' to preserve the old behavior, or some other remote ".
+          "or branch. But you almost certainly want to select ".
+          "'origin/master'.\n\n".
+          "(Technically: the merge-base of the selected revision and HEAD is ".
+          "used to determine the start of the commit range.)");
+
+        $prompt = "What default do you want to use? [origin/master]";
+        $default = phutil_console_prompt($prompt);
+
+        if (!strlen(trim($default))) {
+          $default = 'origin/master';
+        }
+
+        $default_relative = $default;
+        $do_write = true;
+      }
+
+      list($object_type) = $this->execxLocal(
+        'cat-file -t %s',
+        $default_relative);
+
+      if (trim($object_type) !== 'commit') {
+        throw new Exception(
+          "Relative commit '{$relative}' is not the name of a commit!");
+      }
+
+      if ($do_write) {
+        // Don't perform this write until we've verified that the object is a
+        // valid commit name.
+        $this->writeScratchFile('default-relative-commit', $default_relative);
+      }
+
+      list($merge_base) = $this->execxLocal(
+        'merge-base %s HEAD',
+        $default_relative);
+
+      $this->relativeCommit = trim($merge_base);
     }
+
     return $this->relativeCommit;
   }
 
@@ -142,18 +239,16 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getFullGitDiff() {
     $options = $this->getDiffFullOptions();
-    list($stdout) = execx(
-      "(cd %s; git diff {$options} %s --)",
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      "diff {$options} %s --",
       $this->getRelativeCommit());
     return $stdout;
   }
 
   public function getRawDiffText($path) {
     $options = $this->getDiffFullOptions();
-    list($stdout) = execx(
-      "(cd %s; git diff {$options} %s -- %s)",
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      "diff {$options} %s -- %s",
       $this->getRelativeCommit(),
       $path);
     return $stdout;
@@ -165,9 +260,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     //    $ git rev-parse --abbrev-ref `git symbolic-ref HEAD`
     //
     // But that may fail if you're not on a branch.
-    list($stdout) = execx(
-      '(cd %s; git branch)',
-      $this->getPath());
+    list($stdout) = $this->execxLocal('branch');
 
     $matches = null;
     if (preg_match('/^\* (.+)$/m', $stdout, $matches)) {
@@ -188,51 +281,35 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       return '';
     } else if ($relative == self::GIT_MAGIC_ROOT_COMMIT) {
       // First commit.
-      list($stdout) = execx(
-        '(cd %s; git log --format=medium HEAD)',
-        $this->getPath());
+      list($stdout) = $this->execxLocal('log --format=medium HEAD');
     } else {
       // 2..N commits.
-      list($stdout) = execx(
-        '(cd %s; git log --first-parent --format=medium %s..HEAD)',
-        $this->getPath(),
+      list($stdout) = $this->execxLocal(
+        'log --first-parent --format=medium %s..HEAD',
         $this->getRelativeCommit());
     }
     return $stdout;
   }
 
   public function getGitHistoryLog() {
-    list($stdout) = execx(
-      '(cd %s; git log --format=medium -n%d %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'log --format=medium -n%d %s',
       self::SEARCH_LENGTH_FOR_PARENT_REVISIONS,
       $this->getRelativeCommit());
     return $stdout;
   }
 
   public function getSourceControlBaseRevision() {
-    list($stdout) = execx(
-      '(cd %s; git rev-parse %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'rev-parse %s',
       $this->getRelativeCommit());
     return rtrim($stdout, "\n");
   }
 
-  /**
-   * Returns the sha1 of the HEAD revision
-   * @param boolean $short whether return the abbreviated or full hash.
-   */
-  public function getGitHeadRevision($short=false) {
-    if ($short) {
-      $flags = '--short';
-    } else {
-      $flags = '';
-    }
-    list($stdout) = execx(
-      '(cd %s; git rev-parse %s HEAD)',
-      $this->getPath(),
-      $flags);
-    return rtrim($stdout, "\n");
+  public function getCanonicalRevisionName($string) {
+    list($stdout) = $this->execxLocal('show -s --format=%C %s',
+      '%H', $string);
+    return rtrim($stdout);
   }
 
   public function getWorkingCopyStatus() {
@@ -243,31 +320,35 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // -- parallelize these slow cpu bound git calls.
 
       // Find committed changes.
-      $committed_future = new ExecFuture(
-        "(cd %s; git diff {$options} --raw %s --)",
-        $this->getPath(),
-        $this->getRelativeCommit());
+      $committed_future = $this->buildLocalFuture(
+        array(
+          "diff {$options} --raw %s --",
+          $this->getRelativeCommit(),
+        ));
 
       // Find uncommitted changes.
-      $uncommitted_future = new ExecFuture(
-        "(cd %s; git diff {$options} --raw %s --)",
-        $this->getPath(),
-        $this->repositoryHasNoCommits
-          ? self::GIT_MAGIC_ROOT_COMMIT
-          : 'HEAD');
+      $uncommitted_future = $this->buildLocalFuture(
+        array(
+          "diff {$options} --raw %s --",
+          $this->repositoryHasNoCommits
+            ? self::GIT_MAGIC_ROOT_COMMIT
+            : 'HEAD',
+        ));
 
       // Untracked files
-      $untracked_future = new ExecFuture(
-        '(cd %s; git ls-files --others --exclude-standard)',
-        $this->getPath());
+      $untracked_future = $this->buildLocalFuture(
+        array(
+          'ls-files --others --exclude-standard',
+        ));
 
       // TODO: This doesn't list unstaged adds. It's not clear how to get that
       // list other than "git status --porcelain" and then parsing it. :/
 
       // Unstaged changes
-      $unstaged_future = new ExecFuture(
-        '(cd %s; git ls-files -m)',
-        $this->getPath());
+      $unstaged_future = $this->buildLocalFuture(
+        array(
+          'ls-files -m',
+        ));
 
       $futures = array(
         $committed_future,
@@ -320,17 +401,15 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function amendGitHeadCommit($message) {
-    execx(
-      '(cd %s; git commit --amend --allow-empty --message %s)',
-      $this->getPath(),
+    $this->execxLocal(
+      'commit --amend --allow-empty --message %s',
       $message);
   }
 
   public function getPreReceiveHookStatus($old_ref, $new_ref) {
     $options = $this->getDiffBaseOptions();
-    list($stdout) = execx(
-      "(cd %s && git diff {$options} --raw %s %s --)",
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      "diff {$options} --raw %s %s --",
       $old_ref,
       $new_ref);
     return $this->parseGitStatus($stdout, $full = true);
@@ -376,9 +455,8 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getBlame($path) {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
-    list($stdout) = execx(
-      '(cd %s; git blame --date=iso -w -M %s -- %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'blame --date=iso -w -M %s -- %s',
       $this->getRelativeCommit(),
       $path);
 
@@ -454,9 +532,8 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // and treat it as though it as a file containing a list of other files,
     // which is silly.
 
-    list($stdout) = execx(
-      '(cd %s && git ls-tree %s -- %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'ls-tree %s -- %s',
       $revision,
       $path);
 
@@ -472,9 +549,8 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
       return null;
     }
 
-    list($stdout) = execx(
-      '(cd %s && git cat-file blob %s)',
-       $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'cat-file blob %s',
        $info[$path]['ref']);
     return $stdout;
   }
@@ -485,8 +561,7 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return array where each element is a triple ('name', 'sha1', 'current')
    */
   public function getAllBranches() {
-    list($branch_info) = execx(
-      'cd %s && git branch --no-color', $this->getPath());
+    list($branch_info) = $this->execxLocal('branch --no-color');
     $lines = explode("\n", trim($branch_info));
     $result = array();
     foreach ($lines as $line) {
@@ -506,10 +581,8 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $all_names = ipull($result, 'name');
     // Calling 'git branch' first and then 'git rev-parse' is way faster than
     // 'git branch -v' for some reason.
-    list($sha1s_string) = execx(
-      "cd %s && git rev-parse %Ls",
-      $this->path,
-      $all_names);
+    list($sha1s_string) = $this->execxLocal('rev-parse %Ls', $all_names);
+
     $sha1_map = array_combine($all_names, explode("\n", trim($sha1s_string)));
     foreach ($result as &$branch) {
       $branch['sha1'] = $sha1_map[$branch['name']];
@@ -525,34 +598,38 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @param string $format the format to show messages in
    */
   public function multigetCommitMessages($revs, $format) {
-    $delimiter = "%%x00";
-    $revs_list = implode(' ', $revs);
-    $show_command =
-      "git show -s --pretty=\"format:$format$delimiter\" $revs_list";
-    list($commits_string) = execx(
-      "cd %s && $show_command",
-      $this->getPath());
+
+    list($commits_string) = $this->execxLocal(
+      "show -s --pretty='format:'%s%s %Ls",
+      $format,
+      '%x00',
+      $revs);
+
     $commits_list = array_slice(explode("\0", $commits_string), 0, -1);
     $commits_list = array_combine($revs, $commits_list);
     return $commits_list;
   }
 
   public function getRepositoryOwner() {
-    list($owner) = execx(
-      'cd %s && git config --get user.name',
-      $this->getPath());
+    list($owner) = $this->execxLocal('config --get user.name');
     return trim($owner);
   }
 
   public function getWorkingCopyRevision() {
-    list($stdout) = execx(
-      '(cd %s; git rev-parse %s)',
-      $this->getPath(),
-      'HEAD');
+    list($stdout) = $this->execxLocal('rev-parse HEAD');
     return rtrim($stdout, "\n");
   }
 
   public function supportsRelativeLocalCommits() {
+    return true;
+  }
+
+  public function hasLocalCommit($commit) {
+    try {
+      $this->getCanonicalRevisionName($commit);
+    } catch (CommandException $exception) {
+      return false;
+    }
     return true;
   }
 
@@ -567,9 +644,8 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
       $merge_base = $base;
     } else {
-      list($err, $merge_base) = exec_manual(
-        '(cd %s; git merge-base %s HEAD)',
-        $this->getPath(),
+      list($err, $merge_base) = $this->execManualLocal(
+        'merge-base %s HEAD',
         $base);
       if ($err) {
         throw new ArcanistUsageException(
@@ -581,6 +657,9 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getAllLocalChanges() {
     $diff = $this->getFullGitDiff();
+    if (!strlen(trim($diff))) {
+      return array();
+    }
     $parser = new ArcanistDiffParser();
     return $parser->parseDiff($diff);
   }
@@ -611,12 +690,75 @@ class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCommitMessageForRevision($rev) {
-    list($message) = execx(
-      '(cd %s && git log -n1 %s)',
-      $this->getPath(),
+    list($message) = $this->execxLocal(
+      'log -n1 %s',
       $rev);
     $parser = new ArcanistDiffParser();
     return head($parser->parseDiff($message));
+  }
+
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    $messages = $this->getGitCommitLog();
+    if (!strlen($messages)) {
+      return array();
+    }
+
+    $parser = new ArcanistDiffParser();
+    $messages = $parser->parseDiff($messages);
+
+    // First, try to find revisions by explicit revision IDs in commit messages.
+    $revision_ids = array();
+    foreach ($messages as $message) {
+      $object = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $message->getMetadata('message'));
+      if ($object->getRevisionID()) {
+        $revision_ids[] = $object->getRevisionID();
+      }
+    }
+
+    if ($revision_ids) {
+      $results = $conduit->callMethodSynchronous(
+        'differential.query',
+        $query + array(
+          'ids' => $revision_ids,
+        ));
+      return $results;
+    }
+
+    // If we didn't succeed, try to find revisions by hash.
+    $hashes = array();
+    foreach ($this->getLocalCommitInformation() as $commit) {
+      $hashes[] = array('gtcm', $commit['commit']);
+      $hashes[] = array('gttr', $commit['tree']);
+    }
+
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'commitHashes' => $hashes,
+      ));
+
+    if ($results) {
+      return $results;
+    }
+
+    // If we still didn't succeed, try to find revisions by branch name.
+    $project = $this->getWorkingCopyIdentity()->getProjectID();
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'branches'          => array($this->getBranchName()),
+        'arcanistProjects'  => array($project),
+      ));
+
+    return $results;
+  }
+
+  public function updateWorkingCopy() {
+    $this->execxLocal('pull');
   }
 
 }

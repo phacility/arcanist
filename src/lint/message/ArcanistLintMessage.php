@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group lint
  */
-class ArcanistLintMessage {
+final class ArcanistLintMessage {
 
   protected $path;
   protected $line;
@@ -33,7 +33,6 @@ class ArcanistLintMessage {
   protected $originalText;
   protected $replacementText;
   protected $appliedToDisk;
-  protected $generateFile;
   protected $dependentMessages = array();
   protected $obsolete;
 
@@ -145,17 +144,12 @@ class ArcanistLintMessage {
     return $this->getSeverity() == ArcanistLintSeverity::SEVERITY_WARNING;
   }
 
+  public function isAutofix() {
+    return $this->getSeverity() == ArcanistLintSeverity::SEVERITY_AUTOFIX;
+  }
+
   public function hasFileContext() {
     return ($this->getLine() !== null);
-  }
-
-  public function setGenerateFile($generate_file) {
-    $this->generateFile = $generate_file;
-    return $this;
-  }
-
-  public function getGenerateFile() {
-    return $this->generateFile;
   }
 
   public function setObsolete($obsolete) {
@@ -174,7 +168,7 @@ class ArcanistLintMessage {
 
   public function didApplyPatch() {
     if ($this->appliedToDisk) {
-      return;
+      return $this;
     }
     $this->appliedToDisk = true;
     foreach ($this->dependentMessages as $message) {
@@ -188,6 +182,7 @@ class ArcanistLintMessage {
   }
 
   public function setDependentMessages(array $messages) {
+    assert_instances_of($messages, 'ArcanistLintMessage');
     $this->dependentMessages = $messages;
     return $this;
   }

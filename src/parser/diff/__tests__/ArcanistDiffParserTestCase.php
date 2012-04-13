@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
+final class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
 
   public function testParser() {
     $root = dirname(__FILE__).'/data/';
@@ -38,6 +38,9 @@ class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
     $changes = $parser->parseDiff($contents);
 
     switch ($file) {
+      case 'colorized.hggitdiff':
+        $this->assertEqual(1, count($changes));
+        break;
       case 'basic-missing-both-newlines-plus.udiff':
       case 'basic-missing-both-newlines.udiff':
       case 'basic-missing-new-newline-plus.udiff':
@@ -477,6 +480,16 @@ EOTEXT
           ArcanistDiffChangeType::FILE_BINARY,
           $change->getFileType());
         break;
+      case 'git-odd-filename.gitdiff':
+        $this->assertEqual(2, count($changes));
+        $change = reset($changes);
+        $this->assertEqual(
+          'old/'."\342\210\206".'.jpg',
+          $change->getOldPath());
+        $this->assertEqual(
+          'new/'."\342\210\206".'.jpg',
+          $change->getCurrentPath());
+        break;
       case 'hg-binary-change.hgdiff':
       case 'hg-solo-binary-change.hgdiff':
         $this->assertEqual(1, count($changes));
@@ -504,6 +517,14 @@ EOTEXT
         $this->assertEqual(
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
+        break;
+      case 'svn-1.7-property-added.svndiff':
+        $this->assertEqual(1, count($changes));
+        $change = head($changes);
+        $new_properties = $change->getNewProperties();
+        $this->assertEqual(2, count($new_properties));
+        $this->assertEqual('*', idx($new_properties, 'svn:executable'));
+        $this->assertEqual('text/html', idx($new_properties, 'svn:mime-type'));
         break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");

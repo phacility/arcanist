@@ -21,11 +21,17 @@
  *
  * @group workflow
  */
-class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **svn-hook-pre-commit** __repository__ __transaction__
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **svn-hook-pre-commit** __repository__ __transaction__
           Supports: svn
           You can install this as an SVN pre-commit hook. For more information,
           see the article "Installing Arcanist SVN Hooks" in the Arcanist
@@ -155,8 +161,8 @@ EOTEXT
     }
     if (count($groups) > 1) {
       $message = array();
-      foreach ($groups as $config => $group) {
-        $message[] = "Files underneath '{$config}':\n\n";
+      foreach ($groups as $project => $group) {
+        $message[] = "Files underneath '{$project}':\n\n";
         $message[] = "        ".implode("\n        ", $group)."\n\n";
       }
       $message = implode('', $message);

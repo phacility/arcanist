@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,15 @@ final class ArcanistLintResult {
     return false;
   }
 
+  public function isAllAutofix() {
+    foreach ($this->messages as $message) {
+      if (!$message->isAutofix()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private function sortAndFilterMessages() {
     $messages = $this->messages;
 
@@ -86,12 +95,6 @@ final class ArcanistLintResult {
       if ($message->getObsolete()) {
         unset($messages[$key]);
         continue;
-      }
-      if ($message->getGenerateFile()) {
-        $messages = array(
-          $key => $message,
-        );
-        break;
       }
     }
 

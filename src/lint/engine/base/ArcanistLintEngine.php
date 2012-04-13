@@ -56,6 +56,7 @@
  * and Workflows} for more information about configuring lint engines.
  *
  * @group lint
+ * @stable
  */
 abstract class ArcanistLintEngine {
 
@@ -118,6 +119,7 @@ abstract class ArcanistLintEngine {
 
   public function setHookAPI(ArcanistHookAPI $hook_api) {
     $this->hookAPI  = $hook_api;
+    return $this;
   }
 
   public function getHookAPI() {
@@ -183,6 +185,9 @@ abstract class ArcanistLintEngine {
 
     foreach ($linters as $linter) {
       $linter->setEngine($this);
+      if (!$linter->canRun()) {
+        continue;
+      }
       $paths = $linter->getPaths();
 
       foreach ($paths as $key => $path) {

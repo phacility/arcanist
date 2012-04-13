@@ -1,0 +1,53 @@
+<?php
+
+$x = 0;
+$y = 0;
+
+switch ($x) {
+  case 1:
+    $x++;
+    continue;
+  case 2:
+    $x++;
+    break;
+  case 3:
+    $x++;
+    return;
+  case 4:
+    $x++;
+    throw new Exception("!");
+  case 5:
+    break 2;
+  case 6:
+    continue 2;
+  case 7:
+  case 8:
+    $x++;
+    break;
+  case 9:
+    $x++;
+    /* fallthrough */
+  case 10:
+    $x++;
+    break;
+  case 11:
+    $x++;
+    exit(1);
+  default:
+    break;
+}
+
+switch ($x) {
+  case 1:
+    $x++;
+  case 2:
+    break;
+}
+
+switch ($x) {
+  default:
+    $x++;
+}
+~~~~~~~~~~
+warning:41:3
+warning:48:3

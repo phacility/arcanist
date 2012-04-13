@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
  *
  * @group workflow
  */
-class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **call-conduit** __method__
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **call-conduit** __method__
           Supports: http, https
           Allows you to make a raw Conduit method call:
 
@@ -38,7 +44,6 @@ class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
 
             $ echo '{}' | arc call-conduit conduit.ping
             $ echo '{"phid":"PHID-FILE-xxxx"}' | arc call-conduit file.download
-
 EOTEXT
       );
   }

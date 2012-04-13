@@ -11,6 +11,7 @@ phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'unit/engine/phutil/testcase');
 
 phutil_require_module('phutil', 'filesystem');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistDiffParserTestCase.php');

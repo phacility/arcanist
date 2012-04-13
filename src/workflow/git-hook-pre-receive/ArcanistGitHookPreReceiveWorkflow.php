@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
  *
  * @group workflow
  */
-class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **git-hook-pre-receive**
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **git-hook-pre-receive**
           Supports: git
           You can install this as a git pre-receive hook.
 EOTEXT

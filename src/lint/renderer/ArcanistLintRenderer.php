@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,14 @@
  *
  * @group lint
  */
-class ArcanistLintRenderer {
+final class ArcanistLintRenderer {
+  private $showAutofixPatches = false;
+
+  public function setShowAutofixPatches($show_autofix_patches) {
+    $this->showAutofixPatches = $show_autofix_patches;
+    return $this;
+  }
+
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();
     $path = $result->getPath();
@@ -29,9 +36,12 @@ class ArcanistLintRenderer {
     $lines = explode("\n", $result->getData());
 
     $text = array();
-    $text[] = phutil_console_format('**>>>** Lint for __%s__:', $path);
-    $text[] = null;
+
     foreach ($messages as $message) {
+      if (!$this->showAutofixPatches && $message->isAutofix()) {
+        continue;
+      }
+
       if ($message->isError()) {
         $color = 'red';
       } else {
@@ -45,8 +55,7 @@ class ArcanistLintRenderer {
       $description = phutil_console_wrap($message->getDescription(), 4);
 
       $text[] = phutil_console_format(
-        "  **<bg:{$color}> %s </bg>** (%s) __%s__\n".
-        "    %s\n",
+        "  **<bg:{$color}> %s </bg>** (%s) __%s__\n%s\n",
         $severity,
         $code,
         $name,
@@ -56,10 +65,13 @@ class ArcanistLintRenderer {
         $text[] = $this->renderContext($message, $lines);
       }
     }
-    $text[] = null;
-    $text[] = null;
 
-    return implode("\n", $text);
+    if ($text) {
+      $prefix = phutil_console_format("**>>>** Lint for __%s__:\n\n\n", $path);
+      return $prefix . implode("\n", $text);
+    } else {
+      return null;
+    }
   }
 
   protected function renderContext(
@@ -134,28 +146,35 @@ class ArcanistLintRenderer {
     $text_lines = explode("\n", $text);
     $text_length = count($text_lines);
 
-    for (; $cursor < $line_num + $text_length; $cursor++) {
-      $chevron = ($cursor == $line_num);
-      // We may not have any data if, e.g., the old file does not exist.
-      $data = idx($line_data, $cursor, null);
+    if ($text) {
+      for (; $cursor < $line_num + $text_length; $cursor++) {
+        $chevron = ($cursor == $line_num);
+        // We may not have any data if, e.g., the old file does not exist.
+        $data = idx($line_data, $cursor, null);
 
-      // Highlight the problem substring.
-      $text_line = $text_lines[$cursor - $line_num];
-      if (strlen($text_line)) {
-        $data = substr_replace(
-          $data,
-          phutil_console_format('##%s##', $text_line),
-          ($cursor == $line_num)
-            ? $message->getChar() - 1
-            : 0,
-          strlen($text_line));
+        // Highlight the problem substring.
+        $text_line = $text_lines[$cursor - $line_num];
+        if (strlen($text_line)) {
+          $data = substr_replace(
+            $data,
+            phutil_console_format('##%s##', $text_line),
+            ($cursor == $line_num)
+              ? $message->getChar() - 1
+              : 0,
+            strlen($text_line));
+        }
+
+        $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
       }
-
-      $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
     }
 
     // Print out replacement text.
     if ($message->isPatchable()) {
+      // Strip trailing newlines, since "explode" will create an extra patch
+      // line for these.
+      if (strlen($patch) && ($patch[strlen($patch) - 1] === "\n")) {
+        $patch = substr($patch, 0, -1);
+      }
       $patch_lines = explode("\n", $patch);
       $patch_length = count($patch_lines);
 
@@ -163,11 +182,15 @@ class ArcanistLintRenderer {
 
       $len = isset($text_lines[0]) ? strlen($text_lines[0]) : 0;
 
-      $patched = substr_replace(
-        $line_data[$line_num],
-        phutil_console_format('##%s##', $patch_line),
-        $start,
-        $len);
+      $patched = phutil_console_format('##%s##', $patch_line);
+
+      if ($text) {
+        $patched = substr_replace(
+          $line_data[$line_num],
+          $patched,
+          $start,
+          $len);
+      }
 
       $out[] = $this->renderLine(null, $patched, false, '+');
 

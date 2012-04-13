@@ -21,21 +21,47 @@
  *
  * @group workingcopy
  */
-class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
+final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $base;
   private $relativeCommit;
+  private $workingCopyRevision;
+  private $localCommitInfo;
+  private $includeDirectoryStateInDiffs;
+
+  protected function buildLocalFuture(array $argv) {
+
+    // Mercurial has a "defaults" feature which basically breaks automation by
+    // allowing the user to add random flags to any command. This feature is
+    // "deprecated" and "a bad idea" that you should "forget ... existed"
+    // according to project lead Matt Mackall:
+    //
+    //  http://markmail.org/message/hl3d6eprubmkkqh5
+    //
+    // There is an HGPLAIN environmental variable which enables "plain mode"
+    // and hopefully disables this stuff.
+
+    $argv[0] = 'HGPLAIN=1 hg '.$argv[0];
+
+    $future = newv('ExecFuture', $argv);
+    $future->setCWD($this->getPath());
+    return $future;
+  }
 
   public function getSourceControlSystemName() {
     return 'hg';
   }
 
   public function getSourceControlBaseRevision() {
-    list($stdout) = execx(
-      '(cd %s && hg id -ir %s)',
-      $this->getPath(),
-      $this->getRelativeCommit());
+    return $this->getCanonicalRevisionName($this->getRelativeCommit());
+  }
+
+  public function getCanonicalRevisionName($string) {
+    list($stdout) = $this->execxLocal(
+      'log -l 1 --template %s -r %s --',
+      '{node}',
+      $string);
     return $stdout;
   }
 
@@ -44,43 +70,48 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranchName() {
-    // TODO: I have nearly no idea how hg local branches work.
-    list($stdout) = execx(
-      '(cd %s && hg branch)',
-      $this->getPath());
-    return $stdout;
+    // TODO: I have nearly no idea how hg branches work.
+    list($stdout) = $this->execxLocal('branch');
+    return trim($stdout);
   }
 
   public function setRelativeCommit($commit) {
-    list($err) = exec_manual(
-      '(cd %s && hg id -ir %s)',
-      $this->getPath(),
-      $commit);
-
-    if ($err) {
+    try {
+      $commit = $this->getCanonicalRevisionName($commit);
+    } catch (Exception $ex) {
       throw new ArcanistUsageException(
         "Commit '{$commit}' is not a valid Mercurial commit identifier.");
     }
 
     $this->relativeCommit = $commit;
+    $this->dropCaches();
+
     return $this;
   }
 
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
-      list($stdout) = execx(
-        '(cd %s && hg outgoing --branch `hg branch` --style default)',
-        $this->getPath());
-      $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-      if (!count($logs)) {
-        throw new ArcanistUsageException("You have no outgoing changes!");
+      list($err, $stdout) = $this->execManualLocal(
+        'outgoing --branch `hg branch` --style default');
+
+      if (!$err) {
+        $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+      } else {
+        // Mercurial (in some versions?) raises an error when there's nothing
+        // outgoing.
+        $logs = array();
+      }
+
+      if (!$logs) {
+        // In Mercurial, we support operations against uncommitted changes.
+        return $this->getWorkingCopyRevision();
       }
 
       $outgoing_revs = ipull($logs, 'rev');
 
       // This is essentially an implementation of a theoretical `hg merge-base`
       // command.
-      $against = 'tip';
+      $against = $this->getWorkingCopyRevision();
       while (true) {
         // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
         // new as of July 2011, so do this in a compatible way. Also, "hg log"
@@ -88,9 +119,8 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         // explicit template consisting of just the parents token) so we need
         // to separately execute "hg parents".
 
-        list($stdout) = execx(
-          '(cd %s && hg parents --style default --rev %s)',
-          $this->getPath(),
+        list($stdout) = $this->execxLocal(
+          'parents --style default --rev %s',
           $against);
         $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
 
@@ -113,51 +143,51 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         }
       }
 
-      $this->relativeCommit = $against;
+      $this->setRelativeCommit($against);
     }
     return $this->relativeCommit;
   }
 
   public function getLocalCommitInformation() {
-    list($info) = execx(
-      '(cd %s && hg log --style default --rev %s..%s --)',
-      $this->getPath(),
-      $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision());
-    $logs = ArcanistMercurialParser::parseMercurialLog($info);
+    if ($this->localCommitInfo === null) {
+      list($info) = $this->execxLocal(
+        'log --style default --rev %s..%s --',
+        $this->getRelativeCommit(),
+        $this->getWorkingCopyRevision());
+      $logs = ArcanistMercurialParser::parseMercurialLog($info);
 
-    // Get rid of the first log, it's not actually part of the diff. "hg log"
-    // is inclusive, while "hg diff" is exclusive.
-    array_shift($logs);
+      // Get rid of the first log, it's not actually part of the diff. "hg log"
+      // is inclusive, while "hg diff" is exclusive.
+      array_shift($logs);
 
-    // Expand short hashes (12 characters) to full hashes (40 characters) by
-    // issuing a big "hg log" command. Possibly we should do this with parents
-    // too, but nothing uses them directly at the moment.
-    if ($logs) {
-      $cmd = array();
-      foreach (ipull($logs, 'rev') as $rev) {
-        $cmd[] = csprintf('--rev %s', $rev);
+      // Expand short hashes (12 characters) to full hashes (40 characters) by
+      // issuing a big "hg log" command. Possibly we should do this with parents
+      // too, but nothing uses them directly at the moment.
+      if ($logs) {
+        $cmd = array();
+        foreach (ipull($logs, 'rev') as $rev) {
+          $cmd[] = csprintf('--rev %s', $rev);
+        }
+
+        list($full) = $this->execxLocal(
+          'log --template %s %C --',
+          '{node}\\n',
+          implode(' ', $cmd));
+
+        $full = explode("\n", trim($full));
+        foreach ($logs as $key => $dict) {
+          $logs[$key]['rev'] = array_pop($full);
+        }
       }
-
-      list($full) = execx(
-        '(cd %s && hg log --template %s %C --)',
-        $this->getPath(),
-        '{node}\\n',
-        implode(' ', $cmd));
-
-      $full = explode("\n", trim($full));
-      foreach ($logs as $key => $dict) {
-        $logs[$key]['rev'] = array_pop($full);
-      }
+      $this->localCommitInfo = $logs;
     }
 
-    return $logs;
+    return $this->localCommitInfo;
   }
 
   public function getBlame($path) {
-    list($stdout) = execx(
-      '(cd %s && hg annotate -u -v -c --rev %s -- %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'annotate -u -v -c --rev %s -- %s',
       $this->getRelativeCommit(),
       $path);
 
@@ -190,6 +220,12 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       // just take the entire diff and parse it to figure out what's changed.
 
       $diff = $this->getFullMercurialDiff();
+
+      if (!$diff) {
+        $this->status = array();
+        return $this->status;
+      }
+
       $parser = new ArcanistDiffParser();
       $changes = $parser->parseDiff($diff);
 
@@ -216,9 +252,7 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $status_map[$change->getCurrentPath()] = $flags;
       }
 
-      list($stdout) = execx(
-        '(cd %s && hg status)',
-        $this->getPath());
+      list($stdout) = $this->execxLocal('status');
 
       $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
       foreach ($working_status as $path => $status) {
@@ -256,12 +290,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRawDiffText($path) {
     $options = $this->getDiffOptions();
 
-    list($stdout) = execx(
-      '(cd %s && hg diff %C --rev %s --rev %s -- %s)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'diff %C --rev %s --rev %s -- %s',
       $options,
       $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision(),
+      $this->getDiffToRevision(),
       $path);
 
     return $stdout;
@@ -270,12 +303,11 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getFullMercurialDiff() {
     $options = $this->getDiffOptions();
 
-    list($stdout) = execx(
-      '(cd %s && hg diff %C --rev %s --rev %s --)',
-      $this->getPath(),
+    list($stdout) = $this->execxLocal(
+      'diff %C --rev %s --rev %s --',
       $options,
       $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision());
+      $this->getDiffToRevision());
 
     return $stdout;
   }
@@ -291,9 +323,8 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   private function getFileDataAtRevision($path, $revision) {
-    list($err, $stdout) = exec_manual(
-      '(cd %s && hg cat --rev %s -- %s)',
-      $this->getPath(),
+    list($err, $stdout) = $this->execManualLocal(
+      'cat --rev %s -- %s',
       $revision,
       $path);
     if ($err) {
@@ -305,26 +336,38 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyRevision() {
-    // In Mercurial, "tip" means the tip of the current branch, not what's in
-    // the working copy. The tip may be ahead of the working copy. We need to
-    // use "hg summary" to figure out what is actually in the working copy.
-    // For instance, "hg up 4 && arc diff" should not show commits 5 and above.
+    if ($this->workingCopyRevision === null) {
+      // In Mercurial, "tip" means the tip of the current branch, not what's in
+      // the working copy. The tip may be ahead of the working copy. We need to
+      // use "hg summary" to figure out what is actually in the working copy.
+      // For instance, "hg up 4 && arc diff" should not show commits 5 and
+      // above.
 
-    // Without arguments, "hg id" shows the current working directory's commit,
-    // and "--debug" expands it to a 40-character hash.
-    list($stdout) = execx(
-      '(cd %s && hg --debug id --id)',
-      $this->getPath());
+      // Without arguments, "hg id" shows the current working directory's
+      // commit, and "--debug" expands it to a 40-character hash.
+      list($stdout) = $this->execxLocal('--debug id --id');
 
-    // Even with "--id", "hg id" will print a trailing "+" after the hash
-    // if the working copy is dirty (has uncommitted changes). We'll explicitly
-    // detect this later by calling getWorkingCopyStatus(); ignore it for now.
-    $stdout = trim($stdout);
-    return rtrim($stdout, '+');
+      // Even with "--id", "hg id" will print a trailing "+" after the hash
+      // if the working copy is dirty (has uncommitted changes). We'll
+      // explicitly detect this later by calling getWorkingCopyStatus(); ignore
+      // it for now.
+      $stdout = trim($stdout);
+      $this->workingCopyRevision = rtrim($stdout, '+');
+    }
+    return $this->workingCopyRevision;
   }
 
   public function supportsRelativeLocalCommits() {
     return true;
+  }
+
+  public function hasLocalCommit($commit) {
+    try {
+      $this->getCanonicalRevisionName($commit);
+      return true;
+    } catch (Exception $ex) {
+      return false;
+    }
   }
 
   public function parseRelativeLocalCommit(array $argv) {
@@ -341,6 +384,9 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAllLocalChanges() {
     $diff = $this->getFullMercurialDiff();
+    if (!strlen(trim($diff))) {
+      return array();
+    }
     $parser = new ArcanistDiffParser();
     return $parser->parseDiff($diff);
   }
@@ -352,13 +398,13 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function performLocalBranchMerge($branch, $message) {
     if ($branch) {
       $err = phutil_passthru(
-        '(cd %s && hg merge --rev %s && hg commit -m %s)',
+        '(cd %s && HGPLAIN=1 hg merge --rev %s && hg commit -m %s)',
         $this->getPath(),
         $branch,
         $message);
     } else {
       $err = phutil_passthru(
-        '(cd %s && hg merge && hg commit -m %s)',
+        '(cd %s && HGPLAIN=1 hg merge && hg commit -m %s)',
         $this->getPath(),
         $message);
     }
@@ -371,6 +417,68 @@ class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getFinalizedRevisionMessage() {
     return "You may now push this commit upstream, as appropriate (e.g. with ".
            "'hg push' or by printing and faxing it).";
+  }
+
+  public function getCommitMessageLog() {
+    list($stdout) = $this->execxLocal(
+      "log --template '{node}\\1{desc}\\0' --rev %s..%s --",
+      $this->getRelativeCommit(),
+      $this->getWorkingCopyRevision());
+
+    $map = array();
+
+    $logs = explode("\0", trim($stdout));
+    foreach (array_filter($logs) as $log) {
+      list($node, $desc) = explode("\1", $log);
+      $map[$node] = $desc;
+    }
+
+    return array_reverse($map);
+  }
+
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    // Try to find revisions by hash.
+    $hashes = array();
+    foreach ($this->getLocalCommitInformation() as $commit) {
+      $hashes[] = array('hgcm', $commit['rev']);
+    }
+
+    $results = $conduit->callMethodSynchronous(
+      'differential.query',
+      $query + array(
+        'commitHashes' => $hashes,
+      ));
+
+    return $results;
+  }
+
+  public function updateWorkingCopy() {
+    $this->execxLocal('up');
+  }
+
+  public function setIncludeDirectoryStateInDiffs($include) {
+    $this->includeDirectoryStateInDiffs = $include;
+    return $this;
+  }
+
+  private function getDiffToRevision() {
+    $this->dropCaches();
+
+    if ($this->includeDirectoryStateInDiffs) {
+      // This is a magic Mercurial revision name which means "current
+      // directory state"; see lookup() in localrepo.py.
+      return '.';
+    } else {
+      return $this->getWorkingCopyRevision();
+    }
+  }
+
+  private function dropCaches() {
+    $this->status = null;
+    $this->localCommitInfo = null;
   }
 
 }

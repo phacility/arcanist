@@ -37,10 +37,20 @@
  * verified information about the user identity by calling @{method:getUserPHID}
  * or @{method:getUserName} after authentication occurs.
  *
+ * = Scratch Files =
+ *
+ * Arcanist workflows can read and write 'scratch files', which are temporary
+ * files stored in the project that persist across commands. They can be useful
+ * if you want to save some state, or keep a copy of a long message the user
+ * entered in something goes wrong..
+ *
+ *
  * @task  conduit   Conduit
+ * @task  scratch   Scratch Files
  * @group workflow
+ * @stable
  */
-class ArcanistBaseWorkflow {
+abstract class ArcanistBaseWorkflow {
 
   private $conduit;
   private $conduitURI;
@@ -53,6 +63,8 @@ class ArcanistBaseWorkflow {
   private $workingCopy;
   private $arguments;
   private $command;
+
+  private $repositoryEncoding;
 
   private $arcanistConfiguration;
   private $parentWorkflow;
@@ -96,6 +108,15 @@ class ArcanistBaseWorkflow {
     return $this;
   }
 
+  /**
+   * Returns the URI the conduit connection within the workflow uses.
+   *
+   * @return string
+   * @task conduit
+   */
+  final public function getConduitURI() {
+    return $this->conduitURI;
+  }
 
   /**
    * Open a conduit channel to the server which was previously configured by
@@ -148,7 +169,7 @@ class ArcanistBaseWorkflow {
    * @task conduit
    */
   final public function setConduitCredentials(array $credentials) {
-    if ($this->conduitAuthenticated) {
+    if ($this->isConduitAuthenticated()) {
       throw new Exception(
         "You may not set new credentials after authenticating conduit.");
     }
@@ -186,7 +207,7 @@ class ArcanistBaseWorkflow {
    * @task conduit
    */
   final public function authenticateConduit() {
-    if ($this->conduitAuthenticated) {
+    if ($this->isConduitAuthenticated()) {
       return $this;
     }
 
@@ -246,6 +267,14 @@ class ArcanistBaseWorkflow {
     $this->conduitAuthenticated = true;
 
     return $this;
+  }
+
+  /**
+   * @return bool True if conduit is authenticated, false otherwise.
+   * @task conduit
+   */
+  final protected function isConduitAuthenticated() {
+    return (bool) $this->conduitAuthenticated;
   }
 
 
@@ -345,6 +374,10 @@ class ArcanistBaseWorkflow {
 
   public function getArcanistConfiguration() {
     return $this->arcanistConfiguration;
+  }
+
+  public function getCommandSynopses() {
+    return get_class($this).": Undocumented";
   }
 
   public function getCommandHelp() {
@@ -583,6 +616,16 @@ class ArcanistBaseWorkflow {
 
     $untracked = $api->getUntrackedChanges();
     if ($this->shouldRequireCleanUntrackedFiles()) {
+
+      // Exempt ".arc/" scratch files from this warning so that things work
+      // a little more smoothly if no one has gotten around to adding .arc to
+      // the ignore list.
+      foreach ($untracked as $key => $path) {
+        if (preg_match('@\.arc/@', $path)) {
+          unset($untracked[$key]);
+        }
+      }
+
       if (!empty($untracked)) {
         echo "You have untracked files in this working copy.\n\n".
              $working_copy_desc.
@@ -644,77 +687,15 @@ class ArcanistBaseWorkflow {
 
     $uncommitted = $api->getUncommittedChanges();
     if ($uncommitted) {
-      throw new ArcanistUsageException(
-        "You have uncommitted changes in this branch. Commit (or revert) them ".
-        "before proceeding.\n\n".
+      throw new ArcanistUncommittedChangesException(
+        "You have uncommitted changes in this working copy. Commit (or ".
+        "revert) them before proceeding.\n\n".
         $working_copy_desc.
         "  Uncommitted changes in working copy\n".
         "    ".implode("\n    ", $uncommitted)."\n");
     }
   }
 
-  protected function chooseRevision(
-    array $revision_data,
-    $revision_id,
-    $prompt = null) {
-
-    $revisions = array();
-    foreach ($revision_data as $data) {
-      $ref = ArcanistDifferentialRevisionRef::newFromDictionary($data);
-      $revisions[$ref->getID()] = $ref;
-    }
-
-    if ($revision_id) {
-      $revision_id = $this->normalizeRevisionID($revision_id);
-      if (empty($revisions[$revision_id])) {
-        throw new ArcanistChooseInvalidRevisionException();
-      }
-      return $revisions[$revision_id];
-    }
-
-    if (!count($revisions)) {
-      throw new ArcanistChooseNoRevisionsException();
-    }
-
-    $repository_api = $this->getRepositoryAPI();
-
-    $candidates = array();
-    $cur_path = $repository_api->getPath();
-    foreach ($revisions as $revision) {
-      $source_path = $revision->getSourcePath();
-      if ($source_path == $cur_path) {
-        $candidates[] = $revision;
-      }
-    }
-
-    if (count($candidates) == 1) {
-      $candidate = reset($candidates);
-      $revision_id = $candidate->getID();
-    }
-
-    if ($revision_id) {
-      return $revisions[$revision_id];
-    }
-
-    $revision_indexes = array_keys($revisions);
-
-    echo "\n";
-    $ii = 1;
-    foreach ($revisions as $revision) {
-      echo '  ['.$ii++.'] D'.$revision->getID().' '.$revision->getName()."\n";
-    }
-
-    while (true) {
-      $id = phutil_console_prompt($prompt);
-      $id = trim(strtoupper($id), 'D');
-      if (isset($revisions[$id])) {
-        return $revisions[$id];
-      }
-      if (isset($revision_indexes[$id - 1])) {
-        return $revisions[$revision_indexes[$id - 1]];
-      }
-    }
-  }
 
   protected function loadDiffBundleFromConduit(
     ConduitClient $conduit,
@@ -753,6 +734,7 @@ class ArcanistBaseWorkflow {
     $bundle->setConduit($conduit);
     $bundle->setProjectID($diff['projectName']);
     $bundle->setBaseRevision($diff['sourceControlBaseRevision']);
+    $bundle->setRevisionID($diff['revisionID']);
     return $bundle;
   }
 
@@ -770,6 +752,10 @@ class ArcanistBaseWorkflow {
     $repository_api = $this->getRepositoryAPI();
     $full_path = $repository_api->getPath($path);
     if (is_dir($full_path)) {
+      return null;
+    }
+
+    if (!file_exists($full_path)) {
       return null;
     }
 
@@ -890,25 +876,32 @@ class ArcanistBaseWorkflow {
   }
 
   public static function getUserConfigurationFileLocation() {
-    return getenv('HOME').'/.arcrc';
+    if (phutil_is_windows()) {
+      return getenv('APPDATA').'/.arcrc';
+    } else {
+      return getenv('HOME').'/.arcrc';
+    }
   }
 
   public static function readUserConfigurationFile() {
     $user_config = array();
     $user_config_path = self::getUserConfigurationFileLocation();
     if (Filesystem::pathExists($user_config_path)) {
-      $mode = fileperms($user_config_path);
-      if (!$mode) {
-        throw new Exception("Unable to get perms of '{$user_config_path}'!");
-      }
-      if ($mode & 0177) {
-        // Mode should allow only owner access.
-        $prompt = "File permissions on your ~/.arcrc are too open. ".
-                  "Fix them by chmod'ing to 600?";
-        if (!phutil_console_confirm($prompt, $default_no = false)) {
-          throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
+
+      if (!phutil_is_windows()) {
+        $mode = fileperms($user_config_path);
+        if (!$mode) {
+          throw new Exception("Unable to get perms of '{$user_config_path}'!");
         }
-        execx('chmod 600 %s', $user_config_path);
+        if ($mode & 0177) {
+          // Mode should allow only owner access.
+          $prompt = "File permissions on your ~/.arcrc are too open. ".
+                    "Fix them by chmod'ing to 600?";
+          if (!phutil_console_confirm($prompt, $default_no = false)) {
+            throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
+          }
+          execx('chmod 600 %s', $user_config_path);
+        }
       }
 
       $user_config_data = Filesystem::readFile($user_config_path);
@@ -920,6 +913,20 @@ class ArcanistBaseWorkflow {
     }
     return $user_config;
   }
+
+
+  public static function writeUserConfigurationFile($config) {
+    $json_encoder = new PhutilJSON();
+    $json = $json_encoder->encodeFormatted($config);
+
+    $path = self::getUserConfigurationFileLocation();
+    Filesystem::writeFile($path, $json);
+
+    if (!phutil_is_windows()) {
+      execx('chmod 600 %s', $path);
+    }
+  }
+
 
   /**
    * Write a message to stderr so that '--json' flags or stdout which is meant
@@ -949,9 +956,19 @@ class ArcanistBaseWorkflow {
    *
    * @param   list          List of explicitly provided paths.
    * @param   string|null   Revision name, if provided.
+   * @param   mask          Mask of ArcanistRepositoryAPI flags to exclude.
+   *                        Defaults to ArcanistRepositoryAPI::FLAG_UNTRACKED.
    * @return  list          List of paths the workflow should act on.
    */
-  protected function selectPathsForWorkflow(array $paths, $rev) {
+  protected function selectPathsForWorkflow(
+    array $paths,
+    $rev,
+    $omit_mask = null) {
+
+    if ($omit_mask === null) {
+      $omit_mask = ArcanistRepositoryAPI::FLAG_UNTRACKED;
+    }
+
     if ($paths) {
       $working_copy = $this->getWorkingCopy();
       foreach ($paths as $key => $path) {
@@ -972,7 +989,7 @@ class ArcanistBaseWorkflow {
 
       $paths = $repository_api->getWorkingCopyStatus();
       foreach ($paths as $path => $flags) {
-        if ($flags & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
+        if ($flags & $omit_mask) {
           unset($paths[$path]);
         }
       }
@@ -980,6 +997,108 @@ class ArcanistBaseWorkflow {
     }
 
     return array_values($paths);
+  }
+
+  protected function renderRevisionList(array $revisions) {
+    $list = array();
+    foreach ($revisions as $revision) {
+      $list[] = '     - D'.$revision['id'].': '.$revision['title']."\n";
+    }
+    return implode('', $list);
+  }
+
+
+/* -(  Scratch Files  )------------------------------------------------------ */
+
+
+  /**
+   * Try to read a scratch file, if it exists and is readable.
+   *
+   * @param string Scratch file name.
+   * @return mixed String for file contents, or false for failure.
+   * @task scratch
+   */
+  protected function readScratchFile($path) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+    return $this->getRepositoryAPI()->readScratchFile($path);
+  }
+
+
+  /**
+   * Try to write a scratch file, if there's somewhere to put it and we can
+   * write there.
+   *
+   * @param  string Scratch file name to write.
+   * @param  string Data to write.
+   * @return bool   True on success, false on failure.
+   * @task scratch
+   */
+  protected function writeScratchFile($path, $data) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+    return $this->getRepositoryAPI()->writeScratchFile($path, $data);
+  }
+
+
+  /**
+   * Try to remove a scratch file.
+   *
+   * @param   string  Scratch file name to remove.
+   * @return  bool    True if the file was removed successfully.
+   * @task scratch
+   */
+  protected function removeScratchFile($path) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+    return $this->getRepositoryAPI()->removeScratchFile($path);
+  }
+
+
+  /**
+   * Get a human-readable description of the scratch file location.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  String, or false on failure.
+   * @task scratch
+   */
+  protected function getReadableScratchFilePath($path) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+    return $this->getRepositoryAPI()->getReadableScratchFilePath($path);
+  }
+
+
+  /**
+   * Get the path to a scratch file, if possible.
+   *
+   * @param string  Scratch file name.
+   * @return mixed  File path, or false on failure.
+   * @task scratch
+   */
+  protected function getScratchFilePath($path) {
+    if (!$this->repositoryAPI) {
+      return false;
+    }
+    return $this->getRepositoryAPI()->getScratchFilePath($path);
+  }
+
+  protected function getRepositoryEncoding() {
+    if ($this->repositoryEncoding) {
+      return $this->repositoryEncoding;
+    }
+
+    $project_info = $this->getConduit()->callMethodSynchronous(
+      'arcanist.projectinfo',
+      array(
+        'name' => $this->getWorkingCopy()->getProjectID(),
+      ));
+    $this->repositoryEncoding = nonempty($project_info['encoding'], 'UTF-8');
+    return $this->repositoryEncoding;
   }
 
 }

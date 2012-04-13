@@ -118,13 +118,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
   private function compareLint($file, $expect, $result) {
     $seen = array();
     $raised = array();
+    $message_map = array();
     foreach ($result->getMessages() as $message) {
       $sev = $message->getSeverity();
       $line = $message->getLine();
       $char = $message->getChar();
       $code = $message->getCode();
       $name = $message->getName();
-      $seen[] = $sev.":".$line.":".$char;
+      $message_key = $sev.":".$line.":".$char;
+      $message_map[$message_key] = $message;
+      $seen[] = $message_key;
       $raised[] = "  {$sev} at line {$line}, char {$char}: {$code} {$name}";
     }
     $expect = trim($expect);
@@ -134,7 +137,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $expect = array();
     }
     foreach ($expect as $key => $expected) {
-      $expect[$key] = reset(explode(' ', $expected));
+      $expect[$key] = head(explode(' ', $expected));
     }
 
     $expect = array_fill_keys($expect, true);
@@ -154,11 +157,15 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     }
 
     foreach (array_diff_key($seen, $expect) as $surprising => $ignored) {
+
+      $message = $message_map[$surprising];
+      $message_info = $message->getDescription();
+
       list($sev, $line, $char) = explode(':', $surprising);
       $this->assertFailure(
         "In '{$file}', ".
         "lint raised {$sev} on line {$line} at char {$char}, ".
-        "but nothing was expected. {$raised}");
+        "but nothing was expected:\n\n{$message_info}\n\n{$raised}");
     }
   }
 

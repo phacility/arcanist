@@ -21,7 +21,7 @@
  *
  * @group diff
  */
-class ArcanistBundle {
+final class ArcanistBundle {
 
   private $changes;
   private $conduit;
@@ -29,13 +29,18 @@ class ArcanistBundle {
   private $diskPath;
   private $projectID;
   private $baseRevision;
+  private $revisionID;
+  private $encoding;
+  private $loadFileDataCallback;
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
+    return $this;
   }
 
   public function setProjectID($project_id) {
     $this->projectID = $project_id;
+    return $this;
   }
 
   public function getProjectID() {
@@ -44,10 +49,29 @@ class ArcanistBundle {
 
   public function setBaseRevision($base_revision) {
     $this->baseRevision = $base_revision;
+    return $this;
+  }
+
+  public function setEncoding($encoding) {
+    $this->encoding = $encoding;
+    return $this;
+  }
+
+  public function getEncoding() {
+    return $this->encoding;
   }
 
   public function getBaseRevision() {
     return $this->baseRevision;
+  }
+
+  public function setRevisionID($revision_id) {
+    $this->revisionID = $revision_id;
+    return $this;
+  }
+
+  public function getRevisionID() {
+    return $this->revisionID;
   }
 
   public static function newFromChanges(array $changes) {
@@ -72,14 +96,18 @@ class ArcanistBundle {
           'tar xfO %s meta.json',
           $path));
       $meta_info = $future->resolveJSON();
-      $version = idx($meta_info, 'version', 0);
-      $project_name = idx($meta_info, 'projectName');
+      $version       = idx($meta_info, 'version', 0);
+      $project_name  = idx($meta_info, 'projectName');
       $base_revision = idx($meta_info, 'baseRevision');
+      $revision_id   = idx($meta_info, 'revisionID');
+      $encoding      = idx($meta_info, 'encoding');
     // this arc bundle was probably made before we started storing meta info
     } else {
-      $version = 0;
-      $project_name = null;
+      $version       = 0;
+      $project_name  = null;
       $base_revision = null;
+      $revision_id   = null;
+      $encoding      = null;
     }
 
     $future = new ExecFuture(
@@ -104,6 +132,8 @@ class ArcanistBundle {
     $obj->diskPath = $path;
     $obj->setProjectID($project_name);
     $obj->setBaseRevision($base_revision);
+    $obj->setRevisionID($revision_id);
+    $obj->setEncoding($encoding);
 
     return $obj;
   }
@@ -151,9 +181,11 @@ class ArcanistBundle {
     }
 
     $meta_info = array(
-      'version'      => 2,
+      'version'      => 3,
       'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
+      'revisionID'   => $this->getRevisionID(),
+      'encoding'     => $this->getEncoding(),
     );
 
     $dir = Filesystem::createTemporaryDirectory();
@@ -216,7 +248,8 @@ class ArcanistBundle {
       $result[] = $this->buildHunkChanges($change->getHunks());
     }
 
-    return implode("\n", $result)."\n";
+    $diff = implode("\n", $result)."\n";
+    return $this->convertNonUTF8Diff($diff);
   }
 
   public function toGitPatch() {
@@ -360,28 +393,55 @@ class ArcanistBundle {
       }
       $result[] = $change_body;
     }
-    return implode("\n", $result)."\n";
+
+    $diff = implode("\n", $result)."\n";
+    return $this->convertNonUTF8Diff($diff);
+  }
+
+  private function convertNonUTF8Diff($diff) {
+    $try_encoding_is_non_utf8 =
+      ($this->encoding && strtoupper($this->encoding) != 'UTF-8');
+    if ($try_encoding_is_non_utf8) {
+      $diff = mb_convert_encoding($diff, $this->encoding, 'UTF-8');
+      if (!$diff) {
+        throw new Exception(
+          "Attempted conversion of diff to encoding ".
+          "'{$this->encoding}' failed. Have you specified ".
+          "the proper encoding correctly?");
+      }
+    }
+    return $diff;
   }
 
   public function getChanges() {
     return $this->changes;
   }
 
-  private function breakHunkIntoSmallHunks(ArcanistDiffHunk $hunk) {
+  private function breakHunkIntoSmallHunks(ArcanistDiffHunk $base_hunk) {
     $context = 3;
 
     $results = array();
-    $lines = explode("\n", $hunk->getCorpus());
+    $lines = explode("\n", $base_hunk->getCorpus());
     $n = count($lines);
 
-    $old_offset = $hunk->getOldOffset();
-    $new_offset = $hunk->getNewOffset();
+    $old_offset = $base_hunk->getOldOffset();
+    $new_offset = $base_hunk->getNewOffset();
 
     $ii = 0;
     $jj = 0;
     while ($ii < $n) {
-      for ($jj = $ii; $jj < $n && $lines[$jj][0] == ' '; ++$jj) {
-        // Skip lines until we find the first line with changes.
+      // Skip lines until we find the next line with changes. Note: this skips
+      // both ' ' (no changes) and '\' (no newline at end of file) lines. If we
+      // don't skip the latter, we may incorrectly generate a terminal hunk
+      // that has no actual change information when a file doesn't have a
+      // terminal newline and not changed near the end of the file. 'patch' will
+      // fail to apply the diff if we generate a hunk that does not actually
+      // contain changes.
+      for ($jj = $ii; $jj < $n; ++$jj) {
+        $char = $lines[$jj][0];
+        if ($char == '-' || $char == '+') {
+          break;
+        }
       }
       if ($jj >= $n) {
         break;
@@ -400,6 +460,7 @@ class ArcanistBundle {
 
       $old_lines = 0;
       $new_lines = 0;
+      $hunk_adjust = 0;
       $last_change = $jj;
       $break_here = null;
       for (; $jj < $n; ++$jj) {
@@ -423,9 +484,14 @@ class ArcanistBundle {
         } else {
           $break_here = null;
           $last_change = $jj;
-          if ($lines[$jj][0] == '-') {
+
+          if ($lines[$jj][0] == '\\') {
+            // When we have a "\ No newline at end of file" line, it does not
+            // contribute to either hunk length.
+            ++$hunk_adjust;
+          } else if ($lines[$jj][0] == '-') {
             ++$old_lines;
-          } else {
+          } else if ($lines[$jj][0] == '+') {
             ++$new_lines;
           }
         }
@@ -436,12 +502,13 @@ class ArcanistBundle {
       }
 
       $hunk_length = min($jj, $n) - $hunk_start;
+      $count_length = ($hunk_length - $hunk_adjust);
 
       $hunk = new ArcanistDiffHunk();
       $hunk->setOldOffset($old_offset + $hunk_start - $ii);
       $hunk->setNewOffset($new_offset + $hunk_start - $ii);
-      $hunk->setOldLength($hunk_length - $new_lines);
-      $hunk->setNewLength($hunk_length - $old_lines);
+      $hunk->setOldLength($count_length - $new_lines);
+      $hunk->setNewLength($count_length - $old_lines);
 
       $corpus = array_slice($lines, $hunk_start, $hunk_length);
       $corpus = implode("\n", $corpus);
@@ -483,6 +550,7 @@ class ArcanistBundle {
   }
 
   private function buildHunkChanges(array $hunks) {
+    assert_instances_of($hunks, 'ArcanistDiffHunk');
     $result = array();
     foreach ($hunks as $hunk) {
       $small_hunks = $this->breakHunkIntoSmallHunks($hunk);
@@ -493,14 +561,39 @@ class ArcanistBundle {
         $n_len = $small_hunk->getNewLength();
         $corpus = $small_hunk->getCorpus();
 
-        $result[] = "@@ -{$o_off},{$o_len} +{$n_off},{$n_len} @@";
+        // NOTE: If the length is 1 it can be omitted. Since git does this,
+        // we also do it so that "arc export --git" diffs are as similar to
+        // real git diffs as possible, which helps debug issues.
+
+        if ($o_len == 1) {
+          $o_head = "{$o_off}";
+        } else {
+          $o_head = "{$o_off},{$o_len}";
+        }
+
+        if ($n_len == 1) {
+          $n_head = "{$n_off}";
+        } else {
+          $n_head = "{$n_off},{$n_len}";
+        }
+
+        $result[] = "@@ -{$o_head} +{$n_head} @@";
         $result[] = $corpus;
       }
     }
     return implode("\n", $result);
   }
 
+  public function setLoadFileDataCallback($callback) {
+    $this->loadFileDataCallback = $callback;
+    return $this;
+  }
+
   private function getBlob($phid) {
+    if ($this->loadFileDataCallback) {
+      return call_user_func($this->loadFileDataCallback, $phid);
+    }
+
     if ($this->diskPath) {
       list($blob_data) = execx('tar xfO %s blobs/%s', $this->diskPath, $phid);
       return $blob_data;
@@ -516,7 +609,7 @@ class ArcanistBundle {
       return base64_decode($data_base64);
     }
 
-    throw new Exception("Nowhere to load blob '{$phid} from!");
+    throw new Exception("Nowhere to load blob '{$phid}' from!");
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change) {

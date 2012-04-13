@@ -34,42 +34,33 @@ phutil_require_module('arcanist', 'repository/api/base');
 
 ini_set('memory_limit', -1);
 
-$config_trace_mode = false;
+$original_argv = $argv;
+$args = new PhutilArgumentParser($argv);
+$args->parseStandardArguments();
+
+$argv = $args->getUnconsumedArgumentVector();
+$config_trace_mode = $args->getArg('trace');
+
 $force_conduit = null;
-$args = array_slice($argv, 1);
+$args = $argv;
 $load = array();
 $matches = null;
 foreach ($args as $key => $arg) {
   if ($arg == '--') {
     break;
-  } else if ($arg == '--trace') {
-    unset($args[$key]);
-    $config_trace_mode = true;
-  } else if ($arg == '--no-ansi') {
-    unset($args[$key]);
-    PhutilConsoleFormatter::disableANSI(true);
   } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
-    $load['?'] = $matches[1];
+    $load[] = $matches[1];
   } else if (preg_match('/^--conduit-uri=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $force_conduit = $matches[1];
   }
 }
 
-// The POSIX extension is not available by default in some PHP installs.
-if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
-  PhutilConsoleFormatter::disableANSI(true);
-}
-
 $args = array_values($args);
 $working_directory = getcwd();
 
 try {
-
-  if ($config_trace_mode) {
-    PhutilServiceProfiler::installEchoListener();
-  }
 
   if (!$args) {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
@@ -129,9 +120,10 @@ try {
       } catch (PhutilBootloaderException $ex) {
         $error_msg = sprintf(
           'Failed to load library "%s" at location "%s". Please check the '.
-          '"phutil_libraries" setting in your .arcconfig file. Refer to page '.
-          'http://phabricator.com/docs/arcanist/article/'.
-          'Setting_Up_.arcconfig.html for more info.',
+          '"phutil_libraries" setting in your .arcconfig file. Refer to '.
+          '<http://www.phabricator.com/docs/phabricator/article/'.
+          'Arcanist_User_Guide_Configuring_a_New_Project.html> '.
+          'for more information.',
           $name,
           $location);
         throw new ArcanistUsageException($error_msg);
@@ -164,15 +156,41 @@ try {
   }
 
   $command = strtolower($args[0]);
+  $args = array_slice($args, 1);
   $workflow = $config->buildWorkflow($command);
   if (!$workflow) {
-    throw new ArcanistUsageException(
-      "Unknown command '{$command}'. Try 'arc help'.");
+
+    // If the user has an alias, like 'arc alias dhelp diff help', look it up
+    // and substitute it. We do this only after trying to resolve the workflow
+    // normally to prevent you from doing silly things like aliasing 'alias'
+    // to something else.
+
+    list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
+      $command,
+      $config,
+      $args,
+      $working_copy);
+
+    if ($new_command) {
+      $workflow = $config->buildWorkflow($new_command);
+    }
+
+    if (!$workflow) {
+      throw new ArcanistUsageException(
+        "Unknown command '{$command}'. Try 'arc help'.");
+    } else {
+      if ($config_trace_mode) {
+        $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
+        $target = implode(' ', idx($aliases, $command, array()));
+        echo "[alias: 'arc {$command}' -> 'arc {$target}']\n";
+      }
+      $command = $new_command;
+    }
   }
   $workflow->setArcanistConfiguration($config);
   $workflow->setCommand($command);
   $workflow->setWorkingDirectory($working_directory);
-  $workflow->parseArguments(array_slice($args, 1));
+  $workflow->parseArguments($args);
 
   $need_working_copy    = $workflow->requiresWorkingCopy();
   $need_conduit         = $workflow->requiresConduit();
@@ -227,7 +245,7 @@ try {
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
 
-  $description = implode(' ', $argv);
+  $description = implode(' ', $original_argv);
   $credentials = array(
     'user'        => $user_name,
     'certificate' => $certificate,
@@ -297,7 +315,7 @@ try {
  * that exclude core functionality.
  */
 function sanity_check_environment() {
-  $min_version = '5.2.0';
+  $min_version = '5.2.3';
   $cur_version = phpversion();
   if (version_compare($cur_version, $min_version, '<')) {
     die_with_bad_php(
@@ -306,15 +324,23 @@ function sanity_check_environment() {
       "'{$min_version}'.");
   }
 
-  $need_functions = array(
-    'json_decode' => '--without-json',
-  );
+  // NOTE: We don't have phutil_is_windows() yet here.
+
+  if (DIRECTORY_SEPARATOR != '/') {
+    $need_functions = array(
+      'curl_init'     => array('builtin-dll', 'php_curl.dll'),
+    );
+  } else {
+    $need_functions = array(
+      'json_decode'   => array('flag',        '--without-json'),
+    );
+  }
 
   $problems = array();
 
   $config = null;
   $show_config = false;
-  foreach ($need_functions as $fname => $flag) {
+  foreach ($need_functions as $fname => $resolution) {
     if (function_exists($fname)) {
       continue;
     }
@@ -330,15 +356,29 @@ function sanity_check_environment() {
       }
     }
 
-    if (strpos($config, $flag) !== false) {
+    $generic = true;
+    list($what, $which) = $resolution;
+
+    if ($what == 'flag' && strpos($config, $which) !== false) {
       $show_config = true;
+      $generic = false;
       $problems[] =
-        "This build of PHP was compiled with the configure flag '{$flag}', ".
+        "This build of PHP was compiled with the configure flag '{$which}', ".
         "which means it does not have the function '{$fname}()'. This ".
         "function is required for arc to run. Rebuild PHP without this flag. ".
         "You may also be able to build or install the relevant extension ".
         "separately.";
-    } else {
+    }
+
+    if ($what == 'builtin-dll') {
+      $generic = false;
+      $problems[] =
+        "Your install of PHP does not have the '{$which}' extension enabled. ".
+        "Edit your php.ini file and uncomment the line which reads ".
+        "'extension={$which}'.";
+    }
+
+    if ($generic) {
       $problems[] =
         "This build of PHP is missing the required function '{$fname}()'. ".
         "Rebuild PHP or install the extension which provides '{$fname}()'.";

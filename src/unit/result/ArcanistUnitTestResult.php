@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group unit
  */
-class ArcanistUnitTestResult {
+final class ArcanistUnitTestResult {
 
   const RESULT_PASS         = 'pass';
   const RESULT_FAIL         = 'fail';
@@ -35,6 +35,7 @@ class ArcanistUnitTestResult {
   private $result;
   private $duration;
   private $userData;
+  private $coverage;
 
   public function setName($name) {
     $this->name = $name;
@@ -70,6 +71,38 @@ class ArcanistUnitTestResult {
 
   public function getUserData() {
     return $this->userData;
+  }
+
+  public function setCoverage($coverage) {
+    $this->coverage = $coverage;
+    return $this;
+  }
+
+  public function getCoverage() {
+    return $this->coverage;
+  }
+
+  /**
+   * Merge several coverage reports into a comprehensive coverage report.
+   *
+   * @param list List of coverage report strings.
+   * @return string Cumulative coverage report.
+   */
+  public static function mergeCoverage(array $coverage) {
+    if (empty($coverage)) {
+      return null;
+    }
+
+    $base = reset($coverage);
+    foreach ($coverage as $more_coverage) {
+      $len = min(strlen($base), strlen($more_coverage));
+      for ($ii = 0; $ii < $len; $ii++) {
+        if ($more_coverage[$ii] == 'C') {
+          $base[$ii] = 'C';
+        }
+      }
+    }
+    return $base;
   }
 
 }

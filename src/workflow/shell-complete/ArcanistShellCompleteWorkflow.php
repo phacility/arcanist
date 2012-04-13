@@ -21,11 +21,17 @@
  *
  * @group workflow
  */
-class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **shell-complete** __--current__ __N__ -- [__argv__]
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **shell-complete** __--current__ __N__ -- [__argv__]
           Supports: bash, etc.
           Implements shell completion. To use shell completion, source the
           appropriate script from 'resources/shell/' in your .shellrc.
@@ -93,13 +99,35 @@ EOTEXT
         $complete[] = $name;
       }
 
+      // Also permit autocompletion of "arc alias" commands.
+      foreach (
+        ArcanistAliasWorkflow::getAliases($working_copy) as $key => $value) {
+        $complete[] = $key;
+      }
+
       echo implode(' ', $complete)."\n";
       return 0;
     } else {
       $workflow = $arc_config->buildWorkflow($argv[1]);
       if (!$workflow) {
-        return 1;
+        list($new_command, $new_args) = ArcanistAliasWorkflow::resolveAliases(
+          $argv[1],
+          $arc_config,
+          array_slice($argv, 2),
+          $working_copy);
+        if ($new_command) {
+          $workflow = $arc_config->buildWorkflow($new_command);
+        }
+        if (!$workflow) {
+          return 1;
+        } else {
+          $argv = array_merge(
+            array($argv[0]),
+            array($new_command),
+            $new_args);
+        }
       }
+
       $arguments = $workflow->getArguments();
 
       $prev = idx($argv, $pos - 1, null);

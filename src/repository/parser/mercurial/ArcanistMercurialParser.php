@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +210,7 @@ final class ArcanistMercurialParser {
       //  stable                     15095:ec222a29bdf0 (inactive)
       //
       // See the unit tests for more examples.
-      $regexp = '/^([^ ]+)\s+(\d+):([a-f0-9]+)(\s|$)/';
+      $regexp = '/^(\S+(?:\s+\S+)*)\s+(\d+):([a-f0-9]+)(\s+\\(inactive\\))?$/';
 
       if (!preg_match($regexp, $line, $matches)) {
         throw new Exception("Failed to parse 'hg branches' output: {$line}");

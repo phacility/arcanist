@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group unitrun
  */
-class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
+final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   public function run() {
 
@@ -34,6 +34,18 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         continue;
       }
       $library_name = phutil_get_library_name_for_root($library_root);
+
+      if (!$library_name) {
+        throw new Exception(
+          "Attempting to run unit tests on a libphutil library which has not ".
+          "been loaded, at:\n\n".
+          "    {$library_root}\n\n".
+          "This probably means one of two things:\n\n".
+          "    - You may need to add this library to .arcconfig.\n".
+          "    - You may be running tests on a copy of libphutil or arcanist\n".
+          "      using a different copy of libphutil or arcanist. This\n".
+          "      operation is not supported.");
+      }
 
       $path = Filesystem::resolvePath($path);
 
@@ -118,16 +130,33 @@ class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         "No tests to run. You may need to rebuild the phutil library map.");
     }
 
+    $enable_coverage = $this->getEnableCoverage();
+    if ($enable_coverage !== false) {
+      if (!function_exists('xdebug_start_code_coverage')) {
+        if ($enable_coverage === true) {
+          throw new ArcanistUsageException(
+            "You specified --coverage but xdebug is not available, so ".
+            "coverage can not be enabled for PhutilUnitTestEngine.");
+        }
+      } else {
+        $enable_coverage = true;
+      }
+    }
+
     $results = array();
     foreach ($run_tests as $test_class) {
       PhutilSymbolLoader::loadClass($test_class);
       $test_case = newv($test_class, array());
+      $test_case->setEnableCoverage($enable_coverage);
+      $test_case->setProjectRoot($this->getWorkingCopy()->getProjectRoot());
+      $test_case->setPaths($this->getPaths());
       $results[] = $test_case->run();
     }
+
+
     if ($results) {
       $results = call_user_func_array('array_merge', $results);
     }
-
 
     return $results;
   }

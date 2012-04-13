@@ -6,9 +6,8 @@
 
 
 
-phutil_require_module('arcanist', 'differential/revision');
-phutil_require_module('arcanist', 'exception');
 phutil_require_module('arcanist', 'exception/usage');
+phutil_require_module('arcanist', 'exception/usage/uncommittedchanges');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/bundle');
 phutil_require_module('arcanist', 'parser/diff');
@@ -21,6 +20,7 @@ phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'moduleutils');
+phutil_require_module('phutil', 'parser/json');
 phutil_require_module('phutil', 'utils');
 
 

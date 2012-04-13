@@ -19,7 +19,7 @@
 /**
  * Interfaces with Subversion while running as a commit hook.
  */
-class ArcanistSubversionHookAPI extends ArcanistHookAPI {
+final class ArcanistSubversionHookAPI extends ArcanistHookAPI {
 
   protected $root;
   protected $transaction;

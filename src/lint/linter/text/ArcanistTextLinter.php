@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group linter
  */
-class ArcanistTextLinter extends ArcanistLinter {
+final class ArcanistTextLinter extends ArcanistLinter {
 
   const LINT_DOS_NEWLINE            = 1;
   const LINT_TAB_LITERAL            = 2;
@@ -49,6 +49,7 @@ class ArcanistTextLinter extends ArcanistLinter {
   public function getLintSeverityMap() {
     return array(
       self::LINT_LINE_WRAP => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_TRAILING_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
     );
   }
 

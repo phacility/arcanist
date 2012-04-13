@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
  *
  * @group workflow
  */
-class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **mark-committed** __revision__
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **mark-committed** __revision__
           Supports: git, svn
           Manually mark a revision as committed. You should not normally need
           to do this; arc commit (svn), arc amend (git), arc merge (git, hg) or
@@ -44,6 +50,9 @@ EOTEXT
           "Mark committed only if the repository is untracked and the ".
           "revision is accepted. Continue even if the mark can't happen. This ".
           "is a soft version of 'mark-committed' used by other workflows.",
+      ),
+      'quiet' => array(
+        'help' =>  'Do not print a success message.',
       ),
       '*' => 'revision',
     );
@@ -149,11 +158,13 @@ EOTEXT
       $is_finalized = false;
     }
 
-    if ($is_finalized) {
-      $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
-      echo phutil_console_wrap($message)."\n";
-    } else {
-      echo "Done.\n";
+    if (!$this->getArgument('quiet')) {
+      if ($is_finalized) {
+        $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
+        echo phutil_console_wrap($message)."\n";
+      } else {
+        echo "Done.\n";
+      }
     }
 
     return 0;

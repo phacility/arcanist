@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,19 @@
  *
  * @group workflow
  */
-class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
 
   private $branches;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **branch**
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: git
           A wrapper on 'git branch'. It pulls data from Differential and
           displays the revision status next to the branch name.
@@ -104,18 +110,12 @@ EOTEXT
    */
   private function loadDifferentialStatuses($rev_ids) {
     $conduit = $this->getConduit();
-    $revision_future = $conduit->callMethod(
-      'differential.find',
+    $revisions = $conduit->callMethodSynchronous(
+      'differential.query',
       array(
-        'guids' => $rev_ids,
-        'query' => 'revision-ids',
+        'ids'   => $rev_ids,
       ));
-    $revisions = array();
-    foreach ($revision_future->resolve() as $revision_dict) {
-      $revisions[] = ArcanistDifferentialRevisionRef::newFromDictionary(
-        $revision_dict);
-    }
-    $statuses = mpull($revisions, 'getStatusName', 'getId');
+    $statuses = ipull($revisions, 'statusName', 'id');
     return $statuses;
   }
 

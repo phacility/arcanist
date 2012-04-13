@@ -6,13 +6,12 @@
 
 
 
-phutil_require_module('arcanist', 'differential/commitmessage');
 phutil_require_module('arcanist', 'exception/usage');
-phutil_require_module('arcanist', 'parser/diff');
-phutil_require_module('arcanist', 'parser/diff/changetype');
+phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'workflow/base');
 
 phutil_require_module('phutil', 'console');
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('ArcanistAmendWorkflow.php');

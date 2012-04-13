@@ -34,6 +34,10 @@ $builtin = array(
       'print' => true,
       'exit'  => true,
       'die'   => true,
+
+      // These are provided by libphutil but not visible in the map.
+
+      'phutil_is_windows'   => true,
       'phutil_load_library' => true,
 
       // HPHP/i defines these functions as 'internal', but they are NOT
@@ -215,9 +219,14 @@ foreach (Futures($futures) as $file => $future) {
     $functions = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
     foreach ($functions as $function) {
       $name = $function->getChildByIndex(2);
-      $requirements->addFunctionDeclaration(
-        $name,
-        $name->getConcreteString());
+      if ($name->getTypeName() == 'n_EMPTY') {
+        // This is an anonymous function; don't record it into the symbol
+        // index.
+      } else {
+        $requirements->addFunctionDeclaration(
+          $name,
+          $name->getConcreteString());
+      }
     }
 
 

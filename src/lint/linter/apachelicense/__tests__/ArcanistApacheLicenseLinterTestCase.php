@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistApacheLicenseLinterTestCase extends ArcanistLinterTestCase {
 
   public function testApacheLicenseLint() {
     $linter = new ArcanistApacheLicenseLinter();

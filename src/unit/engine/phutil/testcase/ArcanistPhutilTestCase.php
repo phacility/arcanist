@@ -19,9 +19,10 @@
 /**
  * Base test case for the very simple libphutil test framework.
  *
- * @task assert   Making Test Assertions
- * @task hook     Hooks for Setup and Teardown
- * @task internal Internals
+ * @task assert       Making Test Assertions
+ * @task exceptions   Exception Handling
+ * @task hook         Hooks for Setup and Teardown
+ * @task internal     Internals
  *
  * @group unitrun
  */
@@ -30,6 +31,10 @@ abstract class ArcanistPhutilTestCase {
   private $runningTest;
   private $testStartTime;
   private $results = array();
+  private $enableCoverage;
+  private $coverage = array();
+  private $projectRoot;
+  private $paths;
 
 
 /* -(  Making Test Assertions  )--------------------------------------------- */
@@ -74,16 +79,16 @@ abstract class ArcanistPhutilTestCase {
 
     $output .= "\n";
 
-    if (strpos($expect, "\n") !== false) {
-      $expect = "\n{$expect}";
+    if (strpos($expect, "\n") === false && strpos($result, "\n") === false) {
+      $output .= "Expected: {$expect}\n";
+      $output .= "Actual: {$result}";
+    } else {
+      $output .= "Expected vs Actual Output Diff\n";
+      $output .= ArcanistDiffUtils::renderDifferences(
+        $expect,
+        $result,
+        $lines = 0xFFFF);
     }
-
-    if (strpos($result, "\n") !== false) {
-      $result = "\n{$result}";
-    }
-
-    $output .= "Expected: {$expect}\n";
-    $output .= "Actual: {$result}";
 
     $this->failTest($output);
     throw new ArcanistPhutilTestTerminatedException($output);
@@ -102,6 +107,156 @@ abstract class ArcanistPhutilTestCase {
   final protected function assertFailure($message) {
     $this->failTest($message);
     throw new ArcanistPhutilTestTerminatedException($message);
+  }
+
+
+/* -(  Exception Handling  )------------------------------------------------- */
+
+
+  /**
+   * This simplest way to assert exceptions are thrown.
+   *
+   * @param exception   The expected exception.
+   * @param callable    The thing which throws the exception.
+   *
+   * @return void
+   * @task exceptions
+   */
+  final protected function assertException($expected_exception_class,
+                                           $callable) {
+    $this->tryTestCases(
+      array('assertException' => array()),
+      array(false),
+      $callable,
+      $expected_exception_class
+    );
+  }
+
+  /**
+   * Straightforward method for writing unit tests which check if some block of
+   * code throws an exception. For example, this allows you to test the
+   * exception behavior of ##is_a_fruit()## on various inputs:
+   *
+   *    public function testFruit() {
+   *      $this->tryTestCases(
+   *        array(
+   *          'apple is a fruit'    => new Apple(),
+   *          'rock is not a fruit' => new Rock(),
+   *        ),
+   *        array(
+   *          true,
+   *          false,
+   *        ),
+   *        array($this, 'tryIsAFruit'),
+   *        'NotAFruitException');
+   *    }
+   *
+   *    protected function tryIsAFruit($input) {
+   *      is_a_fruit($input);
+   *    }
+   *
+   * @param map       Map of test case labels to test case inputs.
+   * @param list      List of expected results, true to indicate that the case
+   *                  is expected to succeed and false to indicate that the case
+   *                  is expected to throw.
+   * @param callable  Callback to invoke for each test case.
+   * @param string    Optional exception class to catch, defaults to
+   *                  'Exception'.
+   * @return void
+   * @task exceptions
+   */
+  final protected function tryTestCases(
+    array $inputs,
+    array $expect,
+    $callable,
+    $exception_class = 'Exception') {
+
+    if (count($inputs) !== count($expect)) {
+      $this->assertFailure(
+        "Input and expectations must have the same number of values.");
+    }
+
+    $labels = array_keys($inputs);
+    $inputs = array_values($inputs);
+    $expecting = array_values($expect);
+    foreach ($inputs as $idx => $input) {
+      $expect = $expecting[$idx];
+      $label  = $labels[$idx];
+
+      $caught = null;
+      try {
+        call_user_func($callable, $input);
+      } catch (Exception $ex) {
+        if ($ex instanceof ArcanistPhutilTestTerminatedException) {
+          throw $ex;
+        }
+        if (!($ex instanceof $exception_class)) {
+          throw $ex;
+        }
+        $caught = $ex;
+      }
+
+      $actual = !($caught instanceof Exception);
+
+      if ($expect === $actual) {
+        if ($expect) {
+          $message = "Test case '{$label}' did not throw, as expected.";
+        } else {
+          $message = "Test case '{$label}' threw, as expected.";
+        }
+      } else {
+        if ($expect) {
+          $message = "Test case '{$label}' was expected to succeed, but it ".
+                     "raised an exception of class ".get_class($ex)." with ".
+                     "message: ".$ex->getMessage();
+        } else {
+          $message = "Test case '{$label}' was expected to raise an ".
+                     "exception, but it did not throw anything.";
+        }
+      }
+
+      $this->assertEqual($expect, $actual, $message);
+    }
+  }
+
+
+  /**
+   * Convenience wrapper around @{method:tryTestCases} for cases where your
+   * inputs are scalar. For example:
+   *
+   *    public function testFruit() {
+   *      $this->tryTestCaseMap(
+   *        array(
+   *          'apple' => true,
+   *          'rock'  => false,
+   *        ),
+   *        array($this, 'tryIsAFruit'),
+   *        'NotAFruitException');
+   *    }
+   *
+   *    protected function tryIsAFruit($input) {
+   *      is_a_fruit($input);
+   *    }
+   *
+   * For cases where your inputs are not scalar, use @{method:tryTestCases}.
+   *
+   * @param map       Map of scalar test inputs to expected success (true
+   *                  expects success, false expects an exception).
+   * @param callable  Callback to invoke for each test case.
+   * @param string    Optional exception class to catch, defaults to
+   *                  'Exception'.
+   * @return void
+   * @task exceptions
+   */
+  final protected function tryTestCaseMap(
+    array $map,
+    $callable,
+    $exception_class = 'Exception') {
+    return $this->tryTestCases(
+      array_combine(array_keys($map), array_keys($map)),
+      array_values($map),
+      $callable,
+      $exception_class);
   }
 
 
@@ -179,7 +334,10 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function failTest($reason) {
+    $coverage = $this->endCoverage();
+
     $result = new ArcanistUnitTestResult();
+    $result->setCoverage($coverage);
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
     $result->setDuration(microtime(true) - $this->testStartTime);
@@ -197,7 +355,10 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function passTest($reason) {
+    $coverage = $this->endCoverage();
+
     $result = new ArcanistUnitTestResult();
+    $result->setCoverage($coverage);
     $result->setName($this->runningTest);
     $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
     $result->setDuration(microtime(true) - $this->testStartTime);
@@ -233,6 +394,7 @@ abstract class ArcanistPhutilTestCase {
         try {
           $this->willRunOneTest($name);
 
+          $this->beginCoverage();
           $test_exception = null;
           try {
             call_user_func_array(
@@ -261,6 +423,85 @@ abstract class ArcanistPhutilTestCase {
     $this->didRunTests();
 
     return $this->results;
+  }
+
+  final public function setEnableCoverage($enable_coverage) {
+    $this->enableCoverage = $enable_coverage;
+    return $this;
+  }
+
+  /**
+   * @phutil-external-symbol function xdebug_start_code_coverage
+   */
+  final private function beginCoverage() {
+    if (!$this->enableCoverage) {
+      return;
+    }
+
+    $this->assertCoverageAvailable();
+    xdebug_start_code_coverage(XDEBUG_CC_UNUSED | XDEBUG_CC_DEAD_CODE);
+  }
+
+  /**
+   * @phutil-external-symbol function xdebug_get_code_coverage
+   * @phutil-external-symbol function xdebug_stop_code_coverage
+   */
+  final private function endCoverage() {
+    if (!$this->enableCoverage) {
+      return;
+    }
+
+    $result = xdebug_get_code_coverage();
+    xdebug_stop_code_coverage($cleanup = false);
+
+    $coverage = array();
+
+    foreach ($result as $file => $report) {
+      if (strncmp($file, $this->projectRoot, strlen($this->projectRoot))) {
+        continue;
+      }
+
+      $max = max(array_keys($report));
+      $str = '';
+      for ($ii = 1; $ii <= $max; $ii++) {
+        $c = idx($report, $ii);
+        if ($c === -1) {
+          $str .= 'U'; // Un-covered.
+        } else if ($c === -2) {
+          // TODO: This indicates "unreachable", but it flags the closing braces
+          // of functions which end in "return", which is super ridiculous. Just
+          // ignore it for now.
+          $str .= 'N'; // Not executable.
+        } else if ($c === 1) {
+          $str .= 'C'; // Covered.
+        } else {
+          $str .= 'N'; // Not executable.
+        }
+      }
+      $coverage[substr($file, strlen($this->projectRoot) + 1)] = $str;
+    }
+
+    // Only keep coverage information for files modified by the change.
+    $coverage = array_select_keys($coverage, $this->paths);
+
+    return $coverage;
+  }
+
+  final private function assertCoverageAvailable() {
+    if (!function_exists('xdebug_start_code_coverage')) {
+      throw new Exception(
+        "You've enabled code coverage but XDebug is not installed.");
+    }
+  }
+
+  final public function setProjectRoot($project_root) {
+    $this->projectRoot = $project_root;
+    return $this;
+  }
+
+  final public function setPaths(array $paths) {
+    $this->paths = $paths;
+    return $this;
   }
 
 }

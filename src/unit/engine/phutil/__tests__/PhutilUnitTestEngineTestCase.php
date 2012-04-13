@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
+final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
   static $allTestsCounter = 0;
   static $oneTestCounter = 0;
@@ -40,7 +40,7 @@ class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
     self::$allTestsCounter--;
 
-    $actual_test_count = 2;
+    $actual_test_count = 4;
 
     $this->assertEqual(
       $actual_test_count,
@@ -84,6 +84,34 @@ class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
   public function testFail() {
     $this->assertFailure('This test is expected to fail.');
+  }
+
+  public function testTryTestCases() {
+    $this->tryTestCases(
+      array(
+        true,
+        false,
+      ),
+      array(
+        true,
+        false,
+      ),
+      array($this, 'throwIfFalsey'));
+  }
+
+  public function testTryTestMap() {
+    $this->tryTestCaseMap(
+      array(
+        1 => true,
+        0 => false,
+      ),
+      array($this, 'throwIfFalsey'));
+  }
+
+  protected function throwIfFalsey($input) {
+    if (!$input) {
+      throw new Exception("This is a negative test case!");
+    }
   }
 
 }

@@ -6,10 +6,12 @@
 
 
 
+phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'lint/linter/base');
-phutil_require_module('arcanist', 'lint/message');
 phutil_require_module('arcanist', 'lint/severity');
 
+phutil_require_module('phutil', 'filesystem');
+phutil_require_module('phutil', 'future');
 phutil_require_module('phutil', 'future/exec');
 
 

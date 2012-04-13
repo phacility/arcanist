@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  * Holds information about a single git branch, and provides methods
  * for loading and display.
  */
-class BranchInfo {
+final class BranchInfo {
 
   private $branchName;
   private $currentHead = false;
@@ -52,7 +52,7 @@ class BranchInfo {
     $name_sha1_map = mpull($branches, 'getSha1', 'getName');
     $commits_list = $api->multigetCommitMessages(
       array_unique(array_values($name_sha1_map)),
-      "%%ct%%n%%an%%n%%s%%n%%b"); //don't ask
+      "%ct%n%an%n%s%n%b");
     foreach ($branches as $branch) {
       $sha1 = $name_sha1_map[$branch->getName()];
       $branch->setSha1($sha1);
@@ -77,6 +77,7 @@ class BranchInfo {
 
   public function setCurrent() {
     $this->currentHead = true;
+    return $this;
   }
 
   public function isCurrentHead() {
@@ -86,6 +87,7 @@ class BranchInfo {
 
   public function setStatus($status) {
     $this->status = $status;
+    return $this;
   }
 
   public function getStatus() {
@@ -151,15 +153,13 @@ class BranchInfo {
    * Generates a colored status name
    */
   public function getFormattedStatus() {
-    return phutil_console_format(
-      '<fg:'.$this->getColorForStatus().'>%s</fg>',
-      $this->status);
+    return self::renderColorizedRevisionStatus($this->status);
   }
 
   /**
    * Assigns a pretty color based on the status
    */
-  private function getColorForStatus() {
+  private static function getColorForStatus($status) {
     static $status_to_color = array(
       'Committed' => 'cyan',
       'Needs Review' => 'magenta',
@@ -168,7 +168,13 @@ class BranchInfo {
       'No Revision' => 'blue',
       'Abandoned' => 'default',
     );
-    return idx($status_to_color, $this->status, 'default');
+    return idx($status_to_color, $status, 'default');
+  }
+
+  public static function renderColorizedRevisionStatus($status) {
+    return phutil_console_format(
+      '<fg:'.self::getColorForStatus($status).'>%s</fg>',
+      $status);
   }
 
 }

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,19 @@ final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
   private $saveAs;
   private $show;
 
-  public function getCommandHelp() {
+  public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **download** __file__ [--as __name__] [--show]
+EOTEXT
+      );
+  }
+
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
           Supports: filesystems
           Download a file to local disk, e.g.:
 
             $ arc download F33              # Download file 'F33'
-
 EOTEXT
       );
   }
@@ -66,7 +71,7 @@ EOTEXT
     }
 
     $file = reset($argv);
-    if (!preg_match('/^F?\d+/', $file)) {
+    if (!preg_match('/^F?\d+$/', $file)) {
       throw new ArcanistUsageException("Specify file by ID, e.g. F123.");
     }
 

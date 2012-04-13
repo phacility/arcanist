@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-class ArcanistDiffUtilsTestCase extends ArcanistPhutilTestCase {
+final class ArcanistDiffUtilsTestCase extends ArcanistPhutilTestCase {
   public function testLevenshtein() {
     $tests = array(
       array(
@@ -83,6 +83,25 @@ class ArcanistDiffUtilsTestCase extends ArcanistPhutilTestCase {
         'private function a($a, $b) {',
         'public function and($b, $c) {',
         'siixsdddxsssssssssssiissxsssxsss'
+      ),
+      array(
+
+        // This is a test that we correctly detect shared prefixes and suffixes
+        // and don't trigger "give up, too long" mode if there's a small text
+        // change in an ocean of similar text.
+
+        '        if ('.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx) {',
+        '        if('.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+          'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx) {',
+        'ssssssssssds'.
+          'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss'.
+          'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss'.
+          'sssssssssssssssssssssssssssssssssssssss',
       ),
     );
 

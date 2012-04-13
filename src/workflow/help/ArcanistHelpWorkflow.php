@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,18 @@
  *
  * @group workflow
  */
-class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
+
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **help** [__command__]
+      **help** --full
+EOTEXT
+      );
+  }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-      **help** [__command__]
           Supports: english
           Shows this help. With __command__, shows help about a specific
           command.
@@ -35,6 +42,9 @@ EOTEXT
 
   public function getArguments() {
     return array(
+      'full' => array(
+        'help' => 'Print detailed information about each command.',
+      ),
       '*' => 'command',
     );
   }
@@ -47,7 +57,7 @@ EOTEXT
 
     $target = null;
     if ($this->getArgument('command')) {
-      $target = reset($this->getArgument('command'));
+      $target = head($this->getArgument('command'));
       if (empty($workflows[$target])) {
         throw new ArcanistUsageException(
           "Unrecognized command '{$target}'. Try 'arc help'.");
@@ -57,6 +67,10 @@ EOTEXT
     $cmdref = array();
     foreach ($workflows as $command => $workflow) {
       if ($target && $target != $command) {
+        continue;
+      }
+      if (!$target && !$this->getArgument('full')) {
+        $cmdref[] = $workflow->getCommandSynopses();
         continue;
       }
       $optref = array();
@@ -124,7 +138,7 @@ EOTEXT
           $docs = 'This option is not documented.';
         }
         $docs = phutil_console_wrap($docs, 14);
-        $optref[] = "              {$docs}\n";
+        $optref[] = "{$docs}\n";
       }
       if ($optref) {
         $optref = implode("\n", $optref);
@@ -133,7 +147,10 @@ EOTEXT
         $optref = "\n";
       }
 
-      $cmdref[] = $workflow->getCommandHelp().$optref;
+      $cmdref[] =
+        $workflow->getCommandSynopses()."\n".
+        $workflow->getCommandHelp().
+        $optref;
     }
     $cmdref = implode("\n\n", $cmdref);
 
@@ -149,13 +166,22 @@ EOTEXT
 
 **SYNOPSIS**
       **{$self}** __command__ [__options__] [__args__]
-
       This help file provides a detailed command reference.
 
 **COMMAND REFERENCE**
 
 {$cmdref}
 
+
+EOTEXT
+    );
+
+    if (!$this->getArgument('full')) {
+      echo "Run 'arc help --full' to get commands and options descriptions.\n";
+      return;
+    }
+
+    echo phutil_console_format(<<<EOTEXT
 **OPTION REFERENCE**
 
       __--trace__

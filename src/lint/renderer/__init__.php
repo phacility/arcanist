@@ -12,6 +12,7 @@ phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'utils');
 
 
+phutil_require_source('ArcanistLintJSONRenderer.php');
+phutil_require_source('ArcanistLintLikeCompilerRenderer.php');
 phutil_require_source('ArcanistLintRenderer.php');
 phutil_require_source('ArcanistLintSummaryRenderer.php');
-phutil_require_source('ArcanistLintJSONRenderer.php');

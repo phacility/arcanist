@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  * @group lint
  */
-class ArcanistLintJSONRenderer {
+final class ArcanistLintJSONRenderer {
   const LINES_OF_CONTEXT = 3;
 
   public function renderLintResult(ArcanistLintResult $result) {
@@ -52,6 +52,6 @@ class ArcanistLintJSONRenderer {
   }
 
   public function renderOkayResult() {
-    return "\n";
+    return "";
   }
 }
