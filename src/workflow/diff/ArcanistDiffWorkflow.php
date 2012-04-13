@@ -1502,7 +1502,10 @@ EOTEXT
     $template =
       rtrim($comments).
       "\n\n".
-      "# Enter a brief description of the changes included in this update.".
+      "# Enter a brief description of the changes included in this update.\n".
+      "#\n".
+      "# If you intended to create a new revision, use:\n".
+      "#  $ arc diff --create\n".
       "\n";
 
     $comments = id(new PhutilInteractiveEditor($template))

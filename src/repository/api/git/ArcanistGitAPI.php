@@ -741,19 +741,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         'commitHashes' => $hashes,
       ));
 
-    if ($results) {
-      return $results;
-    }
-
-    // If we still didn't succeed, try to find revisions by branch name.
-    $project = $this->getWorkingCopyIdentity()->getProjectID();
-    $results = $conduit->callMethodSynchronous(
-      'differential.query',
-      $query + array(
-        'branches'          => array($this->getBranchName()),
-        'arcanistProjects'  => array($project),
-      ));
-
     return $results;
   }
 
