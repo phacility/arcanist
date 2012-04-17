@@ -290,7 +290,7 @@ EOTEXT
       }
 
       $mark_workflow = $this->buildChildWorkflow(
-        'mark-committed',
+        'close-revision',
         array(
           '--finalize',
           '--quiet',
