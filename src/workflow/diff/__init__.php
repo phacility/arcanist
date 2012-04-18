@@ -10,6 +10,7 @@ phutil_require_module('arcanist', 'difference');
 phutil_require_module('arcanist', 'differential/commitmessage');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');
+phutil_require_module('arcanist', 'parser/commentremover');
 phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'repository/api/base');

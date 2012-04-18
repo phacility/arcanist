@@ -1186,10 +1186,7 @@ EOTEXT
         "No explanation provided.");
     }
 
-    $template = preg_replace('/^\s*#.*$/m', '', $new_template);
-    $template = rtrim($template)."\n";
-
-    return $template;
+    return ArcanistCommentRemover::removeComments($new_template);
   }
 
 
@@ -1357,8 +1354,7 @@ EOTEXT
         throw new ArcanistUsageException("Template not edited.");
       }
 
-      $template = preg_replace('/^\s*#.*$/m', '', $new_template);
-      $template = rtrim($template)."\n";
+      $template = ArcanistCommentRemover::removeComments($new_template);
       $wrote = $this->writeScratchFile('create-message', $template);
       $where = $this->getReadableScratchFilePath('create-message');
 
@@ -1516,10 +1512,8 @@ EOTEXT
       ->setName('differential-update-comments')
       ->editInteractively();
 
-    $comments = preg_replace('/^\s*#.*$/m', '', $comments);
-    $comments = rtrim($comments);
-
-    if (!strlen($comments)) {
+    $comments = ArcanistCommentRemover::removeComments($comments);
+    if (!strlen(trim($comments))) {
       throw new ArcanistUserAbortException();
     }
 
