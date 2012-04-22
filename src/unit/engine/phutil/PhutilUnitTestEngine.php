@@ -118,6 +118,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         ->setLibrary($test['library'])
         ->setModule($test['module'])
         ->setAncestorClass('ArcanistPhutilTestCase')
+        ->setConcreteOnly(true)
         ->selectAndLoadSymbols();
       foreach ($symbols as $symbol) {
         $run_tests[$symbol['name']] = true;
