@@ -57,6 +57,14 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         continue;
       }
 
+      if (!Filesystem::isDescendant($path, $library_root)) {
+        // We have encountered some kind of symlink maze -- for instance, $path
+        // is some symlink living outside the library that links into some file
+        // inside the library. Just ignore these cases, since the affected file
+        // does not actually lie within the library.
+        continue;
+      }
+
       $library_path = Filesystem::readablePath($path, $library_root);
       do {
         // Add the module and all parent modules as affected modules, which
