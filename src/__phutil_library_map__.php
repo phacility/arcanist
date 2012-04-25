@@ -82,6 +82,7 @@ phutil_register_library_map(array(
     'ArcanistPatchWorkflow' => 'workflow/patch',
     'ArcanistPhutilModuleLinter' => 'lint/linter/phutilmodule',
     'ArcanistPhutilTestCase' => 'unit/engine/phutil/testcase',
+    'ArcanistPhutilTestSkippedException' => 'unit/engine/phutil/testcase/exception',
     'ArcanistPhutilTestTerminatedException' => 'unit/engine/phutil/testcase/exception',
     'ArcanistPyFlakesLinter' => 'lint/linter/pyflakes',
     'ArcanistPyLintLinter' => 'lint/linter/pylint',

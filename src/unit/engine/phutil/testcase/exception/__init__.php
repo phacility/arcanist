@@ -7,4 +7,5 @@
 
 
 
+phutil_require_source('ArcanistPhutilTestSkippedException.php');
 phutil_require_source('ArcanistPhutilTestTerminatedException.php');
