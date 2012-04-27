@@ -898,11 +898,9 @@ EOTEXT
       return $result;
     }
 
-    $future = new ExecFuture('file -b --mime -');
-    $future->write($data);
-    list($mime_type) = $future->resolvex();
-
-    $mime_type = trim($mime_type);
+    $tmp = new TempFile();
+    Filesystem::writeFile($tmp, $data);
+    $mime_type = Filesystem::getMimeType($tmp);
     $result['mime'] = $mime_type;
 
     echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
