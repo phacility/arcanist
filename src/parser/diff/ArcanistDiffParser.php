@@ -215,7 +215,7 @@ final class ArcanistDiffParser {
         // This is an SVN property change, probably from "svn diff".
         '(?P<type>Property changes on): (?P<cur>.+)',
         // This is a git commit message, probably from "git show".
-        '(?P<type>commit) (?P<hash>[a-f0-9]+)',
+        '(?P<type>commit) (?P<hash>[a-f0-9]+)(?: \(.*\))?',
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
         '(?P<type>diff --git) '.

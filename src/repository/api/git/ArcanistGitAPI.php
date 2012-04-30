@@ -281,11 +281,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       return '';
     } else if ($relative == self::GIT_MAGIC_ROOT_COMMIT) {
       // First commit.
-      list($stdout) = $this->execxLocal('log --format=medium HEAD');
+      list($stdout) = $this->execxLocal(
+        'log --no-decorate --format=medium HEAD');
     } else {
       // 2..N commits.
       list($stdout) = $this->execxLocal(
-        'log --first-parent --format=medium %s..HEAD',
+        'log --no-decorate --first-parent --format=medium %s..HEAD',
         $this->getRelativeCommit());
     }
     return $stdout;

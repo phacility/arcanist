@@ -428,6 +428,7 @@ EOTEXT
         $this->assertEqual(1, count(reset($changes)->getHunks()));
         break;
       case 'git-commit.gitdiff':
+      case 'git-commit-logdecorate.gitdiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
         $this->assertEqual(
