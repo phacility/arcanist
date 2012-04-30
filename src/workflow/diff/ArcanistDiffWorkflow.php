@@ -855,11 +855,32 @@ EOTEXT
     }
 
     foreach ($changes as $change) {
+      $path = $change->getCurrentPath();
+
+      // Certain types of changes (moves and copies) don't contain change data
+      // when expressed in raw "git diff" form. Augment any such diffs with
+      // textual data.
+      if ($change->getNeedsSyntheticGitHunks()) {
+        $diff = $repository_api->getRawDiffText($path, $moves = false);
+        $parser = new ArcanistDiffParser();
+        $raw_changes = $parser->parseDiff($diff);
+        foreach ($raw_changes as $raw_change) {
+          if ($raw_change->getCurrentPath() == $path) {
+            $change->setFileType($raw_change->getFileType());
+            foreach ($raw_change->getHunks() as $hunk) {
+              $change->addHunk($hunk);
+            }
+            break;
+          }
+        }
+
+        $change->setNeedsSyntheticGitHunks(false);
+      }
+
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;
       }
 
-      $path = $change->getCurrentPath();
       $name = basename($path);
 
       $old_file = $repository_api->getOriginalFileData($path);

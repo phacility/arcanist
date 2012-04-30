@@ -210,16 +210,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->relativeCommit;
   }
 
-  private function getDiffFullOptions() {
+  private function getDiffFullOptions($detect_moves_and_renames = true) {
     $options = array(
       self::getDiffBaseOptions(),
-      '-M',
-      '-C',
       '--no-color',
       '--src-prefix=a/',
       '--dst-prefix=b/',
       '-U'.$this->getDiffLinesOfContext(),
     );
+
+    if ($detect_moves_and_renames) {
+      $options[] = '-M';
+      $options[] = '-C';
+    }
+
     return implode(' ', $options);
   }
 
@@ -245,8 +249,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
-  public function getRawDiffText($path) {
-    $options = $this->getDiffFullOptions();
+  /**
+   * @param string Path to generate a diff for.
+   * @param bool   If true, detect moves and renames. Otherwise, ignore
+   *               moves/renames; this is useful because it prompts git to
+   *               generate real diff text.
+   */
+  public function getRawDiffText($path, $detect_moves_and_renames = true) {
+    $options = $this->getDiffFullOptions($detect_moves_and_renames);
     list($stdout) = $this->execxLocal(
       "diff {$options} %s -- %s",
       $this->getRelativeCommit(),
