@@ -122,7 +122,11 @@ EOTEXT
     $this->revisionID = $revision['id'];
     $revision_id = $revision['id'];
 
-    $this->runSanityChecks($revision);
+    $is_show = $this->getArgument('show');
+
+    if (!$is_show) {
+      $this->runSanityChecks($revision);
+    }
 
     $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
@@ -142,8 +146,8 @@ EOTEXT
 
     $message = $event->getValue('message');
 
-    if ($this->getArgument('show')) {
-      echo $message;
+    if ($is_show) {
+      echo $message."\n";
       return 0;
     }
 
@@ -328,7 +332,7 @@ EOTEXT
         "Commit this revision anyway?";
     }
 
-    $revision_source = $revision['sourcePath'];
+    $revision_source = idx($revision, 'sourcePath');
     $current_source = $repository_api->getPath();
     if ($revision_source != $current_source) {
       $confirm[] =
