@@ -42,7 +42,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // There is an HGPLAIN environmental variable which enables "plain mode"
     // and hopefully disables this stuff.
 
-    $argv[0] = 'HGPLAIN=1 hg '.$argv[0];
+    if (phutil_is_windows()) {
+      $argv[0] = 'set HGPLAIN=1 & hg '.$argv[0];
+    } else {
+      $argv[0] = 'HGPLAIN=1 hg '.$argv[0];
+    }
 
     $future = newv('ExecFuture', $argv);
     $future->setCWD($this->getPath());
