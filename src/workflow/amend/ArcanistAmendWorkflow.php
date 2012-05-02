@@ -176,7 +176,7 @@ EOTEXT
       $repository_api->amendGitHeadCommit($message);
 
       $mark_workflow = $this->buildChildWorkflow(
-        'mark-committed',
+        'close-revision',
         array(
           '--finalize',
           $revision_id,

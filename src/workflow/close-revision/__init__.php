@@ -6,10 +6,12 @@
 
 
 
+phutil_require_module('arcanist', 'differential/constants/revisionstatus');
 phutil_require_module('arcanist', 'exception/usage');
+phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'workflow/base');
 
 phutil_require_module('phutil', 'console');
 
 
-phutil_require_source('ArcanistMergeWorkflow.php');
+phutil_require_source('ArcanistCloseRevisionWorkflow.php');

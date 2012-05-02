@@ -11,6 +11,7 @@ phutil_require_module('arcanist', 'differential/constants/revisionstatus');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/bundle');
+phutil_require_module('arcanist', 'parser/commentremover');
 phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'workflow/base');
 

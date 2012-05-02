@@ -662,11 +662,8 @@ EOTEXT
         ->setName('arcanist-patch-commit-message')
         ->editInteractively();
 
-      $commit_message = preg_replace('/^\s*#.*$/m',
-                                     '',
-                                     $commit_message);
-      $commit_message = rtrim($commit_message);
-      if (!strlen($commit_message)) {
+      $commit_message = ArcanistCommentRemover::removeComments($commit_message);
+      if (!strlen(trim($commit_message))) {
         throw new ArcanistUserAbortException();
       }
     }

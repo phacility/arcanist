@@ -171,20 +171,31 @@ EOTEXT
 
         $cur = idx($argv, $pos, '');
         $any_match = false;
-        foreach ($output as $possible) {
-          if (!strncmp($possible, $cur, strlen($cur))) {
-            $any_match = true;
+
+        if (strlen($cur)) {
+          foreach ($output as $possible) {
+            if (!strncmp($possible, $cur, strlen($cur))) {
+              $any_match = true;
+            }
           }
         }
 
         if (!$any_match && isset($arguments['*'])) {
-          // TODO: the '*' specifier should probably have more details about
-          // whether or not it is a list of files. Since it almost always is in
-          // practice, assume FILE for now.
-          echo "FILE\n";
-        } else {
-          echo implode(' ', $output)."\n";
+          // TODO: This is mega hacktown but something else probably breaks
+          // if we use a rich argument specification; fix it when we move to
+          // PhutilArgumentParser since everything will need to be tested then
+          // anyway.
+          if ($arguments['*'] == 'branch' && isset($repository_api)) {
+            $branches = $repository_api->getAllBranches();
+            $branches = ipull($branches, 'name');
+            $output = $branches;
+          } else {
+            $output = array("FILE");
+          }
         }
+
+        echo implode(' ', $output)."\n";
+
         return 0;
       }
     }

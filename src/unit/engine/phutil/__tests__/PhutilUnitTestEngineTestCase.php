@@ -40,7 +40,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
     self::$allTestsCounter--;
 
-    $actual_test_count = 4;
+    $actual_test_count = 5;
 
     $this->assertEqual(
       $actual_test_count,
@@ -84,6 +84,10 @@ final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
 
   public function testFail() {
     $this->assertFailure('This test is expected to fail.');
+  }
+
+  public function testSkip() {
+    $this->assertSkipped('This test is expected to skip.');
   }
 
   public function testTryTestCases() {

@@ -215,7 +215,7 @@ final class ArcanistDiffParser {
         // This is an SVN property change, probably from "svn diff".
         '(?P<type>Property changes on): (?P<cur>.+)',
         // This is a git commit message, probably from "git show".
-        '(?P<type>commit) (?P<hash>[a-f0-9]+)',
+        '(?P<type>commit) (?P<hash>[a-f0-9]+)(?: \(.*\))?',
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
         '(?P<type>diff --git) '.
@@ -493,6 +493,8 @@ final class ArcanistDiffParser {
     $is_mercurial = $this->getIsMercurial();
     $is_svn = (!$is_git && !$is_mercurial);
 
+    $move_source = null;
+
     $line = $this->getLine();
     if ($is_git) {
       do {
@@ -524,7 +526,21 @@ final class ArcanistDiffParser {
           if ($line === null ||
               preg_match('/^(diff --git|commit) /', $line)) {
             // In this case, there are ONLY file mode changes, or this is a
-            // pure move.
+            // pure move. If it's a move, flag these changesets so we can build
+            // synthetic changes later, enabling us to show file contents in
+            // Differential -- git only gives us a block like this:
+            //
+            //   diff --git a/README b/READYOU
+            //   similarity index 100%
+            //   rename from README
+            //   rename to READYOU
+            //
+            // ...i.e., there is no associated diff.
+
+            $change->setNeedsSyntheticGitHunks(true);
+            if ($move_source) {
+              $move_source->setNeedsSyntheticGitHunks(true);
+            }
             return;
           }
           break;
@@ -590,6 +606,9 @@ final class ArcanistDiffParser {
           } else {
             $old->setType(ArcanistDiffChangeType::TYPE_MOVE_AWAY);
           }
+
+          // We'll reference this above.
+          $move_source = $old;
 
           $old->addAwayPath($change->getCurrentPath());
         }

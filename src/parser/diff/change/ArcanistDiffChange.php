@@ -38,6 +38,8 @@ final class ArcanistDiffChange {
 
   protected $hunks = array();
 
+  private $needsSyntheticGitHunks;
+
   public function toDictionary() {
     $hunks = array();
     foreach ($this->hunks as $hunk) {
@@ -237,6 +239,15 @@ final class ArcanistDiffChange {
       throw new Exception("Failed to extract link target!");
     }
     return trim($match[1]);
+  }
+
+  public function setNeedsSyntheticGitHunks($needs_synthetic_git_hunks) {
+    $this->needsSyntheticGitHunks = $needs_synthetic_git_hunks;
+    return $this;
+  }
+
+  public function getNeedsSyntheticGitHunks() {
+    return $this->needsSyntheticGitHunks;
   }
 
 }

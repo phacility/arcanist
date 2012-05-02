@@ -25,7 +25,7 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **land** [__options__] __branch__ [--onto __master__]
+      **land** [__options__] [__branch__] [--onto __master__]
 EOTEXT
       );
   }
@@ -36,7 +36,8 @@ EOTEXT
 
           Land an accepted change (currently sitting in local feature branch
           __branch__) onto __master__ and push it to the remote. Then, delete
-          the feature branch.
+          the feature branch. If you omit __branch__, the current branch will
+          be used.
 
           In mutable repositories, this will perform a --squash merge (the
           entire branch will be represented by one commit on __master__). In
@@ -106,7 +107,20 @@ EOTEXT
   }
 
   public function run() {
+    $repository_api = $this->getRepositoryAPI();
+    if (!($repository_api instanceof ArcanistGitAPI)) {
+      throw new ArcanistUsageException("'arc land' only supports git.");
+    }
+
     $branch = $this->getArgument('branch');
+    if (empty($branch)) {
+      $branch = $repository_api->getBranchName();
+      if ($branch) {
+        echo "Landing current branch '{$branch}'.\n";
+        $branch = array($branch);
+      }
+    }
+
     if (count($branch) !== 1) {
       throw new ArcanistUsageException(
         "Specify exactly one branch to land changes from.");
@@ -126,11 +140,6 @@ EOTEXT
       $use_squash = true;
     } else {
       $use_squash = !$this->isHistoryImmutable();
-    }
-
-    $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI)) {
-      throw new ArcanistUsageException("'arc land' only supports git.");
     }
 
     list($err) = $repository_api->execManualLocal(
@@ -290,7 +299,7 @@ EOTEXT
       }
 
       $mark_workflow = $this->buildChildWorkflow(
-        'mark-committed',
+        'close-revision',
         array(
           '--finalize',
           '--quiet',

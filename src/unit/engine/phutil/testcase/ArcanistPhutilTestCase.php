@@ -109,6 +109,19 @@ abstract class ArcanistPhutilTestCase {
     throw new ArcanistPhutilTestTerminatedException($message);
   }
 
+  /**
+   * End this test by asserting that the test should be skipped for some
+   * reason.
+   *
+   * @param   string  Reason for skipping this test.
+   * @return  void
+   * @task    assert
+   */
+  final protected function assertSkipped($message) {
+    $this->skipTest($message);
+    throw new ArcanistPhutilTestTerminatedException($message);
+  }
+
 
 /* -(  Exception Handling  )------------------------------------------------- */
 
@@ -368,6 +381,26 @@ abstract class ArcanistPhutilTestCase {
 
 
   /**
+   * Mark the current running test as skipped.
+   *
+   * @param string  Description for why this test was skipped.
+   * @return void
+   * @task internal
+   */
+  final private function skipTest($reason) {
+    $coverage = $this->endCoverage();
+
+    $result = new ArcanistUnitTestResult();
+    $result->setCoverage($coverage);
+    $result->setName($this->runningTest);
+    $result->setResult(ArcanistUnitTestResult::RESULT_SKIP);
+    $result->setDuration(microtime(true) - $this->testStartTime);
+    $result->setUserData($reason);
+    $this->results[] = $result;
+  }
+
+
+  /**
    * Execute the tests in this test case. You should not call this directly;
    * use @{class:PhutilUnitTestEngine} to orchestrate test execution.
    *
@@ -410,6 +443,8 @@ abstract class ArcanistPhutilTestCase {
             throw $test_exception;
           }
         } catch (ArcanistPhutilTestTerminatedException $ex) {
+          // Continue with the next test.
+        } catch (ArcanistPhutilTestSkippedException $ex) {
           // Continue with the next test.
         } catch (Exception $ex) {
           $ex_class = get_class($ex);

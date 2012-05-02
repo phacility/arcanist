@@ -733,8 +733,12 @@ EOTEXT
         $change_size = number_format($size);
         $byte_warning =
           "Diff for '{$file_name}' with context is {$change_size} bytes in ".
-          "length. Generally, source changes should not be this large. If ".
-          "this file is a huge text file, try using the '--less-context' flag.";
+          "length. Generally, source changes should not be this large.";
+        if (!$this->getArgument('less-context')) {
+          $byte_warning .=
+            " If this file is a huge text file, try using the ".
+            "'--less-context' flag.";
+        }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           throw new ArcanistUsageException(
             "{$byte_warning} If the file is not a text file, mark it as ".
@@ -851,11 +855,32 @@ EOTEXT
     }
 
     foreach ($changes as $change) {
+      $path = $change->getCurrentPath();
+
+      // Certain types of changes (moves and copies) don't contain change data
+      // when expressed in raw "git diff" form. Augment any such diffs with
+      // textual data.
+      if ($change->getNeedsSyntheticGitHunks()) {
+        $diff = $repository_api->getRawDiffText($path, $moves = false);
+        $parser = new ArcanistDiffParser();
+        $raw_changes = $parser->parseDiff($diff);
+        foreach ($raw_changes as $raw_change) {
+          if ($raw_change->getCurrentPath() == $path) {
+            $change->setFileType($raw_change->getFileType());
+            foreach ($raw_change->getHunks() as $hunk) {
+              $change->addHunk($hunk);
+            }
+            break;
+          }
+        }
+
+        $change->setNeedsSyntheticGitHunks(false);
+      }
+
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;
       }
 
-      $path = $change->getCurrentPath();
       $name = basename($path);
 
       $old_file = $repository_api->getOriginalFileData($path);
@@ -894,11 +919,9 @@ EOTEXT
       return $result;
     }
 
-    $future = new ExecFuture('file -b --mime -');
-    $future->write($data);
-    list($mime_type) = $future->resolvex();
-
-    $mime_type = trim($mime_type);
+    $tmp = new TempFile();
+    Filesystem::writeFile($tmp, $data);
+    $mime_type = Filesystem::getMimeType($tmp);
     $result['mime'] = $mime_type;
 
     echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
@@ -1182,10 +1205,7 @@ EOTEXT
         "No explanation provided.");
     }
 
-    $template = preg_replace('/^\s*#.*$/m', '', $new_template);
-    $template = rtrim($template)."\n";
-
-    return $template;
+    return ArcanistCommentRemover::removeComments($new_template);
   }
 
 
@@ -1353,8 +1373,7 @@ EOTEXT
         throw new ArcanistUsageException("Template not edited.");
       }
 
-      $template = preg_replace('/^\s*#.*$/m', '', $new_template);
-      $template = rtrim($template)."\n";
+      $template = ArcanistCommentRemover::removeComments($new_template);
       $wrote = $this->writeScratchFile('create-message', $template);
       $where = $this->getReadableScratchFilePath('create-message');
 
@@ -1502,17 +1521,18 @@ EOTEXT
     $template =
       rtrim($comments).
       "\n\n".
-      "# Enter a brief description of the changes included in this update.".
+      "# Enter a brief description of the changes included in this update.\n".
+      "#\n".
+      "# If you intended to create a new revision, use:\n".
+      "#  $ arc diff --create\n".
       "\n";
 
     $comments = id(new PhutilInteractiveEditor($template))
       ->setName('differential-update-comments')
       ->editInteractively();
 
-    $comments = preg_replace('/^\s*#.*$/m', '', $comments);
-    $comments = rtrim($comments);
-
-    if (!strlen($comments)) {
+    $comments = ArcanistCommentRemover::removeComments($comments);
+    if (!strlen(trim($comments))) {
       throw new ArcanistUserAbortException();
     }
 

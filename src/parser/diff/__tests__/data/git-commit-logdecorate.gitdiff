@@ -1,0 +1,31 @@
+commit 76e2f1339c298c748aa0b52030799ed202a6537b (HEAD, refs/heads/master)
+Author: ngao <ngao@2c7ba8d8-a2f7-0310-a573-de162e16dcc7>
+Date:   Wed Mar 3 20:39:39 2010 +0000
+
+    Deprecating UIActionButton (Part 1)
+
+    Summary: Replaces calls to UIActionButton with <ui:button>.  I tested most
+             of these calls, but there were some that I didn't know how to
+             reach, so if you are one of the owners of this code, please test
+             your feature in my sandbox: www.ngao.devrs013.facebook.com
+
+             @brosenthal, I removed some logic that was setting a disabled state
+             on a UIActionButton, which is actually a no-op.
+
+    Reviewed By: brosenthal
+
+    Other Commenters: sparker, egiovanola
+
+    Test Plan: www.ngao.devrs013.facebook.com
+
+               Explicitly tested:
+               * ads creation flow (add keyword)
+               * ads manager (conversion tracking)
+               * help center (create a discussion)
+               * new user wizard (next step button)
+
+    Revert: OK
+
+    DiffCamp Revision: 94064
+
+    git-svn-id: svn+ssh://tubbs/svnroot/tfb/trunk/www@223593 2c7ba8d8
