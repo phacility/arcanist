@@ -262,8 +262,7 @@ EOTEXT
       // the right message.
       chdir($repository_api->getPath());
       $err = phutil_passthru(
-        'git merge --no-ff -m %s %s',
-        $message,
+        'git merge --no-ff --no-commit %s',
         $branch);
       if ($err) {
         throw new ArcanistUsageException(
@@ -276,10 +275,13 @@ EOTEXT
       $repository_api->execxLocal(
         'merge --squash --ff-only %s',
         $branch);
-      $repository_api->execxLocal(
-        'commit -m %s',
-        $message);
     }
+
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
+    $repository_api->execxLocal(
+      'commit -F %s',
+      $tmp_file);
 
     if ($this->getArgument('hold')) {
       echo phutil_console_format(
