@@ -412,9 +412,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function amendGitHeadCommit($message) {
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
     $this->execxLocal(
-      'commit --amend --allow-empty --message %s',
-      $message);
+      'commit --amend --allow-empty -F %s',
+      $tmp_file);
   }
 
   public function getPreReceiveHookStatus($old_ref, $new_ref) {
