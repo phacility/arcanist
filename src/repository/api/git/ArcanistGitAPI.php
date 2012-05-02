@@ -412,9 +412,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function amendGitHeadCommit($message) {
+    $this->writeScratchFile("ammend-message", $message);
+    $scratch_path = $this->getScratchFilePath("ammend-message");
     $this->execxLocal(
-      'commit --amend --allow-empty --message %s',
-      $message);
+      'commit --amend --allow-empty -F %s',
+      $scratch_path);
+    $this->removeScratchFile("ammend-message");
   }
 
   public function getPreReceiveHookStatus($old_ref, $new_ref) {
