@@ -1598,6 +1598,10 @@ EOTEXT
         $message->pullDataFromConduit($conduit, $partial = true);
         $fields += $message->getFields();
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
+        if ($this->getArgument('verbatim')) {
+          throw $ex;
+        }
+
         $fields += $message->getFields();
 
         $frev = substr($hash, 0, 8);
