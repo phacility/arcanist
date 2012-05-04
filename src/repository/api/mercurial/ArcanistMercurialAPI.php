@@ -108,7 +108,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       if (!$logs) {
         // In Mercurial, we support operations against uncommitted changes.
-        return $this->getWorkingCopyRevision();
+        $this->setRelativeCommit($this->getWorkingCopyRevision());
+        return $this->relativeCommit;
       }
 
       $outgoing_revs = ipull($logs, 'rev');
@@ -281,11 +282,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function getDiffOptions() {
     $options = array(
       '--git',
-      // NOTE: We can't use "--color never" because that flag is provided
-      // by the color extension, which may or may not be enabled. Instead,
-      // set the color mode configuration so that color is disabled regardless
-      // of whether the extension is present or not.
-      '--config color.mode=off',
       '-U'.$this->getDiffLinesOfContext(),
     );
     return implode(' ', $options);
