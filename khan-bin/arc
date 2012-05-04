@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# The simplest wrapper imaginable, for now: just run the 'real' arc.
+
+exec `dirname $0`/../bin/arc "$@"
