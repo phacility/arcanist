@@ -300,8 +300,10 @@ EOTEXT
         ),
       ),
       'verbatim' => array(
-        'help' => 'Try to use the working copy commit message verbatim when '.
-                  'creating a revision, without prompting to edit it.',
+        'help' => 'When creating a revision, try to use the working copy '.
+                  'commit message verbatim, without prompting to edit it. '.
+                  'When updating a revision, update some fields from the '.
+                  'local commit message.',
         'supports' => array(
           'hg',
           'git',
@@ -391,6 +393,18 @@ EOTEXT
       );
 
       if ($message->getRevisionID()) {
+
+        // With '--verbatim', pass the (possibly modified) local fields. This
+        // allows the user to edit some fields (like "title" and "summary")
+        // locally without '--edit' and have changes automatically synchronized.
+        // Without '--verbatim', we do not update the revision to reflect local
+        // commit message changes.
+        if ($this->getArgument('verbatim')) {
+          $use_fields = $message->getFields();
+        } else {
+          $use_fields = array();
+        }
+
         // TODO: This is silly -- we're getting a text corpus from the server
         // and then sending it right back to be parsed. This should be a
         // single call.
@@ -398,21 +412,19 @@ EOTEXT
           'differential.getcommitmessage',
           array(
             'revision_id' => $message->getRevisionID(),
-            'edit' => true,
-            'fields' => array(),
+            'edit'        => 'edit',
+            'fields'      => $use_fields,
           ));
 
         $should_edit = $this->getArgument('edit');
         if ($should_edit) {
-          $new_text = id(new PhutilInteractiveEditor($remote_corpus))
+          $remote_corpus = id(new PhutilInteractiveEditor($remote_corpus))
             ->setName('differential-edit-revision-info')
             ->editInteractively();
-          $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-            $new_text);
-        } else {
-          $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-            $remote_corpus);
         }
+
+        $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+          $remote_corpus);
 
         $new_message->pullDataFromConduit($conduit);
         $revision['fields'] = $new_message->getFields();
@@ -1224,9 +1236,14 @@ EOTEXT
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
     $is_message = $this->getArgument('use-commit-message');
+    $is_verbatim = $this->getArgument('verbatim');
 
     if ($is_message) {
       return $this->getCommitMessageFromCommit($is_message);
+    }
+
+    if ($is_verbatim) {
+      return $this->getCommitMessageFromUser();
     }
 
     if (!$is_raw && !$is_create && !$is_update) {

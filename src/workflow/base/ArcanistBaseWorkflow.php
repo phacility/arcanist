@@ -234,7 +234,7 @@ abstract class ArcanistBaseWorkflow {
         'conduit.connect',
         array(
           'client'              => 'arc',
-          'clientVersion'       => 3,
+          'clientVersion'       => 4,
           'clientDescription'   => php_uname('n').':'.$description,
           'user'                => $user,
           'certificate'         => $certificate,
