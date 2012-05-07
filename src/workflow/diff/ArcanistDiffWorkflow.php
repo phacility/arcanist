@@ -1341,9 +1341,13 @@ EOTEXT
 
     $template_is_default = false;
     $notes = array();
+    $included = array();
 
-    if (!$template) {
-      list($fields, $notes) = $this->getDefaultCreateFields();
+    list($fields, $notes, $included) = $this->getDefaultCreateFields();
+    if ($template) {
+      $fields = array();
+      $notes = array();
+    } else {
       if (!$fields) {
         $template_is_default = true;
       }
@@ -1357,15 +1361,38 @@ EOTEXT
         ));
     }
 
-    $issues = array(
-      'NEW DIFFERENTIAL REVISION',
-      'Describe the changes in this new revision.',
-      '',
-      'arc could not identify any existing revision in your working copy.',
-      'If you intended to update an existing revision, use:',
-      '',
-      '  $ arc diff --update <revision>',
-    );
+    if ($included) {
+      foreach ($included as $k => $commit) {
+        $included[$k] = '        '.$commit;
+      }
+      $included = array_merge(
+        array(
+          "",
+          "Included commits:",
+          "",
+        ),
+        $included,
+        array(
+          "",
+        ));
+    } else {
+      $included = array(
+        '',
+      );
+    }
+
+    $issues = array_merge(
+      array(
+        'NEW DIFFERENTIAL REVISION',
+        'Describe the changes in this new revision.',
+      ),
+      $included,
+      array(
+        'arc could not identify any existing revision in your working copy.',
+        'If you intended to update an existing revision, use:',
+        '',
+        '  $ arc diff --update <revision>',
+      ));
     if ($notes) {
       $issues = array_merge($issues, array(''), $notes);
     }
@@ -1580,7 +1607,7 @@ EOTEXT
   }
 
   private function getDefaultCreateFields() {
-    $empty = array(array(), array());
+    $empty = array(array(), array(), array());
 
     if ($this->isRawDiffSource()) {
       return $empty;
@@ -1599,6 +1626,7 @@ EOTEXT
   private function getGitCreateFields() {
     $conduit = $this->getConduit();
     $changes = $this->getLocalGitCommitMessages();
+    $included = array();
 
     $commits = array();
     foreach ($changes as $key => $change) {
@@ -1609,6 +1637,9 @@ EOTEXT
     foreach ($commits as $hash => $text) {
       $messages[$hash] = ArcanistDifferentialCommitMessage::newFromRawCorpus(
         $text);
+
+      $first_line = head(explode("\n", trim($text)));
+      $included[] = substr($hash, 0, 12).' '.$first_line;
     }
 
     $fields = array();
@@ -1632,7 +1663,7 @@ EOTEXT
       }
     }
 
-    return array($fields, $notes);
+    return array($fields, $notes, $included);
   }
 
   private function getDefaultUpdateMessage() {
