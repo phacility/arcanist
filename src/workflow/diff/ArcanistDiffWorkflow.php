@@ -315,7 +315,6 @@ EOTEXT
           'preview'             => true,
           'raw'                 => true,
           'raw-command'         => true,
-          'message'             => true,
           'message-file'        => true,
         ),
       ),
