@@ -927,6 +927,16 @@ abstract class ArcanistBaseWorkflow {
     }
   }
 
+  protected function readGlobalArcConfig() {
+    return idx(self::readUserConfigurationFile(), 'config', array());
+  }
+
+  protected function writeGlobalArcConfig(array $options) {
+    $config = self::readUserConfigurationFile();
+    $config['config'] = $options;
+    self::writeUserConfigurationFile($config);
+  }
+
 
   /**
    * Write a message to stderr so that '--json' flags or stdout which is meant
