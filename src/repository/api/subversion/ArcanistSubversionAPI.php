@@ -537,6 +537,10 @@ EODIFF;
     // this directory and belong to the same project.
 
     $project = $this->getWorkingCopyIdentity()->getProjectID();
+    if (!$project) {
+      return array();
+    }
+
     $results = $conduit->callMethodSynchronous(
       'differential.query',
       $query + array(

@@ -53,7 +53,7 @@ EOTEXT
       throw new ArcanistUsageException("Specify a key and a value.");
     }
 
-    $config = $this->readGlobalArcConfig();
+    $config = self::readGlobalArcConfig();
 
     $key = $argv[0];
     $val = $argv[1];
@@ -65,7 +65,7 @@ EOTEXT
 
     if (!strlen($val)) {
       unset($config[$key]);
-      $this->writeGlobalArcConfig($config);
+      self::writeGlobalArcConfig($config);
 
       if ($old === null) {
         echo "Deleted key '{$key}'.\n";
@@ -74,7 +74,7 @@ EOTEXT
       }
     } else {
       $config[$key] = $val;
-      $this->writeGlobalArcConfig($config);
+      self::writeGlobalArcConfig($config);
 
       if ($old === null) {
         echo "Set key '{$key}' = '{$val}'.\n";

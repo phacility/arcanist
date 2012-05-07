@@ -927,11 +927,11 @@ abstract class ArcanistBaseWorkflow {
     }
   }
 
-  protected function readGlobalArcConfig() {
+  public static function readGlobalArcConfig() {
     return idx(self::readUserConfigurationFile(), 'config', array());
   }
 
-  protected function writeGlobalArcConfig(array $options) {
+  public static function writeGlobalArcConfig(array $options) {
     $config = self::readUserConfigurationFile();
     $config['config'] = $options;
     self::writeUserConfigurationFile($config);
@@ -1102,12 +1102,21 @@ abstract class ArcanistBaseWorkflow {
       return $this->repositoryEncoding;
     }
 
+    $default = 'UTF-8';
+
+    $project_id = $this->getWorkingCopy()->getProjectID();
+    if (!$project_id) {
+      return $default;
+    }
+
     $project_info = $this->getConduit()->callMethodSynchronous(
       'arcanist.projectinfo',
       array(
-        'name' => $this->getWorkingCopy()->getProjectID(),
+        'name' => $project_id,
       ));
-    $this->repositoryEncoding = nonempty($project_info['encoding'], 'UTF-8');
+
+    $this->repositoryEncoding = nonempty($project_info['encoding'], $default);
+
     return $this->repositoryEncoding;
   }
 

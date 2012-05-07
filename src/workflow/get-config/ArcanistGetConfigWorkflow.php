@@ -48,7 +48,7 @@ EOTEXT
   public function run() {
     $argv = $this->getArgument('argv');
 
-    $config = $this->readGlobalArcConfig();
+    $config = self::readGlobalArcConfig();
     if ($argv) {
       $keys = $argv;
     } else {

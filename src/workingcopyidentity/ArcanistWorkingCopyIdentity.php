@@ -40,6 +40,23 @@ final class ArcanistWorkingCopyIdentity {
       $project_root = $dir;
       break;
     }
+
+    if (!$project_root) {
+      foreach (Filesystem::walkToRoot($path) as $dir) {
+        $try = array(
+          $dir.'/.svn',
+          $dir.'/.hg',
+          $dir.'/.git',
+        );
+        foreach ($try as $trydir) {
+          if (Filesystem::pathExists($trydir)) {
+            $project_root = $dir;
+            break 2;
+          }
+        }
+      }
+    }
+
     return new ArcanistWorkingCopyIdentity($project_root, $config);
   }
 
