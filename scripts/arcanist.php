@@ -332,7 +332,12 @@ function sanity_check_environment() {
     );
   } else {
     $need_functions = array(
-      'json_decode'   => array('flag',        '--without-json'),
+      'curl_init'     => array(
+        'text',
+        "You need to install the cURL PHP extension, maybe with ".
+        "'apt-get install php5-curl' or 'yum install php53-curl' or ".
+        "something similar."),
+      'json_decode'   => array('flag', '--without-json'),
     );
   }
 
@@ -376,6 +381,11 @@ function sanity_check_environment() {
         "Your install of PHP does not have the '{$which}' extension enabled. ".
         "Edit your php.ini file and uncomment the line which reads ".
         "'extension={$which}'.";
+    }
+
+    if ($what == 'text') {
+      $generic = false;
+      $problems[] = $which;
     }
 
     if ($generic) {
