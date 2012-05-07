@@ -121,9 +121,9 @@ EOTEXT
     $futures = array();
     foreach ($mark_revisions as $revision_id) {
       $futures[] = $conduit->callMethod(
-        'differential.markcommitted',
+        'differential.close',
         array(
-          'revision_id' => $revision_id,
+          'revisionID' => $revision_id,
         ));
     }
 

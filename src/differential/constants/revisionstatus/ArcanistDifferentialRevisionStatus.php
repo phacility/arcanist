@@ -21,8 +21,7 @@ final class ArcanistDifferentialRevisionStatus {
   const NEEDS_REVIEW      = 0;
   const NEEDS_REVISION    = 1;
   const ACCEPTED          = 2;
-  const COMMITTED         = 3; // TODO: Remove.
-  const CLOSED            = 3; // NOTE: Duplicate of "COMMITTED".
+  const CLOSED            = 3;
   const ABANDONED         = 4;
 
   public static function getNameForRevisionStatus($status) {

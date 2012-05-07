@@ -810,12 +810,11 @@ EOTEXT
     );
 
 
-    // grab the latest committed revision only
+    // grab the latest closed revision only
     $found_revision = null;
     $revisions = isort($revisions, 'dateModified');
     foreach ($revisions as $revision) {
-      if ($revision['status'] ==
-          ArcanistDifferentialRevisionStatus::COMMITTED) {
+      if ($revision['status'] == ArcanistDifferentialRevisionStatus::CLOSED) {
         $found_revision = $revision;
       }
     }

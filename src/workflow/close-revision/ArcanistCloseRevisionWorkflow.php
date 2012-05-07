@@ -143,9 +143,9 @@ EOTEXT
         echo "Closing revision D{$revision_id} '{$revision_name}'...\n";
 
         $conduit->callMethodSynchronous(
-          'differential.markcommitted',
+          'differential.close',
           array(
-            'revision_id' => $revision_id,
+            'revisionID' => $revision_id,
           ));
       }
     }

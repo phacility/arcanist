@@ -161,7 +161,7 @@ final class BranchInfo {
    */
   private static function getColorForStatus($status) {
     static $status_to_color = array(
-      'Committed' => 'cyan',
+      'Closed' => 'cyan',
       'Needs Review' => 'magenta',
       'Needs Revision' => 'red',
       'Accepted' => 'green',

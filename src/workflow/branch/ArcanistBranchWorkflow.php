@@ -38,7 +38,7 @@ EOTEXT
           A wrapper on 'git branch'. It pulls data from Differential and
           displays the revision status next to the branch name.
           Branches are sorted in ascending order by the last commit time.
-          By default branches with committed/abandoned revisions
+          By default branches with closed/abandoned revisions
           are not displayed.
 EOTEXT
       );
@@ -61,7 +61,7 @@ EOTEXT
     return array(
       'view-all' => array(
         'help' =>
-          "Include committed and abandoned revisions",
+          "Include closed and abandoned revisions",
       ),
       'by-status' => array(
         'help' => 'Group output by revision status.',
@@ -120,7 +120,7 @@ EOTEXT
   }
 
   /**
-   * Removes the branches with status either committed or abandoned.
+   * Removes the branches with status either closed or abandoned.
    */
   private function filterOutFinished() {
     foreach ($this->branches as $id => $branch) {
@@ -128,7 +128,7 @@ EOTEXT
         continue; //never filter the current branch
       }
       $status = $branch->getStatus();
-      if ($status == 'Committed' || $status == 'Abandoned') {
+      if ($status == 'Closed' || $status == 'Abandoned') {
         unset($this->branches[$id]);
       }
     }
