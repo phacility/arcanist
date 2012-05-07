@@ -130,25 +130,24 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       $do_write = false;
       $default_relative = null;
+      $working_copy = $this->getWorkingCopyIdentity();
+      if ($working_copy) {
+        $default_relative = $working_copy->getConfig(
+          'git.default-relative-commit');
+      }
 
-      list($err, $upstream) = $this->execManualLocal(
-        "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+      if (!$default_relative) {
+        list($err, $upstream) = $this->execManualLocal(
+          "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
 
-      if (!$err) {
-        $default_relative = trim($upstream);
+        if (!$err) {
+          $default_relative = trim($upstream);
+        }
       }
 
       if (!$default_relative) {
         $default_relative = $this->readScratchFile('default-relative-commit');
         $default_relative = trim($default_relative);
-      }
-
-      if (!$default_relative) {
-        $working_copy = $this->getWorkingCopyIdentity();
-        if ($working_copy) {
-          $default_relative = $working_copy->getConfig(
-            'git.default-relative-commit');
-        }
       }
 
       if (!$default_relative) {
