@@ -996,6 +996,8 @@ EOTEXT
         }
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
         // Ignore.
+      } catch (ArcanistUsageException $ex) {
+        // Ignore an invalid Differential Revision field in the parent commit
       }
     }
 
