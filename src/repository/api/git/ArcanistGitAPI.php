@@ -87,23 +87,26 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         ? 'log %s --format=%C --'
         : 'log %s --format=%s --',
       $against,
-      '%H%x01%T%x01%P%x01%at%x01%an%x01%s');
+      // NOTE: "%B" is somewhat new, use "%s%n%n%b" instead.
+      '%H%x01%T%x01%P%x01%at%x01%an%x01%s%x01%s%n%n%b%x02');
 
     $commits = array();
 
-    $info = trim($info);
-    $info = explode("\n", $info);
+    $info = trim($info, " \n\2");
+    $info = explode("\2", $info);
     foreach ($info as $line) {
-      list($commit, $tree, $parents, $time, $author, $title)
-        = explode("\1", $line, 6);
+      list($commit, $tree, $parents, $time, $author, $title, $message)
+        = explode("\1", $line, 7);
+      $message = rtrim($message);
 
-      $commits[] = array(
+      $commits[$commit] = array(
         'commit'  => $commit,
         'tree'    => $tree,
         'parents' => array_filter(explode(' ', $parents)),
         'time'    => $time,
         'author'  => $author,
         'summary' => $title,
+        'message' => $message,
       );
     }
 

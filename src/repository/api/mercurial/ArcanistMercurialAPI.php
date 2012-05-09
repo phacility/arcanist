@@ -156,35 +156,73 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getLocalCommitInformation() {
     if ($this->localCommitInfo === null) {
       list($info) = $this->execxLocal(
-        'log --style default --rev %s..%s --',
+        "log --template '%C' --rev %s..%s --",
+        "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
+          "{branch}\1{tag}\1{parents}\1{desc}\2",
         $this->getRelativeCommit(),
         $this->getWorkingCopyRevision());
-      $logs = ArcanistMercurialParser::parseMercurialLog($info);
+      $logs = array_filter(explode("\2", $info));
 
-      // Get rid of the first log, it's not actually part of the diff. "hg log"
-      // is inclusive, while "hg diff" is exclusive.
       array_shift($logs);
 
-      // Expand short hashes (12 characters) to full hashes (40 characters) by
-      // issuing a big "hg log" command. Possibly we should do this with parents
-      // too, but nothing uses them directly at the moment.
-      if ($logs) {
-        $cmd = array();
-        foreach (ipull($logs, 'rev') as $rev) {
-          $cmd[] = csprintf('--rev %s', $rev);
+      $last_node = null;
+      $is_first = true;
+
+      $futures = array();
+
+      $commits = array();
+      foreach ($logs as $log) {
+        list($node, $rev, $author, $date, $branch, $tag, $parents, $desc) =
+          explode("\1", $log);
+
+        // NOTE: If a commit has only one parent, {parents} returns empty.
+        // If it has two parents, {parents} returns revs and short hashes, not
+        // full hashes. Try to avoid making calls to "hg parents" because it's
+        // relatively expensive.
+        $commit_parents = null;
+        if (!$parents) {
+          if ($last_node) {
+            $commit_parents = array($last_node);
+          }
         }
 
-        list($full) = $this->execxLocal(
-          'log --template %s %C --',
-          '{node}\\n',
-          implode(' ', $cmd));
-
-        $full = explode("\n", trim($full));
-        foreach ($logs as $key => $dict) {
-          $logs[$key]['rev'] = array_pop($full);
+        if (!$commit_parents && !$is_first) {
+          // We didn't get a cheap hit on previous commit, so do the full-cost
+          // "hg parents" call. We can run these in parallel, at least.
+          $futures[$node] = $this->execFutureLocal(
+            "parents --template='{node}\\n' --rev %s",
+            $node);
         }
+
+        $commits[$node] = array(
+          'author'  => $author,
+          'time'    => strtotime($date),
+          'branch'  => $branch,
+          'tag'     => $tag,
+          'commit'  => $node,
+          'local'   => $rev,
+          'parents' => $commit_parents,
+          'summary' => head(explode("\n", $desc)),
+          'message' => $desc,
+        );
+
+        $last_node = $node;
+        $is_first = false;
       }
-      $this->localCommitInfo = $logs;
+
+      // Get rid of the first log, it's not actually part of the diff. "hg log"
+      // is inclusive, while "hg diff" is exclusive. We do this after processing
+      // so we can take advantage of the cheaper lookup for the parents of the
+      // first commit we keep, in the common case.
+      array_shift($commits);
+
+      foreach (Futures($futures)->limit(4) as $node => $future) {
+        list($parents) = $future->resolvex();
+        $parents = array_filter(explode("\n", $parents));
+        $commits[$node]['parents'] = $parents;
+      }
+
+      $this->localCommitInfo = $commits;
     }
 
     return $this->localCommitInfo;
