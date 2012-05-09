@@ -256,6 +256,30 @@ abstract class ArcanistBaseWorkflow {
           "\n".
           $ex->getMessage();
         throw new ArcanistUsageException($message);
+      } else if ($ex->getErrorCode() == 'NEW-ARC-VERSION') {
+
+        // Cleverly disguise this as being AWESOME!!!
+
+        echo phutil_console_format("**New Version Available!**\n\n");
+        echo phutil_console_wrap($ex->getMessage());
+        echo "\n\n";
+        echo "In most cases, arc can be upgraded automatically.\n";
+
+        $ok = phutil_console_confirm(
+          "Upgrade arc now?",
+          $default_no = false);
+        if (!$ok) {
+          throw $ex;
+        }
+
+        $root = dirname(phutil_get_library_root('arcanist'));
+
+        chdir($root);
+        $err = phutil_passthru('%s upgrade', $root.'/bin/arc');
+        if (!$err) {
+          echo "\nTry running your arc command again.\n";
+        }
+        exit(1);
       } else {
         throw $ex;
       }
