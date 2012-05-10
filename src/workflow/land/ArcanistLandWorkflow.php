@@ -97,6 +97,13 @@ EOTEXT
           'merge' => '--merge and --squash are conflicting merge strategies.',
         ),
       ),
+      'delete-remote' => array(
+        'help'      => 'Delete the feature branch in the remote after '.
+                       'landing it.',
+        'conflicts' => array(
+          'keep-branch' => true,
+        ),
+      ),
       'revision' => array(
         'param' => 'id',
         'help'  => 'Use the message from a specific revision, rather than '.
@@ -133,6 +140,14 @@ EOTEXT
 
     $remote = $this->getArgument('remote', 'origin');
     $onto = $this->getArgument('onto', $onto_default);
+
+    if ($onto == $branch) {
+      throw new ArcanistUsageException(
+        "You can not land a branch onto itself -- you are trying to land ".
+        "'{$branch}' onto '{$onto}'. For more information on how to push ".
+        "changes, see 'Pushing and Closing Revisions' in ".
+        "'Arcanist User Guide: arc diff' in the documentation.");
+    }
 
     if ($this->getArgument('merge')) {
       $use_squash = false;
@@ -327,6 +342,29 @@ EOTEXT
       $repository_api->execxLocal(
         'branch -D %s',
         $branch);
+
+      if ($this->getArgument('delete-remote')) {
+        list($err, $ref) = $repository_api->execManualLocal(
+          'rev-parse --verify %s/%s',
+          $remote,
+          $branch);
+
+        if ($err) {
+          echo "No remote feature branch to clean up.\n";
+        } else {
+
+          // NOTE: In Git, you delete a remote branch by pushing it with a
+          // colon in front of its name:
+          //
+          //   git push <remote> :<branch>
+
+          echo "Cleaning up remote feature branch...\n";
+          $repository_api->execxLocal(
+            'push %s :%s',
+            $remote,
+            $branch);
+        }
+      }
     }
 
     // If we were on some branch A and the user ran "arc land B", switch back
