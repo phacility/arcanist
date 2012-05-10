@@ -1751,7 +1751,7 @@ EOTEXT
     $messages = $repository_api->getCommitMessageLog();
 
     $local = $this->loadActiveLocalCommitInfo();
-    $hashes = ipull($local, null, 'rev');
+    $hashes = ipull($local, null, 'commit');
 
     $usable = array();
     foreach ($messages as $rev => $message) {
