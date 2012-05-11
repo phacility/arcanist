@@ -194,6 +194,14 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  public function getRelativeExplanation() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function getCommitSummary($commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function getAllLocalChanges() {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

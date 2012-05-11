@@ -25,6 +25,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $relativeCommit = null;
+  private $relativeExplanation = '???';
   private $repositoryHasNoCommits = false;
   const SEARCH_LENGTH_FOR_PARENT_REVISIONS = 16;
 
@@ -93,6 +94,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $commits = array();
 
     $info = trim($info, " \n\2");
+    if (!strlen($info)) {
+      return array();
+    }
+
     $info = explode("\2", $info);
     foreach ($info as $line) {
       list($commit, $tree, $parents, $time, $author, $title, $message)
@@ -128,6 +133,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
         $this->relativeCommit = self::GIT_MAGIC_ROOT_COMMIT;
 
+        if ($this->repositoryHasNoCommits) {
+          $this->relativeExplanation = "the repository has no commits.";
+        } else {
+          $this->relativeExplanation = "the repository has only one commit.";
+        }
+
         return $this->relativeCommit;
       }
 
@@ -137,6 +148,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       if ($working_copy) {
         $default_relative = $working_copy->getConfig(
           'git.default-relative-commit');
+        $this->relativeExplanation =
+          "it is the merge-base of '{$default_relative}' and HEAD, as ".
+          "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
+          "setting overrides other settings.";
       }
 
       if (!$default_relative) {
@@ -145,12 +160,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
         if (!$err) {
           $default_relative = trim($upstream);
+          $this->relativeExplanation =
+            "it is the merge-base of '{$default_relative}' (the Git upstream ".
+            "of the current branch) HEAD.";
         }
       }
 
       if (!$default_relative) {
         $default_relative = $this->readScratchFile('default-relative-commit');
         $default_relative = trim($default_relative);
+        if ($default_relative) {
+          $this->relativeExplanation =
+            "it is the merge-base of '{$default_relative}' and HEAD, as ".
+            "specified in '.arc/default-relative-commit'.";
+        }
       }
 
       if (!$default_relative) {
@@ -200,6 +223,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         // Don't perform this write until we've verified that the object is a
         // valid commit name.
         $this->writeScratchFile('default-relative-commit', $default_relative);
+        $this->relativeExplanation =
+          "it is the merge-base of '{$default_relative}' and HEAD, as you ".
+          "just specified.";
       }
 
       list($merge_base) = $this->execxLocal(
@@ -658,6 +684,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $base = reset($argv);
     if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
       $merge_base = $base;
+      $this->relativeExplanation =
+        "you explicitly specified the empty tree.";
     } else {
       list($err, $merge_base) = $this->execManualLocal(
         'merge-base %s HEAD',
@@ -666,6 +694,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         throw new ArcanistUsageException(
           "Unable to find any git commit named '{$base}' in this repository.");
       }
+      $this->relativeExplanation =
+        "it is the merge-base of '{$base}' and HEAD, as you explicitly ".
+        "specified.";
     }
     $this->setRelativeCommit(trim($merge_base));
   }
@@ -725,12 +756,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $messages = $parser->parseDiff($messages);
 
     // First, try to find revisions by explicit revision IDs in commit messages.
+    $reason_map = array();
     $revision_ids = array();
     foreach ($messages as $message) {
       $object = ArcanistDifferentialCommitMessage::newFromRawCorpus(
         $message->getMetadata('message'));
       if ($object->getRevisionID()) {
         $revision_ids[] = $object->getRevisionID();
+        $reason_map[$object->getRevisionID()] = $message->getCommitHash();
       }
     }
 
@@ -740,6 +773,13 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $query + array(
           'ids' => $revision_ids,
         ));
+
+      foreach ($results as $key => $result) {
+        $hash = substr($reason_map[$result['id']], 0, 16);
+        $results[$key]['why'] =
+          "Commit message for '{$hash}' has explicit 'Differential Revision'.";
+      }
+
       return $results;
     }
 
@@ -756,11 +796,34 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         'commitHashes' => $hashes,
       ));
 
+    foreach ($results as $key => $result) {
+      $results[$key]['why'] =
+        "A git commit or tree hash in the commit range is already attached ".
+        "to the Differential revision.";
+    }
+
     return $results;
   }
 
   public function updateWorkingCopy() {
     $this->execxLocal('pull');
+  }
+
+  public function getRelativeExplanation() {
+    return $this->relativeExplanation;
+  }
+
+  public function getCommitSummary($commit) {
+    if ($commit == self::GIT_MAGIC_ROOT_COMMIT) {
+      return '(The Empty Tree)';
+    }
+
+    list($summary) = $this->execxLocal(
+      'log -n 1 --format=%C %s',
+      '%s',
+      $commit);
+
+    return trim($summary);
   }
 
 }

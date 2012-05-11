@@ -26,6 +26,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $status;
   private $base;
   private $relativeCommit;
+  private $relativeExplanation;
   private $workingCopyRevision;
   private $localCommitInfo;
   private $includeDirectoryStateInDiffs;
@@ -107,6 +108,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       }
 
       if (!$logs) {
+
+        $this->relativeExplanation =
+          "you have no outgoing commits, so arc assumes you intend to submit ".
+          "uncommitted changes in the working copy.";
         // In Mercurial, we support operations against uncommitted changes.
         $this->setRelativeCommit($this->getWorkingCopyRevision());
         return $this->relativeCommit;
@@ -148,6 +153,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         }
       }
 
+      if ($against == 'null') {
+        $this->relativeExplanation =
+          "this is a new repository (all changes are outgoing).";
+      } else {
+        $this->relativeExplanation =
+          "it is the first commit reachable from the working copy state ".
+          "which is not outgoing.";
+      }
+
       $this->setRelativeCommit($against);
     }
     return $this->relativeCommit;
@@ -162,8 +176,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $this->getRelativeCommit(),
         $this->getWorkingCopyRevision());
       $logs = array_filter(explode("\2", $info));
-
-      array_shift($logs);
 
       $last_node = null;
       $is_first = true;
@@ -200,6 +212,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           'branch'  => $branch,
           'tag'     => $tag,
           'commit'  => $node,
+          'rev'     => $node, // TODO: Remove eventually.
           'local'   => $rev,
           'parents' => $commit_parents,
           'summary' => head(explode("\n", $desc)),
@@ -415,6 +428,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if (count($argv) != 1) {
       throw new ArcanistUsageException("Specify only one commit.");
     }
+
+    $this->relativeExplanation = "you explicitly specified it.";
+
     // This does the "hg id" call we need to normalize/validate the revision
     // identifier.
     $this->setRelativeCommit(reset($argv));
@@ -481,7 +497,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // Try to find revisions by hash.
     $hashes = array();
     foreach ($this->getLocalCommitInformation() as $commit) {
-      $hashes[] = array('hgcm', $commit['rev']);
+      $hashes[] = array('hgcm', $commit['commit']);
     }
 
     $results = $conduit->callMethodSynchronous(
@@ -489,6 +505,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $query + array(
         'commitHashes' => $hashes,
       ));
+
+    foreach ($results as $key => $hash) {
+      $results[$key]['why'] =
+        "A mercurial commit hash in the commit range is already attached ".
+        "to the Differential revision.";
+    }
 
     return $results;
   }
@@ -517,6 +539,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function dropCaches() {
     $this->status = null;
     $this->localCommitInfo = null;
+  }
+
+  public function getRelativeExplanation() {
+    return $this->relativeExplanation;
+  }
+
+  public function getCommitSummary($commit) {
+    if ($commit == 'null') {
+      return '(The Empty Void)';
+    }
+
+    list($summary) = $this->execxLocal(
+      'log --template {desc} --limit 1 --rev %s',
+      $commit);
+
+    $summary = head(explode("\n", $summary));
+
+    return trim($summary);
   }
 
 }

@@ -34,8 +34,8 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: svn, git, hg
-          Shows which revision is in the working copy (or which revisions, if
-          more than one matches).
+          Shows which commits 'arc diff' will select, and which revision is in
+          the working copy (or which revisions, if more than one matches).
 EOTEXT
       );
   }
@@ -60,10 +60,6 @@ EOTEXT
       'any-status' => array(
         'help' => "Show committed and abandoned revisions.",
       ),
-      'id' => array(
-        'help' => "If exactly one revision matches, print it to stdout. ".
-                  "Otherwise, exit with an error. Intended for scripts.",
-      ),
       '*' => 'commit',
     );
   }
@@ -72,14 +68,62 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    $commit = $this->getArgument('commit');
-    if (count($commit)) {
+    $arg_commit = $this->getArgument('commit');
+    if (count($arg_commit)) {
       if (!$repository_api->supportsRelativeLocalCommits()) {
         throw new ArcanistUsageException(
           "This version control system does not support relative commits.");
       } else {
-        $repository_api->parseRelativeLocalCommit($commit);
+        $repository_api->parseRelativeLocalCommit($arg_commit);
       }
+    }
+    $arg = $arg_commit ? ' '.head($arg_commit) : '';
+
+    if ($repository_api->supportsRelativeLocalCommits()) {
+      $relative = $repository_api->getRelativeCommit();
+
+      $info = $repository_api->getLocalCommitInformation();
+      if ($info) {
+        $commits = array();
+        foreach ($info as $commit) {
+          $hash     = substr($commit['commit'], 0, 16);
+          $summary  = $commit['summary'];
+
+          $commits[] = "    {$hash}  {$summary}";
+        }
+        $commits = implode("\n", $commits);
+      } else {
+        $commits = '    (No commits.)';
+      }
+
+      $explanation = $repository_api->getRelativeExplanation();
+
+      $relative_summary = $repository_api->getCommitSummary($relative);
+      $relative = substr($relative, 0, 16);
+
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $command = "git diff {$relative}..HEAD";
+      } else if ($repository_api instanceof ArcanistMercurialAPI) {
+        $command = "hg diff --rev {$relative} --rev .";
+      } else {
+        throw new Exception("Unknown VCS!");
+      }
+
+      echo phutil_console_wrap(
+        phutil_console_format(
+          "**RELATIVE COMMIT**\n".
+          "If you run 'arc diff{$arg}', changes between the commit:\n\n"));
+
+      echo  "    {$relative}  {$relative_summary}\n\n";
+      echo phutil_console_wrap(
+        "...and the current working copy state will be sent to ".
+        "Differential, because {$explanation}\n\n".
+        "You can see the exact changes that will be sent by running ".
+        "this command:\n\n".
+        "    $ {$command}\n\n".
+        "These commits will be included in the diff:\n\n");
+
+      echo $commits."\n\n\n";
     }
 
     $any_author = $this->getArgument('any-author');
@@ -98,23 +142,38 @@ EOTEXT
       $this->getConduit(),
       $query);
 
+    echo phutil_console_wrap(
+      phutil_console_format(
+        "**MATCHING REVISIONS**\n".
+        "These Differential revisions match the changes in this working ".
+        "copy:\n\n"));
+
     if (empty($revisions)) {
-      $this->writeStatusMessage("No matching revisions.\n");
-      return 1;
-    }
-
-    if ($this->getArgument('id')) {
-      if (count($revisions) == 1) {
-        echo idx(head($revisions), 'id');
-        return 0;
-      } else {
-        $this->writeStatusMessage("More than one matching revision.\n");
-        return 1;
+      echo "    (No revisions match.)\n";
+      echo "\n";
+      echo phutil_console_wrap(
+        phutil_console_format(
+          "Since there are no revisions in Differential which match this ".
+          "working copy, a new revision will be **created** if you run ".
+          "'arc diff{$arg}'.\n\n"));
+    } else {
+      foreach ($revisions as $revision) {
+        echo '    D'.$revision['id'].' '.$revision['title']."\n";
+        echo '        Reason: '.$revision['why']."\n";
+        echo "\n";
       }
-    }
-
-    foreach ($revisions as $revision) {
-      echo 'D'.$revision['id'].' '.$revision['title']."\n";
+      if (count($revisions) == 1) {
+        echo phutil_console_wrap(
+          phutil_console_format(
+            "Since exactly one revision in Differential matches this working ".
+            "copy, it will be **updated** if you run 'arc diff{$arg}'."));
+      } else {
+        echo phutil_console_wrap(
+          "Since more than one revision in Differential matches this working ".
+          "copy, you will be asked which revision you want to update if ".
+          "you run 'arc diff {$arg}'.");
+      }
+      echo "\n\n";
     }
 
     return 0;

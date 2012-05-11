@@ -553,6 +553,11 @@ EODIFF;
       }
     }
 
+    foreach ($results as $key => $result) {
+      $results[$key]['why'] =
+        "Matching arcanist project name and working copy directory path.";
+    }
+
     return $results;
   }
 
