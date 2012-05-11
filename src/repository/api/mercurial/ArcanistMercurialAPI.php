@@ -170,15 +170,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getLocalCommitInformation() {
     if ($this->localCommitInfo === null) {
       list($info) = $this->execxLocal(
-        "log --template '%C' --rev %s..%s --",
+        "log --template '%C' --prune %s --rev %s --branch %s --",
         "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
           "{branch}\1{tag}\1{parents}\1{desc}\2",
         $this->getRelativeCommit(),
-        $this->getWorkingCopyRevision());
+        $this->getWorkingCopyRevision().':0',
+        $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
       $last_node = null;
-      $is_first = true;
 
       $futures = array();
 
@@ -198,7 +198,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           }
         }
 
-        if (!$commit_parents && !$is_first) {
+        if (!$commit_parents) {
           // We didn't get a cheap hit on previous commit, so do the full-cost
           // "hg parents" call. We can run these in parallel, at least.
           $futures[$node] = $this->execFutureLocal(
@@ -220,14 +220,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         );
 
         $last_node = $node;
-        $is_first = false;
       }
-
-      // Get rid of the first log, it's not actually part of the diff. "hg log"
-      // is inclusive, while "hg diff" is exclusive. We do this after processing
-      // so we can take advantage of the cheaper lookup for the parents of the
-      // first commit we keep, in the common case.
-      array_shift($commits);
 
       foreach (Futures($futures)->limit(4) as $node => $future) {
         list($parents) = $future->resolvex();

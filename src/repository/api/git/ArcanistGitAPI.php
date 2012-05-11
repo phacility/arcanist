@@ -72,8 +72,28 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // One commit.
       $against = 'HEAD';
     } else {
-      // 2..N commits.
-      $against = $this->getRelativeCommit().'..HEAD';
+
+      // 2..N commits. We include commits reachable from HEAD which are
+      // not reachable from the relative commit; this is consistent with
+      // user expectations even though it is not actually the diff range.
+      // Particularly:
+      //
+      //    |
+      //    D <----- master branch
+      //    |
+      //    C  Y <- feature branch
+      //    | /|
+      //    B  X
+      //    | /
+      //    A
+      //    |
+      //
+      // If "A, B, C, D" are master, and the user is at Y, when they run
+      // "arc diff B" they want (and get) a diff of B vs Y, but they think about
+      // this as being the commits X and Y. If we log "B..Y", we only show
+      // Y. With "Y --not B", we show X and Y.
+
+      $against = csprintf('%s --not %s', 'HEAD', $this->getRelativeCommit());
     }
 
     // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
@@ -85,8 +105,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     list($info) = $this->execxLocal(
       phutil_is_windows()
-        ? 'log %s --format=%C --'
-        : 'log %s --format=%s --',
+        ? 'log %C --format=%C --'
+        : 'log %C --format=%s --',
       $against,
       // NOTE: "%B" is somewhat new, use "%s%n%n%b" instead.
       '%H%x01%T%x01%P%x01%at%x01%an%x01%s%x01%s%n%n%b%x02');
@@ -101,7 +121,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $info = explode("\2", $info);
     foreach ($info as $line) {
       list($commit, $tree, $parents, $time, $author, $title, $message)
-        = explode("\1", $line, 7);
+        = explode("\1", trim($line), 7);
       $message = rtrim($message);
 
       $commits[$commit] = array(

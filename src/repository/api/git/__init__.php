@@ -17,6 +17,7 @@ phutil_require_module('phutil', 'filesystem/tempfile');
 phutil_require_module('phutil', 'future');
 phutil_require_module('phutil', 'future/exec');
 phutil_require_module('phutil', 'utils');
+phutil_require_module('phutil', 'xsprintf/csprintf');
 
 
 phutil_require_source('ArcanistGitAPI.php');
