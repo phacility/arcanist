@@ -147,7 +147,7 @@ EOTEXT
   }
 
   public function requiresConduit() {
-    return $this->getSource() != self::SOURCE_LOCAL;
+    return true;
   }
 
   public function requiresAuthentication() {
@@ -217,7 +217,12 @@ EOTEXT
     $try_encoding = nonempty($this->getArgument('encoding'), null);
     if (!$try_encoding) {
       try {
-        $try_encoding = $this->getRepositoryEncoding();
+        $project_info = $this->getConduit()->callMethodSynchronous(
+          'arcanist.projectinfo',
+          array(
+            'name' => $bundle->getProjectID(),
+          ));
+        $try_encoding = $project_info['encoding'];
       } catch (ConduitClientException $e) {
         $try_encoding = null;
       }
