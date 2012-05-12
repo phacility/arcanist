@@ -1278,7 +1278,12 @@ EOTEXT
         return $this->getCommitMessageFromUser();
       }
     } else if ($is_update) {
-      return $this->getCommitMessageFromRevision($is_update);
+      $revision_id = $this->normalizeRevisionID($is_update);
+      if (!is_numeric($revision_id)) {
+        throw new ArcanistUsageException(
+          'Parameter to --update must be a Differential Revision number');
+      }
+      return $this->getCommitMessageFromRevision($revision_id);
     } else {
       // This is --raw without enough info to create a revision, so force just
       // a diff.
@@ -1484,7 +1489,7 @@ EOTEXT
    * @task message
    */
   private function getCommitMessageFromRevision($revision_id) {
-    $id = $this->normalizeRevisionID($revision_id);
+    $id = $revision_id;
 
     $revision = $this->getConduit()->callMethodSynchronous(
       'differential.query',
