@@ -176,6 +176,9 @@ final class ArcanistMercurialParser {
           case 'tag':
             $commit['tag'] = $value;
             break;
+          case 'bookmark':
+            $commit['bookmark'] = $value;
+            break;
           default:
             throw new Exception("Unknown Mercurial log field '{$name}'!");
         }
