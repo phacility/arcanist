@@ -174,7 +174,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
           "{branch}\1{tag}\1{parents}\1{desc}\2",
         $this->getRelativeCommit(),
-        $this->getWorkingCopyRevision().':0',
+        "ancestors({$this->getWorkingCopyRevision()})",
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
