@@ -1539,18 +1539,20 @@ EOTEXT
       throw new ArcanistUsageException(
         "You can not be a reviewer for your own revision.");
     } else {
-      $statuses = $this->getConduit()->callMethodSynchronous(
-        'user.getcurrentstatus',
+      $users = $this->getConduit()->callMethodSynchronous(
+        'user.query',
         array(
-          'userPHIDs' => $reviewers,
+          'phids' => $reviewers,
         ));
-      foreach ($statuses as $key => $status) {
-        if ($status['status'] != 'away') {
-          unset($statuses[$key]);
+      $untils = array();
+      foreach ($users as $user) {
+        if (idx($user, 'currentStatus') == 'away') {
+          $untils[] = $user['currentStatusUntil'];
         }
       }
-      if (count($statuses) == count($reviewers)) {
-        $confirm = "All reviewers are away. Continue anyway?";
+      if (count($untils) == count($reviewers)) {
+        $until = date('l, M j Y', min($untils));
+        $confirm = "All reviewers are away until {$until}. Continue anyway?";
         if (!phutil_console_confirm($confirm)) {
           throw new ArcanistUsageException(
             'Specify available reviewers and retry.');
