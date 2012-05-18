@@ -1538,6 +1538,24 @@ EOTEXT
     } else if (in_array($this->getUserPHID(), $reviewers)) {
       throw new ArcanistUsageException(
         "You can not be a reviewer for your own revision.");
+    } else {
+      $statuses = $this->getConduit()->callMethodSynchronous(
+        'user.getcurrentstatus',
+        array(
+          'userPHIDs' => $reviewers,
+        ));
+      foreach ($statuses as $key => $status) {
+        if ($status['status'] != 'away') {
+          unset($statuses[$key]);
+        }
+      }
+      if (count($statuses) == count($reviewers)) {
+        $confirm = "All reviewers are away. Continue anyway?";
+        if (!phutil_console_confirm($confirm)) {
+          throw new ArcanistUsageException(
+            'Specify available reviewers and retry.');
+        }
+      }
     }
   }
 
