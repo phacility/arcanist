@@ -1,5 +1,17 @@
 #!/bin/sh
 
-# The simplest wrapper imaginable, for now: just run the 'real' arc.
+: ${ARC_ROOT:=`dirname "$0"`/..}
 
-exec `dirname $0`/../bin/arc "$@"
+# Make sure we're using the most up-to-date version of arc (and also
+# libphutil, which arc depends on).  Since this takes a few seconds,
+# we only do it once a day.
+if [ -z `find /tmp/arc.pull -mtime -24 2>/dev/null` ]; then
+  ( cd "$ARC_ROOT" &&
+    git pull >/dev/null &&
+    cd ../libphutil &&
+    git pull >/dev/null &&
+    touch /tmp/arc.pull
+  )
+fi
+
+exec "$ARC_ROOT/bin/arc" "$@"
