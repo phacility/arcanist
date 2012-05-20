@@ -8,6 +8,7 @@
 
 phutil_require_module('arcanist', 'difference');
 phutil_require_module('arcanist', 'differential/commitmessage');
+phutil_require_module('arcanist', 'events/constant/type');
 phutil_require_module('arcanist', 'exception/usage');
 phutil_require_module('arcanist', 'exception/usage/userabort');
 phutil_require_module('arcanist', 'parser/commentremover');
@@ -21,6 +22,8 @@ phutil_require_module('arcanist', 'workflow/unit');
 
 phutil_require_module('phutil', 'console');
 phutil_require_module('phutil', 'console/editor');
+phutil_require_module('phutil', 'events/engine');
+phutil_require_module('phutil', 'events/event');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'filesystem/filelist');
 phutil_require_module('phutil', 'filesystem/tempfile');

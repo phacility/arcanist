@@ -1633,20 +1633,22 @@ EOTEXT
   }
 
   private function getDefaultCreateFields() {
-    $empty = array(array(), array(), array());
+    $result = array(array(), array(), array());
 
     if ($this->isRawDiffSource()) {
-      return $empty;
+      return $result;
     }
 
     $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistGitAPI) {
-      return $this->getGitCreateFields();
+      $result = $this->getGitCreateFields();
     }
 
     // TODO: Load default fields in Mercurial.
 
-    return $empty;
+    $result[0] = $this->dispatchWillBuildEvent($result[0]);
+
+    return $result;
   }
 
   private function getGitCreateFields() {
@@ -2036,6 +2038,18 @@ EOTEXT
         'name'    => $name,
         'data'    => $data,
       ));
+  }
+
+  private function dispatchWillBuildEvent(array $fields) {
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_DIFF_WILLBUILDMESSAGE,
+      array(
+        'fields'      => $fields,
+      ));
+
+    PhutilEventEngine::dispatchEvent($event);
+
+    return $event->getValue('fields');
   }
 
 }
