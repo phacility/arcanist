@@ -5,7 +5,7 @@
 This wrapper allows a few options that arc does not, and also provides
 a bit extra functionality.  Most of it is around 'arc diff' -- it
 allows specifying reviewers on the commandline, and checking that
-reviewer names re legal before putting up the form.  (A bit more
+reviewer names are legal before putting up the form.  (A bit more
 expensive, which is why phabricator doesn't do that by default
 probably, but well worth it.)
 """
@@ -36,6 +36,7 @@ def _sync_arc(arc_root):
     if last_pull_time + 24 * 60 * 60 >= time.time():
         return
 
+    # TODO(csilvers): better to call 'arc upgrade' here instead.
     libphutil_root = os.path.join(os.path.dirname(arc_root), 'libphutil')
     subprocess.call(['git', 'pull', '-q'], cwd=arc_root)
     subprocess.call(['git', 'pull', '-q'], cwd=libphutil_root)
