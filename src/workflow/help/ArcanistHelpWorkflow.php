@@ -199,6 +199,11 @@ EOTEXT
           Ignore configured Conduit URI and use an explicit one instead. Mostly
           useful for Arcanist development.
 
+      __--conduit-version=...__
+          Ignore software version and claim to be running some other version
+          instead. Mostly useful for Arcanist development. May cause bad things
+          to happen.
+
 
 EOTEXT
     );

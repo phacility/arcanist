@@ -33,7 +33,7 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: cli
-          Upgrade arc to the latest version.
+          Upgrade arcanist and libphutil to the latest versions.
 EOTEXT
       );
   }
@@ -43,38 +43,44 @@ EOTEXT
   }
 
   public function run() {
-    echo "Upgrading arc...\n";
-    $root = dirname(phutil_get_library_root('arcanist'));
+    $roots = array();
+    $roots['libphutil'] = dirname(phutil_get_library_root('phutil'));
+    $roots['arcanist'] = dirname(phutil_get_library_root('arcanist'));
 
-    if (!Filesystem::pathExists($root.'/.git')) {
-      throw new ArcanistUsageException(
-        "arc must be in its git working copy to be automatically upgraded. ".
-        "This copy of arc (in '{$root}') is not in a git working copy.");
-    }
+    foreach ($roots as $lib => $root) {
+      echo "Upgrading {$lib}...\n";
 
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
+      if (!Filesystem::pathExists($root.'/.git')) {
+        throw new ArcanistUsageException(
+          "{$lib} must be in its git working copy to be automatically ".
+          "upgraded. This copy of {$lib} (in '{$root}') is not in a git ".
+          "working copy.");
+      }
 
-    $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-      $working_copy);
-    $this->setRepositoryAPI($repository_api);
+      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
 
-    // Require no local changes.
-    $this->requireCleanWorkingCopy();
+      $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
+        $working_copy);
+      $this->setRepositoryAPI($repository_api);
 
-    // Require arc be on master.
-    $branch_name = $repository_api->getBranchName();
-    if ($branch_name != 'master') {
-      throw new ArcanistUsageException(
-        "arc must be on branch 'master' to be automatically upgraded. ".
-        "This copy of arc (in '{$root}') is on branch '{$branch_name}'.");
-    }
+      // Require no local changes.
+      $this->requireCleanWorkingCopy();
 
-    chdir($root);
-    try {
-      phutil_passthru('git pull --rebase');
-    } catch (Exception $ex) {
-      phutil_passthru('git rebase --abort');
-      throw $ex;
+      // Require the library be on master.
+      $branch_name = $repository_api->getBranchName();
+      if ($branch_name != 'master') {
+        throw new ArcanistUsageException(
+          "{$lib} must be on branch 'master' to be automatically upgraded. ".
+          "This copy of {$lib} (in '{$root}') is on branch '{$branch_name}'.");
+      }
+
+      chdir($root);
+      try {
+        phutil_passthru('git pull --rebase');
+      } catch (Exception $ex) {
+        phutil_passthru('git rebase --abort');
+        throw $ex;
+      }
     }
 
     echo phutil_console_wrap(

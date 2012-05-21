@@ -56,6 +56,7 @@ abstract class ArcanistBaseWorkflow {
   private $conduitURI;
   private $conduitCredentials;
   private $conduitAuthenticated;
+  private $forcedConduitVersion;
 
   private $userPHID;
   private $userName;
@@ -178,6 +179,14 @@ abstract class ArcanistBaseWorkflow {
     return $this;
   }
 
+  public function forceConduitVersion($version) {
+    $this->forcedConduitVersion = $version;
+    return $this;
+  }
+
+  public function getConduitVersion() {
+    return nonempty($this->forcedConduitVersion, 5);
+  }
 
   /**
    * Open and authenticate a conduit connection to a Phabricator server using
@@ -234,7 +243,7 @@ abstract class ArcanistBaseWorkflow {
         'conduit.connect',
         array(
           'client'              => 'arc',
-          'clientVersion'       => 4,
+          'clientVersion'       => $this->getConduitVersion(),
           'clientDescription'   => php_uname('n').':'.$description,
           'user'                => $user,
           'certificate'         => $certificate,

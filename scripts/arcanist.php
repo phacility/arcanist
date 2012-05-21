@@ -42,6 +42,7 @@ $argv = $args->getUnconsumedArgumentVector();
 $config_trace_mode = $args->getArg('trace');
 
 $force_conduit = null;
+$force_conduit_version = null;
 $args = $argv;
 $load = array();
 $matches = null;
@@ -54,6 +55,9 @@ foreach ($args as $key => $arg) {
   } else if (preg_match('/^--conduit-uri=(.*)$/', $arg, $matches)) {
     unset($args[$key]);
     $force_conduit = $matches[1];
+  } else if (preg_match('/^--conduit-version=(.*)$/', $arg, $matches)) {
+    unset($args[$key]);
+    $force_conduit_version = $matches[1];
   }
 }
 
@@ -192,6 +196,10 @@ try {
   $workflow->setCommand($command);
   $workflow->setWorkingDirectory($working_directory);
   $workflow->parseArguments($args);
+
+  if ($force_conduit_version) {
+    $workflow->forceConduitVersion($force_conduit_version);
+  }
 
   $need_working_copy    = $workflow->requiresWorkingCopy();
   $need_conduit         = $workflow->requiresConduit();
