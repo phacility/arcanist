@@ -1,17 +1,58 @@
-#!/bin/sh
+#!/usr/bin/python
 
-: ${ARC_ROOT:=`dirname "$0"`/..}
+"""A wrapper script around arcanist's arc (part of the phabricator suite).
 
-# Make sure we're using the most up-to-date version of arc (and also
-# libphutil, which arc depends on).  Since this takes a few seconds,
-# we only do it once a day.
-if [ -z `find /tmp/arc.pull -mtime -24 2>/dev/null` ]; then
-  ( cd "$ARC_ROOT" &&
-    git pull >/dev/null &&
-    cd ../libphutil &&
-    git pull >/dev/null &&
-    touch /tmp/arc.pull
-  )
-fi
+This wrapper allows a few options that arc does not, and also provides
+a bit extra functionality.  Most of it is around 'arc diff' -- it
+allows specifying reviewers on the commandline, and checking that
+reviewer names re legal before putting up the form.  (A bit more
+expensive, which is why phabricator doesn't do that by default
+probably, but well worth it.)
+"""
 
-exec "$ARC_ROOT/bin/arc" "$@"
+import os
+import subprocess
+import sys
+import time
+
+
+_DEFAULT_ARC_ROOT = os.path.dirname(os.path.dirname(__file__))
+
+
+def _sync_arc(arc_root):
+    """Make sure we're using the most up-to-date version of arc.
+
+    Updates arcanist and libphutil repositories.  Since this takes a
+    few seconds, we only do it once a day.
+
+    Arguments:
+      arc_root: the root of the arcanist repository.  It is expected
+          that the libphutil repository be a sibling of arcanist.
+    """
+    try:
+        last_pull_time = os.stat('/tmp/arc.pull').st_mtime
+    except (IOError, OSError):
+        last_pull_time = 0
+    if last_pull_time + 24 * 60 * 60 >= time.time():
+        return
+
+    libphutil_root = os.path.join(os.path.dirname(arc_root), 'libphutil')
+    subprocess.call(['git', 'pull', '-q'], cwd=arc_root)
+    subprocess.call(['git', 'pull', '-q'], cwd=libphutil_root)
+
+    open('/tmp/arc.pull', 'w').close()    # update the last-pull time.
+
+
+def main(arc_args, arc_root=None):
+    if arc_root is None:
+        arc_root = _DEFAULT_ARC_ROOT
+
+    _sync_arc(arc_root)
+
+    # Now run the 'real' (arcanist) arc.
+    arcanist_arc = os.path.join(arc_root, 'bin', 'arc')
+    os.execv(arcanist_arc, [arcanist_arc] + arc_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
