@@ -318,6 +318,24 @@ EOTEXT
           'message-file'        => true,
         ),
       ),
+      'reviewers' => array(
+        'param' => 'usernames',
+        'help' => 'When creating a revision, add reviewers.',
+        'conflicts' => array(
+          'only'    => true,
+          'preview' => true,
+          'update'  => true,
+        ),
+      ),
+      'cc' => array(
+        'param' => 'usernames',
+        'help' => 'When creating a revision, add CCs.',
+        'conflicts' => array(
+          'only'    => true,
+          'preview' => true,
+          'update'  => true,
+        ),
+      ),
       '*' => 'paths',
     );
   }
@@ -1652,6 +1670,27 @@ EOTEXT
   private function parseCommitMessagesIntoFields(array $local) {
     $conduit = $this->getConduit();
     $local = ipull($local, null, 'commit');
+
+    // If the user provided "--reviewers" or "--ccs", add a faux message to
+    // the list with the implied fields.
+
+    $faux_message = array();
+    if ($this->getArgument('reviewers')) {
+      $faux_message[] = 'Reviewers: '.$this->getArgument('reviewers');
+    }
+    if ($this->getArgument('cc')) {
+      $faux_message[] = 'CC: '.$this->getArgument('cc');
+    }
+
+    if ($faux_message) {
+      $faux_message = implode("\n\n", $faux_message);
+      $local = array(
+        '(Flags)     ' => array(
+          'message' => $faux_message,
+          'summary' => 'Command-Line Flags',
+        ),
+      ) + $local;
+    }
 
     // Build a human-readable list of the commits, so we can show the user which
     // commits are included in the diff.
