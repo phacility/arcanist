@@ -97,10 +97,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
     $results = array();
     foreach (Futures($futures)->limit(4) as $test => $future) {
 
-      try {
-        list($stdout, $stderr) = $future->resolvex();
-      } catch(CommandException $exc) {
-      }
+      list($err, $stdout, $stderr) = $future->resolve();
 
       $results[] = $this->parseTestResults($test_path,
         $tmpfiles[$test]['json'],
@@ -130,7 +127,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
       );
     }
 
-    $json = preg_replace('/\}\{"/', '},{"', $json);
+    $json = str_replace('}{"', '},{"', $json);
     $json = '[' . $json . ']';
     $json = json_decode($json);
     if (!is_array($json)) {
@@ -180,7 +177,6 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= $event->message;
         } else if ('Incomplete Test' == $event->message) {
-          // TODO: Add ArcanistUnitTestResult::RESULT_INCOMPLETE (??)
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= $event->message;
         } else {
