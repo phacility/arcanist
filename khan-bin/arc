@@ -105,6 +105,9 @@ def normalize_usernames(arc_root, names):
     Raises:
       NameError: if an input name matches no name in the phabricator db.
     """
+    if not names:
+        return []
+
     # This code is adopted from github.com:Khan/kiln-review's review.py
     retval = []
     user_info = _get_user_info(arc_root)
@@ -198,6 +201,9 @@ def normalize_rr_flags(arc_root, arc_args):
         return arc_args
 
     # We need to convert our permissive reviewer args with phab usernames.
+    # TODO(csilvers): allow args ending in '@', indicating an exact username
+    #                 match -- for those, just take off the @ and don't pass
+    #                 to normalize_usernames.
     reviewer_args = normalize_usernames(arc_root, rr_args)
     # It should always be ok to put --reviewers as the first arg to diff,
     # right after the 'diff' arg itself (which is arc_args[0])
