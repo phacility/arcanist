@@ -188,7 +188,14 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         }
       }
 
-      $name = substr($event->test, strlen($event->suite) + 2);
+      $pos = strpos($event->suite, '::');
+      if ($pos === false) {
+        $name = substr($event->test, strlen($event->suite) + 2);
+      } else {
+        $name = substr($event->test, $pos + 2);
+        $name = preg_replace('/ \(array\(.*\)\)/', '', $name);
+      }
+
       $result = new ArcanistUnitTestResult();
       $result->setName($name);
       $result->setResult($status);
@@ -212,7 +219,12 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
   private function readCoverage($path) {
     $test_results = Filesystem::readFile($path);
     if (empty($test_results)) {
-      throw new Exception('Clover coverage XML report file is empty');
+      throw new Exception('Clover coverage XML report file is empty, '
+        . 'it probably means that phpunit failed to run tests. '
+        . 'Try running arc unit with --trace option and then run '
+        . 'generated phpunit command yourself, you might get the '
+        . 'answer.'
+      );
     }
 
     $coverage_dom = new DOMDocument();
