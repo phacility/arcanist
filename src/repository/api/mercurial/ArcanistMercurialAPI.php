@@ -228,6 +228,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $commits[$node]['parents'] = $parents;
       }
 
+      // Put commits in newest-first order, to be consistent with Git and the
+      // expected order of "hg log" and "git log" under normal circumstances.
+      // The order of ancestors() is oldest-first.
+      $commits = array_reverse($commits);
+
       $this->localCommitInfo = $commits;
     }
 

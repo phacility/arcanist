@@ -1612,26 +1612,6 @@ EOTEXT
     return $comments;
   }
 
-  private function getLocalGitCommitMessages() {
-    $repository_api = $this->getRepositoryAPI();
-    $parser = new ArcanistDiffParser();
-    $commit_messages = $repository_api->getGitCommitLog();
-
-    if (!strlen($commit_messages)) {
-      if (!$repository_api->getHasCommits()) {
-        throw new ArcanistUsageException(
-          "This git repository doesn't have any commits yet. You need to ".
-          "commit something before you can diff against it.");
-      } else {
-        throw new ArcanistUsageException(
-          "The commit range doesn't include any commits. (Did you diff ".
-          "against the wrong commit?)");
-      }
-    }
-
-    return $parser->parseDiff($commit_messages);
-  }
-
   private function getDefaultCreateFields() {
     $result = array(array(), array(), array());
 
@@ -1640,50 +1620,70 @@ EOTEXT
     }
 
     $repository_api = $this->getRepositoryAPI();
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $result = $this->getGitCreateFields();
+    $local = $repository_api->getLocalCommitInformation();
+    if ($local) {
+      $result = $this->parseCommitMessagesIntoFields($local);
     }
-
-    // TODO: Load default fields in Mercurial.
 
     $result[0] = $this->dispatchWillBuildEvent($result[0]);
 
     return $result;
   }
 
-  private function getGitCreateFields() {
+  /**
+   * Convert a list of commits from `getLocalCommitInformation()` into
+   * a format usable by arc to create a new diff. Specifically, we emit:
+   *
+   *   - A dictionary of commit message fields.
+   *   - A list of errors encountered while parsing the messages.
+   *   - A human-readable list of the commits themselves.
+   *
+   * For example, if the user runs "arc diff HEAD^^^" and selects a diff range
+   * which includes several diffs, we attempt to merge them somewhat
+   * intelligently into a single message, because we can only send one
+   * "Summary:", "Reviewers:", etc., field to Differential. We also return
+   * errors (e.g., if the user typed a reviewer name incorrectly) and a
+   * summary of the commits themselves.
+   *
+   * @param dict  Local commit information.
+   * @return list Complex output, see summary.
+   * @task message
+   */
+  private function parseCommitMessagesIntoFields(array $local) {
     $conduit = $this->getConduit();
-    $changes = $this->getLocalGitCommitMessages();
+    $local = ipull($local, null, 'commit');
+
+    // Build a human-readable list of the commits, so we can show the user which
+    // commits are included in the diff.
     $included = array();
-
-    $commits = array();
-    foreach ($changes as $key => $change) {
-      $commits[$change->getCommitHash()] = $change->getMetadata('message');
+    foreach ($local as $hash => $info) {
+      $included[] = substr($hash, 0, 12).' '.$info['summary'];
     }
 
+    // Parse all of the messages into fields.
     $messages = array();
-    foreach ($commits as $hash => $text) {
-      $messages[$hash] = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $text);
-
-      $first_line = head(explode("\n", trim($text)));
-      $included[] = substr($hash, 0, 12).' '.$first_line;
+    foreach ($local as $hash => $info) {
+      $text = $info['message'];
+      $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
+      $messages[$hash] = $obj;
     }
 
-    $fields = array();
     $notes = array();
+    $fields = array();
     foreach ($messages as $hash => $message) {
       try {
         $message->pullDataFromConduit($conduit, $partial = true);
-        $fields += $message->getFields();
+        $fields[$hash] = $message->getFields();
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
         if ($this->getArgument('verbatim')) {
+          // In verbatim mode, just bail when we hit an error. The user can
+          // rerun without --verbatim if they want to fix it manually. Most
+          // users will probably `git commit --amend` instead.
           throw $ex;
         }
+        $fields[$hash] = $message->getFields();
 
-        $fields += $message->getFields();
-
-        $frev = substr($hash, 0, 8);
+        $frev = substr($hash, 0, 12);
         $notes[] = "NOTE: commit {$frev} could not be completely parsed:";
         foreach ($ex->getParserErrors() as $error) {
           $notes[] = "  - {$error}";
@@ -1691,7 +1691,82 @@ EOTEXT
       }
     }
 
-    return array($fields, $notes, $included);
+    // Merge commit message fields. We do this somewhat-intelligently so that
+    // multiple "Reviewers" or "CC" fields will merge into the concatenation
+    // of all values.
+
+    // We have special parsing rules for 'title' because we can't merge
+    // multiple titles, and one-line commit messages like "fix stuff" will
+    // parse as titles. Instead, pick the first title we encounter. When we
+    // encounter subsequent titles, treat them as part of the summary. Then
+    // we merge all the summaries together below.
+
+    $result = array();
+
+    // Process fields in oldest-first order, so earlier commits get to set the
+    // title of record and reviewers/ccs are listed in chronological order.
+    $fields = array_reverse($fields);
+
+    foreach ($fields as $hash => $dict) {
+      $title = idx($dict, 'title');
+      if (!strlen($title)) {
+        continue;
+      }
+
+      if (!isset($result['title'])) {
+        // We don't have a title yet, so use this one.
+        $result['title'] = $title;
+      } else {
+        // We already have a title, so merge this new title into the summary.
+        $summary = idx($dict, 'summary');
+        if ($summary) {
+          $summary = $title."\n\n".$summary;
+        } else {
+          $summary = $title;
+        }
+        $fields[$hash]['summary'] = $summary;
+      }
+    }
+
+    // Now, merge all the other fields in a general sort of way.
+
+    foreach ($fields as $hash => $dict) {
+      foreach ($dict as $key => $value) {
+        if ($key == 'title') {
+          // This has been handled above, and either assigned directly or
+          // merged into the summary.
+          continue;
+        }
+
+        if (is_array($value)) {
+          // For array values, merge the arrays, appending the new values.
+          // Examples are "Reviewers" and "Cc", where this produces a list of
+          // all users specified as reviewers.
+          $cur = idx($result, $key, array());
+          $new = array_merge($cur, $value);
+          $result[$key] = $new;
+          continue;
+        } else {
+          if (!strlen(trim($value))) {
+            // Ignore empty fields.
+            continue;
+          }
+
+          // For string values, append the new field to the old field with
+          // a blank line separating them. Examples are "Test Plan" and
+          // "Summary".
+          $cur = idx($result, $key, '');
+          if (strlen($cur)) {
+            $new = $cur."\n\n".$value;
+          } else {
+            $new = $value;
+          }
+          $result[$key] = $new;
+        }
+      }
+    }
+
+    return array($result, $notes, $included);
   }
 
   private function getDefaultUpdateMessage() {
