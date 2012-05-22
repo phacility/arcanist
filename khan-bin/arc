@@ -10,13 +10,17 @@ expensive, which is why phabricator doesn't do that by default
 probably, but well worth it.)
 """
 
+import json
 import os
 import subprocess
 import sys
 import time
 
 
-_DEFAULT_ARC_ROOT = os.path.dirname(os.path.dirname(__file__))
+try:
+    _DEFAULT_ARC_ROOT = os.path.dirname(os.path.dirname(__file__))
+except NameError:     # __file__ not defined
+    _DEFAULT_ARC_ROOT = '..'
 
 
 def _sync_arc(arc_root):
@@ -38,10 +42,167 @@ def _sync_arc(arc_root):
 
     # TODO(csilvers): better to call 'arc upgrade' here instead.
     libphutil_root = os.path.join(os.path.dirname(arc_root), 'libphutil')
-    subprocess.call(['git', 'pull', '-q'], cwd=arc_root)
-    subprocess.call(['git', 'pull', '-q'], cwd=libphutil_root)
+    subprocess.check_call(['git', 'pull', '-q'], cwd=arc_root)
+    subprocess.check_call(['git', 'pull', '-q'], cwd=libphutil_root)
 
     open('/tmp/arc.pull', 'w').close()    # update the last-pull time.
+
+
+def _conduit_call(arc_root, conduit_name, json_input={}):
+    """Make an 'arc call-conduit' call with the given input."""
+    arc = os.path.join(arc_root, 'bin', 'arc')
+    p = subprocess.Popen([arc, 'call-conduit', conduit_name],
+                         stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    conduit_stdout = p.communicate(input=json.dumps(json_input))[0]
+    if p.returncode != 0:
+        raise RuntimeError('Error getting %s info from phabricator'
+                           % conduit_name)
+
+    retval = json.loads(conduit_stdout)
+    if retval.get('Error'):
+        raise RuntimeError('Error getting %s info from phabricator: %s'
+                           % (conduit_name, retval['errorMessage']))
+    return retval['response']
+
+
+def _get_user_info(arc_root):
+    """Retrieve a list of (username, realname) pairs of all phab. users."""
+    user_info = _conduit_call(arc_root, 'user.query')
+    return [(ui['userName'], ui['realName']) for ui in user_info]
+
+
+def _pick_a_number(prompt, max_number):
+    """Prompt the user to pick a number from 1 to max_number, and return it."""
+    try:
+        pick = int(raw_input(prompt))
+    except ValueError:
+        raise ValueError('You must specify a number')
+    if pick not in range(1, max_number + 1):
+        raise IndexError('You must specify a number between 1 and %s'
+                         % max_number)
+    return pick
+
+
+def normalize_usernames(arc_root, names):
+    """Given a list of names or name substrings, return a list of usernames.
+
+    The input names can be a phabricator username, or a real name, or
+    a substring of either.  If the input name is unique -- that is,
+    this string occurs in only one username/real-name in the phabricator
+    user-db -- we normalize to that one user's phabricator username.
+    If it's not unique, we ask the user to pick.  If there are no matches,
+    we raise an exception.
+
+    Arguments:
+      arc_root: the root of the arcanist repository on the local filesystem.
+      names: a list (or anything iterable) of strings.
+
+    Returns:
+      A list of phabricator usernames, in the same order as names.
+      For a given name, the phabricator username is determined as
+      described above.
+
+    Raises:
+      NameError: if an input name matches no name in the phabricator db.
+    """
+    # This code is adopted from github.com:Khan/kiln-review's review.py
+    retval = []
+    user_info = _get_user_info(arc_root)
+    # For ease of searching, we'll create a map from lowercase
+    # username to username/realname, and also from lowercase realname
+    # to username/realname.
+    all_people = {}
+    for (username, realname) in user_info:
+        all_people[username.lower()] = (username, realname)
+        all_people[realname.lower()] = (username, realname)
+
+    # For each asked-for reviewer, find the set of people records that
+    # reviewer could be referring to.  Hopefully it's exactly one!
+    for name in names:
+        name = name.strip().lower()
+        candidate_reviewers = set()  # all people whose name match 'name'
+        for (person, username_and_realname) in all_people.iteritems():
+            if name in person:    # name is a subset of 'person'
+                candidate_reviewers.add(username_and_realname)
+        candidate_reviewers = sorted(candidate_reviewers)
+
+        if not candidate_reviewers:   # no person matched the reviewer
+            raise NameError('No reviewer found matching "%s"' % name)
+        elif len(candidate_reviewers) > 1:
+            print '\nHmm...There are a few folks matching "%s":' % name
+            for (i, username_and_realname) in enumerate(candidate_reviewers):
+                print '  %s. %s (%s)' % (i + 1, username_and_realname[0],
+                                         username_and_realname[1])
+            pick = _pick_a_number('Which "%s" did you mean? ' % name,
+                                  len(candidate_reviewers))
+            retval.append(candidate_reviewers[pick - 1][0])
+        else:
+            retval.append(candidate_reviewers[0][0])
+
+    return retval
+
+
+def normalize_rr_flags(arc_root, arc_args):
+    """Replace --rr=<n1> --rr=<n2> with --reviewers=<normalized n2>,...
+
+    arc takes a flag --reviewers=phabricator_username1,username2,...
+    For historical reasons, and because it's easier to type, we allow
+    --rr to specify reviewers.  We also allow --rr to be specified
+    multiple times.  Finally, we allow the name in --rr to be a subset
+    of a username -- or even of a real name -- and to prompt to clarify
+    if the name is ambiguous.
+
+    We accept '--rr=<n1>', '--rr=<n1> --rr=<n2>', '--rr=<n1>,<n2>', or
+    even '--rr=<n1> --rr=<n2>,<n3>'.  In each case, the equals sign
+    can be omitted -- that is, a space is ok instead of an equals sign.
+
+    This flag takes care of all of this.  While --rr only makes sense
+    for 'arc diff', we do this cleanup for all commands: it can't hurt
+    (since --rr isn't a legal flag for any arcanist command) and that
+    way we don't have to try to figure out if a command is an alias
+    for diff.
+
+    Arguments:
+      arc_root: the root of the arcanist repository on the local filesystem.
+      arc_args: the arguments pass to arc (argv[1+]).
+
+    Returns:
+      A modified version of arc_args, with --rr flags replaces if any
+      are present.  If none are present, arc_args is returned verbatim.
+    """
+    retval = []
+    rr_args = []
+    i = 0
+    while i < len(arc_args):
+        if arc_args[i] == '--rr':
+            rr_arg = arc_args[i + 1]
+            i += 2
+        elif arc_args[i].startswith('--rr='):
+            rr_arg = arc_args[i][len('--rr='):]
+            i += 1
+        else:
+            rr_arg = None
+            retval.append(arc_args[i])
+            i += 1
+
+        if rr_arg:
+            # We only add in the arg if it's not already in rr_args.
+            # This removes dups while preserving relative ordering of
+            # reviewers, in case that's meaningful to the author.
+            for arg in rr_arg.split(','):
+                arg = arg.strip()
+                if arg not in rr_args:    # could be made more efficient...
+                    rr_args.append(arg)
+
+    if not rr_args:
+        return arc_args
+
+    # We need to convert our permissive reviewer args with phab usernames.
+    reviewer_args = normalize_usernames(arc_root, rr_args)
+    # It should always be ok to put --reviewers as the first arg to diff,
+    # right after the 'diff' arg itself (which is arc_args[0])
+    retval.insert(1, '--reviewers=%s' % ','.join(reviewer_args))
+    return retval
 
 
 def main(arc_args, arc_root=None):
@@ -49,6 +210,9 @@ def main(arc_args, arc_root=None):
         arc_root = _DEFAULT_ARC_ROOT
 
     _sync_arc(arc_root)
+
+    # Handle any --rr flags that may be in arc_args (--rr is a khan extension).
+    arc_args = normalize_rr_flags(arc_root, arc_args)
 
     # Now run the 'real' (arcanist) arc.
     arcanist_arc = os.path.join(arc_root, 'bin', 'arc')
