@@ -136,15 +136,15 @@ class NormalizeUsernamesTestCase(unittest.TestCase):
 class NormalizeRRFlagsTestCase(unittest.TestCase):
     def test_one_flag_one_username(self):
         actual = normalize_rr_flags('', ['--rr=csilvers'])
-        self.assertEqual(['--reviewers=csilvers'], actual)
+        self.assertEqual(['--reviewers', 'csilvers'], actual)
 
     def test_one_flag_many_usernames(self):
         actual = normalize_rr_flags('', ['--rr=ben'])
-        self.assertEqual(['--reviewers=toom'], actual)
+        self.assertEqual(['--reviewers', 'toom'], actual)
 
     def test_one_flag_surrounded_by_others(self):
         actual = normalize_rr_flags('', ['diff', '--rr=ben', '--verbatim'])
-        self.assertEqual(['diff', '--reviewers=toom', '--verbatim'], actual)
+        self.assertEqual(['diff', '--reviewers', 'toom', '--verbatim'], actual)
 
     def test_no_flags(self):
         actual = normalize_rr_flags('', ['diff', '--verbatim'])
@@ -152,43 +152,43 @@ class NormalizeRRFlagsTestCase(unittest.TestCase):
 
     def test_one_flag_with_commas(self):
         actual = normalize_rr_flags('', ['--rr=csilvers,ben'])
-        self.assertEqual(['--reviewers=csilvers,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,toom'], actual)
 
     def test_one_flag_with_commas_preserves_order(self):
         actual = normalize_rr_flags('', ['--rr=csilvers,ben'])
-        self.assertEqual(['--reviewers=csilvers,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,toom'], actual)
         actual = normalize_rr_flags('', ['--rr=ben,csilvers'])
-        self.assertEqual(['--reviewers=toom,csilvers'], actual)
+        self.assertEqual(['--reviewers', 'toom,csilvers'], actual)
 
     def test_two_flags_one_username_each(self):
         actual = normalize_rr_flags('', ['--rr=csilvers', '--rr=echoman'])
-        self.assertEqual(['--reviewers=csilvers,echo'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,echo'], actual)
 
     def test_two_flags_ambiguous_usernames(self):
         actual = normalize_rr_flags('', ['--rr=csilvers', '--rr=ben'])
-        self.assertEqual(['--reviewers=csilvers,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,toom'], actual)
 
     def test_two_flags_and_commas(self):
         actual = normalize_rr_flags('', ['--rr=csilvers,echoman', '--rr=ben'])
-        self.assertEqual(['--reviewers=csilvers,echo,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,echo,toom'], actual)
 
     def test_two_flags_and_commas_preserves_order(self):
         actual = normalize_rr_flags('', ['--rr=csilvers,echoman', '--rr=ben'])
-        self.assertEqual(['--reviewers=csilvers,echo,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,echo,toom'], actual)
         actual = normalize_rr_flags('', ['--rr=ben', '--rr=csilvers,echoman'])
-        self.assertEqual(['--reviewers=toom,csilvers,echo'], actual)
+        self.assertEqual(['--reviewers', 'toom,csilvers,echo'], actual)
 
     def test_space_instead_of_equals(self):
         actual = normalize_rr_flags('', ['--rr', 'csilvers,echoman',
                                          '--rr', 'ben'])
-        self.assertEqual(['--reviewers=csilvers,echo,toom'], actual)
+        self.assertEqual(['--reviewers', 'csilvers,echo,toom'], actual)
 
     def test_inserting_as_first_flag(self):
         actual = normalize_rr_flags('', ['diff', '--verbatim',
                                          '--rr', 'csilvers,echoman',
                                          '--dry_run',
                                          '--rr', 'ben'])
-        self.assertEqual(['diff', '--reviewers=csilvers,echo,toom',
+        self.assertEqual(['diff', '--reviewers', 'csilvers,echo,toom',
                           '--verbatim', '--dry_run'],
                          actual)
 

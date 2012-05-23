@@ -146,9 +146,9 @@ def normalize_usernames(arc_root, names):
 
 
 def normalize_rr_flags(arc_root, arc_args):
-    """Replace --rr=<n1> --rr=<n2> with --reviewers=<normalized n2>,...
+    """Replace --rr=<n1> --rr=<n2> with --reviewers <normalized n2>,...
 
-    arc takes a flag --reviewers=phabricator_username1,username2,...
+    arc takes a flag --reviewers phabricator_username1,username2,...
     For historical reasons, and because it's easier to type, we allow
     --rr to specify reviewers.  We also allow --rr to be specified
     multiple times.  Finally, we allow the name in --rr to be a subset
@@ -207,7 +207,8 @@ def normalize_rr_flags(arc_root, arc_args):
     reviewer_args = normalize_usernames(arc_root, rr_args)
     # It should always be ok to put --reviewers as the first arg to diff,
     # right after the 'diff' arg itself (which is arc_args[0])
-    retval.insert(1, '--reviewers=%s' % ','.join(reviewer_args))
+    retval.insert(1, '--reviewers')
+    retval.insert(2, ','.join(reviewer_args))
     return retval
 
 
