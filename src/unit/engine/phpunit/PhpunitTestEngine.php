@@ -188,13 +188,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         }
       }
 
-      $pos = strpos($event->suite, '::');
-      if ($pos === false) {
-        $name = substr($event->test, strlen($event->suite) + 2);
-      } else {
-        $name = substr($event->test, $pos + 2);
-        $name = preg_replace('/ \(array\(.*\)\)/', '', $name);
-      }
+      $name = preg_replace('/ \(.*\)/', '', $event->test);
 
       $result = new ArcanistUnitTestResult();
       $result->setName($name);
