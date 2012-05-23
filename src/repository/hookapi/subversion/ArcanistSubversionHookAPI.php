@@ -36,7 +36,7 @@ final class ArcanistSubversionHookAPI extends ArcanistHookAPI {
       'svnlook cat --transaction %s %s %s',
       $this->transaction,
       $this->repository,
-      $this->root . "/$path");
+      $path);
 
     return ($err? null : $file);
   }

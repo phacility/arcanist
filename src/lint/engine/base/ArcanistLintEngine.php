@@ -141,7 +141,8 @@ abstract class ArcanistLintEngine {
 
   public function pathExists($path) {
     if ($this->getCommitHookMode()) {
-      return (idx($this->fileData, $path) !== null);
+      $file_data = $this->loadData($path);
+      return ($file_data !== null);
     } else {
       $disk_path = $this->getFilePathOnDisk($path);
       return Filesystem::pathExists($disk_path);
