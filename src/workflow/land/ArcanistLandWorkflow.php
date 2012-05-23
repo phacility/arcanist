@@ -141,12 +141,18 @@ EOTEXT
     $remote = $this->getArgument('remote', 'origin');
     $onto = $this->getArgument('onto', $onto_default);
 
+    $is_immutable = $this->isHistoryImmutable();
+
     if ($onto == $branch) {
-      throw new ArcanistUsageException(
+      $message =
         "You can not land a branch onto itself -- you are trying to land ".
         "'{$branch}' onto '{$onto}'. For more information on how to push ".
         "changes, see 'Pushing and Closing Revisions' in ".
-        "'Arcanist User Guide: arc diff' in the documentation.");
+        "'Arcanist User Guide: arc diff' in the documentation.";
+      if (!$is_immutable) {
+        $message .= " You may be able to 'arc amend' instead.";
+      }
+      throw new ArcanistUsageException($message);
     }
 
     if ($this->getArgument('merge')) {
@@ -154,7 +160,7 @@ EOTEXT
     } else if ($this->getArgument('squash')) {
       $use_squash = true;
     } else {
-      $use_squash = !$this->isHistoryImmutable();
+      $use_squash = !$is_immutable;
     }
 
     list($err) = $repository_api->execManualLocal(
