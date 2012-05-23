@@ -40,6 +40,16 @@ final class ExampleLintEngine extends ArcanistLintEngine {
     // and raising warnings and errors.
     $pylint_linter = new ArcanistPyLintLinter();
 
+    // Remove any paths that don't exist before we add paths to linters. We want
+    // to do this for linters that operate on file contents because the
+    // generated list of paths will include deleted paths when a file is
+    // removed.
+    foreach ($paths as $key => $path) {
+      if (!$this->pathExists($path)) {
+        unset($paths[$key]);
+      }
+    }
+
     foreach ($paths as $path) {
       if (!preg_match('/\.py$/', $path)) {
         // This isn't a python file, so don't try to apply the PyLint linter
