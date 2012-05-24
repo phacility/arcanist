@@ -170,28 +170,51 @@ try {
     // normally to prevent you from doing silly things like aliasing 'alias'
     // to something else.
 
+    $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
     list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
       $command,
       $config,
       $args,
       $working_copy);
 
+    $full_alias = idx($aliases, $command, array());
+    $full_alias = implode(' ', $full_alias);
+
+    // Run shell command aliases.
+
+    if (ArcanistAliasWorkflow::isShellCommandAlias($new_command)) {
+      $shell_cmd = substr($full_alias, 1);
+
+      if ($config_trace_mode) {
+        echo "[alias: 'arc {$command}' -> \$ {$full_alias}]\n";
+      }
+
+      if ($args) {
+        $err = phutil_passthru('%C %Ls', $shell_cmd, $args);
+      } else {
+        $err = phutil_passthru('%C', $shell_cmd);
+      }
+      exit($err);
+    }
+
+    // Run arc command aliases.
+
     if ($new_command) {
       $workflow = $config->buildWorkflow($new_command);
+      if ($workflow) {
+        if ($config_trace_mode) {
+          echo "[alias: 'arc {$command}' -> 'arc {$full_alias}']\n";
+        }
+        $command = $new_command;
+      }
     }
 
     if (!$workflow) {
       throw new ArcanistUsageException(
         "Unknown command '{$command}'. Try 'arc help'.");
-    } else {
-      if ($config_trace_mode) {
-        $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
-        $target = implode(' ', idx($aliases, $command, array()));
-        echo "[alias: 'arc {$command}' -> 'arc {$target}']\n";
-      }
-      $command = $new_command;
     }
   }
+
   $workflow->setArcanistConfiguration($config);
   $workflow->setCommand($command);
   $workflow->setWorkingDirectory($working_directory);

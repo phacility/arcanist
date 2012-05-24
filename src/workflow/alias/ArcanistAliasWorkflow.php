@@ -44,6 +44,15 @@ EOTEXT
           'arc patch --force ...' when run. NOTE: use "--" before specifying
           options!
 
+          If you start an alias with "!", the remainder of the alias will be
+          invoked as a shell command. For example, if you want to implement
+          'arc ls', you can do so like this:
+
+            arc alias ls '!ls'
+
+          You can now run "arc ls" and it will behave like "ls". Of course, this
+          example is silly and would make your life worse.
+
           You can not overwrite builtins, including 'alias' itself. The builtin
           will always execute, even if it was added after your alias.
 
@@ -124,7 +133,6 @@ EOTEXT
       }
 
       $aliases[$argv[0]] = array_slice($argv, 1);
-
       echo phutil_console_format(
         "Aliased '**arc %s**' to '**arc %s**'.\n",
         $argv[0],
@@ -134,6 +142,10 @@ EOTEXT
     }
 
     return 0;
+  }
+
+  public static function isShellCommandAlias($command) {
+    return preg_match('/^!/', $command);
   }
 
   public static function resolveAliases(
@@ -148,6 +160,11 @@ EOTEXT
     }
 
     $new_command = head($aliases[$command]);
+
+    if (self::isShellCommandAlias($new_command)) {
+      return array($new_command, $argv);
+    }
+
     $workflow = $config->buildWorkflow($new_command);
     if (!$workflow) {
       return array(null, $argv);
