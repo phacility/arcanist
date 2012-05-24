@@ -1,0 +1,72 @@
+<?php
+
+/*
+ * Copyright 2012 Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This file has diverse symbol declarations and requirements, and can be used
+// to test changes to phutil_symbols.php.
+
+/**
+ * @phutil-external-symbol function ext_func
+ * @phutil-external-symbol class ExtClass
+ * @phutil-external-symbol interface ExtInterface
+ */
+ext_func();
+new ExtClass();
+class L implements ExtInterface { }
+
+function f() { }
+
+(function () {
+  // Anonymous function.
+});
+
+g();
+$g();
+$$g();
+
+X::f();
+call_user_func();
+call_user_func('h');
+call_user_func($var);
+
+class A { }
+class C extends B { }
+class D extends C { }
+
+new U();
+V::m();
+W::$n;
+P::CONST;
+
+interface ILocal extends IForeign { }
+class CLocal extends INonlocal { }
+
+strtoupper('');
+
+
+// Various magic things.
+
+die($x);
+empty($x);
+isset($x);
+echo($x);
+print($x);
+exit($x);
+include($x);
+include_once($x);
+require($x);
+require_once($x);
