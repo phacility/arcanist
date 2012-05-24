@@ -28,35 +28,63 @@ def FakeConduitCall(arc_root, conduit_name, json_input={}):
                 "userName" : "csilvers",
                 "realName" : "Craig Silverstein",
                 "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/csilvers\/"
+                "uri"      : "https:\/\/example.com\/p\/csilvers\/",
+                "roles"    : [
+                  "admin"
+                  ],
                 },
             {
                 "phid"     : "PHID-USER-11111111111111111111",
                 "userName" : "ben",
                 "realName" : "Ben Bentastick",
                 "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/ben\/"
+                "uri"      : "https:\/\/example.com\/p\/ben\/",
+                "roles"    : [],
                 },
             {
                 "phid"     : "PHID-USER-22222222222222222222",
                 "userName" : "echo",
                 "realName" : "Ben Echoman",
                 "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/echo\/"
+                "uri"      : "https:\/\/example.com\/p\/echo\/",
+                "roles"    : [],
                 },
             {
                 "phid"     : "PHID-USER-33333333333333333333",
                 "userName" : "toom",
                 "realName" : "Toomany Bens",
                 "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/toom\/"
+                "uri"      : "https:\/\/example.com\/p\/toom\/",
+                "roles"    : [],
                 },
             {
                 "phid"     : "PHID-USER-44444444444444444444",
                 "userName" : "Upper",
                 "realName" : "Uppercase Username",
                 "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/Upper\/"
+                "uri"      : "https:\/\/example.com\/p\/Upper\/",
+                "roles"    : [],
+                },
+            {
+                "phid"     : "PHID-USER-55555555555555555555",
+                "userName" : "admin1",
+                "realName" : "Enabled Admin",
+                "image"    : "",
+                "uri"      : "https:\/\/example.com\/p\/admin1\/",
+                "roles"    : [
+                  "admin",
+                  ],
+                },
+            {
+                "phid"     : "PHID-USER-66666666666666666666",
+                "userName" : "admin2",
+                "realName" : "Disabled Admin",
+                "image"    : "",
+                "uri"      : "https:\/\/example.com\/p\/admin2\/",
+                "roles"    : [
+                  "admin",
+                  "disabled"
+                  ],
                 },
             ]
     raise NameError('Unexpected conduit_name %s' % conduit_name)
@@ -77,6 +105,7 @@ class GetUserInfoTestCase(unittest.TestCase):
                     ('echo', 'Ben Echoman'),
                     ('toom', 'Toomany Bens'),
                     ('Upper', 'Uppercase Username'),
+                    ('admin1', 'Enabled Admin'),
                     ]
         actual = _get_user_info('')
         self.assertEqual(expected, actual)
@@ -131,6 +160,13 @@ class NormalizeUsernamesTestCase(unittest.TestCase):
     def test_does_not_remove_duplicates(self):
         actual = normalize_usernames('', ['echoman', 'chom'])
         self.assertEqual(['echo', 'echo'], actual)
+
+    def test_ignores_disabled_users(self):
+        actual = normalize_usernames('', ['admin'])
+        self.assertEqual(['admin1'], actual)
+
+    def test_ignores_disabled_users_no_results(self):
+        self.assertRaises(NameError, normalize_usernames, '', ['disabled'])
 
 
 class NormalizeRRFlagsTestCase(unittest.TestCase):
