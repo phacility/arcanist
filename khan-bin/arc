@@ -68,7 +68,8 @@ def _conduit_call(arc_root, conduit_name, json_input={}):
 def _get_user_info(arc_root):
     """Retrieve a list of (username, realname) pairs of all phab. users."""
     user_info = _conduit_call(arc_root, 'user.query')
-    return [(ui['userName'], ui['realName']) for ui in user_info]
+    return [(ui['userName'], ui['realName']) for ui in user_info
+            if 'disabled' not in ui['roles']]
 
 
 def _pick_a_number(prompt, max_number):
