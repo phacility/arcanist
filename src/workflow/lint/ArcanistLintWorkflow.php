@@ -119,8 +119,8 @@ EOTEXT
       ),
       'amend-autofixes' => array(
         'help' =>
-        'When linting git repositories, amend HEAD with autofix '.
-        'patches suggested by lint without prompting.',
+          'When linting git repositories, amend HEAD with autofix '.
+          'patches suggested by lint without prompting.',
       ),
       '*' => 'paths',
     );
