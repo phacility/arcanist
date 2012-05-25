@@ -449,7 +449,7 @@ EOTEXT
         $revision['id'] = $message->getRevisionID();
         $this->revisionID = $revision['id'];
 
-        $update_message = $this->getUpdateMessage();
+        $update_message = $this->getUpdateMessage($revision['fields']);
 
         $revision['message'] = $update_message;
         $future = $conduit->callMethod(
@@ -1389,10 +1389,14 @@ EOTEXT
       foreach ($included as $k => $commit) {
         $included[$k] = '        '.$commit;
       }
+      $in_branch = '';
+      if (!$this->isRawDiffSource()) {
+        $in_branch = ' in branch '.$this->getRepositoryAPI()->getBranchName();
+      }
       $included = array_merge(
         array(
           "",
-          "Included commits:",
+          "Included commits{$in_branch}:",
           "",
         ),
         $included,
@@ -1583,7 +1587,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function getUpdateMessage() {
+  private function getUpdateMessage(array $fields) {
     $comments = $this->getArgument('message');
     if (strlen($comments)) {
       return $comments;
@@ -1611,6 +1615,8 @@ EOTEXT
     $template =
       rtrim($comments).
       "\n\n".
+      "# Updating D{$fields['revisionID']}: {$fields['title']}\n".
+      "#\n".
       "# Enter a brief description of the changes included in this update.\n".
       "# The first line is used as subject, next lines as comment.\n".
       "#\n".
