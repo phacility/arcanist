@@ -20,7 +20,7 @@ $include_path = ini_get('include_path');
 
 $parent_dir = dirname(dirname(dirname(__FILE__)));
 
-ini_set('include_path', $include_path.PATH_SEPARATOR.$parent_dir);
+ini_set('include_path', $parent_dir.PATH_SEPARATOR.$include_path);
 @include_once 'libphutil/scripts/__init_script__.php';
 if (!@constant('__LIBPHUTIL__')) {
   echo "ERROR: Unable to load libphutil. Update your PHP 'include_path' to ".
