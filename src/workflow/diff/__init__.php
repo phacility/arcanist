@@ -15,7 +15,6 @@ phutil_require_module('arcanist', 'parser/commentremover');
 phutil_require_module('arcanist', 'parser/diff');
 phutil_require_module('arcanist', 'parser/diff/changetype');
 phutil_require_module('arcanist', 'repository/api/base');
-phutil_require_module('arcanist', 'unit/result');
 phutil_require_module('arcanist', 'workflow/base');
 phutil_require_module('arcanist', 'workflow/lint');
 phutil_require_module('arcanist', 'workflow/unit');

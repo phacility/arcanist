@@ -1117,17 +1117,11 @@ EOTEXT
       $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
       if ($continue) {
         if ($this->getArgument('excuse')) {
-          $this->unitExcuse = $this->getArgument('excuse');
+          $this->lintExcuse = $this->getArgument('excuse');
         } else {
-          $template = "\n\n# Provide an explanation for these lint failures:\n";
-          foreach ($this->unresolvedLint as $message) {
-            $template = $template."# ".
-              $message->getPath().":".
-              $message->getLine()." ".
-              $message->getCode()." :: ".
-              $message->getDescription()."\n";
-          }
-          $this->lintExcuse = $this->getErrorExcuse($template);
+          $this->lintExcuse = $this->getErrorExcuse(
+            "Provide an explanation for the lint failures:",
+            $repository_api->getScratchFilePath('lint-excuses'));
         }
       }
 
@@ -1197,22 +1191,9 @@ EOTEXT
         if ($this->getArgument('excuse')) {
           $this->unitExcuse = $this->getArgument('excuse');
         } else {
-          $template = "\n\n".
-            "# Provide an explanation for these unit test failures:\n";
-          foreach ($this->testResults as $test) {
-            $testResult = $test->getResult();
-            switch ($testResult) {
-              case ArcanistUnitTestResult::RESULT_FAIL:
-              case ArcanistUnitTestResult::RESULT_BROKEN:
-                $template = $template."# ".
-                  $test->getName()." :: ".
-                  $test->getResult()."\n";
-                break;
-              default:
-                break;
-            }
-          }
-          $this->unitExcuse = $this->getErrorExcuse($template);
+          $this->unitExcuse = $this->getErrorExcuse(
+            "Provide an explanation for the unit test failures:",
+            $repository_api->getScratchFilePath('unit-excuses'));
         }
       }
 
@@ -1226,17 +1207,15 @@ EOTEXT
     return null;
   }
 
-  private function getErrorExcuse($template) {
-    $new_template = id(new PhutilInteractiveEditor($template))
-      ->setName('error-excuse')
-      ->editInteractively();
+  private function getErrorExcuse($prompt, $history = '') {
+    $return = phutil_console_prompt($prompt, $history);
 
-    if ($new_template == $template) {
+    if ($return == '') {
       throw new ArcanistUsageException(
         "No explanation provided.");
     }
 
-    return ArcanistCommentRemover::removeComments($new_template);
+    return $return;
   }
 
 
