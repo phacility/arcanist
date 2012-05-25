@@ -21,4 +21,5 @@
  */
 abstract class ArcanistHookAPI {
   abstract public function getCurrentFileData($path);
+  abstract public function getUpstreamFileData($path);
 }

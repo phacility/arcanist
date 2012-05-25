@@ -40,4 +40,12 @@ final class ArcanistSubversionHookAPI extends ArcanistHookAPI {
 
     return ($err? null : $file);
   }
+
+  public function getUpstreamFileData($path) {
+    list($err, $file) = exec_manual(
+      'svnlook cat %s %s',
+      $this->repository,
+      $this->root."/$path");
+    return ($err ? null : $file);
+  }
 }
