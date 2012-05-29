@@ -1120,7 +1120,7 @@ EOTEXT
           $this->lintExcuse = $this->getArgument('excuse');
         } else {
           $this->lintExcuse = $this->getErrorExcuse(
-            "Provide an explanation for the lint failures:",
+            "Explanation:",
             $repository_api->getScratchFilePath('lint-excuses'));
         }
       }
@@ -1192,7 +1192,7 @@ EOTEXT
           $this->unitExcuse = $this->getArgument('excuse');
         } else {
           $this->unitExcuse = $this->getErrorExcuse(
-            "Provide an explanation for the unit test failures:",
+            "Explanation:",
             $repository_api->getScratchFilePath('unit-excuses'));
         }
       }
