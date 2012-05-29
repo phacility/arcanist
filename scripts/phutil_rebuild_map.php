@@ -41,6 +41,13 @@ $args->parse(
                      'scratch.',
     ),
     array(
+      'name'      => 'limit',
+      'param'     => 'N',
+      'default'   => 8,
+      'help'      => 'Controls the number of symbol mapper subprocesses run '.
+                     'at once. Defaults to 8.',
+    ),
+    array(
       'name'      => 'root',
       'wildcard'  => true,
     )
@@ -55,6 +62,7 @@ $root = Filesystem::resolvePath(head($root));
 $builder = new PhutilLibraryMapBuilder($root);
 
 $builder->setQuiet($args->getArg('quiet'));
+$builder->setSubprocessLimit($args->getArg('limit'));
 
 if ($args->getArg('drop-cache')) {
   $builder->dropSymbolCache();
@@ -80,6 +88,7 @@ final class PhutilLibraryMapBuilder {
 
   private $root;
   private $quiet;
+  private $subprocessLimit = 8;
 
   const LIBRARY_MAP_VERSION_KEY   = '__library_version__';
   const LIBRARY_MAP_VERSION       = 2;
@@ -107,12 +116,26 @@ final class PhutilLibraryMapBuilder {
    * Control status output. Use --quiet to set this.
    *
    * @param   bool  If true, don't show status output.
-   * @return this
+   * @return  this
    *
    * @task map
    */
   public function setQuiet($quiet) {
     $this->quiet = $quiet;
+    return $this;
+  }
+
+
+  /**
+   * Control subprocess parallelism limit. Use --limit to set this.
+   *
+   * @param   int   Maximum number of subprocesses to run in parallel.
+   * @return  this
+   *
+   * @task map
+   */
+  public function setSubprocessLimit($limit) {
+    $this->subprocessLimit = $limit;
     return $this;
   }
 
@@ -155,8 +178,12 @@ final class PhutilLibraryMapBuilder {
 
     // Run the analyzer on any files which need analysis.
     if ($futures) {
-      $this->log("Analyzing ".number_format(count($futures))." files");
-      foreach (Futures($futures)->limit(8) as $file => $future) {
+      $limit = $this->subprocessLimit;
+      $count = number_format(count($futures));
+
+      $this->log("Analyzing {$count} files with {$limit} subprocesses...\n");
+
+      foreach (Futures($futures)->limit($limit) as $file => $future) {
         $this->log(".");
         $symbol_map[$file] = $future->resolveJSON();
       }
@@ -408,7 +435,11 @@ final class PhutilLibraryMapBuilder {
    * @task source
    */
   private function buildLibraryMap(array $symbol_map) {
-    $library_map = array();
+    $library_map = array(
+      'class'     => array(),
+      'function'  => array(),
+      'xmap'      => array(),
+    );
 
     // Detect duplicate symbols within the library.
     foreach ($symbol_map as $file => $info) {
@@ -425,12 +456,21 @@ final class PhutilLibraryMapBuilder {
           $library_map[$lib_type][$symbol] = $file;
         }
       }
+      $library_map['xmap'] += $info['xmap'];
+    }
+
+    // Simplify the common case (one parent) to make the file a little easier
+    // to deal with.
+    foreach ($library_map['xmap'] as $class => $extends) {
+      if (count($extends) == 1) {
+        $library_map['xmap'][$class] = reset($extends);
+      }
     }
 
     // Sort the map so it is relatively stable across changes.
-    foreach ($library_map as $lib_type => $symbols) {
+    foreach ($library_map as $key => $symbols) {
       ksort($symbols);
-      $library_map[$lib_type] = $symbols;
+      $library_map[$key] = $symbols;
     }
     ksort($library_map);
 

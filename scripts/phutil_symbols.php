@@ -118,6 +118,7 @@ foreach ($root->getTokens() as $token) {
 
 $have = array();  // For symbols we declare.
 $need = array();  // For symbols we use.
+$xmap = array();  // For extended classes and implemented interfaces.
 
 
 // -(  Functions  )-------------------------------------------------------------
@@ -226,13 +227,16 @@ foreach ($classes as $class) {
 // This is "class X ... { ... }".
 $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
 foreach ($classes as $class) {
-  $class_name = $class->getChildByIndex(1);
+  $class_name = $class->getChildByIndex(1)->getConcreteString();
   $extends = $class->getChildByIndex(2);
   foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
     $need[] = array(
       'type'    => 'class',
       'symbol'  => $parent,
     );
+
+    // Track all 'extends' in the extension map.
+    $xmap[$class_name][] = $parent->getConcreteString();
   }
 }
 
@@ -299,6 +303,7 @@ foreach ($interfaces as $interface) {
 // This is "class X ... { ... }".
 $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
 foreach ($classes as $class) {
+  $class_name = $class->getChildByIndex(1)->getConcreteString();
   $implements = $class->getChildByIndex(3);
   $interfaces = $implements->selectDescendantsOfType('n_CLASS_NAME');
   foreach ($interfaces as $interface) {
@@ -306,6 +311,9 @@ foreach ($classes as $class) {
       'type'    => 'interface',
       'symbol'  => $interface,
     );
+
+    // Track 'class ... implements' in the extension map.
+    $xmap[$class_name][] = $interface->getConcreteString();
   }
 }
 
@@ -313,7 +321,7 @@ foreach ($classes as $class) {
 // This is "interface X ... { ... }".
 $interfaces = $root->selectDescendantsOfType('n_INTERFACE_DECLARATION');
 foreach ($interfaces as $interface) {
-  $interface_name = $interface->getChildByIndex(1);
+  $interface_name = $interface->getChildByIndex(1)->getConcreteString();
 
   $extends = $interface->getChildByIndex(2);
   foreach ($extends->selectDescendantsOfType('n_CLASS_NAME') as $parent) {
@@ -321,6 +329,9 @@ foreach ($interfaces as $interface) {
       'type'    => 'interface',
       'symbol'  => $parent,
     );
+
+    // Track 'interface ... implements' in the extension map.
+    $xmap[$interface_name][] = $parent->getConcreteString();
   }
 }
 
@@ -367,6 +378,7 @@ foreach ($need as $key => $spec) {
 $result = array(
   'have'  => $declared_symbols,
   'need'  => $required_symbols,
+  'xmap'  => $xmap,
 );
 
 
