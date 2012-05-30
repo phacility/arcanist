@@ -73,13 +73,13 @@ abstract class ArcanistRepositoryAPI {
     // check if we're in an svn working copy
     list($err) = exec_manual('svn info');
     if (!$err) {
-      $api = newv('ArcanistSubversionAPI', array($root));
+      $api = new ArcanistSubversionAPI($root);
       $api->workingCopyIdentity = $working_copy;
       return $api;
     }
 
     if (Filesystem::pathExists($root.'/.hg')) {
-      $api = newv('ArcanistMercurialAPI', array($root));
+      $api = new ArcanistMercurialAPI($root);
       $api->workingCopyIdentity = $working_copy;
       return $api;
     }
@@ -92,7 +92,7 @@ abstract class ArcanistRepositoryAPI {
           "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
       }
 
-      $api = newv('ArcanistGitAPI', array($root));
+      $api = new ArcanistGitAPI($root);
       $api->workingCopyIdentity = $working_copy;
       return $api;
     }
