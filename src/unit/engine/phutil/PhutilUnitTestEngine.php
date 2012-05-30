@@ -154,7 +154,6 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $results = array();
     foreach ($run_tests as $test_class) {
-      PhutilSymbolLoader::loadClass($test_class);
       $test_case = newv($test_class, array());
       $test_case->setEnableCoverage($enable_coverage);
       $test_case->setProjectRoot($this->getWorkingCopy()->getProjectRoot());

@@ -61,14 +61,6 @@ if ($argc != 2) {
 phutil_require_module('phutil', 'filesystem');
 $dir = Filesystem::resolvePath($argv[1]);
 
-phutil_require_module('phutil', 'parser/docblock');
-phutil_require_module('phutil', 'parser/xhpast/bin');
-phutil_require_module('phutil', 'parser/xhpast/api/tree');
-
-phutil_require_module('arcanist', 'lint/linter/phutilmodule');
-phutil_require_module('arcanist', 'lint/message');
-phutil_require_module('arcanist', 'parser/phutilmodule');
-
 
 $data = array();
 $futures = array();

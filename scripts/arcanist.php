@@ -21,17 +21,6 @@ sanity_check_environment();
 
 require_once dirname(__FILE__).'/__init_script__.php';
 
-phutil_require_module('phutil', 'conduit/client');
-phutil_require_module('phutil', 'console');
-phutil_require_module('phutil', 'future/exec');
-phutil_require_module('phutil', 'filesystem');
-phutil_require_module('phutil', 'symbols');
-
-phutil_require_module('arcanist', 'exception/usage');
-phutil_require_module('arcanist', 'configuration');
-phutil_require_module('arcanist', 'workingcopyidentity');
-phutil_require_module('arcanist', 'repository/api/base');
-
 ini_set('memory_limit', -1);
 
 $original_argv = $argv;
@@ -154,7 +143,6 @@ try {
 
   $config = $working_copy->getConfig('arcanist_configuration');
   if ($config) {
-    PhutilSymbolLoader::loadClass($config);
     $config = new $config();
   } else {
     $config = new ArcanistConfiguration();

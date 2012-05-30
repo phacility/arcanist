@@ -164,8 +164,9 @@ EOTEXT
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
-    PhutilSymbolLoader::loadClass($engine);
-    if (!is_subclass_of($engine, 'ArcanistLintEngine')) {
+    // is_subclass_of() doesn't autoload under HPHP.
+    if (!class_exists($engine) ||
+        !is_subclass_of($engine, 'ArcanistLintEngine')) {
       throw new ArcanistUsageException(
         "Configured lint engine '{$engine}' is not a subclass of ".
         "'ArcanistLintEngine'.");

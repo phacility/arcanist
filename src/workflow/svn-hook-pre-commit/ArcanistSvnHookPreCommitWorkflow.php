@@ -198,8 +198,6 @@ EOTEXT
       return 0;
     }
 
-    PhutilSymbolLoader::loadClass($lint_engine);
-
     $engine = newv($lint_engine, array());
     $engine->setWorkingCopy($working_copy);
     $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ERROR);

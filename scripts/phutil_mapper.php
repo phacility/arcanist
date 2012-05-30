@@ -2,7 +2,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,6 @@ if ($argc != 2) {
   echo "usage: {$self} <phutil_library_root>\n";
   exit(1);
 }
-
-phutil_require_module('phutil', 'filesystem');
-phutil_require_module('phutil', 'filesystem/filefinder');
-phutil_require_module('phutil', 'future/exec');
 
 $root = Filesystem::resolvePath($argv[1]);
 

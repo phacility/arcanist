@@ -116,8 +116,9 @@ EOTEXT
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
-    PhutilSymbolLoader::loadClass($engine_class);
-    if (!is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {
+    // is_subclass_of() doesn't autoload under HPHP.
+    if (!class_exists($engine_class) ||
+        !is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {
       throw new ArcanistUsageException(
         "Configured unit test engine '{$engine_class}' is not a subclass of ".
         "'ArcanistBaseUnitTestEngine'.");
