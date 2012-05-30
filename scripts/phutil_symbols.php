@@ -330,7 +330,7 @@ foreach ($interfaces as $interface) {
       'symbol'  => $parent,
     );
 
-    // Track 'interface ... implements' in the extension map.
+    // Track 'interface ... extends' in the extension map.
     $xmap[$interface_name][] = $parent->getConcreteString();
   }
 }
