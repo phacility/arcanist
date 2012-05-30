@@ -69,6 +69,10 @@ EOTEXT
           "Internal. Run the verify step of liberation. You do not need to ".
           "run this unless you are debugging the workflow.",
       ),
+      'upgrade' => array(
+        'hide'  => true,
+        'help'  => "Experimental. Upgrade library to v2.",
+      ),
       '*' => 'argv',
     );
   }
@@ -119,6 +123,69 @@ EOTEXT
         $this->liberateCreateLibrary($path);
       }
     }
+
+    $version = $this->getLibraryFormatVersion($path);
+    switch ($version) {
+      case 1:
+        if ($this->getArgument('upgrade')) {
+          return $this->upgradeLibrary($path);
+        }
+        return $this->liberateVersion1($path);
+      case 2:
+        if ($this->getArgument('upgrade')) {
+          throw new ArcanistUsageException(
+            "Can't upgrade a v2 library!");
+        }
+        return $this->liberateVersion2($path);
+      default:
+        throw new ArcanistUsageException(
+          "Unknown library version '{$version}'!");
+    }
+  }
+
+  private function getLibraryFormatVersion($path) {
+    $map_file = $path.'/__phutil_library_map__.php';
+    if (!Filesystem::pathExists($map_file)) {
+      // Default to library v1.
+      return 1;
+    }
+
+    $map = Filesystem::readFile($map_file);
+
+    $matches = null;
+    if (preg_match('/@phutil-library-version (\d+)/', $map, $matches)) {
+      return (int)$matches[1];
+    }
+
+    return 1;
+  }
+
+  private function liberateVersion2($path) {
+    $bin = $this->getScriptPath('scripts/phutil_rebuild_map.php');
+
+    return phutil_passthru(
+      '%s %C %s',
+      $bin,
+      $this->getArgument('all') ? '--drop-cache' : '',
+      $path);
+  }
+
+  private function upgradeLibrary($path) {
+    $inits = id(new FileFinder($path))
+      ->withPath('*/__init__.php')
+      ->withType('f')
+      ->find();
+
+    echo "Removing __init__.php files...\n";
+    foreach ($inits as $init) {
+      Filesystem::remove($path.'/'.$init);
+    }
+
+    echo "Upgrading library to v2...\n";
+    $this->liberateVersion2($path);
+  }
+
+  private function liberateVersion1($path) {
 
     if ($this->getArgument('remap')) {
       return $this->liberateRunRemap($path);

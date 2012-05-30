@@ -108,6 +108,7 @@ final class ArcanistPhutilModuleLinter extends ArcanistLinter {
     $moduleinfo = array();
 
     $project_root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $bootloader = PhutilBootloader::getInstance();
 
     foreach ($paths as $path) {
       $absolute_path = $project_root.'/'.$path;
@@ -119,6 +120,12 @@ final class ArcanistPhutilModuleLinter extends ArcanistLinter {
         continue;
       }
       $library_name = phutil_get_library_name_for_root($library_root);
+
+      $version = $bootloader->getLibraryFormatVersion($library_name);
+      if ($version != 1) {
+        continue;
+      }
+
       if (!is_dir($path)) {
         $path = dirname($path);
       }
@@ -128,7 +135,7 @@ final class ArcanistPhutilModuleLinter extends ArcanistLinter {
       if ($path == $library_root) {
         continue;
       }
-      $map = PhutilBootloader::getInstance()->getLibraryMap($library_name);
+      $map = $bootloader->getLibraryMap($library_name);
       $module_name = Filesystem::readablePath($path, $library_root);
       $module_key = $library_name.':'.$module_name;
       if (empty($modules[$module_key])) {
