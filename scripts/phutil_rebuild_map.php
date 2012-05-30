@@ -48,6 +48,15 @@ $args->parse(
                      'at once. Defaults to 8.',
     ),
     array(
+      'name'      => 'show',
+      'help'      => 'Print symbol map to stdout instead of writing it to the '.
+                     'map file.',
+    ),
+    array(
+      'name'      => 'ugly',
+      'help'      => 'Use faster but less readable serialization for --show.',
+    ),
+    array(
       'name'      => 'root',
       'wildcard'  => true,
     )
@@ -66,6 +75,11 @@ $builder->setSubprocessLimit($args->getArg('limit'));
 
 if ($args->getArg('drop-cache')) {
   $builder->dropSymbolCache();
+}
+
+if ($args->getArg('show')) {
+  $builder->setShowMap(true);
+  $builder->setUgly($args->getArg('ugly'));
 }
 
 $builder->buildMap();
@@ -89,6 +103,8 @@ final class PhutilLibraryMapBuilder {
   private $root;
   private $quiet;
   private $subprocessLimit = 8;
+  private $ugly;
+  private $showMap;
 
   const LIBRARY_MAP_VERSION_KEY   = '__library_version__';
   const LIBRARY_MAP_VERSION       = 2;
@@ -136,6 +152,36 @@ final class PhutilLibraryMapBuilder {
    */
   public function setSubprocessLimit($limit) {
     $this->subprocessLimit = $limit;
+    return $this;
+  }
+
+
+  /**
+   * Control whether the ugly (but fast) or pretty (but slower) JSON formatter
+   * is used.
+   *
+   * @param   bool  If true, use the fastest formatter.
+   * @return  this
+   *
+   * @task map
+   */
+  public function setUgly($ugly) {
+    $this->ugly = $ugly;
+    return $this;
+  }
+
+
+  /**
+   * Control whether the map should be rebuilt, or just shown (printed to
+   * stdout in JSON).
+   *
+   * @param bool  If true, show map instead of updating.
+   * @return this
+   *
+   * @task map
+   */
+  public function setShowMap($show_map) {
+    $this->showMap = $show_map;
     return $this;
   }
 
@@ -196,11 +242,25 @@ final class PhutilLibraryMapBuilder {
     // out old cache entries.
     $this->writeSymbolCache($symbol_map, $source_map);
 
-    $this->log("Building library map...\n");
-    $library_map = $this->buildLibraryMap($symbol_map, $source_map);
 
-    $this->log("Writing map...\n");
-    $this->writeLibraryMap($library_map);
+    // Our map is up to date, so either show it on stdout or write it to disk.
+
+    if ($this->showMap) {
+      $this->log("Showing map...\n");
+
+      if ($this->ugly) {
+        echo json_encode($symbol_map);
+      } else {
+        $json = new PhutilJSON();
+        echo $json->encodeFormatted($symbol_map);
+      }
+    } else {
+      $this->log("Building library map...\n");
+      $library_map = $this->buildLibraryMap($symbol_map, $source_map);
+
+      $this->log("Writing map...\n");
+      $this->writeLibraryMap($library_map);
+    }
 
     $this->log("Done.\n");
 
