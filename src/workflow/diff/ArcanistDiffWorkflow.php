@@ -336,6 +336,9 @@ EOTEXT
           'update'  => true,
         ),
       ),
+      'skip-binaries' => array(
+        'help'  => 'Do not upload binaries (like images).',
+      ),
       '*' => 'paths',
     );
   }
@@ -943,6 +946,10 @@ EOTEXT
       'size' => null
     );
 
+    if ($this->getArgument('skip-binaries')) {
+      return $result;
+    }
+
     $result['size'] = $size = strlen($data);
     if (!$size) {
       return $result;
@@ -964,12 +971,13 @@ EOTEXT
       ));
 
       $result['guid'] = $guid;
-    } catch (ConduitClientException $e) {
-      $message = "Failed to upload {$desc} '{$name}'.  Continue?";
-      if (!phutil_console_confirm($message, $default_no = false)) {
+    } catch (Exception $e) {
+      echo "Failed to upload {$desc} '{$name}'.\n";
+
+      if (!phutil_console_confirm('Continue?', $default_no = false)) {
         throw new ArcanistUsageException(
-          'Aborted due to file upload failure.'
-        );
+          'Aborted due to file upload failure. You can use --skip-binaries '.
+          'to skip binary uploads.');
       }
     }
     return $result;
