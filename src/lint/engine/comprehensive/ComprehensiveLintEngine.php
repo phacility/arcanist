@@ -28,17 +28,6 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
 
     $paths = $this->getPaths();
 
-    // This needs to go first so that changes to generated files cause module
-    // linting. This linter also operates on removed files, because removing
-    // a file changes the static properties of a module.
-    $module_linter = new ArcanistPhutilModuleLinter();
-    $linters[] = $module_linter;
-    foreach ($paths as $path) {
-      $module_linter->addPath($path);
-    }
-
-    // Remaining lint engines operate on file contents and ignore removed
-    // files.
     foreach ($paths as $key => $path) {
       if (!$this->pathExists($path)) {
         unset($paths[$key]);
