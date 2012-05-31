@@ -27,7 +27,8 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $bootloader = PhutilBootloader::getInstance();
 
-    $affected_modules = array();
+    $look_here = array();
+
     foreach ($this->getPaths() as $path) {
       $library_root = phutil_get_library_root_for_path($path);
       if (!$library_root) {
@@ -67,67 +68,36 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
       $library_path = Filesystem::readablePath($path, $library_root);
       do {
-        // Add the module and all parent modules as affected modules, which
-        // means we'll look for __tests__ to run here and in any containing
-        // module.
-        $affected_modules[$library_name.':'.$library_path] = array(
-          'name' => $library_name,
-          'root' => $library_root,
-          'path' => $library_path,
+        $look_here[$library_name.':'.$library_path] = array(
+          'library' => $library_name,
+          'path'    => $library_path,
         );
         $library_path = dirname($library_path);
       } while ($library_path != '.');
     }
 
-    $tests = array();
-    foreach ($affected_modules as $library_info) {
-      $library_name = $library_info['name'];
-      $library_root = $library_info['root'];
-      $module = $library_info['path'];
-
-      if (basename($module) == '__tests__') {
-        // Okay, this is a __tests__ module.
-      } else {
-        $exists = $bootloader->moduleExists(
-          $library_name,
-          $module.'/__tests__');
-        if ($exists) {
-          // This is a module which has a __tests__ module in it.
-          $module .= '/__tests__';
-        } else {
-          // Look for a parent named __tests__.
-          $rpos = strrpos($module, '/__tests__');
-          if ($rpos === false) {
-            // No tests to run since there is no child or parent module named
-            // __tests__.
-            continue;
-          }
-          // Select the parent named __tests__.
-          $module = substr($module, 0, $rpos + strlen('/__tests__'));
-        }
-      }
-
-      $module_key = $library_name.':'.$module;
-      $tests[$module_key] = array(
-        'library' => $library_name,
-        'root'    => $library_root,
-        'module'  => $module,
-      );
-    }
-
-    if (!$tests) {
-      throw new ArcanistNoEffectException("No tests to run.");
-    }
+    // Look for any class that extends ArcanistPhutilTestCase inside a
+    // __tests__ directory in any parent directory of every affected file.
+    //
+    // The idea is that "infrastructure/__tests__/" tests defines general tests
+    // for all of "infrastructure/", and those tests run for any change in
+    // "infrastructure/". However, "infrastructure/concrete/rebar/__tests__/"
+    // defines more specific tests that run only when rebar/ (or some
+    // subdirectory) changes.
 
     $run_tests = array();
-    foreach ($tests as $test) {
+    foreach ($look_here as $path_info) {
+      $library = $path_info['library'];
+      $path    = $path_info['path'];
+
       $symbols = id(new PhutilSymbolLoader())
         ->setType('class')
-        ->setLibrary($test['library'])
-        ->setModule($test['module'])
+        ->setLibrary($library)
+        ->setPathPrefix($path.'/__tests__/')
         ->setAncestorClass('ArcanistPhutilTestCase')
         ->setConcreteOnly(true)
         ->selectAndLoadSymbols();
+
       foreach ($symbols as $symbol) {
         $run_tests[$symbol['name']] = true;
       }
@@ -135,8 +105,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $run_tests = array_keys($run_tests);
 
     if (!$run_tests) {
-      throw new ArcanistNoEffectException(
-        "No tests to run. You may need to rebuild the phutil library map.");
+      throw new ArcanistNoEffectException("No tests to run.");
     }
 
     $enable_coverage = $this->getEnableCoverage();
