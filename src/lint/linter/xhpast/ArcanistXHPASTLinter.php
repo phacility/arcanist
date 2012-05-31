@@ -137,7 +137,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     foreach ($paths as $path) {
       $futures[$path] = xhpast_get_parser_future($this->getData($path));
     }
-    foreach ($futures as $path => $future) {
+    foreach (Futures($futures)->limit(8) as $path => $future) {
       $this->willLintPath($path);
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
