@@ -1153,4 +1153,16 @@ abstract class ArcanistBaseWorkflow {
     return $this->repositoryEncoding;
   }
 
+  protected static function formatConfigValueForDisplay($value) {
+    if (is_array($value)) {
+      // TODO: Both json_encode() and PhutilJSON do a bad job with one-liners.
+      // PhutilJSON splits them across a bunch of lines, while json_encode()
+      // escapes all kinds of stuff like "/". It would be nice if PhutilJSON
+      // had a mode for pretty one-liners.
+      $value = json_encode($value);
+      return $value;
+    }
+    return $value;
+  }
+
 }

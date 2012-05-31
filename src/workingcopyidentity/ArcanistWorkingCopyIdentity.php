@@ -19,6 +19,9 @@
 /**
  * Interfaces with basic information about the working copy.
  *
+ *
+ * @task config
+ *
  * @group workingcopy
  */
 final class ArcanistWorkingCopyIdentity {
@@ -108,11 +111,59 @@ final class ArcanistWorkingCopyIdentity {
     return $this->getConfig('conduit_uri');
   }
 
-  public function getConfig($key) {
-    if (!empty($this->projectConfig[$key])) {
-      return $this->projectConfig[$key];
+
+/* -(  Config  )------------------------------------------------------------- */
+
+
+  /**
+   * Read a configuration directive from project configuration. This reads ONLY
+   * permanent project configuration (i.e., ".arcconfig"), not other
+   * configuration sources. See @{method:getConfigFromAnySource} to read from
+   * user configuration.
+   *
+   * @param key   Key to read.
+   * @param wild  Default value if key is not found.
+   * @return wild Value, or default value if not found.
+   *
+   * @task config
+   */
+  public function getConfig($key, $default = null) {
+    return idx($this->projectConfig, $key, $default);
+  }
+
+
+  /**
+   * Read a configuration directive from any available configuration source.
+   * In contrast to @{method:getConfig}, this will look for the directive in
+   * user configuration in addition to project configuration.
+   *
+   * @param key   Key to read.
+   * @param wild  Default value if key is not found.
+   * @return wild Value, or default value if not found.
+   *
+   * @task config
+   */
+  public function getConfigFromAnySource($key, $default = null) {
+    $pval = $this->getConfig($key);
+    if ($pval !== null) {
+      return $pval;
     }
-    return null;
+
+    // Test for older names.
+
+    static $deprecated_names = array(
+      'lint.engine' => 'lint_engine',
+      'unit.engine' => 'unit_engine',
+    );
+    if (isset($deprecated_names[$key])) {
+      $pval = $this->getConfig($deprecated_names[$key]);
+      if ($pval !== null) {
+        return $pval;
+      }
+    }
+
+    $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
+    return idx($global_config, $key, $default);
   }
 
 }

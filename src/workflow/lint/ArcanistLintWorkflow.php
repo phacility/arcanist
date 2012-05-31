@@ -139,7 +139,7 @@ EOTEXT
 
     $engine = $this->getArgument('engine');
     if (!$engine) {
-      $engine = $working_copy->getConfig('lint_engine');
+      $engine = $working_copy->getConfigFromAnySource('lint.engine');
       if (!$engine) {
         throw new ArcanistNoEngineException(
           "No lint engine configured for this project. Edit .arcconfig to ".

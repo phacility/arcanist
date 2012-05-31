@@ -57,7 +57,8 @@ EOTEXT
     }
 
     foreach ($keys as $key) {
-      echo "{$key} = ".idx($config, $key)."\n";
+      $val = self::formatConfigValueForDisplay(idx($config, $key));
+      echo "{$key} = {$val}\n";
     }
 
     return 0;

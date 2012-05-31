@@ -59,87 +59,46 @@ try {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
   }
 
+  $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
   $working_copy = ArcanistWorkingCopyIdentity::newFromPath($working_directory);
+
+  // Load additional libraries, which can provide new classes like configuration
+  // overrides, linters and lint engines, unit test engines, etc.
+
+  // If the user specified "--load-phutil-library" one or more times from
+  // the command line, we load those libraries **instead** of whatever else
+  // is configured. This is basically a debugging feature to let you force
+  // specific libraries to load regardless of the state of the world.
   if ($load) {
-    $libs = $load;
+    // Load the flag libraries. These must load, since the user specified them
+    // explicitly.
+    arcanist_load_libraries(
+      $load,
+      $must_load = true,
+      $lib_source = 'a "--load-phutil-library" flag',
+      $working_copy,
+      $config_trace_mode);
   } else {
-    $libs = $working_copy->getConfig('phutil_libraries');
-  }
-  if ($libs) {
-    foreach ($libs as $name => $location) {
+    // Load libraries in global 'load' config, as per "arc set-config load". We
+    // need to fail softly if these break because errors would prevent the user
+    // from running "arc set-config" to correct them.
+    arcanist_load_libraries(
+      idx($global_config, 'load', array()),
+      $must_load = false,
+      $lib_source = 'the "load" setting in global config',
+      $working_copy,
+      $config_trace_mode);
 
-      // Try to resolve the library location. We look in several places, in
-      // order:
-      //
-      //  1. Inside the working copy. This is for phutil libraries within the
-      //     project. For instance "library/src" will resolve to
-      //     "./library/src" if it exists.
-      //  2. In the same directory as the working copy. This allows you to
-      //     check out a library alongside a working copy and reference it.
-      //     If we haven't resolved yet, "library/src" will try to resolve to
-      //     "../library/src" if it exists.
-      //  3. Using normal libphutil resolution rules. Generally, this means
-      //     that it checks for libraries next to libphutil, then libraries
-      //     in the PHP include_path.
-
-      $resolved = false;
-
-      // Check inside the working copy.
-      $resolved_location = Filesystem::resolvePath(
-        $location,
-        $working_copy->getProjectRoot());
-      if (Filesystem::pathExists($resolved_location)) {
-        $location = $resolved_location;
-        $resolved = true;
-      }
-
-      // If we didn't find anything, check alongside the working copy.
-      if (!$resolved) {
-        $resolved_location = Filesystem::resolvePath(
-          $location,
-          dirname($working_copy->getProjectRoot()));
-        if (Filesystem::pathExists($resolved_location)) {
-          $location = $resolved_location;
-          $resolved = true;
-        }
-      }
-
-      if ($config_trace_mode) {
-        echo "Loading phutil library '{$name}' from '{$location}'...\n";
-      }
-
-      try {
-        phutil_load_library($location);
-      } catch (PhutilBootloaderException $ex) {
-        $error_msg = sprintf(
-          'Failed to load library "%s" at location "%s". Please check the '.
-          '"phutil_libraries" setting in your .arcconfig file. Refer to '.
-          '<http://www.phabricator.com/docs/phabricator/article/'.
-          'Arcanist_User_Guide_Configuring_a_New_Project.html> '.
-          'for more information.',
-          $name,
-          $location);
-        throw new ArcanistUsageException($error_msg);
-      } catch (PhutilLibraryConflictException $ex) {
-        if ($ex->getLibrary() != 'arcanist') {
-          throw $ex;
-        }
-
-        $arc_dir = dirname(dirname(__FILE__));
-        $error_msg =
-          "You are trying to run one copy of Arcanist on another copy of ".
-          "Arcanist. This operation is not supported. To execute Arcanist ".
-          "operations against this working copy, run './bin/arc' (from the ".
-          "current working copy) not some other copy of 'arc' (you ran one ".
-          "from '{$arc_dir}').";
-
-        throw new ArcanistUsageException($error_msg);
-      }
-    }
+    // Load libraries in ".arcconfig". Libraries here must load.
+    arcanist_load_libraries(
+      $working_copy->getConfig('phutil_libraries'),
+      $must_load = true,
+      $lib_source = 'the "phutil_libraries" setting in ".arcconfig"',
+      $working_copy,
+      $config_trace_mode);
   }
 
   $user_config = ArcanistBaseWorkflow::readUserConfigurationFile();
-  $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
 
   $config = $working_copy->getConfig('arcanist_configuration');
   if ($config) {
@@ -437,4 +396,92 @@ function die_with_bad_php($message) {
   echo $message;
   echo "\n\n";
   exit(1);
+}
+
+
+function arcanist_load_libraries(
+  $load,
+  $must_load,
+  $lib_source,
+  ArcanistWorkingCopyIdentity $working_copy,
+  $config_trace_mode) {
+
+  if (!$load) {
+    return;
+  }
+
+  foreach ($load as $location) {
+
+    // Try to resolve the library location. We look in several places, in
+    // order:
+    //
+    //  1. Inside the working copy. This is for phutil libraries within the
+    //     project. For instance "library/src" will resolve to
+    //     "./library/src" if it exists.
+    //  2. In the same directory as the working copy. This allows you to
+    //     check out a library alongside a working copy and reference it.
+    //     If we haven't resolved yet, "library/src" will try to resolve to
+    //     "../library/src" if it exists.
+    //  3. Using normal libphutil resolution rules. Generally, this means
+    //     that it checks for libraries next to libphutil, then libraries
+    //     in the PHP include_path.
+    //
+    // Note that absolute paths will just resolve absolutely through rule (1).
+
+    $resolved = false;
+
+    // Check inside the working copy. This also checks absolute paths, since
+    // they'll resolve absolute and just ignore the project root.
+    $resolved_location = Filesystem::resolvePath(
+      $location,
+      $working_copy->getProjectRoot());
+    if (Filesystem::pathExists($resolved_location)) {
+      $location = $resolved_location;
+      $resolved = true;
+    }
+
+    // If we didn't find anything, check alongside the working copy.
+    if (!$resolved) {
+      $resolved_location = Filesystem::resolvePath(
+        $location,
+        dirname($working_copy->getProjectRoot()));
+      if (Filesystem::pathExists($resolved_location)) {
+        $location = $resolved_location;
+        $resolved = true;
+      }
+    }
+
+    if ($config_trace_mode) {
+      echo "Loading phutil library from '{$location}'...\n";
+    }
+
+    $error = null;
+    try {
+      phutil_load_library($location);
+    } catch (PhutilBootloaderException $ex) {
+      $error = "Failed to load phutil library at location '{$location}'. ".
+               "This library is specified by {$lib_source}. Check that the ".
+               "setting is correct and the library is located in the right ".
+               "place.";
+      if ($must_load) {
+        throw new ArcanistUsageException($error);
+      } else {
+        file_put_contents(
+          'php://stderr',
+          phutil_console_wrap('WARNING: '.$error."\n\n"));
+      }
+    } catch (PhutilLibraryConflictException $ex) {
+      if ($ex->getLibrary() != 'arcanist') {
+        throw $ex;
+      }
+      $arc_dir = dirname(dirname(__FILE__));
+      $error =
+        "You are trying to run one copy of Arcanist on another copy of ".
+        "Arcanist. This operation is not supported. To execute Arcanist ".
+        "operations against this working copy, run './bin/arc' (from the ".
+        "current working copy) not some other copy of 'arc' (you ran one ".
+        "from '{$arc_dir}').";
+      throw new ArcanistUsageException($error);
+    }
+  }
 }
