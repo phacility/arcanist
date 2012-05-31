@@ -199,7 +199,13 @@ abstract class ArcanistLinter {
   abstract public function willLintPaths(array $paths);
   abstract public function lintPath($path);
   abstract public function getLinterName();
-  abstract public function getLintSeverityMap();
-  abstract public function getLintNameMap();
+
+  public function getLintSeverityMap() {
+    return array();
+  }
+
+  public function getLintNameMap() {
+    return array();
+  }
 
 }
