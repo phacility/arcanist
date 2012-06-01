@@ -1042,7 +1042,7 @@ EOTEXT
       $targets[] = array('command' => 'info', 'path' => $path);
     }
 
-    foreach ($futures as $key => $future) {
+    foreach (Futures($futures)->limit(8) as $key => $future) {
       $target = $targets[$key];
       if ($target['command'] == 'diff') {
         $repository_api->primeSVNDiffResult(
