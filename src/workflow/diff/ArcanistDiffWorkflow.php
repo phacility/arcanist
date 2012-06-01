@@ -1092,46 +1092,26 @@ EOTEXT
 
       $lint_result = $lint_workflow->run();
 
-      $continue = false;
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
           echo phutil_console_format(
             "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $msg = "Lint issued unresolved warnings. ";
-          $msg .= $this->getArgument('excuse')
-            ? "Ignore them?"
-            : "Provide explanation and continue?";
-          $continue = phutil_console_confirm($msg);
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
+          $this->lintExcuse = $this->getErrorExcuse(
+            "Lint issued unresolved warnings.",
+            $repository_api->getScratchFilePath('lint-excuses'));
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           echo phutil_console_format(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
-          $msg = "Lint issued unresolved errors! ";
-          $msg .= $this->getArgument('excuse')
-            ? "Ignore lint errors?"
-            : "Provide explanation and continue?";
-          $continue = phutil_console_confirm($msg);
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
+          $this->lintExcuse = $this->getErrorExcuse(
+            "Lint issued unresolved errors!",
+            $repository_api->getScratchFilePath('lint-excuses'));
           break;
       }
 
       $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
-      if ($continue) {
-        if ($this->getArgument('excuse')) {
-          $this->lintExcuse = $this->getArgument('excuse');
-        } else {
-          $this->lintExcuse = $this->getErrorExcuse(
-            "Explanation:",
-            $repository_api->getScratchFilePath('lint-excuses'));
-        }
-      }
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1165,7 +1145,7 @@ EOTEXT
       }
       $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $this->unitWorkflow->run();
-      $explain = false;
+
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
           echo phutil_console_format(
@@ -1182,28 +1162,13 @@ EOTEXT
         case ArcanistUnitWorkflow::RESULT_FAIL:
           echo phutil_console_format(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
-          $msg = "Unit test results include failures! ";
-          $msg .= $this->getArgument('excuse')
-            ? "Ignore test failures?"
-            : "Explain test failures and continue?";
-          $continue = phutil_console_confirm($msg);
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
-          }
-          $explain = true;
+          $this->unitExcuse = $this->getErrorExcuse(
+            "Unit test results include failures!",
+            $repository_api->getScratchFilePath('unit-excuses'));
           break;
       }
 
       $this->testResults = $this->unitWorkflow->getTestResults();
-      if ($explain) {
-        if ($this->getArgument('excuse')) {
-          $this->unitExcuse = $this->getArgument('excuse');
-        } else {
-          $this->unitExcuse = $this->getErrorExcuse(
-            "Explanation:",
-            $repository_api->getScratchFilePath('unit-excuses'));
-        }
-      }
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1216,13 +1181,21 @@ EOTEXT
   }
 
   private function getErrorExcuse($prompt, $history = '') {
-    $return = phutil_console_prompt($prompt, $history);
-
-    if ($return == '') {
-      throw new ArcanistUsageException(
-        "No explanation provided.");
+    if ($this->getArgument('excuse')) {
+      $prompt .= " Ignore them?";
+      if (!phutil_console_confirm($prompt)) {
+        throw new ArcanistUserAbortException();
+      }
+      return $this->getArgument('excuse');
     }
 
+    $prompt .= " Provide explanation to continue or press Enter to abort.";
+    echo "\n\n";
+    echo phutil_console_format($prompt);
+    $return = phutil_console_prompt("Explanation:", $history);
+    if ($return == '') {
+      throw new ArcanistUserAbortException();
+    }
     return $return;
   }
 
