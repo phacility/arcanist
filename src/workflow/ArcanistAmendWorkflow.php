@@ -99,6 +99,8 @@ EOTEXT
       $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     }
 
+    $repository_api->setRelativeCommit('HEAD^');
+
     $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(
       $this->getConduit(),
       array(
