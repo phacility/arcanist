@@ -48,7 +48,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
           "      operation is not supported.");
       }
 
-      $path = Filesystem::resolvePath($path);
+      $path = Filesystem::resolvePath($path, dirname($library_root));
 
       if (!is_dir($path)) {
         $path = dirname($path);
