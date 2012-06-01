@@ -204,11 +204,31 @@ final class ArcanistLintRenderer {
 
     $end = min($num_lines, $cursor + $lines_of_context);
     for (; $cursor < $end; $cursor++) {
-      $out[] = $this->renderLine($cursor, $line_data[$cursor]);
+      // If there is no original text, we didn't print out a chevron or any
+      // highlighted text above, so print it out here. This allows messages
+      // which don't have any original/replacement information to still
+      // render with indicator chevrons.
+      if ($text || $message->isPatchable()) {
+        $chevron = false;
+      } else {
+        $chevron = ($cursor == $line_num);
+      }
+      $out[] = $this->renderLine($cursor, $line_data[$cursor], $chevron);
+
+      // With original text, we'll render the text highlighted above. If the
+      // lint message only has a line/char offset there's nothing to
+      // highlight, so print out a caret on the next line instead.
+      if ($chevron && $message->getChar()) {
+        $out[] = $this->renderCaret($message->getChar());
+      }
     }
     $out[] = null;
 
     return implode("\n", $out);
+  }
+
+  private function renderCaret($pos) {
+    return str_repeat(' ', 16 + $pos).'^';
   }
 
   protected function renderLine($line, $data, $chevron = false, $diff = null) {
