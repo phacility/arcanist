@@ -150,7 +150,7 @@ abstract class ArcanistXHPASTLintNamingHook {
    * @{method:isLowercaseWithUnderscores}.
    *
    * @param string Symbol name.
-   * @return bool True if the symbol is UpperCamelCase.
+   * @return string Stripped symbol.
    * @task util
    */
   public static function stripPHPVariable($symbol) {
