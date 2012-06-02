@@ -264,8 +264,6 @@ EOTEXT
 
       if ($apply_patches && $result->isPatchable()) {
         $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
-        $old = $patcher->getUnmodifiedFileContent();
-        $new = $patcher->getModifiedFileContent();
 
         if ($prompt_patches &&
             !($result_all_autofix && !$prompt_autofix_patches)) {
@@ -274,6 +272,7 @@ EOTEXT
             $old_file = '/dev/null';
           }
           $new_file = new TempFile();
+          $new = $patcher->getModifiedFileContent();
           Filesystem::writeFile($new_file, $new);
 
           // TODO: Improve the behavior here, make it more like
