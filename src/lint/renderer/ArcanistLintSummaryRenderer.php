@@ -21,32 +21,28 @@
  *
  * @group lint
  */
-final class ArcanistLintLikeCompilerRenderer {
+final class ArcanistLintSummaryRenderer implements ArcanistLintRenderer {
   public function renderLintResult(ArcanistLintResult $result) {
-    $lines = array();
     $messages = $result->getMessages();
     $path = $result->getPath();
 
+    $text = array();
+    $text[] = $path.":";
     foreach ($messages as $message) {
+      $name = $message->getName();
       $severity = ArcanistLintSeverity::getStringForSeverity(
         $message->getSeverity());
       $line = $message->getLine();
-      $code = $message->getCode();
-      $description = $message->getDescription();
-      $lines[] = sprintf(
-        "%s:%d:%s (%s) %s\n",
-        $path,
-        $line,
-        $severity,
-        $code,
-        $description
-      );
-    }
 
-    return implode('', $lines);
+      $text[] = "    {$severity} on line {$line}: {$name}";
+    }
+    $text[] = null;
+
+    return implode("\n", $text);
   }
 
   public function renderOkayResult() {
-    return "";
+    return
+      phutil_console_format("<bg:green>** OKAY **</bg> No lint warnings.\n");
   }
 }

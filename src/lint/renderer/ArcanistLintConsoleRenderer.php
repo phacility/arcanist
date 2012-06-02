@@ -21,7 +21,7 @@
  *
  * @group lint
  */
-final class ArcanistLintRenderer {
+final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
   private $showAutofixPatches = false;
 
   public function setShowAutofixPatches($show_autofix_patches) {

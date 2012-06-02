@@ -393,7 +393,7 @@ EOTEXT
     $paths = $this->liberateGetChangedPaths($path);
     $results = $this->liberateLintModules($path, $paths);
 
-    $renderer = new ArcanistLintRenderer();
+    $renderer = new ArcanistLintConsoleRenderer();
 
     $unresolved = false;
     foreach ($results as $result) {

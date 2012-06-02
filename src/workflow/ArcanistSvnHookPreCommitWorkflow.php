@@ -212,7 +212,6 @@ EOTEXT
       return 0;
     }
 
-    $renderer = new ArcanistLintRenderer();
     $failures = array();
     foreach ($results as $result) {
       if (!$result->getMessages()) {
@@ -231,6 +230,8 @@ EOTEXT
         "lint checks for this commit, or '{$at}nolint' to the file with ".
         "errors to disable lint for that file.\n\n");
       echo phutil_console_wrap($msg);
+
+      $renderer = new ArcanistLintConsoleRenderer();
       foreach ($failures as $result) {
         echo $renderer->renderLintResult($result);
       }

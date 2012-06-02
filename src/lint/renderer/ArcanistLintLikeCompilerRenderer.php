@@ -21,34 +21,29 @@
  *
  * @group lint
  */
-final class ArcanistLintJSONRenderer {
-  const LINES_OF_CONTEXT = 3;
-
+final class ArcanistLintLikeCompilerRenderer implements ArcanistLintRenderer {
   public function renderLintResult(ArcanistLintResult $result) {
+    $lines = array();
     $messages = $result->getMessages();
     $path = $result->getPath();
-    $data = explode("\n", $result->getData());
-    array_unshift($data, ''); // make the line numbers work as array indices
-
-    $output = array($path => array());
 
     foreach ($messages as $message) {
-      $output[$path][] = array(
-        'code' => $message->getCode(),
-        'name' => $message->getName(),
-        'severity' => $message->getSeverity(),
-        'line' => $message->getLine(),
-        'char' => $message->getChar(),
-        'context' => implode("\n", array_slice(
-          $data,
-          $message->getLine() - self::LINES_OF_CONTEXT,
-          self::LINES_OF_CONTEXT * 2 + 1
-        )),
-        'description' => $message->getDescription(),
+      $severity = ArcanistLintSeverity::getStringForSeverity(
+        $message->getSeverity());
+      $line = $message->getLine();
+      $code = $message->getCode();
+      $description = $message->getDescription();
+      $lines[] = sprintf(
+        "%s:%d:%s (%s) %s\n",
+        $path,
+        $line,
+        $severity,
+        $code,
+        $description
       );
     }
 
-    return json_encode($output)."\n";
+    return implode('', $lines);
   }
 
   public function renderOkayResult() {

@@ -239,7 +239,7 @@ EOTEXT
         $apply_patches = $this->getArgument('apply-patches');
         break;
       default:
-        $renderer = new ArcanistLintRenderer();
+        $renderer = new ArcanistLintConsoleRenderer();
         $renderer->setShowAutofixPatches($prompt_autofix_patches);
         break;
     }
