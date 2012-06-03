@@ -26,31 +26,41 @@ ini_set('memory_limit', -1);
 $original_argv = $argv;
 $args = new PhutilArgumentParser($argv);
 $args->parseStandardArguments();
+$args->parsePartial(
+  array(
+    array(
+      'name'    => 'load-phutil-library',
+      'param'   => 'path',
+      'help'    => 'Load a libphutil library.',
+      'repeat'  => true,
+    ),
+    array(
+      'name'    => 'conduit-uri',
+      'param'   => 'uri',
+      'help'    => 'Connect to Phabricator install specified by __uri__.',
+    ),
+    array(
+      'name'    => 'conduit-version',
+      'param'   => 'version',
+      'help'    => '(Developers) Mock client version in protocol handshake.',
+    ),
+    array(
+      'name'    => 'conduit-timeout',
+      'param'   => 'timeout',
+      'help'    => 'Set Conduit timeout (in seconds).',
+    ),
+  ));
 
-$argv = $args->getUnconsumedArgumentVector();
 $config_trace_mode = $args->getArg('trace');
 
-$force_conduit = null;
-$force_conduit_version = null;
-$args = $argv;
-$load = array();
-$matches = null;
-foreach ($args as $key => $arg) {
-  if ($arg == '--') {
-    break;
-  } else if (preg_match('/^--load-phutil-library=(.*)$/', $arg, $matches)) {
-    unset($args[$key]);
-    $load[] = $matches[1];
-  } else if (preg_match('/^--conduit-uri=(.*)$/', $arg, $matches)) {
-    unset($args[$key]);
-    $force_conduit = $matches[1];
-  } else if (preg_match('/^--conduit-version=(.*)$/', $arg, $matches)) {
-    unset($args[$key]);
-    $force_conduit_version = $matches[1];
-  }
-}
+$force_conduit = $args->getArg('conduit-uri');
+$force_conduit_version = $args->getArg('conduit-version');
+$conduit_timeout = $args->getArg('conduit-timeout');
+$load = $args->getArg('load-phutil-library');
 
-$args = array_values($args);
+$argv = $args->getUnconsumedArgumentVector();
+$args = array_values($argv);
+
 $working_directory = getcwd();
 
 try {
@@ -169,6 +179,9 @@ try {
 
   if ($force_conduit_version) {
     $workflow->forceConduitVersion($force_conduit_version);
+  }
+  if ($conduit_timeout) {
+    $workflow->setConduitTimeout($conduit_timeout);
   }
 
   $need_working_copy    = $workflow->requiresWorkingCopy();
@@ -289,7 +302,7 @@ try {
   }
 
   echo phutil_console_format(
-    "\n**Exception:**\n%s\n%s\n",
+    "**Exception**\n%s\n%s\n",
     $ex->getMessage(),
     "(Run with --trace for a full exception trace.)");
 

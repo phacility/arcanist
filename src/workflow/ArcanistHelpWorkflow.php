@@ -195,15 +195,17 @@ EOTEXT
           Ignore libraries listed in .arcconfig and explicitly load specified
           libraries instead. Mostly useful for Arcanist development.
 
-      __--conduit-uri=...__
+      __--conduit-uri__ __uri__
           Ignore configured Conduit URI and use an explicit one instead. Mostly
           useful for Arcanist development.
 
-      __--conduit-version=...__
+      __--conduit-version__ __version__
           Ignore software version and claim to be running some other version
           instead. Mostly useful for Arcanist development. May cause bad things
           to happen.
 
+      __--conduit-timeout__ __timeout__
+          Override the default Conduit timeout. Specified in seconds.
 
 EOTEXT
     );

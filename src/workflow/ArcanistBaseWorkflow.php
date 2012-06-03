@@ -57,6 +57,7 @@ abstract class ArcanistBaseWorkflow {
   private $conduitCredentials;
   private $conduitAuthenticated;
   private $forcedConduitVersion;
+  private $conduitTimeout;
 
   private $userPHID;
   private $userName;
@@ -146,6 +147,10 @@ abstract class ArcanistBaseWorkflow {
 
     $this->conduit = new ConduitClient($this->conduitURI);
 
+    if ($this->conduitTimeout) {
+      $this->conduit->setTimeout($this->conduitTimeout);
+    }
+
     return $this;
   }
 
@@ -179,14 +184,53 @@ abstract class ArcanistBaseWorkflow {
     return $this;
   }
 
+
+  /**
+   * Force arc to identify with a specific Conduit version during the
+   * protocol handshake. This is primarily useful for development (especially
+   * for sending diffs which bump the client Conduit version), since the client
+   * still actually speaks the builtin version of the protocol.
+   *
+   * Controlled by the --conduit-version flag.
+   *
+   * @param int Version the client should pretend to be.
+   * @return this
+   * @task conduit
+   */
   public function forceConduitVersion($version) {
     $this->forcedConduitVersion = $version;
     return $this;
   }
 
+
+  /**
+   * Get the protocol version the client should identify with.
+   *
+   * @return int Version the client should claim to be.
+   * @task conduit
+   */
   public function getConduitVersion() {
     return nonempty($this->forcedConduitVersion, 5);
   }
+
+
+  /**
+   * Override the default timeout for Conduit.
+   *
+   * Controlled by the --conduit-timeout flag.
+   *
+   * @param float Timeout, in seconds.
+   * @return this
+   * @task conduit
+   */
+  public function setConduitTimeout($timeout) {
+    $this->conduitTimeout = $timeout;
+    if ($this->conduit) {
+      $this->conduit->setConduitTimeout($timeout);
+    }
+    return $this;
+  }
+
 
   /**
    * Open and authenticate a conduit connection to a Phabricator server using
@@ -307,7 +351,7 @@ abstract class ArcanistBaseWorkflow {
    * @task conduit
    */
   final protected function isConduitAuthenticated() {
-    return (bool) $this->conduitAuthenticated;
+    return (bool)$this->conduitAuthenticated;
   }
 
 
