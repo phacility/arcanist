@@ -459,7 +459,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->status;
   }
 
-  public function amendGitHeadCommit($message) {
+  public function amendCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
     $this->execxLocal(
@@ -679,6 +679,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getWorkingCopyRevision() {
     list($stdout) = $this->execxLocal('rev-parse HEAD');
     return rtrim($stdout, "\n");
+  }
+
+  public function isHistoryDefaultImmutable() {
+    return false;
+  }
+
+  public function supportsAmend() {
+    return true;
   }
 
   public function supportsRelativeLocalCommits() {
