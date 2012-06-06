@@ -26,6 +26,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
   public function run() {
 
     $bootloader = PhutilBootloader::getInstance();
+    $project_root = $this->getWorkingCopy()->getProjectRoot();
 
     $look_here = array();
 
@@ -48,7 +49,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
           "      operation is not supported.");
       }
 
-      $path = Filesystem::resolvePath($path, dirname($library_root));
+      $path = Filesystem::resolvePath($path, $project_root);
 
       if (!is_dir($path)) {
         $path = dirname($path);
@@ -125,7 +126,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     foreach ($run_tests as $test_class) {
       $test_case = newv($test_class, array());
       $test_case->setEnableCoverage($enable_coverage);
-      $test_case->setProjectRoot($this->getWorkingCopy()->getProjectRoot());
+      $test_case->setProjectRoot($project_root);
       $test_case->setPaths($this->getPaths());
       $results[] = $test_case->run();
     }
