@@ -230,8 +230,18 @@ final class PhutilLibraryMapBuilder {
       $this->log("Analyzing {$count} files with {$limit} subprocesses...\n");
 
       foreach (Futures($futures)->limit($limit) as $file => $future) {
+        $result = $future->resolveJSON();
+        if (empty($result['error'])) {
+          $symbol_map[$file] = $result;
+        } else {
+          echo phutil_console_format(
+            "\n**SYNTAX ERROR!**\nFile: %s\nLine: %d\n\n%s\n",
+            Filesystem::readablePath($result['file']),
+            $result['line'],
+            $result['error']);
+          exit(1);
+        }
         $this->log(".");
-        $symbol_map[$file] = $future->resolveJSON();
       }
       $this->log("\nDone.\n");
     }

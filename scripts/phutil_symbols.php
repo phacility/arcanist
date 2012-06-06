@@ -75,7 +75,20 @@ $path = Filesystem::resolvePath(head($paths));
 $show_all = $args->getArg('all');
 
 $source_code = Filesystem::readFile($path);
-$tree = XHPASTTree::newFromData($source_code);
+
+try {
+  $tree = XHPASTTree::newFromData($source_code);
+} catch (XHPASTSyntaxErrorException $ex) {
+  $result = array(
+    'error' => $ex->getMessage(),
+    'line'  => $ex->getErrorLine(),
+    'file'  => $path,
+  );
+  $json = new PhutilJSON();
+  echo $json->encodeFormatted($result);
+  exit(0);
+}
+
 $root = $tree->getRootNode();
 
 $root->buildSelectCache();
