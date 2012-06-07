@@ -406,6 +406,19 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->workingCopyRevision;
   }
 
+  public function isHistoryDefaultImmutable() {
+    return true;
+  }
+
+  public function supportsAmend() {
+    list ($err, $stdout) = $this->execManualLocal('help commit');
+    if ($err) {
+        return false;
+    } else {
+        return (strstr($stdout, "amend") !== false);
+    }
+  }
+
   public function supportsRelativeLocalCommits() {
     return true;
   }
@@ -473,9 +486,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getCommitMessageLog() {
     list($stdout) = $this->execxLocal(
-      "log --template '{node}\\1{desc}\\0' --rev %s..%s --",
+      "log --template '{node}\\1{desc}\\0' --prune %s --rev %s --",
       $this->getRelativeCommit(),
-      $this->getWorkingCopyRevision());
+      "ancestors({$this->getWorkingCopyRevision()})");
 
     $map = array();
 
@@ -491,6 +504,37 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query) {
+
+    $messages = $this->getCommitMessageLog();
+    $parser = new ArcanistDiffParser();
+
+    // First, try to find revisions by explicit revision IDs in commit messages.
+    $reason_map = array();
+    $revision_ids = array();
+    foreach ($messages as $node_id => $message) {
+      $object = ArcanistDifferentialCommitMessage::newFromRawCorpus($message);
+
+      if ($object->getRevisionID()) {
+        $revision_ids[] = $object->getRevisionID();
+        $reason_map[$object->getRevisionID()] = $node_id;
+      }
+    }
+
+    if ($revision_ids) {
+      $results = $conduit->callMethodSynchronous(
+        'differential.query',
+        $query + array(
+          'ids' => $revision_ids,
+        ));
+
+      foreach ($results as $key => $result) {
+        $hash = substr($reason_map[$result['id']], 0, 16);
+        $results[$key]['why'] =
+          "Commit message for '{$hash}' has explicit 'Differential Revision'.";
+      }
+
+      return $results;
+    }
 
     // Try to find revisions by hash.
     $hashes = array();
@@ -515,6 +559,14 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('up');
+  }
+
+  public function amendCommit($message) {
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
+    $this->execxLocal(
+      'commit --amend -l %s',
+      $tmp_file);
   }
 
   public function setIncludeDirectoryStateInDiffs($include) {

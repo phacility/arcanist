@@ -473,12 +473,15 @@ EOTEXT
             'revision_id' => $result['revisionid'],
           ));
 
-        if (!$this->isRawDiffSource()) {
+        if (!$this->isRawDiffSource() && $this->shouldAmend()) {
           $repository_api = $this->getRepositoryAPI();
-          if (($repository_api instanceof ArcanistGitAPI) &&
-              $this->shouldAmend()) {
+
+          if ($repository_api->supportsAmend()) {
             echo "Updating commit message...\n";
-            $repository_api->amendGitHeadCommit($revised_message);
+            $repository_api->amendCommit($revised_message);
+          } else {
+            echo "Commit message was not amended. Amending commit message is ".
+                 "only supported in git and hg (version 2.2 or newer)";
           }
         }
 

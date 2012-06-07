@@ -170,12 +170,18 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getLocalCommitInformation();
   abstract public function getSourceControlBaseRevision();
   abstract public function getCanonicalRevisionName($string);
+  abstract public function isHistoryDefaultImmutable();
+  abstract public function supportsAmend();
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
   abstract public function updateWorkingCopy();
   abstract public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query);
+
+  public function amendCommit() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
 
   public function getAllBranches() {
     // TODO: Implement for Mercurial/SVN and make abstract.

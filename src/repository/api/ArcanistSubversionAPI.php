@@ -507,6 +507,14 @@ EODIFF;
     return null;
   }
 
+  public function isHistoryDefaultImmutable() {
+    return true;
+  }
+
+  public function supportsAmend() {
+    return false;
+  }
+
   public function supportsRelativeLocalCommits() {
     return false;
   }
