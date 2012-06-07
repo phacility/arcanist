@@ -32,9 +32,11 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Supports: git
+          Supports: git, hg
           Amend the working copy after a revision has been accepted, so commits
           can be marked 'committed' and pushed upstream.
+
+          Supported in Mercurial 2.2 and newer.
 EOTEXT
       );
   }
@@ -74,12 +76,13 @@ EOTEXT
     $is_show = $this->getArgument('show');
 
     $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI)) {
-      throw new ArcanistUsageException(
-        "You may only run 'arc amend' in a git working copy.");
-    }
-
     if (!$is_show) {
+      if (!$repository_api->supportsAmend()) {
+        throw new ArcanistUsageException(
+          "You may only run 'arc amend' in a git or hg (version ".
+          "2.2 or newer) working copy.");
+      }
+
       if ($this->isHistoryImmutable()) {
         throw new ArcanistUsageException(
           "This project is marked as adhering to a conservative history ".
@@ -175,7 +178,8 @@ EOTEXT
       echo phutil_console_format(
         "Amending commit message to reflect revision **%s**.\n",
         "D{$revision_id}: {$revision_title}");
-      $repository_api->amendGitHeadCommit($message);
+
+      $repository_api->amendCommit($message);
 
       $mark_workflow = $this->buildChildWorkflow(
         'close-revision',
@@ -191,7 +195,7 @@ EOTEXT
 
 
   protected function getSupportedRevisionControlSystems() {
-    return array('git');
+    return array('git', 'hg');
   }
 
 }

@@ -1027,8 +1027,15 @@ abstract class ArcanistBaseWorkflow {
   }
 
   protected function isHistoryImmutable() {
+    $repository_api = $this->getRepositoryAPI();
     $working_copy = $this->getWorkingCopy();
-    return ($working_copy->getConfig('immutable_history') === true);
+
+    $project_config = $working_copy->getConfig('immutable_history');
+    if ($project_config !== null) {
+      return $project_config;
+    }
+
+    return $repository_api->isHistoryDefaultImmutable();
   }
 
   /**
