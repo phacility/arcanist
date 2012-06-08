@@ -23,11 +23,81 @@ except NameError:     # __file__ not defined
     _DEFAULT_ARC_ROOT = '..'
 
 
+def _update_arcrc(arc_root, default_arcrc_file = 'khan-bin/khan-arcrc',
+                  user_arcrc_file='~/.arcrc', create_bak=True):
+    """Update the user's .arcrc to include the contents of the standard one.
+
+    This directory has khan-arcrc, which has the Khan-specific
+    configuration options.  It can get updated from time to time.
+    When this happens, we want to incorporate the updates into the
+    user's .arcrc.  This routine does this.
+
+    If the user's .arcrc has a section like
+      'khan': {'do_not_auto_update': ['foo/bar', 'baz']}
+    then this update process will skip the fields
+    arcrc['foo']['bar'] and ['baz'] when updating the user's .arcrc.
+
+    Arguments:
+      arc_root: the root of the arcanist repository.
+      default_arcrc_file: where the khan-system .arcrc file lives,
+         relative to arc-root.
+      user_arcrc_file: where the user's .arcrc file lives, relative to
+         arc-root (so should usually be an absolute path).  Can include ~.
+      create_bak: whether to copy the .arcrc to .arcrc.bak before updating
+         its contents.
+    """
+    default_arcrc = json.load(open(default_arcrc_file))
+
+    user_arcrc_file = os.path.expanduser(user_arcrc_file)
+    try:
+        user_arcrc = json.load(open(user_arcrc_file))
+    except (IOError, OSError):
+        user_arcrc = {}
+
+    do_not_update = user_arcrc.get('khan', {}).get('do_not_auto_update', [])
+
+    # Now update user_arcrc with the contents of default_arcrc.
+    def _add_or_replace(from_root, to_root, key_path, do_not_update):
+        """Recursively merges maps in from_root with to_root."""
+        num_updates = 0
+        for k in from_root:
+            new_key_path = key_path + [k]
+            if '/'.join(new_key_path) in do_not_update:
+                pass
+            elif (isinstance(from_root.get(k), dict) and
+                  isinstance(to_root.get(k), dict)):
+                num_updates += _add_or_replace(from_root[k], to_root[k],
+                                               new_key_path, do_not_update)
+            elif to_root.get(k) != from_root.get(k):
+                to_root[k] = from_root[k]
+                num_updates += 1
+        return num_updates
+
+    num_updates = _add_or_replace(default_arcrc, user_arcrc, [], do_not_update)
+
+    if num_updates:
+        bak_filename = user_arcrc_file + '.bak'
+        if create_bak and os.path.exists(user_arcrc_file):
+            os.rename(user_arcrc_file, bak_filename)
+        f = open(user_arcrc_file, 'w')
+        try:
+            json.dump(user_arcrc, f, indent=2, sort_keys=True)
+            f.close()
+        except:
+            if os.path.exists(bak_filename):
+                if os.path.exists(user_arcrc_file):  # in an inconsistent state
+                    os.unlink(user_arcrc_file)
+                os.rename(bak_filename, user_arcrc_file)
+            raise
+
+
 def _sync_arc(arc_root):
     """Make sure we're using the most up-to-date version of arc.
 
     Updates arcanist and libphutil repositories.  Since this takes a
     few seconds, we only do it once a day.
+
+    We also make sure the user's .arcrc file is up to date.
 
     Arguments:
       arc_root: the root of the arcanist repository.  It is expected
@@ -44,6 +114,10 @@ def _sync_arc(arc_root):
     libphutil_root = os.path.join(os.path.dirname(arc_root), 'libphutil')
     subprocess.check_call(['git', 'pull', '-q'], cwd=arc_root)
     subprocess.check_call(['git', 'pull', '-q'], cwd=libphutil_root)
+
+    # Update the user's .arcrc with the default values (which may have
+    # changed due to the pull).
+    _update_arcrc(arc_root)
 
     open('/tmp/arc.pull', 'w').close()    # update the last-pull time.
 

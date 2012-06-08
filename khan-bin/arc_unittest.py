@@ -6,7 +6,10 @@ This tests only the KA-specific features, like support for the --rr flag.
 It mocks out all actual arc communication.
 """
 
+import copy
+import json
 import os
+import tempfile
 import unittest
 
 # This is tricky since the script is called 'arc', not 'arc.py'.  The
@@ -14,7 +17,8 @@ import unittest
 # because it's easier to stub out '__main__' that way, which we need to
 # do so we don't *run* arc when we 'import' it.  The downside
 # is all of arc's symbols are imported into our namespace.  Oh well.
-arc_contents = file(os.path.join(os.path.dirname(__file__), 'arc')).read()
+g_arc_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+arc_contents = file(os.path.join(g_arc_root, 'khan-bin', 'arc')).read()
 arc_contents = arc_contents.replace('__main__', '__not_main__')
 exec(arc_contents)
 
@@ -227,6 +231,140 @@ class NormalizeRRFlagsTestCase(unittest.TestCase):
         self.assertEqual(['diff', '--reviewers', 'csilvers,echo,toom',
                           '--verbatim', '--dry_run'],
                          actual)
+
+
+class UpdateArcrcTest(unittest.TestCase):
+    def setUp(self):
+        self.start_json = {'a': {'b': {'c': [1, 2, 3]}, 'd': 'hello'},
+                           'b': 'top-level b',
+                           'stays': {'under': 'stays'},
+                           'some': {'stay': 'immutable', 'rest': 'mutable'},
+                           'list': ['top-level list', 4, 5, {'m': 1}],
+                           'khan': {'do_not_auto_update':
+                                    ['stays', 'some/stay']},
+                           }
+        (fd, filename1) = tempfile.mkstemp(prefix='arc_unittest_arcrc')
+        os.write(fd, json.dumps(self.start_json))
+        os.close(fd)
+        self.arcrc = filename1
+
+        (fd, filename2) = tempfile.mkstemp(prefix='arc_unittest_khan_arcrc')
+        os.close(fd)
+        self.default_arcrc = filename2
+
+    def tearDown(self):
+        if os.path.exists(self.arcrc):
+            os.unlink(self.arcrc)
+        if os.path.exists(self.default_arcrc):
+            os.unlink(self.default_arcrc)
+
+    def _update_with_this_default(self, default_dict):
+        """Write the dict as json to the .arcrc, and calls update_arcrc."""
+        f = open(self.default_arcrc, 'w')
+        json.dump(default_dict, f)
+        f.close()
+        _update_arcrc(g_arc_root,
+                      user_arcrc_file=self.arcrc,
+                      default_arcrc_file=self.default_arcrc,
+                      create_bak=False)
+        return json.load(open(self.arcrc))
+
+    def _arcrc_was_updated(self):
+        """Return true if the test modified the .arcrc file, false else."""
+        # We can tell because when we write the arcrc file in
+        # _update_dict, there's no indent= argument, so it's all on
+        # one line.  But _update_arcrc uses indent=, so it's on many
+        # lines.  If the file is now on many lines, _update_arcrc did
+        # some updating.
+        content = open(self.arcrc).read()
+        return content.count('\n') > 1
+
+    def test_update_nonexistent_file(self):
+        os.unlink(self.arcrc)
+        self._update_with_this_default({'a': 1, 'b': 2})
+
+        expected = {'a': 1, 'b': 2}
+        actual = json.load(open(self.arcrc))
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_update_with_same_default(self):
+        """When the update is the same as the original, it's a noop."""
+        expected = self.start_json
+        actual = self._update_with_this_default(self.start_json)
+        self.assertEqual(expected, actual)
+        self.assertFalse(self._arcrc_was_updated())
+
+    def test_simple_addition(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['new'] = 'all new'
+        actual = self._update_with_this_default({'new': 'all new'})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_simple_change(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['b'] = 'changed'
+        actual = self._update_with_this_default({'b': 'changed'})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_deep_addition(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['a']['newb'] = 'new'
+        actual = self._update_with_this_default({'a': {'newb': 'new'}})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+    
+    def test_deep_change(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['a']['b'] = 'new'
+        actual = self._update_with_this_default({'a': {'b': 'new'}})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_dict_to_notdict(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['a'] = 'no longer a dict'
+        actual = self._update_with_this_default({'a': 'no longer a dict'})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_notdict_to_dict(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['a']['b']['c'] = {'1': 2, '3': 4}
+        actual = self._update_with_this_default(
+            {'a': {'b': {'c': {'1': 2, '3': 4}}}})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
+
+    def test_nochange(self):
+        expected = copy.deepcopy(self.start_json)
+        actual = self._update_with_this_default({'b': 'top-level b'})
+        self.assertEqual(expected, actual)
+        self.assertFalse(self._arcrc_was_updated())
+
+    def test_no_auto_update(self):
+        expected = self.start_json
+        actual = self._update_with_this_default({'stays': 'changes'})
+        self.assertEqual(expected, actual)
+        self.assertFalse(self._arcrc_was_updated())
+
+    def test_nested_no_auto_update(self):
+        expected = self.start_json
+        actual = self._update_with_this_default({'some': {'stay': 'changes'}})
+        self.assertEqual(expected, actual)
+        self.assertFalse(self._arcrc_was_updated())
+
+    def test_nested_mix_auto_update_and_not(self):
+        expected = copy.deepcopy(self.start_json)
+        expected['some']['rest'] = 'change'
+        expected['some']['new'] = 'hi'
+        actual = self._update_with_this_default({'some': {'stay': 'changes',
+                                                          'rest': 'change',
+                                                          'new': 'hi'}})
+        self.assertEqual(expected, actual)
+        self.assertTrue(self._arcrc_was_updated())
 
 
 if __name__ == '__main__':

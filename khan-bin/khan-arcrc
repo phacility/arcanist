@@ -1,0 +1,18 @@
+{
+  "config"  : {
+    "default"                      : "http:\/\/phabricator.khanacademy.org",
+    "lint.engine"                  : "ArcanistSingleLintEngine",
+    "lint.engine.single.linter"    : "ArcanistScriptAndRegexLinter",
+    "linter.scriptandregex.script" : "~\/khan\/stable\/tools\/runlint.py --always-exit-0",
+    "linter.scriptandregex.regex"  : "\/^((?P<file>[^:]*):(?P<line>\\d+):((?P<char>\\d+):)? (?P<name>((?P<error>E)|(?P<warning>W))\\S+) (?P<message>.*))|(?P<ignore>SKIPPING.*)$\/m"
+  },
+  "aliases" : {
+    "mail" : [
+      "diff",
+      "--verbatim"
+    ]
+  },
+  "khan": {
+    "do_not_auto_update": [ "config/default" ]
+  }
+}
