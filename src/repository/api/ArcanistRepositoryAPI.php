@@ -179,7 +179,7 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
 
-  public function amendCommit() {
+  public function amendCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
