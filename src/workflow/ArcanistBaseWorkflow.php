@@ -532,11 +532,7 @@ abstract class ArcanistBaseWorkflow {
   }
 
   public function getArgument($key, $default = null) {
-    $args = $this->arguments;
-    if (!array_key_exists($key, $args)) {
-      return $default;
-    }
-    return $args[$key];
+    return idx($this->arguments, $key, $default);
   }
 
   final public function getCompleteArgumentSpecification() {
@@ -564,6 +560,12 @@ abstract class ArcanistBaseWorkflow {
     foreach ($spec as $long => $options) {
       if (!empty($options['short'])) {
         $short_to_long_map[$options['short']] = $long;
+      }
+    }
+
+    foreach ($spec as $long => $options) {
+      if (!empty($options['repeat'])) {
+        $dict[$long] = array();
       }
     }
 
@@ -603,7 +605,11 @@ abstract class ArcanistBaseWorkflow {
           throw new ArcanistUsageException(
             "Option '{$arg}' requires a parameter.");
         }
-        $dict[$arg_key] = $args[$ii + 1];
+        if (!empty($options['repeat'])) {
+          $dict[$arg_key][] = $args[$ii + 1];
+        } else {
+          $dict[$arg_key] = $args[$ii + 1];
+        }
         $ii++;
       }
     }

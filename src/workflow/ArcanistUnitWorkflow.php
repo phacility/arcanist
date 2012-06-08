@@ -68,6 +68,11 @@ EOTEXT
         'help' =>
           "Override configured unit engine for this project."
       ),
+      'skip' => array(
+        'param' => 'path',
+        'help' => "Specify file paths that will be ignored.",
+        'repeat' => true,
+      ),
       'coverage' => array(
         'help' => 'Always enable coverage information.',
         'conflicts' => array(
@@ -127,6 +132,7 @@ EOTEXT
     $this->engine = newv($engine_class, array());
     $this->engine->setWorkingCopy($working_copy);
     $this->engine->setPaths($paths);
+    $this->engine->setSkipFiles($this->getArgument('skip'));
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
     $enable_coverage = null; // Means "default".

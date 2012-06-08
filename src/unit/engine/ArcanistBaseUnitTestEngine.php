@@ -25,6 +25,7 @@ abstract class ArcanistBaseUnitTestEngine {
 
   private $workingCopy;
   private $paths;
+  private $skipFiles;
   private $arguments = array();
   protected $diffID;
   private $enableAsyncTests;
@@ -52,6 +53,15 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getPaths() {
     return $this->paths;
+  }
+
+  final public function setSkipFiles(array $paths) {
+    $this->skipFiles = $paths;
+    return $this;
+  }
+
+  final public function getSkipFiles() {
+    return $this->skipFiles;
   }
 
   final public function setArguments(array $arguments) {
