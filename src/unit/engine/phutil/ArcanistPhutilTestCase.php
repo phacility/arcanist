@@ -119,7 +119,7 @@ abstract class ArcanistPhutilTestCase {
    */
   final protected function assertSkipped($message) {
     $this->skipTest($message);
-    throw new ArcanistPhutilTestTerminatedException($message);
+    throw new ArcanistPhutilTestSkippedException($message);
   }
 
 
