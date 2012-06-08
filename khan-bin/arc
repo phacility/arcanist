@@ -23,7 +23,7 @@ except NameError:     # __file__ not defined
     _DEFAULT_ARC_ROOT = '..'
 
 
-def _update_arcrc(arc_root, default_arcrc_file = 'khan-bin/khan-arcrc',
+def _update_arcrc(arc_root, default_arcrc_file='khan-bin/khan-arcrc',
                   user_arcrc_file='~/.arcrc', create_bak=True):
     """Update the user's .arcrc to include the contents of the standard one.
 
@@ -46,9 +46,11 @@ def _update_arcrc(arc_root, default_arcrc_file = 'khan-bin/khan-arcrc',
       create_bak: whether to copy the .arcrc to .arcrc.bak before updating
          its contents.
     """
+    default_arcrc_file = os.path.join(arc_root, default_arcrc_file)
     default_arcrc = json.load(open(default_arcrc_file))
 
     user_arcrc_file = os.path.expanduser(user_arcrc_file)
+    user_arcrc_file = os.path.join(arc_root, user_arcrc_file)
     try:
         user_arcrc = json.load(open(user_arcrc_file))
     except (IOError, OSError):

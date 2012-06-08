@@ -21,6 +21,11 @@ g_arc_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 arc_contents = file(os.path.join(g_arc_root, 'khan-bin', 'arc')).read()
 arc_contents = arc_contents.replace('__main__', '__not_main__')
 exec(arc_contents)
+# These are just to quiet lint.  They also document what we imported
+_get_user_info = _get_user_info              # @Nolint
+normalize_usernames = normalize_usernames    # @Nolint
+normalize_rr_flags = normalize_rr_flags      # @Nolint
+_update_arcrc = _update_arcrc                # @Nolint
 
 
 def FakeConduitCall(arc_root, conduit_name, json_input={}):
@@ -28,64 +33,64 @@ def FakeConduitCall(arc_root, conduit_name, json_input={}):
     if conduit_name == 'user.query':
         return [
             {
-                "phid"     : "PHID-USER-00000000000000000000",
-                "userName" : "csilvers",
-                "realName" : "Craig Silverstein",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/csilvers\/",
-                "roles"    : [
+                "phid": "PHID-USER-00000000000000000000",
+                "userName": "csilvers",
+                "realName": "Craig Silverstein",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/csilvers\/",
+                "roles": [
                   "admin"
                   ],
                 },
             {
-                "phid"     : "PHID-USER-11111111111111111111",
-                "userName" : "ben",
-                "realName" : "Ben Bentastick",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/ben\/",
-                "roles"    : [],
+                "phid": "PHID-USER-11111111111111111111",
+                "userName": "ben",
+                "realName": "Ben Bentastick",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/ben\/",
+                "roles": [],
                 },
             {
-                "phid"     : "PHID-USER-22222222222222222222",
-                "userName" : "echo",
-                "realName" : "Ben Echoman",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/echo\/",
-                "roles"    : [],
+                "phid": "PHID-USER-22222222222222222222",
+                "userName": "echo",
+                "realName": "Ben Echoman",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/echo\/",
+                "roles": [],
                 },
             {
-                "phid"     : "PHID-USER-33333333333333333333",
-                "userName" : "toom",
-                "realName" : "Toomany Bens",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/toom\/",
-                "roles"    : [],
+                "phid": "PHID-USER-33333333333333333333",
+                "userName": "toom",
+                "realName": "Toomany Bens",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/toom\/",
+                "roles": [],
                 },
             {
-                "phid"     : "PHID-USER-44444444444444444444",
-                "userName" : "Upper",
-                "realName" : "Uppercase Username",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/Upper\/",
-                "roles"    : [],
+                "phid": "PHID-USER-44444444444444444444",
+                "userName": "Upper",
+                "realName": "Uppercase Username",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/Upper\/",
+                "roles": [],
                 },
             {
-                "phid"     : "PHID-USER-55555555555555555555",
-                "userName" : "admin1",
-                "realName" : "Enabled Admin",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/admin1\/",
-                "roles"    : [
+                "phid": "PHID-USER-55555555555555555555",
+                "userName": "admin1",
+                "realName": "Enabled Admin",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/admin1\/",
+                "roles": [
                   "admin",
                   ],
                 },
             {
-                "phid"     : "PHID-USER-66666666666666666666",
-                "userName" : "admin2",
-                "realName" : "Disabled Admin",
-                "image"    : "",
-                "uri"      : "https:\/\/example.com\/p\/admin2\/",
-                "roles"    : [
+                "phid": "PHID-USER-66666666666666666666",
+                "userName": "admin2",
+                "realName": "Disabled Admin",
+                "image": "",
+                "uri": "https:\/\/example.com\/p\/admin2\/",
+                "roles": [
                   "admin",
                   "disabled"
                   ],
@@ -95,7 +100,6 @@ def FakeConduitCall(arc_root, conduit_name, json_input={}):
 
 
 _conduit_call = FakeConduitCall
-
 
 # We can't test pick_a_number, since it has raw_input.  We just always
 # pick the largest numbers.
@@ -315,7 +319,7 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'a': {'newb': 'new'}})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
-    
+
     def test_deep_change(self):
         expected = copy.deepcopy(self.start_json)
         expected['a']['b'] = 'new'
