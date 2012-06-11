@@ -266,7 +266,7 @@ final class PhutilLibraryMapBuilder {
       }
     } else {
       $this->log("Building library map...\n");
-      $library_map = $this->buildLibraryMap($symbol_map, $source_map);
+      $library_map = $this->buildLibraryMap($symbol_map);
 
       $this->log("Writing map...\n");
       $this->writeLibraryMap($library_map);

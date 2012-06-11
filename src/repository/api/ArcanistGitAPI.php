@@ -236,7 +236,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       if (trim($object_type) !== 'commit') {
         throw new Exception(
-          "Relative commit '{$relative}' is not the name of a commit!");
+          "Relative commit '{$default_relative}' is not the name of a commit!");
       }
 
       if ($do_write) {

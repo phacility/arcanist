@@ -293,7 +293,7 @@ final class ArcanistHgProxyServer {
    */
   public function __destruct() {
     if ($this->socket) {
-      @stream_socket_shutdown($this->socket);
+      @stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
       @fclose($this->socket);
       Filesystem::remove(self::getPathToSocket($this->workingCopy));
       $this->socket = null;
