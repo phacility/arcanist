@@ -58,6 +58,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return 'hg';
   }
 
+  public function getMetadataPath() {
+    return $this->getPath('.hg');
+  }
+
   public function getSourceControlBaseRevision() {
     return $this->getCanonicalRevisionName($this->getRelativeCommit());
   }

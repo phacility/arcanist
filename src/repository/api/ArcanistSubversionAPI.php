@@ -36,6 +36,10 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return 'svn';
   }
 
+  public function getMetadataPath() {
+    return $this->getPath('.svn');
+  }
+
   protected function buildLocalFuture(array $argv) {
 
     $argv[0] = 'svn '.$argv[0];
