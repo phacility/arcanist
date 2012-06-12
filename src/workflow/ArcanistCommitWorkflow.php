@@ -227,13 +227,12 @@ EOTEXT
     }
 
     if ($modified_but_not_included) {
-      if (count($modified_but_not_included) == 1) {
-        $prefix = "A locally modified path is not included in this revision:";
-        $prompt = "It will NOT be committed. Commit this revision anyway?";
-      } else {
-        $prefix = "Locally modified paths are not included in this revision:";
-        $prompt = "They will NOT be committed. Commit this revision anyway?";
-      }
+      $prefix = pht(
+        'Locally modified path(s) are not included in this revision:',
+        count($modified_but_not_included));
+      $prompt = pht(
+        'They will NOT be committed. Commit this revision anyway?',
+        count($modified_but_not_included));
       $this->promptFileWarning($prefix, $prompt, $modified_but_not_included);
     }
 
@@ -254,13 +253,10 @@ EOTEXT
     }
 
     if ($do_not_exist) {
-      if (count($do_not_exist) == 1) {
-        $prefix = "Revision includes changes to a path that does not exist:";
-        $prompt = "Commit this revision anyway?";
-      } else {
-        $prefix = "Revision includes changes to paths that do not exist:";
-        $prompt = "Commit this revision anyway?";
-      }
+      $prefix = pht(
+        'Revision includes changes to path(s) that do not exist:',
+        count($do_not_exist));
+      $prompt = "Commit this revision anyway?";
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }
 
