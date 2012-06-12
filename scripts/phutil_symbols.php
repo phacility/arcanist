@@ -415,6 +415,16 @@ function phutil_symbols_get_builtins() {
   $builtin_functions  = get_defined_functions();
   $builtin_functions  = $builtin_functions['internal'];
 
+  // Developers may not have every extension that a library potentially uses
+  // installed. We supplement the list of declared functions with a list of
+  // known extension functions to avoid raising false positives just because
+  // you don't have pcntl, etc.
+  $list = dirname(__FILE__).'/php_extension_functions.txt';
+  $extension_functions = file_get_contents($list);
+  $extension_functions = explode("\n", trim($extension_functions));
+
+  $builtin_functions = array_merge($builtin_functions, $extension_functions);
+
   return array(
     'class'     => array_fill_keys($builtin_classes, true) + array(
       'PhutilBootloader' => true,
