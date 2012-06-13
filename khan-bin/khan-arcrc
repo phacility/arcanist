@@ -3,7 +3,7 @@
     "default"                      : "http:\/\/phabricator.khanacademy.org",
     "lint.engine"                  : "ArcanistSingleLintEngine",
     "lint.engine.single.linter"    : "ArcanistScriptAndRegexLinter",
-    "linter.scriptandregex.script" : "~\/khan\/stable\/tools\/runlint.py --always-exit-0",
+    "linter.scriptandregex.script__example_must_fix_up_path" : "~\/khan\/stable\/tools\/runlint.py --always-exit-0",
     "linter.scriptandregex.regex"  : "\/^((?P<file>[^:]*):(?P<line>\\d+):((?P<char>\\d+):)? (?P<name>((?P<error>E)|(?P<warning>W))\\S+) (?P<message>.*))|(?P<ignore>SKIPPING.*)$\/m"
   },
   "aliases" : {
@@ -13,6 +13,10 @@
     ]
   },
   "khan": {
-    "do_not_auto_update": [ "config/default" ]
+    "do_not_auto_update": [
+      "config/linter.scriptandregex.script__example_must_fix_up_path", 
+      "aliases/mail", 
+      "khan/do_not_auto_update"
+    ]
   }
 }

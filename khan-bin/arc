@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """A wrapper script around arcanist's arc (part of the phabricator suite).
 
@@ -63,19 +63,28 @@ def _update_arcrc(arc_root, default_arcrc_file='khan-bin/khan-arcrc',
         """Recursively merges maps in from_root with to_root."""
         num_updates = 0
         for k in from_root:
-            new_key_path = key_path + [k]
-            if '/'.join(new_key_path) in do_not_update:
+            new_key_path = key_path + ('/' if key_path else '') + k
+            if new_key_path in do_not_update:
                 pass
             elif (isinstance(from_root.get(k), dict) and
                   isinstance(to_root.get(k), dict)):
                 num_updates += _add_or_replace(from_root[k], to_root[k],
                                                new_key_path, do_not_update)
             elif to_root.get(k) != from_root.get(k):
+                print >>sys.stderr, (
+                    'Updating %s:%s to match the default value in %s.\n'
+                    '  WAS: %s\n'
+                    '  NOW: %s\n'
+                    'If this was wrong, recover your old .arcrc from %s.bak\n'
+                    'and add "%s" to %s:khan/do_not_auto_update.'
+                    % (user_arcrc_file, new_key_path, default_arcrc_file,
+                       to_root.get(k, '<empty>'), from_root.get(k, '<empty>'),
+                       user_arcrc_file, new_key_path, user_arcrc_file))
                 to_root[k] = from_root[k]
                 num_updates += 1
         return num_updates
 
-    num_updates = _add_or_replace(default_arcrc, user_arcrc, [], do_not_update)
+    num_updates = _add_or_replace(default_arcrc, user_arcrc, '', do_not_update)
 
     if num_updates:
         bak_filename = user_arcrc_file + '.bak'

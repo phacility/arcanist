@@ -6,9 +6,11 @@ This tests only the KA-specific features, like support for the --rr flag.
 It mocks out all actual arc communication.
 """
 
+import cStringIO
 import copy
 import json
 import os
+import sys
 import tempfile
 import unittest
 
@@ -18,7 +20,7 @@ import unittest
 # do so we don't *run* arc when we 'import' it.  The downside
 # is all of arc's symbols are imported into our namespace.  Oh well.
 g_arc_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-arc_contents = file(os.path.join(g_arc_root, 'khan-bin', 'arc')).read()
+arc_contents = open(os.path.join(g_arc_root, 'khan-bin', 'arc')).read()
 arc_contents = arc_contents.replace('__main__', '__not_main__')
 exec(arc_contents)
 # These are just to quiet lint.  They also document what we imported
@@ -256,7 +258,12 @@ class UpdateArcrcTest(unittest.TestCase):
         os.close(fd)
         self.default_arcrc = filename2
 
+        # We want to test the stderr output as well.
+        self.old_stderr = sys.stderr
+        sys.stderr = cStringIO.StringIO()
+
     def tearDown(self):
+        sys.stderr = self.old_stderr
         if os.path.exists(self.arcrc):
             os.unlink(self.arcrc)
         if os.path.exists(self.default_arcrc):
@@ -283,6 +290,16 @@ class UpdateArcrcTest(unittest.TestCase):
         content = open(self.arcrc).read()
         return content.count('\n') > 1
 
+    def assert_in_stderr(self, *args):
+        """Assert that all arg occurred somewhere in the stderr output."""
+        stderr_output = sys.stderr.getvalue()
+        for s in args:
+            self.assertTrue(s in stderr_output, (s, stderr_output))
+
+    def assert_stderr_is_empty(self):
+        stderr_output = sys.stderr.getvalue()
+        self.assertFalse(stderr_output)   # should be no output
+
     def test_update_nonexistent_file(self):
         os.unlink(self.arcrc)
         self._update_with_this_default({'a': 1, 'b': 2})
@@ -291,6 +308,8 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = json.load(open(self.arcrc))
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':a ', '  WAS: <empty>\n  NOW: 1\n')
+        self.assert_in_stderr(':b ', '  WAS: <empty>\n  NOW: 2\n')
 
     def test_update_with_same_default(self):
         """When the update is the same as the original, it's a noop."""
@@ -298,6 +317,7 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default(self.start_json)
         self.assertEqual(expected, actual)
         self.assertFalse(self._arcrc_was_updated())
+        self.assert_stderr_is_empty()
 
     def test_simple_addition(self):
         expected = copy.deepcopy(self.start_json)
@@ -305,6 +325,7 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'new': 'all new'})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':new ', '  WAS: <empty>\n  NOW: all new\n')
 
     def test_simple_change(self):
         expected = copy.deepcopy(self.start_json)
@@ -312,6 +333,7 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'b': 'changed'})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':b ', '  WAS: top-level b\n  NOW: changed\n')
 
     def test_deep_addition(self):
         expected = copy.deepcopy(self.start_json)
@@ -319,6 +341,7 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'a': {'newb': 'new'}})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':a/newb ', '  WAS: <empty>\n  NOW: new\n')
 
     def test_deep_change(self):
         expected = copy.deepcopy(self.start_json)
@@ -326,6 +349,8 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'a': {'b': 'new'}})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':a/b ',
+                              "  WAS: {u'c': [1, 2, 3]}\n  NOW: new\n")
 
     def test_dict_to_notdict(self):
         expected = copy.deepcopy(self.start_json)
@@ -333,6 +358,9 @@ class UpdateArcrcTest(unittest.TestCase):
         actual = self._update_with_this_default({'a': 'no longer a dict'})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        old_a = "{u'b': {u'c': [1, 2, 3]}, u'd': u'hello'}"
+        self.assert_in_stderr(':a ',
+                              '  WAS: %s\n  NOW: no longer a dict\n' % old_a)
 
     def test_notdict_to_dict(self):
         expected = copy.deepcopy(self.start_json)
@@ -341,24 +369,29 @@ class UpdateArcrcTest(unittest.TestCase):
             {'a': {'b': {'c': {'1': 2, '3': 4}}}})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':a/b/c ',
+                              "  WAS: [1, 2, 3]\n  NOW: {u'1': 2, u'3': 4}\n")
 
     def test_nochange(self):
         expected = copy.deepcopy(self.start_json)
         actual = self._update_with_this_default({'b': 'top-level b'})
         self.assertEqual(expected, actual)
         self.assertFalse(self._arcrc_was_updated())
+        self.assert_stderr_is_empty()
 
     def test_no_auto_update(self):
         expected = self.start_json
         actual = self._update_with_this_default({'stays': 'changes'})
         self.assertEqual(expected, actual)
         self.assertFalse(self._arcrc_was_updated())
+        self.assert_stderr_is_empty()
 
     def test_nested_no_auto_update(self):
         expected = self.start_json
         actual = self._update_with_this_default({'some': {'stay': 'changes'}})
         self.assertEqual(expected, actual)
         self.assertFalse(self._arcrc_was_updated())
+        self.assert_stderr_is_empty()
 
     def test_nested_mix_auto_update_and_not(self):
         expected = copy.deepcopy(self.start_json)
@@ -369,6 +402,10 @@ class UpdateArcrcTest(unittest.TestCase):
                                                           'new': 'hi'}})
         self.assertEqual(expected, actual)
         self.assertTrue(self._arcrc_was_updated())
+        self.assert_in_stderr(':some/rest ',
+                              '  WAS: mutable\n  NOW: change\n')
+        self.assert_in_stderr(':some/new ',
+                              '  WAS: <empty>\n  NOW: hi\n')
 
 
 if __name__ == '__main__':
