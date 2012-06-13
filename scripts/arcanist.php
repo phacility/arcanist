@@ -288,7 +288,7 @@ try {
   $workflow->willRunWorkflow();
   $err = $workflow->run();
   $config->didRunWorkflow($command, $workflow, $err);
-  exit($err);
+  exit((int)$err);
 
 } catch (ArcanistUsageException $ex) {
   echo phutil_console_format(
