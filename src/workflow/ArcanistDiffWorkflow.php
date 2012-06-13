@@ -1339,13 +1339,18 @@ EOTEXT
         $template_is_default = true;
       }
 
-      $template = $conduit->callMethodSynchronous(
-        'differential.getcommitmessage',
-        array(
-          'revision_id' => null,
-          'edit'        => 'create',
-          'fields'      => $fields,
-        ));
+      if ($notes) {
+        $commit = head($this->getRepositoryAPI()->getLocalCommitInformation());
+        $template = $commit['message'];
+      } else {
+        $template = $conduit->callMethodSynchronous(
+          'differential.getcommitmessage',
+          array(
+            'revision_id' => null,
+            'edit'        => 'create',
+            'fields'      => $fields,
+          ));
+      }
     }
 
     if ($included) {

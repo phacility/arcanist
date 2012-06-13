@@ -407,7 +407,11 @@ final class PhutilLibraryMapBuilder {
     }
 
     $json = json_encode($cache);
-    Filesystem::writeFile($cache_file, $json);
+    try {
+      Filesystem::writeFile($cache_file, $json);
+    } catch (FilesystemException $ex) {
+      $this->log("Unable to save the cache!\n");
+    }
   }
 
 
