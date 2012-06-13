@@ -465,8 +465,15 @@ abstract class ArcanistBaseWorkflow {
     return false;
   }
 
+  public function desiresWorkingCopy() {
+    return false;
+  }
 
   public function requiresRepositoryAPI() {
+    return false;
+  }
+
+  public function desiresRepositoryAPI() {
     return false;
   }
 
@@ -1018,6 +1025,25 @@ abstract class ArcanistBaseWorkflow {
     $config = self::readUserConfigurationFile();
     $config['config'] = $options;
     self::writeUserConfigurationFile($config);
+  }
+
+  public function readLocalArcConfig() {
+    $local = array();
+    $file = $this->readScratchFile('config');
+    if ($file) {
+      $local = json_decode($file, true);
+    }
+
+    return $local;
+  }
+
+  public function writeLocalArcConfig(array $config) {
+    $json_encoder = new PhutilJSON();
+    $json = $json_encoder->encodeFormatted($config);
+
+    $this->writeScratchFile('config', $json);
+
+    return $this;
   }
 
 

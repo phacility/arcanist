@@ -25,7 +25,7 @@ final class ArcanistGetConfigWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **get-config** [__name__ ...]
+      **get-config** -- [__name__ ...]
 EOTEXT
       );
   }
@@ -45,20 +45,32 @@ EOTEXT
     );
   }
 
+  public function desiresRepositoryAPI() {
+    return true;
+  }
+
   public function run() {
     $argv = $this->getArgument('argv');
 
-    $config = self::readGlobalArcConfig();
+    $configs = array(
+      'global' => self::readGlobalArcConfig(),
+      'local' => $this->readLocalArcConfig(),
+    );
     if ($argv) {
       $keys = $argv;
     } else {
-      $keys = array_keys($config);
+      $keys = array_mergev(array_map('array_keys', $configs));
+      $keys = array_unique($keys);
       sort($keys);
     }
 
     foreach ($keys as $key) {
-      $val = self::formatConfigValueForDisplay(idx($config, $key));
-      echo "{$key} = {$val}\n";
+      foreach ($configs as $name => $config) {
+        if ($name == 'global' || isset($config[$key])) {
+          $val = self::formatConfigValueForDisplay(idx($config, $key));
+          echo "({$name}) {$key} = {$val}\n";
+        }
+      }
     }
 
     return 0;
