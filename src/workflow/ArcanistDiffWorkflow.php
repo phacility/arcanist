@@ -1424,7 +1424,7 @@ EOTEXT
         echo "Commit message has errors:\n\n";
         $issues = array('Resolve these errors:');
         foreach ($ex->getParserErrors() as $error) {
-          echo "      - ".$error."\n";
+          echo phutil_console_wrap("- ".$error."\n", 6);
           $issues[] = '  - '.$error;
         }
         echo "\n";

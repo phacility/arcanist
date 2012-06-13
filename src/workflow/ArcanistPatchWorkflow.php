@@ -502,7 +502,7 @@ EOTEXT
         $link_path = $symlink->getCurrentPath();
         switch ($symlink->getType()) {
           case ArcanistDiffChangeType::TYPE_ADD:
-          case ArcanistDiffChangeType::TYPE_MODIFY:
+          case ArcanistDiffChangeType::TYPE_CHANGE:
           case ArcanistDiffChangeType::TYPE_MOVE_HERE:
           case ArcanistDiffChangeType::TYPE_COPY_HERE:
             execx(

@@ -613,8 +613,8 @@ final class ArcanistBundle {
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change) {
-    $old_phid = $change->getMetadata('old:binary-phid', null);
-    $new_phid = $change->getMetadata('new:binary-phid', null);
+    $old_phid = $change->getMetadata('old:binary-phid');
+    $new_phid = $change->getMetadata('new:binary-phid');
 
     $type = $change->getType();
     if ($type == ArcanistDiffChangeType::TYPE_ADD) {

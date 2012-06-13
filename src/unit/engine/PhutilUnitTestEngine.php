@@ -77,13 +77,6 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       } while ($library_path != '.');
     }
 
-    $skip = array();
-    foreach ($this->getSkipFiles() as $skip_path) {
-      $skip_path = Filesystem::resolvePath($skip_path);
-      $skip_path = Filesystem::readablePath($skip_path, $library_root);
-      $skip[$skip_path] = true;
-    }
-
     // Look for any class that extends ArcanistPhutilTestCase inside a
     // __tests__ directory in any parent directory of every affected file.
     //
@@ -107,9 +100,6 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
         ->selectAndLoadSymbols();
 
       foreach ($symbols as $symbol) {
-        if (isset($skip[$symbol['where']])) {
-          continue;
-        }
         $run_tests[$symbol['name']] = true;
       }
     }

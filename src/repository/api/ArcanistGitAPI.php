@@ -53,6 +53,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return 'git';
   }
 
+  public function getMetadataPath() {
+    return $this->getPath('.git');
+  }
+
   public function getHasCommits() {
     return !$this->repositoryHasNoCommits;
   }
@@ -192,7 +196,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         if ($default_relative) {
           $this->relativeExplanation =
             "it is the merge-base of '{$default_relative}' and HEAD, as ".
-            "specified in '.arc/default-relative-commit'.";
+            "specified in '.git/arc/default-relative-commit'.";
         }
       }
 
@@ -236,7 +240,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       if (trim($object_type) !== 'commit') {
         throw new Exception(
-          "Relative commit '{$relative}' is not the name of a commit!");
+          "Relative commit '{$default_relative}' is not the name of a commit!");
       }
 
       if ($do_write) {

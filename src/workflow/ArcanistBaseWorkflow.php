@@ -1036,7 +1036,7 @@ abstract class ArcanistBaseWorkflow {
     $repository_api = $this->getRepositoryAPI();
     $working_copy = $this->getWorkingCopy();
 
-    $project_config = $working_copy->getConfig('immutable_history');
+    $project_config = $working_copy->getConfigFromAnySource('immutable_history');
     if ($project_config !== null) {
       return $project_config;
     }

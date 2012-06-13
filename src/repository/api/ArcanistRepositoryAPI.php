@@ -175,6 +175,7 @@ abstract class ArcanistRepositoryAPI {
   abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
   abstract public function updateWorkingCopy();
+  abstract public function getMetadataPath();
   abstract public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query);
@@ -353,7 +354,32 @@ abstract class ArcanistRepositoryAPI {
    * @task scratch
    */
   public function getScratchFilePath($path) {
-    return $this->getPath('.arc/'.$path);
+    $new_scratch_path  = Filesystem::resolvePath(
+      'arc',
+      $this->getMetadataPath());
+
+    static $checked = false;
+    if (!$checked) {
+      $checked = true;
+      $old_scratch_path = $this->getPath('.arc');
+      // we only want to do the migration once
+      // unfortunately, people have checked in .arc directories which
+      // means that the old one may get recreated after we delete it
+      if (Filesystem::pathExists($old_scratch_path) &&
+          !Filesystem::pathExists($new_scratch_path)) {
+        Filesystem::createDirectory($new_scratch_path);
+        $existing_files = Filesystem::listDirectory($old_scratch_path, true);
+        foreach ($existing_files as $file) {
+          $new_path = Filesystem::resolvePath($file, $new_scratch_path);
+          $old_path = Filesystem::resolvePath($file, $old_scratch_path);
+          Filesystem::writeFile(
+            $new_path,
+            Filesystem::readFile($old_path));
+        }
+        Filesystem::remove($old_scratch_path);
+      }
+    }
+    return Filesystem::resolvePath($path, $new_scratch_path);
   }
 
 }
