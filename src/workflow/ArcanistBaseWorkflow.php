@@ -991,6 +991,11 @@ abstract class ArcanistBaseWorkflow {
             throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
           }
           execx('chmod 600 %s', $user_config_path);
+
+          // Drop the stat cache so we don't read the old permissions if
+          // we end up here again. If we don't do this, we may prompt the user
+          // to fix permissions multiple times.
+          clearstatcache();
         }
       }
 
