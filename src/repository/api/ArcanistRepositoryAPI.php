@@ -42,6 +42,7 @@ abstract class ArcanistRepositoryAPI {
 
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
+  private $baseCommitExplanation = '???';
   private $workingCopyIdentity;
 
   abstract public function getSourceControlSystemName();
@@ -201,8 +202,13 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function getRelativeExplanation() {
-    throw new ArcanistCapabilityNotSupportedException($this);
+  public function getBaseCommitExplanation() {
+    return $this->baseCommitExplanation;
+  }
+
+  public function setBaseCommitExplanation($explanation) {
+    $this->baseCommitExplanation = $explanation;
+    return $this;
   }
 
   public function getCommitSummary($commit) {

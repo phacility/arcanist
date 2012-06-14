@@ -26,7 +26,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $status;
   private $base;
   private $relativeCommit;
-  private $relativeExplanation;
   private $workingCopyRevision;
   private $localCommitInfo;
   private $includeDirectoryStateInDiffs;
@@ -113,9 +112,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       if (!$logs) {
 
-        $this->relativeExplanation =
+        $this->setBaseCommitExplanation(
           "you have no outgoing commits, so arc assumes you intend to submit ".
-          "uncommitted changes in the working copy.";
+          "uncommitted changes in the working copy.");
         // In Mercurial, we support operations against uncommitted changes.
         $this->setRelativeCommit($this->getWorkingCopyRevision());
         return $this->relativeCommit;
@@ -158,12 +157,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       }
 
       if ($against == 'null') {
-        $this->relativeExplanation =
-          "this is a new repository (all changes are outgoing).";
+        $this->setBaseCommitExplanation(
+          "this is a new repository (all changes are outgoing).");
       } else {
-        $this->relativeExplanation =
+        $this->setBaseCommitExplanation(
           "it is the first commit reachable from the working copy state ".
-          "which is not outgoing.";
+          "which is not outgoing.");
       }
 
       $this->setRelativeCommit($against);
@@ -444,7 +443,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       throw new ArcanistUsageException("Specify only one commit.");
     }
 
-    $this->relativeExplanation = "you explicitly specified it.";
+    $this->setBaseCommitExplanation("you explicitly specified it.");
 
     // This does the "hg id" call we need to normalize/validate the revision
     // identifier.
@@ -593,10 +592,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function dropCaches() {
     $this->status = null;
     $this->localCommitInfo = null;
-  }
-
-  public function getRelativeExplanation() {
-    return $this->relativeExplanation;
   }
 
   public function getCommitSummary($commit) {

@@ -96,7 +96,7 @@ EOTEXT
         $commits = '    (No commits.)';
       }
 
-      $explanation = $repository_api->getRelativeExplanation();
+      $explanation = $repository_api->getBaseCommitExplanation();
 
       $relative_summary = $repository_api->getCommitSummary($relative);
       $relative = substr($relative, 0, 16);
