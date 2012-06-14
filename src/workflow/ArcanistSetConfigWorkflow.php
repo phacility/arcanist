@@ -25,7 +25,7 @@ final class ArcanistSetConfigWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **set-config** __name__ __value__
+      **set-config** [__options__] -- __name__ __value__
 EOTEXT
       );
   }
@@ -35,8 +35,14 @@ EOTEXT
           Supports: cli
           Sets an arc configuration option.
 
-          Values are written to '~/.arcrc' on Linux and Mac OS X, and an
-          undisclosed location on Windows.
+          Options are either global (apply to all arc commands you invoke
+          from the current user) or local (apply only to the current working
+          copy).  By default, global configuration is written.  Use __--local__
+          to write local configuration.
+
+          Global values are written to '~/.arcrc' on Linux and Mac OS X, and an
+          undisclosed location on Windows.  Local values are written to an arc
+          directory under either .git, .hg, or .svn as appropriate.
 
           With __--show__, a description of supported configuration values
           is shown.
@@ -49,8 +55,15 @@ EOTEXT
       'show' => array(
         'help' => 'Show available configuration values.',
       ),
+      'local' => array(
+        'help' => 'Set a local config value instead of a global one',
+      ),
       '*' => 'argv',
     );
+  }
+
+  public function requiresRepositoryAPI() {
+    return $this->getArgument('local');
   }
 
   public function run() {
@@ -64,7 +77,15 @@ EOTEXT
         "Specify a key and a value, or --show.");
     }
 
-    $config = self::readGlobalArcConfig();
+    $is_local = $this->getArgument('local');
+
+    if ($is_local) {
+      $config = $this->readLocalArcConfig();
+      $which = 'local';
+    } else {
+      $config = self::readGlobalArcConfig();
+      $which = 'global';
+    }
 
     $key = $argv[0];
     $val = $argv[1];
@@ -76,26 +97,34 @@ EOTEXT
 
     if (!strlen($val)) {
       unset($config[$key]);
-      self::writeGlobalArcConfig($config);
+      if ($is_local) {
+        $this->writeLocalArcConfig($config);
+      } else {
+        self::writeGlobalArcConfig($config);
+      }
 
       if ($old === null) {
-        echo "Deleted key '{$key}'.\n";
+        echo "Deleted key '{$key}' from {$which} config.\n";
       } else {
-        echo "Deleted key '{$key}' (was '{$old}').\n";
+        echo "Deleted key '{$key}' from {$which} config (was '{$old}').\n";
       }
     } else {
       $val = $this->parse($key, $val);
 
       $config[$key] = $val;
-      self::writeGlobalArcConfig($config);
+      if ($is_local) {
+        $this->writeLocalArcConfig($config);
+      } else {
+        self::writeGlobalArcConfig($config);
+      }
 
       $val = self::formatConfigValueForDisplay($val);
       $old = self::formatConfigValueForDisplay($old);
 
       if ($old === null) {
-        echo "Set key '{$key}' = '{$val}'.\n";
+        echo "Set key '{$key}' = '{$val}' in {$which} config.\n";
       } else {
-        echo "Set key '{$key}' = '{$val}' (was '{$old}').\n";
+        echo "Set key '{$key}' = '{$val}' in {$which} config (was '{$old}').\n";
       }
     }
 

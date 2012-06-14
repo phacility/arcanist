@@ -189,13 +189,17 @@ try {
   $need_auth            = $workflow->requiresAuthentication();
   $need_repository_api  = $workflow->requiresRepositoryAPI();
 
+  $want_repository_api = $workflow->desiresRepositoryAPI();
+  $want_working_copy = $workflow->desiresWorkingCopy() ||
+                       $want_repository_api;
+
   $need_conduit       = $need_conduit ||
                         $need_auth;
   $need_working_copy  = $need_working_copy ||
                         $need_repository_api;
 
-  if ($need_working_copy) {
-    if (!$working_copy->getProjectRoot()) {
+  if ($need_working_copy || $want_working_copy) {
+    if ($need_working_copy && !$working_copy->getProjectRoot()) {
       throw new ArcanistUsageException(
         "This command must be run in a Git, Mercurial or Subversion working ".
         "copy.");
@@ -267,7 +271,7 @@ try {
     $workflow->authenticateConduit();
   }
 
-  if ($need_repository_api) {
+  if ($need_repository_api || ($want_repository_api && $working_copy)) {
     $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
       $working_copy);
     $workflow->setRepositoryAPI($repository_api);
@@ -284,7 +288,7 @@ try {
   $workflow->willRunWorkflow();
   $err = $workflow->run();
   $config->didRunWorkflow($command, $workflow, $err);
-  exit($err);
+  exit((int)$err);
 
 } catch (ArcanistUsageException $ex) {
   echo phutil_console_format(

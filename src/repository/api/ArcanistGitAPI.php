@@ -25,7 +25,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $status;
   private $relativeCommit = null;
-  private $relativeExplanation = '???';
   private $repositoryHasNoCommits = false;
   const SEARCH_LENGTH_FOR_PARENT_REVISIONS = 16;
 
@@ -158,9 +157,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $this->relativeCommit = self::GIT_MAGIC_ROOT_COMMIT;
 
         if ($this->repositoryHasNoCommits) {
-          $this->relativeExplanation = "the repository has no commits.";
+          $this->setBaseCommitExplanation(
+            "the repository has no commits.");
         } else {
-          $this->relativeExplanation = "the repository has only one commit.";
+          $this->setBaseCommitExplanation(
+            "the repository has only one commit.");
         }
 
         return $this->relativeCommit;
@@ -172,10 +173,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       if ($working_copy) {
         $default_relative = $working_copy->getConfig(
           'git.default-relative-commit');
-        $this->relativeExplanation =
+        $this->setBaseCommitExplanation(
           "it is the merge-base of '{$default_relative}' and HEAD, as ".
           "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
-          "setting overrides other settings.";
+          "setting overrides other settings.");
       }
 
       if (!$default_relative) {
@@ -184,9 +185,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
         if (!$err) {
           $default_relative = trim($upstream);
-          $this->relativeExplanation =
+          $this->setBaseCommitExplanation(
             "it is the merge-base of '{$default_relative}' (the Git upstream ".
-            "of the current branch) HEAD.";
+            "of the current branch) HEAD.");
         }
       }
 
@@ -194,9 +195,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $default_relative = $this->readScratchFile('default-relative-commit');
         $default_relative = trim($default_relative);
         if ($default_relative) {
-          $this->relativeExplanation =
+          $this->setBaseCommitExplanation(
             "it is the merge-base of '{$default_relative}' and HEAD, as ".
-            "specified in '.git/arc/default-relative-commit'.";
+            "specified in '.git/arc/default-relative-commit'.");
         }
       }
 
@@ -247,9 +248,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         // Don't perform this write until we've verified that the object is a
         // valid commit name.
         $this->writeScratchFile('default-relative-commit', $default_relative);
-        $this->relativeExplanation =
+        $this->setBaseCommitExplanation(
           "it is the merge-base of '{$default_relative}' and HEAD, as you ".
-          "just specified.";
+          "just specified.");
       }
 
       list($merge_base) = $this->execxLocal(
@@ -716,8 +717,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $base = reset($argv);
     if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
       $merge_base = $base;
-      $this->relativeExplanation =
-        "you explicitly specified the empty tree.";
+      $this->setBaseCommitExplanation(
+        "you explicitly specified the empty tree.");
     } else {
       list($err, $merge_base) = $this->execManualLocal(
         'merge-base %s HEAD',
@@ -726,9 +727,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         throw new ArcanistUsageException(
           "Unable to find any git commit named '{$base}' in this repository.");
       }
-      $this->relativeExplanation =
+      $this->setBaseCommitExplanation(
         "it is the merge-base of '{$base}' and HEAD, as you explicitly ".
-        "specified.";
+        "specified.");
     }
     $this->setRelativeCommit(trim($merge_base));
   }
@@ -839,10 +840,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('pull');
-  }
-
-  public function getRelativeExplanation() {
-    return $this->relativeExplanation;
   }
 
   public function getCommitSummary($commit) {

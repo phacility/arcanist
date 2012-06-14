@@ -465,8 +465,15 @@ abstract class ArcanistBaseWorkflow {
     return false;
   }
 
+  public function desiresWorkingCopy() {
+    return false;
+  }
 
   public function requiresRepositoryAPI() {
+    return false;
+  }
+
+  public function desiresRepositoryAPI() {
     return false;
   }
 
@@ -984,6 +991,11 @@ abstract class ArcanistBaseWorkflow {
             throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
           }
           execx('chmod 600 %s', $user_config_path);
+
+          // Drop the stat cache so we don't read the old permissions if
+          // we end up here again. If we don't do this, we may prompt the user
+          // to fix permissions multiple times.
+          clearstatcache();
         }
       }
 
@@ -1018,6 +1030,25 @@ abstract class ArcanistBaseWorkflow {
     $config = self::readUserConfigurationFile();
     $config['config'] = $options;
     self::writeUserConfigurationFile($config);
+  }
+
+  public function readLocalArcConfig() {
+    $local = array();
+    $file = $this->readScratchFile('config');
+    if ($file) {
+      $local = json_decode($file, true);
+    }
+
+    return $local;
+  }
+
+  public function writeLocalArcConfig(array $config) {
+    $json_encoder = new PhutilJSON();
+    $json = $json_encoder->encodeFormatted($config);
+
+    $this->writeScratchFile('config', $json);
+
+    return $this;
   }
 
 
