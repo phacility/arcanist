@@ -44,6 +44,7 @@ abstract class ArcanistRepositoryAPI {
   protected $diffLinesOfContext = 0x7FFF;
   private $baseCommitExplanation = '???';
   private $workingCopyIdentity;
+  private $baseCommitArgumentRules;
 
   abstract public function getSourceControlSystemName();
 
@@ -200,15 +201,6 @@ abstract class ArcanistRepositoryAPI {
 
   public function parseRelativeLocalCommit(array $argv) {
     throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
-  public function getBaseCommitExplanation() {
-    return $this->baseCommitExplanation;
-  }
-
-  public function setBaseCommitExplanation($explanation) {
-    $this->baseCommitExplanation = $explanation;
-    return $this;
   }
 
   public function getCommitSummary($commit) {
@@ -386,6 +378,48 @@ abstract class ArcanistRepositoryAPI {
       }
     }
     return Filesystem::resolvePath($path, $new_scratch_path);
+  }
+
+
+/* -(  Base Commits  )------------------------------------------------------- */
+
+
+  public function getBaseCommitExplanation() {
+    return $this->baseCommitExplanation;
+  }
+
+  public function setBaseCommitExplanation($explanation) {
+    $this->baseCommitExplanation = $explanation;
+    return $this;
+  }
+
+  public function resolveBaseCommitRule($rule, $source) {
+    return null;
+  }
+
+  public function setBaseCommitArgumentRules($base_commit_argument_rules) {
+    $this->baseCommitArgumentRules = $base_commit_argument_rules;
+    return $this;
+  }
+
+  public function getBaseCommitArgumentRules() {
+    return $this->baseCommitArgumentRules;
+  }
+
+  public function resolveBaseCommit() {
+    $working_copy = $this->getWorkingCopyIdentity();
+    $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
+
+    $parser = new ArcanistBaseCommitParser($this);
+    $commit = $parser->resolveBaseCommit(
+      array(
+        'args'    => $this->getBaseCommitArgumentRules(),
+        'local'   => $working_copy->getLocalConfig('base', ''),
+        'project' => $working_copy->getConfig('base', ''),
+        'global'  => idx($global_config, 'base', ''),
+      ));
+
+    return $commit;
   }
 
 }

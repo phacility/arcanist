@@ -339,6 +339,14 @@ EOTEXT
       'skip-binaries' => array(
         'help'  => 'Do not upload binaries (like images).',
       ),
+      'base' => array(
+        'param' => 'rules',
+        'help'  => 'Additional rules for determining base revision.',
+        'nosupport' => array(
+          'svn' => 'Subversion does not use base commits.',
+        ),
+        'supports' => array('git', 'hg'),
+      ),
       '*' => 'paths',
     );
   }
@@ -514,6 +522,9 @@ EOTEXT
       if ($this->getArgument('less-context')) {
         $repository_api->setDiffLinesOfContext(3);
       }
+
+      $repository_api->setBaseCommitArgumentRules(
+        $this->getArgument('base', ''));
 
       if ($repository_api->supportsRelativeLocalCommits()) {
 

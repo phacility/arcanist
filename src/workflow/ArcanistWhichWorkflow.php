@@ -60,6 +60,21 @@ EOTEXT
       'any-status' => array(
         'help' => "Show committed and abandoned revisions.",
       ),
+      'base' => array(
+        'param' => 'rules',
+        'help'  => 'Additional rules for determining base revision.',
+        'nosupport' => array(
+          'svn' => 'Subversion does not use base commits.',
+        ),
+        'supports' => array('git', 'hg'),
+      ),
+      'show-base' => array(
+        'help'  => 'Print base commit only and exit.',
+        'nosupport' => array(
+          'svn' => 'Subversion does not use base commits.',
+        ),
+        'supports' => array('git', 'hg'),
+      ),
       '*' => 'commit',
     );
   }
@@ -79,8 +94,16 @@ EOTEXT
     }
     $arg = $arg_commit ? ' '.head($arg_commit) : '';
 
+    $repository_api->setBaseCommitArgumentRules(
+      $this->getArgument('base', ''));
+
     if ($repository_api->supportsRelativeLocalCommits()) {
       $relative = $repository_api->getRelativeCommit();
+
+      if ($this->getArgument('show-base')) {
+        echo $relative."\n";
+        return 0;
+      }
 
       $info = $repository_api->getLocalCommitInformation();
       if ($info) {
