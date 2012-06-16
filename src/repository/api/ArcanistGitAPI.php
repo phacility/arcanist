@@ -167,6 +167,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         return $this->relativeCommit;
       }
 
+      if ($this->getBaseCommitArgumentRules() ||
+          $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+        $base = $this->resolveBaseCommit();
+        if (!$base) {
+          throw new ArcanistUsageException(
+            "None of the rules in your 'base' configuration matched a valid ".
+            "commit. Adjust rules or specify which commit you want to use ".
+            "explicitly.");
+        }
+        $this->relativeCommit = $base;
+        return $this->relativeCommit;
+      }
+
       $do_write = false;
       $default_relative = null;
       $working_copy = $this->getWorkingCopyIdentity();
@@ -853,6 +866,64 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $commit);
 
     return trim($summary);
+  }
+
+  public function resolveBaseCommitRule($rule, $source) {
+    list($type, $name) = explode(':', $rule, 2);
+
+    switch ($type) {
+      case 'git':
+        $matches = null;
+        if (preg_match('/^merge-base\((.+)\)$/', $name, $matches)) {
+          list($err, $merge_base) = $this->execManualLocal(
+            'merge-base %s HEAD',
+            $matches[1]);
+          if (!$err) {
+            $this->setBaseCommitExplanation(
+              "it is the merge-base of '{$matches[1]}' and HEAD, as ".
+              "specified by '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return trim($merge_base);
+          }
+        } else {
+          list($err) = $this->execManualLocal(
+            'cat-file -t %s',
+            $name);
+          if (!$err) {
+            $this->setBaseCommitExplanation(
+              "it is specified by '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return $name;
+          }
+        }
+        break;
+      case 'arc':
+        switch ($name) {
+          case 'empty':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return self::GIT_MAGIC_ROOT_COMMIT;
+          case 'upstream':
+            list($err, $upstream) = $this->execManualLocal(
+              "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+            if (!$err) {
+              list($upstream_merge_base) = $this->execxLocal(
+                'merge-base %s HEAD',
+                $upstream);
+              $this->setBaseCommitExplanation(
+                "it is the merge-base of the upstream of the current branch ".
+                "and HEAD, and matched the rule '{$rule}' in your {$source} ".
+                "'base' configuration.");
+              return $upstream_merge_base;
+            }
+            break;
+        }
+      default:
+        return null;
+    }
+
+    return null;
   }
 
 }
