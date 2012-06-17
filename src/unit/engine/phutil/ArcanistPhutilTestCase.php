@@ -28,6 +28,7 @@
  */
 abstract class ArcanistPhutilTestCase {
 
+  private $assertions = 0;
   private $runningTest;
   private $testStartTime;
   private $results = array();
@@ -59,6 +60,7 @@ abstract class ArcanistPhutilTestCase {
    */
   final protected function assertEqual($expect, $result, $message = null) {
     if ($expect === $result) {
+      $this->assertions++;
       return;
     }
 
@@ -422,6 +424,7 @@ abstract class ArcanistPhutilTestCase {
       $name = $method->getName();
       if (preg_match('/^test/', $name)) {
         $this->runningTest = $name;
+        $this->assertions = 0;
         $this->testStartTime = microtime(true);
 
         try {
@@ -433,7 +436,7 @@ abstract class ArcanistPhutilTestCase {
             call_user_func_array(
               array($this, $name),
               array());
-            $this->passTest("All assertions passed.");
+            $this->passTest(pht('%d assertion(s) passed.', $this->assertions));
           } catch (Exception $ex) {
             $test_exception = $ex;
           }

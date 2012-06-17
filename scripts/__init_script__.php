@@ -62,6 +62,11 @@ PhutilTranslator::getInstance()
     ),
 
     'line(s)' => array('line', 'lines'),
+
+    '%d assertion(s) passed.' => array(
+      '%d assertion passed.',
+      '%d assertions passed.',
+    ),
   ));
 
 phutil_load_library(dirname(dirname(__FILE__)).'/src/');
