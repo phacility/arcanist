@@ -403,6 +403,7 @@ final class ArcanistDiffParser {
     $target = null;
 
     $line = $this->nextLine();
+    $prop_index = 2;
     while ($line !== null) {
       $done = preg_match(
         '/^(Modified|Added|Deleted|Index|Property changes on):/',
@@ -410,7 +411,6 @@ final class ArcanistDiffParser {
       if ($done) {
         break;
       }
-      $prop_index = 2;
       $trimline = ltrim($line);
       if ($trimline && $trimline[0] == '#') {
         // in svn1.7, a line like ## -0,0 +1 ## is put between the Added: line
