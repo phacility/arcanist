@@ -193,10 +193,9 @@ EOTEXT
       }
     }
     if ($postponed_count) {
-      echo sprintf("%s %d %s\n",
+      echo sprintf("%s %s\n",
          $status_codes[ArcanistUnitTestResult::RESULT_POSTPONED],
-         $postponed_count,
-         ($postponed_count > 1)?'tests':'test');
+         pht('%d test(s)', $postponed_count));
     }
 
     if ($coverage) {

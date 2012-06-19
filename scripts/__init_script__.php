@@ -63,6 +63,8 @@ PhutilTranslator::getInstance()
 
     'line(s)' => array('line', 'lines'),
 
+    '%d test(s)' => array('%d test', '%d tests'),
+
     '%d assertion(s) passed.' => array(
       '%d assertion passed.',
       '%d assertions passed.',
