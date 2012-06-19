@@ -249,6 +249,19 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         'This codebase targets PHP 5.2, but namespaces were not introduced '.
         'until PHP 5.3.');
     }
+
+    $statics = $root->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+    foreach ($statics as $static) {
+      $name = $static->getChildOfType(0, 'n_CLASS_NAME');
+      if ($name->getConcreteString() == 'static') {
+        $this->raiseLintAtNode(
+          $name,
+          self::LINT_PHP_53_FEATURES,
+          'This codebase targets PHP 5.2, but `static::` was not introduced '.
+          'until PHP 5.3.');
+      }
+    }
+
   }
 
   private function lintImplicitFallthrough($root) {
