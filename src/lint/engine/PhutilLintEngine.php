@@ -93,9 +93,7 @@ class PhutilLintEngine extends ArcanistLintEngine {
         ArcanistXHPASTLinter::LINT_PHP_53_FEATURES
           => ArcanistLintSeverity::SEVERITY_ERROR,
       ));
-    $license_linter = new ArcanistApacheLicenseLinter();
     $linters[] = $xhpast_linter;
-    $linters[] = $license_linter;
     foreach ($paths as $path) {
       if (preg_match('/\.php$/', $path)) {
         $xhpast_linter->addPath($path);
@@ -103,6 +101,8 @@ class PhutilLintEngine extends ArcanistLintEngine {
       }
     }
 
+    $license_linter = new ArcanistApacheLicenseLinter();
+    $linters[] = $license_linter;
     foreach ($paths as $path) {
       if (preg_match('/\.(php|cpp|hpp|l|y)$/', $path)) {
         if (!preg_match('@^externals/@', $path)) {
