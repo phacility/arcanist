@@ -114,6 +114,7 @@ EOTEXT
       foreach (Filesystem::walkToRoot($path) as $dir) {
         if (Filesystem::pathExists($dir.'/__phutil_library_init__.php')) {
           $path = $dir;
+          $found = true;
           break;
         }
       }
