@@ -193,6 +193,7 @@ EOTEXT
 
       __--ansi__
           Use formatting even in environments which probably don't support it.
+          Example: arc --ansi unit | less -r
 
       __--load-phutil-library=/path/to/library__
           Ignore libraries listed in .arcconfig and explicitly load specified
