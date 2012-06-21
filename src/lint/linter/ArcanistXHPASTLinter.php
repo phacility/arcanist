@@ -57,6 +57,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_PHP_53_FEATURES           = 31;
   const LINT_REUSED_AS_ITERATOR        = 32;
   const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
+  const LINT_COMMENT_SPACING           = 34;
 
 
   public function getLintNameMap() {
@@ -93,6 +94,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
+      self::LINT_COMMENT_SPACING           => 'Comment Spaces',
     );
   }
 
@@ -123,6 +125,9 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PHT_WITH_DYNAMIC_STRING
         => ArcanistLintSeverity::SEVERITY_WARNING,
+
+      self::LINT_COMMENT_SPACING
+        => ArcanistLintSeverity::SEVERITY_ADVICE,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -194,6 +199,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPregQuote($root);
     $this->lintUndeclaredVariables($root);
     $this->lintArrayIndexWhitespace($root);
+    $this->lintCommentSpaces($root);
     $this->lintHashComments($root);
     $this->lintPrimaryDeclarationFilenameMatch($root);
     $this->lintTautologicalExpressions($root);
@@ -567,6 +573,24 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
 
+  protected function lintCommentSpaces($root) {
+    foreach ($root->selectTokensOfType('T_COMMENT') as $comment) {
+      $value = $comment->getValue();
+      if ($value[0] != '#') {
+        $match = null;
+        if (preg_match('@^(/[/*]+)[^/*\s]@', $value, $match)) {
+          $this->raiseLintAtOffset(
+            $comment->getOffset(),
+            self::LINT_COMMENT_SPACING,
+            'Put space after comment start.',
+            $match[1],
+            $match[1].' ');
+        }
+      }
+    }
+  }
+
+
   protected function lintHashComments($root) {
     foreach ($root->selectTokensOfType('T_COMMENT') as $comment) {
       $value = $comment->getValue();
@@ -579,7 +603,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         self::LINT_COMMENT_STYLE,
         'Use "//" single-line comments, not "#".',
         '#',
-        '//');
+        (preg_match('/^#\S/', $value) ? '// ' : '//'));
     }
   }
 
