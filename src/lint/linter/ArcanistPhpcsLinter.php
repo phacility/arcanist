@@ -32,7 +32,6 @@
 final class ArcanistPhpcsLinter extends ArcanistLinter {
 
   private $reports;
-  private $stdout;
 
   public function getLinterName() {
     return 'PHPCS';
@@ -86,27 +85,26 @@ final class ArcanistPhpcsLinter extends ArcanistLinter {
     foreach (Futures($futures)->limit(8) as $path => $future) {
       $this->results[$path] = $future->resolve();
     }
-  }
 
-  protected function loadXmlException() {
-    throw new ArcanistUsageException('PHPCS Linter failed to load ' .
-      'reporting file. Something happened when running phpcs. ' .
-      "Output:\n$this->stdout" .
-      "\nTry running lint with --trace flag to get more details.");
+    libxml_use_internal_errors(true);
   }
 
   public function lintPath($path) {
     list($rc, $stdout) = $this->results[$path];
 
     $report = Filesystem::readFile($this->reports[$path]);
-    $report_dom = new DOMDocument();
 
-    // Unfortunately loadXML does not have normal error reporting,
-    // so we need temporary to take over error handler
-    set_error_handler(array($this, 'loadXmlException'));
-    $this->stdout = $stdout;
-    $report_dom->loadXML($report);
-    restore_error_handler();
+    if ($report) {
+      $report_dom = new DOMDocument();
+      libxml_clear_errors();
+      $report_dom->loadXML($report);
+    }
+    if (!$report || libxml_get_errors()) {
+      throw new ArcanistUsageException('PHPCS Linter failed to load ' .
+        'reporting file. Something happened when running phpcs. ' .
+        "Output:\n$stdout" .
+        "\nTry running lint with --trace flag to get more details.");
+    }
 
     $files = $report_dom->getElementsByTagName('file');
     foreach ($files as $file) {
