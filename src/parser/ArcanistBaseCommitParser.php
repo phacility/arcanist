@@ -32,7 +32,7 @@ final class ArcanistBaseCommitParser {
       return array();
     }
 
-    $spec = preg_split('/[ ,]/', $raw_spec);
+    $spec = preg_split('/\s*,\s*/', $raw_spec);
     $spec = array_filter($spec);
 
     foreach ($spec as $rule) {
@@ -164,6 +164,19 @@ final class ArcanistBaseCommitParser {
       case 'outgoing':
         return $this->api->resolveBaseCommitRule($rule, $source);
       default:
+        $matches = null;
+        if (preg_match('/^exec\((.*)\)$/', $name, $matches)) {
+          $root = $this->api->getWorkingCopyIdentity()->getProjectRoot();
+          $future = new ExecFuture($matches[1]);
+          $future->setCWD($root);
+          list($err, $stdout) = $future->resolve();
+          if (!$err) {
+            return trim($stdout);
+          } else {
+            return null;
+          }
+        }
+
         throw new ArcanistUsageException(
           "Base commit rule '{$rule}' (from source '{$source}') ".
           "is not a recognized rule.");
