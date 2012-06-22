@@ -70,7 +70,8 @@ EOTEXT
         'param' => 'master',
         'help' => "Land feature branch onto a branch other than ".
                   "'master' (default). You can change the default by setting ".
-                  "'arc.land.onto.default' in your .arcconfig.",
+                  "'arc.land.onto.default' with `arc set-config` or for the ".
+                  "entire project in .arcconfig.",
       ),
       'hold' => array(
         'help' => "Prepare the change to be pushed, but do not actually ".
@@ -135,7 +136,7 @@ EOTEXT
     $branch = head($branch);
 
     $onto_default = nonempty(
-      $this->getWorkingCopy()->getConfig('arc.land.onto.default'),
+      $this->getWorkingCopy()->getConfigFromAnySource('arc.land.onto.default'),
       'master');
 
     $remote = $this->getArgument('remote', 'origin');

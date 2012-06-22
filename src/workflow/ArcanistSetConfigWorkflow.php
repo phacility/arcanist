@@ -159,6 +159,12 @@ EOTEXT
           'engine is specified by the current project.',
         'example' => 'ExampleUnitTestEngine',
       ),
+      'arc.land.onto.default' => array(
+        'help' =>
+          'The name of the default branch to land changes onto when '.
+          '`arc land` is run.',
+        'example' => 'develop',
+      ),
     );
 
     $config = self::readGlobalArcConfig();

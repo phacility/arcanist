@@ -1104,14 +1104,14 @@ EOTEXT
         case ArcanistLintWorkflow::RESULT_WARNINGS:
           $this->lintExcuse = $this->getErrorExcuse(
             "Lint issued unresolved warnings.",
-            $repository_api->getScratchFilePath('lint-excuses'));
+            'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           echo phutil_console_format(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
           $this->lintExcuse = $this->getErrorExcuse(
             "Lint issued unresolved errors!",
-            $repository_api->getScratchFilePath('lint-excuses'));
+            'lint-excuses');
           break;
       }
 
@@ -1168,7 +1168,7 @@ EOTEXT
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
           $this->unitExcuse = $this->getErrorExcuse(
             "Unit test results include failures!",
-            $repository_api->getScratchFilePath('unit-excuses'));
+            'unit-excuses');
           break;
       }
 
@@ -1184,7 +1184,7 @@ EOTEXT
     return null;
   }
 
-  private function getErrorExcuse($prompt, $history = '') {
+  private function getErrorExcuse($prompt, $history) {
     if ($this->getArgument('excuse')) {
       $prompt .= " Ignore them?";
       if (!phutil_console_confirm($prompt)) {
@@ -1193,9 +1193,11 @@ EOTEXT
       return $this->getArgument('excuse');
     }
 
+    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+
     $prompt .= " Provide explanation to continue or press Enter to abort.";
     echo "\n\n";
-    echo phutil_console_format($prompt);
+    echo phutil_console_wrap($prompt);
     $return = phutil_console_prompt("Explanation:", $history);
     if ($return == '') {
       throw new ArcanistUserAbortException();

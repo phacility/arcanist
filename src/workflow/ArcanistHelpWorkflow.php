@@ -191,6 +191,10 @@ EOTEXT
       __--no-ansi__
           Output in plain ASCII text only, without color or style.
 
+      __--ansi__
+          Use formatting even in environments which probably don't support it.
+          Example: arc --ansi unit | less -r
+
       __--load-phutil-library=/path/to/library__
           Ignore libraries listed in .arcconfig and explicitly load specified
           libraries instead. Mostly useful for Arcanist development.
