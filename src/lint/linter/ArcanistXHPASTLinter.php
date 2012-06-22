@@ -302,6 +302,53 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+    $this->lintPHP53Functions($root);
+  }
+
+  private function lintPHP53Functions($root) {
+    $target = dirname(__FILE__).'/../../../resources/php_compat_info.json';
+    $compat_info = json_decode(file_get_contents($target), true);
+
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    foreach ($calls as $call) {
+      $node = $call->getChildByIndex(0);
+      $name = strtolower($node->getConcreteString());
+      $version = idx($compat_info['functions'], $name);
+      if ($version) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_53_FEATURES,
+          "This codebase targets PHP 5.2.3, but `{$name}()` was not ".
+          "introduced until PHP {$version}.");
+      } else if (array_key_exists($name, $compat_info['params'])) {
+        $params = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+        foreach (array_values($params->getChildren()) as $i => $param) {
+          $version = idx($compat_info['params'][$name], $i);
+          if ($version) {
+            $this->raiseLintAtNode(
+              $param,
+              self::LINT_PHP_53_FEATURES,
+              "This codebase targets PHP 5.2.3, but parameter ".($i + 1)." ".
+              "of `{$name}()` was not introduced until PHP {$version}.");
+          }
+        }
+      }
+    }
+
+    $classes = $root->selectDescendantsOfType('n_CLASS_NAME');
+    foreach ($classes as $node) {
+      $name = strtolower($node->getConcreteString());
+      $version = idx($compat_info['interfaces'], $name);
+      $version = idx($compat_info['classes'], $name, $version);
+      if ($version) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_53_FEATURES,
+          "This codebase targets PHP 5.2.3, but `{$name}` was not ".
+          "introduced until PHP {$version}.");
+      }
+    }
+
   }
 
   private function lintImplicitFallthrough($root) {
