@@ -1,0 +1,11 @@
+<?php
+pht('a');
+pht("a");
+pht('a'.'b');
+pht(f());
+pht();
+pht($a);
+pht('%s', $a);
+~~~~~~~~~~
+warning:5:1
+warning:7:1

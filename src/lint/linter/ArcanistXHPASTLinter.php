@@ -56,6 +56,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
   const LINT_PHP_53_FEATURES           = 31;
   const LINT_REUSED_AS_ITERATOR        = 32;
+  const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
 
 
   public function getLintNameMap() {
@@ -91,6 +92,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
+      self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
     );
   }
 
@@ -118,6 +120,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_ARRAY_INDEX_SPACING
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_IMPLICIT_FALLTHROUGH
+        => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_PHT_WITH_DYNAMIC_STRING
         => ArcanistLintSeverity::SEVERITY_WARNING,
 
       // This is disabled by default because it implies a very strict policy
@@ -200,6 +204,42 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintRaggedClasstreeEdges($root);
     $this->lintImplicitFallthrough($root);
     $this->lintPHP53Features($root);
+    $this->lintPHT($root);
+  }
+
+  public function lintPHT($root) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    foreach ($calls as $call) {
+      $name = strtolower($call->getChildByIndex(0)->getConcreteString());
+      if ($name != 'pht') {
+        continue;
+      }
+
+      $parameters = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+      if (!$parameters->getChildren()) {
+        continue;
+      }
+
+      $identifier = $parameters->getChildByIndex(0);
+      if ($identifier->getTypeName() == 'n_STRING_SCALAR') {
+        continue;
+      }
+
+      if ($identifier->getTypeName() == 'n_CONCATENATION_LIST') {
+        foreach ($identifier->getChildren() as $child) {
+          if ($child->getTypeName() == 'n_STRING_SCALAR' ||
+              $child->getTypeName() == 'n_OPERATOR') {
+            continue 2;
+          }
+        }
+      }
+
+      $this->raiseLintAtNode(
+        $call,
+        self::LINT_PHT_WITH_DYNAMIC_STRING,
+        "The first parameter of pht() can be only a scalar string, ".
+          "otherwise it can't be extracted.");
+    }
   }
 
   public function lintPHP53Features($root) {
