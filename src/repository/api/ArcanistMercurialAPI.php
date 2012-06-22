@@ -99,6 +99,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getRelativeCommit() {
     if (empty($this->relativeCommit)) {
+
+      if ($this->getBaseCommitArgumentRules() ||
+          $this->getWorkingCopyIdentity->getConfigFromAnySource('base')) {
+        $base = $this->resolveBaseCommit();
+        if (!$base) {
+          throw new ArcanistUsageException(
+            "None of the rules in your 'base' configuration matched a valid ".
+            "commit. Adjust rules or specify which commit you want to use ".
+            "explicitly.");
+        }
+        $this->relativeCommit = $base;
+        return $this->relativeCommit;
+      }
+
       list($err, $stdout) = $this->execManualLocal(
         'outgoing --branch `hg branch` --style default');
 
@@ -606,6 +620,64 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $summary = head(explode("\n", $summary));
 
     return trim($summary);
+  }
+
+  public function resolveBaseCommitRule($rule, $source) {
+    list($type, $name) = explode(':', $rule, 2);
+
+    switch ($type) {
+      case 'hg':
+        $matches = null;
+        if (preg_match('/^gca\((.+)\)$/', $name, $matches)) {
+          list($err, $merge_base) = $this->execManualLocal(
+            'log --template={node} --rev %s',
+            sprintf('ancestor(., %s)', $matches[1]));
+          if (!$err) {
+            $this->setBaseCommitExplanation(
+              "it is the greatest common ancestor of '{$matches[1]}' and ., as".
+              "specified by '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return trim($merge_base);
+          }
+        } else {
+          list($err) = $this->execManualLocal(
+            'id -r %s',
+            $name);
+          if (!$err) {
+            $this->setBaseCommitExplanation(
+              "it is specified by '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return $name;
+          }
+        }
+        break;
+      case 'arc':
+        switch ($name) {
+          case 'empty':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return 'null';
+          case 'outgoing':
+            list($err, $outgoing_base) = $this->execManualLocal(
+              'log --template={node} --rev %s',
+              'limit(reverse(ancestors(.) - outgoing()), 1)'
+            );
+            if (!$err) {
+              $this->setBaseCommitExplanation(
+                "it is the first ancestor of the working copy that is not ".
+                "outgoing, and it matched the rule {$rule} in your {$source} ".
+                "'base' configuration.");
+              return trim($outgoing_base);
+            }
+        }
+        break;
+      default:
+        return null;
+    }
+
+    return null;
+
   }
 
 }
