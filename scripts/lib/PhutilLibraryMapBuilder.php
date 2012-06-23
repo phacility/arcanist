@@ -37,7 +37,7 @@ final class PhutilLibraryMapBuilder {
   const LIBRARY_MAP_VERSION       = 2;
 
   const SYMBOL_CACHE_VERSION_KEY  = '__symbol_cache_version__';
-  const SYMBOL_CACHE_VERSION      = 3;
+  const SYMBOL_CACHE_VERSION      = 4;
 
 
 /* -(  Mapping libphutil Libraries  )---------------------------------------- */
@@ -420,7 +420,9 @@ final class PhutilLibraryMapBuilder {
         continue;
       }
 
-      $map[$file] = $hash;
+      // We include also filename in the hash to handle cases when the file is
+      // moved without modifying its content.
+      $map[$file] = md5($hash.$file);
     }
 
     return $map;
