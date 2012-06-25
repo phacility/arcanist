@@ -202,7 +202,16 @@ final class ArcanistWorkingCopyIdentity {
     // lastly, try global (i.e. user-level) config
     if ($pval === null) {
       $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
-      $pval = idx($global_config, $key, $default);
+      $pval = idx($global_config, $key);
+    }
+
+    if ($pval === null) {
+      $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
+      $pval = idx($system_config, $key);
+    }
+
+    if ($pval === null) {
+      $pval = $default;
     }
 
     return $pval;

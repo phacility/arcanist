@@ -53,6 +53,7 @@ EOTEXT
     $argv = $this->getArgument('argv');
 
     $configs = array(
+      'system' => self::readSystemArcConfig(),
       'global' => self::readGlobalArcConfig(),
       'local' => $this->readLocalArcConfig(),
     );

@@ -58,6 +58,7 @@ final class ArcanistBaseCommitParser {
       'local'   => '',
       'project' => '',
       'global'  => '',
+      'system'  => '',
     );
 
     foreach ($specs as $source => $spec) {
@@ -69,6 +70,7 @@ final class ArcanistBaseCommitParser {
       'local',
       'project',
       'global',
+      'system',
     );
 
     while ($this->try) {
@@ -143,6 +145,7 @@ final class ArcanistBaseCommitParser {
       case 'global':
       case 'project':
       case 'args':
+      case 'system':
         // Push the other source on top of the list.
         array_unshift($this->try, $name);
         $this->log("Switching to source '{$name}'.");
