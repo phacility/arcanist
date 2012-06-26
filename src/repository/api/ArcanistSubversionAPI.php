@@ -37,7 +37,20 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getMetadataPath() {
-    return $this->getPath('.svn');
+    static $svn_dir = null;
+    if ($svn_dir === null) {
+      // from svn 1.7, subversion keeps a single .svn directly under
+      // the working copy root.  However, we allow .arcconfigs that
+      // aren't at the working copy root.
+      foreach (Filesystem::walkToRoot($this->getPath()) as $parent) {
+        $possible_svn_dir = Filesystem::resolvePath('.svn', $parent);
+        if (Filesystem::pathExists($possible_svn_dir)) {
+          $svn_dir = $possible_svn_dir;
+          break;
+        }
+      }
+    }
+    return $svn_dir;
   }
 
   protected function buildLocalFuture(array $argv) {
