@@ -207,7 +207,7 @@ EOTEXT
         $status = 'No Revision';
       }
 
-      if (!$this->getArgument('view-all')) {
+      if (!$this->getArgument('view-all') && !$branch['current']) {
         if ($status == 'Closed' || $status == 'Abandoned') {
           continue;
         }
