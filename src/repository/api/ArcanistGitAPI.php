@@ -637,61 +637,32 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   /**
    * Returns names of all the branches in the current repository.
    *
-   * @return array where each element is a triple ('name', 'sha1', 'current')
+   * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($branch_info) = $this->execxLocal('branch --no-color');
-    $lines = explode("\n", trim($branch_info));
+    list($branch_info) = $this->execxLocal(
+      'branch --verbose --abbrev=40 --no-color');
+    $lines = explode("\n", rtrim($branch_info));
+
     $result = array();
     foreach ($lines as $line) {
-      $match = array();
-      preg_match('/^(\*?)\s*(.*)$/', $line, $match);
-      $name = $match[2];
-      if ($name == '(no branch)') {
-        // Just ignore this, we could theoretically try to figure out the ref
-        // and treat it like a real branch but that's sort of ridiculous.
+
+      if (preg_match('/^[* ]+\(no branch\)/', $line)) {
+        // This is indicating that the working copy is in a detached state;
+        // just ignore it.
         continue;
       }
+
+      list($current, $name, $hash, $desc) = preg_split('/\s+/', $line, 4);
       $result[] = array(
-        'current' => !empty($match[1]),
+        'current' => !empty($current),
         'name'    => $name,
+        'hash'    => $hash,
+        'desc'    => $desc,
       );
     }
-    $all_names = ipull($result, 'name');
-    // Calling 'git branch' first and then 'git rev-parse' is way faster than
-    // 'git branch -v' for some reason.
-    list($sha1s_string) = $this->execxLocal('rev-parse %Ls', $all_names);
 
-    $sha1_map = array_combine($all_names, explode("\n", trim($sha1s_string)));
-    foreach ($result as &$branch) {
-      $branch['sha1'] = $sha1_map[$branch['name']];
-    }
     return $result;
-  }
-
-  /**
-   * Returns git commit messages for the given revisions,
-   * in the specified format (see git show --help for options).
-   *
-   * @param array $revs a list of commit hashes
-   * @param string $format the format to show messages in
-   */
-  public function multigetCommitMessages($revs, $format) {
-
-    list($commits_string) = $this->execxLocal(
-      "show -s --pretty='format:'%s%s %Ls",
-      $format,
-      '%x00',
-      $revs);
-
-    $commits_list = array_slice(explode("\0", $commits_string), 0, -1);
-    $commits_list = array_combine($revs, $commits_list);
-    return $commits_list;
-  }
-
-  public function getRepositoryOwner() {
-    list($owner) = $this->execxLocal('config --get user.name');
-    return trim($owner);
   }
 
   public function getWorkingCopyRevision() {

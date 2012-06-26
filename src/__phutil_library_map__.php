@@ -127,7 +127,6 @@ phutil_register_library_map(array(
     'ArcanistXHPASTLintNamingHookTestCase' => 'lint/linter/xhpast/__tests__/ArcanistXHPASTLintNamingHookTestCase.php',
     'ArcanistXHPASTLinter' => 'lint/linter/ArcanistXHPASTLinter.php',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/__tests__/ArcanistXHPASTLinterTestCase.php',
-    'BranchInfo' => 'branch/BranchInfo.php',
     'ComprehensiveLintEngine' => 'lint/engine/ComprehensiveLintEngine.php',
     'ExampleLintEngine' => 'lint/engine/ExampleLintEngine.php',
     'NoseTestEngine' => 'unit/engine/NoseTestEngine.php',
