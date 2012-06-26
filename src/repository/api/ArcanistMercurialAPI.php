@@ -670,6 +670,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "'base' configuration.");
               return trim($outgoing_base);
             }
+          case 'bookmark':
+            $revset =
+              'limit('.
+              '  sort('.
+              '    (ancestors(.) and bookmark() - .) or'.
+              '    (ancestors(.) - outgoing()), '.
+              '  -rev),'.
+              '1)';
+            list($err, $bookmark_base) = $this->execManualLocal(
+              'log --template={node} --rev %s',
+              $revset);
+            if (!$err) {
+              $this->setBaseCommitExplanation(
+                "it is the first ancestor of . that either has a bookmark, or ".
+                "is already in the remote and it matched the rule {$rule} in ".
+                "your {$source} 'base' configuration");
+              return trim($bookmark_base);
+            }
         }
         break;
       default:
