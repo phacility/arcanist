@@ -24,6 +24,13 @@ $args->parseStandardArguments();
 $args->parse(
   array(
     array(
+      'name'      => 'skip-hello',
+      'help'      => 'Do not expect "capability" message when connecting. '.
+                     'The server must be configured not to send the message. '.
+                     'This deviates from the Mercurial protocol, but slightly '.
+                     'improves performance.',
+    ),
+    array(
       'name'      => 'repository',
       'wildcard'  => true,
     ),
@@ -35,14 +42,15 @@ if (count($repo) !== 1) {
 }
 $repo = head($repo);
 
-$daemon = new ArcanistHgProxyClient($repo);
+$client = new ArcanistHgProxyClient($repo);
+$client->setSkipHello($args->getArg('skip-hello'));
 
 $t_start = microtime(true);
 
-$result = $daemon->executeCommand(
+$result = $client->executeCommand(
   array('log', '--template', '{node}', '--rev', 2));
 
 $t_end   = microtime(true);
 var_dump($result);
 
-echo "\nExecuted in ".((int)(1000 * ($t_end - $t_start)))."ms.\n";
+echo "\nExecuted in ".((int)(1000000 * ($t_end - $t_start)))."us.\n";
