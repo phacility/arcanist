@@ -105,15 +105,37 @@ final class ArcanistWorkingCopyIdentity {
       '.hg',
       '.svn',
     );
+    $found_meta_dir = false;
     foreach ($vc_dirs as $dir) {
-      $local_path = Filesystem::resolvePath(
-        $dir.'/arc/config',
+      $meta_path = Filesystem::resolvePath(
+        $dir,
         $this->projectRoot);
-      if (Filesystem::pathExists($local_path)) {
-        $file = Filesystem::readFile($local_path);
-        if ($file) {
-          $this->localConfig = json_decode($file, true);
-          break;
+      if (Filesystem::pathExists($meta_path)) {
+        $found_meta_dir = true;
+        $local_path = Filesystem::resolvePath(
+          'arc/config',
+          $meta_path);
+        if (Filesystem::pathExists($local_path)) {
+          $file = Filesystem::readFile($local_path);
+          if ($file) {
+            $this->localConfig = json_decode($file, true);
+          }
+        }
+        break;
+      }
+    }
+
+    if (!$found_meta_dir) {
+      // Try for a single higher-level .svn directory as used by svn 1.7+
+      foreach (Filesystem::walkToRoot($this->projectRoot) as $parent_path) {
+        $local_path = Filesystem::resolvePath(
+          '.svn/arc/config',
+          $parent_path);
+        if (Filesystem::pathExists($local_path)) {
+          $file = Filesystem::readFile($local_path);
+          if ($file) {
+            $this->localConfig = json_decode($file, true);
+          }
         }
       }
     }
@@ -202,7 +224,16 @@ final class ArcanistWorkingCopyIdentity {
     // lastly, try global (i.e. user-level) config
     if ($pval === null) {
       $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
-      $pval = idx($global_config, $key, $default);
+      $pval = idx($global_config, $key);
+    }
+
+    if ($pval === null) {
+      $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
+      $pval = idx($system_config, $key);
+    }
+
+    if ($pval === null) {
+      $pval = $default;
     }
 
     return $pval;

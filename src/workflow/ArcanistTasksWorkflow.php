@@ -56,7 +56,7 @@ EOTEXT
     return array(
       'status' => array(
         'param' => 'task_status',
-        'help' => "Show tasks that or open or closed, default is all.",
+        'help' => "Show tasks that or open or closed, default is open.",
       ),
       'owner' => array(
         'param' => 'username',

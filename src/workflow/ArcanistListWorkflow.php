@@ -81,12 +81,10 @@ EOTEXT
         $info[$key]['here'],
         $revision['status'],
         $revision['id']);
-      $info[$key]['statusColorized'] =
-        BranchInfo::renderColorizedRevisionStatus(
-          $revision['statusName']);
+      $info[$key]['statusName'] = $revision['statusName'];
       $status_len = max(
         $status_len,
-        strlen($info[$key]['statusColorized']));
+        strlen($info[$key]['statusName']));
     }
 
     $info = isort($info, 'sort');
@@ -97,7 +95,7 @@ EOTEXT
         $spec['here']
           ? phutil_console_format('**%s**', '*')
           : ' ',
-        $spec['statusColorized'],
+        $spec['statusName'],
         $revision['id'],
         $revision['title']);
     }

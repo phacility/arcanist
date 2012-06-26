@@ -36,6 +36,7 @@
  * and serve them from a single Mercurial server process.
  *
  * @task construct  Construction
+ * @task config     Configuration
  * @task server     Serving Requests
  * @task client     Managing Clients
  * @task hg         Managing Mercurial
@@ -46,6 +47,18 @@ final class ArcanistHgProxyServer {
   private $workingCopy;
   private $socket;
   private $hello;
+
+  private $quiet;
+
+  private $clientLimit;
+  private $lifetimeClientCount;
+
+  private $idleLimit;
+  private $idleSince;
+
+  private $skipHello;
+
+  private $doNotDaemonize;
 
 
 /* -(  Construction  )------------------------------------------------------- */
@@ -64,37 +77,123 @@ final class ArcanistHgProxyServer {
   }
 
 
+/* -(  Configuration  )------------------------------------------------------ */
+
+
+  /**
+   * Disable status messages to stdout. Controlled with `--quiet`.
+   *
+   * @param bool  True to disable status messages.
+   * @return this
+   *
+   * @task config
+   */
+  public function setQuiet($quiet) {
+    $this->quiet = $quiet;
+    return $this;
+  }
+
+
+  /**
+   * Configure a client limit. After serving this many clients, the server
+   * will exit. Controlled with `--client-limit`.
+   *
+   * You can use `--client-limit 1` with `--xprofile` and `--do-not-daemonize`
+   * to profile the server.
+   *
+   * @param int Client limit, or 0 to disable limit.
+   * @return this
+   *
+   * @task config
+   */
+  public function setClientLimit($limit) {
+    $this->clientLimit = $limit;
+    return $this;
+  }
+
+
+  /**
+   * Configure an idle time limit. After this many seconds idle, the server
+   * will exit. Controlled with `--idle-limit`.
+   *
+   * @param int Idle limit, or 0 to disable limit.
+   * @return this
+   *
+   * @task config
+   */
+  public function setIdleLimit($limit) {
+    $this->idleLimit = $limit;
+    return $this;
+  }
+
+
+  /**
+   * When clients connect, do not send the "capabilities" message expected by
+   * the Mercurial protocol. This deviates from the protocol and will only work
+   * if the clients are also configured not to expect the message, but slightly
+   * improves performance. Controlled with --skip-hello.
+   *
+   * @param bool True to skip the "capabilities" message.
+   * @return this
+   *
+   * @task config
+   */
+  public function setSkipHello($skip) {
+    $this->skipHello = $skip;
+    return $this;
+  }
+
+
+  /**
+   * Configure whether the server runs in the foreground or daemonizes.
+   * Controlled by --do-not-daemonize. Primarily useful for debugging.
+   *
+   * @param bool True to run in the foreground.
+   * @return this
+   *
+   * @task config
+   */
+  public function setDoNotDaemonize($do_not_daemonize) {
+    $this->doNotDaemonize = $do_not_daemonize;
+    return $this;
+  }
+
+
 /* -(  Serving Requests  )--------------------------------------------------- */
 
 
   /**
-   * Start the server. This method does not return.
+   * Start the server. This method returns after the client limit or idle
+   * limit are exceeded. If neither limit is configured, this method does not
+   * exit.
    *
-   * @return never
+   * @return null
    *
    * @task server
    */
   public function start() {
-
     // Create the unix domain socket in the working copy to listen for clients.
     $socket = $this->startWorkingCopySocket();
     $this->socket = $socket;
 
-    // TODO: Daemonize here.
+    if (!$this->doNotDaemonize) {
+      $this->daemonize();
+    }
 
     // Start the Mercurial process which we'll forward client requests to.
     $hg = $this->startMercurialProcess();
     $clients = array();
 
     $this->log(null, 'Listening');
+    $this->idleSince = time();
     while (true) {
       // Wait for activity on any active clients, the Mercurial process, or
       // the listening socket where new clients connect.
       PhutilChannel::waitForAny(
         array_merge($clients, array($hg)),
         array(
-          'read'    => array($socket),
-          'except'  => array($socket),
+          'read'    => $socket ? array($socket) : array(),
+          'except'  => $socket ? array($socket) : array()
         ));
 
       if (!$hg->update()) {
@@ -102,20 +201,61 @@ final class ArcanistHgProxyServer {
       }
 
       // Accept any new clients.
-      while ($client = $this->acceptNewClient($socket)) {
+      while ($socket && ($client = $this->acceptNewClient($socket))) {
         $clients[] = $client;
         $key = last_key($clients);
         $client->setName($key);
 
         $this->log($client, 'Connected');
+        $this->idleSince = time();
+
+        // Check if we've hit the client limit. If there's a configured
+        // client limit and we've hit it, stop accepting new connections
+        // and close the socket.
+
+        $this->lifetimeClientCount++;
+
+        if ($this->clientLimit) {
+          if ($this->lifetimeClientCount >= $this->clientLimit) {
+            $this->closeSocket();
+            $socket = null;
+          }
+        }
       }
 
       // Update all the active clients.
       foreach ($clients as $key => $client) {
-        $ok = $this->updateClient($client, $hg);
-        if (!$ok) {
-          $this->log($client, 'Disconnected');
-          unset($clients[$key]);
+        if ($this->updateClient($client, $hg)) {
+          // In this case, the client is still connected so just move on to
+          // the next one. Otherwise we continue below and handle the disconect.
+          continue;
+        }
+
+        $this->log($client, 'Disconnected');
+        unset($clients[$key]);
+
+        // If we have a client limit and we've served that many clients, exit.
+
+        if ($this->clientLimit) {
+          if ($this->lifetimeClientCount >= $this->clientLimit) {
+            if (!$clients) {
+              $this->log(null, 'Exiting (Client Limit)');
+              return;
+            }
+          }
+        }
+      }
+
+      // If we have an idle limit and haven't had any activity in at least
+      // that long, exit.
+      if ($this->idleLimit) {
+        $remaining = $this->idleLimit - (time() - $this->idleSince);
+        if ($remaining <= 0) {
+          $this->log(null, 'Exiting (Idle Limit)');
+          return;
+        }
+        if ($remaining <= 5) {
+          $this->log(null, 'Exiting in '.$remaining.' seconds');
         }
       }
     }
@@ -189,6 +329,8 @@ final class ArcanistHgProxyServer {
     $t = 1000000 * ($t_end - $t_start);
     $this->log($client, '< '.number_format($t, 0).'us');
 
+    $this->idleSince = time();
+
     return true;
   }
 
@@ -242,13 +384,15 @@ final class ArcanistHgProxyServer {
     // been set nonblocking.
     $new_client = @stream_socket_accept($socket, $timeout = 0);
     if (!$new_client) {
-      return;
+      return null;
     }
 
     $channel = new PhutilSocketChannel($new_client);
     $client = new ArcanistHgClientChannel($channel);
 
-    $client->write($this->hello);
+    if (!$this->skipHello) {
+      $client->write($this->hello);
+    }
 
     return $client;
   }
@@ -292,6 +436,10 @@ final class ArcanistHgProxyServer {
    * @task internal
    */
   public function __destruct() {
+    $this->closeSocket();
+  }
+
+  private function closeSocket() {
     if ($this->socket) {
       @stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
       @fclose($this->socket);
@@ -301,12 +449,56 @@ final class ArcanistHgProxyServer {
   }
 
   private function log($client, $message) {
+    if ($this->quiet) {
+      return;
+    }
+
     if ($client) {
       $message = '[Client '.$client->getName().'] '.$message;
     } else {
       $message = '[Server] '.$message;
     }
+
     echo $message."\n";
+  }
+
+  private function daemonize() {
+
+    // Keep stdout if it's been redirected somewhere, otherwise shut it down.
+    $keep_stdout = false;
+    $keep_stderr = false;
+    if (function_exists('posix_isatty')) {
+      if (!posix_isatty(STDOUT)) {
+        $keep_stdout = true;
+      }
+      if (!posix_isatty(STDERR)) {
+        $keep_stderr = true;
+      }
+    }
+
+    $pid = pcntl_fork();
+    if ($pid === -1) {
+      throw new Exception("Unable to fork!");
+    } else if ($pid) {
+      // We're the parent; exit. First, drop our reference to the socket so
+      // our __destruct() doesn't tear it down; the child will tear it down
+      // later.
+      $this->socket = null;
+      exit(0);
+    }
+
+    // We're the child; continue.
+
+    fclose(STDIN);
+
+    if (!$keep_stdout) {
+      fclose(STDOUT);
+      $this->quiet = true;
+    }
+
+    if (!$keep_stderr) {
+      fclose(STDERR);
+    }
   }
 
 }

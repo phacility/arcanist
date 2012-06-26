@@ -27,7 +27,7 @@ final class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **branch**
+      **branch** [__options__]
 EOTEXT
       );
   }
@@ -37,9 +37,12 @@ EOTEXT
           Supports: git
           A wrapper on 'git branch'. It pulls data from Differential and
           displays the revision status next to the branch name.
-          Branches are sorted in ascending order by the last commit time.
-          By default branches with closed/abandoned revisions
-          are not displayed.
+
+          By default, branches are sorted chronologically. You can sort them
+          by status instead with __--by-status__.
+
+          By default, branches that are "Closed" or "Abandoned" are not
+          displayed. You can show them with __--view-all__.
 EOTEXT
       );
   }
@@ -60,11 +63,10 @@ EOTEXT
   public function getArguments() {
     return array(
       'view-all' => array(
-        'help' =>
-          "Include closed and abandoned revisions",
+        'help' => 'Include closed and abandoned revisions',
       ),
       'by-status' => array(
-        'help' => 'Group output by revision status.',
+        'help' => 'Sort branches by status instead of time.',
       ),
     );
   }
@@ -73,103 +75,179 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException(
-        "arc branch is only supported under git."
+        'arc branch is only supported under git.');
+    }
+
+    $branches = $repository_api->getAllBranches();
+    if (!$branches) {
+      throw new ArcanistUsageException('No branches in this working copy.');
+    }
+
+    $commit_map = $this->loadCommitInfo($branches, $repository_api);
+    foreach ($branches as $key => $branch) {
+      $branches[$key] += $commit_map[$branch['hash']];
+    }
+
+    $revisions = $this->loadRevisions($branches);
+
+    $this->printBranches($branches, $revisions);
+
+    return 0;
+  }
+
+  private function loadCommitInfo(
+    array $branches,
+    ArcanistRepositoryAPI $repository_api) {
+
+    $commits = ipull($branches, 'hash');
+    list($info) = $repository_api->execxLocal(
+      'log --format=%C %Ls --',
+      '%H%x01%ct%x01%T%x01%s%n%b%x02',
+      $commits);
+
+    $commit_map = array();
+
+    $info = array_filter(explode("\2", trim($info)));
+    foreach ($info as $line) {
+      list($hash, $epoch, $tree, $text) = explode("\1", trim($line), 4);
+      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
+      $id = $message->getRevisionID();
+
+      $commit_map[$hash] = array(
+        'epoch'       => (int)$epoch,
+        'tree'        => $tree,
+        'revisionID'  => $id,
       );
     }
 
-    $this->branches = BranchInfo::loadAll($repository_api);
-    $all_revisions = array_unique(
-      array_filter(mpull($this->branches, 'getRevisionId')));
-    $revision_status = $this->loadDifferentialStatuses($all_revisions);
-    $owner = $repository_api->getRepositoryOwner();
-    foreach ($this->branches as $branch) {
-      if ($branch->getCommitAuthor() != $owner) {
-        $branch->setStatus('Not Yours');
-        continue;
+    return $commit_map;
+  }
+
+  private function loadRevisions(array $branches) {
+    $ids = array();
+    $hashes = array();
+
+    foreach ($branches as $branch) {
+      if ($branch['revisionID']) {
+        $ids[] = $branch['revisionID'];
+      }
+      $hashes[] = array('gtcm', $branch['hash']);
+      $hashes[] = array('gttr', $branch['tree']);
+    }
+
+    $calls = array();
+
+    if ($ids) {
+      $calls[] = $this->getConduit()->callMethod(
+        'differential.query',
+        array(
+          'ids' => $ids,
+        ));
+    }
+
+    if ($hashes) {
+      $calls[] = $this->getConduit()->callMethod(
+        'differential.query',
+        array(
+          'commitHashes' => $hashes,
+        ));
+    }
+
+    $results = array();
+    foreach (Futures($calls) as $call) {
+      $results[] = $call->resolve();
+    }
+
+    return array_mergev($results);
+  }
+
+  private function printBranches(array $branches, array $revisions) {
+    $revisions = ipull($revisions, null, 'id');
+
+    static $color_map = array(
+      'Closed'          => 'cyan',
+      'Needs Review'    => 'magenta',
+      'Needs Revision'  => 'red',
+      'Accepted'        => 'green',
+      'No Revision'     => 'blue',
+      'Abandoned'       => 'default',
+    );
+
+    static $ssort_map = array(
+      'Closed'          => 1,
+      'No Revision'     => 2,
+      'Needs Review'    => 3,
+      'Needs Revision'  => 4,
+      'Accepted'        => 5,
+    );
+
+    $out = array();
+    foreach ($branches as $branch) {
+      $revision = idx($revisions, idx($branch, 'revisionID'));
+
+      // If we haven't identified a revision by ID, try to identify it by hash.
+      if (!$revision) {
+        foreach ($revisions as $rev) {
+          $hashes = idx($rev, 'hashes', array());
+          foreach ($hashes as $hash) {
+            if (($hash[0] == 'gtcm' && $hash[1] == $branch['hash']) ||
+                ($hash[0] == 'gttr' && $hash[1] == $branch['tree'])) {
+              $revision = $rev;
+              break;
+            }
+          }
+        }
       }
 
-      $rev_id = $branch->getRevisionID();
-      if ($rev_id) {
-        $status = idx($revision_status, $rev_id, 'Unknown Status');
-        $branch->setStatus($status);
+      if ($revision) {
+        $desc = 'D'.$revision['id'].': '.$revision['title'];
+        $status = $revision['statusName'];
       } else {
-        $branch->setStatus('No Revision');
+        $desc = $branch['desc'];
+        $status = 'No Revision';
       }
-    }
-    if (!$this->getArgument('view-all')) {
-      $this->filterOutFinished();
-    }
-    $this->printInColumns();
-  }
 
-
-
-  /**
-   * Makes a conduit call to differential to find out revision statuses
-   * based on their IDs
-   */
-  private function loadDifferentialStatuses($rev_ids) {
-    $conduit = $this->getConduit();
-    $revisions = $conduit->callMethodSynchronous(
-      'differential.query',
-      array(
-        'ids'   => $rev_ids,
-      ));
-    $statuses = ipull($revisions, 'statusName', 'id');
-    return $statuses;
-  }
-
-  /**
-   * Removes the branches with status either closed or abandoned.
-   */
-  private function filterOutFinished() {
-    foreach ($this->branches as $id => $branch) {
-      if ($branch->isCurrentHead() ) {
-        continue; //never filter the current branch
-      }
-      $status = $branch->getStatus();
-      if ($status == 'Closed' || $status == 'Abandoned') {
-        unset($this->branches[$id]);
-      }
-    }
-  }
-
-  public function printInColumns() {
-    $longest_name = 0;
-    $longest_status = 0;
-    foreach ($this->branches as $branch) {
-      $longest_name = max(strlen($branch->getFormattedName()), $longest_name);
-      $longest_status = max(strlen($branch->getStatus()), $longest_status);
-    }
-
-    if ($this->getArgument('by-status')) {
-      $by_status = mgroup($this->branches, 'getStatus');
-      foreach (array('Accepted', 'Needs Revision',
-                     'Needs Review', 'No Revision') as $status) {
-        $branches = idx($by_status, $status);
-        if (!$branches) {
+      if (!$this->getArgument('view-all')) {
+        if ($status == 'Closed' || $status == 'Abandoned') {
           continue;
         }
-        echo reset($branches)->getFormattedStatus()."\n";
-        foreach ($branches as $branch) {
-          $name_markdown = $branch->getFormattedName();
-          $subject = $branch->getCommitDisplayName();
-          $name_markdown = str_pad($name_markdown, $longest_name + 4, ' ');
-          echo "  $name_markdown $subject\n";
-        }
       }
+
+      $epoch = $branch['epoch'];
+
+      $color = idx($color_map, $status, 'default');
+      $ssort = sprintf('%d%012d', idx($ssort_map, $status, 0), $epoch);
+
+      $out[] = array(
+        'name'      => $branch['name'],
+        'current'   => $branch['current'],
+        'status'    => $status,
+        'desc'      => $desc,
+        'color'     => $color,
+        'esort'     => $epoch,
+        'ssort'     => $ssort,
+      );
+    }
+
+    $len_name = max(array_map('strlen', ipull($out, 'name'))) + 2;
+    $len_status = max(array_map('strlen', ipull($out, 'status'))) + 2;
+
+    if ($this->getArgument('by-status')) {
+      $out = isort($out, 'ssort');
     } else {
-      foreach ($this->branches as $branch) {
-        $name_markdown = $branch->getFormattedName();
-        $status_markdown = $branch->getFormattedStatus();
-        $subject = $branch->getCommitDisplayName();
-        $subject_pad = $longest_status - strlen($branch->getStatus()) + 4;
-        $name_markdown =
-          str_pad($name_markdown, $longest_name + 4, ' ');
-        $subject =
-          str_pad($subject, strlen($subject) + $subject_pad, ' ', STR_PAD_LEFT);
-        echo "$name_markdown $status_markdown $subject\n";
-      }
+      $out = isort($out, 'esort');
+    }
+
+    $console = PhutilConsole::getConsole();
+    foreach ($out as $line) {
+      $color = $line['color'];
+      $console->writeOut(
+        "%s **%s** <fg:{$color}>%s</fg> %s\n",
+        $line['current'] ? '* ' : '  ',
+        str_pad($line['name'], $len_name),
+        str_pad($line['status'], $len_status),
+        $line['desc']);
     }
   }
+
 }

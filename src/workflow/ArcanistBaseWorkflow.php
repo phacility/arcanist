@@ -965,6 +965,29 @@ abstract class ArcanistBaseWorkflow {
     return $argv;
   }
 
+  public static function getSystemArcConfigLocation() {
+    if (phutil_is_windows()) {
+      // this is a horrible place to put this, but there doesn't seem to be a
+      // non-horrible place on Windows
+      return Filesystem::resolvePath(
+        'Phabricator/Arcanist/config',
+        getenv('PROGRAMFILES'));
+    } else {
+      return '/etc/arcconfig';
+    }
+  }
+
+  public static function readSystemArcConfig() {
+    $system_config = array();
+    $system_config_path = self::getSystemArcConfigLocation();
+    if (Filesystem::pathExists($system_config_path)) {
+      $file = Filesystem::readFile($system_config_path);
+      if ($file) {
+        $system_config = json_decode($file, true);
+      }
+    }
+    return $system_config;
+  }
   public static function getUserConfigurationFileLocation() {
     if (phutil_is_windows()) {
       return getenv('APPDATA').'/.arcrc';

@@ -409,6 +409,7 @@ abstract class ArcanistRepositoryAPI {
   public function resolveBaseCommit() {
     $working_copy = $this->getWorkingCopyIdentity();
     $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
+    $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
 
     $parser = new ArcanistBaseCommitParser($this);
     $commit = $parser->resolveBaseCommit(
@@ -417,6 +418,7 @@ abstract class ArcanistRepositoryAPI {
         'local'   => $working_copy->getLocalConfig('base', ''),
         'project' => $working_copy->getConfig('base', ''),
         'global'  => idx($global_config, 'base', ''),
+        'system'  => idx($system_config, 'base', ''),
       ));
 
     return $commit;
