@@ -60,6 +60,7 @@ EOTEXT
 EOTEXT
       );
   }
+
   public function requiresWorkingCopy() {
     return !$this->isRawDiffSource();
   }
