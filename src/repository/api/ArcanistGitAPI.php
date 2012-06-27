@@ -856,6 +856,52 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               "configuration.");
             return trim($merge_base);
           }
+        } else if (preg_match('/^branch-unique\((.+)\)$/', $name, $matches)) {
+          list($err, $merge_base) = $this->execManualLocal(
+            'merge-base %s HEAD',
+            $matches[1]);
+          if ($err) {
+            return null;
+          }
+          $merge_base = trim($merge_base);
+
+          list($commits) = $this->execxLocal(
+            'log --format=%C %s..HEAD --',
+            '%H',
+            $merge_base);
+          $commits = array_filter(explode("\n", $commits));
+
+          if (!$commits) {
+            return null;
+          }
+
+          $commits[] = $merge_base;
+
+          $head_branch_count = null;
+          foreach ($commits as $commit) {
+            list($branches) = $this->execxLocal(
+              'branch --contains %s',
+              $commit);
+            $branches = array_filter(explode("\n", $branches));
+            if ($head_branch_count === null) {
+              // If this is the first commit, it's HEAD. Count how many
+              // branches it is on; we want to include commits on the same
+              // number of branches. This covers a case where this branch
+              // has sub-branches and we're running "arc diff" here again
+              // for whatever reason.
+              $head_branch_count = count($branches);
+            } else if (count($branches) > $head_branch_count) {
+              foreach ($branches as $key => $branch) {
+                $branches[$key] = trim($branch, ' *');
+              }
+              $branches = implode(', ', $branches);
+              $this->setBaseCommitExplanation(
+                "it is the first commit between '{$merge_base}' (the ".
+                "merge-base of '{$matches[1]}' and HEAD) which is also ".
+                "contained by another branch ({$branches}).");
+              return $commit;
+            }
+          }
         } else {
           list($err) = $this->execManualLocal(
             'cat-file -t %s',
