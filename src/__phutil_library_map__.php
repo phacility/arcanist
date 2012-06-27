@@ -130,7 +130,6 @@ phutil_register_library_map(array(
     'NoseTestEngine' => 'unit/engine/NoseTestEngine.php',
     'PhpunitTestEngine' => 'unit/engine/PhpunitTestEngine.php',
     'PhutilLintEngine' => 'lint/engine/PhutilLintEngine.php',
-    'PhutilModuleRequirements' => 'parser/PhutilModuleRequirements.php',
     'PhutilUnitTestEngine' => 'unit/engine/PhutilUnitTestEngine.php',
     'PhutilUnitTestEngineTestCase' => 'unit/engine/__tests__/PhutilUnitTestEngineTestCase.php',
     'UnitTestableArcanistLintEngine' => 'lint/engine/UnitTestableArcanistLintEngine.php',
