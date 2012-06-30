@@ -1974,6 +1974,7 @@ EOTEXT
     $parent         = null;
     $source_path    = null;
     $branch         = null;
+    $bookmark       = null;
 
     if (!$this->isRawDiffSource()) {
       $repository_api = $this->getRepositoryAPI();
@@ -2001,7 +2002,15 @@ EOTEXT
       } else if ($repository_api instanceof ArcanistSubversionAPI) {
         $repo_uuid = $repository_api->getRepositorySVNUUID();
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
-        // TODO: Provide this information.
+
+        $bookmark = $repository_api->getActiveBookmark();
+        $svn_info = $repository_api->getSubversionInfo();
+        $repo_uuid = idx($svn_info, 'uuid');
+        $base_path = idx($svn_info, 'base_path', $base_path);
+        $base_revision = idx($svn_info, 'base_revision', $base_revision);
+
+        // TODO: provide parent info
+
       } else {
         throw new Exception("Unsupported repository API!");
       }
@@ -2016,6 +2025,7 @@ EOTEXT
       'sourceMachine'             => php_uname('n'),
       'sourcePath'                => $source_path,
       'branch'                    => $branch,
+      'bookmark'                  => $bookmark,
       'sourceControlSystem'       => $vcs,
       'sourceControlPath'         => $base_path,
       'sourceControlBaseRevision' => $base_revision,

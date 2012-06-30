@@ -698,4 +698,48 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   }
 
+  public function getSubversionInfo() {
+    $info = array();
+    $base_path = null;
+    $revision = null;
+    list($err, $raw_info) = $this->execManualLocal('svn info');
+    if (!$err) {
+      foreach (explode("\n", trim($raw_info)) as $line) {
+        list($key, $value) = explode(': ', $line, 2);
+        switch ($key) {
+          case 'URL':
+            $info['base_path'] = $value;
+            $base_path = $value;
+            break;
+          case 'Repository UUID':
+            $info['uuid'] = $value;
+            break;
+          case 'Revision':
+            $revision = $value;
+            break;
+          default:
+            break;
+        }
+      }
+      if ($base_path && $revision) {
+        $info['base_revision'] = $base_path.'@'.$revision;
+      }
+    }
+    return $info;
+  }
+
+  public function getActiveBookmark() {
+    list($raw_output) = $this->execxLocal('bookmarks');
+    $raw_output = trim($raw_output);
+    if ($raw_output !== 'no bookmarks set') {
+      foreach (explode("\n", $raw_output) as $line) {
+        $line = trim($line);
+        if ('*' === $line[0]) {
+          return idx(explode(' ', $line, 3), 1);
+        }
+      }
+    }
+    return null;
+  }
+
 }
