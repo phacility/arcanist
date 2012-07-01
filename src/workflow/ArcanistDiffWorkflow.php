@@ -1280,10 +1280,9 @@ EOTEXT
   /**
    * @task message
    */
-  private function getCommitMessageFromCommit($rev) {
-    $change = $this->getRepositoryAPI()->getCommitMessageForRevision($rev);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-      $change->getMetadata('message'));
+  private function getCommitMessageFromCommit($commit) {
+    $text = $this->getRepositoryAPI()->getCommitMessage($commit);
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
     $message->pullDataFromConduit($this->getConduit());
     $this->validateCommitMessage($message);
     return $message;

@@ -752,12 +752,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
            "'git push', or 'git svn dcommit', or by printing and faxing it).";
   }
 
-  public function getCommitMessageForRevision($rev) {
+  public function getCommitMessage($commit) {
     list($message) = $this->execxLocal(
-      'log -n1 %s',
-      $rev);
-    $parser = new ArcanistDiffParser();
-    return head($parser->parseDiff($message));
+      'log -n1 --format=%C %s --',
+      '%s%n%b',
+      $commit);
+    return $message;
   }
 
   public function loadWorkingCopyDifferentialRevisions(
@@ -921,6 +921,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               "you specified '{$rule}' in your {$source} 'base' ".
               "configuration.");
             return self::GIT_MAGIC_ROOT_COMMIT;
+          case 'amended':
+            $text = $this->getCommitMessage('HEAD');
+            $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+              $text);
+            if ($message->getRevisionID()) {
+              $this->setBaseCommitExplanation(
+                "HEAD has been amended with 'Differential Revision:', ".
+                "as specified by '{$rule}' in your {$source} 'base' ".
+                "configuration.");
+              return 'HEAD^';
+            }
+            break;
           case 'upstream':
             list($err, $upstream) = $this->execManualLocal(
               "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");

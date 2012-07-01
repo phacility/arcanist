@@ -195,7 +195,7 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function getCommitMessageForRevision($revision) {
+  public function getCommitMessage($commit) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
@@ -221,17 +221,17 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function execxLocal($pattern /*, ... */) {
+  public function execxLocal($pattern /* , ... */) {
     $args = func_get_args();
     return $this->buildLocalFuture($args)->resolvex();
   }
 
-  public function execManualLocal($pattern /*, ... */) {
+  public function execManualLocal($pattern /* , ... */) {
     $args = func_get_args();
     return $this->buildLocalFuture($args)->resolve();
   }
 
-  public function execFutureLocal($pattern /*, ... */) {
+  public function execFutureLocal($pattern /* , ... */) {
     $args = func_get_args();
     return $this->buildLocalFuture($args);
   }
