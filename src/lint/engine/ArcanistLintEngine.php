@@ -72,6 +72,9 @@ abstract class ArcanistLintEngine {
   private $commitHookMode = false;
   private $hookAPI;
 
+  private $enableAsyncLint = false;
+  private $postponedLinters = array();
+
   public function __construct() {
 
   }
@@ -124,6 +127,15 @@ abstract class ArcanistLintEngine {
 
   public function getHookAPI() {
     return $this->hookAPI;
+  }
+
+  public function setEnableAsyncLint($enable_async_lint) {
+    $this->enableAsyncLint = $enable_async_lint;
+    return $this;
+  }
+
+  public function getEnableAsyncLint() {
+    return $this->enableAsyncLint;
   }
 
   public function loadData($path) {
@@ -295,5 +307,13 @@ abstract class ArcanistLintEngine {
     return array($line, $char);
   }
 
+  public function getPostponedLinters() {
+    return $this->postponedLinters;
+  }
+
+  public function setPostponedLinters(array $linters) {
+    $this->postponedLinters = $linters;
+    return $this;
+  }
 
 }

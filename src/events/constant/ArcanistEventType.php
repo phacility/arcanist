@@ -20,5 +20,6 @@ final class ArcanistEventType extends PhutilEventType {
 
   const TYPE_COMMIT_WILLCOMMITSVN   = 'commit.willCommitSVN';
   const TYPE_DIFF_WILLBUILDMESSAGE  = 'diff.willBuildMessage';
+  const TYPE_DIFF_WASCREATED        = 'diff.wasCreated';
 
 }

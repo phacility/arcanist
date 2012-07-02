@@ -36,6 +36,8 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $diffID;
   private $revisionID;
   private $unitWorkflow;
+  private $lintWorkflow;
+  private $postponedLinters;
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
@@ -386,6 +388,8 @@ EOTEXT
       $diff_spec);
 
     $this->diffID = $diff_info['diffid'];
+
+    $this->dispatchDiffWasCreatedEvent($diff_info['diffid']);
 
     if ($this->unitWorkflow) {
       $this->unitWorkflow->setDifferentialDiffID($diff_info['diffid']);
@@ -1093,6 +1097,7 @@ EOTEXT
         $argv[] = $repository_api->getRelativeCommit();
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
+      $this->lintWorkflow = $lint_workflow;
 
       if ($this->shouldAmend()) {
         // TODO: We should offer to create a checkpoint commit.
@@ -1118,9 +1123,15 @@ EOTEXT
             "Lint issued unresolved errors!",
             'lint-excuses');
           break;
+        case ArcanistLintWorkflow::RESULT_POSTPONED:
+          echo phutil_console_format(
+            "<bg:yellow>** LINT POSTPONED **</bg> ".
+            "Lint results are postponed.\n");
+          break;
       }
 
       $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
+      $this->postponedLinters = $lint_workflow->getPostponedLinters();
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -1945,6 +1956,7 @@ EOTEXT
       ArcanistLintWorkflow::RESULT_ERRORS     => 'fail',
       ArcanistLintWorkflow::RESULT_WARNINGS   => 'warn',
       ArcanistLintWorkflow::RESULT_SKIP       => 'skip',
+      ArcanistLintWorkflow::RESULT_POSTPONED  => 'postponed',
     );
     return idx($map, $lint_result, 'none');
   }
@@ -2052,28 +2064,33 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
-    if (!$this->unresolvedLint) {
-      return;
+
+    if ($this->unresolvedLint) {
+      $data = array();
+      foreach ($this->unresolvedLint as $message) {
+        $data[] = array(
+          'path'        => $message->getPath(),
+          'line'        => $message->getLine(),
+          'char'        => $message->getChar(),
+          'code'        => $message->getCode(),
+          'severity'    => $message->getSeverity(),
+          'name'        => $message->getName(),
+          'description' => $message->getDescription(),
+        );
+      }
+
+      $this->updateDiffProperty('arc:lint', json_encode($data));
+      if (strlen($this->lintExcuse)) {
+        $this->updateDiffProperty('arc:lint-excuse',
+          json_encode($this->lintExcuse));
+      }
     }
 
-    $data = array();
-    foreach ($this->unresolvedLint as $message) {
-      $data[] = array(
-        'path'        => $message->getPath(),
-        'line'        => $message->getLine(),
-        'char'        => $message->getChar(),
-        'code'        => $message->getCode(),
-        'severity'    => $message->getSeverity(),
-        'name'        => $message->getName(),
-        'description' => $message->getDescription(),
-      );
+    $postponed = $this->postponedLinters;
+    if ($postponed) {
+      $this->updateDiffProperty('arc:lint-postponed', json_encode($postponed));
     }
 
-    $this->updateDiffProperty('arc:lint', json_encode($data));
-    if (strlen($this->lintExcuse)) {
-      $this->updateDiffProperty('arc:lint-excuse',
-        json_encode($this->lintExcuse));
-    }
   }
 
 
@@ -2157,4 +2174,13 @@ EOTEXT
     return $event->getValue('fields');
   }
 
+  private function dispatchDiffWasCreatedEvent($diff_id) {
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_DIFF_WASCREATED,
+      array(
+        'diffID' => $diff_id,
+      ));
+
+    PhutilEventEngine::dispatchEvent($event);
+  }
 }
