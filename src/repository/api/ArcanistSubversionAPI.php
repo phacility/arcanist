@@ -268,9 +268,12 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     // itself (such as property changes) and also give us changes to any
     // files within the directory (basically, implicit recursion). We don't
     // want that, so prevent recursive diffing.
+    $root = phutil_get_library_root('arcanist');
+
     return new ExecFuture(
-      '(cd %s; svn diff --depth empty --diff-cmd diff -x -U%d %s)',
+      '(cd %s; svn diff --depth empty --diff-cmd %s -x -U%d %s)',
       $this->getPath(),
+      $root.'/../scripts/repository/binary_safe_diff.sh',
       $this->getDiffLinesOfContext(),
       $path);
   }
