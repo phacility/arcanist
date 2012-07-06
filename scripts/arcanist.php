@@ -62,8 +62,16 @@ $argv = $args->getUnconsumedArgumentVector();
 $args = array_values($argv);
 
 $working_directory = getcwd();
+$console = PhutilConsole::getConsole();
 
 try {
+
+  if ($config_trace_mode) {
+    $phutil_location = phutil_get_library_root('phutil');
+    $arcanist_location = phutil_get_library_root('arcanist');
+    $console->writeErr("libphutil loaded from '{$phutil_location}'.\n");
+    $console->writeErr("arcanist loaded from '{$arcanist_location}'.\n");
+  }
 
   if (!$args) {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
