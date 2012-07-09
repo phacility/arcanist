@@ -110,14 +110,18 @@ EOTEXT
     $info = array_filter(explode("\2", trim($info)));
     foreach ($info as $line) {
       list($hash, $epoch, $tree, $text) = explode("\1", trim($line), 4);
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-      $id = $message->getRevisionID();
+      try {
+        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
+        $id = $message->getRevisionID();
 
-      $commit_map[$hash] = array(
-        'epoch'       => (int)$epoch,
-        'tree'        => $tree,
-        'revisionID'  => $id,
-      );
+        $commit_map[$hash] = array(
+          'epoch'       => (int)$epoch,
+          'tree'        => $tree,
+          'revisionID'  => $id,
+        );
+      } catch (ArcanistUsageException $ex) {
+        // In case of invalid commit message which fails the parsing, do noting.
+      }
     }
 
     return $commit_map;
