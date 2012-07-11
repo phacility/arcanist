@@ -658,7 +658,7 @@ EOTEXT
         $prompt_message.
         "\n";
 
-      $commit_message = id(new PhutilInteractiveEditor($template))
+      $commit_message = $this->newInteractiveEditor($template)
         ->setName('arcanist-patch-commit-message')
         ->editInteractively();
 

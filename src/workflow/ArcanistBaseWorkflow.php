@@ -1276,4 +1276,15 @@ abstract class ArcanistBaseWorkflow {
     return $value;
   }
 
+  protected function newInteractiveEditor($text) {
+    $editor = new PhutilInteractiveEditor($text);
+
+    $preferred = $this->getWorkingCopy()->getConfigFromAnySource('editor');
+    if ($preferred) {
+      $editor->setPreferredEditor($preferred);
+    }
+
+    return $editor;
+  }
+
 }

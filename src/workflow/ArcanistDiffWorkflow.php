@@ -447,7 +447,7 @@ EOTEXT
 
         $should_edit = $this->getArgument('edit');
         if ($should_edit) {
-          $remote_corpus = id(new PhutilInteractiveEditor($remote_corpus))
+          $remote_corpus = $this->newInteractiveEditor($remote_corpus)
             ->setName('differential-edit-revision-info')
             ->editInteractively();
         }
@@ -1412,7 +1412,7 @@ EOTEXT
       if ($first && $this->getArgument('verbatim') && !$template_is_default) {
         $new_template = $template;
       } else {
-        $new_template = id(new PhutilInteractiveEditor($template))
+        $new_template = $this->newInteractiveEditor($template)
           ->setName('new-commit')
           ->editInteractively();
       }
@@ -1599,7 +1599,7 @@ EOTEXT
       "#  $ arc diff --create\n".
       "\n";
 
-    $comments = id(new PhutilInteractiveEditor($template))
+    $comments = $this->newInteractiveEditor($template)
       ->setName('differential-update-comments')
       ->editInteractively();
 
