@@ -99,9 +99,13 @@ EOTEXT
     array $branches,
     ArcanistRepositoryAPI $repository_api) {
 
+    // NOTE: "-s" is an option deep in git's diff argument parser that doesn't
+    // seem to have much documentation and has no long form. It suppresses any
+    // diff output.
+
     $commits = ipull($branches, 'hash');
     list($info) = $repository_api->execxLocal(
-      'log --format=%C %Ls --',
+      'show -s --format=%C %Ls',
       '%H%x01%ct%x01%T%x01%s%n%b%x02',
       $commits);
 
