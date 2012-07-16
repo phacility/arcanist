@@ -342,6 +342,9 @@ EOTEXT
       'skip-binaries' => array(
         'help'  => 'Do not upload binaries (like images).',
       ),
+      'ignore-unsound-tests' => array(
+        'help'  => 'Ignore unsound test failures without prompting.',
+      ),
       'base' => array(
         'param' => 'rules',
         'help'  => 'Additional rules for determining base revision.',
@@ -1296,11 +1299,17 @@ EOTEXT
             "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          $continue = phutil_console_confirm(
-            "Unit test results included failures, but all failing tests ".
-            "are known to be unsound. Ignore unsound test failures?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
+          if ($this->getArgument('ignore-unsound-tests')) {
+            echo phutil_console_format(
+              "<bg:yellow>** UNIT UNSOUND **</bg> Unit testing raised errors, ".
+              "but all failing tests are unsound.\n");
+          } else {
+            $continue = phutil_console_confirm(
+              "Unit test results included failures, but all failing tests ".
+              "are known to be unsound. Ignore unsound test failures?");
+            if (!$continue) {
+              throw new ArcanistUserAbortException();
+            }
           }
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
