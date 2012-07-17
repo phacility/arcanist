@@ -988,7 +988,13 @@ final class ArcanistDiffParser {
       $text = preg_replace('/'.$ansi_color_pattern.'/', '', $text);
     }
 
-    $this->text = explode("\n", $text);
+    // TODO: This is a hack for SVN + Windows.
+    if (strpos($text, "\r\n") !== false) {
+      $this->text = explode("\r\n", $text);
+    } else {
+      $this->text = explode("\n", $text);
+    }
+
     $this->line = 0;
   }
 
