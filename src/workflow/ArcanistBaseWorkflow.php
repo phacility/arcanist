@@ -1287,4 +1287,10 @@ abstract class ArcanistBaseWorkflow {
     return $editor;
   }
 
+  protected function newDiffParser() {
+    $parser = new ArcanistDiffParser();
+    $parser->setWriteDiffOnFailure(true);
+    return $parser;
+  }
+
 }

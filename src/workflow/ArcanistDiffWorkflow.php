@@ -667,7 +667,7 @@ EOTEXT
 
 
   protected function generateChanges() {
-    $parser = new ArcanistDiffParser();
+    $parser = $this->newDiffParser();
 
     $is_raw = $this->isRawDiffSource();
     if ($is_raw) {
@@ -908,7 +908,8 @@ EOTEXT
       // textual data.
       if ($change->getNeedsSyntheticGitHunks()) {
         $diff = $repository_api->getRawDiffText($path, $moves = false);
-        $parser = new ArcanistDiffParser();
+        $parser = $this->newDiffParser();
+
         $raw_changes = $parser->parseDiff($diff);
         foreach ($raw_changes as $raw_change) {
           if ($raw_change->getCurrentPath() == $path) {
@@ -1008,7 +1009,7 @@ EOTEXT
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser();
+    $parser = $this->newDiffParser();
     $history_messages = $repository_api->getGitHistoryLog();
     if (!$history_messages) {
       // This can occur on the initial commit.
@@ -1842,7 +1843,7 @@ EOTEXT
   private function getGitUpdateMessage() {
     $repository_api = $this->getRepositoryAPI();
 
-    $parser = new ArcanistDiffParser();
+    $parser = $this->newDiffParser();
     $commit_messages = $repository_api->getGitCommitLog();
     $commit_messages = $parser->parseDiff($commit_messages);
 
