@@ -38,6 +38,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $unitWorkflow;
   private $lintWorkflow;
   private $postponedLinters;
+  private $haveUncommittedChanges = false;
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
@@ -297,7 +298,7 @@ EOTEXT
         'help' => 'Never amend commits in the working copy.',
       ),
       'uncommitted' => array(
-        'help' => 'Include uncommitted changes without prompting.',
+        'help' => 'Suppress warning about uncommitted changes.',
         'supports' => array(
           'hg',
         ),
@@ -486,9 +487,8 @@ EOTEXT
             'revision_id' => $result['revisionid'],
           ));
 
-        if (!$this->isRawDiffSource() && $this->shouldAmend()) {
+        if ($this->shouldAmend()) {
           $repository_api = $this->getRepositoryAPI();
-
           if ($repository_api->supportsAmend()) {
             echo "Updating commit message...\n";
             $repository_api->amendCommit($revised_message);
@@ -577,6 +577,7 @@ EOTEXT
           }
 
           $repository_api->setIncludeDirectoryStateInDiffs(true);
+          $this->haveUncommittedChanges = true;
         }
       }
     }
@@ -1070,7 +1071,23 @@ EOTEXT
   }
 
   private function shouldAmend() {
-    return !$this->isHistoryImmutable() && !$this->getArgument('no-amend');
+    if ($this->haveUncommittedChanges) {
+      return false;
+    }
+
+    if ($this->isHistoryImmutable()) {
+      return false;
+    }
+
+    if ($this->getArgument('no-amend')) {
+      return false;
+    }
+
+    if ($this->isRawDiffSource()) {
+      return false;
+    }
+
+    return true;
   }
 
 

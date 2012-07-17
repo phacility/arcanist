@@ -417,9 +417,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function supportsAmend() {
     list ($err, $stdout) = $this->execManualLocal('help commit');
     if ($err) {
-        return false;
+      return false;
     } else {
-        return (strstr($stdout, "amend") !== false);
+      return (strstr($stdout, "amend") !== false);
     }
   }
 
@@ -553,19 +553,27 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $hashes[] = array('hgcm', $commit['commit']);
     }
 
-    $results = $conduit->callMethodSynchronous(
-      'differential.query',
-      $query + array(
-        'commitHashes' => $hashes,
-      ));
+    if ($hashes) {
 
-    foreach ($results as $key => $hash) {
-      $results[$key]['why'] =
-        "A mercurial commit hash in the commit range is already attached ".
-        "to the Differential revision.";
+      // NOTE: In the case of "arc diff . --uncommitted" in a Mercurial working
+      // copy with dirty changes, there may be no local commits.
+
+      $results = $conduit->callMethodSynchronous(
+        'differential.query',
+        $query + array(
+          'commitHashes' => $hashes,
+        ));
+
+      foreach ($results as $key => $hash) {
+        $results[$key]['why'] =
+          "A mercurial commit hash in the commit range is already attached ".
+          "to the Differential revision.";
+      }
+
+      return $results;
     }
 
-    return $results;
+    return array();
   }
 
   public function updateWorkingCopy() {
