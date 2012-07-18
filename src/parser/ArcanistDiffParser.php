@@ -991,13 +991,13 @@ final class ArcanistDiffParser {
       $text = preg_replace('/'.$ansi_color_pattern.'/', '', $text);
     }
 
-    // TODO: This is a hack for SVN + Windows.
-    if (strpos($text, "\r\n") !== false) {
-      $this->text = explode("\r\n", $text);
-    } else {
-      $this->text = explode("\n", $text);
-    }
+    // TODO: This is a hack for SVN + Windows. Eventually, we should retain line
+    // endings and preserve them through the patch lifecycle or something along
+    // those lines.
 
+    // NOTE: On Windows, a diff may have \n delimited lines (because the file
+    // uses \n) but \r\n delimited blocks. Split on both.
+    $this->text = preg_split('/\r?\n/', $text);
     $this->line = 0;
   }
 
