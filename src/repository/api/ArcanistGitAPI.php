@@ -641,7 +641,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    */
   public function getAllBranches() {
     list($branch_info) = $this->execxLocal(
-      'branch --verbose --abbrev=40 --no-color');
+      'branch --no-color');
     $lines = explode("\n", rtrim($branch_info));
 
     $result = array();
@@ -653,12 +653,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         continue;
       }
 
-      list($current, $name, $hash, $desc) = preg_split('/\s+/', $line, 4);
+      list($current, $name) = preg_split('/\s+/', $line, 2);
       $result[] = array(
         'current' => !empty($current),
         'name'    => $name,
-        'hash'    => $hash,
-        'desc'    => $desc,
       );
     }
 
