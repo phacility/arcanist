@@ -100,12 +100,19 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
+
+      $severity = ArcanistLintSeverity::SEVERITY_WARNING;
+      $description = $matches[3];
+      if (preg_match('/(^undefined|^duplicate|before assignment$)/', $description)) {
+        $severity = ArcanistLintSeverity::SEVERITY_ERROR;
+      }
+
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
       $message->setCode($this->getLinterName());
-      $message->setDescription($matches[3]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $message->setDescription($description);
+      $message->setSeverity($severity);
       $this->addLintMessage($message);
     }
   }
