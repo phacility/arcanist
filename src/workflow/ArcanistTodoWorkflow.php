@@ -90,9 +90,15 @@ EOTEXT
       $args['ccPHIDs'] = $phids;
     }
 
-    $conduit->callMethodSynchronous(
+    $result = $conduit->callMethodSynchronous(
       'maniphest.createtask',
       $args);
+
+    echo phutil_console_format(
+      "Created task T%s: '<fg:green>**%s**</fg>' at <fg:blue>**%s**</fg>\n",
+      $result['id'],
+      $result['title'],
+      $result['uri']);
   }
 
 }
