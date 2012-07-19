@@ -36,11 +36,10 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
   public function run() {
 
     $this->projectRoot = $this->getWorkingCopy()->getProjectRoot();
-
     $this->affectedTests = array();
     foreach ($this->getPaths() as $path) {
 
-      $path = Filesystem::resolvePath($path);
+      $path = Filesystem::resolvePath($path, $this->projectRoot);
 
       // TODO: add support for directories
       // Users can call phpunit on the directory themselves
