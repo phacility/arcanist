@@ -12,6 +12,7 @@ phutil_register_library_map(array(
   array(
     'ArcanistAliasWorkflow' => 'workflow/ArcanistAliasWorkflow.php',
     'ArcanistAmendWorkflow' => 'workflow/ArcanistAmendWorkflow.php',
+    'ArcanistAnoidWorkflow' => 'workflow/ArcanistAnoidWorkflow.php',
     'ArcanistApacheLicenseLinter' => 'lint/linter/ArcanistApacheLicenseLinter.php',
     'ArcanistApacheLicenseLinterTestCase' => 'lint/linter/__tests__/ArcanistApacheLicenseLinterTestCase.php',
     'ArcanistBaseCommitParser' => 'parser/ArcanistBaseCommitParser.php',
@@ -142,6 +143,7 @@ phutil_register_library_map(array(
   array(
     'ArcanistAliasWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistAmendWorkflow' => 'ArcanistBaseWorkflow',
+    'ArcanistAnoidWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistApacheLicenseLinter' => 'ArcanistLicenseLinter',
     'ArcanistApacheLicenseLinterTestCase' => 'ArcanistLinterTestCase',
     'ArcanistBaseCommitParserTestCase' => 'ArcanistPhutilTestCase',
