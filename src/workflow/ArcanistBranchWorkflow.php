@@ -102,7 +102,7 @@ EOTEXT
       // seem to have much documentation and has no long form. It suppresses any
       // diff output.
       $futures[$branch['name']] = $repository_api->execFutureLocal(
-        'show -s --format=%C %s',
+        'show -s --format=%C %s --',
         '%H%x01%ct%x01%T%x01%s%x01%b',
         $branch['name']);
     }
