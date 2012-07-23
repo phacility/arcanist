@@ -83,10 +83,7 @@ EOTEXT
       throw new ArcanistUsageException('No branches in this working copy.');
     }
 
-    $commit_map = $this->loadCommitInfo($branches, $repository_api);
-    foreach ($branches as $key => $branch) {
-      $branches[$key] += $commit_map[$branch['hash']];
-    }
+    $branches = $this->loadCommitInfo($branches, $repository_api);
 
     $revisions = $this->loadRevisions($branches);
 
@@ -99,25 +96,44 @@ EOTEXT
     array $branches,
     ArcanistRepositoryAPI $repository_api) {
 
-    $commits = ipull($branches, 'hash');
-    list($info) = $repository_api->execxLocal(
-      'log --format=%C %Ls --',
-      '%H%x01%ct%x01%T%x01%s%n%b%x02',
-      $commits);
+    $futures = array();
+    foreach ($branches as $branch) {
+      // NOTE: "-s" is an option deep in git's diff argument parser that doesn't
+      // seem to have much documentation and has no long form. It suppresses any
+      // diff output.
+      $futures[$branch['name']] = $repository_api->execFutureLocal(
+        'show -s --format=%C %s --',
+        '%H%x01%ct%x01%T%x01%s%x01%b',
+        $branch['name']);
+    }
+
+    $branches = ipull($branches, null, 'name');
 
     $commit_map = array();
+    foreach (Futures($futures) as $name => $future) {
+      list($info) = $future->resolvex();
+      list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
 
-    $info = array_filter(explode("\2", trim($info)));
-    foreach ($info as $line) {
-      list($hash, $epoch, $tree, $text) = explode("\1", trim($line), 4);
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-      $id = $message->getRevisionID();
+      $branch = $branches[$name];
+      $branch['hash'] = $hash;
+      $branch['desc'] = $desc;
 
-      $commit_map[$hash] = array(
-        'epoch'       => (int)$epoch,
-        'tree'        => $tree,
-        'revisionID'  => $id,
-      );
+      try {
+        $text = $desc."\n".$text;
+        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
+        $id = $message->getRevisionID();
+
+        $branch += array(
+          'epoch'       => (int)$epoch,
+          'tree'        => $tree,
+          'revisionID'  => $id,
+        );
+      } catch (ArcanistUsageException $ex) {
+        // In case of invalid commit message which fails the parsing,
+        // do nothing.
+      }
+
+      $commit_map[$hash] = $branch;
     }
 
     return $commit_map;
@@ -207,7 +223,7 @@ EOTEXT
         $status = 'No Revision';
       }
 
-      if (!$this->getArgument('view-all')) {
+      if (!$this->getArgument('view-all') && !$branch['current']) {
         if ($status == 'Closed' || $status == 'Abandoned') {
           continue;
         }

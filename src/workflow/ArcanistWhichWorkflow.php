@@ -127,7 +127,7 @@ EOTEXT
       if ($repository_api instanceof ArcanistGitAPI) {
         $command = "git diff {$relative}..HEAD";
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
-        $command = "hg diff --rev {$relative} --rev .";
+        $command = "hg diff --rev {$relative}";
       } else {
         throw new Exception("Unknown VCS!");
       }

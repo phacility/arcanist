@@ -61,6 +61,11 @@ EOTEXT
 
       $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
         $working_copy);
+
+      // Force the range to HEAD^..HEAD, which is meaningless but keeps us
+      // from triggering "base" rules or other commit range resolution rules
+      // that might prompt the user when we pull the working copy status.
+      $repository_api->setRelativeCommit('HEAD^');
       $this->setRepositoryAPI($repository_api);
 
       // Require no local changes.

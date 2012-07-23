@@ -641,7 +641,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    */
   public function getAllBranches() {
     list($branch_info) = $this->execxLocal(
-      'branch --verbose --abbrev=40 --no-color');
+      'branch --no-color');
     $lines = explode("\n", rtrim($branch_info));
 
     $result = array();
@@ -653,12 +653,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         continue;
       }
 
-      list($current, $name, $hash, $desc) = preg_split('/\s+/', $line, 4);
+      list($current, $name) = preg_split('/\s+/', $line, 2);
       $result[] = array(
         'current' => !empty($current),
         'name'    => $name,
-        'hash'    => $hash,
-        'desc'    => $desc,
       );
     }
 
@@ -752,12 +750,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
            "'git push', or 'git svn dcommit', or by printing and faxing it).";
   }
 
-  public function getCommitMessageForRevision($rev) {
+  public function getCommitMessage($commit) {
     list($message) = $this->execxLocal(
-      'log -n1 %s',
-      $rev);
-    $parser = new ArcanistDiffParser();
-    return head($parser->parseDiff($message));
+      'log -n1 --format=%C %s --',
+      '%s%n%b',
+      $commit);
+    return $message;
   }
 
   public function loadWorkingCopyDifferentialRevisions(
@@ -856,6 +854,52 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               "configuration.");
             return trim($merge_base);
           }
+        } else if (preg_match('/^branch-unique\((.+)\)$/', $name, $matches)) {
+          list($err, $merge_base) = $this->execManualLocal(
+            'merge-base %s HEAD',
+            $matches[1]);
+          if ($err) {
+            return null;
+          }
+          $merge_base = trim($merge_base);
+
+          list($commits) = $this->execxLocal(
+            'log --format=%C %s..HEAD --',
+            '%H',
+            $merge_base);
+          $commits = array_filter(explode("\n", $commits));
+
+          if (!$commits) {
+            return null;
+          }
+
+          $commits[] = $merge_base;
+
+          $head_branch_count = null;
+          foreach ($commits as $commit) {
+            list($branches) = $this->execxLocal(
+              'branch --contains %s',
+              $commit);
+            $branches = array_filter(explode("\n", $branches));
+            if ($head_branch_count === null) {
+              // If this is the first commit, it's HEAD. Count how many
+              // branches it is on; we want to include commits on the same
+              // number of branches. This covers a case where this branch
+              // has sub-branches and we're running "arc diff" here again
+              // for whatever reason.
+              $head_branch_count = count($branches);
+            } else if (count($branches) > $head_branch_count) {
+              foreach ($branches as $key => $branch) {
+                $branches[$key] = trim($branch, ' *');
+              }
+              $branches = implode(', ', $branches);
+              $this->setBaseCommitExplanation(
+                "it is the first commit between '{$merge_base}' (the ".
+                "merge-base of '{$matches[1]}' and HEAD) which is also ".
+                "contained by another branch ({$branches}).");
+              return $commit;
+            }
+          }
         } else {
           list($err) = $this->execManualLocal(
             'cat-file -t %s',
@@ -875,6 +919,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               "you specified '{$rule}' in your {$source} 'base' ".
               "configuration.");
             return self::GIT_MAGIC_ROOT_COMMIT;
+          case 'amended':
+            $text = $this->getCommitMessage('HEAD');
+            $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+              $text);
+            if ($message->getRevisionID()) {
+              $this->setBaseCommitExplanation(
+                "HEAD has been amended with 'Differential Revision:', ".
+                "as specified by '{$rule}' in your {$source} 'base' ".
+                "configuration.");
+              return 'HEAD^';
+            }
+            break;
           case 'upstream':
             list($err, $upstream) = $this->execManualLocal(
               "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");

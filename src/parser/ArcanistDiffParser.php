@@ -30,6 +30,8 @@ final class ArcanistDiffParser {
   protected $isMercurial;
   protected $detectBinaryFiles = false;
   protected $tryEncoding;
+  protected $rawDiff;
+  protected $writeDiffOnFailure;
 
   protected $changes = array();
   private $forcePath;
@@ -957,6 +959,7 @@ final class ArcanistDiffParser {
   }
 
   protected function didStartParse($text) {
+    $this->rawDiff = $text;
 
     // Eat leading whitespace. This may happen if the first change in the diff
     // is an SVN property change.
@@ -988,7 +991,13 @@ final class ArcanistDiffParser {
       $text = preg_replace('/'.$ansi_color_pattern.'/', '', $text);
     }
 
-    $this->text = explode("\n", $text);
+    // TODO: This is a hack for SVN + Windows. Eventually, we should retain line
+    // endings and preserve them through the patch lifecycle or something along
+    // those lines.
+
+    // NOTE: On Windows, a diff may have \n delimited lines (because the file
+    // uses \n) but \r\n delimited blocks. Split on both.
+    $this->text = preg_split('/\r?\n/', $text);
     $this->line = 0;
   }
 
@@ -1020,9 +1029,15 @@ final class ArcanistDiffParser {
     $this->text = null;
   }
 
+  public function setWriteDiffOnFailure($write) {
+    $this->writeDiffOnFailure = $write;
+    return $this;
+  }
+
   protected function didFailParse($message) {
-    $min = max(0, $this->line - 3);
-    $max = min($this->line + 3, count($this->text) - 1);
+    $context = 3;
+    $min = max(0, $this->line - $context);
+    $max = min($this->line + $context, count($this->text) - 1);
 
     $context = '';
     for ($ii = $min; $ii <= $max; $ii++) {
@@ -1033,8 +1048,21 @@ final class ArcanistDiffParser {
         $this->text[$ii]);
     }
 
-    $message = "Parse Exception: {$message}\n\n{$context}\n";
-    throw new Exception($message);
+    $out = array();
+    $out[] = "Diff Parse Exception: {$message}";
+
+    if ($this->writeDiffOnFailure) {
+      $temp = new TempFile();
+      $temp->setPreserveFile(true);
+
+      Filesystem::writeFile($temp, $this->rawDiff);
+      $out[] = "Raw input file was written to: ".(string)$temp;
+    }
+
+    $out[] = $context;
+    $out = implode("\n\n", $out);
+
+    throw new Exception($out);
   }
 
   /**

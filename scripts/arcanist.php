@@ -62,14 +62,23 @@ $argv = $args->getUnconsumedArgumentVector();
 $args = array_values($argv);
 
 $working_directory = getcwd();
+$console = PhutilConsole::getConsole();
 
 try {
+
+  if ($config_trace_mode) {
+    $phutil_location = phutil_get_library_root('phutil');
+    $arcanist_location = phutil_get_library_root('arcanist');
+    $console->writeErr("libphutil loaded from '{$phutil_location}'.\n");
+    $console->writeErr("arcanist loaded from '{$arcanist_location}'.\n");
+  }
 
   if (!$args) {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
   }
 
   $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
+  $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
   $working_copy = ArcanistWorkingCopyIdentity::newFromPath($working_directory);
 
   // Load additional libraries, which can provide new classes like configuration
@@ -89,6 +98,16 @@ try {
       $working_copy,
       $config_trace_mode);
   } else {
+    // Load libraries in system 'load' config. In contrast to global config, we
+    // fail hard here because this file is edited manually, so if 'arc' breaks
+    // that doesn't make it any more difficult to correct.
+    arcanist_load_libraries(
+      idx($system_config, 'load', array()),
+      $must_load = true,
+      $lib_source = 'the "load" setting in system config',
+      $working_copy,
+      $config_trace_mode);
+
     // Load libraries in global 'load' config, as per "arc set-config load". We
     // need to fail softly if these break because errors would prevent the user
     // from running "arc set-config" to correct them.
@@ -424,6 +443,14 @@ function arcanist_load_libraries(
   $config_trace_mode) {
 
   if (!$load) {
+    return;
+  }
+
+  if (!is_array($load)) {
+    $error = "Libraries specified by {$lib_source} are invalid; expected ".
+             "a list. Check your configuration.";
+    $console = PhutilConsole::getConsole();
+    $console->writeErr("WARNING: %s\n", $error);
     return;
   }
 

@@ -26,6 +26,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $status;
   private $base;
   private $relativeCommit;
+  private $branch;
   private $workingCopyRevision;
   private $localCommitInfo;
   private $includeDirectoryStateInDiffs;
@@ -78,9 +79,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranchName() {
-    // TODO: I have nearly no idea how hg branches work.
-    list($stdout) = $this->execxLocal('branch');
-    return trim($stdout);
+    if (!$this->branch) {
+      list($stdout) = $this->execxLocal('branch');
+      $this->branch = trim($stdout);
+    }
+    return $this->branch;
   }
 
   public function setRelativeCommit($commit) {
@@ -92,7 +95,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     $this->relativeCommit = $commit;
-    $this->dropCaches();
+    $this->status = null;
+    $this->localCommitInfo = null;
 
     return $this;
   }
@@ -114,7 +118,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       }
 
       list($err, $stdout) = $this->execManualLocal(
-        'outgoing --branch `hg branch` --style default');
+        'outgoing --branch %s --style default',
+        $this->getBranchName());
 
       if (!$err) {
         $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
@@ -187,11 +192,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getLocalCommitInformation() {
     if ($this->localCommitInfo === null) {
       list($info) = $this->execxLocal(
-        "log --template '%C' --prune %s --rev %s --branch %s --",
+        "log --template '%C' --rev %s --branch %s --",
         "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
           "{branch}\1{tag}\1{parents}\1{desc}\2",
-        $this->getRelativeCommit(),
-        "ancestors({$this->getWorkingCopyRevision()})",
+        '(ancestors(.) - ancestors('.$this->getRelativeCommit().'))',
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
@@ -356,26 +360,27 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRawDiffText($path) {
     $options = $this->getDiffOptions();
 
+    // NOTE: In Mercurial, "--rev x" means "diff between x and the working
+    // copy state", while "--rev x..." means "diff between x and the working
+    // copy commit" (i.e., from 'x' to '.'). The latter excludes any dirty
+    // changes in the working copy.
+
+    $range = $this->getRelativeCommit();
+    if (!$this->includeDirectoryStateInDiffs) {
+      $range .= '...';
+    }
+
     list($stdout) = $this->execxLocal(
-      'diff %C --rev %s --rev %s -- %s',
+      'diff %C --rev %s -- %s',
       $options,
-      $this->getRelativeCommit(),
-      $this->getDiffToRevision(),
+      $range,
       $path);
 
     return $stdout;
   }
 
   public function getFullMercurialDiff() {
-    $options = $this->getDiffOptions();
-
-    list($stdout) = $this->execxLocal(
-      'diff %C --rev %s --rev %s --',
-      $options,
-      $this->getRelativeCommit(),
-      $this->getDiffToRevision());
-
-    return $stdout;
+    return $this->getRawDiffText('');
   }
 
   public function getOriginalFileData($path) {
@@ -402,25 +407,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyRevision() {
-    if ($this->workingCopyRevision === null) {
-      // In Mercurial, "tip" means the tip of the current branch, not what's in
-      // the working copy. The tip may be ahead of the working copy. We need to
-      // use "hg summary" to figure out what is actually in the working copy.
-      // For instance, "hg up 4 && arc diff" should not show commits 5 and
-      // above.
-
-      // Without arguments, "hg id" shows the current working directory's
-      // commit, and "--debug" expands it to a 40-character hash.
-      list($stdout) = $this->execxLocal('--debug id --id');
-
-      // Even with "--id", "hg id" will print a trailing "+" after the hash
-      // if the working copy is dirty (has uncommitted changes). We'll
-      // explicitly detect this later by calling getWorkingCopyStatus(); ignore
-      // it for now.
-      $stdout = trim($stdout);
-      $this->workingCopyRevision = rtrim($stdout, '+');
-    }
-    return $this->workingCopyRevision;
+    return '.';
   }
 
   public function isHistoryDefaultImmutable() {
@@ -430,9 +417,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function supportsAmend() {
     list ($err, $stdout) = $this->execManualLocal('help commit');
     if ($err) {
-        return false;
+      return false;
     } else {
-        return (strstr($stdout, "amend") !== false);
+      return (strstr($stdout, "amend") !== false);
     }
   }
 
@@ -447,6 +434,13 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     } catch (Exception $ex) {
       return false;
     }
+  }
+
+  public function getCommitMessage($commit) {
+    list($message) = $this->execxLocal(
+      'log --template={desc} --rev %s',
+      $commit);
+    return $message;
   }
 
   public function parseRelativeLocalCommit(array $argv) {
@@ -503,15 +497,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getCommitMessageLog() {
     list($stdout) = $this->execxLocal(
-      "log --template '{node}\\1{desc}\\0' --prune %s --rev %s --",
-      $this->getRelativeCommit(),
-      "ancestors({$this->getWorkingCopyRevision()})");
+      "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
+      'ancestors(.) - ancestors('.$this->getRelativeCommit().')',
+      $this->getBranchName());
 
     $map = array();
 
-    $logs = explode("\0", trim($stdout));
+    $logs = explode("\1", trim($stdout));
     foreach (array_filter($logs) as $log) {
-      list($node, $desc) = explode("\1", $log);
+      list($node, $desc) = explode("\2", $log);
       $map[$node] = $desc;
     }
 
@@ -559,19 +553,27 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $hashes[] = array('hgcm', $commit['commit']);
     }
 
-    $results = $conduit->callMethodSynchronous(
-      'differential.query',
-      $query + array(
-        'commitHashes' => $hashes,
-      ));
+    if ($hashes) {
 
-    foreach ($results as $key => $hash) {
-      $results[$key]['why'] =
-        "A mercurial commit hash in the commit range is already attached ".
-        "to the Differential revision.";
+      // NOTE: In the case of "arc diff . --uncommitted" in a Mercurial working
+      // copy with dirty changes, there may be no local commits.
+
+      $results = $conduit->callMethodSynchronous(
+        'differential.query',
+        $query + array(
+          'commitHashes' => $hashes,
+        ));
+
+      foreach ($results as $key => $hash) {
+        $results[$key]['why'] =
+          "A mercurial commit hash in the commit range is already attached ".
+          "to the Differential revision.";
+      }
+
+      return $results;
     }
 
-    return $results;
+    return array();
   }
 
   public function updateWorkingCopy() {
@@ -589,23 +591,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function setIncludeDirectoryStateInDiffs($include) {
     $this->includeDirectoryStateInDiffs = $include;
     return $this;
-  }
-
-  private function getDiffToRevision() {
-    $this->dropCaches();
-
-    if ($this->includeDirectoryStateInDiffs) {
-      // This is a magic Mercurial revision name which means "current
-      // directory state"; see lookup() in localrepo.py.
-      return '.';
-    } else {
-      return $this->getWorkingCopyRevision();
-    }
-  }
-
-  private function dropCaches() {
-    $this->status = null;
-    $this->localCommitInfo = null;
   }
 
   public function getCommitSummary($commit) {
@@ -670,6 +655,38 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "'base' configuration.");
               return trim($outgoing_base);
             }
+          case 'amended':
+            $text = $this->getCommitMessage('.');
+            $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+              $text);
+            if ($message->getRevisionID()) {
+              $this->setBaseCommitExplanation(
+                "'.' has been amended with 'Differential Revision:', ".
+                "as specified by '{$rule}' in your {$source} 'base' ".
+                "configuration.");
+              // NOTE: This should be safe because Mercurial doesn't support
+              // amend until 2.2.
+              return '.^';
+            }
+            break;
+          case 'bookmark':
+            $revset =
+              'limit('.
+              '  sort('.
+              '    (ancestors(.) and bookmark() - .) or'.
+              '    (ancestors(.) - outgoing()), '.
+              '  -rev),'.
+              '1)';
+            list($err, $bookmark_base) = $this->execManualLocal(
+              'log --template={node} --rev %s',
+              $revset);
+            if (!$err) {
+              $this->setBaseCommitExplanation(
+                "it is the first ancestor of . that either has a bookmark, or ".
+                "is already in the remote and it matched the rule {$rule} in ".
+                "your {$source} 'base' configuration");
+              return trim($bookmark_base);
+            }
         }
         break;
       default:
@@ -678,6 +695,50 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return null;
 
+  }
+
+  public function getSubversionInfo() {
+    $info = array();
+    $base_path = null;
+    $revision = null;
+    list($err, $raw_info) = $this->execManualLocal('svn info');
+    if (!$err) {
+      foreach (explode("\n", trim($raw_info)) as $line) {
+        list($key, $value) = explode(': ', $line, 2);
+        switch ($key) {
+          case 'URL':
+            $info['base_path'] = $value;
+            $base_path = $value;
+            break;
+          case 'Repository UUID':
+            $info['uuid'] = $value;
+            break;
+          case 'Revision':
+            $revision = $value;
+            break;
+          default:
+            break;
+        }
+      }
+      if ($base_path && $revision) {
+        $info['base_revision'] = $base_path.'@'.$revision;
+      }
+    }
+    return $info;
+  }
+
+  public function getActiveBookmark() {
+    list($raw_output) = $this->execxLocal('bookmarks');
+    $raw_output = trim($raw_output);
+    if ($raw_output !== 'no bookmarks set') {
+      foreach (explode("\n", $raw_output) as $line) {
+        $line = trim($line);
+        if ('*' === $line[0]) {
+          return idx(explode(' ', $line, 3), 1);
+        }
+      }
+    }
+    return null;
   }
 
 }

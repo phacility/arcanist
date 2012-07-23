@@ -17,22 +17,28 @@
  */
 
 /**
- * Lint engine which powers 'arc liberate'.
- *
- * @group linter
+ * @group workflow
  */
-final class ArcanistLiberateLintEngine extends ArcanistLintEngine {
+final class ArcanistAnoidWorkflow extends ArcanistBaseWorkflow {
 
-  public function buildLinters() {
-    // We just run the module linter, 'arc liberate' is only interested in
-    // building __init__.php files.
+  public function getCommandSynopses() {
+    return phutil_console_format(<<<EOTEXT
+      **anoid**
+EOTEXT
+      );
+  }
 
-    $module_linter = new ArcanistPhutilModuleLinter();
-    foreach ($this->getPaths() as $path) {
-      $module_linter->addPath($path);
-    }
+  public function getCommandHelp() {
+    return phutil_console_format(<<<EOTEXT
+          There's only one way to find out...
+EOTEXT
+      );
+  }
 
-    return array($module_linter);
+  public function run() {
+    phutil_passthru(
+      dirname(phutil_get_library_root('arcanist')) . '/scripts/breakout.py'
+    );
   }
 
 }

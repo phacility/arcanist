@@ -131,7 +131,9 @@ EOTEXT
         if ($this->getArgument('upgrade')) {
           return $this->upgradeLibrary($path);
         }
-        return $this->liberateVersion1($path);
+        throw new ArcanistUsageException(
+          "This library is using libphutil v1, which is no longer supported. ".
+          "Run 'arc liberate --upgrade' to upgrade to v2.");
       case 2:
         if ($this->getArgument('upgrade')) {
           throw new ArcanistUsageException(
@@ -186,139 +188,6 @@ EOTEXT
     $this->liberateVersion2($path);
   }
 
-  private function liberateVersion1($path) {
-
-    if ($this->getArgument('remap')) {
-      return $this->liberateRunRemap($path);
-    }
-
-    if ($this->getArgument('verify')) {
-      return $this->liberateRunVerify($path);
-    }
-
-    $readable = Filesystem::readablePath($path);
-    echo "Using library root at '{$readable}'...\n";
-
-    $this->checkForLooseFiles($path);
-
-    if ($this->getArgument('all')) {
-      echo "Dropping module cache...\n";
-      Filesystem::remove($path.'/.phutil_module_cache');
-    }
-
-    echo "Mapping library...\n";
-
-    // Force a rebuild of the library map before running lint. The remap
-    // operation will load the map before regenerating it, so if a class has
-    // been renamed (say, from OldClass to NewClass) this rebuild will
-    // cause the initial remap to see NewClass and correctly remove includes
-    // caused by use of OldClass.
-    $this->liberateGetChangedPaths($path);
-
-    $arc_bin = $this->getScriptPath('bin/arc');
-
-    do {
-      $future = new ExecFuture(
-        '%s liberate --remap -- %s',
-        $arc_bin,
-        $path);
-      $wrote = $future->resolveJSON();
-      foreach ($wrote as $wrote_path) {
-        echo "Updated '{$wrote_path}'...\n";
-      }
-    } while ($wrote);
-
-    echo "Verifying library...\n";
-
-    $err = phutil_passthru('%s liberate --verify -- %s', $arc_bin, $path);
-
-    $do_update = (!$err || $this->getArgument('force-update'));
-
-    if ($do_update) {
-      echo "Finalizing library map...\n";
-      execx('%s %s', $this->getPhutilMapperLocation(), $path);
-    }
-
-    if ($err) {
-      if ($do_update) {
-        echo phutil_console_format(
-          "<bg:yellow>**  WARNING  **</bg> Library update forced, but lint ".
-          "failures remain.\n");
-      } else {
-        echo phutil_console_format(
-          "<bg:red>**  UNRESOLVED LINT ERRORS  **</bg> This library has ".
-          "unresolved lint failures. The library map was not updated. Use ".
-          "--force-update to force an update.\n");
-      }
-    } else {
-      echo phutil_console_format(
-        "<bg:green>**  OKAY  **</bg> Library updated.\n");
-    }
-
-    return $err;
-  }
-
-  private function liberateLintModules($path, array $changed) {
-    $engine = $this->liberateBuildLintEngine($path, $changed);
-    if ($engine) {
-      return $engine->run();
-    } else {
-      return array();
-    }
-  }
-
-  private function liberateWritePatches(array $results) {
-    assert_instances_of($results, 'ArcanistLintResult');
-    $wrote = array();
-
-    foreach ($results as $result) {
-      if ($result->isPatchable()) {
-        $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
-        $patcher->writePatchToDisk();
-        $wrote[] = $result->getPath();
-      }
-    }
-
-    return $wrote;
-  }
-
-  private function liberateBuildLintEngine($path, array $changed) {
-    $lint_map = array();
-    foreach ($changed as $module) {
-      $module_path = $path.'/'.$module;
-      $files = Filesystem::listDirectory($module_path);
-      $lint_map[$module] = $files;
-    }
-
-    $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
-      $path,
-      json_encode(
-        array(
-          'project_id' => '__arcliberate__',
-        )),
-      'arc liberate');
-
-    $engine = new ArcanistLiberateLintEngine();
-    $engine->setWorkingCopy($working_copy);
-
-    $lint_paths = array();
-    foreach ($lint_map as $module => $files) {
-      foreach ($files as $file) {
-        $lint_paths[] = $module.'/'.$file;
-      }
-    }
-
-    if (!$lint_paths) {
-      return null;
-    }
-
-    $engine->setPaths($lint_paths);
-    $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-
-    return $engine;
-  }
-
-
   private function liberateCreateDirectory($path) {
     if (Filesystem::pathExists($path)) {
       if (!is_dir($path)) {
@@ -361,72 +230,10 @@ EOTEXT
     Filesystem::writeFile($init_path, $template);
   }
 
-  private function liberateGetChangedPaths($path) {
-    $mapper = $this->getPhutilMapperLocation();
-    $future = new ExecFuture('%s %s --find-paths-for-liberate', $mapper, $path);
-    return $future->resolveJSON();
-  }
 
   private function getScriptPath($script) {
     $root = dirname(phutil_get_library_root('arcanist'));
     return $root.'/'.$script;
-  }
-
-  private function getPhutilMapperLocation() {
-    return $this->getScriptPath('scripts/phutil_mapper.php');
-  }
-
-  private function liberateRunRemap($path) {
-    phutil_load_library($path);
-
-    $paths = $this->liberateGetChangedPaths($path);
-    $results = $this->liberateLintModules($path, $paths);
-    $wrote = $this->liberateWritePatches($results);
-
-    echo json_encode($wrote, true);
-
-    return 0;
-  }
-
-  private function liberateRunVerify($path) {
-    phutil_load_library($path);
-
-    $paths = $this->liberateGetChangedPaths($path);
-    $results = $this->liberateLintModules($path, $paths);
-
-    $renderer = new ArcanistLintConsoleRenderer();
-
-    $unresolved = false;
-    foreach ($results as $result) {
-      foreach ($result->getMessages() as $message) {
-        echo $renderer->renderLintResult($result);
-        $unresolved = true;
-        break;
-      }
-    }
-
-    return (int)$unresolved;
-  }
-
-  /**
-   * Sanity check to catch people putting class files in the root of a libphutil
-   * library.
-   */
-  private function checkForLooseFiles($path) {
-    foreach (Filesystem::listDirectory($path) as $item) {
-      if (!preg_match('/\.php$/', $item)) {
-        // Not a ".php" file.
-        continue;
-      }
-      if (preg_match('/^__/', $item)) {
-        // Has magic '__' prefix.
-        continue;
-      }
-
-      echo phutil_console_wrap(
-        "WARNING: File '{$item}' is not in a module and won't be loaded. ".
-        "Put source files in subdirectories, not the top level directory.\n");
-    }
   }
 
 }

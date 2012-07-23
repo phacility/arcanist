@@ -104,7 +104,8 @@ EOTEXT
       $results[$path] = $info;
 
       if (!$this->getJSON()) {
-        echo "  {$name}: ".$info['uri']."\n\n";
+        $id = $info['id'];
+        echo "  F{$id} {$name}: ".$info['uri']."\n\n";
       }
     }
 
