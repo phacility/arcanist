@@ -229,8 +229,9 @@ final class ArcanistDiffParser {
           '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
           '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
 
-        // This is a normal Mercurial text change, probably from "hg diff".
-        '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?P<cur>.+)',
+        // This is a normal Mercurial text change, probably from "hg diff". It
+        // may have two "-r" blocks if it came from "hg diff -r x:y".
+        '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?:-r [a-f0-9]+ )?(?P<cur>.+)',
       );
 
       $ok = false;

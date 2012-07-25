@@ -1,0 +1,11 @@
+diff -r 2ccefc36d42f -r 6a07a384974e Test.java
+--- a/Test.java	Tue Jul 24 14:57:51 2012 -0700
++++ b/Test.java	Tue Jul 24 14:59:23 2012 -0700
+@@ -2,6 +2,6 @@
+ {
+     public static void main(String[] args)
+     {
+-        System.out.println("Hello!");
++        System.out.println("Hello, world!");
+     }
+ }

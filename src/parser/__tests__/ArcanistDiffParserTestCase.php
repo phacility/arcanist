@@ -527,6 +527,16 @@ EOTEXT
         $this->assertEqual('*', idx($new_properties, 'svn:executable'));
         $this->assertEqual('text/html', idx($new_properties, 'svn:mime-type'));
         break;
+      case 'hg-diff-range.hgdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          'Test.java',
+          $change->getOldPath());
+        $this->assertEqual(
+          'Test.java',
+          $change->getCurrentPath());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
