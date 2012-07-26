@@ -237,12 +237,14 @@ final class ArcanistDiffParser {
 
       $line = $this->getLine();
       $match = null;
+      $ok = $this->tryMatchHeader($patterns, $line, $match);
 
-      if (!$this->tryMatchHeader($patterns, $line, $match)) {
+      if (!$ok && $this->isFirstNonEmptyLine()) {
         // 'hg export' command creates so called "extended diff" that
-        // contains some meta information and comment at the beginning.
-        // Actual mercurial code detects where comment ends and unified
-        // diff starts by searching "diff -r" in the text.
+        // contains some meta information and comment at the beginning
+        // (isFirstNonEmptyLine() to check for beginning). Actual mercurial
+        // code detects where comment ends and unified diff starts by
+        // searching "diff -r" in the text.
         $this->saveLine();
         $line = $this->nextLineThatLooksLikeDiffStart();
         if (!$this->tryMatchHeader($patterns, $line, $match)) {
@@ -1055,6 +1057,17 @@ final class ArcanistDiffParser {
 
   protected function restoreLine() {
     $this->line = $this->lineSaved;
+  }
+
+  protected function isFirstNonEmptyLine() {
+    $count = count($this->text);
+    for ($i = 0; $i < $count; $i++) {
+      if (strlen(trim($line)) != 0) {
+        return ($i == $this->line);
+      }
+    }
+    // Entire file is empty.
+    return false;
   }
 
   protected function didFinishParse() {
