@@ -1090,9 +1090,9 @@ abstract class ArcanistBaseWorkflow {
     $repository_api = $this->getRepositoryAPI();
     $working_copy = $this->getWorkingCopy();
 
-    $project_config = $working_copy->getConfigFromAnySource('immutable_history');
-    if ($project_config !== null) {
-      return $project_config;
+    $config = $working_copy->getConfigFromAnySource('history.immutable');
+    if ($config !== null) {
+      return $config;
     }
 
     return $repository_api->isHistoryDefaultImmutable();
@@ -1262,18 +1262,6 @@ abstract class ArcanistBaseWorkflow {
     $this->repositoryEncoding = nonempty($project_info['encoding'], $default);
 
     return $this->repositoryEncoding;
-  }
-
-  protected static function formatConfigValueForDisplay($value) {
-    if (is_array($value)) {
-      // TODO: Both json_encode() and PhutilJSON do a bad job with one-liners.
-      // PhutilJSON splits them across a bunch of lines, while json_encode()
-      // escapes all kinds of stuff like "/". It would be nice if PhutilJSON
-      // had a mode for pretty one-liners.
-      $value = json_encode($value);
-      return $value;
-    }
-    return $value;
   }
 
   protected function newInteractiveEditor($text) {

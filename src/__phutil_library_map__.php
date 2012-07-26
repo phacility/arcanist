@@ -102,6 +102,7 @@ phutil_register_library_map(array(
     'ArcanistRepositoryAPI' => 'repository/api/ArcanistRepositoryAPI.php',
     'ArcanistScriptAndRegexLinter' => 'lint/linter/ArcanistScriptAndRegexLinter.php',
     'ArcanistSetConfigWorkflow' => 'workflow/ArcanistSetConfigWorkflow.php',
+    'ArcanistSettings' => 'configuration/ArcanistSettings.php',
     'ArcanistShellCompleteWorkflow' => 'workflow/ArcanistShellCompleteWorkflow.php',
     'ArcanistSingleLintEngine' => 'lint/engine/ArcanistSingleLintEngine.php',
     'ArcanistSpellingDefaultData' => 'lint/linter/ArcanistSpellingDefaultData.php',

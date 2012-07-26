@@ -120,9 +120,9 @@ try {
 
     // Load libraries in ".arcconfig". Libraries here must load.
     arcanist_load_libraries(
-      $working_copy->getConfig('phutil_libraries'),
+      $working_copy->getConfig('load'),
       $must_load = true,
-      $lib_source = 'the "phutil_libraries" setting in ".arcconfig"',
+      $lib_source = 'the "load" setting in ".arcconfig"',
       $working_copy,
       $config_trace_mode);
   }
