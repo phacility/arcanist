@@ -1,0 +1,16 @@
+# Some meta information
+Some
+multiline comment
+
+with empty strings.
+
+diff -r b073ee763933 -r 36fbb0c6c48a vim_nix.rb
+--- a/vim_nix.rb	Wed Jul 04 11:28:53 2012 +0400
++++ b/vim_nix.rb	Wed Jul 25 23:14:44 2012 +0400
+@@ -11,6 +11,3 @@
+   `sudo apt-get install vim-gtk`
+ end
+ 
+-File.delete( File.expand_path( "~/.vimrc" ) ) rescue
+-File.link( "#{DirDropbox()}/cfg/vim/_vimrc", File.expand_path( "~/.vimrc" ) )
+-
