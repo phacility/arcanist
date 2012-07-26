@@ -1062,7 +1062,7 @@ final class ArcanistDiffParser {
   protected function isFirstNonEmptyLine() {
     $count = count($this->text);
     for ($i = 0; $i < $count; $i++) {
-      if (strlen(trim($line)) != 0) {
+      if (strlen(trim($this->text[$i])) != 0) {
         return ($i == $this->line);
       }
     }
