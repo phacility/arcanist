@@ -238,11 +238,19 @@ final class ArcanistDiffParser {
       $match = null;
 
       if (!$this->tryMatchHeader($patterns, $line, $match)) {
-        $this->didFailParse(
-          "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
-          "'Property changes on: /path/to/file.ext' (svn properties), ".
-          "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
-          "'diff --git' (git diff), or '--- filename' (unified diff).");
+        // 'hg export' command creates so called "extended diff" that
+        // contains some meta information and comment at the beginning.
+        // Actual mercurial code detects where comment ends and unified
+        // diff starts by searching "diff -r" in the text.
+        $line = $this->nextLineThatLooksLikeDiffStart();
+        if (!$this->tryMatchHeader($patterns, $line, $match)) {
+          $this->didFailParse(
+            "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
+            "'Property changes on: /path/to/file.ext' (svn properties), ".
+            "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
+            "'diff --git' (git diff), '--- filename' (unified diff), or " .
+            "'diff -r' (hg diff or patch).");
+        }
       }
 
       if (isset($match['type'])) {
@@ -1022,6 +1030,15 @@ final class ArcanistDiffParser {
   protected function nextNonemptyLine() {
     while (($line = $this->nextLine()) !== null) {
       if (strlen(trim($line)) !== 0) {
+        break;
+      }
+    }
+    return $this->getLine();
+  }
+
+  protected function nextLineThatLooksLikeDiffStart() {
+    while (($line = $this->nextLine()) !== null) {
+      if (preg_match('/^\s*diff\s+-r/', $line)) {
         break;
       }
     }
