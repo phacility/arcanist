@@ -60,6 +60,7 @@ EOTEXT
       'project' => $this->getWorkingCopy()->getProjectConfig(),
       'local'   => $this->readLocalArcConfig(),
     );
+
     if ($argv) {
       $keys = $argv;
     } else {
@@ -68,17 +69,31 @@ EOTEXT
       sort($keys);
     }
 
+    $multi = (count($keys) > 1);
+
     foreach ($keys as $key) {
-      echo "{$key}\n";
+      if ($multi) {
+        echo "{$key}\n";
+      }
       foreach ($configs as $name => $config) {
-        $val = idx($config, $key);
+        switch ($name) {
+          case 'project':
+            // Respect older names in project config.
+            $val = $this->getWorkingCopy()->getConfig($key);
+            break;
+          default:
+            $val = idx($config, $key);
+            break;
+        }
         if ($val === null) {
           continue;
         }
         $val = $settings->formatConfigValueForDisplay($key, $val);
         printf("% 10.10s: %s\n", $name, $val);
       }
-      echo "\n";
+      if ($multi) {
+        echo "\n";
+      }
     }
 
     return 0;
