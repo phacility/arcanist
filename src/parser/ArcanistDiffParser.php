@@ -26,6 +26,7 @@ final class ArcanistDiffParser {
   protected $api;
   protected $text;
   protected $line;
+  protected $lineSaved;
   protected $isGit;
   protected $isMercurial;
   protected $detectBinaryFiles = false;
@@ -242,8 +243,11 @@ final class ArcanistDiffParser {
         // contains some meta information and comment at the beginning.
         // Actual mercurial code detects where comment ends and unified
         // diff starts by searching "diff -r" in the text.
+        $this->saveLine();
         $line = $this->nextLineThatLooksLikeDiffStart();
         if (!$this->tryMatchHeader($patterns, $line, $match)) {
+          // Restore line before guessing to display correct error.
+          $this->restoreLine();
           $this->didFailParse(
             "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
             "'Property changes on: /path/to/file.ext' (svn properties), ".
@@ -1043,6 +1047,14 @@ final class ArcanistDiffParser {
       }
     }
     return $this->getLine();
+  }
+
+  protected function saveLine() {
+    $this->lineSaved = $this->line;
+  }
+
+  protected function restoreLine() {
+    $this->line = $this->lineSaved;
   }
 
   protected function didFinishParse() {
