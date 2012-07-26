@@ -234,17 +234,10 @@ final class ArcanistDiffParser {
         '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?:-r [a-f0-9]+ )?(?P<cur>.+)',
       );
 
-      $ok = false;
       $line = $this->getLine();
       $match = null;
-      foreach ($patterns as $pattern) {
-        $ok = preg_match('@^'.$pattern.'$@', $line, $match);
-        if ($ok) {
-          break;
-        }
-      }
 
-      if (!$ok) {
+      if (!$this->tryMatchHeader($patterns, $line, $match)) {
         $this->didFailParse(
           "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
           "'Property changes on: /path/to/file.ext' (svn properties), ".
@@ -323,6 +316,15 @@ final class ArcanistDiffParser {
     $this->didFinishParse();
 
     return $this->changes;
+  }
+
+  protected function tryMatchHeader($patterns, $line, &$match) {
+    foreach ($patterns as $pattern) {
+      if (preg_match('@^'.$pattern.'$@', $line, $match)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   protected function parseCommitMessage(ArcanistDiffChange $change) {
