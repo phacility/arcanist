@@ -265,24 +265,28 @@ abstract class ArcanistBaseWorkflow {
     }
 
     $this->establishConduit();
-
     $credentials = $this->conduitCredentials;
-    if (!$credentials) {
-      throw new Exception(
-        "Set conduit credentials with setConduitCredentials() before ".
-        "authenticating conduit!");
-    }
-
-    if (empty($credentials['user']) || empty($credentials['certificate'])) {
-      throw new Exception(
-        "Credentials must include a 'user' and a 'certificate'.");
-    }
-
-    $description = idx($credentials, 'description', '');
-    $user        = $credentials['user'];
-    $certificate = $credentials['certificate'];
 
     try {
+      if (!$credentials) {
+        throw new Exception(
+          "Set conduit credentials with setConduitCredentials() before ".
+          "authenticating conduit!");
+      }
+
+      if (empty($credentials['user'])) {
+        throw new ConduitClientException('ERR-INVALID-USER',
+                                         'Empty user in credentials.');
+      }
+      if (empty($credentials['certificate'])) {
+        throw new ConduitClientException('ERR-NO-CERTIFICATE',
+                                         'Empty certificate in credentials.');
+      }
+
+      $description = idx($credentials, 'description', '');
+      $user        = $credentials['user'];
+      $certificate = $credentials['certificate'];
+
       $connection = $this->getConduit()->callMethodSynchronous(
         'conduit.connect',
         array(
