@@ -116,7 +116,8 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     }
 
     // Look for globally installed JSHint
-    list($err) = exec_manual('which %s', $bin);
+    $cmd = (phutil_is_windows()) ? 'where %s' : 'which %s';
+    list($err) = exec_manual($cmd, $bin);
     if ($err) {
       throw new ArcanistUsageException(
         "JSHint does not appear to be installed on this system. Install it ".
