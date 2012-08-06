@@ -28,6 +28,7 @@
  */
 final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
+  private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
   private $lintExcuse;
@@ -349,6 +350,15 @@ EOTEXT
         ),
         'supports' => array('git', 'hg'),
       ),
+      'no-diff' => array(
+        'help' => 'Only run lint and unit tests. Intended for internal use.',
+      ),
+      'background' => array(
+        'param' => 'bool',
+        'help' =>
+          'Run lint and unit tests on background. '.
+          '"0" to disable (default), "1" to enable.',
+      ),
       '*' => 'paths',
     );
   }
@@ -358,16 +368,50 @@ EOTEXT
   }
 
   public function run() {
+    $this->console = PhutilConsole::getConsole();
+
+    if ($this->getArgument('no-diff')) {
+      $this->removeScratchFile('diff-result.json');
+      $data = $this->runLintUnit();
+      $this->writeScratchFile('diff-result.json', json_encode($data));
+      return 0;
+    }
+
     $this->runDiffSetupBasics();
 
-    $paths = $this->generateAffectedPaths();
+    if ($this->getArgument('background')) {
+      $argv = $_SERVER['argv'];
+      if (!PhutilConsoleFormatter::getDisableANSI()) {
+        $argv[] = '--ansi';
+      }
+      $lint_unit = new ExecFuture('%Ls --recon --no-diff', $argv);
+      $lint_unit->write('', true);
+      $lint_unit->start();
+    }
 
-    // Do this before we start linting or running unit tests so we can detect
-    // things like a missing test plan or invalid reviewers immediately.
     $commit_message = $this->buildCommitMessage();
 
-    $lint_result = $this->runLint($paths);
-    $unit_result = $this->runUnit($paths);
+    if ($this->getArgument('background')) {
+      $server = new PhutilConsoleServer();
+      $server->addExecFutureClient($lint_unit);
+      $server->run();
+
+      list($err) = $lint_unit->resolve();
+      $data = $this->readScratchFile('diff-result.json');
+      if ($err || !$data) {
+        return 1;
+      }
+      $data = json_decode($data, true);
+    } else {
+      $data = $this->runLintUnit();
+    }
+    $lint_result = $data['lintResult'];
+    $this->lintExcuse = $data['lintExcuse'];
+    $this->unresolvedLint = $data['unresolvedLint'];
+    $this->postponedLinters = $data['postponedLinters'];
+    $unit_result = $data['unitResult'];
+    $this->unitExcuse = $data['unitExcuse'];
+    $this->testResults = $data['testResults'];
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -1094,7 +1138,25 @@ EOTEXT
   /**
    * @task lintunit
    */
-  private function runLint($paths) {
+  private function runLintUnit() {
+    $lint_result = $this->runLint();
+    $unit_result = $this->runUnit();
+    return array(
+      'lintResult' => $lint_result,
+      'lintExcuse' => $this->lintExcuse,
+      'unresolvedLint' => $this->unresolvedLint,
+      'postponedLinters' => $this->postponedLinters,
+      'unitResult' => $unit_result,
+      'unitExcuse' => $this->unitExcuse,
+      'testResults' => $this->testResults,
+    );
+  }
+
+
+  /**
+   * @task lintunit
+   */
+  private function runLint() {
     if ($this->getArgument('nolint') ||
         $this->getArgument('only') ||
         $this->isRawDiffSource()) {
@@ -1103,7 +1165,7 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    echo "Linting...\n";
+    $this->console->writeOut("Linting...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('lint');
       if ($repository_api->supportsRelativeLocalCommits()) {
@@ -1121,7 +1183,7 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
@@ -1130,27 +1192,39 @@ EOTEXT
             'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
           $this->lintExcuse = $this->getErrorExcuse(
             "Lint issued unresolved errors!",
             'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_POSTPONED:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:yellow>** LINT POSTPONED **</bg> ".
             "Lint results are postponed.\n");
           break;
       }
 
-      $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
+      $this->unresolvedLint = array();
+      foreach ($lint_workflow->getUnresolvedMessages() as $message) {
+        $this->unresolvedLint[] = array(
+          'path'        => $message->getPath(),
+          'line'        => $message->getLine(),
+          'char'        => $message->getChar(),
+          'code'        => $message->getCode(),
+          'severity'    => $message->getSeverity(),
+          'name'        => $message->getName(),
+          'description' => $message->getDescription(),
+        );
+      }
+
       $this->postponedLinters = $lint_workflow->getPostponedLinters();
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
-      echo "No lint engine configured for this project.\n";
+      $this->console->writeOut("No lint engine configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      echo "No paths to lint.\n";
+      $this->console->writeOut("No paths to lint.\n");
     }
 
     return null;
@@ -1160,7 +1234,7 @@ EOTEXT
   /**
    * @task lintunit
    */
-  private function runUnit($paths) {
+  private function runUnit() {
     if ($this->getArgument('nounit') ||
         $this->getArgument('only') ||
         $this->isRawDiffSource()) {
@@ -1169,7 +1243,7 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    echo "Running unit tests...\n";
+    $this->console->writeOut("Running unit tests...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('unit');
       if ($repository_api->supportsRelativeLocalCommits()) {
@@ -1181,7 +1255,7 @@ EOTEXT
 
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
@@ -1193,7 +1267,7 @@ EOTEXT
           }
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
           $this->unitExcuse = $this->getErrorExcuse(
             "Unit test results include failures!",
@@ -1201,13 +1275,22 @@ EOTEXT
           break;
       }
 
-      $this->testResults = $unit_workflow->getTestResults();
+      $this->testResults = array();
+      foreach ($unit_workflow->getTestResults() as $test) {
+        $this->testResults[] = array(
+          'name'      => $test->getName(),
+          'result'    => $test->getResult(),
+          'userdata'  => $test->getUserData(),
+          'coverage'  => $test->getCoverage(),
+        );
+      }
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
-      echo "No unit test engine is configured for this project.\n";
+      $this->console->writeOut(
+        "No unit test engine is configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      echo "No tests to run.\n";
+      $this->console->writeOut("No tests to run.\n");
     }
 
     return null;
@@ -1216,7 +1299,7 @@ EOTEXT
   private function getErrorExcuse($prompt, $history) {
     if ($this->getArgument('excuse')) {
       $prompt .= " Ignore them?";
-      if (!phutil_console_confirm($prompt)) {
+      if (!$this->console->confirm($prompt)) {
         throw new ArcanistUserAbortException();
       }
       return $this->getArgument('excuse');
@@ -1225,9 +1308,8 @@ EOTEXT
     $history = $this->getRepositoryAPI()->getScratchFilePath($history);
 
     $prompt .= " Provide explanation to continue or press Enter to abort.";
-    echo "\n\n";
-    echo phutil_console_wrap($prompt);
-    $return = phutil_console_prompt("Explanation:", $history);
+    $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
+    $return = $this->console->prompt("Explanation:", $history);
     if ($return == '') {
       throw new ArcanistUserAbortException();
     }
@@ -2079,20 +2161,7 @@ EOTEXT
   private function updateLintDiffProperty() {
 
     if ($this->unresolvedLint) {
-      $data = array();
-      foreach ($this->unresolvedLint as $message) {
-        $data[] = array(
-          'path'        => $message->getPath(),
-          'line'        => $message->getLine(),
-          'char'        => $message->getChar(),
-          'code'        => $message->getCode(),
-          'severity'    => $message->getSeverity(),
-          'name'        => $message->getName(),
-          'description' => $message->getDescription(),
-        );
-      }
-
-      $this->updateDiffProperty('arc:lint', json_encode($data));
+      $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
       if (strlen($this->lintExcuse)) {
         $this->updateDiffProperty('arc:lint-excuse',
           json_encode($this->lintExcuse));
@@ -2119,17 +2188,7 @@ EOTEXT
       return;
     }
 
-    $data = array();
-    foreach ($this->testResults as $test) {
-      $data[] = array(
-        'name'      => $test->getName(),
-        'result'    => $test->getResult(),
-        'userdata'  => $test->getUserData(),
-        'coverage'  => $test->getCoverage(),
-      );
-    }
-
-    $this->updateDiffProperty('arc:unit', json_encode($data));
+    $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     if (strlen($this->unitExcuse)) {
       $this->updateDiffProperty('arc:unit-excuse',
         json_encode($this->unitExcuse));
