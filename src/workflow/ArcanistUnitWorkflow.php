@@ -271,13 +271,6 @@ EOTEXT
     return $this->testResults;
   }
 
-  public function setDifferentialDiffID($id) {
-    if ($this->engine) {
-      $this->engine->setDifferentialDiffID($id);
-    }
-    return $this;
-  }
-
   private static function formatTestDuration($seconds) {
     // Very carefully define inclusive upper bounds on acceptable unit test
     // durations. Times are in milliseconds and are in increasing order.

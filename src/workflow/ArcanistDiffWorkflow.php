@@ -35,8 +35,6 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $unitWorkflow;
-  private $lintWorkflow;
   private $postponedLinters;
   private $haveUncommittedChanges = false;
 
@@ -391,10 +389,6 @@ EOTEXT
     $this->diffID = $diff_info['diffid'];
 
     $this->dispatchDiffWasCreatedEvent($diff_info['diffid']);
-
-    if ($this->unitWorkflow) {
-      $this->unitWorkflow->setDifferentialDiffID($diff_info['diffid']);
-    }
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -1117,7 +1111,6 @@ EOTEXT
         $argv[] = $repository_api->getRelativeCommit();
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
-      $this->lintWorkflow = $lint_workflow;
 
       if ($this->shouldAmend()) {
         // TODO: We should offer to create a checkpoint commit.
@@ -1183,8 +1176,8 @@ EOTEXT
         $argv[] = '--rev';
         $argv[] = $repository_api->getRelativeCommit();
       }
-      $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
-      $unit_result = $this->unitWorkflow->run();
+      $unit_workflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $unit_workflow->run();
 
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
@@ -1208,7 +1201,7 @@ EOTEXT
           break;
       }
 
-      $this->testResults = $this->unitWorkflow->getTestResults();
+      $this->testResults = $unit_workflow->getTestResults();
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
