@@ -578,6 +578,8 @@ EOTEXT
 
           $repository_api->setIncludeDirectoryStateInDiffs(true);
           $this->haveUncommittedChanges = true;
+        } else {
+          throw $ex;
         }
       }
     }
