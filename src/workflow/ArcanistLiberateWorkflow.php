@@ -215,10 +215,11 @@ EOTEXT
     echo "Choose a name for the new library.\n";
     do {
       $name = phutil_console_prompt('What do you want to name this library?');
-      if (preg_match('/^[a-z]+$/', $name)) {
+      if (preg_match('/^[a-z-]+$/', $name)) {
         break;
       } else {
-        echo "Library name should contain only lowercase letters.\n";
+        echo "Library name should contain only lowercase letters and ".
+          "hyphens.\n";
       }
     } while (true);
 

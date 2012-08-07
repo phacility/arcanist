@@ -90,6 +90,8 @@ EOTEXT
     $key = $argv[0];
     $val = $argv[1];
 
+    $settings = new ArcanistSettings();
+
     $old = null;
     if (array_key_exists($key, $config)) {
       $old = $config[$key];
@@ -103,13 +105,15 @@ EOTEXT
         self::writeGlobalArcConfig($config);
       }
 
+      $old = $settings->formatConfigValueForDisplay($key, $old);
+
       if ($old === null) {
         echo "Deleted key '{$key}' from {$which} config.\n";
       } else {
-        echo "Deleted key '{$key}' from {$which} config (was '{$old}').\n";
+        echo "Deleted key '{$key}' from {$which} config (was {$old}).\n";
       }
     } else {
-      $val = $this->parse($key, $val);
+      $val = $settings->willWriteValue($key, $val);
 
       $config[$key] = $val;
       if ($is_local) {
@@ -118,13 +122,13 @@ EOTEXT
         self::writeGlobalArcConfig($config);
       }
 
-      $val = self::formatConfigValueForDisplay($val);
-      $old = self::formatConfigValueForDisplay($old);
+      $val = $settings->formatConfigValueForDisplay($key, $val);
+      $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo "Set key '{$key}' = '{$val}' in {$which} config.\n";
+        echo "Set key '{$key}' = {$val} in {$which} config.\n";
       } else {
-        echo "Set key '{$key}' = '{$val}' in {$which} config (was '{$old}').\n";
+        echo "Set key '{$key}' = {$val} in {$which} config (was {$old}).\n";
       }
     }
 
@@ -132,88 +136,33 @@ EOTEXT
   }
 
   private function show() {
-    $keys = array(
-      'default'   => array(
-        'help' =>
-          'The URI of a Phabricator install to connect to by default, if '.
-          'arc is run in a project without a Phabricator URI or run outside '.
-          'of a project.',
-        'example' => 'http://phabricator.example.com/',
-      ),
-      'load'      => array(
-        'help' =>
-          'A list of paths to phutil libraries that should be loaded at '.
-          'startup. This can be used to make classes available, like lint or '.
-          'unit test engines.',
-        'example' => '["/var/arc/customlib/src"]',
-      ),
-      'lint.engine' => array(
-        'help' =>
-          'The name of a default lint engine to use, if no lint engine is '.
-          'specified by the current project.',
-        'example' => 'ExampleLintEngine',
-      ),
-      'unit.engine' => array(
-        'help' =>
-          'The name of a default unit test engine to use, if no unit test '.
-          'engine is specified by the current project.',
-        'example' => 'ExampleUnitTestEngine',
-      ),
-      'arc.land.onto.default' => array(
-        'help' =>
-          'The name of the default branch to land changes onto when '.
-          '`arc land` is run.',
-        'example' => 'develop',
-      ),
-    );
-
     $config = self::readGlobalArcConfig();
 
-    foreach ($keys as $key => $spec) {
-      $type = $this->getType($key);
+    $settings = new ArcanistSettings();
+
+    $keys = $settings->getAllKeys();
+    sort($keys);
+    foreach ($keys as $key) {
+      $type = $settings->getType($key);
+      $example = $settings->getExample($key);
+      $help = $settings->getHelp($key);
 
       $value = idx($config, $key);
-      $value = self::formatConfigValueForDisplay($value);
+      $value = $settings->formatConfigValueForDisplay($key, $value);
 
       echo phutil_console_format("**__%s__** (%s)\n\n", $key, $type);
-      echo phutil_console_format("           Example: %s\n", $spec['example']);
+      if ($example !== null) {
+        echo phutil_console_format("           Example: %s\n", $example);
+      }
       if (strlen($value)) {
         echo phutil_console_format("    Global Setting: %s\n", $value);
       }
       echo "\n";
-      echo phutil_console_wrap($spec['help'], 4);
+      echo phutil_console_wrap($help, 4);
       echo "\n\n\n";
     }
 
     return 0;
-  }
-
-  private function getType($key) {
-    static $types = array(
-      'load'  => 'list',
-    );
-
-    return idx($types, $key, 'string');
-  }
-
-  private function parse($key, $val) {
-    $type = $this->getType($key);
-
-    switch ($type) {
-      case 'string':
-        return $val;
-      case 'list':
-        $val = json_decode($val, true);
-        if (!is_array($val)) {
-          $example = '["apple", "banana", "cherry"]';
-          throw new ArcanistUsageException(
-            "Value for key '{$key}' must be specified as a JSON-encoded ".
-            "list. Example: {$example}");
-        }
-        return $val;
-      default:
-        throw new Exception("Unknown config key type '{$type}'!");
-    }
   }
 
 }

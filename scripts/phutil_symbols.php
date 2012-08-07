@@ -410,23 +410,26 @@ if ($args->getArg('ugly')) {
 
 
 function phutil_symbols_get_builtins() {
-  $builtin_classes    = get_declared_classes();
-  $builtin_interfaces = get_declared_interfaces();
-  $builtin_functions  = get_defined_functions();
-  $builtin_functions  = $builtin_functions['internal'];
+  $builtin = array();
+  $builtin['classes']    = get_declared_classes();
+  $builtin['interfaces'] = get_declared_interfaces();
 
-  // Developers may not have every extension that a library potentially uses
-  // installed. We supplement the list of declared functions with a list of
-  // known extension functions to avoid raising false positives just because
-  // you don't have pcntl, etc.
-  $list = dirname(__FILE__).'/php_extension_functions.txt';
-  $extension_functions = file_get_contents($list);
-  $extension_functions = explode("\n", trim($extension_functions));
+  $funcs  = get_defined_functions();
+  $builtin['functions']  = $funcs['internal'];
 
-  $builtin_functions = array_merge($builtin_functions, $extension_functions);
+  foreach (array('functions', 'classes') as $type) {
+    // Developers may not have every extension that a library potentially uses
+    // installed. We supplement the list of declared functions and classses with
+    // a list of known extension functions to avoid raising false positives just
+    // because you don't have pcntl, etc.
+    $list = dirname(__FILE__)."/php_extension_{$type}.txt";
+    $extensions = file_get_contents($list);
+    $extensions = explode("\n", trim($extensions));
+    $builtin[$type] = array_merge($builtin[$type], $extensions);
+  }
 
   return array(
-    'class'     => array_fill_keys($builtin_classes, true) + array(
+    'class'     => array_fill_keys($builtin['classes'], true) + array(
       'PhutilBootloader' => true,
     ),
     'function'  => array_filter(
@@ -446,7 +449,7 @@ function phutil_symbols_get_builtins() {
         // them as builtin since we need to add dependencies for them.
         'idx'   => false,
         'id'    => false,
-      ) + array_fill_keys($builtin_functions, true)),
-    'interface' => array_fill_keys($builtin_interfaces, true),
+      ) + array_fill_keys($builtin['functions'], true)),
+    'interface' => array_fill_keys($builtin['interfaces'], true),
   );
 }

@@ -263,6 +263,8 @@ EOTEXT
 
     $all_autofix = true;
 
+    $console = PhutilConsole::getConsole();
+
     foreach ($results as $result) {
       $result_all_autofix = $result->isAllAutofix();
 
@@ -276,7 +278,7 @@ EOTEXT
 
       $lint_result = $renderer->renderLintResult($result);
       if ($lint_result) {
-        echo $lint_result;
+        $console->writeOut('%s', $lint_result);
       }
 
       if ($apply_patches && $result->isPatchable()) {
@@ -294,12 +296,15 @@ EOTEXT
 
           // TODO: Improve the behavior here, make it more like
           // difference_render().
-          passthru(csprintf("diff -u %s %s", $old_file, $new_file));
+          list(, $stdout, $stderr) =
+            exec_manual("diff -u %s %s", $old_file, $new_file);
+          $console->writeOut('%s', $stdout);
+          $console->writeErr('%s', $stderr);
 
           $prompt = phutil_console_format(
             "Apply this patch to __%s__?",
             $result->getPath());
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
+          if (!$console->confirm($prompt, $default_no = false)) {
             continue;
           }
         }
@@ -316,12 +321,12 @@ EOTEXT
 
       if ($this->shouldAmendWithoutPrompt ||
           ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
-        echo phutil_console_format(
+        $console->writeOut(
           "<bg:yellow>** LINT NOTICE **</bg> Automatically amending HEAD ".
           "with lint patches.\n");
         $amend = true;
       } else {
-        $amend = phutil_console_confirm("Amend HEAD with lint patches?");
+        $amend = $console->confirm("Amend HEAD with lint patches?");
       }
 
       if ($amend) {
@@ -367,7 +372,7 @@ EOTEXT
 
     if (!$this->getParentWorkflow()) {
       if ($result_code == self::RESULT_OKAY) {
-        echo $renderer->renderOkayResult();
+        $console->writeOut('%s', $renderer->renderOkayResult());
       }
     }
 

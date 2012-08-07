@@ -33,7 +33,7 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: cli
-          Reads an arc configuration option. With no arugment, reads all
+          Reads an arc configuration option. With no argument, reads all
           options.
 EOTEXT
       );
@@ -52,11 +52,15 @@ EOTEXT
   public function run() {
     $argv = $this->getArgument('argv');
 
+    $settings = new ArcanistSettings();
+
     $configs = array(
-      'system' => self::readSystemArcConfig(),
-      'global' => self::readGlobalArcConfig(),
-      'local' => $this->readLocalArcConfig(),
+      'system'  => self::readSystemArcConfig(),
+      'global'  => self::readGlobalArcConfig(),
+      'project' => $this->getWorkingCopy()->getProjectConfig(),
+      'local'   => $this->readLocalArcConfig(),
     );
+
     if ($argv) {
       $keys = $argv;
     } else {
@@ -65,12 +69,30 @@ EOTEXT
       sort($keys);
     }
 
+    $multi = (count($keys) > 1);
+
     foreach ($keys as $key) {
+      if ($multi) {
+        echo "{$key}\n";
+      }
       foreach ($configs as $name => $config) {
-        if ($name == 'global' || isset($config[$key])) {
-          $val = self::formatConfigValueForDisplay(idx($config, $key));
-          echo "({$name}) {$key} = {$val}\n";
+        switch ($name) {
+          case 'project':
+            // Respect older names in project config.
+            $val = $this->getWorkingCopy()->getConfig($key);
+            break;
+          default:
+            $val = idx($config, $key);
+            break;
         }
+        if ($val === null) {
+          continue;
+        }
+        $val = $settings->formatConfigValueForDisplay($key, $val);
+        printf("% 10.10s: %s\n", $name, $val);
+      }
+      if ($multi) {
+        echo "\n";
       }
     }
 
