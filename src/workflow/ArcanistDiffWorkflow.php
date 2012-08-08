@@ -373,7 +373,7 @@ EOTEXT
     if ($this->getArgument('no-diff')) {
       $this->removeScratchFile('diff-result.json');
       $data = $this->runLintUnit();
-      $this->writeScratchFile('diff-result.json', json_encode($data));
+      $this->writeScratchJSONFile('diff-result.json', $data);
       return 0;
     }
 
@@ -391,17 +391,20 @@ EOTEXT
 
     $commit_message = $this->buildCommitMessage();
 
+    if (!$this->shouldOnlyCreateDiff()) {
+      $revision = $this->buildRevisionFromCommitMessage($commit_message);
+    }
+
     if ($this->getArgument('background')) {
       $server = new PhutilConsoleServer();
       $server->addExecFutureClient($lint_unit);
       $server->run();
 
       list($err) = $lint_unit->resolve();
-      $data = $this->readScratchFile('diff-result.json');
+      $data = $this->readScratchJSONFile('diff-result.json');
       if ($err || !$data) {
         return 1;
       }
-      $data = json_decode($data, true);
     } else {
       $data = $this->runLintUnit();
     }
@@ -457,60 +460,20 @@ EOTEXT
       }
     } else {
 
-      $message = $commit_message;
+      $revision['diffid'] = $this->getDiffID();
 
-      $revision = array(
-        'diffid' => $this->getDiffID(),
-        'fields' => $message->getFields(),
-      );
-
-      if ($message->getRevisionID()) {
-
-        // With '--verbatim', pass the (possibly modified) local fields. This
-        // allows the user to edit some fields (like "title" and "summary")
-        // locally without '--edit' and have changes automatically synchronized.
-        // Without '--verbatim', we do not update the revision to reflect local
-        // commit message changes.
-        if ($this->getArgument('verbatim')) {
-          $use_fields = $message->getFields();
-        } else {
-          $use_fields = array();
-        }
-
-        // TODO: This is silly -- we're getting a text corpus from the server
-        // and then sending it right back to be parsed. This should be a
-        // single call.
-        $remote_corpus = $conduit->callMethodSynchronous(
-          'differential.getcommitmessage',
-          array(
-            'revision_id' => $message->getRevisionID(),
-            'edit'        => 'edit',
-            'fields'      => $use_fields,
-          ));
-
-        $should_edit = $this->getArgument('edit');
-        if ($should_edit) {
-          $remote_corpus = $this->newInteractiveEditor($remote_corpus)
-            ->setName('differential-edit-revision-info')
-            ->editInteractively();
-        }
-
-        $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-          $remote_corpus);
-
-        $new_message->pullDataFromConduit($conduit);
-        $revision['fields'] = $new_message->getFields();
-
-        $revision['id'] = $message->getRevisionID();
-        $this->revisionID = $revision['id'];
-
-        $update_message = $this->getUpdateMessage($revision['fields']);
-
-        $revision['message'] = $update_message;
+      if ($commit_message->getRevisionID()) {
         $future = $conduit->callMethod(
           'differential.updaterevision',
           $revision);
         $result = $future->resolve();
+
+        foreach (array('edit-messages.json', 'update-messages.json') as $file) {
+          $messages = $this->readScratchJSONFile($file);
+          unset($messages[$revision['id']]);
+          $this->writeScratchJSONFile($file, $messages);
+        }
+
         echo "Updated an existing Differential revision:\n";
       } else {
         $revision['user'] = $this->getUserPHID();
@@ -621,6 +584,79 @@ EOTEXT
         }
       }
     }
+  }
+
+  private function buildRevisionFromCommitMessage($message) {
+    $conduit = $this->getConduit();
+
+    $revision_id = $message->getRevisionID();
+    $revision = array(
+      'fields' => $message->getFields(),
+    );
+
+    if ($revision_id) {
+
+      // With '--verbatim', pass the (possibly modified) local fields. This
+      // allows the user to edit some fields (like "title" and "summary")
+      // locally without '--edit' and have changes automatically synchronized.
+      // Without '--verbatim', we do not update the revision to reflect local
+      // commit message changes.
+      if ($this->getArgument('verbatim')) {
+        $use_fields = $message->getFields();
+      } else {
+        $use_fields = array();
+      }
+
+      $should_edit = $this->getArgument('edit');
+      $edit_messages = $this->readScratchJSONFile('edit-messages.json');
+      $remote_corpus = idx($edit_messages, $revision_id);
+
+      if (!$should_edit || !$remote_corpus || $use_fields) {
+        $remote_corpus = $conduit->callMethodSynchronous(
+          'differential.getcommitmessage',
+          array(
+            'revision_id' => $revision_id,
+            'edit'        => 'edit',
+            'fields'      => $use_fields,
+          ));
+      }
+
+      if ($should_edit) {
+        $remote_corpus = $this->newInteractiveEditor($remote_corpus)
+          ->setName('differential-edit-revision-info')
+          ->editInteractively();
+        $edit_messages[$revision_id] = $remote_corpus;
+        $this->writeScratchJSONFile('edit-messages.json', $edit_messages);
+      }
+
+      $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $remote_corpus);
+
+      $new_message->pullDataFromConduit($conduit);
+      $revision['fields'] = $new_message->getFields();
+
+      $revision['id'] = $revision_id;
+      $this->revisionID = $revision_id;
+
+      $revision['message'] = $this->getArgument('message');
+      if (!strlen($revision['message'])) {
+        $update_messages = $this->readScratchJSONFile('update-messages.json');
+
+        $update_messages[$revision_id] = $this->getUpdateMessage(
+          $revision['fields'],
+          idx($update_messages, $revision_id));
+
+        $revision['message'] = ArcanistCommentRemover::removeComments(
+          $update_messages[$revision_id]);
+        if (!strlen(trim($revision['message']))) {
+          throw new ArcanistUserAbortException();
+        }
+
+        $this->writeScratchJSONFile('update-messages.json', $update_messages);
+      }
+    }
+
+    return $revision;
   }
 
   protected function shouldOnlyCreateDiff() {
@@ -1668,12 +1704,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function getUpdateMessage(array $fields) {
-    $comments = $this->getArgument('message');
-    if (strlen($comments)) {
-      return $comments;
-    }
-
+  private function getUpdateMessage(array $fields, $template = '') {
     if ($this->getArgument('raw')) {
       throw new ArcanistUsageException(
         "When using '--raw' to update a revision, specify an update message ".
@@ -1691,28 +1722,25 @@ EOTEXT
     // ...you shouldn't have to retype the update message. Similar things apply
     // to Mercurial.
 
-    $comments = $this->getDefaultUpdateMessage();
+    if ($template == '') {
+      $comments = $this->getDefaultUpdateMessage();
 
-    $template =
-      rtrim($comments).
-      "\n\n".
-      "# Updating D{$fields['revisionID']}: {$fields['title']}\n".
-      "#\n".
-      "# Enter a brief description of the changes included in this update.\n".
-      "# The first line is used as subject, next lines as comment.\n".
-      "#\n".
-      "# If you intended to create a new revision, use:\n".
-      "#  $ arc diff --create\n".
-      "\n";
+      $template =
+        rtrim($comments).
+        "\n\n".
+        "# Updating D{$fields['revisionID']}: {$fields['title']}\n".
+        "#\n".
+        "# Enter a brief description of the changes included in this update.\n".
+        "# The first line is used as subject, next lines as comment.\n".
+        "#\n".
+        "# If you intended to create a new revision, use:\n".
+        "#  $ arc diff --create\n".
+        "\n";
+    }
 
     $comments = $this->newInteractiveEditor($template)
       ->setName('differential-update-comments')
       ->editInteractively();
-
-    $comments = ArcanistCommentRemover::removeComments($comments);
-    if (!strlen(trim($comments))) {
-      throw new ArcanistUserAbortException();
-    }
 
     return $comments;
   }
