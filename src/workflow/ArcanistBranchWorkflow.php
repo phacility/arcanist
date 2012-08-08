@@ -109,7 +109,6 @@ EOTEXT
 
     $branches = ipull($branches, null, 'name');
 
-    $commit_map = array();
     foreach (Futures($futures) as $name => $future) {
       list($info) = $future->resolvex();
       list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
@@ -133,10 +132,10 @@ EOTEXT
         // do nothing.
       }
 
-      $commit_map[$hash] = $branch;
+      $branches[$name] = $branch;
     }
 
-    return $commit_map;
+    return $branches;
   }
 
   private function loadRevisions(array $branches) {
