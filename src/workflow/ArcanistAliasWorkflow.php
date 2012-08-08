@@ -171,7 +171,7 @@ EOTEXT
     }
 
     $alias_argv = array_slice($aliases[$command], 1);
-    foreach ($alias_argv as $alias_arg) {
+    foreach (array_reverse($alias_argv) as $alias_arg) {
       if (!in_array($alias_arg, $argv)) {
         array_unshift($argv, $alias_arg);
       }
