@@ -371,6 +371,7 @@ EOTEXT
     $this->console = PhutilConsole::getConsole();
 
     if ($this->getArgument('no-diff')) {
+      $this->console->beginRedirectOut();
       $this->removeScratchFile('diff-result.json');
       $data = $this->runLintUnit();
       $this->writeScratchJSONFile('diff-result.json', $data);
