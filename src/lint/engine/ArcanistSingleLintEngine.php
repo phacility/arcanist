@@ -18,7 +18,7 @@
 
 /**
  * Run a single linter on every path unconditionally. This is a glue engine for
- * linters like @{class:ArcanistScriptAndRegexLintEngine}, if you are averse to
+ * linters like @{class:ArcanistScriptAndRegexLinter}, if you are averse to
  * writing a phutil library. Your linter will receive every path, including
  * paths which have been moved or deleted.
  *
