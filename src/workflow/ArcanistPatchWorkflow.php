@@ -692,10 +692,18 @@ EOTEXT
       // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version = 0
       // they don't come with a project id so just do nothing
     } else if ($bundle_project_id != $working_copy_project_id) {
+      if ($working_copy_project_id) {
+        $issue =
+          "This patch is for the '{$bundle_project_id}' project,  but the ".
+          "working copy belongs to the '{$working_copy_project_id}' project.";
+      } else {
+        $issue =
+          "This patch is for the '{$bundle_project_id}' project, but the ".
+          "working copy does not have an '.arcconfig' file to identify which ".
+          "project it belongs to.";
+      }
       $ok = phutil_console_confirm(
-        "This diff is for the '{$bundle_project_id}' project but the working ".
-        "copy belongs to the '{$working_copy_project_id}' project. ".
-        "Still try to apply it?",
+        "{$issue} Still try to apply the patch?",
         $default_no = false
       );
       if (!$ok) {
