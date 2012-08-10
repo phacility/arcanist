@@ -128,6 +128,9 @@ class Ship:
         win.addch(curses.ACS_RTEE)
         return True
 
+class PowerOverwhelmingException(Exception):
+    pass
+
 def main(stdscr):
     global height, width, ship
 
@@ -139,7 +142,10 @@ def main(stdscr):
     height, width = stdscr.getmaxyx()
 
     if height < 15 or width < 30:
-        return 1
+        raise PowerOverwhelmingException(
+            "Your computer is not powerful enough to run 'arc anoid'. "
+            "It must support at least 30 columns and 15 rows of next-gen "
+            "full-color 3D graphics.")
 
     status = curses.newwin(1, width, 0, 0)
     height -= 1
@@ -202,11 +208,9 @@ def main(stdscr):
         status.refresh()
         time.sleep(0.05)
 
-res = curses.wrapper(main)
-if res == 1:
-    print ("Your computer is not powerful enough to run 'arc anoid'. "
-        "It must support at least 30 columns and 15 rows of next-gen "
-        "full-color 3D graphics.")
-else:
+try:
+    curses.wrapper(main)
     print ('You destroyed %s blocks out of %s with %s deaths.' %
         (Block.killed, Block.total, Ball.killed))
+except PowerOverwhelmingException as e:
+    print e
