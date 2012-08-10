@@ -43,6 +43,10 @@ EOTEXT
           "Display inline comments for a specific revision. If you do not ".
           "specify a revision, arc will look in the commit message at HEAD.",
       ),
+      'root' => array(
+        'param' => 'directory',
+        'help' => "Specify a string printed in front of each path.",
+      ),
     );
   }
 
@@ -99,12 +103,13 @@ EOTEXT
       }
     }
 
+    $root = $this->getArgument('root');
     ksort($inlines);
     foreach ($inlines as $file => $file_inlines) {
       ksort($file_inlines);
       foreach ($file_inlines as $line => $line_inlines) {
         foreach ($line_inlines as $content) {
-          echo "{$file}:{$line}:{$content}\n";
+          echo "{$root}{$file}:{$line}:{$content}\n";
         }
       }
     }
