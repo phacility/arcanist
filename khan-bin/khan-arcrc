@@ -4,7 +4,8 @@
     "lint.engine"                  : "ArcanistSingleLintEngine",
     "lint.engine.single.linter"    : "ArcanistScriptAndRegexLinter",
     "linter.scriptandregex.script__example_must_fix_up_path" : "~\/khan\/devtools\/khan-linter\/runlint.py --always-exit-0 --blacklist=yes",
-    "linter.scriptandregex.regex"  : "\/^((?P<file>[^:]*):(?P<line>\\d+):((?P<char>\\d+):)? (?P<name>((?P<error>E)|(?P<warning>W))\\S+) (?P<message>.*))|(?P<ignore>SKIPPING.*)$\/m"
+    "linter.scriptandregex.regex"  : "\/^((?P<file>[^:]*):(?P<line>\\d+):((?P<char>\\d+):)? (?P<name>((?P<error>E)|(?P<warning>W))\\S+) (?P<message>.*))|(?P<ignore>SKIPPING.*)$\/m",
+    "history.immutable": false
   },
   "aliases" : {
     "mail" : [
