@@ -3,3 +3,4 @@
 /src/.phutil_module_cache
 /docs/
 /.divinercache/
+/externals/includes/*
