@@ -913,18 +913,17 @@ final class ArcanistDiffParser {
       $is_binary = false;
       if ($this->detectBinaryFiles) {
         $is_binary = !phutil_is_utf8($corpus);
+        $try_encoding = $this->tryEncoding;
 
-        if ($is_binary && $this->tryEncoding) {
+        if ($is_binary && $try_encoding) {
           $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
           if (!$is_binary) {
-              // NOTE: This feature is HIGHLY EXPERIMENTAL and will cause a lot
-              // of issues. Use it at your own risk.
-              $corpus = mb_convert_encoding(
-                  $corpus, 'UTF-8', $this->tryEncoding);
-              if (!phutil_is_utf8($corpus)) {
-                  throw new Exception(
-                      'Failed converting hunk to '.$this->tryEncoding);
-              }
+            $corpus = phutil_utf8_convert($corpus, 'UTF-8', $try_encoding);
+            if (!phutil_is_utf8($corpus)) {
+              throw new Exception(
+                "Failed to convert a hunk from '{$try_encoding}' to UTF-8. ".
+                "Check that the specified encoding is correct.");
+            }
           }
         }
 

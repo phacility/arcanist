@@ -399,16 +399,8 @@ final class ArcanistBundle {
   }
 
   private function convertNonUTF8Diff($diff) {
-    $try_encoding_is_non_utf8 =
-      ($this->encoding && strtoupper($this->encoding) != 'UTF-8');
-    if ($try_encoding_is_non_utf8) {
-      $diff = mb_convert_encoding($diff, $this->encoding, 'UTF-8');
-      if (!$diff) {
-        throw new Exception(
-          "Attempted conversion of diff to encoding ".
-          "'{$this->encoding}' failed. Have you specified ".
-          "the proper encoding correctly?");
-      }
+    if ($this->encoding) {
+      $diff = phutil_utf8_convert($diff, $this->encoding, 'UTF-8');
     }
     return $diff;
   }

@@ -916,14 +916,8 @@ EOTEXT
               }
             }
 
-            if ($try_encoding && $try_encoding != 'UTF-8') {
-              if (!function_exists('mb_convert_encoding')) {
-                throw new ArcanistUsageException(
-                  "This diff includes a file encoded in '{$try_encoding}', ".
-                  "but you don't have the PHP mbstring extension installed ".
-                  "so it can't be converted to UTF-8. Install mbstring.");
-              }
-              $corpus = mb_convert_encoding($corpus, 'UTF-8', $try_encoding);
+            if ($try_encoding) {
+              $corpus = phutil_utf8_convert($corpus, 'UTF-8', $try_encoding);
               $name = $change->getCurrentPath();
               if (phutil_is_utf8($corpus)) {
                 $this->writeStatusMessage(
