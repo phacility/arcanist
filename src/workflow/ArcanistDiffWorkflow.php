@@ -435,7 +435,14 @@ EOTEXT
 
     $this->diffID = $diff_info['diffid'];
 
-    $this->dispatchDiffWasCreatedEvent($diff_info['diffid']);
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_DIFF_WASCREATED,
+      array(
+        'diffID' => $diff_info['diffid'],
+        'lintResult' => $lint_result,
+        'unitResult' => $unit_result,
+      ));
+    PhutilEventEngine::dispatchEvent($event);
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -2268,13 +2275,4 @@ EOTEXT
     return $event->getValue('fields');
   }
 
-  private function dispatchDiffWasCreatedEvent($diff_id) {
-    $event = new PhutilEvent(
-      ArcanistEventType::TYPE_DIFF_WASCREATED,
-      array(
-        'diffID' => $diff_id,
-      ));
-
-    PhutilEventEngine::dispatchEvent($event);
-  }
 }
