@@ -669,7 +669,7 @@ final class ArcanistBundle {
       } else {
         $buf .= chr($len - 26 + ord('a') - 1);
       }
-      $buf .= $this->encodeBase85($line);
+      $buf .= self::encodeBase85($line);
       $buf .= "\n";
     }
 
@@ -678,7 +678,7 @@ final class ArcanistBundle {
     return $buf;
   }
 
-  private function encodeBase85($data) {
+  public static function encodeBase85($data) {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
