@@ -1185,6 +1185,22 @@ abstract class ArcanistBaseWorkflow {
 
 
   /**
+   * Try to read a scratch JSON file, if it exists and is readable.
+   *
+   * @param string Scratch file name.
+   * @return array Empty array for failure.
+   * @task scratch
+   */
+  protected function readScratchJSONFile($path) {
+    $file = $this->readScratchFile($path);
+    if (!$file) {
+      return array();
+    }
+    return json_decode($file, true);
+  }
+
+
+  /**
    * Try to write a scratch file, if there's somewhere to put it and we can
    * write there.
    *
@@ -1198,6 +1214,20 @@ abstract class ArcanistBaseWorkflow {
       return false;
     }
     return $this->getRepositoryAPI()->writeScratchFile($path, $data);
+  }
+
+
+  /**
+   * Try to write a scratch JSON file, if there's somewhere to put it and we can
+   * write there.
+   *
+   * @param  string Scratch file name to write.
+   * @param  array Data to write.
+   * @return bool   True on success, false on failure.
+   * @task scratch
+   */
+  protected function writeScratchJSONFile($path, array $data) {
+    return $this->writeScratchFile($path, json_encode($data));
   }
 
 

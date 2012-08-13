@@ -84,16 +84,6 @@ abstract class ArcanistBaseUnitTestEngine {
   abstract public function run();
 
   /**
-   * This function is called after run() when the diff is created
-   * Child classes should override this function if they want to
-   * do more with the diff ID.
-   */
-  public function setDifferentialDiffID($id) {
-    $this->diffID = $id;
-    return $this;
-  }
-
-  /**
    * Modify the return value of this function in the child class, if
    * you do not need to echo the test results after all the tests have
    * been run. This is the case for example when the child class

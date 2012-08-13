@@ -22,9 +22,6 @@
  * new workflows (and extend existing workflows) by subclassing it and then
  * pointing to your subclass in your project configuration.
  *
- * For instructions on how to extend this class and customize Arcanist in your
- * project, see @{article:Building New Configuration Classes}.
- *
  * When specified as the **arcanist_configuration** class in your project's
  * ##.arcconfig##, your subclass will be instantiated (instead of this class)
  * and be able to handle all the method calls. In particular, you can:

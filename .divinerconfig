@@ -3,7 +3,7 @@
   "src_link" :
     "https://secure.phabricator.com/diffusion/ARC/browse/master/%f$%l",
   "groups" : {
-    "intro" : "Introduction",
+    "notuser" : "HEY! THIS IS NOT USER DOCUMENTATION!",
     "config" : "Setup & Configuration",
     "workflow" : "Workflows",
     "lint" : "Lint Integration",

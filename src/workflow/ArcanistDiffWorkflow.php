@@ -28,6 +28,7 @@
  */
 final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 
+  private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
   private $lintExcuse;
@@ -35,8 +36,6 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $unitWorkflow;
-  private $lintWorkflow;
   private $postponedLinters;
   private $haveUncommittedChanges = false;
 
@@ -351,6 +350,15 @@ EOTEXT
         ),
         'supports' => array('git', 'hg'),
       ),
+      'no-diff' => array(
+        'help' => 'Only run lint and unit tests. Intended for internal use.',
+      ),
+      'background' => array(
+        'param' => 'bool',
+        'help' =>
+          'Run lint and unit tests on background. '.
+          '"0" to disable (default), "1" to enable.',
+      ),
       '*' => 'paths',
     );
   }
@@ -360,16 +368,53 @@ EOTEXT
   }
 
   public function run() {
+    $this->console = PhutilConsole::getConsole();
+
+    if ($this->getArgument('no-diff')) {
+      $this->removeScratchFile('diff-result.json');
+      $data = $this->runLintUnit();
+      $this->writeScratchJSONFile('diff-result.json', $data);
+      return 0;
+    }
+
     $this->runDiffSetupBasics();
 
-    $paths = $this->generateAffectedPaths();
+    if ($this->getArgument('background')) {
+      $argv = $_SERVER['argv'];
+      if (!PhutilConsoleFormatter::getDisableANSI()) {
+        $argv[] = '--ansi';
+      }
+      $lint_unit = new ExecFuture('%Ls --recon --no-diff', $argv);
+      $lint_unit->write('', true);
+      $lint_unit->start();
+    }
 
-    // Do this before we start linting or running unit tests so we can detect
-    // things like a missing test plan or invalid reviewers immediately.
     $commit_message = $this->buildCommitMessage();
 
-    $lint_result = $this->runLint($paths);
-    $unit_result = $this->runUnit($paths);
+    if (!$this->shouldOnlyCreateDiff()) {
+      $revision = $this->buildRevisionFromCommitMessage($commit_message);
+    }
+
+    if ($this->getArgument('background')) {
+      $server = new PhutilConsoleServer();
+      $server->addExecFutureClient($lint_unit);
+      $server->run();
+
+      list($err) = $lint_unit->resolve();
+      $data = $this->readScratchJSONFile('diff-result.json');
+      if ($err || !$data) {
+        return 1;
+      }
+    } else {
+      $data = $this->runLintUnit();
+    }
+    $lint_result = $data['lintResult'];
+    $this->lintExcuse = $data['lintExcuse'];
+    $this->unresolvedLint = $data['unresolvedLint'];
+    $this->postponedLinters = $data['postponedLinters'];
+    $unit_result = $data['unitResult'];
+    $this->unitExcuse = $data['unitExcuse'];
+    $this->testResults = $data['testResults'];
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -391,10 +436,6 @@ EOTEXT
     $this->diffID = $diff_info['diffid'];
 
     $this->dispatchDiffWasCreatedEvent($diff_info['diffid']);
-
-    if ($this->unitWorkflow) {
-      $this->unitWorkflow->setDifferentialDiffID($diff_info['diffid']);
-    }
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -419,60 +460,20 @@ EOTEXT
       }
     } else {
 
-      $message = $commit_message;
+      $revision['diffid'] = $this->getDiffID();
 
-      $revision = array(
-        'diffid' => $this->getDiffID(),
-        'fields' => $message->getFields(),
-      );
-
-      if ($message->getRevisionID()) {
-
-        // With '--verbatim', pass the (possibly modified) local fields. This
-        // allows the user to edit some fields (like "title" and "summary")
-        // locally without '--edit' and have changes automatically synchronized.
-        // Without '--verbatim', we do not update the revision to reflect local
-        // commit message changes.
-        if ($this->getArgument('verbatim')) {
-          $use_fields = $message->getFields();
-        } else {
-          $use_fields = array();
-        }
-
-        // TODO: This is silly -- we're getting a text corpus from the server
-        // and then sending it right back to be parsed. This should be a
-        // single call.
-        $remote_corpus = $conduit->callMethodSynchronous(
-          'differential.getcommitmessage',
-          array(
-            'revision_id' => $message->getRevisionID(),
-            'edit'        => 'edit',
-            'fields'      => $use_fields,
-          ));
-
-        $should_edit = $this->getArgument('edit');
-        if ($should_edit) {
-          $remote_corpus = $this->newInteractiveEditor($remote_corpus)
-            ->setName('differential-edit-revision-info')
-            ->editInteractively();
-        }
-
-        $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-          $remote_corpus);
-
-        $new_message->pullDataFromConduit($conduit);
-        $revision['fields'] = $new_message->getFields();
-
-        $revision['id'] = $message->getRevisionID();
-        $this->revisionID = $revision['id'];
-
-        $update_message = $this->getUpdateMessage($revision['fields']);
-
-        $revision['message'] = $update_message;
+      if ($commit_message->getRevisionID()) {
         $future = $conduit->callMethod(
           'differential.updaterevision',
           $revision);
         $result = $future->resolve();
+
+        foreach (array('edit-messages.json', 'update-messages.json') as $file) {
+          $messages = $this->readScratchJSONFile($file);
+          unset($messages[$revision['id']]);
+          $this->writeScratchJSONFile($file, $messages);
+        }
+
         echo "Updated an existing Differential revision:\n";
       } else {
         $revision['user'] = $this->getUserPHID();
@@ -583,6 +584,79 @@ EOTEXT
         }
       }
     }
+  }
+
+  private function buildRevisionFromCommitMessage($message) {
+    $conduit = $this->getConduit();
+
+    $revision_id = $message->getRevisionID();
+    $revision = array(
+      'fields' => $message->getFields(),
+    );
+
+    if ($revision_id) {
+
+      // With '--verbatim', pass the (possibly modified) local fields. This
+      // allows the user to edit some fields (like "title" and "summary")
+      // locally without '--edit' and have changes automatically synchronized.
+      // Without '--verbatim', we do not update the revision to reflect local
+      // commit message changes.
+      if ($this->getArgument('verbatim')) {
+        $use_fields = $message->getFields();
+      } else {
+        $use_fields = array();
+      }
+
+      $should_edit = $this->getArgument('edit');
+      $edit_messages = $this->readScratchJSONFile('edit-messages.json');
+      $remote_corpus = idx($edit_messages, $revision_id);
+
+      if (!$should_edit || !$remote_corpus || $use_fields) {
+        $remote_corpus = $conduit->callMethodSynchronous(
+          'differential.getcommitmessage',
+          array(
+            'revision_id' => $revision_id,
+            'edit'        => 'edit',
+            'fields'      => $use_fields,
+          ));
+      }
+
+      if ($should_edit) {
+        $remote_corpus = $this->newInteractiveEditor($remote_corpus)
+          ->setName('differential-edit-revision-info')
+          ->editInteractively();
+        $edit_messages[$revision_id] = $remote_corpus;
+        $this->writeScratchJSONFile('edit-messages.json', $edit_messages);
+      }
+
+      $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $remote_corpus);
+
+      $new_message->pullDataFromConduit($conduit);
+      $revision['fields'] = $new_message->getFields();
+
+      $revision['id'] = $revision_id;
+      $this->revisionID = $revision_id;
+
+      $revision['message'] = $this->getArgument('message');
+      if (!strlen($revision['message'])) {
+        $update_messages = $this->readScratchJSONFile('update-messages.json');
+
+        $update_messages[$revision_id] = $this->getUpdateMessage(
+          $revision['fields'],
+          idx($update_messages, $revision_id));
+
+        $revision['message'] = ArcanistCommentRemover::removeComments(
+          $update_messages[$revision_id]);
+        if (!strlen(trim($revision['message']))) {
+          throw new ArcanistUserAbortException();
+        }
+
+        $this->writeScratchJSONFile('update-messages.json', $update_messages);
+      }
+    }
+
+    return $revision;
   }
 
   protected function shouldOnlyCreateDiff() {
@@ -842,14 +916,8 @@ EOTEXT
               }
             }
 
-            if ($try_encoding && $try_encoding != 'UTF-8') {
-              if (!function_exists('mb_convert_encoding')) {
-                throw new ArcanistUsageException(
-                  "This diff includes a file encoded in '{$try_encoding}', ".
-                  "but you don't have the PHP mbstring extension installed ".
-                  "so it can't be converted to UTF-8. Install mbstring.");
-              }
-              $corpus = mb_convert_encoding($corpus, 'UTF-8', $try_encoding);
+            if ($try_encoding) {
+              $corpus = phutil_utf8_convert($corpus, 'UTF-8', $try_encoding);
               $name = $change->getCurrentPath();
               if (phutil_is_utf8($corpus)) {
                 $this->writeStatusMessage(
@@ -1100,7 +1168,25 @@ EOTEXT
   /**
    * @task lintunit
    */
-  private function runLint($paths) {
+  private function runLintUnit() {
+    $lint_result = $this->runLint();
+    $unit_result = $this->runUnit();
+    return array(
+      'lintResult' => $lint_result,
+      'lintExcuse' => $this->lintExcuse,
+      'unresolvedLint' => $this->unresolvedLint,
+      'postponedLinters' => $this->postponedLinters,
+      'unitResult' => $unit_result,
+      'unitExcuse' => $this->unitExcuse,
+      'testResults' => $this->testResults,
+    );
+  }
+
+
+  /**
+   * @task lintunit
+   */
+  private function runLint() {
     if ($this->getArgument('nolint') ||
         $this->getArgument('only') ||
         $this->isRawDiffSource()) {
@@ -1109,7 +1195,7 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    echo "Linting...\n";
+    $this->console->writeOut("Linting...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('lint');
       if ($repository_api->supportsRelativeLocalCommits()) {
@@ -1117,7 +1203,6 @@ EOTEXT
         $argv[] = $repository_api->getRelativeCommit();
       }
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
-      $this->lintWorkflow = $lint_workflow;
 
       if ($this->shouldAmend()) {
         // TODO: We should offer to create a checkpoint commit.
@@ -1128,7 +1213,7 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
@@ -1137,27 +1222,39 @@ EOTEXT
             'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
           $this->lintExcuse = $this->getErrorExcuse(
             "Lint issued unresolved errors!",
             'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_POSTPONED:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:yellow>** LINT POSTPONED **</bg> ".
             "Lint results are postponed.\n");
           break;
       }
 
-      $this->unresolvedLint = $lint_workflow->getUnresolvedMessages();
+      $this->unresolvedLint = array();
+      foreach ($lint_workflow->getUnresolvedMessages() as $message) {
+        $this->unresolvedLint[] = array(
+          'path'        => $message->getPath(),
+          'line'        => $message->getLine(),
+          'char'        => $message->getChar(),
+          'code'        => $message->getCode(),
+          'severity'    => $message->getSeverity(),
+          'name'        => $message->getName(),
+          'description' => $message->getDescription(),
+        );
+      }
+
       $this->postponedLinters = $lint_workflow->getPostponedLinters();
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
-      echo "No lint engine configured for this project.\n";
+      $this->console->writeOut("No lint engine configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      echo "No paths to lint.\n";
+      $this->console->writeOut("No paths to lint.\n");
     }
 
     return null;
@@ -1167,7 +1264,7 @@ EOTEXT
   /**
    * @task lintunit
    */
-  private function runUnit($paths) {
+  private function runUnit() {
     if ($this->getArgument('nounit') ||
         $this->getArgument('only') ||
         $this->isRawDiffSource()) {
@@ -1176,19 +1273,19 @@ EOTEXT
 
     $repository_api = $this->getRepositoryAPI();
 
-    echo "Running unit tests...\n";
+    $this->console->writeOut("Running unit tests...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('unit');
       if ($repository_api->supportsRelativeLocalCommits()) {
         $argv[] = '--rev';
         $argv[] = $repository_api->getRelativeCommit();
       }
-      $this->unitWorkflow = $this->buildChildWorkflow('unit', $argv);
-      $unit_result = $this->unitWorkflow->run();
+      $unit_workflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $unit_workflow->run();
 
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
@@ -1200,7 +1297,7 @@ EOTEXT
           }
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
-          echo phutil_console_format(
+          $this->console->writeOut(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
           $this->unitExcuse = $this->getErrorExcuse(
             "Unit test results include failures!",
@@ -1208,13 +1305,22 @@ EOTEXT
           break;
       }
 
-      $this->testResults = $this->unitWorkflow->getTestResults();
+      $this->testResults = array();
+      foreach ($unit_workflow->getTestResults() as $test) {
+        $this->testResults[] = array(
+          'name'      => $test->getName(),
+          'result'    => $test->getResult(),
+          'userdata'  => $test->getUserData(),
+          'coverage'  => $test->getCoverage(),
+        );
+      }
 
       return $unit_result;
     } catch (ArcanistNoEngineException $ex) {
-      echo "No unit test engine is configured for this project.\n";
+      $this->console->writeOut(
+        "No unit test engine is configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      echo "No tests to run.\n";
+      $this->console->writeOut("No tests to run.\n");
     }
 
     return null;
@@ -1223,7 +1329,7 @@ EOTEXT
   private function getErrorExcuse($prompt, $history) {
     if ($this->getArgument('excuse')) {
       $prompt .= " Ignore them?";
-      if (!phutil_console_confirm($prompt)) {
+      if (!$this->console->confirm($prompt)) {
         throw new ArcanistUserAbortException();
       }
       return $this->getArgument('excuse');
@@ -1232,9 +1338,8 @@ EOTEXT
     $history = $this->getRepositoryAPI()->getScratchFilePath($history);
 
     $prompt .= " Provide explanation to continue or press Enter to abort.";
-    echo "\n\n";
-    echo phutil_console_wrap($prompt);
-    $return = phutil_console_prompt("Explanation:", $history);
+    $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
+    $return = $this->console->prompt("Explanation:", $history);
     if ($return == '') {
       throw new ArcanistUserAbortException();
     }
@@ -1593,12 +1698,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function getUpdateMessage(array $fields) {
-    $comments = $this->getArgument('message');
-    if (strlen($comments)) {
-      return $comments;
-    }
-
+  private function getUpdateMessage(array $fields, $template = '') {
     if ($this->getArgument('raw')) {
       throw new ArcanistUsageException(
         "When using '--raw' to update a revision, specify an update message ".
@@ -1616,28 +1716,25 @@ EOTEXT
     // ...you shouldn't have to retype the update message. Similar things apply
     // to Mercurial.
 
-    $comments = $this->getDefaultUpdateMessage();
+    if ($template == '') {
+      $comments = $this->getDefaultUpdateMessage();
 
-    $template =
-      rtrim($comments).
-      "\n\n".
-      "# Updating D{$fields['revisionID']}: {$fields['title']}\n".
-      "#\n".
-      "# Enter a brief description of the changes included in this update.\n".
-      "# The first line is used as subject, next lines as comment.\n".
-      "#\n".
-      "# If you intended to create a new revision, use:\n".
-      "#  $ arc diff --create\n".
-      "\n";
+      $template =
+        rtrim($comments).
+        "\n\n".
+        "# Updating D{$fields['revisionID']}: {$fields['title']}\n".
+        "#\n".
+        "# Enter a brief description of the changes included in this update.\n".
+        "# The first line is used as subject, next lines as comment.\n".
+        "#\n".
+        "# If you intended to create a new revision, use:\n".
+        "#  $ arc diff --create\n".
+        "\n";
+    }
 
     $comments = $this->newInteractiveEditor($template)
       ->setName('differential-update-comments')
       ->editInteractively();
-
-    $comments = ArcanistCommentRemover::removeComments($comments);
-    if (!strlen(trim($comments))) {
-      throw new ArcanistUserAbortException();
-    }
 
     return $comments;
   }
@@ -2086,20 +2183,7 @@ EOTEXT
   private function updateLintDiffProperty() {
 
     if ($this->unresolvedLint) {
-      $data = array();
-      foreach ($this->unresolvedLint as $message) {
-        $data[] = array(
-          'path'        => $message->getPath(),
-          'line'        => $message->getLine(),
-          'char'        => $message->getChar(),
-          'code'        => $message->getCode(),
-          'severity'    => $message->getSeverity(),
-          'name'        => $message->getName(),
-          'description' => $message->getDescription(),
-        );
-      }
-
-      $this->updateDiffProperty('arc:lint', json_encode($data));
+      $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
       if (strlen($this->lintExcuse)) {
         $this->updateDiffProperty('arc:lint-excuse',
           json_encode($this->lintExcuse));
@@ -2126,17 +2210,7 @@ EOTEXT
       return;
     }
 
-    $data = array();
-    foreach ($this->testResults as $test) {
-      $data[] = array(
-        'name'      => $test->getName(),
-        'result'    => $test->getResult(),
-        'userdata'  => $test->getUserData(),
-        'coverage'  => $test->getCoverage(),
-      );
-    }
-
-    $this->updateDiffProperty('arc:unit', json_encode($data));
+    $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     if (strlen($this->unitExcuse)) {
       $this->updateDiffProperty('arc:unit-excuse',
         json_encode($this->unitExcuse));
