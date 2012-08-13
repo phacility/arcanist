@@ -682,6 +682,30 @@ final class ArcanistBundle {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
+    // It is also implemeted awkwardly to work correctly on 32-bit machines.
+    // Broadly, this algorithm converts the binary input to printable output
+    // by transforming each 4 binary bytes of input to 5 printable bytes of
+    // output, one piece at a time.
+    //
+    // To do this, we convert the 4 bytes into a 32-bit integer, then use
+    // modulus and division by 85 to pick out printable bytes (85^5 is slightly
+    // larger than 2^32). In C, this algorithm is fairly easy to implement
+    // because the accumulator can be made unsigned.
+    //
+    // In PHP, there are no unsigned integers, so values larger than 2^31 break
+    // on 32-bit systems under modulus:
+    //
+    //   $ php -r 'print (1 << 31) % 13;' # On a 32-bit machine.
+    //   -11
+    //
+    // However, PHP's float type is an IEEE 754 64-bit double precision float,
+    // so we can safely store integers up to around 2^53 without loss of
+    // precision. To work around the lack of an unsigned type, we just use a
+    // double and perform the modulus with fmod().
+    //
+    // (Since PHP overflows integer operations into floats, we don't need much
+    // additional casting.)
+
     static $map = array(
       '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
       'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
@@ -700,19 +724,19 @@ final class ArcanistBundle {
     $pos = 0;
     $bytes = strlen($data);
     while ($bytes) {
-      $accum = '0';
+      $accum = 0;
       for ($count = 24; $count >= 0; $count -= 8) {
         $val = ord($data[$pos++]);
-        $val = bcmul($val, (string)(1 << $count));
-        $accum = bcadd($accum, $val);
+        $val = $val * (1 << $count);
+        $accum = $accum + $val;
         if (--$bytes == 0) {
           break;
         }
       }
       $slice = '';
       for ($count = 4; $count >= 0; $count--) {
-        $val = bcmod($accum, 85);
-        $accum = bcdiv($accum, 85);
+        $val = (int)fmod($accum, 85.0);
+        $accum = floor($accum / 85.0);
         $slice .= $map[$val];
       }
       $buf .= strrev($slice);
