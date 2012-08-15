@@ -221,6 +221,49 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPHP54Features($root);
     $this->lintPHT($root);
     $this->lintStrposUsedForStart($root);
+    $this->lintStrstrUsedForCheck($root);
+  }
+
+  public function lintStrstrUsedForCheck($root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+    foreach ($expressions as $expression) {
+      $operator = $expression->getChildOfType(1, 'n_OPERATOR');
+      $operator = $operator->getConcreteString();
+
+      if ($operator != '===' && $operator != '!==') {
+        continue;
+      }
+
+      $false = $expression->getChildByIndex(0);
+      if ($false->getTypeName() == 'n_SYMBOL_NAME' &&
+          $false->getConcreteString() == 'false') {
+        $strstr = $expression->getChildByIndex(2);
+      } else {
+        $strstr = $false;
+        $false = $expression->getChildByIndex(2);
+        if ($false->getTypeName() != 'n_SYMBOL_NAME' ||
+            $false->getConcreteString() != 'false') {
+          continue;
+        }
+      }
+
+      if ($strstr->getTypeName() != 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      $name = strtolower($strstr->getChildByIndex(0)->getConcreteString());
+      if ($name == 'strstr' || $name == 'strchr') {
+        $this->raiseLintAtNode(
+          $strstr,
+          self::LINT_SLOWNESS,
+          "Use strpos() for checking if the string contains something.");
+      } else if ($name == 'stristr') {
+        $this->raiseLintAtNode(
+          $strstr,
+          self::LINT_SLOWNESS,
+          "Use stripos() for checking if the string contains something.");
+      }
+    }
   }
 
   public function lintStrposUsedForStart($root) {
