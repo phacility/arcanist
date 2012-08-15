@@ -58,6 +58,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_REUSED_AS_ITERATOR        = 32;
   const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
   const LINT_COMMENT_SPACING           = 34;
+  const LINT_PHP_54_FEATURES           = 35;
 
 
   public function getLintNameMap() {
@@ -92,6 +93,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
+      self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
@@ -137,6 +139,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       // This is disabled by default because projects don't necessarily target
       // a specific minimum version.
       self::LINT_PHP_53_FEATURES
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_PHP_54_FEATURES
         => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
   }
@@ -210,6 +214,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintRaggedClasstreeEdges($root);
     $this->lintImplicitFallthrough($root);
     $this->lintPHP53Features($root);
+    $this->lintPHP54Features($root);
     $this->lintPHT($root);
   }
 
@@ -355,6 +360,23 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+  }
+
+  public function lintPHP54Features($root) {
+    $indexes = $root->selectDescendantsOfType('n_INDEX_ACCESS');
+    foreach ($indexes as $index) {
+      $left = $index->getChildByIndex(0);
+      switch ($left->getTypeName()) {
+        case 'n_FUNCTION_CALL':
+          $this->raiseLintAtNode(
+            $index->getChildByIndex(1),
+            self::LINT_PHP_54_FEATURES,
+            "The f()[...] syntax was not introduced until PHP 5.4, but this ".
+            "codebase targets an earlier version of PHP. You can rewrite ".
+            "this expression using idx().");
+          break;
+      }
+    }
   }
 
   private function lintImplicitFallthrough($root) {
