@@ -1319,6 +1319,7 @@ EOTEXT
           'result'    => $test->getResult(),
           'userdata'  => $test->getUserData(),
           'coverage'  => $test->getCoverage(),
+          'extra'     => $test->getExtraData(),
         );
       }
 
