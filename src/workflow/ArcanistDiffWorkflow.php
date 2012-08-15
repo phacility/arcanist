@@ -1304,7 +1304,7 @@ EOTEXT
               "<bg:yellow>** UNIT UNSOUND **</bg> Unit testing raised errors, ".
               "but all failing tests are unsound.\n");
           } else {
-            $continue = phutil_console_confirm(
+            $continue = $this->console->confirm(
               "Unit test results included failures, but all failing tests ".
               "are known to be unsound. Ignore unsound test failures?");
             if (!$continue) {
