@@ -415,11 +415,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function supportsAmend() {
-    list ($err, $stdout) = $this->execManualLocal('help commit');
+    list($err, $stdout) = $this->execManualLocal('help commit');
     if ($err) {
       return false;
     } else {
-      return (strstr($stdout, "amend") !== false);
+      return (strpos($stdout, "amend") !== false);
     }
   }
 
