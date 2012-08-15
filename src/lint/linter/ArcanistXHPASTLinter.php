@@ -59,6 +59,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
   const LINT_COMMENT_SPACING           = 34;
   const LINT_PHP_54_FEATURES           = 35;
+  const LINT_SLOWNESS                  = 36;
 
 
   public function getLintNameMap() {
@@ -97,6 +98,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
+      self::LINT_SLOWNESS                  => 'Slow Construct',
     );
   }
 
@@ -126,6 +128,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_IMPLICIT_FALLTHROUGH
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PHT_WITH_DYNAMIC_STRING
+        => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_SLOWNESS
         => ArcanistLintSeverity::SEVERITY_WARNING,
 
       self::LINT_COMMENT_SPACING
@@ -216,6 +220,50 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPHP53Features($root);
     $this->lintPHP54Features($root);
     $this->lintPHT($root);
+    $this->lintStrposUsedForStart($root);
+  }
+
+  public function lintStrposUsedForStart($root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+    foreach ($expressions as $expression) {
+      $operator = $expression->getChildOfType(1, 'n_OPERATOR');
+      $operator = $operator->getConcreteString();
+
+      if ($operator != '===' && $operator != '!==') {
+        continue;
+      }
+
+      $zero = $expression->getChildByIndex(0);
+      if ($zero->getTypeName() == 'n_NUMERIC_SCALAR' &&
+          $zero->getConcreteString() == '0') {
+        $strpos = $expression->getChildByIndex(2);
+      } else {
+        $strpos = $zero;
+        $zero = $expression->getChildByIndex(2);
+        if ($zero->getTypeName() != 'n_NUMERIC_SCALAR' ||
+            $zero->getConcreteString() != '0') {
+          continue;
+        }
+      }
+
+      if ($strpos->getTypeName() != 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      $name = strtolower($strpos->getChildByIndex(0)->getConcreteString());
+      if ($name == 'strpos') {
+        $this->raiseLintAtNode(
+          $strpos,
+          self::LINT_SLOWNESS,
+          "Use strncmp() for checking if the string starts with something.");
+      } else if ($name == 'stripos') {
+        $this->raiseLintAtNode(
+          $strpos,
+          self::LINT_SLOWNESS,
+          "Use strncasecmp() for checking if the string starts with ".
+            "something.");
+      }
+    }
   }
 
   public function lintPHT($root) {

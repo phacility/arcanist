@@ -1,0 +1,10 @@
+<?php
+
+(strpos('a', 'b') === 0);
+(strpos('a', 'b') !== 0);
+(0 === strpos('a', 'b'));
+(1 + 0 === strpos('a', 'b'));
+~~~~~~~~~~
+warning:3:2
+warning:4:2
+warning:5:8
