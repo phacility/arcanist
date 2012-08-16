@@ -849,11 +849,15 @@ EOTEXT
 
     if (count($changes) > 250) {
       $count = number_format(count($changes));
+      $link =
+        "http://www.phabricator.com/docs/phabricator/article/".
+        "Differential_User_Guide_Large_Changes.html";
       $message =
         "This diff has a very large number of changes ({$count}). ".
         "Differential works best for changes which will receive detailed ".
         "human review, and not as well for large automated changes or ".
-        "bulk checkins. Continue anyway?";
+        "bulk checkins. See {$link} for information about reviewing big ".
+        "checkins. Continue anyway?";
       if (!phutil_console_confirm($message)) {
         throw new ArcanistUsageException(
           "Aborted generation of gigantic diff.");
