@@ -58,6 +58,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_REUSED_AS_ITERATOR        = 32;
   const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
   const LINT_COMMENT_SPACING           = 34;
+  const LINT_PHP_54_FEATURES           = 35;
+  const LINT_SLOWNESS                  = 36;
 
 
   public function getLintNameMap() {
@@ -92,9 +94,11 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
+      self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
+      self::LINT_SLOWNESS                  => 'Slow Construct',
     );
   }
 
@@ -125,6 +129,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PHT_WITH_DYNAMIC_STRING
         => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_SLOWNESS
+        => ArcanistLintSeverity::SEVERITY_WARNING,
 
       self::LINT_COMMENT_SPACING
         => ArcanistLintSeverity::SEVERITY_ADVICE,
@@ -137,6 +143,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       // This is disabled by default because projects don't necessarily target
       // a specific minimum version.
       self::LINT_PHP_53_FEATURES
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_PHP_54_FEATURES
         => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
   }
@@ -210,7 +218,95 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintRaggedClasstreeEdges($root);
     $this->lintImplicitFallthrough($root);
     $this->lintPHP53Features($root);
+    $this->lintPHP54Features($root);
     $this->lintPHT($root);
+    $this->lintStrposUsedForStart($root);
+    $this->lintStrstrUsedForCheck($root);
+  }
+
+  public function lintStrstrUsedForCheck($root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+    foreach ($expressions as $expression) {
+      $operator = $expression->getChildOfType(1, 'n_OPERATOR');
+      $operator = $operator->getConcreteString();
+
+      if ($operator != '===' && $operator != '!==') {
+        continue;
+      }
+
+      $false = $expression->getChildByIndex(0);
+      if ($false->getTypeName() == 'n_SYMBOL_NAME' &&
+          $false->getConcreteString() == 'false') {
+        $strstr = $expression->getChildByIndex(2);
+      } else {
+        $strstr = $false;
+        $false = $expression->getChildByIndex(2);
+        if ($false->getTypeName() != 'n_SYMBOL_NAME' ||
+            $false->getConcreteString() != 'false') {
+          continue;
+        }
+      }
+
+      if ($strstr->getTypeName() != 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      $name = strtolower($strstr->getChildByIndex(0)->getConcreteString());
+      if ($name == 'strstr' || $name == 'strchr') {
+        $this->raiseLintAtNode(
+          $strstr,
+          self::LINT_SLOWNESS,
+          "Use strpos() for checking if the string contains something.");
+      } else if ($name == 'stristr') {
+        $this->raiseLintAtNode(
+          $strstr,
+          self::LINT_SLOWNESS,
+          "Use stripos() for checking if the string contains something.");
+      }
+    }
+  }
+
+  public function lintStrposUsedForStart($root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+    foreach ($expressions as $expression) {
+      $operator = $expression->getChildOfType(1, 'n_OPERATOR');
+      $operator = $operator->getConcreteString();
+
+      if ($operator != '===' && $operator != '!==') {
+        continue;
+      }
+
+      $zero = $expression->getChildByIndex(0);
+      if ($zero->getTypeName() == 'n_NUMERIC_SCALAR' &&
+          $zero->getConcreteString() == '0') {
+        $strpos = $expression->getChildByIndex(2);
+      } else {
+        $strpos = $zero;
+        $zero = $expression->getChildByIndex(2);
+        if ($zero->getTypeName() != 'n_NUMERIC_SCALAR' ||
+            $zero->getConcreteString() != '0') {
+          continue;
+        }
+      }
+
+      if ($strpos->getTypeName() != 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      $name = strtolower($strpos->getChildByIndex(0)->getConcreteString());
+      if ($name == 'strpos') {
+        $this->raiseLintAtNode(
+          $strpos,
+          self::LINT_SLOWNESS,
+          "Use strncmp() for checking if the string starts with something.");
+      } else if ($name == 'stripos') {
+        $this->raiseLintAtNode(
+          $strpos,
+          self::LINT_SLOWNESS,
+          "Use strncasecmp() for checking if the string starts with ".
+            "something.");
+      }
+    }
   }
 
   public function lintPHT($root) {
@@ -355,6 +451,23 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+  }
+
+  public function lintPHP54Features($root) {
+    $indexes = $root->selectDescendantsOfType('n_INDEX_ACCESS');
+    foreach ($indexes as $index) {
+      $left = $index->getChildByIndex(0);
+      switch ($left->getTypeName()) {
+        case 'n_FUNCTION_CALL':
+          $this->raiseLintAtNode(
+            $index->getChildByIndex(1),
+            self::LINT_PHP_54_FEATURES,
+            "The f()[...] syntax was not introduced until PHP 5.4, but this ".
+            "codebase targets an earlier version of PHP. You can rewrite ".
+            "this expression using idx().");
+          break;
+      }
+    }
   }
 
   private function lintImplicitFallthrough($root) {

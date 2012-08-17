@@ -342,6 +342,9 @@ EOTEXT
       'skip-binaries' => array(
         'help'  => 'Do not upload binaries (like images).',
       ),
+      'ignore-unsound-tests' => array(
+        'help'  => 'Ignore unsound test failures without prompting.',
+      ),
       'base' => array(
         'param' => 'rules',
         'help'  => 'Additional rules for determining base revision.',
@@ -435,7 +438,14 @@ EOTEXT
 
     $this->diffID = $diff_info['diffid'];
 
-    $this->dispatchDiffWasCreatedEvent($diff_info['diffid']);
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_DIFF_WASCREATED,
+      array(
+        'diffID' => $diff_info['diffid'],
+        'lintResult' => $lint_result,
+        'unitResult' => $unit_result,
+      ));
+    PhutilEventEngine::dispatchEvent($event);
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -839,11 +849,15 @@ EOTEXT
 
     if (count($changes) > 250) {
       $count = number_format(count($changes));
+      $link =
+        "http://www.phabricator.com/docs/phabricator/article/".
+        "Differential_User_Guide_Large_Changes.html";
       $message =
         "This diff has a very large number of changes ({$count}). ".
         "Differential works best for changes which will receive detailed ".
         "human review, and not as well for large automated changes or ".
-        "bulk checkins. Continue anyway?";
+        "bulk checkins. See {$link} for information about reviewing big ".
+        "checkins. Continue anyway?";
       if (!phutil_console_confirm($message)) {
         throw new ArcanistUsageException(
           "Aborted generation of gigantic diff.");
@@ -1289,11 +1303,17 @@ EOTEXT
             "<bg:green>** UNIT OKAY **</bg> No unit test failures.\n");
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          $continue = phutil_console_confirm(
-            "Unit test results included failures, but all failing tests ".
-            "are known to be unsound. Ignore unsound test failures?");
-          if (!$continue) {
-            throw new ArcanistUserAbortException();
+          if ($this->getArgument('ignore-unsound-tests')) {
+            echo phutil_console_format(
+              "<bg:yellow>** UNIT UNSOUND **</bg> Unit testing raised errors, ".
+              "but all failing tests are unsound.\n");
+          } else {
+            $continue = $this->console->confirm(
+              "Unit test results included failures, but all failing tests ".
+              "are known to be unsound. Ignore unsound test failures?");
+            if (!$continue) {
+              throw new ArcanistUserAbortException();
+            }
           }
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
@@ -1312,6 +1332,7 @@ EOTEXT
           'result'    => $test->getResult(),
           'userdata'  => $test->getUserData(),
           'coverage'  => $test->getCoverage(),
+          'extra'     => $test->getExtraData(),
         );
       }
 
@@ -2268,13 +2289,4 @@ EOTEXT
     return $event->getValue('fields');
   }
 
-  private function dispatchDiffWasCreatedEvent($diff_id) {
-    $event = new PhutilEvent(
-      ArcanistEventType::TYPE_DIFF_WASCREATED,
-      array(
-        'diffID' => $diff_id,
-      ));
-
-    PhutilEventEngine::dispatchEvent($event);
-  }
 }

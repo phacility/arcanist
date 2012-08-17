@@ -35,6 +35,7 @@ final class ArcanistUnitTestResult {
   private $result;
   private $duration;
   private $userData;
+  private $extraData;
   private $coverage;
 
   public function setName($name) {
@@ -71,6 +72,19 @@ final class ArcanistUnitTestResult {
 
   public function getUserData() {
     return $this->userData;
+  }
+
+  /**
+   * "extra data" allows an implementation to store additional
+   * key/value metadata along with the result of the test run.
+   */
+  public function setExtraData(array $extra_data = null) {
+    $this->extraData = $extra_data;
+    return $this;
+  }
+
+  public function getExtraData() {
+    return $this->extraData;
   }
 
   public function setCoverage($coverage) {

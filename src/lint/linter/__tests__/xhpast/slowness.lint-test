@@ -1,0 +1,14 @@
+<?php
+
+(strpos('a', 'b') === 0);
+(strpos('a', 'b') !== 0);
+(0 === strpos('a', 'b'));
+(1 + 0 === strpos('a', 'b'));
+
+(strstr('a', 'b') === false);
+(strstr('a', 'b') === 'b');
+~~~~~~~~~~
+warning:3:2
+warning:4:2
+warning:5:8
+warning:8:2
