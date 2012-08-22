@@ -141,7 +141,6 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw disables lint.',
           'never-apply-patches' => '--raw disables lint.',
-          'advice'              => '--raw disables lint.',
           'lintall'             => '--raw disables lint.',
 
           'create'              => '--raw and --create both need stdin. '.
@@ -161,7 +160,6 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw-command disables lint.',
           'never-apply-patches' => '--raw-command disables lint.',
-          'advice'              => '--raw-command disables lint.',
           'lintall'             => '--raw-command disables lint.',
         ),
       ),
@@ -187,7 +185,6 @@ EOTEXT
           "Do not run lint.",
         'conflicts' => array(
           'lintall'   => '--nolint suppresses lint.',
-          'advice'    => '--nolint suppresses lint.',
           'apply-patches' => '--nolint suppresses lint.',
           'never-apply-patches' => '--nolint suppresses lint.',
         ),
@@ -201,7 +198,6 @@ EOTEXT
           'message'   => '--only does not affect revisions.',
           'edit'      => '--only does not affect revisions.',
           'lintall'   => '--only suppresses lint.',
-          'advice'    => '--only suppresses lint.',
           'apply-patches' => '--only suppresses lint.',
           'never-apply-patches' => '--only suppresses lint.',
         ),
@@ -242,13 +238,6 @@ EOTEXT
       'lintall' => array(
         'help' =>
           "Raise all lint warnings, not just those on lines you changed.",
-        'passthru' => array(
-          'lint' => true,
-        ),
-      ),
-      'advice' => array(
-        'help' =>
-          "Raise lint advice in addition to lint warnings and errors.",
         'passthru' => array(
           'lint' => true,
         ),
