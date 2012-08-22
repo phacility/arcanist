@@ -122,6 +122,7 @@ EOTEXT
         echo "No library currently exists at that path...\n";
         $this->liberateCreateDirectory($path);
         $this->liberateCreateLibrary($path);
+        return;
       }
     }
 
@@ -227,8 +228,9 @@ EOTEXT
       "<?php\n\n".
       "phutil_register_library('{$name}', __FILE__);\n";
 
-    echo "Writing '__phutil_library_init__.php' to '{$init_path}'...\n";
+    echo "Writing '__phutil_library_init__.php' to '{$path}'...\n";
     Filesystem::writeFile($init_path, $template);
+    $this->liberateVersion2($path);
   }
 
 
