@@ -655,6 +655,13 @@ final class ArcanistBundle {
   }
 
   private function emitBinaryDiffBody($data) {
+    if (!function_exists('gzcompress')) {
+      throw new Exception(
+        "This patch has binary data. The PHP zlib extension is required to ".
+        "apply patches with binary data to git. Install the PHP zlib ".
+        "extension to continue.");
+    }
+
     // See emit_binary_diff_body() in diff.c for git's implementation.
 
     $buf = '';

@@ -92,10 +92,6 @@ EOTEXT
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'compiler', show lint warnings in suitable for your editor."
       ),
-      'advice' => array(
-        'help' =>
-          "Show lint advice, not just warnings and errors."
-      ),
       'engine' => array(
         'param' => 'classname',
         'help' =>
@@ -179,11 +175,7 @@ EOTEXT
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
 
-    if ($this->getArgument('advice')) {
-      $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
-    } else {
-      $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_AUTOFIX);
-    }
+    $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
 
     // Propagate information about which lines changed to the lint engine.
     // This is used so that the lint engine can drop warning messages
