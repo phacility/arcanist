@@ -538,7 +538,7 @@ EOTEXT
       }
 
       foreach ($propset as $path => $changes) {
-        foreach ($change as $prop => $value) {
+        foreach ($changes as $prop => $value) {
           // TODO: Probably need to handle svn:executable specially here by
           // doing chmod +x or -x.
           if ($value === null) {
