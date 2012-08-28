@@ -383,6 +383,9 @@ EOTEXT
 
     $commit_message = $this->buildCommitMessage();
 
+    PhutilEventEngine::dispatchEvent(
+      new PhutilEvent(ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE));
+
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
