@@ -119,10 +119,11 @@ EOTEXT
     $conduit = $this->getConduit();
 
     $info = $conduit->callMethodSynchronous(
-      'paste.info',
+      'paste.query',
       array(
-        'paste_id' => $this->id,
+        'ids' => array($this->id),
       ));
+    $info = head($info);
 
     if ($this->getJSON()) {
       echo json_encode($info)."\n";
