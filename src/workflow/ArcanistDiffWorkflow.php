@@ -479,6 +479,9 @@ EOTEXT
         echo "Updated an existing Differential revision:\n";
       } else {
         $revision['user'] = $this->getUserPHID();
+
+        $revision = $this->dispatchWillCreateRevisionEvent($revision);
+
         $future = $conduit->callMethod(
           'differential.createrevision',
           $revision);
@@ -2269,11 +2272,23 @@ EOTEXT
       ));
   }
 
+  private function dispatchWillCreateRevisionEvent(array $fields) {
+    $event = new PhutilEvent(
+      ArcanistEventType::TYPE_REVISION_WILLCREATEREVISION,
+      array(
+        'specification' => $fields,
+      ));
+
+    PhutilEventEngine::dispatchEvent($event);
+
+    return $event->getValue('specification');
+  }
+
   private function dispatchWillBuildEvent(array $fields) {
     $event = new PhutilEvent(
       ArcanistEventType::TYPE_DIFF_WILLBUILDMESSAGE,
       array(
-        'fields'      => $fields,
+        'fields' => $fields,
       ));
 
     PhutilEventEngine::dispatchEvent($event);
