@@ -135,14 +135,11 @@ EOTEXT
         'edit'        => false,
       ));
 
-    $event = new PhutilEvent(
+    $event = $this->dispatchEvent(
       ArcanistEventType::TYPE_COMMIT_WILLCOMMITSVN,
       array(
         'message'   => $message,
-        'workflow'  => $this,
-      )
-    );
-    PhutilEventEngine::dispatchEvent($event);
+      ));
 
     $message = $event->getValue('message');
 

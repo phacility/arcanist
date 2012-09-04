@@ -383,8 +383,9 @@ EOTEXT
 
     $commit_message = $this->buildCommitMessage();
 
-    PhutilEventEngine::dispatchEvent(
-      new PhutilEvent(ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE));
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
+      array());
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
@@ -430,14 +431,13 @@ EOTEXT
 
     $this->diffID = $diff_info['diffid'];
 
-    $event = new PhutilEvent(
+    $event = $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_WASCREATED,
       array(
         'diffID' => $diff_info['diffid'],
         'lintResult' => $lint_result,
         'unitResult' => $unit_result,
       ));
-    PhutilEventEngine::dispatchEvent($event);
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -2273,25 +2273,21 @@ EOTEXT
   }
 
   private function dispatchWillCreateRevisionEvent(array $fields) {
-    $event = new PhutilEvent(
+    $event = $this->dispatchEvent(
       ArcanistEventType::TYPE_REVISION_WILLCREATEREVISION,
       array(
         'specification' => $fields,
       ));
 
-    PhutilEventEngine::dispatchEvent($event);
-
     return $event->getValue('specification');
   }
 
   private function dispatchWillBuildEvent(array $fields) {
-    $event = new PhutilEvent(
+    $event = $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_WILLBUILDMESSAGE,
       array(
         'fields' => $fields,
       ));
-
-    PhutilEventEngine::dispatchEvent($event);
 
     return $event->getValue('fields');
   }

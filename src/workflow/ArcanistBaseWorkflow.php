@@ -1315,4 +1315,15 @@ abstract class ArcanistBaseWorkflow {
     return $parser;
   }
 
+  protected function dispatchEvent($type, array $data) {
+    $data += array(
+      'workflow' => $this,
+    );
+
+    $event = new PhutilEvent($type, $data);
+    PhutilEventEngine::dispatchEvent($event);
+
+    return $event;
+  }
+
 }
