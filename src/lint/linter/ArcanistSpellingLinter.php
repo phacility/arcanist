@@ -115,7 +115,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
         $next,
         $severity,
         sprintf(
-          "Possible spelling error.  You wrote '%s', but did you mean '%s'",
+          "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
           $correct_word
         )
@@ -141,7 +141,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
         $match[1],
         $severity,
         sprintf(
-          "Possible spelling error.  You wrote '%s', but did you mean '%s'",
+          "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
           $correct_word
         )
