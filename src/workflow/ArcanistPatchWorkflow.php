@@ -59,7 +59,7 @@ EOTEXT
         'help' =>
           "Apply changes from a Differential revision, using the most recent ".
           "diff that has been attached to it. You can run 'arc patch D12345' ".
-          "as a shorthand for this.",
+          "as a shorthand.",
       ),
       'diff' => array(
         'param' => 'diff_id',
@@ -94,25 +94,39 @@ EOTEXT
           "Update the local working copy before applying the patch.",
         'conflicts' => array(
           'nobranch' => true,
+          'bookmark' => true,
         ),
       ),
       'nocommit' => array(
         'supports' => array(
-          'git'
+          'git', 'hg'
         ),
         'help' =>
-          "Normally under git if the patch is successful the changes are ".
-          "committed to the working copy. This flag prevents the commit.",
+          "Normally under git/hg, if the patch is successful, the changes ".
+          "are committed to the working copy. This flag prevents the commit.",
       ),
       'nobranch' => array(
         'supports' => array(
           'git'
         ),
         'help' =>
-          "Normally under git a new branch is created and then the patch ".
-          "is applied and committed in the branch.  This flag skips the ".
+          "Normally under git, a new branch is created and then the patch ".
+          "is applied and committed in the new branch. This flag skips the ".
           "branch creation step and applies and commits the patch to the ".
           "current branch.",
+        'conflicts' => array(
+          'update' => true,
+        ),
+      ),
+      'bookmark' => array(
+        'supports' => array(
+          'hg'
+        ),
+        'help' =>
+          "Normally under hg, a new bookmark is not created and the patch ".
+          "is applied and committed in the current bookmark. With this flag, ".
+          "a new bookmark is created and the patch is applied and committed ".
+          "in the new bookmark.",
         'conflicts' => array(
           'update' => true,
         ),
@@ -220,6 +234,22 @@ EOTEXT
     return true;
   }
 
+  private function shouldBookmark() {
+    // specific to hg
+    $repository_api = $this->getRepositoryAPI();
+    if (!($repository_api instanceof ArcanistMercurialAPI)) {
+      return false;
+    }
+
+    $bookmark = $this->getArgument('bookmark', false);
+    if ($bookmark) {
+      return true;
+    }
+
+    return false;
+  }
+
+
   private function getBranchName(ArcanistBundle $bundle) {
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
@@ -259,6 +289,45 @@ EOTEXT
     return $branch_name;
   }
 
+  private function getBookmarkName(ArcanistBundle $bundle) {
+    $bookmark_name    = null;
+    $repository_api = $this->getRepositoryAPI();
+    $revision_id    = $bundle->getRevisionID();
+    $base_name      = "arcpatch";
+    if ($revision_id) {
+      $base_name .= "-D{$revision_id}";
+    }
+
+    $suffixes = array(null, '-1', '-2', '-3');
+    foreach ($suffixes as $suffix) {
+      $proposed_name = $base_name.$suffix;
+
+      list($err) = $repository_api->execManualLocal(
+        'log -r %s',
+        $proposed_name);
+
+      // no error means hg log found a bookmark
+      if (!$err) {
+        echo phutil_console_format(
+          "Bookmark name {$proposed_name} already exists; trying a new name.\n"
+        );
+        continue;
+      } else {
+        $bookmark_name = $proposed_name;
+        break;
+      }
+    }
+
+    if (!$bookmark_name) {
+      throw new Exception(
+        "Arc was unable to automagically make a name for this patch. ".
+        "Please clean up your working copy and try again."
+      );
+    }
+
+    return $bookmark_name;
+  }
+
   private function createBranch(ArcanistBundle $bundle) {
     $branch_name    = $this->getBranchName($bundle);
     $repository_api = $this->getRepositoryAPI();
@@ -289,6 +358,19 @@ EOTEXT
     echo phutil_console_format(
       "Created and checked out branch %s.\n",
       $branch_name);
+  }
+
+  private function createBookmark(ArcanistBundle $bundle) {
+    $bookmark_name    = $this->getBookmarkName($bundle);
+    $repository_api = $this->getRepositoryAPI();
+
+    $repository_api->execxLocal(
+      'bookmark %s',
+      $bookmark_name);
+
+    echo phutil_console_format(
+      "Created and applied bookmark %s.\n",
+      $bookmark_name);
   }
 
   private function shouldUpdateWorkingCopy() {
@@ -374,6 +456,10 @@ EOTEXT
 
     if ($this->shouldBranch()) {
       $this->createBranch($bundle);
+    }
+
+    if ($this->shouldBookmark()) {
+      $this->createBookmark($bundle);
     }
 
     $repository_api = $this->getRepositoryAPI();
@@ -593,7 +679,7 @@ EOTEXT
             phutil_console_format(
               "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
               "because it attempts to change the case of a filename (for ".
-              "instance, from 'example.c' to 'Example.c'). Git can not apply ".
+              "instance, from 'example.c' to 'Example.c'). Git cannot apply ".
               "patches like this on case-insensitive filesystems. You must ".
               "apply this patch manually.\n"));
         }
@@ -613,13 +699,42 @@ EOTEXT
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
+
       $future = $repository_api->execFutureLocal(
         'import --no-commit -');
       $future->write($bundle->toGitPatch());
-      $future->resolvex();
 
+      try {
+        $future->resolvex();
+      } catch (CommandException $ex) {
+        echo phutil_console_format(
+          "\n<bg:red>** Patch Failed! **</bg>\n");
+        $stderr = $ex->getStdErr();
+        if (preg_match('/case-folding collision/', $stderr)) {
+          echo phutil_console_wrap(
+            phutil_console_format(
+              "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
+              "because it attempts to change the case of a filename (for ".
+              "instance, from 'example.c' to 'Example.c'). Mercurial cannot ".
+              "apply patches like this on case-insensitive filesystems. You ".
+              "must apply this patch manually.\n"));
+        }
+        throw $ex;
+      }
+
+      if ($this->shouldCommit()) {
+        $commit_message = $this->getCommitMessage($bundle);
+        $future = $repository_api->execFutureLocal(
+          'commit -A -l -');
+        $future->write($commit_message);
+        $future->resolvex();
+        $verb = 'committed';
+      } else {
+        $verb = 'applied';
+      }
       echo phutil_console_format(
-        "<bg:green>** OKAY **</bg> Successfully applied patch.\n");
+        "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
+
     } else {
       throw new Exception('Unknown version control system.');
     }

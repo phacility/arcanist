@@ -116,7 +116,6 @@ EOTEXT
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
-    // is_subclass_of() doesn't autoload under HPHP.
     if (!class_exists($engine_class) ||
         !is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {
       throw new ArcanistUsageException(

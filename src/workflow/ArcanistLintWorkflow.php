@@ -163,7 +163,6 @@ EOTEXT
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
-    // is_subclass_of() doesn't autoload under HPHP.
     if (!class_exists($engine) ||
         !is_subclass_of($engine, 'ArcanistLintEngine')) {
       throw new ArcanistUsageException(
