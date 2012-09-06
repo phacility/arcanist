@@ -48,6 +48,22 @@ switch ($x) {
   default:
     $x++;
 }
+
+switch ($x) {
+  case 1:
+    while (true) {
+      break;
+    }
+    // TODO: false negative
+  case 2:
+    switch ($y) {
+      case 1:
+        break;
+    }
+    // TODO: false negative
+}
 ~~~~~~~~~~
 warning:41:3
 warning:48:3
+disabled:57:8
+disabled:63:8
