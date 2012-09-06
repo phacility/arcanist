@@ -1,0 +1,4 @@
+def hello()
+  puts "hello world"
+~~~~~~~~~~
+error:2:

@@ -81,6 +81,7 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
 
     $linters = array_merge($linters, $this->buildLicenseLinters($paths));
     $linters = array_merge($linters, $this->buildPythonLinters($paths));
+    $linters = array_merge($linters, $this->buildRubyLinters($paths));
     $linters = array_merge($linters, $this->buildJSLinters($paths));
 
     return $linters;
@@ -117,6 +118,20 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
         $pep8_linter->addData($path, $this->loadData($path));
       }
     }
+    return $linters;
+  }
+
+  public function buildRubyLinters($paths) {
+    $ruby_linter = new ArcanistRubyLinter();
+
+    $linters = array();
+    $linters[] = $ruby_linter;
+      foreach ($paths as $path) {
+        if (preg_match('/\.rb$/', $path)) {
+          $ruby_linter->addPath($path);
+          $ruby_linter->addData($path, $this->loadData($path));
+        }
+      }
     return $linters;
   }
 

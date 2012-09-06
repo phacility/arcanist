@@ -1,0 +1,10 @@
+# ruby -wc says syntax ok
+# ruby -w says blah.rb:2: undefined local variable or method `index' for main:Object (NameError)
+if index < 0 and $VERBOSE
+  $stderr.puts "warning: index is a negative number"
+  if $DEBUG
+    $stderr.puts "index value: #{index.inspect}"
+    $stderr.puts "array state: #{array.inspect}"
+  end
+end
+~~~~~~~~~~
