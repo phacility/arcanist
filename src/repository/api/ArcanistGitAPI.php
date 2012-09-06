@@ -753,7 +753,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getCommitMessage($commit) {
     list($message) = $this->execxLocal(
       'log -n1 --format=%C %s --',
-      '%s%n%b',
+      '%s%n%n%b',
       $commit);
     return $message;
   }
