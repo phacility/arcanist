@@ -32,6 +32,7 @@ final class ArcanistUnitTestResult {
 
   private $namespace;
   private $name;
+  private $link;
   private $result;
   private $duration;
   private $userData;
@@ -45,6 +46,15 @@ final class ArcanistUnitTestResult {
 
   public function getName() {
     return $this->name;
+  }
+
+  public function setLink($link) {
+    $this->link = $link;
+    return $this;
+  }
+
+  public function getLink() {
+    return $this->link;
   }
 
   public function setResult($result) {
