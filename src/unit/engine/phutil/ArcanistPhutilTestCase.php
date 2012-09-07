@@ -349,15 +349,7 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function failTest($reason) {
-    $coverage = $this->endCoverage();
-
-    $result = new ArcanistUnitTestResult();
-    $result->setCoverage($coverage);
-    $result->setName($this->runningTest);
-    $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-    $result->setDuration(microtime(true) - $this->testStartTime);
-    $result->setUserData($reason);
-    $this->results[] = $result;
+    $this->resultTest(ArcanistUnitTestResult::RESULT_FAIL, $reason);
   }
 
 
@@ -370,15 +362,7 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function passTest($reason) {
-    $coverage = $this->endCoverage();
-
-    $result = new ArcanistUnitTestResult();
-    $result->setCoverage($coverage);
-    $result->setName($this->runningTest);
-    $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-    $result->setDuration(microtime(true) - $this->testStartTime);
-    $result->setUserData($reason);
-    $this->results[] = $result;
+    $this->resultTest(ArcanistUnitTestResult::RESULT_PASS, $reason);
   }
 
 
@@ -390,12 +374,18 @@ abstract class ArcanistPhutilTestCase {
    * @task internal
    */
   final private function skipTest($reason) {
+    $this->resultTest(ArcanistUnitTestResult::RESULT_SKIP, $reason);
+  }
+
+
+  final private function resultTest($test_result, $reason) {
     $coverage = $this->endCoverage();
 
     $result = new ArcanistUnitTestResult();
     $result->setCoverage($coverage);
     $result->setName($this->runningTest);
-    $result->setResult(ArcanistUnitTestResult::RESULT_SKIP);
+    $result->setLink($this->getLink($this->runningTest));
+    $result->setResult($test_result);
     $result->setDuration(microtime(true) - $this->testStartTime);
     $result->setUserData($reason);
     $this->results[] = $result;
@@ -540,6 +530,10 @@ abstract class ArcanistPhutilTestCase {
   final public function setPaths(array $paths) {
     $this->paths = $paths;
     return $this;
+  }
+
+  protected function getLink($method) {
+    return null;
   }
 
 }
