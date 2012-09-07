@@ -16,33 +16,14 @@
  * limitations under the License.
  */
 
-final class ArcanistCommentRemoverTestCase extends ArcanistTestCase {
+abstract class ArcanistTestCase extends ArcanistPhutilTestCase {
 
-  public function testRemover() {
-    $test = <<<EOTEXT
-Here is a list:
-
-  # Stuff
-  # More Stuff
-
-The end.
-
-# Instructional comments.
-# Appear here.
-# At the bottom.
-EOTEXT;
-
-    $expect = <<<EOTEXT
-Here is a list:
-
-  # Stuff
-  # More Stuff
-
-The end.
-
-EOTEXT;
-
-    $this->assertEqual($expect, ArcanistCommentRemover::removeComments($test));
+  protected function getLink($method) {
+    $arcanist_project = 'PHID-APRJ-703e0b140530f17ede30';
+    return
+      'https://secure.phabricator.com/diffusion/symbol/'.$method.
+      '/?lang=php&projects='.$arcanist_project.
+      '&jump=true&context='.get_class($this);
   }
 
 }

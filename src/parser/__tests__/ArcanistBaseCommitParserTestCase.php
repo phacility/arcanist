@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class ArcanistBaseCommitParserTestCase extends ArcanistPhutilTestCase {
+final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
 
   public function testBasics() {
 

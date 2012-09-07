@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-final class ArcanistDiffParserTestCase extends ArcanistPhutilTestCase {
+final class ArcanistDiffParserTestCase extends ArcanistTestCase {
 
   public function testParser() {
     $root = dirname(__FILE__).'/diff/';
