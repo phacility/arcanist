@@ -35,4 +35,19 @@ final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
       $working_copy);
   }
 
+  public function testFixLetterCase() {
+    $tests = array(
+      'tst' => 'test',
+      'Tst' => 'Test',
+      'TST' => 'TEST',
+      'tSt' => null,
+    );
+    foreach ($tests as $case => $expect) {
+      foreach (array('test', 'TEST') as $string) {
+        $result = ArcanistSpellingLinter::fixLetterCase($string, $case);
+        $this->assertEqual($expect, $result, $case);
+      }
+    }
+  }
+
 }
