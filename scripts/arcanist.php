@@ -66,12 +66,12 @@ $console = PhutilConsole::getConsole();
 
 try {
 
-  if ($config_trace_mode) {
-    $phutil_location = phutil_get_library_root('phutil');
-    $arcanist_location = phutil_get_library_root('arcanist');
-    $console->writeErr("libphutil loaded from '{$phutil_location}'.\n");
-    $console->writeErr("arcanist loaded from '{$arcanist_location}'.\n");
-  }
+  $console->writeLog(
+    "libphutil loaded from '%s'.\n",
+    phutil_get_library_root('phutil'));
+  $console->writeLog(
+    "arcanist loaded from '%s'.\n",
+    phutil_get_library_root('arcanist'));
 
   if (!$args) {
     throw new ArcanistUsageException("No command provided. Try 'arc help'.");
@@ -95,8 +95,7 @@ try {
       $load,
       $must_load = true,
       $lib_source = 'a "--load-phutil-library" flag',
-      $working_copy,
-      $config_trace_mode);
+      $working_copy);
   } else {
     // Load libraries in system 'load' config. In contrast to global config, we
     // fail hard here because this file is edited manually, so if 'arc' breaks
@@ -105,8 +104,7 @@ try {
       idx($system_config, 'load', array()),
       $must_load = true,
       $lib_source = 'the "load" setting in system config',
-      $working_copy,
-      $config_trace_mode);
+      $working_copy);
 
     // Load libraries in global 'load' config, as per "arc set-config load". We
     // need to fail softly if these break because errors would prevent the user
@@ -115,16 +113,14 @@ try {
       idx($global_config, 'load', array()),
       $must_load = false,
       $lib_source = 'the "load" setting in global config',
-      $working_copy,
-      $config_trace_mode);
+      $working_copy);
 
     // Load libraries in ".arcconfig". Libraries here must load.
     arcanist_load_libraries(
       $working_copy->getConfig('load'),
       $must_load = true,
       $lib_source = 'the "load" setting in ".arcconfig"',
-      $working_copy,
-      $config_trace_mode);
+      $working_copy);
   }
 
   $user_config = ArcanistBaseWorkflow::readUserConfigurationFile();
@@ -161,9 +157,10 @@ try {
     if (ArcanistAliasWorkflow::isShellCommandAlias($new_command)) {
       $shell_cmd = substr($full_alias, 1);
 
-      if ($config_trace_mode) {
-        echo "[alias: 'arc {$command}' -> \$ {$full_alias}]\n";
-      }
+      $console->writeLog(
+        "[alias: 'arc %s' -> $ %s]",
+        $command,
+        $shell_cmd);
 
       if ($args) {
         $err = phutil_passthru('%C %Ls', $shell_cmd, $args);
@@ -178,9 +175,10 @@ try {
     if ($new_command) {
       $workflow = $config->buildWorkflow($new_command);
       if ($workflow) {
-        if ($config_trace_mode) {
-          echo "[alias: 'arc {$command}' -> 'arc {$full_alias}']\n";
-        }
+        $console->writeLog(
+          "[alias: 'arc %s' -> 'arc %s']\n",
+          $command,
+          $full_alias);
         $command = $new_command;
       }
     }
@@ -296,10 +294,22 @@ try {
     $workflow->setRepositoryAPI($repository_api);
   }
 
-  $listeners = $working_copy->getConfig('events.listeners');
+  $listeners = $working_copy->getConfigFromAnySource('events.listeners');
   if ($listeners) {
     foreach ($listeners as $listener) {
-      id(new $listener())->register();
+      $console->writeLog(
+        "Registering event listener '%s'.\n",
+        $listener);
+      try {
+        id(new $listener())->register();
+      } catch (PhutilMissingSymbolException $ex) {
+        // Continue anwyay, since you may otherwise be unable to run commands
+        // like `arc set-config events.listeners in order to repair the damage
+        // you've caused.
+        $console->writeErr(
+          "ERROR: Failed to load event listener '%s'!\n",
+          $listener);
+      }
     }
   }
 
@@ -439,8 +449,7 @@ function arcanist_load_libraries(
   $load,
   $must_load,
   $lib_source,
-  ArcanistWorkingCopyIdentity $working_copy,
-  $config_trace_mode) {
+  ArcanistWorkingCopyIdentity $working_copy) {
 
   if (!$load) {
     return;
@@ -495,9 +504,10 @@ function arcanist_load_libraries(
       }
     }
 
-    if ($config_trace_mode) {
-      echo "Loading phutil library from '{$location}'...\n";
-    }
+    $console = PhutilConsole::getConsole();
+    $console->writeLog(
+      "Loading phutil library from '%s'...\n",
+      $location);
 
     $error = null;
     try {

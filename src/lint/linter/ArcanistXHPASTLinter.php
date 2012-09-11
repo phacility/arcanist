@@ -487,28 +487,61 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
 
       foreach ($blocks as $key => $block) {
-        $tokens = $block->getTokens();
+        // Collect all the tokens in this block which aren't at top level.
+        // We want to ignore "break", and "continue" in these blocks.
+        $lower_level = $block->selectDescendantsOfType('n_WHILE');
+        $lower_level->add($block->selectDescendantsOfType('n_DO_WHILE'));
+        $lower_level->add($block->selectDescendantsOfType('n_FOR'));
+        $lower_level->add($block->selectDescendantsOfType('n_FOREACH'));
+        $lower_level->add($block->selectDescendantsOfType('n_SWITCH'));
+        $lower_level_tokens = array();
+        foreach ($lower_level as $lower_level_block) {
+          $lower_level_tokens += $lower_level_block->getTokens();
+        }
+
+        // Collect all the tokens in this block which aren't in this scope
+        // (because they're inside class, function or interface declarations).
+        // We want to ignore all of these tokens.
+        $decls = $block->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+        $decls->add($block->selectDescendantsOfType('n_CLASS_DECLARATION'));
+        // For completeness; these can't actually have anything.
+        $decls->add($block->selectDescendantsOfType('n_INTERFACE_DECLARATION'));
+        $different_scope_tokens = array();
+        foreach ($decls as $decl) {
+          $different_scope_tokens += $decl->getTokens();
+        }
+
+        $lower_level_tokens += $different_scope_tokens;
 
         // Get all the trailing nonsemantic tokens, since we need to look for
         // "fallthrough" comments past the end of the semantic block.
 
+        $tokens = $block->getTokens();
         $last = end($tokens);
         while ($last && $last = $last->getNextToken()) {
           if (!$last->isSemantic()) {
-            $tokens[] = $last;
+            $tokens[$last->getTokenID()] = $last;
           }
         }
 
-        $blocks[$key] = $tokens;
+        $blocks[$key] = array(
+          $tokens,
+          $lower_level_tokens,
+          $different_scope_tokens,
+        );
       }
 
-      foreach ($blocks as $tokens) {
+      foreach ($blocks as $token_lists) {
+        list(
+          $tokens,
+          $lower_level_tokens,
+          $different_scope_tokens) = $token_lists;
 
         // Test each block (case or default statement) to see if it's OK. It's
         // OK if:
         //
         //  - it is empty; or
-        //  - it ends in break, return, throw, continue or exit; or
+        //  - it ends in break, return, throw, continue or exit at top level; or
         //  - it has a comment with "fallthrough" in its text.
 
         // Empty blocks are OK, so we start this at `true` and only set it to
@@ -519,7 +552,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         // the block (break, return, throw, continue) or something else.
         $statement_ok = false;
 
-        foreach ($tokens as $token) {
+        foreach ($tokens as $token_id => $token) {
           if (!$token->isSemantic()) {
             // Liberally match "fall" in the comment text so that comments like
             // "fallthru", "fall through", "fallthrough", etc., are accepted.
@@ -532,6 +565,14 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
           $tok_type = $token->getTypeName();
 
+          if ($tok_type == 'T_FUNCTION' ||
+              $tok_type == 'T_CLASS' ||
+              $tok_type == 'T_INTERFACE') {
+            // These aren't statements, but mark the block as nonempty anyway.
+            $block_ok = false;
+            continue;
+          }
+
           if ($tok_type == ';') {
             if ($statement_ok) {
               $statment_ok = false;
@@ -541,13 +582,23 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
             continue;
           }
 
+          if ($tok_type == 'T_BREAK'    ||
+              $tok_type == 'T_CONTINUE') {
+            if (empty($lower_level_tokens[$token_id])) {
+              $statement_ok = true;
+              $block_ok = true;
+            }
+            continue;
+          }
+
           if ($tok_type == 'T_RETURN'   ||
-              $tok_type == 'T_BREAK'    ||
-              $tok_type == 'T_CONTINUE' ||
               $tok_type == 'T_THROW'    ||
               $tok_type == 'T_EXIT') {
-            $statement_ok = true;
-            $block_ok = true;
+            if (empty($different_scope_tokens[$token_id])) {
+              $statement_ok = true;
+              $block_ok = true;
+            }
+            continue;
           }
         }
 

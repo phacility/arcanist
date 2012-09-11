@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-final class ArcanistDiffUtilsTestCase extends ArcanistPhutilTestCase {
+final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
   public function testLevenshtein() {
     $tests = array(
       array(

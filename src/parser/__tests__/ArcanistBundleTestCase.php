@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class ArcanistBundleTestCase extends ArcanistPhutilTestCase {
+final class ArcanistBundleTestCase extends ArcanistTestCase {
 
   private function loadResource($name) {
     return Filesystem::readFile($this->getResourcePath($name));

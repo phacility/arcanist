@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class ArcanistMercurialParserTestCase extends ArcanistPhutilTestCase {
+final class ArcanistMercurialParserTestCase extends ArcanistTestCase {
 
   public function testParseAll() {
     $root = dirname(__FILE__).'/mercurial/';

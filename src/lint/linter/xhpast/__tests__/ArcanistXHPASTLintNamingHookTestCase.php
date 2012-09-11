@@ -22,7 +22,7 @@
  * @group testcase
  */
 final class ArcanistXHPASTLintNamingHookTestCase
-  extends ArcanistPhutilTestCase {
+  extends ArcanistTestCase {
 
   public function testCaseUtilities() {
     $tests = array(

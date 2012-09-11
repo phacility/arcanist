@@ -17,37 +17,20 @@
  */
 
 /**
- * Test cases for @{class:ArcanistSpellingLinter}.
+ * Test cases for @{class:ArcanistRubyLinter}.
  *
  * @group testcase
  */
-final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistRubyLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testSpellingLint() {
-    $linter = new ArcanistSpellingLinter();
-    $linter->removeLintRule('acc'.'out');
-    $linter->addPartialWordRule('supermn', 'superman');
-    $linter->addWholeWordRule('batmn', 'batman');
+  public function testRubyLint() {
+    $linter = new ArcanistRubyLinter();
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
-      dirname(__FILE__).'/spelling/',
+      dirname(__FILE__).'/ruby/',
       $linter,
       $working_copy);
   }
 
-  public function testFixLetterCase() {
-    $tests = array(
-      'tst' => 'test',
-      'Tst' => 'Test',
-      'TST' => 'TEST',
-      'tSt' => null,
-    );
-    foreach ($tests as $case => $expect) {
-      foreach (array('test', 'TEST') as $string) {
-        $result = ArcanistSpellingLinter::fixLetterCase($string, $case);
-        $this->assertEqual($expect, $result, $case);
-      }
-    }
-  }
-
 }
+

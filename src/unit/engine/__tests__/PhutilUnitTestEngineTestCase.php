@@ -21,7 +21,7 @@
  *
  * @group testcase
  */
-final class PhutilUnitTestEngineTestCase extends ArcanistPhutilTestCase {
+final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
 
   static $allTestsCounter = 0;
   static $oneTestCounter = 0;

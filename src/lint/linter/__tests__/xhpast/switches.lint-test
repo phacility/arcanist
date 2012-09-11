@@ -48,6 +48,43 @@ switch ($x) {
   default:
     $x++;
 }
+
+switch ($x) {
+  case 1:
+    while (true) {
+      break;
+    }
+  case 2:
+    switch ($y) {
+      case 1:
+        break;
+    }
+  case 3:
+    while (true) {
+      return;
+    }
+  case 4:
+    function f() { throw new Exception(); }
+    g(function() { return; });
+    final class C { public function m() { return; } }
+    interface I { }
+  case 5:
+    do {
+      break;
+    } while (true);
+  case 6:
+    // We accept this "false" positive because the construction is bizarre and
+    // the author can easily add an unreachable "break;" for clarity.
+    do {
+      break 2;
+    } while (true);
+}
 ~~~~~~~~~~
 warning:41:3
 warning:48:3
+warning:53:3
+warning:57:3
+warning:66:3
+disabled:68:7 # PHP 5.3 features
+warning:71:3
+warning:75:3
