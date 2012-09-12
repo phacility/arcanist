@@ -128,7 +128,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_IMPLICIT_FALLTHROUGH
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PHT_WITH_DYNAMIC_STRING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
       self::LINT_SLOWNESS
         => ArcanistLintSeverity::SEVERITY_WARNING,
 

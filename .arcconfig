@@ -1,8 +1,8 @@
 {
   "project_id" : "arcanist",
   "conduit_uri" : "https://secure.phabricator.com/",
-  "lint_engine" : "ComprehensiveLintEngine",
-  "unit_engine" : "PhutilUnitTestEngine",
+  "lint.engine" : "PhutilLintEngine",
+  "unit.engine" : "PhutilUnitTestEngine",
   "copyright_holder" : "Facebook, Inc.",
   "phutil_libraries" : {
     "arcanist" : "src/"
