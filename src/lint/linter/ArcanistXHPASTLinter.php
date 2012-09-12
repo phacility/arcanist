@@ -1147,7 +1147,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           }
         }
 
-        // This is a declration, exclude it from the "declare variables prior
+        // This is a declaration, exclude it from the "declare variables prior
         // to use" check below.
         unset($all[$var->getID()]);
 
