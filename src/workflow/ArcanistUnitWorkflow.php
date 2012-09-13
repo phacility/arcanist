@@ -147,21 +147,6 @@ EOTEXT
     $results = $this->engine->run();
     $this->testResults = $results;
 
-    $status_codes = array(
-      ArcanistUnitTestResult::RESULT_PASS => phutil_console_format(
-        '<bg:green>** PASS **</bg>'),
-      ArcanistUnitTestResult::RESULT_FAIL => phutil_console_format(
-        '<bg:red>** FAIL **</bg>'),
-      ArcanistUnitTestResult::RESULT_SKIP => phutil_console_format(
-        '<bg:yellow>** SKIP **</bg>'),
-      ArcanistUnitTestResult::RESULT_BROKEN => phutil_console_format(
-        '<bg:red>** BROKEN **</bg>'),
-      ArcanistUnitTestResult::RESULT_UNSOUND => phutil_console_format(
-        '<bg:yellow>** UNSOUND **</bg>'),
-      ArcanistUnitTestResult::RESULT_POSTPONED => phutil_console_format(
-        '<bg:yellow>** POSTPONED **</bg>'),
-      );
-
     $console = PhutilConsole::getConsole();
 
     $unresolved = array();
@@ -180,7 +165,7 @@ EOTEXT
           }
           $console->writeOut(
             "  %s %s\n",
-            $status_codes[$result_code].$duration,
+            $result->getConsoleFormattedResult().$duration,
             $result->getName());
         }
         if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
@@ -197,9 +182,11 @@ EOTEXT
       }
     }
     if ($postponed_count) {
+      $postponed = id(new ArcanistUnitTestResult())
+        ->setResult(ArcanistUnitTestResult::RESULT_POSTPONED);
       $console->writeOut(
         "%s %s\n",
-        $status_codes[ArcanistUnitTestResult::RESULT_POSTPONED],
+        $postponed->getConsoleFormattedResult(),
         pht('%d test(s)', $postponed_count));
     }
 
