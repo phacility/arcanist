@@ -404,6 +404,18 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+    $ternaries = $root->selectDescendantsOfType('n_TERNARY_EXPRESSION');
+    foreach ($ternaries as $ternary) {
+      $yes = $ternary->getChildByIndex(1);
+      if ($yes->getTypeName() == 'n_EMPTY') {
+        $this->raiseLintAtNode(
+          $ternary,
+          self::LINT_PHP_53_FEATURES,
+          'This codebase targets PHP 5.2, but short ternary was not '.
+          'introduced until PHP 5.3.');
+      }
+    }
+
     $this->lintPHP53Functions($root);
   }
 

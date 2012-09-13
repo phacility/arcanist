@@ -6,6 +6,8 @@ f(function() {});
 g(function() use ($c) {});
 h(function /* ! */ () use ($c) {});
 static::m();
+1 ? 1 : 2;
+1 ?: 2;
 ~~~~~~~~~~
 disabled:3:1
 disabled:4:5
@@ -13,3 +15,4 @@ disabled:5:3
 disabled:6:3
 disabled:7:3
 disabled:8:1
+disabled:10:1
