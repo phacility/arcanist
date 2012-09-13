@@ -336,7 +336,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     //    $ git rev-parse --abbrev-ref `git symbolic-ref HEAD`
     //
     // But that may fail if you're not on a branch.
-    list($stdout) = $this->execxLocal('branch');
+    list($stdout) = $this->execxLocal('branch --no-color');
 
     $matches = null;
     if (preg_match('/^\* (.+)$/m', $stdout, $matches)) {
