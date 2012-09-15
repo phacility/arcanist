@@ -42,7 +42,7 @@
  * Arcanist workflows can read and write 'scratch files', which are temporary
  * files stored in the project that persist across commands. They can be useful
  * if you want to save some state, or keep a copy of a long message the user
- * entered in something goes wrong..
+ * entered if something goes wrong.
  *
  *
  * @task  conduit   Conduit
