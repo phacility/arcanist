@@ -74,9 +74,13 @@ abstract class ArcanistBaseWorkflow {
 
   private $changeCache = array();
 
+
   public function __construct() {
 
   }
+
+
+  abstract public function run();
 
 
 /* -(  Conduit  )------------------------------------------------------------ */
