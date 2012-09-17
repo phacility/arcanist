@@ -349,7 +349,11 @@ try {
  * that exclude core functionality.
  */
 function sanity_check_environment() {
-  $min_version = '5.2.3';
+  // NOTE: We don't have phutil_is_windows() yet here.
+  $is_windows = (DIRECTORY_SEPARATOR != '/');
+
+  // We use stream_socket_pair() which is not available on Windows earlier.
+  $min_version = ($is_windows ? '5.3.0' : '5.2.3');
   $cur_version = phpversion();
   if (version_compare($cur_version, $min_version, '<')) {
     die_with_bad_php(
@@ -358,9 +362,7 @@ function sanity_check_environment() {
       "'{$min_version}'.");
   }
 
-  // NOTE: We don't have phutil_is_windows() yet here.
-
-  if (DIRECTORY_SEPARATOR != '/') {
+  if ($is_windows) {
     $need_functions = array(
       'curl_init'     => array('builtin-dll', 'php_curl.dll'),
     );
