@@ -420,7 +420,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   private function lintPHP53Functions($root) {
-    $target = dirname(__FILE__).'/../../../resources/php_compat_info.json';
+    $target = phutil_get_library_root('arcanist').
+      '/../resources/php_compat_info.json';
     $compat_info = json_decode(file_get_contents($target), true);
 
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
@@ -428,6 +429,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       $node = $call->getChildByIndex(0);
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['functions'], $name);
+      $windows_version = idx($compat_info['functions_windows'], $name);
       if ($version) {
         $this->raiseLintAtNode(
           $node,
@@ -446,6 +448,13 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
               "of `{$name}()` was not introduced until PHP {$version}.");
           }
         }
+      } else if ($windows_version !== null) {
+        $this->raiseLintAtNode(
+          $param,
+          self::LINT_PHP_53_FEATURES,
+          "This codebase targets PHP 5.2.3, but `{$name}()` is not available ".
+          "on Windows".
+          ($windows_version ? " until PHP {$windows_version}" : "").".");
       }
     }
 
