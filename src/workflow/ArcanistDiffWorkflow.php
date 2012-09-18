@@ -1028,7 +1028,8 @@ EOTEXT
       $change->setMetadata('new:file:size',      $new_dict['size']);
       $change->setMetadata('new:file:mime-type', $new_dict['mime']);
 
-      if (preg_match('@^image/@', $new_dict['mime'])) {
+      $mime_type = coalesce($new_dict['mime'], $old_dict['mime']);
+      if (preg_match('@^image/@', $mime_type)) {
         $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
       }
     }
