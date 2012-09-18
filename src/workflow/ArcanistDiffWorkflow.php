@@ -92,7 +92,7 @@ EOTEXT
   }
 
   public function getArguments() {
-    return array(
+    $arguments = array(
       'message' => array(
         'short'       => 'm',
         'param'       => 'message',
@@ -349,10 +349,16 @@ EOTEXT
         'param' => 'bool',
         'help' =>
           'Run lint and unit tests on background. '.
-          '"0" to disable (default), "1" to enable.',
+          '"0" to disable, "1" to enable (default).',
       ),
       '*' => 'paths',
     );
+
+    if (phutil_is_windows()) {
+      unset($arguments['background']);
+    }
+
+    return $arguments;
   }
 
   public function isRawDiffSource() {
@@ -371,7 +377,9 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    if ($this->getArgument('background')) {
+    $background = $this->getArgument('background', !phutil_is_windows());
+
+    if ($background) {
       $argv = $_SERVER['argv'];
       // Insert after `arc diff`.
       array_splice($argv, 2, 0, array('--recon', '--no-diff'));
@@ -394,7 +402,7 @@ EOTEXT
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
 
-    if ($this->getArgument('background')) {
+    if ($background) {
       $server = new PhutilConsoleServer();
       $server->addExecFutureClient($lint_unit);
       $server->run();
