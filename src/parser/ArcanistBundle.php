@@ -299,6 +299,21 @@ final class ArcanistBundle {
       }
     }
 
+    $old_file_phids = array();
+    foreach ($changes as $change) {
+      $type = $change->getType();
+      if ($type == ArcanistDiffChangeType::TYPE_MOVE_AWAY) {
+        $file_type = $change->getFileType();
+        $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY ||
+                      $file_type == ArcanistDiffChangeType::FILE_IMAGE);
+        if ($is_binary) {
+          foreach ($change->getAwayPaths() as $path) {
+            $old_file_phids[$path] = $change->getMetadata('old:binary-phid');
+          }
+        }
+      }
+    }
+
     foreach ($changes as $change) {
       $type = $change->getType();
       $file_type = $change->getFileType();
@@ -326,7 +341,8 @@ final class ArcanistBundle {
                     $file_type == ArcanistDiffChangeType::FILE_IMAGE);
 
       if ($is_binary) {
-        $change_body = $this->buildBinaryChange($change);
+        $old_phid = idx($old_file_phids, $this->getCurrentPath($change));
+        $change_body = $this->buildBinaryChange($change, $old_phid);
       } else {
         $change_body = $this->buildHunkChanges($change->getHunks());
       }
@@ -604,24 +620,11 @@ final class ArcanistBundle {
     throw new Exception("Nowhere to load blob '{$phid}' from!");
   }
 
-  private function buildBinaryChange(ArcanistDiffChange $change) {
-    $old_phid = $change->getMetadata('old:binary-phid');
+  private function buildBinaryChange(ArcanistDiffChange $change, $old_phid) {
+    $old_phid = idx($change->getAllMetadata(), 'old:binary-phid', $old_phid);
     $new_phid = $change->getMetadata('new:binary-phid');
 
-    $type = $change->getType();
-    if ($type == ArcanistDiffChangeType::TYPE_ADD) {
-      $old_null = true;
-    } else {
-      $old_null = false;
-    }
-
-    if ($type == ArcanistDiffChangeType::TYPE_DELETE) {
-      $new_null = true;
-    } else {
-      $new_null = false;
-    }
-
-    if ($old_null) {
+    if (!$old_phid) {
       $old_data = '';
       $old_length = 0;
       $old_sha1 = str_repeat('0', 40);
@@ -631,7 +634,7 @@ final class ArcanistBundle {
       $old_sha1 = sha1("blob {$old_length}\0{$old_data}");
     }
 
-    if ($new_null) {
+    if (!$new_phid) {
       $new_data = '';
       $new_length = 0;
       $new_sha1 = str_repeat('0', 40);
