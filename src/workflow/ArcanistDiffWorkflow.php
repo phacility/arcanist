@@ -997,6 +997,10 @@ EOTEXT
           if ($raw_change->getCurrentPath() == $path) {
             $change->setFileType($raw_change->getFileType());
             foreach ($raw_change->getHunks() as $hunk) {
+              // Git thinks that this file has been added. But we know that it
+              // has been moved or copied without a change.
+              $hunk->setCorpus(
+                preg_replace('/^\+/m', ' ', $hunk->getCorpus()));
               $change->addHunk($hunk);
             }
             break;
