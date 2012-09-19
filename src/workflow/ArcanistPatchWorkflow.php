@@ -532,10 +532,8 @@ EOTEXT
             break;
         }
         if ($should_patch) {
-          if ($change->getHunks()) {
-            $cbundle = ArcanistBundle::newFromChanges(array($change));
-            $patches[$change->getCurrentPath()] = $cbundle->toUnifiedDiff();
-          }
+          $cbundle = ArcanistBundle::newFromChanges(array($change));
+          $patches[$change->getCurrentPath()] = $cbundle->toUnifiedDiff();
           $prop_old = $change->getOldProperties();
           $prop_new = $change->getNewProperties();
           $props = $prop_old + $prop_new;
@@ -601,15 +599,24 @@ EOTEXT
       }
 
       foreach ($patches as $path => $patch) {
-        $tmp = new TempFile();
-        Filesystem::writeFile($tmp, $patch);
         $err = null;
-        passthru(
-          csprintf(
-            '(cd %s; patch -p0 < %s)',
-            $repository_api->getPath(),
-            $tmp),
-          $err);
+        if ($patch) {
+          $tmp = new TempFile();
+          Filesystem::writeFile($tmp, $patch);
+          passthru(
+            csprintf(
+              '(cd %s; patch -p0 < %s)',
+              $repository_api->getPath(),
+              $tmp),
+            $err);
+        } else {
+          passthru(
+            csprintf(
+              '(cd %s; touch %s)',
+              $repository_api->getPath(),
+              $path),
+            $err);
+        }
         if ($err) {
           $patch_err = max($patch_err, $err);
         }

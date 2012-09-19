@@ -212,6 +212,11 @@ final class ArcanistBundle {
     $changes = $this->getChanges();
     foreach ($changes as $change) {
 
+      $hunk_changes = $this->buildHunkChanges($change->getHunks());
+      if (!$hunk_changes) {
+        continue;
+      }
+
       $old_path = $this->getOldPath($change);
       $cur_path = $this->getCurrentPath($change);
 
@@ -245,7 +250,11 @@ final class ArcanistBundle {
       $result[] = '--- '.$old_path;
       $result[] = '+++ '.$cur_path;
 
-      $result[] = $this->buildHunkChanges($change->getHunks());
+      $result[] = $hunk_changes;
+    }
+
+    if (!$result) {
+      return '';
     }
 
     $diff = implode("\n", $result)."\n";
