@@ -131,11 +131,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       $results[] = $test_case->run();
     }
 
-
-    if ($results) {
-      $results = call_user_func_array('array_merge', $results);
-    }
-
+    $results = array_mergev($results);
     return $results;
   }
 

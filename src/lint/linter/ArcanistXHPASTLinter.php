@@ -128,7 +128,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_IMPLICIT_FALLTHROUGH
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PHT_WITH_DYNAMIC_STRING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
+        => ArcanistLintSeverity::SEVERITY_DISABLED,
       self::LINT_SLOWNESS
         => ArcanistLintSeverity::SEVERITY_WARNING,
 
@@ -404,11 +404,24 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
 
+    $ternaries = $root->selectDescendantsOfType('n_TERNARY_EXPRESSION');
+    foreach ($ternaries as $ternary) {
+      $yes = $ternary->getChildByIndex(1);
+      if ($yes->getTypeName() == 'n_EMPTY') {
+        $this->raiseLintAtNode(
+          $ternary,
+          self::LINT_PHP_53_FEATURES,
+          'This codebase targets PHP 5.2, but short ternary was not '.
+          'introduced until PHP 5.3.');
+      }
+    }
+
     $this->lintPHP53Functions($root);
   }
 
   private function lintPHP53Functions($root) {
-    $target = dirname(__FILE__).'/../../../resources/php_compat_info.json';
+    $target = phutil_get_library_root('arcanist').
+      '/../resources/php_compat_info.json';
     $compat_info = json_decode(file_get_contents($target), true);
 
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
@@ -416,6 +429,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       $node = $call->getChildByIndex(0);
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['functions'], $name);
+      $windows_version = idx($compat_info['functions_windows'], $name);
       if ($version) {
         $this->raiseLintAtNode(
           $node,
@@ -434,6 +448,13 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
               "of `{$name}()` was not introduced until PHP {$version}.");
           }
         }
+      } else if ($windows_version !== null) {
+        $this->raiseLintAtNode(
+          $param,
+          self::LINT_PHP_53_FEATURES,
+          "This codebase targets PHP 5.2.3, but `{$name}()` is not available ".
+          "on Windows".
+          ($windows_version ? " until PHP {$windows_version}" : "").".");
       }
     }
 
@@ -1147,7 +1168,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           }
         }
 
-        // This is a declration, exclude it from the "declare variables prior
+        // This is a declaration, exclude it from the "declare variables prior
         // to use" check below.
         unset($all[$var->getID()]);
 

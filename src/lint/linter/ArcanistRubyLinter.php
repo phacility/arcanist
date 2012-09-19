@@ -54,10 +54,9 @@ final class ArcanistRubyLinter extends ArcanistLinter {
       list($err) = exec_manual('which %s', $ruby_bin);
       if ($err) {
         throw new ArcanistUsageException(
-          "Ruby does not appear to be installed on this system.".
-          "Install it or add ".
-          "'lint.ruby.prefix' in your .arcconfig to point to the directory ".
-            "where it resides.");
+          "Ruby does not appear to be installed on this system. Install it or ".
+          "add 'lint.ruby.prefix' in your .arcconfig to point to ".
+          "the directory where it resides.");
       }
     }
 

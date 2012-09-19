@@ -373,10 +373,13 @@ EOTEXT
 
     if ($this->getArgument('background')) {
       $argv = $_SERVER['argv'];
+      // Insert after `arc diff`.
+      array_splice($argv, 2, 0, array('--recon', '--no-diff'));
       if (!PhutilConsoleFormatter::getDisableANSI()) {
-        $argv[] = '--ansi';
+        // Insert after `arc`.
+        array_splice($argv, 1, 0, array('--ansi'));
       }
-      $lint_unit = new ExecFuture('%Ls --recon --no-diff', $argv);
+      $lint_unit = new ExecFuture('%Ls', $argv);
       $lint_unit->write('', true);
       $lint_unit->start();
     }
