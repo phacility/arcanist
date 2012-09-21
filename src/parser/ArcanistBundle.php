@@ -412,11 +412,13 @@ final class ArcanistBundle {
         }
       }
 
-      if (!$is_binary) {
-        $result[] = "--- {$old_target}";
-        $result[] = "+++ {$cur_target}";
+      if ($change_body) {
+        if (!$is_binary) {
+          $result[] = "--- {$old_target}";
+          $result[] = "+++ {$cur_target}";
+        }
+        $result[] = $change_body;
       }
-      $result[] = $change_body;
     }
 
     $diff = implode("\n", $result)."\n";
