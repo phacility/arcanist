@@ -384,8 +384,17 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
-    list($stdout) = $this->execxLocal('show -s --format=%C %s',
-      '%H', $string);
+    $match = null;
+    if (preg_match('/@([0-9]+)$/', $string, $match)) {
+      list($stdout) = $this->execxLocal(
+        'svn find-rev r%d',
+        $match[1]);
+    } else {
+      list($stdout) = $this->execxLocal(
+        'show -s --format=%C %s',
+        '%H',
+        $string);
+    }
     return rtrim($stdout);
   }
 
@@ -682,7 +691,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function hasLocalCommit($commit) {
     try {
-      $this->getCanonicalRevisionName($commit);
+      if (!$this->getCanonicalRevisionName($commit)) {
+        return false;
+      }
     } catch (CommandException $exception) {
       return false;
     }
