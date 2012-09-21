@@ -1235,6 +1235,7 @@ EOTEXT
       }
 
       $lint_result = $lint_workflow->run();
+      $this->flushOutput();
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
@@ -1307,6 +1308,7 @@ EOTEXT
       }
       $unit_workflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $unit_workflow->run();
+      $this->flushOutput();
 
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
@@ -1377,6 +1379,12 @@ EOTEXT
       throw new ArcanistUserAbortException();
     }
     return $return;
+  }
+
+  private function flushOutput() {
+    if ($this->getArgument('no-diff')) {
+      ob_flush();
+    }
   }
 
 
