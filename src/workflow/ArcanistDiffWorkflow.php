@@ -387,7 +387,7 @@ EOTEXT
         // Insert after `arc`.
         array_splice($argv, 1, 0, array('--ansi'));
       }
-      $lint_unit = new ExecFuture('%Ls', $argv);
+      $lint_unit = new ExecFuture('php %Ls', $argv);
       $lint_unit->write('', true);
       $lint_unit->start();
     }
