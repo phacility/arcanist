@@ -64,6 +64,7 @@ abstract class ArcanistBaseWorkflow {
   private $repositoryAPI;
   private $workingCopy;
   private $arguments;
+  private $passedArguments;
   private $command;
 
   private $repositoryEncoding;
@@ -550,6 +551,10 @@ abstract class ArcanistBaseWorkflow {
     return idx($this->arguments, $key, $default);
   }
 
+  public function getPassedArguments() {
+    return $this->passedArguments;
+  }
+
   final public function getCompleteArgumentSpecification() {
     $spec = $this->getArguments();
     $arc_config = $this->getArcanistConfiguration();
@@ -559,6 +564,7 @@ abstract class ArcanistBaseWorkflow {
   }
 
   public function parseArguments(array $args) {
+    $this->passedArguments = $args;
 
     $spec = $this->getCompleteArgumentSpecification();
 

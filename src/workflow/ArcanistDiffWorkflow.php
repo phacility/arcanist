@@ -380,14 +380,14 @@ EOTEXT
     $background = $this->getArgument('background', !phutil_is_windows());
 
     if ($background) {
-      $argv = $_SERVER['argv'];
-      // Insert after `arc diff`.
-      array_splice($argv, 2, 0, array('--recon', '--no-diff'));
+      $argv = $this->getPassedArguments();
       if (!PhutilConsoleFormatter::getDisableANSI()) {
-        // Insert after `arc`.
-        array_splice($argv, 1, 0, array('--ansi'));
+        array_unshift($argv, '--ansi');
       }
-      $lint_unit = new ExecFuture('php %Ls', $argv);
+      $lint_unit = new ExecFuture(
+        'php %s --recon diff --no-diff %Ls',
+        phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
+        $argv);
       $lint_unit->write('', true);
       $lint_unit->start();
     }
