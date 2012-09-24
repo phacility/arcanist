@@ -85,20 +85,10 @@ class PhutilLintEngine extends ArcanistLintEngine {
       $name_linter->addPath($path);
     }
 
+
     $xhpast_linter = new ArcanistXHPASTLinter();
-    $xhpast_linter->setCustomSeverityMap(
-      array(
-        ArcanistXHPASTLinter::LINT_RAGGED_CLASSTREE_EDGE
-          => ArcanistLintSeverity::SEVERITY_WARNING,
-        ArcanistXHPASTLinter::LINT_PHP_53_FEATURES
-          => ArcanistLintSeverity::SEVERITY_ERROR,
-        ArcanistXHPASTLinter::LINT_PHP_54_FEATURES
-          => ArcanistLintSeverity::SEVERITY_ERROR,
-        ArcanistXHPASTLinter::LINT_PHT_WITH_DYNAMIC_STRING
-          => ArcanistLintSeverity::SEVERITY_WARNING,
-        ArcanistXHPASTLinter::LINT_COMMENT_SPACING
-          => ArcanistLintSeverity::SEVERITY_ERROR,
-      ));
+    $xhpast_map = $this->getXHPASTSeverityMap();
+    $xhpast_linter->setCustomSeverityMap($xhpast_map);
     $linters[] = $xhpast_linter;
     foreach ($paths as $path) {
       if (preg_match('/\.php$/', $path)) {
@@ -121,4 +111,17 @@ class PhutilLintEngine extends ArcanistLintEngine {
     return $linters;
   }
 
+  private function getXHPASTSeverityMap() {
+    $error = ArcanistLintSeverity::SEVERITY_ERROR;
+    $warning = ArcanistLintSeverity::SEVERITY_WARNING;
+
+    return array(
+      ArcanistXHPASTLinter::LINT_PHP_53_FEATURES          => $error,
+      ArcanistXHPASTLinter::LINT_PHP_54_FEATURES          => $error,
+      ArcanistXHPASTLinter::LINT_PHT_WITH_DYNAMIC_STRING  => $error,
+      ArcanistXHPASTLinter::LINT_COMMENT_SPACING          => $error,
+
+      ArcanistXHPASTLinter::LINT_RAGGED_CLASSTREE_EDGE    => $warning,
+    );
+  }
 }

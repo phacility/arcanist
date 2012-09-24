@@ -45,6 +45,58 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     return ArcanistBundle::newFromDiff($diff);
   }
 
+  /**
+   * Unarchive a saved git repository and apply each commit as though via
+   * "arc patch", verifying that the resulting tree hash is identical to the
+   * tree hash produced by the real commit.
+   */
+  public function testGitRepository() {
+    if (phutil_is_windows()) {
+      $this->assertSkipped('This test is not supported under Windows.');
+    }
+
+    $archive = dirname(__FILE__).'/bundle.git.tgz';
+    $fixture = PhutilDirectoryFixture::newFromArchive($archive);
+
+    chdir($fixture->getPath());
+
+    list($commits) = execx(
+      'git log --format=%s',
+      '%H %T %s');
+    $commits = explode("\n", trim($commits));
+
+    // The very first commit doesn't have a meaningful parent, so don't examine
+    // it.
+    array_pop($commits);
+
+    foreach ($commits as $commit) {
+      list($commit_hash, $tree_hash, $subject) = explode(' ', $commit, 3);
+      list($diff) = execx(
+        'git diff %s^ %s --',
+        $commit_hash,
+        $commit_hash);
+
+      $parser = new ArcanistDiffParser();
+      $changes = $parser->parseDiff($diff);
+      $bundle = ArcanistBundle::newFromChanges($changes);
+
+      execx('git reset --hard %s^ --', $commit_hash);
+
+      id(new ExecFuture('git apply --index --reject'))
+        ->write($bundle->toGitPatch())
+        ->resolvex();
+
+      execx('git commit -m %s', $subject);
+      list($result_hash) = execx('git log -n1 --format=%s', '%T');
+      $result_hash = trim($result_hash);
+
+      $this->assertEqual(
+        $tree_hash,
+        $result_hash,
+        "Commit {$commit_hash}: {$subject}");
+    }
+  }
+
   public function testTrailingContext() {
     // Diffs need to generate without extra trailing context, or 'patch' will
     // choke on them.

@@ -450,7 +450,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         }
       } else if ($windows_version !== null) {
         $this->raiseLintAtNode(
-          $param,
+          $node,
           self::LINT_PHP_53_FEATURES,
           "This codebase targets PHP 5.2.3, but `{$name}()` is not available ".
           "on Windows".

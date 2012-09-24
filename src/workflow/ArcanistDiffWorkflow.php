@@ -92,7 +92,7 @@ EOTEXT
   }
 
   public function getArguments() {
-    return array(
+    $arguments = array(
       'message' => array(
         'short'       => 'm',
         'param'       => 'message',
@@ -349,10 +349,16 @@ EOTEXT
         'param' => 'bool',
         'help' =>
           'Run lint and unit tests on background. '.
-          '"0" to disable (default), "1" to enable.',
+          '"0" to disable, "1" to enable (default).',
       ),
       '*' => 'paths',
     );
+
+    if (phutil_is_windows()) {
+      unset($arguments['background']);
+    }
+
+    return $arguments;
   }
 
   public function isRawDiffSource() {
@@ -371,15 +377,17 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    if ($this->getArgument('background')) {
-      $argv = $_SERVER['argv'];
-      // Insert after `arc diff`.
-      array_splice($argv, 2, 0, array('--recon', '--no-diff'));
+    $background = $this->getArgument('background', !phutil_is_windows());
+
+    if ($background) {
+      $argv = $this->getPassedArguments();
       if (!PhutilConsoleFormatter::getDisableANSI()) {
-        // Insert after `arc`.
-        array_splice($argv, 1, 0, array('--ansi'));
+        array_unshift($argv, '--ansi');
       }
-      $lint_unit = new ExecFuture('%Ls', $argv);
+      $lint_unit = new ExecFuture(
+        'php %s --recon diff --no-diff %Ls',
+        phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
+        $argv);
       $lint_unit->write('', true);
       $lint_unit->start();
     }
@@ -394,7 +402,7 @@ EOTEXT
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
 
-    if ($this->getArgument('background')) {
+    if ($background) {
       $server = new PhutilConsoleServer();
       $server->addExecFutureClient($lint_unit);
       $server->run();
@@ -997,6 +1005,10 @@ EOTEXT
           if ($raw_change->getCurrentPath() == $path) {
             $change->setFileType($raw_change->getFileType());
             foreach ($raw_change->getHunks() as $hunk) {
+              // Git thinks that this file has been added. But we know that it
+              // has been moved or copied without a change.
+              $hunk->setCorpus(
+                preg_replace('/^\+/m', ' ', $hunk->getCorpus()));
               $change->addHunk($hunk);
             }
             break;
@@ -1028,7 +1040,8 @@ EOTEXT
       $change->setMetadata('new:file:size',      $new_dict['size']);
       $change->setMetadata('new:file:mime-type', $new_dict['mime']);
 
-      if (preg_match('@^image/@', $new_dict['mime'])) {
+      $mime_type = coalesce($new_dict['mime'], $old_dict['mime']);
+      if (preg_match('@^image/@', $mime_type)) {
         $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
       }
     }
@@ -1222,6 +1235,7 @@ EOTEXT
       }
 
       $lint_result = $lint_workflow->run();
+      $this->flushOutput();
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
@@ -1294,6 +1308,7 @@ EOTEXT
       }
       $unit_workflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $unit_workflow->run();
+      $this->flushOutput();
 
       switch ($unit_result) {
         case ArcanistUnitWorkflow::RESULT_OKAY:
@@ -1364,6 +1379,12 @@ EOTEXT
       throw new ArcanistUserAbortException();
     }
     return $return;
+  }
+
+  private function flushOutput() {
+    if ($this->getArgument('no-diff')) {
+      ob_flush();
+    }
   }
 
 
