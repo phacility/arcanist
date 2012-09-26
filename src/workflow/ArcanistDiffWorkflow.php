@@ -377,7 +377,10 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    $background = $this->getArgument('background', !phutil_is_windows());
+    $background = $this->getArgument('background', true);
+    if ($this->isRawDiffSource() || phutil_is_windows()) {
+      $background = false;
+    }
 
     if ($background) {
       $argv = $this->getPassedArguments();
