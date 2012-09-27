@@ -304,8 +304,8 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
       $look_for = $dir . DIRECTORY_SEPARATOR
                     . '%s' . $expected_dir . $expected_file;
 
-      if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
-        return sprintf($look_for, 'Tests');
+      if (Filesystem::pathExists(sprintf($look_for, 'tests'))) {
+        return sprintf($look_for, 'tests');
       } else if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
         return sprintf($look_for, 'Tests');
       }
