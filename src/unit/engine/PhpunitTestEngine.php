@@ -283,11 +283,8 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
    * /www/project/module/package/subpackage/[Tt]ests/FooBarTest.php
    * /www/project/module/package/[Tt]ests/subpackage/FooBarTest.php
    * /www/project/module/[Tt]ests/package/subpackage/FooBarTest.php
-   * /www/project/Tt]ests/module/package/subpackage/FooBarTest.php
-   *
-   * TODO: Add support for finding tests based on PSR-1 naming conventions:
-   * /www/project/src/Something/Foo/Bar.php tests should be detected in
-   * /www/project/tests/Something/Foo/BarTest.php
+   * /www/project/[Tt]ests/module/package/subpackage/FooBarTest.php
+   * /www/project/[Tt]ests/Something/Foo/BarTest.php
    *
    * TODO: Add support for finding tests in testsuite folders from
    * phpunit.xml configuration.
@@ -307,8 +304,8 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
       $look_for = $dir . DIRECTORY_SEPARATOR
                     . '%s' . $expected_dir . $expected_file;
 
-      if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
-        return sprintf($look_for, 'Tests');
+      if (Filesystem::pathExists(sprintf($look_for, 'tests'))) {
+        return sprintf($look_for, 'tests');
       } else if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
         return sprintf($look_for, 'Tests');
       }
@@ -317,6 +314,17 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         break;
       }
 
+    }
+
+    //checking for PSR-1
+    $look_for = $this->projectRoot . DIRECTORY_SEPARATOR . '%s'
+                    . DIRECTORY_SEPARATOR . substr($dirname, strlen($this->projectRoot) + 1)
+                    . DIRECTORY_SEPARATOR . $expected_file;
+
+    if (Filesystem::pathExists(sprintf($look_for, 'tests'))) {
+      return sprintf($look_for, 'tests');
+    } else if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
+      return sprintf($look_for, 'Tests');
     }
 
     return false;
