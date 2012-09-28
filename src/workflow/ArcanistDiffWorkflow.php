@@ -1509,7 +1509,7 @@ EOTEXT
     $notes = array();
     $included = array();
 
-    list($fields, $notes, $included) = $this->getDefaultCreateFields();
+    list($fields, $notes, $included_commits) = $this->getDefaultCreateFields();
     if ($template) {
       $fields = array();
       $notes = array();
@@ -1532,9 +1532,10 @@ EOTEXT
       }
     }
 
-    if ($included) {
-      foreach ($included as $k => $commit) {
-        $included[$k] = '        '.$commit;
+    $included = array();
+    if ($included_commits) {
+      foreach ($included_commits as $commit) {
+        $included[] = '        '.$commit;
       }
       $in_branch = '';
       if (!$this->isRawDiffSource()) {
@@ -1546,14 +1547,7 @@ EOTEXT
           "Included commits{$in_branch}:",
           "",
         ),
-        $included,
-        array(
-          "",
-        ));
-    } else {
-      $included = array(
-        '',
-      );
+        $included);
     }
 
     $issues = array_merge(
@@ -1563,6 +1557,7 @@ EOTEXT
       ),
       $included,
       array(
+        '',
         'arc could not identify any existing revision in your working copy.',
         'If you intended to update an existing revision, use:',
         '',
@@ -1595,8 +1590,17 @@ EOTEXT
       }
 
       $template = ArcanistCommentRemover::removeComments($new_template);
-      $wrote = $this->writeScratchFile('create-message', $template);
-      $where = $this->getReadableScratchFilePath('create-message');
+
+      $repository_api = $this->getRepositoryAPI();
+      $should_amend = (count($included_commits) == 1 && $this->shouldAmend());
+      if ($should_amend && $repository_api->supportsAmend()) {
+        $repository_api->amendCommit($template);
+        $wrote = true;
+        $where = 'commit message';
+      } else {
+        $wrote = $this->writeScratchFile('create-message', $template);
+        $where = "'".$this->getReadableScratchFilePath('create-message')."'";
+      }
 
       try {
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
@@ -1621,14 +1625,14 @@ EOTEXT
         } else {
           $saved = null;
           if ($wrote) {
-            $saved = "A copy was saved to '{$where}'.";
+            $saved = "A copy was saved to {$where}.";
           }
           throw new ArcanistUsageException(
             "Message has unresolved errrors. {$saved}");
         }
       } catch (Exception $ex) {
         if ($wrote) {
-          echo phutil_console_wrap("(Commit messaged saved to '{$where}'.)\n");
+          echo phutil_console_wrap("(Message saved to {$where}.)\n");
         }
         throw $ex;
       }
