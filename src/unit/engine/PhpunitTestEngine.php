@@ -272,54 +272,139 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
 
 
   /**
-   * Some nasty guessing here.
-   *
-   * Walk up to the project root trying to find
-   * [Tt]ests directory and replicate the structure there.
-   *
-   * Assume that the class path is
-   * /www/project/module/package/subpackage/FooBar.php
-   * and a project root is /www/project it will look for it by these paths:
-   * /www/project/module/package/subpackage/[Tt]ests/FooBarTest.php
-   * /www/project/module/package/[Tt]ests/subpackage/FooBarTest.php
-   * /www/project/module/[Tt]ests/package/subpackage/FooBarTest.php
-   * /www/project/Tt]ests/module/package/subpackage/FooBarTest.php
-   *
-   * TODO: Add support for finding tests based on PSR-1 naming conventions:
-   * /www/project/src/Something/Foo/Bar.php tests should be detected in
-   * /www/project/tests/Something/Foo/BarTest.php
+   * Search for test cases for a given file in a large number of "reasonable"
+   * locations. See @{method:getSearchLocationsForTests} for specifics.
    *
    * TODO: Add support for finding tests in testsuite folders from
    * phpunit.xml configuration.
    *
-   * @param string $path
-   *
-   * @return string|boolean
+   * @param   string      PHP file to locate test cases for.
+   * @return  string|null Path to test cases, or null.
    */
   private function findTestFile($path) {
-    $expected_file = substr(basename($path), 0, -4) . 'Test.php';
-    $expected_dir = null;
-    $dirname = dirname($path);
-    foreach (Filesystem::walkToRoot($dirname) as $dir) {
-      $expected_dir =  DIRECTORY_SEPARATOR
-                        . substr($dirname, strlen($dir) + 1)
-                        . $expected_dir;
-      $look_for = $dir . DIRECTORY_SEPARATOR
-                    . '%s' . $expected_dir . $expected_file;
+    $root = $this->projectRoot;
+    $path = Filesystem::resolvePath($path, $root);
 
-      if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
-        return sprintf($look_for, 'Tests');
-      } else if (Filesystem::pathExists(sprintf($look_for, 'Tests'))) {
-        return sprintf($look_for, 'Tests');
+    $file = basename($path);
+    $possible_files = array(
+      $file,
+      substr($file, 0, -4).'Test.php',
+    );
+
+    $search = self::getSearchLocationsForTests($path);
+
+    foreach ($search as $search_path) {
+      foreach ($possible_files as $possible_file) {
+        $full_path = $search_path.$possible_file;
+        if (!Filesystem::pathExists($full_path)) {
+          // If the file doesn't exist, it's clearly a miss.
+          continue;
+        }
+        if (!Filesystem::isDescendant($full_path, $root)) {
+          // Don't look above the project root.
+          continue;
+        }
+        if (Filesystem::resolvePath($full_path) == $path) {
+          // Don't return the original file.
+          continue;
+        }
+        return $full_path;
       }
-
-      if ($dir == $this->projectRoot) {
-        break;
-      }
-
     }
 
-    return false;
+    return null;
+  }
+
+
+  /**
+   * Get places to look for PHP Unit tests that cover a given file. For some
+   * file "/a/b/c/X.php", we look in the same directory:
+   *
+   *  /a/b/c/
+   *
+   * We then look in all parent directories for a directory named "tests/"
+   * (or "Tests/"):
+   *
+   *  /a/b/c/tests/
+   *  /a/b/tests/
+   *  /a/tests/
+   *  /tests/
+   *
+   * We also try to replace each directory component with "tests/":
+   *
+   *  /a/b/tests/
+   *  /a/tests/c/
+   *  /tests/b/c/
+   *
+   * We also try to add "tests/" at each directory level:
+   *
+   *  /a/b/c/tests/
+   *  /a/b/tests/c/
+   *  /a/tests/b/c/
+   *  /tests/a/b/c/
+   *
+   * This finds tests with a layout like:
+   *
+   *  docs/
+   *  src/
+   *  tests/
+   *
+   * ...or similar. This list will be further pruned by the caller; it is
+   * intentionally filesystem-agnostic to be unit testable.
+   *
+   * @param   string        PHP file to locate test cases for.
+   * @return  list<string>  List of directories to search for tests in.
+   */
+  public static function getSearchLocationsForTests($path) {
+    $file = basename($path);
+    $dir  = dirname($path);
+
+    $test_dir_names = array('tests', 'Tests');
+
+    $try_directories = array();
+
+    // Try in the current directory.
+    $try_directories[] = array($dir);
+
+    // Try in a tests/ directory anywhere in the ancestry.
+    foreach (Filesystem::walkToRoot($dir) as $parent_dir) {
+      if ($parent_dir == '/') {
+        // We'll restore this later.
+        $parent_dir = '';
+      }
+      foreach ($test_dir_names as $test_dir_name) {
+        $try_directories[] = array($parent_dir, $test_dir_name);
+      }
+    }
+
+    // Try replacing each directory component with 'tests/'.
+    $parts = trim($dir, DIRECTORY_SEPARATOR);
+    $parts = explode(DIRECTORY_SEPARATOR, $parts);
+    foreach (array_reverse(array_keys($parts)) as $key) {
+      foreach ($test_dir_names as $test_dir_name) {
+        $try = $parts;
+        $try[$key] = $test_dir_name;
+        array_unshift($try, '');
+        $try_directories[] = $try;
+      }
+    }
+
+    // Try adding 'tests/' at each level.
+    foreach (array_reverse(array_keys($parts)) as $key) {
+      foreach ($test_dir_names as $test_dir_name) {
+        $try = $parts;
+        $try[$key] = $test_dir_name.DIRECTORY_SEPARATOR.$try[$key];
+        array_unshift($try, '');
+        $try_directories[] = $try;
+      }
+    }
+
+    $results = array();
+    foreach ($try_directories as $parts) {
+      $results[implode(DIRECTORY_SEPARATOR, $parts).DIRECTORY_SEPARATOR] = true;
+    }
+
+    return array_keys($results);
   }
 
   /**
