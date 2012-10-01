@@ -632,8 +632,11 @@ EOTEXT
 
       foreach ($propset as $path => $changes) {
         foreach ($changes as $prop => $value) {
-          // TODO: Probably need to handle svn:executable specially here by
-          // doing chmod +x or -x.
+          if ($prop == 'unix:filemode') {
+            // Setting this property also changes the file mode.
+            $prop = 'svn:executable';
+            $value = (octdec($value) & 0111 ? 'on' : null);
+          }
           if ($value === null) {
             passthru(
               csprintf(
