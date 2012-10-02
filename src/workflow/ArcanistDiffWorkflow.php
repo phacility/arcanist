@@ -368,6 +368,8 @@ EOTEXT
   public function run() {
     $this->console = PhutilConsole::getConsole();
 
+    $this->runRepositoryAPISetup();
+
     if ($this->getArgument('no-diff')) {
       $this->removeScratchFile('diff-result.json');
       $data = $this->runLintUnit();
@@ -387,6 +389,7 @@ EOTEXT
       if (!PhutilConsoleFormatter::getDisableANSI()) {
         array_unshift($argv, '--ansi');
       }
+
       $lint_unit = new ExecFuture(
         'php %s --recon diff --no-diff %Ls',
         phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
@@ -541,29 +544,33 @@ EOTEXT
     return 0;
   }
 
-  private function runDiffSetupBasics() {
-    if ($this->requiresRepositoryAPI()) {
-      $repository_api = $this->getRepositoryAPI();
-      if ($this->getArgument('less-context')) {
-        $repository_api->setDiffLinesOfContext(3);
-      }
-
-      $repository_api->setBaseCommitArgumentRules(
-        $this->getArgument('base', ''));
-
-      if ($repository_api->supportsRelativeLocalCommits()) {
-
-        // Parse the relative commit as soon as we can, to avoid generating
-        // caches we need to drop later and expensive discovery operations
-        // (particularly in Mercurial).
-
-        $relative = $this->getArgument('paths');
-        if ($relative) {
-          $repository_api->parseRelativeLocalCommit($relative);
-        }
-      }
+  private function runRepositoryAPISetup() {
+    if (!$this->requiresRepositoryAPI()) {
+      return;
     }
 
+    $repository_api = $this->getRepositoryAPI();
+    if ($this->getArgument('less-context')) {
+      $repository_api->setDiffLinesOfContext(3);
+    }
+
+    $repository_api->setBaseCommitArgumentRules(
+      $this->getArgument('base', ''));
+
+    if ($repository_api->supportsRelativeLocalCommits()) {
+
+      // Parse the relative commit as soon as we can, to avoid generating
+      // caches we need to drop later and expensive discovery operations
+      // (particularly in Mercurial).
+
+      $relative = $this->getArgument('paths');
+      if ($relative) {
+        $repository_api->parseRelativeLocalCommit($relative);
+      }
+    }
+  }
+
+  private function runDiffSetupBasics() {
     $output_json = $this->getArgument('json');
     if ($output_json) {
       // TODO: We should move this to a higher-level and put an indirection
@@ -1230,6 +1237,7 @@ EOTEXT
         $argv[] = '--rev';
         $argv[] = $repository_api->getRelativeCommit();
       }
+
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
 
       if ($this->shouldAmend()) {
