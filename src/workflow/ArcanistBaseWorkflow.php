@@ -34,7 +34,7 @@
  * @group workflow
  * @stable
  */
-abstract class ArcanistBaseWorkflow {
+abstract class ArcanistBaseWorkflow extends Phobject {
 
   const COMMIT_DISABLE = 0;
   const COMMIT_ALLOW = 1;
