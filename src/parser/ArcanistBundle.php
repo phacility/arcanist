@@ -226,7 +226,9 @@ final class ArcanistBundle {
       }
 
       $result[] = 'Index: '.$index_path;
+      $result[] = PHP_EOL;
       $result[] = str_repeat('=', 67);
+      $result[] = PHP_EOL;
 
       if ($old_path === null) {
         $old_path = '/dev/null';
@@ -247,8 +249,8 @@ final class ArcanistBundle {
         $old_path = $cur_path;
       }
 
-      $result[] = '--- '.$old_path;
-      $result[] = '+++ '.$cur_path;
+      $result[] = '--- '.$old_path.PHP_EOL;
+      $result[] = '+++ '.$cur_path.PHP_EOL;
 
       $result[] = $hunk_changes;
     }
@@ -257,7 +259,7 @@ final class ArcanistBundle {
       return '';
     }
 
-    $diff = implode("\n", $result)."\n";
+    $diff = implode('', $result);
     return $this->convertNonUTF8Diff($diff);
   }
 
@@ -383,45 +385,45 @@ final class ArcanistBundle {
         $cur_target  = 'b/'.$cur_path;
       }
 
-      $result[] = "diff --git {$old_index} {$cur_index}";
+      $result[] = "diff --git {$old_index} {$cur_index}".PHP_EOL;
 
       if ($type == ArcanistDiffChangeType::TYPE_ADD) {
-        $result[] = "new file mode {$new_mode}";
+        $result[] = "new file mode {$new_mode}".PHP_EOL;
       }
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE ||
           $type == ArcanistDiffChangeType::TYPE_MOVE_HERE ||
           $type == ArcanistDiffChangeType::TYPE_COPY_AWAY) {
         if ($old_mode !== $new_mode) {
-          $result[] = "old mode {$old_mode}";
-          $result[] = "new mode {$new_mode}";
+          $result[] = "old mode {$old_mode}".PHP_EOL;
+          $result[] = "new mode {$new_mode}".PHP_EOL;
         }
       }
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE) {
-        $result[] = "copy from {$old_path}";
-        $result[] = "copy to {$cur_path}";
+        $result[] = "copy from {$old_path}".PHP_EOL;
+        $result[] = "copy to {$cur_path}".PHP_EOL;
       } else if ($type == ArcanistDiffChangeType::TYPE_MOVE_HERE) {
-        $result[] = "rename from {$old_path}";
-        $result[] = "rename to {$cur_path}";
+        $result[] = "rename from {$old_path}".PHP_EOL;
+        $result[] = "rename to {$cur_path}".PHP_EOL;
       } else if ($type == ArcanistDiffChangeType::TYPE_DELETE ||
                  $type == ArcanistDiffChangeType::TYPE_MULTICOPY) {
         $old_mode = idx($change->getOldProperties(), 'unix:filemode');
         if ($old_mode) {
-          $result[] = "deleted file mode {$old_mode}";
+          $result[] = "deleted file mode {$old_mode}".PHP_EOL;
         }
       }
 
       if ($change_body) {
         if (!$is_binary) {
-          $result[] = "--- {$old_target}";
-          $result[] = "+++ {$cur_target}";
+          $result[] = "--- {$old_target}".PHP_EOL;
+          $result[] = "+++ {$cur_target}".PHP_EOL;
         }
         $result[] = $change_body;
       }
     }
 
-    $diff = implode("\n", $result)."\n";
+    $diff = implode('', $result).PHP_EOL;
     return $this->convertNonUTF8Diff($diff);
   }
 
@@ -440,7 +442,7 @@ final class ArcanistBundle {
     $context = 3;
 
     $results = array();
-    $lines = explode("\n", $base_hunk->getCorpus());
+    $lines = phutil_split_lines($base_hunk->getCorpus());
     $n = count($lines);
 
     $old_offset = $base_hunk->getOldOffset();
@@ -530,7 +532,7 @@ final class ArcanistBundle {
       $hunk->setNewLength($count_length - $old_lines);
 
       $corpus = array_slice($lines, $hunk_start, $hunk_length);
-      $corpus = implode("\n", $corpus);
+      $corpus = implode('', $corpus);
       $hunk->setCorpus($corpus);
 
       $results[] = $hunk;
@@ -596,11 +598,11 @@ final class ArcanistBundle {
           $n_head = "{$n_off},{$n_len}";
         }
 
-        $result[] = "@@ -{$o_head} +{$n_head} @@";
+        $result[] = "@@ -{$o_head} +{$n_head} @@".PHP_EOL;
         $result[] = $corpus;
       }
     }
-    return implode("\n", $result);
+    return implode('', $result);
   }
 
   public function setLoadFileDataCallback($callback) {
@@ -656,16 +658,16 @@ final class ArcanistBundle {
     }
 
     $content = array();
-    $content[] = "index {$old_sha1}..{$new_sha1}";
-    $content[] = "GIT binary patch";
+    $content[] = "index {$old_sha1}..{$new_sha1}".PHP_EOL;
+    $content[] = "GIT binary patch".PHP_EOL;
 
-    $content[] = "literal {$new_length}";
-    $content[] = $this->emitBinaryDiffBody($new_data);
+    $content[] = "literal {$new_length}".PHP_EOL;
+    $content[] = $this->emitBinaryDiffBody($new_data).PHP_EOL;
 
-    $content[] = "literal {$old_length}";
-    $content[] = $this->emitBinaryDiffBody($old_data);
+    $content[] = "literal {$old_length}".PHP_EOL;
+    $content[] = $this->emitBinaryDiffBody($old_data).PHP_EOL;
 
-    return implode("\n", $content);
+    return implode('', $content);
   }
 
   private function emitBinaryDiffBody($data) {
@@ -691,10 +693,8 @@ final class ArcanistBundle {
         $buf .= chr($len - 26 + ord('a') - 1);
       }
       $buf .= self::encodeBase85($line);
-      $buf .= "\n";
+      $buf .= PHP_EOL;
     }
-
-    $buf .= "\n";
 
     return $buf;
   }

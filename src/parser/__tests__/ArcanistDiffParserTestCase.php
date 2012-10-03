@@ -93,6 +93,7 @@ final class ArcanistDiffParserTestCase extends ArcanistTestCase {
  %%
  %%
  %%%
+
 EOCORPUS;
         $corpus_1 = <<<EOCORPUS
  %%%%%
@@ -100,6 +101,7 @@ EOCORPUS;
 {$there_is_a_literal_trailing_space_here}
 -!
 +! quack
+
 EOCORPUS;
         $this->assertEqual(
           $corpus_0,
