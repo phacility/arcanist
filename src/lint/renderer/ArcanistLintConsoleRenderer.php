@@ -159,7 +159,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
             $data,
             phutil_console_format('##%s##', $text_line),
             ($cursor == $line_num)
-              ? $message->getChar() - 1
+              ? ($message->isPatchable() ? $start : $message->getChar() - 1)
               : 0,
             strlen($text_line));
         }

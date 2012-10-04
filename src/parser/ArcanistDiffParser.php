@@ -235,10 +235,11 @@ final class ArcanistDiffParser {
         '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?:-r [a-f0-9]+ )?(?P<cur>.+)',
       );
 
-      $line = $this->getLine();
+      $line = $this->getLineTrimmed();
       $match = null;
       $ok = $this->tryMatchHeader($patterns, $line, $match);
 
+      $failed_parse = false;
       if (!$ok && $this->isFirstNonEmptyLine()) {
         // 'hg export' command creates so called "extended diff" that
         // contains some meta information and comment at the beginning
@@ -250,13 +251,19 @@ final class ArcanistDiffParser {
         if (!$this->tryMatchHeader($patterns, $line, $match)) {
           // Restore line before guessing to display correct error.
           $this->restoreLine();
-          $this->didFailParse(
-            "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
-            "'Property changes on: /path/to/file.ext' (svn properties), ".
-            "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
-            "'diff --git' (git diff), '--- filename' (unified diff), or " .
-            "'diff -r' (hg diff or patch).");
+          $failed_parse = true;
         }
+      } else if (!$ok) {
+        $failed_parse = true;
+      }
+
+      if ($failed_parse) {
+        $this->didFailParse(
+          "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
+          "'Property changes on: /path/to/file.ext' (svn properties), ".
+          "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
+          "'diff --git' (git diff), '--- filename' (unified diff), or " .
+          "'diff -r' (hg diff or patch).");
       }
 
       if (isset($match['type'])) {
@@ -361,15 +368,17 @@ final class ArcanistDiffParser {
       $this->didFailParse("Expected 'Date:'.");
     }
 
-    while (($line = $this->nextLine()) !== null) {
+    while (($line = $this->nextLineTrimmed()) !== null) {
       if (strlen($line) && $line[0] != ' ') {
         break;
       }
-      // Strip leading spaces from Git commit messages.
-      $message[] = substr($line, 4);
+
+      // Strip leading spaces from Git commit messages. Note that empty lines
+      // are represented as just "\n"; don't touch those.
+      $message[] = preg_replace('/^    /', '', $this->getLine());
     }
 
-    $message = rtrim(implode("\n", $message));
+    $message = rtrim(implode('', $message), "\r\n");
     $change->setMetadata('message', $message);
   }
 
@@ -472,8 +481,8 @@ final class ArcanistDiffParser {
       $line = $this->nextLine();
     }
 
-    $old = rtrim(implode("\n", $old));
-    $new = rtrim(implode("\n", $new));
+    $old = rtrim(implode('', $old));
+    $new = rtrim(implode('', $new));
 
     if (!strlen($old)) {
       $old = null;
@@ -754,7 +763,7 @@ final class ArcanistDiffParser {
       $this->didFailParse("Expected 'literal NNNN' to start git binary patch.");
     }
     do {
-      $line = $this->nextLine();
+      $line = $this->nextLineTrimmed();
       if ($line === '' || $line === null) {
         // Some versions of Mercurial apparently omit the terminal newline,
         // although it's unclear if Git will ever do this. In either case,
@@ -800,7 +809,7 @@ final class ArcanistDiffParser {
     $all_changes = array();
     do {
       $hunk = new ArcanistDiffHunk();
-      $line = $this->getLine();
+      $line = $this->getLineTrimmed();
       $real = array();
 
       // In the case where only one line is changed, the length is omitted.
@@ -896,6 +905,8 @@ final class ArcanistDiffParser {
             --$new_len;
             $real[] = $line;
             break;
+          case "\r":
+          case "\n":
           case '~':
             $advance = true;
             break 2;
@@ -908,7 +919,7 @@ final class ArcanistDiffParser {
         $this->didFailParse("Found the wrong number of hunk lines.");
       }
 
-      $corpus = implode("\n", $real);
+      $corpus = implode('', $real);
 
       $is_binary = false;
       if ($this->detectBinaryFiles) {
@@ -1007,13 +1018,7 @@ final class ArcanistDiffParser {
       $text = preg_replace('/'.$ansi_color_pattern.'/', '', $text);
     }
 
-    // TODO: This is a hack for SVN + Windows. Eventually, we should retain line
-    // endings and preserve them through the patch lifecycle or something along
-    // those lines.
-
-    // NOTE: On Windows, a diff may have \n delimited lines (because the file
-    // uses \n) but \r\n delimited blocks. Split on both.
-    $this->text = preg_split('/\r?\n/', $text);
+    $this->text = phutil_split_lines($text);
     $this->line = 0;
   }
 
@@ -1027,9 +1032,25 @@ final class ArcanistDiffParser {
     return null;
   }
 
+  protected function getLineTrimmed() {
+    $line = $this->getLine();
+    if ($line !== null) {
+      $line = trim($line, "\r\n");
+    }
+    return $line;
+  }
+
   protected function nextLine() {
     $this->line++;
     return $this->getLine();
+  }
+
+  protected function nextLineTrimmed() {
+    $line = $this->nextLine();
+    if ($line !== null) {
+      $line = trim($line, "\r\n");
+    }
+    return $line;
   }
 
   protected function nextNonemptyLine() {
@@ -1079,14 +1100,14 @@ final class ArcanistDiffParser {
   }
 
   protected function didFailParse($message) {
-    $context = 3;
+    $context = 5;
     $min = max(0, $this->line - $context);
     $max = min($this->line + $context, count($this->text) - 1);
 
     $context = '';
     for ($ii = $min; $ii <= $max; $ii++) {
       $context .= sprintf(
-        "%8.8s %6.6s   %s\n",
+        "%8.8s %6.6s   %s",
         ($ii == $this->line) ? '>>>  ' : '',
         $ii + 1,
         $this->text[$ii]);

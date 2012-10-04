@@ -153,17 +153,17 @@ EOTEXT
 
     $files = $this->getCommitFileList($revision);
 
-    $files = implode(' ', array_map('escapeshellarg', $files));
-    $message = escapeshellarg($message);
-    $root = escapeshellarg($repository_api->getPath());
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
 
-    $lang = $this->getSVNLangEnvVar();
+    $command = $this->getSVNCommitCommand();
+    chdir($repository_api->getPath());
 
-    // Specify LANG explicitly so that UTF-8 commit messages don't break
-    // subversion.
-    $command = "(cd {$root} && LANG={$lang} svn commit {$files} -m {$message})";
-
-    $err = phutil_passthru('%C', $command);
+    $err = phutil_passthru(
+      $command,
+      $files,
+      $tmp_file
+    );
 
     if ($err) {
       throw new Exception("Executing 'svn commit' failed!");
@@ -289,7 +289,8 @@ EOTEXT
    *   svn: warning: environment variable LANG is en_US.utf8
    *   svn: warning: please check that your locale name is correct
    *
-   * For example, is happens on my 10.6.7 machine with Subversion 1.6.15.
+   * For example, it happens on epriestley's Mac (10.6.7) with
+   * Subversion 1.6.15.
    */
   private function getSVNLangEnvVar() {
     $locale = 'en_US.utf8';
@@ -304,6 +305,16 @@ EOTEXT
       // Ignore.
     }
     return $locale;
+  }
+
+  private function getSVNCommitCommand() {
+    $command = 'svn commit %Ls --encoding utf-8 -F %s';
+    // make sure to specify LANG on non-windows systems to surpress any fancy
+    // warnings; see @{method:getSVNLangEnvVar}.
+    if (!phutil_is_windows()) {
+      $command = 'LANG='.$this->getSVNLangEnvVar().' '.$command;
+    }
+    return $command;
   }
 
   private function runSanityChecks(array $revision) {
