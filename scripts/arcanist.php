@@ -522,9 +522,7 @@ function arcanist_load_libraries(
       if ($must_load) {
         throw new ArcanistUsageException($error);
       } else {
-        file_put_contents(
-          'php://stderr',
-          phutil_console_wrap('WARNING: '.$error."\n\n"));
+        fwrite(STDERR, phutil_console_wrap('WARNING: '.$error."\n\n"));
       }
     } catch (PhutilLibraryConflictException $ex) {
       if ($ex->getLibrary() != 'arcanist') {
