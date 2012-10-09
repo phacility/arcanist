@@ -281,7 +281,7 @@ final class ArcanistBundle {
       // see T419.
 
       // Basically, MULTICOPY means there are 2 or more corresponding COPY_HERE
-      // changes, so find one of them arbitrariy and turn it into a MOVE_HERE.
+      // changes, so find one of them arbitrarily and turn it into a MOVE_HERE.
 
       // TODO: We might be able to do this more cleanly after T230 is resolved.
 
