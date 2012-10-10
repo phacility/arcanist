@@ -48,7 +48,7 @@ final class ArcanistBaseCommitParser {
 
   private function log($message) {
     if ($this->verbose) {
-      file_put_contents('php://stderr', $message."\n");
+      fwrite(STDERR, $message."\n");
     }
   }
 

@@ -114,7 +114,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_NAMING_CONVENTIONS
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PREG_QUOTE_MISUSE
-        => ArcanistLintSeverity::SEVERITY_WARNING,
+        => ArcanistLintSeverity::SEVERITY_ADVICE,
       self::LINT_BRACE_FORMATTING
         => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_PARENTHESES_SPACING
@@ -1772,8 +1772,9 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           $this->raiseLintAtNode(
             $call,
             self::LINT_PREG_QUOTE_MISUSE,
-            'You should always pass two arguments to preg_quote(), so that ' .
-            'preg_quote() knows which delimiter to escape.');
+            'If you use pattern delimiters that require escaping (such as //, '.
+            'but not ()) then you should pass two arguments to preg_quote(), '.
+            'so that preg_quote() knows which delimiter to escape.');
         }
       }
     }

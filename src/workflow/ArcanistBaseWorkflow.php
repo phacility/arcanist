@@ -1097,7 +1097,7 @@ abstract class ArcanistBaseWorkflow {
    * @return void
    */
   protected function writeStatusMessage($msg) {
-    file_put_contents('php://stderr', $msg);
+    fwrite(STDERR, $msg);
   }
 
   protected function isHistoryImmutable() {

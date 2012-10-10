@@ -775,7 +775,7 @@ EOTEXT
     if ($is_raw) {
 
       if ($this->getArgument('raw')) {
-        file_put_contents('php://stderr', "Reading diff from stdin...\n");
+        fwrite(STDERR, "Reading diff from stdin...\n");
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
         list($raw_diff) = execx($this->getArgument('raw-command'));
