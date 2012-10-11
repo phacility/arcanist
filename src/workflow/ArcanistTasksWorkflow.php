@@ -92,6 +92,11 @@ EOTEXT
       $order,
       $limit);
 
+    if (!$this->tasks) {
+      echo "No tasks found.\n";
+      return 0;
+    }
+
     $task_rows = array();
     foreach ($this->tasks as $task) {
       $output = array();
