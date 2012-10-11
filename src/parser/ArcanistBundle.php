@@ -600,6 +600,11 @@ final class ArcanistBundle {
 
         $result[] = "@@ -{$o_head} +{$n_head} @@".PHP_EOL;
         $result[] = $corpus;
+
+        $last = substr($corpus, -1);
+        if ($last !== false && $last != "\r" && $last != "\n") {
+          $result[] = PHP_EOL;
+        }
       }
     }
     return implode('', $result);
