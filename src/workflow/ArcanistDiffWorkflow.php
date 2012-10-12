@@ -1716,9 +1716,6 @@ EOTEXT
       if (!phutil_console_confirm($confirm)) {
         throw new ArcanistUsageException('Specify reviewers and retry.');
       }
-    } else if (in_array($this->getUserPHID(), $reviewers)) {
-      throw new ArcanistUsageException(
-        "You can not be a reviewer for your own revision.");
     } else {
       $users = $this->getConduit()->callMethodSynchronous(
         'user.query',

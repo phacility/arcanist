@@ -32,7 +32,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Supports: svn, git
+          Supports: svn, git, hg
           Cover your... professional reputation. Show blame for the lines you
           changed in your working copy (svn) or since some commit (hg, git).
           This will take a minute because blame takes a minute, especially under
