@@ -38,6 +38,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $revisionID;
   private $postponedLinters;
   private $haveUncommittedChanges = false;
+  private $diffPropertyFutures = array();
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
@@ -459,6 +460,7 @@ EOTEXT
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
     $this->updateLocalDiffProperty();
+    $this->resolveDiffPropertyUpdates();
 
     $output_json = $this->getArgument('json');
 
@@ -499,10 +501,9 @@ EOTEXT
 
         $revision = $this->dispatchWillCreateRevisionEvent($revision);
 
-        $future = $conduit->callMethod(
+        $result = $conduit->callMethodSynchronous(
           'differential.createrevision',
           $revision);
-        $result = $future->resolve();
 
         $revised_message = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
@@ -2292,13 +2293,25 @@ EOTEXT
    * @task diffprop
    */
   private function updateDiffProperty($name, $data) {
-    $this->getConduit()->callMethodSynchronous(
+    $this->diffPropertyFutures[] = $this->getConduit()->callMethod(
       'differential.setdiffproperty',
       array(
         'diff_id' => $this->getDiffID(),
         'name'    => $name,
         'data'    => $data,
       ));
+  }
+
+  /**
+   * Wait for finishing all diff property updates.
+   *
+   * @return void
+   *
+   * @task diffprop
+   */
+  private function resolveDiffPropertyUpdates() {
+    Futures($this->diffPropertyFutures)->resolveAll();
+    $this->diffPropertyFutures = array();
   }
 
   private function dispatchWillCreateRevisionEvent(array $fields) {
