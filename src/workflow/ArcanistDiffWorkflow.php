@@ -1371,6 +1371,10 @@ EOTEXT
     return null;
   }
 
+  public function getTestResults() {
+    return $this->testResults;
+  }
+
   private function getErrorExcuse($prompt, $history) {
     if ($this->getArgument('excuse')) {
       $prompt .= " Ignore them?";
