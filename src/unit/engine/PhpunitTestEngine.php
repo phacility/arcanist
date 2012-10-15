@@ -127,6 +127,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
     }
 
     $json = str_replace('}{"', '},{"', $json);
+    $json = str_replace('}{', '},{', $json);
     $json = '[' . $json . ']';
     $json = json_decode($json);
     if (!is_array($json)) {
