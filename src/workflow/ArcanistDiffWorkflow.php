@@ -39,6 +39,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $postponedLinters;
   private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
+  private $commitMessageFromRevision;
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
@@ -613,7 +614,9 @@ EOTEXT
     }
   }
 
-  private function buildRevisionFromCommitMessage($message) {
+  private function buildRevisionFromCommitMessage(
+    ArcanistDifferentialCommitMessage $message) {
+
     $conduit = $this->getConduit();
 
     $revision_id = $message->getRevisionID();
@@ -639,27 +642,38 @@ EOTEXT
       $remote_corpus = idx($edit_messages, $revision_id);
 
       if (!$should_edit || !$remote_corpus || $use_fields) {
-        $remote_corpus = $conduit->callMethodSynchronous(
-          'differential.getcommitmessage',
-          array(
-            'revision_id' => $revision_id,
-            'edit'        => 'edit',
-            'fields'      => $use_fields,
-          ));
+        if ($this->commitMessageFromRevision) {
+          $remote_corpus = $this->commitMessageFromRevision;
+        } else {
+          $remote_corpus = $conduit->callMethodSynchronous(
+            'differential.getcommitmessage',
+            array(
+              'revision_id' => $revision_id,
+              'edit'        => 'edit',
+              'fields'      => $use_fields,
+            ));
+        }
       }
 
       if ($should_edit) {
-        $remote_corpus = $this->newInteractiveEditor($remote_corpus)
+        $edited = $this->newInteractiveEditor($remote_corpus)
           ->setName('differential-edit-revision-info')
           ->editInteractively();
-        $edit_messages[$revision_id] = $remote_corpus;
-        $this->writeScratchJSONFile('edit-messages.json', $edit_messages);
+        if ($edited != $remote_corpus) {
+          $remote_corpus = $edited;
+          $edit_messages[$revision_id] = $remote_corpus;
+          $this->writeScratchJSONFile('edit-messages.json', $edit_messages);
+        }
       }
 
-      $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $remote_corpus);
+      if ($this->commitMessageFromRevision == $remote_corpus) {
+        $new_message = $message;
+      } else {
+        $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+          $remote_corpus);
+        $new_message->pullDataFromConduit($conduit);
+      }
 
-      $new_message->pullDataFromConduit($conduit);
       $revision['fields'] = $new_message->getFields();
 
       $revision['id'] = $revision_id;
@@ -1702,6 +1716,7 @@ EOTEXT
         'revision_id' => $id,
         'edit'        => false,
       ));
+    $this->commitMessageFromRevision = $message;
 
     $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($message);
     $obj->pullDataFromConduit($this->getConduit());
