@@ -29,7 +29,7 @@
  *    - create, replace, or disable workflows by overriding buildWorkflow()
  *      and buildAllWorkflows();
  *    - add additional steps before or after workflows run by overriding
- *      willRunWorkflow() or didRunWorkflow(); and
+ *      willRunWorkflow() or didRunWorkflow() or didAbortWorkflow(); and
  *    - add new flags to existing workflows by overriding
  *      getCustomArgumentsForCommand().
  *
@@ -90,6 +90,14 @@ class ArcanistConfiguration {
 
   public function didRunWorkflow($command, ArcanistBaseWorkflow $workflow,
                                  $err) {
+    // This is a hook.
+  }
+
+  public function didAbortWorkflow(
+    $command,
+    ArcanistBaseWorkflow $workflow,
+    Exception $ex) {
+
     // This is a hook.
   }
 

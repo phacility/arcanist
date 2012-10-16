@@ -319,25 +319,27 @@ try {
   $config->didRunWorkflow($command, $workflow, $err);
   exit((int)$err);
 
-} catch (ArcanistUsageException $ex) {
-  echo phutil_console_format(
-    "**Usage Exception:** %s\n",
-    $ex->getMessage());
+} catch (Exception $ex) {
+  $is_usage = ($ex instanceof ArcanistUsageException);
+  if ($is_usage) {
+    echo phutil_console_format(
+      "**Usage Exception:** %s\n",
+      $ex->getMessage());
+  }
+
+  $config->didAbortWorkflow($command, $workflow, $ex);
+
   if ($config_trace_mode) {
     echo "\n";
     throw $ex;
   }
 
-  exit(1);
-} catch (Exception $ex) {
-  if ($config_trace_mode) {
-    throw $ex;
+  if (!$is_usage) {
+    echo phutil_console_format(
+      "**Exception**\n%s\n%s\n",
+      $ex->getMessage(),
+      "(Run with --trace for a full exception trace.)");
   }
-
-  echo phutil_console_format(
-    "**Exception**\n%s\n%s\n",
-    $ex->getMessage(),
-    "(Run with --trace for a full exception trace.)");
 
   exit(1);
 }
