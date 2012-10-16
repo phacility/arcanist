@@ -304,7 +304,7 @@ try {
         id(new $listener())->register();
       } catch (PhutilMissingSymbolException $ex) {
         // Continue anwyay, since you may otherwise be unable to run commands
-        // like `arc set-config events.listeners in order to repair the damage
+        // like `arc set-config events.listeners` in order to repair the damage
         // you've caused.
         $console->writeErr(
           "ERROR: Failed to load event listener '%s'!\n",
