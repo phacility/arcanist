@@ -25,6 +25,10 @@ final class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
 
   private $branches;
 
+  public function getWorkflowName() {
+    return 'branch';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **branch** [__options__]

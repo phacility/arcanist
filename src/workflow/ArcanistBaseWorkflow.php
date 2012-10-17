@@ -83,6 +83,14 @@ abstract class ArcanistBaseWorkflow {
 
   abstract public function run();
 
+  /**
+   * Return the command used to invoke this workflow from the command like,
+   * e.g. "help" for @{class:ArcanistHelpWorkflow}.
+   *
+   * @return string   The command a user types to invoke this workflow.
+   */
+  abstract public function getWorkflowName();
+
 
 /* -(  Conduit  )------------------------------------------------------------ */
 

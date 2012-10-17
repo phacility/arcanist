@@ -23,6 +23,10 @@
  */
 final class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'git-hook-pre-receive';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **git-hook-pre-receive**

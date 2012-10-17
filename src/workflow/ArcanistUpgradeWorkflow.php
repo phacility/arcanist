@@ -23,6 +23,10 @@
  */
 final class ArcanistUpgradeWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'upgrade';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **upgrade**

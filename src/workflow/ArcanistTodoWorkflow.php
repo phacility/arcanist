@@ -23,6 +23,10 @@
  */
 final class ArcanistTodoWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'todo';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **todo** __summary__ [__options__]

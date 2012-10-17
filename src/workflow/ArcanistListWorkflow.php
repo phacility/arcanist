@@ -23,6 +23,10 @@
  */
 final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'list';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **list**

@@ -36,6 +36,10 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
   private $engine;
   private $postponedLinters;
 
+  public function getWorkflowName() {
+    return 'lint';
+  }
+
   public function setShouldAmendChanges($should_amend) {
     $this->shouldAmendChanges = $should_amend;
     return $this;

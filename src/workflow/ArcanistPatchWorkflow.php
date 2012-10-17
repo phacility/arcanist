@@ -31,6 +31,10 @@ final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
   private $source;
   private $sourceParam;
 
+  public function getWorkflowName() {
+    return 'patch';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **patch** __D12345__

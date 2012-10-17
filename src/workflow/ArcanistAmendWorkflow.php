@@ -23,6 +23,10 @@
  */
 final class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'amend';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **amend** [--revision __revision_id__] [--show]

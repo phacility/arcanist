@@ -25,6 +25,10 @@ final class ArcanistTasksWorkflow extends ArcanistBaseWorkflow {
 
   private $tasks;
 
+  public function getWorkflowName() {
+    return 'tasks';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **tasks** [__options__]

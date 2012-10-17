@@ -43,6 +43,10 @@ final class ArcanistFlagWorkflow extends ArcanistBaseWorkflow {
     'checkered' => 7, 'c' => 7,   7 => 7,
   );
 
+  public function getWorkflowName() {
+    return 'flag';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **flag** [__object__ ...]

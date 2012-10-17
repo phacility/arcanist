@@ -21,6 +21,10 @@
  */
 final class ArcanistMarkCommittedWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'mark-committed';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **mark-committed** (DEPRECATED)

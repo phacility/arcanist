@@ -26,6 +26,10 @@ final class ArcanistUploadWorkflow extends ArcanistBaseWorkflow {
   private $paths;
   private $json;
 
+  public function getWorkflowName() {
+    return 'upload';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **upload** __file__ [__file__ ...] [--json]

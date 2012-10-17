@@ -23,6 +23,10 @@
  */
 final class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'help';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **help** [__command__]

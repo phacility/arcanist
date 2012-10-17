@@ -29,6 +29,10 @@
  */
 final class ArcanistLiberateWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'liberate';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **liberate** [__path__]

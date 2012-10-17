@@ -35,6 +35,10 @@ final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
   private $sourceID;
   private $format;
 
+  public function getWorkflowName() {
+    return 'export';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **export** [__paths__] __format__ (svn)

@@ -23,6 +23,10 @@
  */
 final class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'call-conduit';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **call-conduit** __method__

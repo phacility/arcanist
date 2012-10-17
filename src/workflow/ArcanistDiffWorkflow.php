@@ -41,6 +41,10 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
 
+  public function getWorkflowName() {
+    return 'diff';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **diff** [__paths__] (svn)
