@@ -48,6 +48,15 @@ class PhutilLintEngine extends ArcanistLintEngine {
       }
     }
 
+    $name_linter = new ArcanistFilenameLinter();
+    $linters[] = $name_linter;
+    foreach ($paths as $key => $path) {
+      $name_linter->addPath($path);
+      if (!is_file($path)) {
+        unset($paths[$key]);
+      }
+    }
+
     $generated_linter = new ArcanistGeneratedLinter();
     $linters[] = $generated_linter;
 
@@ -79,13 +88,6 @@ class PhutilLintEngine extends ArcanistLintEngine {
       }
     }
 
-    $name_linter = new ArcanistFilenameLinter();
-    $linters[] = $name_linter;
-    foreach ($paths as $path) {
-      $name_linter->addPath($path);
-    }
-
-
     $xhpast_linter = new ArcanistXHPASTLinter();
     $xhpast_map = $this->getXHPASTSeverityMap();
     $xhpast_linter->setCustomSeverityMap($xhpast_map);
@@ -101,10 +103,8 @@ class PhutilLintEngine extends ArcanistLintEngine {
     $linters[] = $license_linter;
     foreach ($paths as $path) {
       if (preg_match('/\.(php|cpp|hpp|l|y)$/', $path)) {
-        if (!preg_match('@^externals/@', $path)) {
-          $license_linter->addPath($path);
-          $license_linter->addData($path, $this->loadData($path));
-        }
+        $license_linter->addPath($path);
+        $license_linter->addData($path, $this->loadData($path));
       }
     }
 
