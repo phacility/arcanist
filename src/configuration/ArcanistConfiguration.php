@@ -58,13 +58,6 @@ class ArcanistConfiguration {
     foreach ($symbols as $symbol) {
       $class = $symbol['name'];
       $workflow = newv($class, array());
-
-      // TODO: Delete after installations will update (2012-10-31).
-      if (!method_exists($workflow, 'getWorkflowName')) {
-        // This workflow was hopefully already built by our parent.
-        continue;
-      }
-
       $name = $workflow->getWorkflowName();
 
       if (isset($workflows[$name])) {
