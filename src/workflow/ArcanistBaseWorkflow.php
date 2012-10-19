@@ -89,7 +89,8 @@ abstract class ArcanistBaseWorkflow {
    *
    * @return string   The command a user types to invoke this workflow.
    */
-  abstract public function getWorkflowName();
+  // TODO: Uncomment after installations will update (2012-10-31).
+  // abstract public function getWorkflowName();
 
   /**
    * Return console formatted string with all command synopses.
