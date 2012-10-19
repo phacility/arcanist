@@ -471,8 +471,16 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     $has_base_revision = $this->hasBaseRevision($bundle);
-    if ($this->canBranch() && ($this->shouldBranch() || $has_base_revision)) {
+    if ($this->shouldCommit() &&
+        $this->canBranch() &&
+        ($this->shouldBranch() || $has_base_revision)) {
+
       $original_branch = $repository_api->getBranchName();
+      // If we weren't on a branch, then record the ref we'll return to
+      // instead.
+      if ($original_branch === null) {
+        $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+      }
       $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
 
@@ -724,7 +732,8 @@ EOTEXT
         $verb = 'applied';
       }
 
-      if ($this->canBranch() && !$this->shouldBranch() && $has_base_revision) {
+      if ($this->shouldCommit() && $this->canBranch() &&
+          !$this->shouldBranch() && $has_base_revision) {
         $repository_api->execxLocal('checkout %s', $original_branch);
         $ex = null;
         try {

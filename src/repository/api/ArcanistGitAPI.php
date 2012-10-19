@@ -338,8 +338,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // But that may fail if you're not on a branch.
     list($stdout) = $this->execxLocal('branch --no-color');
 
+    // Assume that any branch beginning with '(' means 'no branch', or whatever
+    // 'no branch' is in the current locale.
     $matches = null;
-    if (preg_match('/^\* (.+)$/m', $stdout, $matches)) {
+    if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
       return $matches[1];
     }
     return null;
