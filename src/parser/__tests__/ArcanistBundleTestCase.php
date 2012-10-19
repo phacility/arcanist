@@ -71,6 +71,8 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
 
     foreach ($commits as $commit) {
       list($commit_hash, $tree_hash, $subject) = explode(' ', $commit, 3);
+      execx('git reset --hard %s --', $commit_hash);
+
       list($diff) = execx(
         'git diff %s^ %s --',
         $commit_hash,
@@ -78,12 +80,20 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
 
       $parser = new ArcanistDiffParser();
       $changes = $parser->parseDiff($diff);
+
+      $repository_api = new ArcanistGitAPI($fixture->getPath());
+      $repository_api->setRelativeCommit($commit_hash.'^');
+
+      $parser->loadSyntheticData($changes, $repository_api);
+
       $bundle = ArcanistBundle::newFromChanges($changes);
 
       execx('git reset --hard %s^ --', $commit_hash);
 
+      $patch = $bundle->toGitPatch();
+
       id(new ExecFuture('git apply --index --reject'))
-        ->write($bundle->toGitPatch())
+        ->write($patch)
         ->resolvex();
 
       execx('git commit -m %s', $subject);

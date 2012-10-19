@@ -204,6 +204,8 @@ EOTEXT
             $paths);
         }
 
+        $changes = $parser->loadSyntheticData($changes, $repository_api);
+
         $bundle = ArcanistBundle::newFromChanges($changes);
         $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
         $bundle->setBaseRevision(

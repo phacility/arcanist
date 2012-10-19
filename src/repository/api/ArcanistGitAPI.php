@@ -689,6 +689,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function setDefaultBaseCommit() {
+    $this->setRelativeCommit('HEAD^');
+    return $this;
+  }
+
   public function hasLocalCommit($commit) {
     try {
       if (!$this->getCanonicalRevisionName($commit)) {

@@ -312,15 +312,14 @@ final class ArcanistBundle {
 
     $old_file_phids = array();
     foreach ($changes as $change) {
+      if (!$this->isGitBinaryChange($change)) {
+        continue;
+      }
+
       $type = $change->getType();
       if ($type == ArcanistDiffChangeType::TYPE_MOVE_AWAY) {
-        $file_type = $change->getFileType();
-        $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY ||
-                      $file_type == ArcanistDiffChangeType::FILE_IMAGE);
-        if ($is_binary) {
-          foreach ($change->getAwayPaths() as $path) {
-            $old_file_phids[$path] = $change->getMetadata('old:binary-phid');
-          }
+        foreach ($change->getAwayPaths() as $path) {
+          $old_file_phids[$path] = $change->getMetadata('old:binary-phid');
         }
       }
     }
@@ -348,8 +347,7 @@ final class ArcanistBundle {
       $old_mode = idx($change->getOldProperties(), 'unix:filemode', '100644');
       $new_mode = idx($change->getNewProperties(), 'unix:filemode', '100644');
 
-      $is_binary = ($file_type == ArcanistDiffChangeType::FILE_BINARY ||
-                    $file_type == ArcanistDiffChangeType::FILE_IMAGE);
+      $is_binary = $this->isGitBinaryChange($change);
 
       if ($is_binary) {
         $old_phid = idx($old_file_phids, $this->getCurrentPath($change));
@@ -425,6 +423,12 @@ final class ArcanistBundle {
 
     $diff = implode('', $result).PHP_EOL;
     return $this->convertNonUTF8Diff($diff);
+  }
+
+  private function isGitBinaryChange(ArcanistDiffChange $change) {
+    $file_type = $change->getFileType();
+    return ($file_type == ArcanistDiffChangeType::FILE_BINARY ||
+            $file_type == ArcanistDiffChangeType::FILE_IMAGE);
   }
 
   private function convertNonUTF8Diff($diff) {
@@ -615,7 +619,7 @@ final class ArcanistBundle {
     return $this;
   }
 
-  private function getBlob($phid) {
+  private function getBlob($phid, $name = null) {
     if ($this->loadFileDataCallback) {
       return call_user_func($this->loadFileDataCallback, $phid);
     }
@@ -625,8 +629,14 @@ final class ArcanistBundle {
       return $blob_data;
     }
 
+    $console = PhutilConsole::getConsole();
+
     if ($this->conduit) {
-      echo "Downloading binary data...\n";
+      if ($name) {
+        $console->writeErr("Downloading binary data for '%s'...\n", $name);
+      } else {
+        $console->writeErr("Downloading binary data...\n");
+      }
       $data_base64 = $this->conduit->callMethodSynchronous(
         'file.download',
         array(
@@ -642,23 +652,37 @@ final class ArcanistBundle {
     $old_phid = idx($change->getAllMetadata(), 'old:binary-phid', $old_phid);
     $new_phid = $change->getMetadata('new:binary-phid');
 
-    if (!$old_phid) {
+    $old_data = null;
+    if ($change->getOriginalFileData() !== null) {
+      $old_data = $change->getOriginalFileData();
+    } else if ($old_phid) {
+      $name = basename($change->getOldPath());
+      $old_data = $this->getBlob($old_phid, $name);
+    }
+
+    $old_length = strlen($old_data);
+
+    if ($old_data === null) {
       $old_data = '';
-      $old_length = 0;
       $old_sha1 = str_repeat('0', 40);
     } else {
-      $old_data = $this->getBlob($old_phid);
-      $old_length = strlen($old_data);
       $old_sha1 = sha1("blob {$old_length}\0{$old_data}");
     }
 
-    if (!$new_phid) {
+    $new_data = null;
+    if ($change->getCurrentFileData() !== null) {
+      $new_data = $change->getCurrentFileData();
+    } else if ($new_phid) {
+      $name = basename($change->getCurrentPath());
+      $new_data = $this->getBlob($new_phid, $name);
+    }
+
+    $new_length = strlen($new_data);
+
+    if ($new_data === null) {
       $new_data = '';
-      $new_length = 0;
       $new_sha1 = str_repeat('0', 40);
     } else {
-      $new_data = $this->getBlob($new_phid);
-      $new_length = strlen($new_data);
       $new_sha1 = sha1("blob {$new_length}\0{$new_data}");
     }
 

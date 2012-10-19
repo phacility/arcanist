@@ -837,6 +837,11 @@ EOTEXT
    * Do the best we can to prevent PEBKAC and id10t issues.
    */
   private function sanityCheck(ArcanistBundle $bundle) {
+    $repository_api = $this->getRepositoryAPI();
+
+    if ($repository_api->supportsRelativeLocalCommits()) {
+      $repository_api->setDefaultBaseCommit();
+    }
 
     // Require clean working copy
     $this->requireCleanWorkingCopy();
@@ -870,7 +875,6 @@ EOTEXT
 
     // Check to see if the bundle's base revision matches the working copy
     // base revision
-    $repository_api = $this->getRepositoryAPI();
     if ($repository_api->supportsRelativeLocalCommits()) {
       $bundle_base_rev = $bundle->getBaseRevision();
       if (empty($bundle_base_rev)) {

@@ -1019,41 +1019,18 @@ EOTEXT
       }
     }
 
+    $changes = $parser->loadSyntheticData($changes, $repository_api);
+
     foreach ($changes as $change) {
-      $path = $change->getCurrentPath();
-
-      // Certain types of changes (moves and copies) don't contain change data
-      // when expressed in raw "git diff" form. Augment any such diffs with
-      // textual data.
-      if ($change->getNeedsSyntheticGitHunks()) {
-        $diff = $repository_api->getRawDiffText($path, $moves = false);
-        $parser = $this->newDiffParser();
-
-        $raw_changes = $parser->parseDiff($diff);
-        foreach ($raw_changes as $raw_change) {
-          if ($raw_change->getCurrentPath() == $path) {
-            $change->setFileType($raw_change->getFileType());
-            foreach ($raw_change->getHunks() as $hunk) {
-              // Git thinks that this file has been added. But we know that it
-              // has been moved or copied without a change.
-              $hunk->setCorpus(
-                preg_replace('/^\+/m', ' ', $hunk->getCorpus()));
-              $change->addHunk($hunk);
-            }
-            break;
-          }
-        }
-
-        $change->setNeedsSyntheticGitHunks(false);
-      }
-
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;
       }
 
+      $path = $change->getCurrentPath();
+
       $name = basename($path);
 
-      $old_file = $repository_api->getOriginalFileData($path);
+      $old_file = $change->getOriginalFileData();
       $old_dict = $this->uploadFile($old_file, $name, 'old binary');
       if ($old_dict['guid']) {
         $change->setMetadata('old:binary-phid', $old_dict['guid']);
@@ -1061,7 +1038,7 @@ EOTEXT
       $change->setMetadata('old:file:size',      $old_dict['size']);
       $change->setMetadata('old:file:mime-type', $old_dict['mime']);
 
-      $new_file = $repository_api->getCurrentFileData($path);
+      $new_file = $change->getCurrentFileData();
       $new_dict = $this->uploadFile($new_file, $name, 'new binary');
       if ($new_dict['guid']) {
         $change->setMetadata('new:binary-phid', $new_dict['guid']);

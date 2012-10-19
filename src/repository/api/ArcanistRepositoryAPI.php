@@ -182,6 +182,21 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
 
+  /**
+   * Set the base commit to a reasonable default value so that working copy
+   * status checks can do something meaningful and won't invoke configured
+   * 'base' rules.
+   *
+   * This is primarily useful for workflows which do not operate on commit
+   * ranges but need to verify the working copy is not dirty, like "amend",
+   * "upgrade" and "patch".
+   *
+   * @return this
+   */
+  public function setDefaultBaseCommit() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function amendCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

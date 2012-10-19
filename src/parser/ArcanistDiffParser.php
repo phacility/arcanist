@@ -1140,4 +1140,49 @@ final class ArcanistDiffParser {
       return $name;
     }
   }
+
+  public function loadSyntheticData(
+    array $changes,
+    ArcanistRepositoryAPI $repository_api) {
+    assert_instances_of($changes, 'ArcanistDiffChange');
+
+    foreach ($changes as $change) {
+      $path = $change->getCurrentPath();
+
+      // Certain types of changes (moves and copies) don't contain change data
+      // when expressed in raw "git diff" form. Augment any such diffs with
+      // textual data.
+      if ($change->getNeedsSyntheticGitHunks()) {
+        $diff = $repository_api->getRawDiffText($path, $moves = false);
+
+        $raw_changes = $this->parseDiff($diff);
+        foreach ($raw_changes as $raw_change) {
+          if ($raw_change->getCurrentPath() == $path) {
+            $change->setFileType($raw_change->getFileType());
+            foreach ($raw_change->getHunks() as $hunk) {
+              // Git thinks that this file has been added. But we know that it
+              // has been moved or copied without a change.
+              $hunk->setCorpus(
+                preg_replace('/^\+/m', ' ', $hunk->getCorpus()));
+              $change->addHunk($hunk);
+            }
+            break;
+          }
+        }
+
+        $change->setNeedsSyntheticGitHunks(false);
+      }
+
+      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY &&
+          $change->getFileType() != ArcanistDiffChangeType::FILE_IMAGE) {
+        continue;
+      }
+
+      $change->setOriginalFileData($repository_api->getOriginalFileData($path));
+      $change->setCurrentFileData($repository_api->getCurrentFileData($path));
+    }
+
+    return $changes;
+  }
+
 }

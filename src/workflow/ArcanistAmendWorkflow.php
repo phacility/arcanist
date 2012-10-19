@@ -106,10 +106,8 @@ EOTEXT
       $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     }
 
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $repository_api->setRelativeCommit('HEAD^');
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      $repository_api->setRelativeCommit('.^');
+    if ($repository_api->supportsRelativeLocalCommits()) {
+      $repository_api->setDefaultBaseCommit();
     }
 
     $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(
