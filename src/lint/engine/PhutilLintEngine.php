@@ -52,7 +52,8 @@ class PhutilLintEngine extends ArcanistLintEngine {
     $linters[] = $name_linter;
     foreach ($paths as $key => $path) {
       $name_linter->addPath($path);
-      if (!is_file($path)) {
+      if (!$this->getCommitHookMode() &&
+          !is_file($this->getFilePathOnDisk($path))) {
         unset($paths[$key]);
       }
     }
