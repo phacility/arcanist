@@ -542,9 +542,39 @@ EOTEXT
       case 'hg-patch.hgdiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'custom-prefixes.gitdiff':
+        $this->assertEqual(1, count($changes));
+        $change = head($changes);
+        $this->assertEqual(
+          'dst/file',
+          $change->getCurrentPath());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
     }
   }
+
+  public function testGitPrefixStripping() {
+    static $tests = array(
+      'a/file.c'    => 'file.c',
+      'b/file.c'    => 'file.c',
+      'i/file.c'    => 'file.c',
+      'c/file.c'    => 'file.c',
+      'w/file.c'    => 'file.c',
+      'o/file.c'    => 'file.c',
+      '1/file.c'    => 'file.c',
+      '2/file.c'    => 'file.c',
+      'src/file.c'  => 'src/file.c',
+      'file.c'      => 'file.c',
+    );
+
+    foreach ($tests as $input => $expect) {
+      $this->assertEqual(
+        $expect,
+        ArcanistDiffParser::stripGitPathPrefix($input),
+        "Strip git prefix from '{$input}'.");
+    }
+  }
+
 }

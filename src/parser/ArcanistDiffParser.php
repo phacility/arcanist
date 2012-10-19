@@ -221,9 +221,7 @@ final class ArcanistDiffParser {
         '(?P<type>commit) (?P<hash>[a-f0-9]+)(?: \(.*\))?',
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
-        '(?P<type>diff --git) '.
-          '(?P<old>"?[abicwo12]/.+"?) '.
-          '(?P<cur>"?[abicwo12]/.+"?)',
+        '(?P<type>diff --git) (?P<old>"?.+"?) (?P<cur>"?.+"?)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
         '(?P<binary>Binary) files '.
@@ -270,11 +268,11 @@ final class ArcanistDiffParser {
         if ($match['type'] == 'diff --git') {
           if (isset($match['old'])) {
             $match['old'] = $this->unescapeFilename($match['old']);
-            $match['old'] = substr($match['old'], 2);
+            $match['old'] = self::stripGitPathPrefix($match['old']);
           }
           if (isset($match['cur'])) {
             $match['cur'] = $this->unescapeFilename($match['cur']);
-            $match['cur'] = substr($match['cur'], 2);
+            $match['cur'] = self::stripGitPathPrefix($match['cur']);
           }
         }
       }
@@ -1183,6 +1181,45 @@ final class ArcanistDiffParser {
     }
 
     return $changes;
+  }
+
+  /**
+   * Strip prefixes off paths from `git diff`. By default git uses a/ and b/,
+   * but you can set `diff.mnemonicprefix` to get a different set of prefixes,
+   * or use `--no-prefix`, `--src-prefix` or `--dst-prefix` to set these to
+   * other arbitrary values.
+   *
+   * We strip the default and mnemonic prefixes, and trust the user knows what
+   * they're doing in the other cases.
+   *
+   * @param   string Path to strip.
+   * @return  string Stripped path.
+   */
+  public static function stripGitPathPrefix($path) {
+
+    static $regex;
+    if ($regex === null) {
+      $prefixes = array(
+        // These are the defaults.
+        'a/',
+        'b/',
+
+        // These show up when you set "diff.mnemonicprefix".
+        'i/',
+        'c/',
+        'w/',
+        'o/',
+        '1/',
+        '2/',
+      );
+
+      foreach ($prefixes as $key => $prefix) {
+        $prefixes[$key] = preg_quote($prefix, '@');
+      }
+      $regex = '@^('.implode('|', $prefixes).')@S';
+    }
+
+    return preg_replace($regex, '', $path);
   }
 
 }
