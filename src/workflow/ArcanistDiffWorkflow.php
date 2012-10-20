@@ -588,6 +588,7 @@ EOTEXT
       try {
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
+        $repository_api = $this->getRepositoryAPI();
         if ($repository_api instanceof ArcanistMercurialAPI) {
 
           // Some Mercurial users prefer to use it like SVN, where they don't

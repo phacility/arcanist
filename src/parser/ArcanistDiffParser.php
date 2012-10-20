@@ -1158,7 +1158,14 @@ final class ArcanistDiffParser {
       if ($change->getNeedsSyntheticGitHunks()) {
         $diff = $repository_api->getRawDiffText($path, $moves = false);
 
+        // NOTE: We're reusing the parser and it doesn't reset change state
+        // between parses because there's an oddball SVN workflow in Phabricator
+        // which relies on being able to inject changes.
+        // TODO: Fix this.
+        $this->setChanges(array());
+
         $raw_changes = $this->parseDiff($diff);
+
         foreach ($raw_changes as $raw_change) {
           if ($raw_change->getCurrentPath() == $path) {
             $change->setFileType($raw_change->getFileType());
