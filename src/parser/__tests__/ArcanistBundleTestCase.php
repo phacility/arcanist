@@ -146,6 +146,154 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     }
 
     switch ($commit) {
+      case 'c573c25d1a767d270fed504cd993e78aba936338':
+        // "Copy a koan over text, editing the original koan."
+        // Git doesn't really do anything meaningful with this.
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $c->getType());
+
+        $c = $changes['text'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $c->getType());
+
+        break;
+      case 'd26628e588cf7d16368845b121c6ac6c781e81d0':
+        // "Copy a koan, modifying both the source and destination."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_AWAY,
+          $c->getType());
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+
+        break;
+      case 'b0c9663ecda5f666f62dad245a3a7549aac5e636':
+        // "Remove a koan copy."
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        break;
+      case 'b6ecdb3b4801f3028d88ba49940a558360847dbf':
+        // "Copy a koan and edit the destination."
+        // Git does not detect this as a copy without --find-copies-harder.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
+      case '30d23787e1ecd254c884afbe37afa612f61e3904':
+        // "Move and edit a koan."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_AWAY,
+          $c->getType());
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case 'c0ba9bfe3695f95c3f558bc5797eeba421d32483':
+        // "Remove two koans."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan3'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        $c = $changes['koan4'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        break;
+      case '2658fd01d5355abe5d4c7ead3a0e7b4b3449fe77':
+        // "Multicopy a koan."
+
+        $this->assertEqual(3, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MULTICOPY,
+          $c->getType());
+
+        $c = $changes['koan3'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+
+        $c = $changes['koan4'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case '1c5fe4e2243bb19d6b3bf15896177b13768e6eb6':
+        // "Copy a koan."
+        // Git does not detect this as a copy without --find-copies-harder.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
+      case '6d9eb65a2c2b56dee64d72f59554c1cca748dd34':
+        // "Move a koan."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_AWAY,
+          $c->getType());
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case '141452e2a775ee86409e8779dd2eda767b4fe8ab':
+        // "Add a koan."
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
       case '5dec8bf28557f078d1987c4e8cfb53d08310f522':
         // "Copy an image, and replace the original."
         // `image_2.png` is copied to `image.png` and then replaced.
