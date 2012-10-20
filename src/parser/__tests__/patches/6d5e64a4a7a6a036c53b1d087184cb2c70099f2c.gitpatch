@@ -1,0 +1,9 @@
+diff --git a/text b/text
+--- a/text
++++ b/text
+@@ -1,2 +1,2 @@
+-	quack quack
+-	quack quack
++quack quack
++quack quack
+

@@ -267,6 +267,22 @@ final class ArcanistBundle {
     $result = array();
     $changes = $this->getChanges();
 
+    $binary_sources = array();
+    foreach ($changes as $change) {
+      if (!$this->isGitBinaryChange($change)) {
+        continue;
+      }
+
+      $type = $change->getType();
+      if ($type == ArcanistDiffChangeType::TYPE_MOVE_AWAY ||
+          $type == ArcanistDiffChangeType::TYPE_COPY_AWAY ||
+          $type == ArcanistDiffChangeType::TYPE_MULTICOPY) {
+        foreach ($change->getAwayPaths() as $path) {
+          $binary_sources[$path] = $change;
+        }
+      }
+    }
+
     foreach (array_keys($changes) as $multicopy_key) {
       $multicopy_change = $changes[$multicopy_key];
 
@@ -310,20 +326,6 @@ final class ArcanistBundle {
       }
     }
 
-    $old_file_phids = array();
-    foreach ($changes as $change) {
-      if (!$this->isGitBinaryChange($change)) {
-        continue;
-      }
-
-      $type = $change->getType();
-      if ($type == ArcanistDiffChangeType::TYPE_MOVE_AWAY) {
-        foreach ($change->getAwayPaths() as $path) {
-          $old_file_phids[$path] = $change->getMetadata('old:binary-phid');
-        }
-      }
-    }
-
     foreach ($changes as $change) {
       $type = $change->getType();
       $file_type = $change->getFileType();
@@ -350,8 +352,8 @@ final class ArcanistBundle {
       $is_binary = $this->isGitBinaryChange($change);
 
       if ($is_binary) {
-        $old_phid = idx($old_file_phids, $this->getCurrentPath($change));
-        $change_body = $this->buildBinaryChange($change, $old_phid);
+        $old_binary = idx($binary_sources, $this->getCurrentPath($change));
+        $change_body = $this->buildBinaryChange($change, $old_binary);
       } else {
         $change_body = $this->buildHunkChanges($change->getHunks());
       }
@@ -648,14 +650,25 @@ final class ArcanistBundle {
     throw new Exception("Nowhere to load blob '{$phid}' from!");
   }
 
-  private function buildBinaryChange(ArcanistDiffChange $change, $old_phid) {
-    $old_phid = idx($change->getAllMetadata(), 'old:binary-phid', $old_phid);
-    $new_phid = $change->getMetadata('new:binary-phid');
+  private function buildBinaryChange(ArcanistDiffChange $change, $old_binary) {
+    // In Git, when we write out a binary file move or copy, we need the
+    // original binary for the source and the current binary for the
+    // destination.
 
-    $old_data = null;
-    if ($change->getOriginalFileData() !== null) {
+    if ($old_binary) {
+      if ($old_binary->getOriginalFileData() !== null) {
+        $old_data = $old_binary->getOriginalFileData();
+        $old_phid = null;
+      } else {
+        $old_data = null;
+        $old_binary->getMetadata('old:binary-phid');
+      }
+    } else {
       $old_data = $change->getOriginalFileData();
-    } else if ($old_phid) {
+      $old_phid = $change->getMetadata('old:binary-phid');
+    }
+
+    if ($old_data === null && $old_phid) {
       $name = basename($change->getOldPath());
       $old_data = $this->getBlob($old_phid, $name);
     }
@@ -668,6 +681,8 @@ final class ArcanistBundle {
     } else {
       $old_sha1 = sha1("blob {$old_length}\0{$old_data}");
     }
+
+    $new_phid = $change->getMetadata('new:binary-phid');
 
     $new_data = null;
     if ($change->getCurrentFileData() !== null) {
