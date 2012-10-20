@@ -57,6 +57,11 @@ abstract class ArcanistLinter {
     return $this;
   }
 
+  public function setPaths(array $paths) {
+    $this->paths = $paths;
+    return $this;
+  }
+
   public function getPaths() {
     return array_values($this->paths);
   }

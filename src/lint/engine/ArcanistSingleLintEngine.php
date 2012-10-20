@@ -71,9 +71,7 @@ final class ArcanistSingleLintEngine extends ArcanistLintEngine {
     }
 
     $linter = newv($linter_name, array());
-    foreach ($paths as $path) {
-      $linter->addPath($path);
-    }
+    $linter->setPaths($paths);
 
     return array($linter);
   }
