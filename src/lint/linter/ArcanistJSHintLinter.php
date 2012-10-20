@@ -145,7 +145,7 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    list($rc, $stdout) = $this->results[$path];
+    list($rc, $stdout, $stderr) = $this->results[$path];
 
     if ($rc === 0) {
       return;
@@ -155,9 +155,9 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     if (!is_array($errors)) {
       // Something went wrong and we can't decode the output. Exit abnormally.
       throw new ArcanistUsageException(
-        "JSHint returned output we can't parse. Check that your JSHint installation.\n".
-        "Output:\n".
-        $stdout);
+        "JSHint returned unparseable output.\n".
+        "stdout:\n\n{$stdout}".
+        "stderr:\n\n{$stderr}");
     }
 
     foreach ($errors as $err) {
