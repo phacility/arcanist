@@ -197,7 +197,7 @@ abstract class ArcanistLintEngine {
     }
 
     $exceptions = array();
-    foreach ($linters as $linter) {
+    foreach ($linters as $linter_name => $linter) {
       try {
         $linter->setEngine($this);
         if (!$linter->canRun()) {
@@ -238,7 +238,10 @@ abstract class ArcanistLintEngine {
           $result->addMessage($message);
         }
       } catch (Exception $ex) {
-        $exceptions[] = $ex;
+        if (!is_string($linter_name)) {
+          $linter_name = get_class($linter);
+        }
+        $exceptions[$linter_name] = $ex;
       }
     }
 
