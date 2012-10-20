@@ -201,7 +201,14 @@ EOTEXT
       $engine->setEnableAsyncLint(false);
     }
 
-    $results = $engine->run();
+    $failed = null;
+    try {
+      $engine->run();
+    } catch (Exception $ex) {
+      $failed = $ex;
+    }
+
+    $results = $engine->getResults();
 
     // It'd be nice to just return a single result from the run method above
     // which contains both the lint messages and the postponed linters.
@@ -307,6 +314,10 @@ EOTEXT
         $patcher->writePatchToDisk();
         $wrote_to_disk = true;
       }
+    }
+
+    if ($failed) {
+      throw $failed;
     }
 
     $repository_api = $this->getRepositoryAPI();
