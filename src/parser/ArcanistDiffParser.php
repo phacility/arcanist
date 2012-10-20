@@ -23,7 +23,7 @@
  */
 final class ArcanistDiffParser {
 
-  protected $api;
+  protected $repositoryAPI;
   protected $text;
   protected $line;
   protected $lineSaved;
@@ -37,13 +37,9 @@ final class ArcanistDiffParser {
   protected $changes = array();
   private $forcePath;
 
-  protected function setRepositoryAPI(ArcanistRepositoryAPI $api) {
-    $this->api = $api;
+  public function setRepositoryAPI(ArcanistRepositoryAPI $repository_api) {
+    $this->repositoryAPI = $repository_api;
     return $this;
-  }
-
-  protected function getRepositoryAPI() {
-    return $this->api;
   }
 
   public function setDetectBinaryFiles($detect) {
@@ -338,6 +334,8 @@ final class ArcanistDiffParser {
     } while ($this->getLine() !== null);
 
     $this->didFinishParse();
+
+    $this->loadSyntheticData();
 
     return $this->changes;
   }
@@ -1144,27 +1142,34 @@ final class ArcanistDiffParser {
     }
   }
 
-  public function loadSyntheticData(
-    array $changes,
-    ArcanistRepositoryAPI $repository_api) {
-    assert_instances_of($changes, 'ArcanistDiffChange');
+  private function loadSyntheticData() {
+    if (!$this->changes) {
+      return;
+    }
 
+    $repository_api = $this->repositoryAPI;
+    if (!$repository_api) {
+      return;
+    }
+
+    $changes = $this->changes;
     foreach ($changes as $change) {
       $path = $change->getCurrentPath();
 
       // Certain types of changes (moves and copies) don't contain change data
       // when expressed in raw "git diff" form. Augment any such diffs with
       // textual data.
-      if ($change->getNeedsSyntheticGitHunks()) {
+      if ($change->getNeedsSyntheticGitHunks() &&
+          ($repository_api instanceof ArcanistGitAPI)) {
         $diff = $repository_api->getRawDiffText($path, $moves = false);
 
         // NOTE: We're reusing the parser and it doesn't reset change state
         // between parses because there's an oddball SVN workflow in Phabricator
         // which relies on being able to inject changes.
         // TODO: Fix this.
-        $this->setChanges(array());
-
-        $raw_changes = $this->parseDiff($diff);
+        $parser = clone $this;
+        $parser->setChanges(array());
+        $raw_changes = $parser->parseDiff($diff);
 
         foreach ($raw_changes as $raw_change) {
           if ($raw_change->getCurrentPath() == $path) {
@@ -1192,7 +1197,7 @@ final class ArcanistDiffParser {
       $change->setCurrentFileData($repository_api->getCurrentFileData($path));
     }
 
-    return $changes;
+    $this->changes = $changes;
   }
 
   /**

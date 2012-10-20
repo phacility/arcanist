@@ -1020,8 +1020,6 @@ EOTEXT
       }
     }
 
-    $changes = $parser->loadSyntheticData($changes, $repository_api);
-
     foreach ($changes as $change) {
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;

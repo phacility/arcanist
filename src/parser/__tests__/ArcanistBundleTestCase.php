@@ -78,13 +78,12 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
         $commit_hash,
         $commit_hash);
 
-      $parser = new ArcanistDiffParser();
-      $changes = $parser->parseDiff($diff);
-
       $repository_api = new ArcanistGitAPI($fixture->getPath());
-      $repository_api->setRelativeCommit($commit_hash.'^');
+      $repository_api->setDefaultBaseCommit();
 
-      $parser->loadSyntheticData($changes, $repository_api);
+      $parser = new ArcanistDiffParser();
+      $parser->setRepositoryAPI($repository_api);
+      $changes = $parser->parseDiff($diff);
 
       $bundle = ArcanistBundle::newFromChanges($changes);
 

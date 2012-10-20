@@ -1336,6 +1336,9 @@ abstract class ArcanistBaseWorkflow {
 
   protected function newDiffParser() {
     $parser = new ArcanistDiffParser();
+    if ($this->getRepositoryAPI()) {
+      $parser->setRepositoryAPI($this->getRepositoryAPI());
+    }
     $parser->setWriteDiffOnFailure(true);
     return $parser;
   }

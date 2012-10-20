@@ -190,6 +190,7 @@ EOTEXT
       case self::SOURCE_LOCAL:
         $repository_api = $this->getRepositoryAPI();
         $parser = new ArcanistDiffParser();
+        $parser->setRepositorAPI($repository_api);
 
         if ($repository_api instanceof ArcanistGitAPI) {
           $repository_api->parseRelativeLocalCommit(
@@ -203,8 +204,6 @@ EOTEXT
             $repository_api,
             $paths);
         }
-
-        $changes = $parser->loadSyntheticData($changes, $repository_api);
 
         $bundle = ArcanistBundle::newFromChanges($changes);
         $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
