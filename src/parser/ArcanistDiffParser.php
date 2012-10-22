@@ -649,7 +649,7 @@ final class ArcanistDiffParser {
     $line = $this->getLine();
 
     if ($is_svn) {
-      $ok = preg_match('/^=+$/', $line);
+      $ok = preg_match('/^=+\s*$/', $line);
       if (!$ok) {
         $this->didFailParse("Expected '=======================' divider line.");
       } else {
@@ -684,8 +684,8 @@ final class ArcanistDiffParser {
     }
 
     $is_binary_add = preg_match(
-      '/^Cannot display: file marked as a binary type.$/',
-      $line);
+      '/^Cannot display: file marked as a binary type\.$/',
+      rtrim($line));
     if ($is_binary_add) {
       $this->nextLine(); // Cannot display: file marked as a binary type.
       $this->nextNonemptyLine(); // svn:mime-type = application/octet-stream
@@ -697,7 +697,7 @@ final class ArcanistDiffParser {
     // WITHOUT a binary mime-type and is changed and given a binary mime-type.
     $is_binary_diff = preg_match(
       '/^Binary files .* and .* differ$/',
-      $line);
+      rtrim($line));
     if ($is_binary_diff) {
       $this->nextNonemptyLine(); // Binary files x and y differ
       $this->markBinary($change);
@@ -710,7 +710,7 @@ final class ArcanistDiffParser {
     // can not apply these patches.)
     $is_hg_binary_delete = preg_match(
       '/^Binary file .* has changed$/',
-      $line);
+      rtrim($line));
     if ($is_hg_binary_delete) {
       $this->nextNonemptyLine();
       $this->markBinary($change);
@@ -723,7 +723,7 @@ final class ArcanistDiffParser {
     // patch.
     $is_git_binary_patch = preg_match(
       '/^GIT binary patch$/',
-      $line);
+      rtrim($line));
     if ($is_git_binary_patch) {
       $this->nextLine();
       $this->parseGitBinaryPatch();
@@ -739,7 +739,7 @@ final class ArcanistDiffParser {
 
     if ($is_git) {
       // "git diff -b" ignores whitespace, but has an empty hunk target
-      if (preg_match('@^diff --git a/.*$@', $line)) {
+      if (preg_match('@^diff --git .*$@', $line)) {
         $this->nextLine();
         return null;
       }

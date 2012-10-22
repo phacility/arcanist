@@ -549,6 +549,9 @@ EOTEXT
           'dst/file',
           $change->getCurrentPath());
         break;
+      case 'more-newlines.svndiff':
+        $this->assertEqual(1, count($changes));
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
