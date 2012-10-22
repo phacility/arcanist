@@ -421,19 +421,30 @@ abstract class ArcanistPhutilTestCase {
           $this->willRunOneTest($name);
 
           $this->beginCoverage();
-          $test_exception = null;
+          $exceptions = array();
           try {
             call_user_func_array(
               array($this, $name),
               array());
             $this->passTest(pht('%d assertion(s) passed.', $this->assertions));
           } catch (Exception $ex) {
-            $test_exception = $ex;
+            $exceptions['Execution'] = $ex;
           }
 
-          $this->didRunOneTest($name);
-          if ($test_exception) {
-            throw $test_exception;
+          try {
+            $this->didRunOneTest($name);
+          } catch (Exception $ex) {
+            $exceptions['Shutdown'] = $ex;
+          }
+
+          if ($exceptions) {
+            if (count($exceptions) == 1) {
+              throw head($exceptions);
+            } else {
+              throw new PhutilAggregateException(
+                "Multiple exceptions were raised during test execution.",
+                $exceptions);
+            }
           }
         } catch (ArcanistPhutilTestTerminatedException $ex) {
           // Continue with the next test.
