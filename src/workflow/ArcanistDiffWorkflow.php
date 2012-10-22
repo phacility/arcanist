@@ -31,8 +31,7 @@ final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
   private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $lintExcuse;
-  private $unitExcuse;
+  private $excuses = array('lint' => null, 'unit' => null);
   private $testResults;
   private $diffID;
   private $revisionID;
@@ -417,6 +416,7 @@ EOTEXT
     if ($background) {
       $server = new PhutilConsoleServer();
       $server->addExecFutureClient($lint_unit);
+      $server->setHandler(array($this, 'handleServerMessage'));
       $server->run();
 
       list($err) = $lint_unit->resolve();
@@ -425,14 +425,14 @@ EOTEXT
         return 1;
       }
     } else {
+      $server = $this->console->getServer();
+      $server->setHandler(array($this, 'handleServerMessage'));
       $data = $this->runLintUnit();
     }
     $lint_result = $data['lintResult'];
-    $this->lintExcuse = $data['lintExcuse'];
     $this->unresolvedLint = $data['unresolvedLint'];
     $this->postponedLinters = $data['postponedLinters'];
     $unit_result = $data['unitResult'];
-    $this->unitExcuse = $data['unitExcuse'];
     $this->testResults = $data['testResults'];
 
     $changes = $this->generateChanges();
@@ -1203,11 +1203,9 @@ EOTEXT
     $unit_result = $this->runUnit();
     return array(
       'lintResult' => $lint_result,
-      'lintExcuse' => $this->lintExcuse,
       'unresolvedLint' => $this->unresolvedLint,
       'postponedLinters' => $this->postponedLinters,
       'unitResult' => $unit_result,
-      'unitExcuse' => $this->unitExcuse,
       'testResults' => $this->testResults,
     );
   }
@@ -1248,14 +1246,16 @@ EOTEXT
             "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $this->lintExcuse = $this->getErrorExcuse(
+          $this->getErrorExcuse(
+            'lint',
             "Lint issued unresolved warnings.",
             'lint-excuses');
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           $this->console->writeOut(
             "<bg:red>** LINT ERRORS **</bg> Lint raised errors!\n");
-          $this->lintExcuse = $this->getErrorExcuse(
+          $this->getErrorExcuse(
+            'lint',
             "Lint issued unresolved errors!",
             'lint-excuses');
           break;
@@ -1336,7 +1336,8 @@ EOTEXT
         case ArcanistUnitWorkflow::RESULT_FAIL:
           $this->console->writeOut(
             "<bg:red>** UNIT ERRORS **</bg> Unit testing raised errors!\n");
-          $this->unitExcuse = $this->getErrorExcuse(
+          $this->getErrorExcuse(
+            'unit',
             "Unit test results include failures!",
             'unit-excuses');
           break;
@@ -1369,24 +1370,35 @@ EOTEXT
     return $this->testResults;
   }
 
-  private function getErrorExcuse($prompt, $history) {
+  private function getErrorExcuse($type, $prompt, $history) {
     if ($this->getArgument('excuse')) {
       $prompt .= " Ignore them?";
       if (!$this->console->confirm($prompt)) {
         throw new ArcanistUserAbortException();
       }
-      return $this->getArgument('excuse');
+      $this->excuses[$type] = $this->getArgument('excuse');
+      return;
     }
 
     $history = $this->getRepositoryAPI()->getScratchFilePath($history);
 
     $prompt .= " Provide explanation to continue or press Enter to abort.";
     $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
-    $return = $this->console->prompt("Explanation:", $history);
-    if ($return == '') {
+    $this->console->sendMessage(array(
+      'type'    => $type,
+      'prompt'  => "Explanation:",
+      'history' => $history,
+    ));
+  }
+
+  public function handleServerMessage(PhutilConsoleMessage $message) {
+    $data = $message->getData();
+    $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
+    if ($response == '') {
       throw new ArcanistUserAbortException();
     }
-    return $return;
+    $this->excuses[$data['type']] = $response;
+    return null;
   }
 
 
@@ -2229,9 +2241,9 @@ EOTEXT
 
     if ($this->unresolvedLint) {
       $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
-      if (strlen($this->lintExcuse)) {
+      if (strlen($this->excuses['lint'])) {
         $this->updateDiffProperty('arc:lint-excuse',
-          json_encode($this->lintExcuse));
+          json_encode($this->excuses['lint']));
       }
     }
 
@@ -2256,9 +2268,9 @@ EOTEXT
     }
 
     $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
-    if (strlen($this->unitExcuse)) {
+    if (strlen($this->excuses['unit'])) {
       $this->updateDiffProperty('arc:unit-excuse',
-        json_encode($this->unitExcuse));
+        json_encode($this->excuses['unit']));
     }
   }
 
