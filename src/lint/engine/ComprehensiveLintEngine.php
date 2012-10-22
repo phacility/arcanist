@@ -62,8 +62,6 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
     $linters[] = id(new ArcanistJSHintLinter())
       ->setPaths(preg_grep('/\.js$/', $paths));
 
-    $linters = array_merge($linters, $this->buildJSLinters($paths));
-
     return $linters;
   }
 
