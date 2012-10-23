@@ -23,6 +23,10 @@
  */
 final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'svn-hook-pre-commit';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **svn-hook-pre-commit** __repository__ __transaction__

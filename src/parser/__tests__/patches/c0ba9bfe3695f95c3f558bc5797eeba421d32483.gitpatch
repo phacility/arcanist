@@ -1,0 +1,35 @@
+diff --git a/koan3 b/koan3
+deleted file mode 100644
+--- a/koan3
++++ /dev/null
+@@ -1,12 +0,0 @@
+-A monk asked Joshu,
+-"Has a dog Buddha nature?"
+-Joshu replied, "Mu".
+-
+-The quick brown
+-fox jumped over
+-the lazy dog.
+-
+-Git only detects changes
+-as moves if both files
+-are mostly similar. So
+-you need a lot of text.
+diff --git a/koan4 b/koan4
+deleted file mode 100644
+--- a/koan4
++++ /dev/null
+@@ -1,12 +0,0 @@
+-A monk asked Joshu,
+-"Has a dog Buddha nature?"
+-Joshu replied, "Mu".
+-
+-The quick brown
+-fox jumped over
+-the lazy dog.
+-
+-Git only detects changes
+-as moves if both files
+-are mostly similar. So
+-you need a lot of text.
+

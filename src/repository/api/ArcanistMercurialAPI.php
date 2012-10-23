@@ -427,6 +427,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function setDefaultBaseCommit() {
+    $this->setRelativeCommit('.^');
+    return $this;
+  }
+
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);

@@ -23,6 +23,10 @@
  */
 final class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'amend';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **amend** [--revision __revision_id__] [--show]
@@ -102,10 +106,8 @@ EOTEXT
       $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     }
 
-    if ($repository_api instanceof ArcanistGitAPI) {
-      $repository_api->setRelativeCommit('HEAD^');
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      $repository_api->setRelativeCommit('.^');
+    if ($repository_api->supportsRelativeLocalCommits()) {
+      $repository_api->setDefaultBaseCommit();
     }
 
     $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(

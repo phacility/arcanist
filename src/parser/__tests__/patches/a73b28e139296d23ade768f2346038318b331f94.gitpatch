@@ -1,0 +1,8 @@
+diff --git a/text b/text
+--- a/text
++++ b/text
+@@ -1,2 +1,3 @@
+ quack quack
++I am a duck
+ quack quack
+

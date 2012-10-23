@@ -33,6 +33,11 @@ final class ArcanistCloseWorkflow extends ArcanistBaseWorkflow {
     "open"      => 0
     );
 
+
+  public function getWorkflowName() {
+    return 'close';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **close** __task_id__ [__options__]

@@ -25,6 +25,10 @@ final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
   private $revisionID;
 
+  public function getWorkflowName() {
+    return 'commit';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **commit** [--revision __revision_id__] [--show]

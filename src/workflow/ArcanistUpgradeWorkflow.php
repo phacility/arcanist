@@ -23,6 +23,10 @@
  */
 final class ArcanistUpgradeWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'upgrade';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **upgrade**
@@ -62,10 +66,10 @@ EOTEXT
       $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
         $working_copy);
 
-      // Force the range to HEAD^..HEAD, which is meaningless but keeps us
-      // from triggering "base" rules or other commit range resolution rules
-      // that might prompt the user when we pull the working copy status.
-      $repository_api->setRelativeCommit('HEAD^');
+      if ($repository_api->supportsRelativeLocalCommits()) {
+        $repository_api->setDefaultBaseCommit();
+      }
+
       $this->setRepositoryAPI($repository_api);
 
       // Require no local changes.

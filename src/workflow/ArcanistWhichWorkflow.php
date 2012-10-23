@@ -23,6 +23,10 @@
  */
 final class ArcanistWhichWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'which';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **which** (svn)

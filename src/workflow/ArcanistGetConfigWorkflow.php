@@ -23,6 +23,10 @@
  */
 final class ArcanistGetConfigWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'get-config';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **get-config** -- [__name__ ...]

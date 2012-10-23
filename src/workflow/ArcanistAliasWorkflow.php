@@ -23,6 +23,10 @@
  */
 final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'alias';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **alias**

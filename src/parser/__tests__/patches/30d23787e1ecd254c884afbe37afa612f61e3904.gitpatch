@@ -1,0 +1,14 @@
+diff --git a/koan2 b/koan
+rename from koan2
+rename to koan
+--- a/koan2
++++ b/koan
+@@ -1,6 +1,6 @@
+ A monk asked Joshu,
+ "Has a dog Buddha nature?"
+-Joshu replied, "Mu".
++Joshu replied, "No".
+ 
+ The quick brown
+ fox jumped over
+

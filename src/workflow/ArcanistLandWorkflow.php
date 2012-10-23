@@ -23,6 +23,10 @@
  */
 final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'land';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **land** [__options__] [__branch__] [--onto __master__]

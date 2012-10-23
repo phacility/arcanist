@@ -23,6 +23,10 @@
  */
 final class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'cover';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **cover** [--rev __revision__] [__path__ ...]

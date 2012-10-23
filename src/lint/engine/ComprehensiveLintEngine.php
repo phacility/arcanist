@@ -39,113 +39,29 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
       }
     }
 
-    $generated_linter = new ArcanistGeneratedLinter();
-    $linters[] = $generated_linter;
+    $text_paths = preg_grep('/\.(php|css|hpp|cpp|l|y)$/', $paths);
+    $linters[] = id(new ArcanistGeneratedLinter())->setPaths($text_paths);
+    $linters[] = id(new ArcanistNoLintLinter())->setPaths($text_paths);
+    $linters[] = id(new ArcanistTextLinter())->setPaths($text_paths);
 
-    $nolint_linter = new ArcanistNoLintLinter();
-    $linters[] = $nolint_linter;
+    $linters[] = id(new ArcanistFilenameLinter())->setPaths($paths);
 
-    $text_linter = new ArcanistTextLinter();
-    $linters[] = $text_linter;
-    foreach ($paths as $path) {
-      $is_text = false;
-      if (preg_match('/\.(php|css|hpp|cpp|l|y)$/', $path)) {
-        $is_text = true;
-      }
-      if ($is_text) {
-        $generated_linter->addPath($path);
-        $generated_linter->addData($path, $this->loadData($path));
+    $linters[] = id(new ArcanistXHPASTLinter())
+      ->setPaths(preg_grep('/\.php$/', $paths));
 
-        $nolint_linter->addPath($path);
-        $nolint_linter->addData($path, $this->loadData($path));
+    $linters[] = id(new ArcanistApacheLicenseLinter())
+      ->setPaths(preg_grep('/\.(php|cpp|hpp|l|y)$/', $paths));
 
-        $text_linter->addPath($path);
-        $text_linter->addData($path, $this->loadData($path));
-      }
-    }
+    $py_paths = preg_grep('/\.py$/', $paths);
+    $linters[] = id(new ArcanistPyFlakesLinter())->setPaths($py_paths);
+    $linters[] = id(new ArcanistPEP8Linter())->setPaths($py_paths);
 
-    $name_linter = new ArcanistFilenameLinter();
-    $linters[] = $name_linter;
-    foreach ($paths as $path) {
-      $name_linter->addPath($path);
-    }
+    $linters[] = id(new ArcanistRubyLinter())
+      ->setPaths(preg_grep('/\.rb$/', $paths));
 
-    $xhpast_linter = new ArcanistXHPASTLinter();
-    $linters[] = $xhpast_linter;
-    foreach ($paths as $path) {
-      if (preg_match('/\.php$/', $path)) {
-        $xhpast_linter->addPath($path);
-        $xhpast_linter->addData($path, $this->loadData($path));
-      }
-    }
+    $linters[] = id(new ArcanistJSHintLinter())
+      ->setPaths(preg_grep('/\.js$/', $paths));
 
-    $linters = array_merge($linters, $this->buildLicenseLinters($paths));
-    $linters = array_merge($linters, $this->buildPythonLinters($paths));
-    $linters = array_merge($linters, $this->buildRubyLinters($paths));
-    $linters = array_merge($linters, $this->buildJSLinters($paths));
-
-    return $linters;
-  }
-
-  public function buildLicenseLinters($paths) {
-    $license_linter = new ArcanistApacheLicenseLinter();
-
-    $linters = array();
-    $linters[] = $license_linter;
-    foreach ($paths as $path) {
-      if (preg_match('/\.(php|cpp|hpp|l|y)$/', $path)) {
-        if (!preg_match('@^externals/@', $path)) {
-          $license_linter->addPath($path);
-          $license_linter->addData($path, $this->loadData($path));
-        }
-      }
-    }
-    return $linters;
-  }
-
-  public function buildPythonLinters($paths) {
-    $pyflakes_linter = new ArcanistPyFlakesLinter();
-    $pep8_linter = new ArcanistPEP8Linter();
-
-    $linters = array();
-    $linters[] = $pyflakes_linter;
-    $linters[] = $pep8_linter;
-    foreach ($paths as $path) {
-      if (preg_match('/\.py$/', $path)) {
-        $pyflakes_linter->addPath($path);
-        $pyflakes_linter->addData($path, $this->loadData($path));
-        $pep8_linter->addPath($path);
-        $pep8_linter->addData($path, $this->loadData($path));
-      }
-    }
-    return $linters;
-  }
-
-  public function buildRubyLinters($paths) {
-    $ruby_linter = new ArcanistRubyLinter();
-
-    $linters = array();
-    $linters[] = $ruby_linter;
-      foreach ($paths as $path) {
-        if (preg_match('/\.rb$/', $path)) {
-          $ruby_linter->addPath($path);
-          $ruby_linter->addData($path, $this->loadData($path));
-        }
-      }
-    return $linters;
-  }
-
-  public function buildJSLinters($paths) {
-    $js_linter = new ArcanistJSHintLinter();
-
-    $linters = array();
-    $linters[] = $js_linter;
-      foreach ($paths as $path) {
-        if (preg_match('/\.js$/', $path)) {
-          $js_linter->addPath($path);
-          $js_linter->addData($path, $this->loadData($path));
-        }
-      }
     return $linters;
   }
 

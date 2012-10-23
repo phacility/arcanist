@@ -31,6 +31,10 @@ final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
   private $source;
   private $sourceParam;
 
+  public function getWorkflowName() {
+    return 'patch';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **patch** __D12345__
@@ -111,9 +115,9 @@ EOTEXT
         ),
         'help' =>
           "Normally under git, a new branch is created and then the patch ".
-          "is applied and committed in the new branch. This flag skips the ".
-          "branch creation step and applies and commits the patch to the ".
-          "current branch.",
+          "is applied and committed in the new branch. This flag ".
+          "cherry-picks the resultant commit onto the original branch and ".
+          "deletes the temporary branch.",
         'conflicts' => array(
           'update' => true,
         ),
@@ -219,18 +223,20 @@ EOTEXT
     return true;
   }
 
-  private function shouldBranch() {
+  private function canBranch() {
     // git only for now
     $repository_api = $this->getRepositoryAPI();
     if (!($repository_api instanceof ArcanistGitAPI)) {
       return false;
     }
+    return true;
+  }
 
+  private function shouldBranch() {
     $no_branch = $this->getArgument('nobranch', false);
     if ($no_branch) {
       return false;
     }
-
     return true;
   }
 
@@ -328,10 +334,9 @@ EOTEXT
     return $bookmark_name;
   }
 
-  private function createBranch(ArcanistBundle $bundle) {
-    $branch_name    = $this->getBranchName($bundle);
+  private function hasBaseRevision(ArcanistBundle $bundle) {
+    $base_revision = $bundle->getBaseRevision();
     $repository_api = $this->getRepositoryAPI();
-    $base_revision  = $bundle->getBaseRevision();
 
     // verify the base revision is valid
     // in a working copy that uses the git-svn bridge, the base revision might
@@ -343,8 +348,15 @@ EOTEXT
     list($err) = $repository_api->execManualLocal(
       'cat-file -t %s',
       $base_revision);
+    return !$err;
+  }
 
-    if ($base_revision && !$err) {
+  private function createBranch(ArcanistBundle $bundle, $has_base_revision) {
+    $branch_name = $this->getBranchName($bundle);
+    $base_revision = $bundle->getBaseRevision();
+    $repository_api = $this->getRepositoryAPI();
+
+    if ($base_revision && $has_base_revision) {
       $repository_api->execxLocal(
         'checkout -b %s %s',
         $branch_name,
@@ -358,6 +370,8 @@ EOTEXT
     echo phutil_console_format(
       "Created and checked out branch %s.\n",
       $branch_name);
+
+    return $branch_name;
   }
 
   private function createBookmark(ArcanistBundle $bundle) {
@@ -454,15 +468,26 @@ EOTEXT
       $this->updateWorkingCopy();
     }
 
-    if ($this->shouldBranch()) {
-      $this->createBranch($bundle);
+    $repository_api = $this->getRepositoryAPI();
+
+    $has_base_revision = $this->hasBaseRevision($bundle);
+    if ($this->shouldCommit() &&
+        $this->canBranch() &&
+        ($this->shouldBranch() || $has_base_revision)) {
+
+      $original_branch = $repository_api->getBranchName();
+      // If we weren't on a branch, then record the ref we'll return to
+      // instead.
+      if ($original_branch === null) {
+        $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+      }
+      $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
 
     if ($this->shouldBookmark()) {
       $this->createBookmark($bundle);
     }
 
-    $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistSubversionAPI) {
       $patch_err = 0;
 
@@ -706,6 +731,22 @@ EOTEXT
       } else {
         $verb = 'applied';
       }
+
+      if ($this->shouldCommit() && $this->canBranch() &&
+          !$this->shouldBranch() && $has_base_revision) {
+        $repository_api->execxLocal('checkout %s', $original_branch);
+        $ex = null;
+        try {
+          $repository_api->execxLocal('cherry-pick %s', $new_branch);
+        } catch (Exception $ex) {}
+        $repository_api->execxLocal('branch -D %s', $new_branch);
+        if ($ex) {
+          echo phutil_console_format(
+            "\n<bg:red>** Cherry Pick Failed!**</bg>\n");
+          throw $ex;
+        }
+      }
+
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
@@ -805,6 +846,11 @@ EOTEXT
    * Do the best we can to prevent PEBKAC and id10t issues.
    */
   private function sanityCheck(ArcanistBundle $bundle) {
+    $repository_api = $this->getRepositoryAPI();
+
+    if ($repository_api->supportsRelativeLocalCommits()) {
+      $repository_api->setDefaultBaseCommit();
+    }
 
     // Require clean working copy
     $this->requireCleanWorkingCopy();
@@ -838,7 +884,6 @@ EOTEXT
 
     // Check to see if the bundle's base revision matches the working copy
     // base revision
-    $repository_api = $this->getRepositoryAPI();
     if ($repository_api->supportsRelativeLocalCommits()) {
       $bundle_base_rev = $bundle->getBaseRevision();
       if (empty($bundle_base_rev)) {

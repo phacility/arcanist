@@ -28,6 +28,10 @@ final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
   private $title;
   private $json;
 
+  public function getWorkflowName() {
+    return 'paste';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **paste** [--title __title__] [--lang __language__] [--json]

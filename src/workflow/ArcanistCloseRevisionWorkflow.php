@@ -23,6 +23,10 @@
  */
 final class ArcanistCloseRevisionWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'close-revision';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **close-revision** [__options__] __revision__

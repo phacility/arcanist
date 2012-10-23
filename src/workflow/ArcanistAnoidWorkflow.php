@@ -21,6 +21,10 @@
  */
 final class ArcanistAnoidWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'anoid';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **anoid**

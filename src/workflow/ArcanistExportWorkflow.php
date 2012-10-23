@@ -35,6 +35,10 @@ final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
   private $sourceID;
   private $format;
 
+  public function getWorkflowName() {
+    return 'export';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **export** [__paths__] __format__ (svn)
@@ -186,6 +190,7 @@ EOTEXT
       case self::SOURCE_LOCAL:
         $repository_api = $this->getRepositoryAPI();
         $parser = new ArcanistDiffParser();
+        $parser->setRepositorAPI($repository_api);
 
         if ($repository_api instanceof ArcanistGitAPI) {
           $repository_api->parseRelativeLocalCommit(

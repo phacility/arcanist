@@ -196,44 +196,52 @@ abstract class ArcanistLintEngine {
       throw new ArcanistNoEffectException("No paths are lintable.");
     }
 
-    foreach ($linters as $linter) {
-      $linter->setEngine($this);
-      if (!$linter->canRun()) {
-        continue;
-      }
-      $paths = $linter->getPaths();
-
-      foreach ($paths as $key => $path) {
-        // Make sure each path has a result generated, even if it is empty
-        // (i.e., the file has no lint messages).
-        $result = $this->getResultForPath($path);
-        if (isset($stopped[$path])) {
-          unset($paths[$key]);
+    $exceptions = array();
+    foreach ($linters as $linter_name => $linter) {
+      try {
+        $linter->setEngine($this);
+        if (!$linter->canRun()) {
+          continue;
         }
-      }
-      $paths = array_values($paths);
+        $paths = $linter->getPaths();
 
-      if ($paths) {
-        $linter->willLintPaths($paths);
-        foreach ($paths as $path) {
-          $linter->willLintPath($path);
-          $linter->lintPath($path);
-          if ($linter->didStopAllLinters()) {
-            $stopped[$path] = true;
+        foreach ($paths as $key => $path) {
+          // Make sure each path has a result generated, even if it is empty
+          // (i.e., the file has no lint messages).
+          $result = $this->getResultForPath($path);
+          if (isset($stopped[$path])) {
+            unset($paths[$key]);
           }
         }
-      }
+        $paths = array_values($paths);
 
-      $minimum = $this->minimumSeverity;
-      foreach ($linter->getLintMessages() as $message) {
-        if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
-          continue;
+        if ($paths) {
+          $linter->willLintPaths($paths);
+          foreach ($paths as $path) {
+            $linter->willLintPath($path);
+            $linter->lintPath($path);
+            if ($linter->didStopAllLinters()) {
+              $stopped[$path] = true;
+            }
+          }
         }
-        if (!$this->isRelevantMessage($message)) {
-          continue;
+
+        $minimum = $this->minimumSeverity;
+        foreach ($linter->getLintMessages() as $message) {
+          if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
+            continue;
+          }
+          if (!$this->isRelevantMessage($message)) {
+            continue;
+          }
+          $result = $this->getResultForPath($message->getPath());
+          $result->addMessage($message);
         }
-        $result = $this->getResultForPath($message->getPath());
-        $result->addMessage($message);
+      } catch (Exception $ex) {
+        if (!is_string($linter_name)) {
+          $linter_name = get_class($linter);
+        }
+        $exceptions[$linter_name] = $ex;
       }
     }
 
@@ -258,6 +266,14 @@ abstract class ArcanistLintEngine {
       }
     }
 
+    if ($exceptions) {
+      throw new PhutilAggregateException('Some linters failed:', $exceptions);
+    }
+
+    return $this->results;
+  }
+
+  public function getResults() {
     return $this->results;
   }
 

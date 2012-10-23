@@ -23,6 +23,10 @@
  */
 final class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'install-certificate';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **install-certificate** [uri]

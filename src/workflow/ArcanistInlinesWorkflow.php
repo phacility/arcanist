@@ -21,6 +21,10 @@
  */
 final class ArcanistInlinesWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'inlines';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **inlines** [--revision __revision_id__]

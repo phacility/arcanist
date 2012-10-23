@@ -27,6 +27,10 @@ final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
   private $saveAs;
   private $show;
 
+  public function getWorkflowName() {
+    return 'download';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **download** __file__ [--as __name__] [--show]

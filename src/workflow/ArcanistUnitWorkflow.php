@@ -33,6 +33,10 @@ final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
   private $testResults;
   private $engine;
 
+  public function getWorkflowName() {
+    return 'unit';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **unit** [__options__] [__paths__]

@@ -100,10 +100,18 @@ abstract class ArcanistLinterTestCase extends ArcanistTestCase {
 
     } catch (ArcanistPhutilTestTerminatedException $ex) {
       throw $ex;
-    } catch (ArcanistUsageException $ex) {
-      $this->assertSkipped($ex->getMessage());
     } catch (Exception $exception) {
       $caught_exception = true;
+      if ($exception instanceof PhutilAggregateException) {
+        $caught_exception = false;
+        foreach ($exception->getExceptions() as $ex) {
+          if ($ex instanceof ArcanistUsageException) {
+            $this->assertSkipped($ex->getMessage());
+          } else {
+            $caught_exception = true;
+          }
+        }
+      }
       $exception_message = $exception->getMessage()."\n\n".
                            $exception->getTraceAsString();
     }

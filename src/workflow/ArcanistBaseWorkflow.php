@@ -83,6 +83,29 @@ abstract class ArcanistBaseWorkflow {
 
   abstract public function run();
 
+  /**
+   * Return the command used to invoke this workflow from the command like,
+   * e.g. "help" for @{class:ArcanistHelpWorkflow}.
+   *
+   * @return string   The command a user types to invoke this workflow.
+   */
+  // TODO: Uncomment after installations will update (2012-10-31).
+  // abstract public function getWorkflowName();
+
+  /**
+   * Return console formatted string with all command synopses.
+   *
+   * @return string  6-space indented list of available command synopses.
+   */
+  abstract public function getCommandSynopses();
+
+  /**
+   * Return console formatted string with command help printed in `arc help`.
+   *
+   * @return string  10-space indented help to use the command.
+   */
+  abstract public function getCommandHelp();
+
 
 /* -(  Conduit  )------------------------------------------------------------ */
 
@@ -460,14 +483,6 @@ abstract class ArcanistBaseWorkflow {
 
   public function getArcanistConfiguration() {
     return $this->arcanistConfiguration;
-  }
-
-  public function getCommandSynopses() {
-    return get_class($this).": Undocumented";
-  }
-
-  public function getCommandHelp() {
-    return get_class($this).": Undocumented";
   }
 
   public function requiresWorkingCopy() {
@@ -1321,6 +1336,9 @@ abstract class ArcanistBaseWorkflow {
 
   protected function newDiffParser() {
     $parser = new ArcanistDiffParser();
+    if ($this->getRepositoryAPI()) {
+      $parser->setRepositoryAPI($this->getRepositoryAPI());
+    }
     $parser->setWriteDiffOnFailure(true);
     return $parser;
   }

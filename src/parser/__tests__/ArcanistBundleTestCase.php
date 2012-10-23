@@ -56,6 +56,7 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     }
 
     $archive = dirname(__FILE__).'/bundle.git.tgz';
+    $patches = dirname(__FILE__).'/patches/';
     $fixture = PhutilDirectoryFixture::newFromArchive($archive);
 
     chdir($fixture->getPath());
@@ -71,20 +72,53 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
 
     foreach ($commits as $commit) {
       list($commit_hash, $tree_hash, $subject) = explode(' ', $commit, 3);
-      list($diff) = execx(
-        'git diff %s^ %s --',
-        $commit_hash,
-        $commit_hash);
+      execx('git reset --hard %s --', $commit_hash);
+
+      $repository_api = new ArcanistGitAPI($fixture->getPath());
+      $repository_api->setDefaultBaseCommit();
+      $diff = $repository_api->getFullGitDiff();
 
       $parser = new ArcanistDiffParser();
+      $parser->setRepositoryAPI($repository_api);
       $changes = $parser->parseDiff($diff);
+
+      $this->makeChangeAssertions($commit_hash, $changes);
+
       $bundle = ArcanistBundle::newFromChanges($changes);
 
       execx('git reset --hard %s^ --', $commit_hash);
 
-      id(new ExecFuture('git apply --index --reject'))
-        ->write($bundle->toGitPatch())
-        ->resolvex();
+      $patch = $bundle->toGitPatch();
+
+      $expect_path = $patches.'/'.$commit_hash.'.gitpatch';
+      $expect = null;
+      if (Filesystem::pathExists($expect_path)) {
+        $expect = Filesystem::readFile($expect_path);
+      }
+
+      if ($patch === $expect) {
+        $this->assertEqual($expect, $patch);
+      } else {
+        Filesystem::writeFile($expect_path.'.real', $patch);
+        throw new Exception(
+          "Expected patch and actual patch for {$commit_hash} differ. ".
+          "Wrote actual patch to '{$expect_path}.real'.");
+      }
+
+      try {
+        id(new ExecFuture('git apply --index --reject'))
+          ->write($patch)
+          ->resolvex();
+      } catch (CommandException $ex) {
+        $temp = new TempFile(substr($commit_hash, 0, 8).'.patch');
+        $temp->setPreserveFile(true);
+        Filesystem::writeFile($temp, $patch);
+
+        PhutilConsole::getConsole()->writeErr(
+          "Wrote failing patch to '%s'.\n",
+          $temp);
+        throw $ex;
+      }
 
       execx('git commit -m %s', $subject);
       list($result_hash) = execx('git log -n1 --format=%s', '%T');
@@ -94,6 +128,389 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
         $tree_hash,
         $result_hash,
         "Commit {$commit_hash}: {$subject}");
+    }
+  }
+
+  private function makeChangeAssertions($commit, array $raw_changes) {
+    $changes = array();
+
+    // Verify that there are no duplicate changes, and rekey the changes on
+    // affected path because we don't care about the order in which the
+    // changes appear.
+    foreach ($raw_changes as $change) {
+      $this->assertEqual(
+        true,
+        empty($changes[$change->getCurrentPath()]),
+        "Unique Path: ".$change->getCurrentPath());
+      $changes[$change->getCurrentPath()] = $change;
+    }
+
+    switch ($commit) {
+      case 'c573c25d1a767d270fed504cd993e78aba936338':
+        // "Copy a koan over text, editing the original koan."
+        // Git doesn't really do anything meaningful with this.
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $c->getType());
+
+        $c = $changes['text'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $c->getType());
+
+        break;
+      case 'd26628e588cf7d16368845b121c6ac6c781e81d0':
+        // "Copy a koan, modifying both the source and destination."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_AWAY,
+          $c->getType());
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+
+        break;
+      case 'b0c9663ecda5f666f62dad245a3a7549aac5e636':
+        // "Remove a koan copy."
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        break;
+      case 'b6ecdb3b4801f3028d88ba49940a558360847dbf':
+        // "Copy a koan and edit the destination."
+        // Git does not detect this as a copy without --find-copies-harder.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
+      case '30d23787e1ecd254c884afbe37afa612f61e3904':
+        // "Move and edit a koan."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_AWAY,
+          $c->getType());
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case 'c0ba9bfe3695f95c3f558bc5797eeba421d32483':
+        // "Remove two koans."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan3'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        $c = $changes['koan4'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+
+        break;
+      case '2658fd01d5355abe5d4c7ead3a0e7b4b3449fe77':
+        // "Multicopy a koan."
+
+        $this->assertEqual(3, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MULTICOPY,
+          $c->getType());
+
+        $c = $changes['koan3'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+
+        $c = $changes['koan4'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case '1c5fe4e2243bb19d6b3bf15896177b13768e6eb6':
+        // "Copy a koan."
+        // Git does not detect this as a copy without --find-copies-harder.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
+      case '6d9eb65a2c2b56dee64d72f59554c1cca748dd34':
+        // "Move a koan."
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_AWAY,
+          $c->getType());
+
+        $c = $changes['koan2'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+
+        break;
+      case '141452e2a775ee86409e8779dd2eda767b4fe8ab':
+        // "Add a koan."
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['koan'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+
+        break;
+      case '5dec8bf28557f078d1987c4e8cfb53d08310f522':
+        // "Copy an image, and replace the original."
+        // `image_2.png` is copied to `image.png` and then replaced.
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['image.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        $c = $changes['image_2.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_AWAY,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getOriginalFileData()));
+        $this->assertEqual(
+          'c9ec1b952480da09b393ba672d9b13da',
+          md5($c->getCurrentFileData()));
+
+        break;
+      case 'fb28468d25a5fdd063aca4ca559454c998a0af51':
+        // "Multicopy image."
+        // `image.png` is copied to `image_2.png` and `image_3.png` and then
+        // deleted. Git detects this as a move and an add.
+
+        $this->assertEqual(3, count($changes));
+
+        $c = $changes['image.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MULTICOPY,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getOriginalFileData()));
+        $this->assertEqual(
+          null,
+          $c->getCurrentFileData());
+
+        $c = $changes['image_2.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_COPY_HERE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        $c = $changes['image_3.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        break;
+      case 'df340e88d8aba12e8f2b8827f01f0cd9f35eb758':
+        // "Remove binary image."
+        // `image_2.png` is deleted.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['image_2.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_DELETE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getOriginalFileData()));
+        $this->assertEqual(
+          null,
+          $c->getCurrentFileData());
+
+        break;
+      case '3f5c6d735e64c25a04f83be48ef184b25b5282f0':
+        // "Copy binary image."
+        // `image_2.png` is copied to `image.png`. Git does not detect this as
+        // a copy without --find-copies-harder.
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['image.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        break;
+      case 'b454edb3bb29890ee5b3af5ef66ce6a24d15d882':
+        // "Move binary image."
+        // `image.png` is moved to `image_2.png`.
+
+        $this->assertEqual(2, count($changes));
+
+        $c = $changes['image.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_AWAY,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getOriginalFileData()));
+        $this->assertEqual(
+          null,
+          $c->getCurrentFileData());
+
+        $c = $changes['image_2.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MOVE_HERE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        break;
+      case '5de5f3dfda1b7db2eb054e57699f05aaf1f4483e':
+        // "Add a binary image."
+        // `image.png` is added.
+
+        $c = $changes['image.png'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_ADD,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_BINARY,
+          $c->getFileType());
+        $this->assertEqual(
+          null,
+          $c->getOriginalFileData());
+        $this->assertEqual(
+          '8645053452b2cc2f955ef3944ac0831a',
+          md5($c->getCurrentFileData()));
+
+        break;
+      case '176a4c2c3fd88b2d598ce41a55d9c3958be9fd2d':
+        // "Convert \r\n newlines to \n newlines."
+      case 'a73b28e139296d23ade768f2346038318b331f94':
+        // "Add text with \r\n newlines."
+      case '337ccec314075a2bdb4a912ef467d35d04a713e4':
+        // "Convert \n newlines to \r\n newlines.";
+      case '6d5e64a4a7a6a036c53b1d087184cb2c70099f2c':
+        // "Remove tabs."
+      case '49395994a1a8a06287e40a3b318be4349e8e0288':
+        // "Add tabs."
+      case 'a5a53c424f3c2a7e85f6aee35e834c8ec5b3dbe3':
+        // "Add trailing newline."
+      case 'd53dc614090c6c7d6d023e170877d7f611f18f5a':
+        // "Remove trailing newline."
+      case 'f19fb9fa1385c01b53bdb6d8842dd154e47151ec':
+        // "Edit a text file."
+
+        $this->assertEqual(1, count($changes));
+
+        $c = $changes['text'];
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $c->getType());
+        $this->assertEqual(
+          ArcanistDiffChangeType::FILE_TEXT,
+          $c->getFileType());
+        break;
+      case '228d7be4840313ed805c25c15bba0f7b188af3e6':
+        // "Add a text file."
+        // This commit is never reached because we skip the 0th commit junk.
+        $this->assertEqual(true, "This is never reached.");
+        break;
+      default:
+        throw new Exception(
+          "Commit {$commit} has no change assertions!");
     }
   }
 

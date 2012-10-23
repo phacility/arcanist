@@ -23,6 +23,10 @@
  */
 final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
+  public function getWorkflowName() {
+    return 'shell-complete';
+  }
+
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **shell-complete** __--current__ __N__ -- [__argv__]

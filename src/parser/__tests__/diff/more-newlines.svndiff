@@ -1,0 +1,13 @@
+Index: Database/tables/dbo.Account.sql
+===================================================================
+--- Database/tables/dbo.Account.sql	(revision 1587)
++++ Database/tables/dbo.Account.sql	(working copy)
+@@ -23,6 +23,8 @@
+ GO
+ CREATE CLUSTERED INDEX IX_Account ON [Account] ([CreationDateTime])
+ GO
++ALTER TABLE [dbo].[Account] ADD CONSTRAINT [UK_Account_APIKey] UNIQUE ([APIKey])
++GO
+ ALTER TABLE [dbo].[Account] ADD  CONSTRAINT [DF_Account_AccountId]  DEFAULT (newid()) FOR [AccountId]
+ GO
+ ALTER TABLE [dbo].[Account] ADD  CONSTRAINT [DF_Account_CreationDateTime]  DEFAULT (getutcdate()) FOR [CreationDateTime]

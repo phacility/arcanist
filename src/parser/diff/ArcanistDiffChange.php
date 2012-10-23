@@ -40,6 +40,27 @@ final class ArcanistDiffChange {
 
   private $needsSyntheticGitHunks;
 
+  private $currentFileData;
+  private $originalFileData;
+
+  public function setOriginalFileData($original_file_data) {
+    $this->originalFileData = $original_file_data;
+    return $this;
+  }
+
+  public function getOriginalFileData() {
+    return $this->originalFileData;
+  }
+
+  public function setCurrentFileData($current_file_data) {
+    $this->currentFileData = $current_file_data;
+    return $this;
+  }
+
+  public function getCurrentFileData() {
+    return $this->currentFileData;
+  }
+
   public function toDictionary() {
     $hunks = array();
     foreach ($this->hunks as $hunk) {
