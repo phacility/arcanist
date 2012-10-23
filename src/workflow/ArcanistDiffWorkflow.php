@@ -1372,11 +1372,10 @@ EOTEXT
 
   private function getErrorExcuse($type, $prompt, $history) {
     if ($this->getArgument('excuse')) {
-      $prompt .= " Ignore them?";
-      if (!$this->console->confirm($prompt)) {
-        throw new ArcanistUserAbortException();
-      }
-      $this->excuses[$type] = $this->getArgument('excuse');
+      $this->console->sendMessage(array(
+        'type'    => $type,
+        'confirm'  => $prompt." Ignore them?",
+      ));
       return;
     }
 
@@ -1393,7 +1392,12 @@ EOTEXT
 
   public function handleServerMessage(PhutilConsoleMessage $message) {
     $data = $message->getData();
-    $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
+    $response = '';
+    if (isset($data['prompt'])) {
+      $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
+    } else if (phutil_console_confirm($data['confirm'])) {
+      $response = $this->getArgument('excuse');
+    }
     if ($response == '') {
       throw new ArcanistUserAbortException();
     }
