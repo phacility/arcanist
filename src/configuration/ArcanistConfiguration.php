@@ -93,11 +93,7 @@ class ArcanistConfiguration {
     // This is a hook.
   }
 
-  public function didAbortWorkflow(
-    $command,
-    ArcanistBaseWorkflow $workflow,
-    Exception $ex) {
-
+  public function didAbortWorkflow($command, $workflow, Exception $ex) {
     // This is a hook.
   }
 
