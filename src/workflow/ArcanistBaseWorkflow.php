@@ -954,7 +954,7 @@ abstract class ArcanistBaseWorkflow {
   }
 
   protected function normalizeRevisionID($revision_id) {
-    return ltrim(strtoupper($revision_id), 'D');
+    return preg_replace('/^D/i', '', $revision_id);
   }
 
   protected function shouldShellComplete() {
