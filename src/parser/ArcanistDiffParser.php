@@ -222,7 +222,7 @@ final class ArcanistDiffParser {
         '(?P<type>commit) (?P<hash>[a-f0-9]+)(?: \(.*\))?',
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
-        '(?P<type>diff --git) (?P<old>"?.+"?) (?P<cur>"?.+"?)',
+        '(?P<type>diff --git) (?P<oldnew>.*)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
         '(?P<binary>Binary) files '.
@@ -267,14 +267,9 @@ final class ArcanistDiffParser {
 
       if (isset($match['type'])) {
         if ($match['type'] == 'diff --git') {
-          if (isset($match['old'])) {
-            $match['old'] = $this->unescapeFilename($match['old']);
-            $match['old'] = self::stripGitPathPrefix($match['old']);
-          }
-          if (isset($match['cur'])) {
-            $match['cur'] = $this->unescapeFilename($match['cur']);
-            $match['cur'] = self::stripGitPathPrefix($match['cur']);
-          }
+          list($old, $new) = self::splitGitDiffPaths($match['oldnew']);
+          $match['old'] = $old;
+          $match['cur'] = $new;
         }
       }
 
@@ -598,12 +593,12 @@ final class ArcanistDiffParser {
         }
 
         if (!empty($match['old'])) {
-          $match['old'] = $this->unescapeFilename($match['old']);
+          $match['old'] = self::unescapeFilename($match['old']);
           $change->setOldPath($match['old']);
         }
 
         if (!empty($match['cur'])) {
-          $match['cur'] = $this->unescapeFilename($match['cur']);
+          $match['cur'] = self::unescapeFilename($match['cur']);
           $change->setCurrentPath($match['cur']);
         }
 
@@ -1134,7 +1129,7 @@ final class ArcanistDiffParser {
   /**
    * Unescape escaped filenames, e.g. from "git diff".
    */
-  private function unescapeFilename($name) {
+  private static function unescapeFilename($name) {
     if (preg_match('/^".+"$/', $name)) {
       return stripcslashes(substr($name, 1, -1));
     } else {
@@ -1200,6 +1195,7 @@ final class ArcanistDiffParser {
     $this->changes = $changes;
   }
 
+
   /**
    * Strip prefixes off paths from `git diff`. By default git uses a/ and b/,
    * but you can set `diff.mnemonicprefix` to get a different set of prefixes,
@@ -1237,6 +1233,61 @@ final class ArcanistDiffParser {
     }
 
     return preg_replace($regex, '', $path);
+  }
+
+
+  /**
+   * Split the paths on a "diff --git" line into old and new paths. This
+   * is difficult because they may be ambiguous if the files contain spaces.
+   *
+   * @param string Text from a diff line after "diff --git ".
+   * @return pair<string, string> Old and new paths.
+   */
+  public static function splitGitDiffPaths($paths) {
+    $matches = null;
+    $paths = rtrim($paths, "\r\n");
+
+    $patterns = array(
+      // Try quoted paths, used for unicode filenames or filenames with quotes.
+      '@^(?P<old>"(?:\\\\.|[^"\\\\]+)+") (?P<new>"(?:\\\\.|[^"\\\\]+)+")$@',
+
+      // Try paths without spaces.
+      '@^(?P<old>[^ ]+) (?P<new>[^ ]+)$@',
+
+      // Try paths with well-known prefixes.
+      '@^(?P<old>[abicwo12]/.*) (?P<new>[abicwo12]/.*)$@',
+
+      // Try the exact same string twice in a row separated by a space.
+      // This can hit a false positive for moves from files like "old file old"
+      // to "file", but such a case combined with custom diff prefixes is
+      // incredibly obscure.
+      '@^(?P<old>.*) (?P<new>\\1)$@',
+    );
+
+    foreach ($patterns as $pattern) {
+      if (preg_match($pattern, $paths, $matches)) {
+        break;
+      }
+    }
+
+    if (!$matches) {
+      throw new Exception(
+        "Input diff contains ambiguous line 'diff --git {$paths}'. This line ".
+        "is ambiguous because there are spaces in the file names, so the ".
+        "parser can not determine where the file names begin and end. To ".
+        "resolve this ambiguity, use standard prefixes ('a/' and 'b/') when ".
+        "generating diffs.");
+    }
+
+    $old = $matches['old'];
+    $old = self::unescapeFilename($old);
+    $old = self::stripGitPathPrefix($old);
+
+    $new = $matches['new'];
+    $new = self::unescapeFilename($new);
+    $new = self::stripGitPathPrefix($new);
+
+    return array($old, $new);
   }
 
 }
