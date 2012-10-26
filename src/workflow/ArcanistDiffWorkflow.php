@@ -1431,6 +1431,7 @@ EOTEXT
       return $this->getCommitMessageFromUser();
     }
 
+
     if (!$is_raw && !$is_create && !$is_update) {
       $repository_api = $this->getRepositoryAPI();
       $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
@@ -1699,12 +1700,7 @@ EOTEXT
         "Revision '{$revision_id}' does not exist!");
     }
 
-    if ($revision['authorPHID'] != $this->getUserPHID()) {
-      $rev_title = $revision['title'];
-      throw new ArcanistUsageException(
-        "You don't own revision D{$id} '{$rev_title}'. You can only update ".
-        "revisions you own.");
-    }
+    $this->checkRevisionOwnership($revision);
 
     $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
@@ -1726,6 +1722,17 @@ EOTEXT
    */
   private function validateCommitMessage(
     ArcanistDifferentialCommitMessage $message) {
+    $futures = array();
+
+    $revision_id = $message->getRevisionID();
+    if ($revision_id) {
+      $futures['revision'] = $this->getConduit()->callMethod(
+        'differential.query',
+        array(
+          'ids' => array($revision_id),
+        ));
+    }
+
     $reviewers = $message->getFieldValue('reviewerPHIDs');
     if (!$reviewers) {
       $confirm = "You have not specified any reviewers. Continue anyway?";
@@ -1733,26 +1740,43 @@ EOTEXT
         throw new ArcanistUsageException('Specify reviewers and retry.');
       }
     } else {
-      $users = $this->getConduit()->callMethodSynchronous(
+      $futures['reviewers'] = $this->getConduit()->callMethod(
         'user.query',
         array(
           'phids' => $reviewers,
         ));
-      $untils = array();
-      foreach ($users as $user) {
-        if (idx($user, 'currentStatus') == 'away') {
-          $untils[] = $user['currentStatusUntil'];
-        }
-      }
-      if (count($untils) == count($reviewers)) {
-        $until = date('l, M j Y', min($untils));
-        $confirm = "All reviewers are away until {$until}. Continue anyway?";
-        if (!phutil_console_confirm($confirm)) {
-          throw new ArcanistUsageException(
-            'Specify available reviewers and retry.');
-        }
+    }
+
+    foreach (Futures($futures) as $key => $future) {
+      $result = $future->resolve();
+      switch ($key) {
+        case 'revision':
+          if (empty($result)) {
+            throw new ArcanistUsageException(
+              "There is no revision D{$revision_id}.");
+          }
+          $this->checkRevisionOwnership(head($result));
+          break;
+        case 'reviewers':
+          $untils = array();
+          foreach ($result as $user) {
+            if (idx($user, 'currentStatus') == 'away') {
+              $untils[] = $user['currentStatusUntil'];
+            }
+          }
+          if (count($untils) == count($reviewers)) {
+            $until = date('l, M j Y', min($untils));
+            $confirm = "All reviewers are away until {$until}. ".
+                       "Continue anyway?";
+            if (!phutil_console_confirm($confirm)) {
+              throw new ArcanistUsageException(
+                'Specify available reviewers and retry.');
+            }
+          }
+          break;
       }
     }
+
   }
 
 
@@ -2347,6 +2371,20 @@ EOTEXT
       ));
 
     return $event->getValue('fields');
+  }
+
+  private function checkRevisionOwnership(array $revision) {
+    if ($revision['authorPHID'] == $this->getUserPHID()) {
+      return;
+    }
+
+    $id = $revision['id'];
+    $title = $revision['title'];
+
+    throw new ArcanistUsageException(
+      "You don't own revision D{$id} '{$title}'. You can only update ".
+      "revisions you own. You can 'Commandeer' this revision from the web ".
+      "interface if you want to become the owner.");
   }
 
 }

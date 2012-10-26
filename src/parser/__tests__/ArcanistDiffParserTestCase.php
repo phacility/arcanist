@@ -580,4 +580,60 @@ EOTEXT
     }
   }
 
+  public function testGitPathSplitting() {
+    static $tests = array(
+      "a/old.c b/new.c"       => array('old.c', 'new.c'),
+      "a/old.c b/new.c\n"     => array('old.c', 'new.c'),
+      "a/old.c b/new.c\r\n"   => array('old.c', 'new.c'),
+      "old.c new.c"           => array('old.c', 'new.c'),
+      "1/old.c 2/new.c"       => array('old.c', 'new.c'),
+      '"a/\\"quotes1\\"" "b/\\"quotes2\\""' => array(
+        '"quotes1"',
+        '"quotes2"',
+      ),
+      '"a/\\"quotes and spaces1\\"" "b/\\"quotes and spaces2\\""' => array(
+        '"quotes and spaces1"',
+        '"quotes and spaces2"',
+      ),
+      '"a/\\342\\230\\2031" "b/\\342\\230\\2032"' => array(
+        "\xE2\x98\x831",
+        "\xE2\x98\x832",
+      ),
+      "a/Core Data/old.c b/Core Data/new.c" => array(
+        'Core Data/old.c',
+        'Core Data/new.c',
+      ),
+      "some file with spaces.c some file with spaces.c" => array(
+        'some file with spaces.c',
+        'some file with spaces.c',
+      ),
+    );
+
+    foreach ($tests as $input => $expect) {
+      $result = ArcanistDiffParser::splitGitDiffPaths($input);
+      $this->assertEqual(
+        $expect,
+        $result,
+        "Split: {$input}");
+    }
+
+
+    static $ambiguous = array(
+      "old file with spaces.c new file with spaces.c",
+    );
+
+    foreach ($ambiguous as $input) {
+      $caught = null;
+      try {
+        ArcanistDiffParser::splitGitDiffPaths($input);
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertEqual(
+        true,
+        ($caught instanceof Exception),
+        "Ambiguous: {$input}");
+    }
+  }
+
 }
