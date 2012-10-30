@@ -134,10 +134,8 @@ final class ArcanistDiffParser {
           $change->setOldPath($cpath);
           $from[$path] = $cpath;
         }
-      } else {
-        // file was merged from another branch, treat it as a new file
-        $change->setType(ArcanistDiffChangeType::TYPE_ADD);
       }
+
       $type = $change->getType();
       if (($type === ArcanistDiffChangeType::TYPE_MOVE_AWAY ||
            $type === ArcanistDiffChangeType::TYPE_DELETE) &&
