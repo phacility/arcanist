@@ -63,6 +63,7 @@ $args = array_values($argv);
 
 $working_directory = getcwd();
 $console = PhutilConsole::getConsole();
+$config = null;
 
 try {
 
@@ -125,9 +126,9 @@ try {
 
   $user_config = ArcanistBaseWorkflow::readUserConfigurationFile();
 
-  $config = $working_copy->getConfig('arcanist_configuration');
-  if ($config) {
-    $config = new $config();
+  $config_class = $working_copy->getConfig('arcanist_configuration');
+  if ($config_class) {
+    $config = new $config_class();
   } else {
     $config = new ArcanistConfiguration();
   }
@@ -327,7 +328,9 @@ try {
       $ex->getMessage());
   }
 
-  $config->didAbortWorkflow($command, $workflow, $ex);
+  if ($config) {
+    $config->didAbortWorkflow($command, $workflow, $ex);
+  }
 
   if ($config_trace_mode) {
     echo "\n";
