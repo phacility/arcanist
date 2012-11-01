@@ -1616,8 +1616,13 @@ EOTEXT
       $template = ArcanistCommentRemover::removeComments($new_template);
 
       $repository_api = $this->getRepositoryAPI();
-      $should_amend = (count($included_commits) == 1 && $this->shouldAmend());
-      if ($should_amend && $repository_api->supportsAmend()) {
+      // special check for whether to amend here. optimizes a common git
+      // workflow. we can't do this for mercurial because the mq extension
+      // is popular and incompatible with hg commit --amend ; see T2011.
+      $should_amend = (count($included_commits) == 1 &&
+                       $repository_api instanceof ArcanistGitAPI &&
+                       $this->shouldAmend());
+      if ($should_amend) {
         $repository_api->amendCommit($template);
         $wrote = true;
         $where = 'commit message';
