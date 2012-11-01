@@ -194,7 +194,7 @@ EOTEXT
       }
     }
 
-    // Enable possible async linting only for 'arc diff' not 'arc unit'
+    // Enable possible async linting only for 'arc diff' not 'arc lint'
     if ($this->getParentWorkflow()) {
       $engine->setEnableAsyncLint(true);
     } else {
