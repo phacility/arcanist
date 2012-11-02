@@ -61,6 +61,7 @@
 abstract class ArcanistLintEngine {
 
   protected $workingCopy;
+  protected $paths = array();
   protected $fileData = array();
 
   protected $charToLine = array();
