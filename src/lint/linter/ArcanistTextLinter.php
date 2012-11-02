@@ -197,7 +197,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
       $this->raiseLintAtOffset(
         $offset,
         self::LINT_TRAILING_WHITESPACE,
-        'This line contains trailing whitespace.',
+        'This line contains trailing whitespace. Consider setting up your '.
+          'editor to automatically remove trailing whitespace, you will save '.
+          'time.',
         $string,
         '');
     }
