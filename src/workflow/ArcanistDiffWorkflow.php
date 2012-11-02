@@ -435,6 +435,18 @@ EOTEXT
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
 
+    if ($this->getArgument('nolint')) {
+      $this->excuses['lint'] = $this->getSkipExcuse(
+        'Provide explanation for skipping lint or press Enter to abort:',
+        'lint-excuses');
+    }
+
+    if ($this->getArgument('nounit')) {
+      $this->excuses['unit'] = $this->getSkipExcuse(
+        'Provide explanation for skipping unit tests or press Enter to abort:',
+        'unit-excuses');
+    }
+
     $changes = $this->generateChanges();
     if (!$changes) {
       throw new ArcanistUsageException(
@@ -1370,6 +1382,20 @@ EOTEXT
     return $this->testResults;
   }
 
+  private function getSkipExcuse($prompt, $history) {
+    $excuse = $this->getArgument('excuse');
+
+    if ($excuse === null) {
+      $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+      $excuse = phutil_console_prompt($prompt, $history);
+      if ($excuse == '') {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+    return $excuse;
+  }
+
   private function getErrorExcuse($type, $prompt, $history) {
     if ($this->getArgument('excuse')) {
       $this->console->sendMessage(array(
@@ -2271,13 +2297,13 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
+    if (strlen($this->excuses['lint'])) {
+      $this->updateDiffProperty('arc:lint-excuse',
+        json_encode($this->excuses['lint']));
+    }
 
     if ($this->unresolvedLint) {
       $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
-      if (strlen($this->excuses['lint'])) {
-        $this->updateDiffProperty('arc:lint-excuse',
-          json_encode($this->excuses['lint']));
-      }
     }
 
     $postponed = $this->postponedLinters;
@@ -2296,14 +2322,13 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (!$this->testResults) {
-      return;
-    }
-
-    $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     if (strlen($this->excuses['unit'])) {
       $this->updateDiffProperty('arc:unit-excuse',
         json_encode($this->excuses['unit']));
+    }
+
+    if ($this->testResults) {
+      $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     }
   }
 
