@@ -28,9 +28,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
     $options = $working_copy->getConfig('lint.pep8.options');
 
     if ($options === null) {
-      // W293 (blank line contains whitespace) is redundant when used
-      // alongside TXT6, causing pain to python programmers.
-      return '--ignore=W293';
+      $options = $this->getConfig('options');
     }
 
     return $options;
