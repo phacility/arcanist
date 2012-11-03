@@ -5,7 +5,7 @@
  *
  * @group testcase
  */
-abstract class ArcanistLinterTestCase extends ArcanistTestCase {
+abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
   public function executeTestsInDirectory($root, $linter, $working_copy) {
     foreach (Filesystem::listDirectory($root, $hidden = false) as $file) {

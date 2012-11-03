@@ -5,7 +5,7 @@
  *
  * @group testcase
  */
-final class ArcanistRubyLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistRubyLinterTestCase extends ArcanistArcanistLinterTestCase {
 
   public function testRubyLint() {
     $linter = new ArcanistRubyLinter();
@@ -17,4 +17,3 @@ final class ArcanistRubyLinterTestCase extends ArcanistLinterTestCase {
   }
 
 }
-

@@ -5,7 +5,8 @@
  *
  * @group testcase
  */
-final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistSpellingLinterTestCase
+  extends ArcanistArcanistLinterTestCase {
 
   public function testSpellingLint() {
     $linter = new ArcanistSpellingLinter();

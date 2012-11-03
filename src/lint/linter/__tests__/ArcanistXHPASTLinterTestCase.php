@@ -5,7 +5,8 @@
  *
  * @group testcase
  */
-final class ArcanistXHPASTLinterTestCase extends ArcanistLinterTestCase {
+final class ArcanistXHPASTLinterTestCase
+  extends ArcanistArcanistLinterTestCase {
 
   public function testXHPASTLint() {
     $linter = new ArcanistXHPASTLinter();
