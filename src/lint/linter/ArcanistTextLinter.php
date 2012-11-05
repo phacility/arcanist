@@ -136,8 +136,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $data = $this->getData($path);
 
     $matches = null;
+    $bad = '[^\x09\x0A\x20-\x7E]';
     $preg = preg_match_all(
-      '/[^\x09\x0A\x20-\x7E]+/',
+      "/{$bad}(.*{$bad})?/",
       $data,
       $matches,
       PREG_OFFSET_CAPTURE);
