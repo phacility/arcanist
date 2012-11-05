@@ -68,6 +68,7 @@ abstract class ArcanistLinterTestCase extends ArcanistTestCase {
 
       $linter->addPath($path);
       $linter->addData($path, $data);
+      $linter->setConfig(idx($config, 'config', array()));
 
       $engine->addLinter($linter);
       $engine->addFileData($path, $data);

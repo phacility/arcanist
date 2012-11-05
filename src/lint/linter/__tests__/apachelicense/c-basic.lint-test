@@ -27,3 +27,5 @@ error:1:1
 int main(int argv, char **argv) {
   return 0;
 }
+~~~~~~~~~~
+{"config": {"copyright_holder": "Facebook, Inc."}}

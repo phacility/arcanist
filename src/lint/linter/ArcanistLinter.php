@@ -17,10 +17,20 @@ abstract class ArcanistLinter {
   protected $stopAllLinters = false;
 
   private $customSeverityMap = array();
+  private $config = array();
 
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
     return $this;
+  }
+
+  public function setConfig(array $config) {
+    $this->config = $config;
+    return $this;
+  }
+
+  protected function getConfig($key, $default = null) {
+    return idx($this->config, $key, $default);
   }
 
   public function getActivePath() {

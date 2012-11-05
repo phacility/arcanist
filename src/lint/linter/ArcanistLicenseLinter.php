@@ -35,8 +35,11 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
   abstract protected function getLicensePatterns();
 
   public function lintPath($path) {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $copyright_holder = $working_copy->getConfig('copyright_holder');
+    $copyright_holder = $this->getConfig('copyright_holder');
+    if ($copyright_holder === null) {
+      $working_copy = $this->getEngine()->getWorkingCopy();
+      $copyright_holder = $working_copy->getConfig('copyright_holder');
+    }
 
     if (!$copyright_holder) {
       return;
