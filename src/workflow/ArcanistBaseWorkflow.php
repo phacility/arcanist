@@ -719,15 +719,6 @@ abstract class ArcanistBaseWorkflow {
     $untracked = $api->getUntrackedChanges();
     if ($this->shouldRequireCleanUntrackedFiles()) {
 
-      // Exempt ".arc/" scratch files from this warning so that things work
-      // a little more smoothly if no one has gotten around to adding .arc to
-      // the ignore list.
-      foreach ($untracked as $key => $path) {
-        if (preg_match('@\.arc/@', $path)) {
-          unset($untracked[$key]);
-        }
-      }
-
       if (!empty($untracked)) {
         echo "You have untracked files in this working copy.\n\n".
              $working_copy_desc.
