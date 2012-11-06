@@ -39,6 +39,18 @@ final class ArcanistLintMessage {
     return $message;
   }
 
+  public function toDictionary() {
+    return array(
+      'path'        => $this->getPath(),
+      'line'        => $this->getLine(),
+      'char'        => $this->getChar(),
+      'code'        => $this->getCode(),
+      'severity'    => $this->getSeverity(),
+      'name'        => $this->getName(),
+      'description' => $this->getDescription(),
+    );
+  }
+
   public function setPath($path) {
     $this->path = $path;
     return $this;

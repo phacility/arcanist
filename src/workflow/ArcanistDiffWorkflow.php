@@ -1264,15 +1264,7 @@ EOTEXT
 
       $this->unresolvedLint = array();
       foreach ($lint_workflow->getUnresolvedMessages() as $message) {
-        $this->unresolvedLint[] = array(
-          'path'        => $message->getPath(),
-          'line'        => $message->getLine(),
-          'char'        => $message->getChar(),
-          'code'        => $message->getCode(),
-          'severity'    => $message->getSeverity(),
-          'name'        => $message->getName(),
-          'description' => $message->getDescription(),
-        );
+        $this->unresolvedLint[] = $message->toDictionary();
       }
 
       $this->postponedLinters = $lint_workflow->getPostponedLinters();

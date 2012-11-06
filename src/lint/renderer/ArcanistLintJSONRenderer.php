@@ -17,19 +17,13 @@ final class ArcanistLintJSONRenderer implements ArcanistLintRenderer {
     $output = array($path => array());
 
     foreach ($messages as $message) {
-      $output[$path][] = array(
-        'code' => $message->getCode(),
-        'name' => $message->getName(),
-        'severity' => $message->getSeverity(),
-        'line' => $message->getLine(),
-        'char' => $message->getChar(),
-        'context' => implode("\n", array_slice(
-          $data,
-          max(1, $message->getLine() - self::LINES_OF_CONTEXT),
-          self::LINES_OF_CONTEXT * 2 + 1
-        )),
-        'description' => $message->getDescription(),
-      );
+      $dictionary = $message->toDictionary();
+      $dictionary['context'] = implode("\n", array_slice(
+        $data,
+        max(1, $message->getLine() - self::LINES_OF_CONTEXT),
+        self::LINES_OF_CONTEXT * 2 + 1));
+      unset($dictionary['path']);
+      $output[$path][] = $dictionary;
     }
 
     return json_encode($output)."\n";
