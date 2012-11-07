@@ -14,6 +14,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $workingCopyRevision;
   private $localCommitInfo;
   private $includeDirectoryStateInDiffs;
+  private $rawDiffCache = array();
 
   protected function buildLocalFuture(array $argv) {
 
@@ -278,6 +279,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       // there is no way to get file change status across multiple commits, so
       // just take the entire diff and parse it to figure out what's changed.
 
+      // Execute status in the background
+      $status_future = $this->buildLocalFuture(array('status'));
+      $status_future->start();
+
       $diff = $this->getFullMercurialDiff();
 
       if (!$diff) {
@@ -311,7 +316,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $status_map[$change->getCurrentPath()] = $flags;
       }
 
-      list($stdout) = $this->execxLocal('status');
+      list($stdout) = $status_future->resolvex();
 
       $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
       foreach ($working_status as $path => $status) {
@@ -354,11 +359,18 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $range .= '...';
     }
 
+    $raw_diff_cache_key = $options.' '.$range.' '.$path;
+    if (idx($this->rawDiffCache, $raw_diff_cache_key)) {
+      return idx($this->rawDiffCache, $raw_diff_cache_key);
+    }
+
     list($stdout) = $this->execxLocal(
       'diff %C --rev %s -- %s',
       $options,
       $range,
       $path);
+
+    $this->rawDiffCache[$raw_diff_cache_key] = $stdout;
 
     return $stdout;
   }
