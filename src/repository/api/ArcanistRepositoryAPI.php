@@ -156,6 +156,8 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getLocalCommitInformation();
   abstract public function getSourceControlBaseRevision();
   abstract public function getCanonicalRevisionName($string);
+  abstract public function getBranchName();
+  abstract public function getSourceControlPath();
   abstract public function isHistoryDefaultImmutable();
   abstract public function supportsAmend();
   abstract public function supportsRelativeLocalCommits();
