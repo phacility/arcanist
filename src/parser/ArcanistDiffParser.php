@@ -543,9 +543,15 @@ final class ArcanistDiffParser {
             //
             // ...i.e., there is no associated diff.
 
-            $change->setNeedsSyntheticGitHunks(true);
-            if ($move_source) {
-              $move_source->setNeedsSyntheticGitHunks(true);
+            // This allows us to distinguish between property changes only
+            // and actual moves. For property changes only, we can't currently
+            // build a synthetic diff correctly, so just skip it.
+            // TODO: Build synthetic diffs for property changes, too.
+            if ($change->getType() != ArcanistDiffChangeType::TYPE_CHANGE) {
+              $change->setNeedsSyntheticGitHunks(true);
+              if ($move_source) {
+                $move_source->setNeedsSyntheticGitHunks(true);
+              }
             }
             return;
           }

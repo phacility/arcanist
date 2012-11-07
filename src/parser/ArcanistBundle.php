@@ -377,7 +377,8 @@ final class ArcanistBundle {
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE ||
           $type == ArcanistDiffChangeType::TYPE_MOVE_HERE ||
-          $type == ArcanistDiffChangeType::TYPE_COPY_AWAY) {
+          $type == ArcanistDiffChangeType::TYPE_COPY_AWAY ||
+          $type == ArcanistDiffChangeType::TYPE_CHANGE) {
         if ($old_mode !== $new_mode) {
           $result[] = "old mode {$old_mode}".PHP_EOL;
           $result[] = "new mode {$new_mode}".PHP_EOL;
