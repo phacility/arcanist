@@ -646,7 +646,7 @@ final class ArcanistBundle {
         $old_phid = null;
       } else {
         $old_data = null;
-        $old_binary->getMetadata('old:binary-phid');
+        $old_phid = $old_binary->getMetadata('old:binary-phid');
       }
     } else {
       $old_data = $change->getOriginalFileData();
