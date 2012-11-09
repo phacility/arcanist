@@ -16,6 +16,15 @@ final class ArcanistBundle {
   private $revisionID;
   private $encoding;
   private $loadFileDataCallback;
+  private $author;
+
+  public function setAuthor($author) {
+    $this->author = $author;
+    return $this;
+  }
+  public function getAuthor() {
+    return $this->author;
+  }
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
@@ -85,6 +94,7 @@ final class ArcanistBundle {
       $base_revision = idx($meta_info, 'baseRevision');
       $revision_id   = idx($meta_info, 'revisionID');
       $encoding      = idx($meta_info, 'encoding');
+      $author        = idx($meta_info, 'author');
     // this arc bundle was probably made before we started storing meta info
     } else {
       $version       = 0;
@@ -92,6 +102,7 @@ final class ArcanistBundle {
       $base_revision = null;
       $revision_id   = null;
       $encoding      = null;
+      $author        = null;
     }
 
     $future = new ExecFuture(
@@ -165,11 +176,12 @@ final class ArcanistBundle {
     }
 
     $meta_info = array(
-      'version'      => 3,
+      'version'      => 4,
       'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
       'revisionID'   => $this->getRevisionID(),
       'encoding'     => $this->getEncoding(),
+      'author'       => $this->getAuthor(),
     );
 
     $dir = Filesystem::createTemporaryDirectory();

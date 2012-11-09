@@ -828,6 +828,7 @@ abstract class ArcanistBaseWorkflow {
     $bundle->setProjectID($diff['projectName']);
     $bundle->setBaseRevision($diff['sourceControlBaseRevision']);
     $bundle->setRevisionID($diff['revisionID']);
+    $bundle->setAuthor($diff['author']);
     return $bundle;
   }
 

@@ -26,7 +26,7 @@ final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **export** [__paths__] __format__ (svn)
-      **export** [__commit_range__] __format__ (git)
+      **export** [__commit_range__] __format__ (git, hg)
       **export** __--revision__ __revision_id__ __format__
       **export** __--diff__ __diff_id__ __format__
 EOTEXT
@@ -35,7 +35,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Supports: git, svn
+          Supports: svn, git, hg
           Export the local changeset (or a Differential changeset) to a file,
           in some __format__: git diff (__--git__), unified diff
           (__--unified__), or arc bundle (__--arcbundle__ __path__) format.
@@ -181,12 +181,36 @@ EOTEXT
             $this->getArgument('paths'));
           $diff = $repository_api->getFullGitDiff();
           $changes = $parser->parseDiff($diff);
+          $authors = $this->getConduit()->callMethodSynchronous(
+            'user.query',
+            array(
+              'phids' => array($this->getUserPHID()),
+            ));
+          $author_dict = reset($authors);
+          $author = sprintf('%s <%s>',
+            $author_dict['realName'],
+            $repository_api->execxLocal('config user.email'));
+        } else if ($repository_api instanceof ArcanistMercurialAPI) {
+          $repository_api->parseRelativeLocalCommit(
+            $this->getArgument('paths'));
+          $diff = $repository_api->getFullMercurialDiff();
+          $changes = $parser->parseDiff($diff);
+          $authors = $this->getConduit()->callMethodSynchronous(
+            'user.query',
+            array(
+              'phids' => array($this->getUserPHID()),
+            ));
+          $author_dict = reset($authors);
+          $author = sprintf('%s <%s>',
+            $author_dict['realName'],
+            $repository_api->execxLocal('showconfig ui.username'));
         } else {
           // TODO: paths support
           $paths = $repository_api->getWorkingCopyStatus();
           $changes = $parser->parseSubversionDiff(
             $repository_api,
             $paths);
+          $author = $this->getUserName();
         }
 
         $bundle = ArcanistBundle::newFromChanges($changes);
@@ -194,6 +218,7 @@ EOTEXT
         $bundle->setBaseRevision(
           $repository_api->getSourceControlBaseRevision());
         // note we can't get a revision ID for SOURCE_LOCAL
+        $bundle->setAuthor($author);
         break;
       case self::SOURCE_REVISION:
         $bundle = $this->loadRevisionBundleFromConduit(
