@@ -465,6 +465,22 @@ Index: {$path}
 EODIFF;
   }
 
+  public function getAllFiles() {
+    // TODO: Handle paths with newlines.
+    $future = $this->buildLocalFuture(array('list -R'));
+    return new PhutilCallbackFilterIterator(
+      new LinesOfALargeExecFuture($future),
+      array($this, 'filterFiles'));
+  }
+
+  public function filterFiles($path) {
+    // NOTE: SVN uses '/' also on Windows.
+    if ($path == '' || substr($path, -1) == '/') {
+      return null;
+    }
+    return $path;
+  }
+
   public function getBlame($path) {
     $blame = array();
 

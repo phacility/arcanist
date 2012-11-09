@@ -527,6 +527,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $files;
   }
 
+  public function getAllFiles() {
+    $future = $this->buildLocalFuture(array('ls-files -z'));
+    return id(new LinesOfALargeExecFuture($future))
+      ->setDelimiter("\0");
+  }
+
   public function getBlame($path) {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
