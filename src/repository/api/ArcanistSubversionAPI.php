@@ -473,6 +473,22 @@ EODIFF;
       array($this, 'filterFiles'));
   }
 
+  public function getChangedFiles($since_commit) {
+    // TODO: Handle paths with newlines.
+    list($stdout) = $this->execxLocal(
+      'diff --revision %s:HEAD',
+      $since_commit);
+    $return = array();
+    foreach (explode("\n", $stdout) as $val) {
+      $match = null;
+      if (preg_match('/^(.)\S*\s+(.+)/', $val, $match)) {
+        list(, $status, $path) = $match;
+        $return[$path] = ($status == 'D' ? false : true);
+      }
+    }
+    return $return;
+  }
+
   public function filterFiles($path) {
     // NOTE: SVN uses '/' also on Windows.
     if ($path == '' || substr($path, -1) == '/') {

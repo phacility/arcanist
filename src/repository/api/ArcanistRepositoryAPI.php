@@ -188,6 +188,10 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  public function getChangedFiles($since_commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function amendCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

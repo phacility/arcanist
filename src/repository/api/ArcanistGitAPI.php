@@ -533,6 +533,21 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       ->setDelimiter("\0");
   }
 
+  public function getChangedFiles($since_commit) {
+    list($stdout) = $this->execxLocal(
+      'diff --name-status -z %s',
+      $since_commit);
+    $return = array();
+    foreach (array_chunk(explode("\0", $stdout), 2) as $val) {
+      if (count($val) != 2) {
+        break;
+      }
+      list($status, $path) = $val;
+      $return[$path] = ($status == 'D' ? false : true);
+    }
+    return $return;
+  }
+
   public function getBlame($path) {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
