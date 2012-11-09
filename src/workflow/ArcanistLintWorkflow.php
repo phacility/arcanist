@@ -13,6 +13,8 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
   const RESULT_SKIP       = 3;
   const RESULT_POSTPONED  = 4;
 
+  const DEFAULT_SEVERITY = ArcanistLintSeverity::SEVERITY_ADVICE;
+
   private $unresolvedMessages;
   private $shouldAmendChanges = false;
   private $shouldAmendWithoutPrompt = false;
@@ -109,6 +111,15 @@ EOTEXT
           'When linting git repositories, amend HEAD with autofix '.
           'patches suggested by lint without prompting.',
       ),
+      'severity' => array(
+        'param' => 'string',
+        'help' =>
+          "Set minimum message severity. One of: '".
+          implode(
+            "', '",
+            array_keys(ArcanistLintSeverity::getLintSeverities())).
+          "'. Defaults to '".self::DEFAULT_SEVERITY."'.",
+      ),
       '*' => 'paths',
     );
   }
@@ -162,7 +173,8 @@ EOTEXT
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
 
-    $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
+    $engine->setMinimumSeverity(
+      $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
     // Propagate information about which lines changed to the lint engine.
     // This is used so that the lint engine can drop warning messages
@@ -300,10 +312,6 @@ EOTEXT
       }
     }
 
-    if ($failed) {
-      throw $failed;
-    }
-
     $repository_api = $this->getRepositoryAPI();
     if ($wrote_to_disk &&
         ($repository_api instanceof ArcanistGitAPI) &&
@@ -328,6 +336,15 @@ EOTEXT
           "Sort out the lint changes that were applied to the working ".
           "copy and relint.");
       }
+    }
+
+    if ($this->getArgument('output') == 'json') {
+      // NOTE: Required by save_lint.php in Phabricator.
+      return 0;
+    }
+
+    if ($failed) {
+      throw $failed;
     }
 
     $unresolved = array();

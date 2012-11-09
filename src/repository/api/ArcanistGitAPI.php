@@ -500,7 +500,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $lines = array();
     foreach (explode("\n", $status) as $line) {
       if ($line) {
-        $lines[] = preg_split("/[ \t]/", $line);
+        $lines[] = preg_split("/[ \t]/", $line, 6);
       }
     }
 
@@ -535,17 +535,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'diff --name-status -z %s',
+      'diff --name-status --raw %s',
       $since_commit);
-    $return = array();
-    foreach (array_chunk(explode("\0", $stdout), 2) as $val) {
-      if (count($val) != 2) {
-        break;
-      }
-      list($status, $path) = $val;
-      $return[$path] = ($status == 'D' ? false : true);
-    }
-    return $return;
+    return $this->parseGitStatus($stdout);
   }
 
   public function getBlame($path) {

@@ -253,17 +253,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'status --rev %s -0',
+      'status --rev %s',
       $since_commit);
-    $return = array();
-    foreach (explode("\0", $stdout) as $val) {
-      $match = null;
-      if (preg_match('/^(.) (.+)/', $val, $match)) {
-        list(, $status, $path) = $match;
-        $return[$path] = ($status == 'R' ? false : true);
-      }
-    }
-    return $return;
+    return ArcanistMercurialParser::parseMercurialStatus($stdout);
   }
 
   public function getBlame($path) {

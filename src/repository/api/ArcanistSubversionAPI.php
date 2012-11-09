@@ -102,45 +102,9 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
             throw new Exception("Unrecognized property status '{$props}'.");
         }
 
-        switch ($item) {
-          case 'normal':
-            break;
-          case 'external':
-            $mask |= self::FLAG_EXTERNALS;
-            $externals[] = $path;
-            break;
-          case 'unversioned':
-            $mask |= self::FLAG_UNTRACKED;
-            break;
-          case 'obstructed':
-            $mask |= self::FLAG_OBSTRUCTED;
-            break;
-          case 'missing':
-            $mask |= self::FLAG_MISSING;
-            break;
-          case 'added':
-            $mask |= self::FLAG_ADDED;
-            break;
-          case 'replaced':
-            // This is the result of "svn rm"-ing a file, putting another one
-            // in place of it, and then "svn add"-ing the new file. Just treat
-            // this as equivalent to "modified".
-            $mask |= self::FLAG_MODIFIED;
-            break;
-          case 'modified':
-            $mask |= self::FLAG_MODIFIED;
-            break;
-          case 'deleted':
-            $mask |= self::FLAG_DELETED;
-            break;
-          case 'conflicted':
-            $mask |= self::FLAG_CONFLICT;
-            break;
-          case 'incomplete':
-            $mask |= self::FLAG_INCOMPLETE;
-            break;
-          default:
-            throw new Exception("Unrecognized item status '{$item}'.");
+        $mask |= $this->parseSVNStatus($item);
+        if ($item == 'external') {
+          $externals[] = $path;
         }
 
         // This is new in or around Subversion 1.6.
@@ -173,6 +137,38 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     }
 
     return $status;
+  }
+
+  private function parseSVNStatus($item) {
+    switch ($item) {
+      case 'normal':
+        return 0;
+      case 'external':
+        return self::FLAG_EXTERNALS;
+      case 'unversioned':
+        return self::FLAG_UNTRACKED;
+      case 'obstructed':
+        return self::FLAG_OBSTRUCTED;
+      case 'missing':
+        return self::FLAG_MISSING;
+      case 'added':
+        return self::FLAG_ADDED;
+      case 'replaced':
+        // This is the result of "svn rm"-ing a file, putting another one
+        // in place of it, and then "svn add"-ing the new file. Just treat
+        // this as equivalent to "modified".
+        return self::FLAG_MODIFIED;
+      case 'modified':
+        return self::FLAG_MODIFIED;
+      case 'deleted':
+        return self::FLAG_DELETED;
+      case 'conflicted':
+        return self::FLAG_CONFLICT;
+      case 'incomplete':
+        return self::FLAG_INCOMPLETE;
+      default:
+        throw new Exception("Unrecognized item status '{$item}'.");
+    }
   }
 
   public function getSVNProperty($path, $property) {
@@ -476,15 +472,13 @@ EODIFF;
   public function getChangedFiles($since_commit) {
     // TODO: Handle paths with newlines.
     list($stdout) = $this->execxLocal(
-      'diff --revision %s:HEAD',
+      '--xml diff --revision %s:HEAD --summarize',
       $since_commit);
+    $xml = new SimpleXMLElement($stdout);
+
     $return = array();
-    foreach (explode("\n", $stdout) as $val) {
-      $match = null;
-      if (preg_match('/^(.)\S*\s+(.+)/', $val, $match)) {
-        list(, $status, $path) = $match;
-        $return[$path] = ($status == 'D' ? false : true);
-      }
+    foreach ($xml->paths[0]->path as $path) {
+      $return[(string)$path] = $this->parseSVNStatus($path['item']);
     }
     return $return;
   }
