@@ -1,21 +1,5 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Basic lint engine which just applies several linters based on the file types
  *
@@ -54,7 +38,9 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
 
     $py_paths = preg_grep('/\.py$/', $paths);
     $linters[] = id(new ArcanistPyFlakesLinter())->setPaths($py_paths);
-    $linters[] = id(new ArcanistPEP8Linter())->setPaths($py_paths);
+    $linters[] = id(new ArcanistPEP8Linter())
+      ->setConfig(array('options' => $this->getPEP8WithTextOptions()))
+      ->setPaths($py_paths);
 
     $linters[] = id(new ArcanistRubyLinter())
       ->setPaths(preg_grep('/\.rb$/', $paths));

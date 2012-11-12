@@ -1,21 +1,5 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Sends changes from your working copy to Differential for code review.
  *
@@ -434,6 +418,18 @@ EOTEXT
     $this->postponedLinters = $data['postponedLinters'];
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
+
+    if ($this->getArgument('nolint')) {
+      $this->excuses['lint'] = $this->getSkipExcuse(
+        'Provide explanation for skipping lint or press Enter to abort:',
+        'lint-excuses');
+    }
+
+    if ($this->getArgument('nounit')) {
+      $this->excuses['unit'] = $this->getSkipExcuse(
+        'Provide explanation for skipping unit tests or press Enter to abort:',
+        'unit-excuses');
+    }
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -1268,15 +1264,7 @@ EOTEXT
 
       $this->unresolvedLint = array();
       foreach ($lint_workflow->getUnresolvedMessages() as $message) {
-        $this->unresolvedLint[] = array(
-          'path'        => $message->getPath(),
-          'line'        => $message->getLine(),
-          'char'        => $message->getChar(),
-          'code'        => $message->getCode(),
-          'severity'    => $message->getSeverity(),
-          'name'        => $message->getName(),
-          'description' => $message->getDescription(),
-        );
+        $this->unresolvedLint[] = $message->toDictionary();
       }
 
       $this->postponedLinters = $lint_workflow->getPostponedLinters();
@@ -1368,6 +1356,20 @@ EOTEXT
 
   public function getTestResults() {
     return $this->testResults;
+  }
+
+  private function getSkipExcuse($prompt, $history) {
+    $excuse = $this->getArgument('excuse');
+
+    if ($excuse === null) {
+      $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+      $excuse = phutil_console_prompt($prompt, $history);
+      if ($excuse == '') {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+    return $excuse;
   }
 
   private function getErrorExcuse($type, $prompt, $history) {
@@ -2271,13 +2273,13 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
+    if (strlen($this->excuses['lint'])) {
+      $this->updateDiffProperty('arc:lint-excuse',
+        json_encode($this->excuses['lint']));
+    }
 
     if ($this->unresolvedLint) {
       $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
-      if (strlen($this->excuses['lint'])) {
-        $this->updateDiffProperty('arc:lint-excuse',
-          json_encode($this->excuses['lint']));
-      }
     }
 
     $postponed = $this->postponedLinters;
@@ -2296,14 +2298,13 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (!$this->testResults) {
-      return;
-    }
-
-    $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     if (strlen($this->excuses['unit'])) {
       $this->updateDiffProperty('arc:unit-excuse',
         json_encode($this->excuses['unit']));
+    }
+
+    if ($this->testResults) {
+      $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
     }
   }
 

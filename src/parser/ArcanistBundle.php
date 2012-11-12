@@ -1,21 +1,5 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Converts changesets between different formats.
  *
@@ -32,6 +16,15 @@ final class ArcanistBundle {
   private $revisionID;
   private $encoding;
   private $loadFileDataCallback;
+  private $author;
+
+  public function setAuthor($author) {
+    $this->author = $author;
+    return $this;
+  }
+  public function getAuthor() {
+    return $this->author;
+  }
 
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
@@ -101,6 +94,7 @@ final class ArcanistBundle {
       $base_revision = idx($meta_info, 'baseRevision');
       $revision_id   = idx($meta_info, 'revisionID');
       $encoding      = idx($meta_info, 'encoding');
+      $author        = idx($meta_info, 'author');
     // this arc bundle was probably made before we started storing meta info
     } else {
       $version       = 0;
@@ -108,6 +102,7 @@ final class ArcanistBundle {
       $base_revision = null;
       $revision_id   = null;
       $encoding      = null;
+      $author        = null;
     }
 
     $future = new ExecFuture(
@@ -181,11 +176,12 @@ final class ArcanistBundle {
     }
 
     $meta_info = array(
-      'version'      => 3,
+      'version'      => 4,
       'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
       'revisionID'   => $this->getRevisionID(),
       'encoding'     => $this->getEncoding(),
+      'author'       => $this->getAuthor(),
     );
 
     $dir = Filesystem::createTemporaryDirectory();
@@ -393,7 +389,8 @@ final class ArcanistBundle {
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE ||
           $type == ArcanistDiffChangeType::TYPE_MOVE_HERE ||
-          $type == ArcanistDiffChangeType::TYPE_COPY_AWAY) {
+          $type == ArcanistDiffChangeType::TYPE_COPY_AWAY ||
+          $type == ArcanistDiffChangeType::TYPE_CHANGE) {
         if ($old_mode !== $new_mode) {
           $result[] = "old mode {$old_mode}".PHP_EOL;
           $result[] = "new mode {$new_mode}".PHP_EOL;
@@ -661,7 +658,7 @@ final class ArcanistBundle {
         $old_phid = null;
       } else {
         $old_data = null;
-        $old_binary->getMetadata('old:binary-phid');
+        $old_phid = $old_binary->getMetadata('old:binary-phid');
       }
     } else {
       $old_data = $change->getOriginalFileData();

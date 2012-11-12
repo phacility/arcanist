@@ -1,0 +1,27 @@
+; http://editorconfig.org/
+
+[*]
+indent_style = space
+indent_size = 2
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[src/parser/__tests__/bundle/*]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[src/parser/__tests__/diff/*]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[src/parser/__tests__/patches/*]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[externals/**]
+; Use editor default (possible autodetection).
+indent_style =
+indent_size =
+trim_trailing_whitespace = false
+insert_final_newline = false

@@ -1,0 +1,12 @@
+diff --git a/koan2 b/koan2
+old mode 100644
+new mode 100755
+--- a/koan2
++++ b/koan2
+@@ -10,3 +10,5 @@
+ as moves if both files
+ are mostly similar. So
+ you need a lot of text.
++
++Execute!
+

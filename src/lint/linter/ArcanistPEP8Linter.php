@@ -1,21 +1,5 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Uses "pep8.py" to enforce PEP8 rules for Python.
  *
@@ -44,9 +28,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
     $options = $working_copy->getConfig('lint.pep8.options');
 
     if ($options === null) {
-      // W293 (blank line contains whitespace) is redundant when used
-      // alongside TXT6, causing pain to python programmers.
-      return '--ignore=W293';
+      $options = $this->getConfig('options');
     }
 
     return $options;
@@ -115,6 +97,9 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
+      if (!$this->isMessageEnabled($matches[4])) {
+        continue;
+      }
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
@@ -122,14 +107,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       $message->setCode($matches[4]);
       $message->setName('PEP8 '.$matches[4]);
       $message->setDescription($matches[5]);
-      if (!$this->isMessageEnabled($matches[4])) {
-        continue;
-      }
-      if ($matches[4][0] == 'E') {
-        $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-      } else {
-        $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-      }
+      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
       $this->addLintMessage($message);
     }
   }

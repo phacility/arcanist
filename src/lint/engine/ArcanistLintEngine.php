@@ -1,21 +1,5 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Manages lint execution. When you run 'arc lint' or 'arc diff', Arcanist
  * checks your .arcconfig to see if you have specified a lint engine in the
@@ -61,6 +45,7 @@
 abstract class ArcanistLintEngine {
 
   protected $workingCopy;
+  protected $paths = array();
   protected $fileData = array();
 
   protected $charToLine = array();
@@ -349,6 +334,15 @@ abstract class ArcanistLintEngine {
   public function setPostponedLinters(array $linters) {
     $this->postponedLinters = $linters;
     return $this;
+  }
+
+  protected function getPEP8WithTextOptions() {
+    // E101 is subset of TXT2 (Tab Literal).
+    // E501 is same as TXT3 (Line Too Long).
+    // W291 is same as TXT6 (Trailing Whitespace).
+    // W292 is same as TXT4 (File Does Not End in Newline).
+    // W293 is same as TXT6 (Trailing Whitespace).
+    return '--ignore=E101,E501,W291,W292,W293';
   }
 
 }
