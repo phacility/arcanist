@@ -148,6 +148,11 @@ abstract class ArcanistRepositoryAPI {
     }
   }
 
+  /**
+   * @return Traversable
+   */
+  abstract public function getAllFiles();
+
   abstract public function getBlame($path);
   abstract public function getWorkingCopyStatus();
   abstract public function getRawDiffText($path);
@@ -180,6 +185,10 @@ abstract class ArcanistRepositoryAPI {
    * @return this
    */
   public function setDefaultBaseCommit() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function getChangedFiles($since_commit) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 

@@ -245,6 +245,19 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->localCommitInfo;
   }
 
+  public function getAllFiles() {
+    // TODO: Handle paths with newlines.
+    $future = $this->buildLocalFuture(array('manifest'));
+    return new LinesOfALargeExecFuture($future);
+  }
+
+  public function getChangedFiles($since_commit) {
+    list($stdout) = $this->execxLocal(
+      'status --rev %s',
+      $since_commit);
+    return ArcanistMercurialParser::parseMercurialStatus($stdout);
+  }
+
   public function getBlame($path) {
     list($stdout) = $this->execxLocal(
       'annotate -u -v -c --rev %s -- %s',

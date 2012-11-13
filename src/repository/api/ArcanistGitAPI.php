@@ -500,7 +500,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $lines = array();
     foreach (explode("\n", $status) as $line) {
       if ($line) {
-        $lines[] = preg_split("/[ \t]/", $line);
+        $lines[] = preg_split("/[ \t]/", $line, 6);
       }
     }
 
@@ -525,6 +525,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     return $files;
+  }
+
+  public function getAllFiles() {
+    $future = $this->buildLocalFuture(array('ls-files -z'));
+    return id(new LinesOfALargeExecFuture($future))
+      ->setDelimiter("\0");
+  }
+
+  public function getChangedFiles($since_commit) {
+    list($stdout) = $this->execxLocal(
+      'diff --name-status --raw %s',
+      $since_commit);
+    return $this->parseGitStatus($stdout);
   }
 
   public function getBlame($path) {
