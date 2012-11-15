@@ -267,12 +267,17 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'add-all' => array(
+        'help' =>
+          'Automatically add all untracked, unstaged and uncommitted files to '.
+          'the commit.',
+      ),
       'json' => array(
         'help' =>
           'Emit machine-readable JSON. EXPERIMENTAL! Probably does not work!',
       ),
       'no-amend' => array(
-        'help' => 'Never amend commits in the working copy.',
+        'help' => 'Never amend commits in the working copy with lint patches.',
       ),
       'uncommitted' => array(
         'help' => 'Suppress warning about uncommitted changes.',
@@ -582,6 +587,13 @@ EOTEXT
 
     if ($this->requiresWorkingCopy()) {
       try {
+        if ($this->getArgument('add-all')) {
+          $this->setCommitMode(self::COMMIT_ENABLE);
+        } else if ($this->getArgument('uncommitted')) {
+          $this->setCommitMode(self::COMMIT_DISABLE);
+        } else {
+          $this->setCommitMode(self::COMMIT_ALLOW);
+        }
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
         $repository_api = $this->getRepositoryAPI();

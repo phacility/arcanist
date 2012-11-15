@@ -192,6 +192,14 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  public function addToCommit(array $paths) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function doCommit($message) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function amendCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

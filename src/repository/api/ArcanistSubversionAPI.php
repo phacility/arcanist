@@ -171,6 +171,12 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     }
   }
 
+  public function addToCommit(array $paths) {
+    $this->execxLocal(
+      'add -- %Ls',
+      $paths);
+  }
+
   public function getSVNProperty($path, $property) {
     list($stdout) = execx(
       'svn propget %s %s@',
