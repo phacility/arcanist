@@ -271,7 +271,7 @@ EOTEXT
       // the right message.
       chdir($repository_api->getPath());
       $err = phutil_passthru(
-        'git merge --no-ff %s',
+        "git merge --log --no-ff --edit -m 'Merging revision https://cr.goindex.com/D{$revision_id} from {$branch}' %s",
         $branch);
       if ($err) {
         $err = phutil_passthru(
