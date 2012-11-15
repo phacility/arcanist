@@ -260,14 +260,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->relativeCommit;
   }
 
-  private function getDiffFullCommand($detect_moves_and_renames = true) {
-    $diff_cmd = array(
-      // Our diff parser relies on the trailing spaces that are suppressed
-      // when the diff.suppress-blank-empty boolean is set to "true".
-      // Without the following, "arc lint" would always fail with this:
-      // "Diff Parse Exception: Found the wrong number of hunk lines."
-      '-c diff.suppress-blank-empty=false',
-      'diff',
+  private function getDiffFullOptions($detect_moves_and_renames = true) {
+    $options = array(
       self::getDiffBaseOptions(),
       '--no-color',
       '--src-prefix=a/',
@@ -276,11 +270,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     );
 
     if ($detect_moves_and_renames) {
-      $diff_cmd[] = '-M';
-      $diff_cmd[] = '-C';
+      $options[] = '-M';
+      $options[] = '-C';
     }
 
-    return implode(' ', $diff_cmd);
+    return implode(' ', $options);
   }
 
   private function getDiffBaseOptions() {
@@ -298,9 +292,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getFullGitDiff() {
-    $diff_cmd = $this->getDiffFullCommand();
+    $options = $this->getDiffFullOptions();
     list($stdout) = $this->execxLocal(
-      "{$diff_cmd} %s --",
+      "diff {$options} %s --",
       $this->getRelativeCommit());
     return $stdout;
   }
@@ -312,9 +306,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    *               generate real diff text.
    */
   public function getRawDiffText($path, $detect_moves_and_renames = true) {
-    $diff_cmd = $this->getDiffFullCommand($detect_moves_and_renames);
+    $options = $this->getDiffFullOptions($detect_moves_and_renames);
     list($stdout) = $this->execxLocal(
-      "{$diff_cmd} %s -- %s",
+      "diff {$options} %s -- %s",
       $this->getRelativeCommit(),
       $path);
     return $stdout;
