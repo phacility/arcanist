@@ -274,10 +274,14 @@ EOTEXT
         'git merge --no-ff %s',
         $branch);
       if ($err) {
+        $err = phutil_passthru(
+          'git merge --abort');
+        $err = phutil_passthru(
+          'git checkout %s', $branch);
+              
         throw new ArcanistUsageException(
-          "'git merge' failed. Your working copy has been left in a partially ".
-          "merged state. You can: abort with 'git merge --abort'; or follow ".
-          "the instructions to complete the merge.");
+          "'git merge' failed. Your merge was aborted. Please merge master ".
+          "into your feature branch, resolve conflicts, and try again.");
       }
     } else {
       // In mutable histories, do a --squash merge.
