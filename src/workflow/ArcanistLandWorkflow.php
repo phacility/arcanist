@@ -79,9 +79,8 @@ EOTEXT
                   'the default behavior.',
       ),
       'squash' => array(
-        'help' => 'Perform a --squash merge, not a --no-ff merge. If the '.
-                  'project is marked as having a mutable history, this is '.
-                  'the default behavior.',
+        'help' => 'Perform a --squash merge, not a --no-ff merge. The default '.
+                  'behavior is --no-ff.',
         'conflicts' => array(
           'merge' => '--merge and --squash are conflicting merge strategies.',
         ),
@@ -149,7 +148,7 @@ EOTEXT
     } else if ($this->getArgument('squash')) {
       $use_squash = true;
     } else {
-      $use_squash = !$is_immutable;
+      $use_squash = false;
     }
 
     list($err) = $repository_api->execManualLocal(
@@ -272,7 +271,7 @@ EOTEXT
       // the right message.
       chdir($repository_api->getPath());
       $err = phutil_passthru(
-        'git merge --no-ff --no-commit %s',
+        'git merge --no-ff %s',
         $branch);
       if ($err) {
         throw new ArcanistUsageException(
@@ -285,13 +284,12 @@ EOTEXT
       $repository_api->execxLocal(
         'merge --squash --ff-only %s',
         $branch);
+			$tmp_file = new TempFile();
+      Filesystem::writeFile($tmp_file, $message);
+      $repository_api->execxLocal(
+        'commit -F %s',
+        $tmp_file);
     }
-
-    $tmp_file = new TempFile();
-    Filesystem::writeFile($tmp_file, $message);
-    $repository_api->execxLocal(
-      'commit -F %s',
-      $tmp_file);
 
     if ($this->getArgument('hold')) {
       echo phutil_console_format(
