@@ -36,6 +36,13 @@
  */
 abstract class ArcanistBaseWorkflow {
 
+  const COMMIT_DISABLE = 0;
+  const COMMIT_ALLOW = 1;
+  const COMMIT_ENABLE = 2;
+
+  private $commitMode = self::COMMIT_DISABLE;
+  private $shouldAmend;
+
   private $conduit;
   private $conduitURI;
   private $conduitCredentials;
@@ -51,7 +58,7 @@ abstract class ArcanistBaseWorkflow {
   private $passedArguments;
   private $command;
 
-  private $repositoryEncoding;
+  private $projectInfo;
 
   private $arcanistConfiguration;
   private $parentWorkflow;
@@ -709,8 +716,15 @@ abstract class ArcanistBaseWorkflow {
     return empty($this->arguments['allow-untracked']);
   }
 
+  public function setCommitMode($mode) {
+    $this->commitMode = $mode;
+    return $this;
+  }
+
   public function requireCleanWorkingCopy() {
     $api = $this->getRepositoryAPI();
+
+    $must_commit = array();
 
     $working_copy_desc = phutil_console_format(
       "  Working copy: __%s__\n\n",
@@ -740,10 +754,16 @@ abstract class ArcanistBaseWorkflow {
             "may have forgotten to 'hg add' them to your commit.");
         }
 
-        $prompt = "Do you want to continue without adding these files?";
-        if (!phutil_console_confirm($prompt, $default_no = false)) {
-          throw new ArcanistUserAbortException();
+        if ($this->askForAdd()) {
+          $api->addToCommit($untracked);
+          $must_commit += array_flip($untracked);
+        } else if ($this->commitMode == self::COMMIT_DISABLE) {
+          $prompt = "Do you want to continue without adding these files?";
+          if (!phutil_console_confirm($prompt, $default_no = false)) {
+            throw new ArcanistUserAbortException();
+          }
         }
+
       }
     }
 
@@ -770,25 +790,120 @@ abstract class ArcanistBaseWorkflow {
 
     $unstaged = $api->getUnstagedChanges();
     if ($unstaged) {
-      throw new ArcanistUsageException(
-        "You have unstaged changes in this working copy. Stage and commit (or ".
-        "revert) them before proceeding.\n\n".
+      echo "You have unstaged changes in this working copy.\n\n".
         $working_copy_desc.
         "  Unstaged changes in working copy:\n".
-        "    ".implode("\n    ", $unstaged)."\n");
+        "    ".implode("\n    ", $unstaged)."\n\n";
+      if ($this->askForAdd()) {
+        $api->addToCommit($unstaged);
+        $must_commit += array_flip($unstaged);
+      } else {
+        throw new ArcanistUsageException(
+          "Stage and commit (or revert) them before proceeding.");
+      }
     }
 
     $uncommitted = $api->getUncommittedChanges();
+    foreach ($uncommitted as $key => $path) {
+      if (array_key_exists($path, $must_commit)) {
+        unset($uncommitted[$key]);
+      }
+    }
     if ($uncommitted) {
-      throw new ArcanistUncommittedChangesException(
-        "You have uncommitted changes in this working copy. Commit (or ".
-        "revert) them before proceeding.\n\n".
+      echo "You have uncommitted changes in this working copy.\n\n".
         $working_copy_desc.
-        "  Uncommitted changes in working copy\n".
-        "    ".implode("\n    ", $uncommitted)."\n");
+        "  Uncommitted changes in working copy:\n".
+        "    ".implode("\n    ", $uncommitted)."\n\n";
+      if ($this->askForAdd()) {
+        $must_commit += array_flip($uncommitted);
+      } else {
+        throw new ArcanistUncommittedChangesException(
+          "Commit (or revert) them before proceeding.");
+      }
+    }
+
+    if ($must_commit) {
+      if ($this->shouldAmend) {
+        $commit = head($api->getLocalCommitInformation());
+        $api->amendCommit($commit['message']);
+      } else if ($api->supportsRelativeLocalCommits()) {
+        $api->doCommit('');
+      }
     }
   }
 
+  private function shouldAmend() {
+    $api = $this->getRepositoryAPI();
+
+    if ($this->isHistoryImmutable() || !$api->supportsAmend()) {
+      return false;
+    }
+
+    $commits = $api->getLocalCommitInformation();
+    if (!$commits) {
+      return false;
+    }
+    $commit = reset($commits);
+
+    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+      $commit['message']);
+    if ($message->getGitSVNBaseRevision()) {
+      return false;
+    }
+
+    // TODO: Check last commit's author. If not me then return false.
+    // TODO: Check commits since tracking branch. If empty then return false.
+
+    $repository_phid = idx($this->getProjectInfo(), 'repositoryPHID');
+    if ($repository_phid) {
+      $repositories = $this->getConduit()->callMethodSynchronous(
+        'repository.query',
+        array());
+      $callsigns = ipull($repositories, 'callsign', 'phid');
+      $callsign = idx($callsigns, $repository_phid);
+      if ($callsign) {
+        $known_commits = $this->getConduit()->callMethodSynchronous(
+          'diffusion.getcommits',
+          array('commits' => array('r'.$callsign.$commit['commit'])));
+        if ($known_commits) {
+          return false;
+        }
+      }
+    }
+
+    if (!$message->getRevisionID()) {
+      return true;
+    }
+
+    $in_working_copy = $api->loadWorkingCopyDifferentialRevisions(
+      $this->getConduit(),
+      array(
+        'authors' => array($this->getUserPHID()),
+        'status' => 'status-open',
+      ));
+    if ($in_working_copy) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private function askForAdd() {
+    if ($this->commitMode == self::COMMIT_DISABLE) {
+      return false;
+    } else if ($this->commitMode == self::COMMIT_ENABLE) {
+      return true;
+    }
+    if ($this->shouldAmend === null) {
+      $this->shouldAmend = $this->shouldAmend();
+    }
+    if ($this->shouldAmend) {
+      $prompt = "Do you want to amend these files to the commit?";
+    } else {
+      $prompt = "Do you want to add these files to the commit?";
+    }
+    return phutil_console_confirm($prompt);
+  }
 
   protected function loadDiffBundleFromConduit(
     ConduitClient $conduit,
@@ -1276,26 +1391,25 @@ abstract class ArcanistBaseWorkflow {
   }
 
   protected function getRepositoryEncoding() {
-    if ($this->repositoryEncoding) {
-      return $this->repositoryEncoding;
-    }
-
     $default = 'UTF-8';
+    return nonempty(idx($this->getProjectInfo(), 'encoding'), $default);
+  }
 
-    $project_id = $this->getWorkingCopy()->getProjectID();
-    if (!$project_id) {
-      return $default;
+  protected function getProjectInfo() {
+    if ($this->projectInfo === null) {
+      $project_id = $this->getWorkingCopy()->getProjectID();
+      if (!$project_id) {
+        $this->projectInfo = array();
+      } else {
+        $this->projectInfo = $this->getConduit()->callMethodSynchronous(
+          'arcanist.projectinfo',
+          array(
+            'name' => $project_id,
+          ));
+      }
     }
 
-    $project_info = $this->getConduit()->callMethodSynchronous(
-      'arcanist.projectinfo',
-      array(
-        'name' => $project_id,
-      ));
-
-    $this->repositoryEncoding = nonempty($project_info['encoding'], $default);
-
-    return $this->repositoryEncoding;
+    return $this->projectInfo;
   }
 
   protected function newInteractiveEditor($text) {

@@ -1,0 +1,11 @@
+diff --git a/things b/things
+index b6c8793..0c96a0f 100644
+--- a/things
++++ b/things
+@@ -1,5 +1,5 @@
+ apple
+
+-banana
++bananas
+
+ cherry

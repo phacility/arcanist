@@ -840,12 +840,17 @@ final class ArcanistDiffParser {
       $add = 0;
       $del = 0;
 
-      $advance = false;
+      $hit_next_hunk = false;
       while ((($line = $this->nextLine()) !== null)) {
-        if (strlen($line)) {
+        if (strlen(rtrim($line, "\r\n"))) {
           $char = $line[0];
         } else {
-          $char = '~';
+          // Normally, we do not encouter empty lines in diffs, because
+          // unchanged lines have an initial space. However, in Git, with
+          // the option `diff.suppress-blank-empty` set, unchanged blank lines
+          // emit as completely empty. If we encounter a completely empty line,
+          // treat it as a ' ' (i.e., unchanged empty line) line.
+          $char = ' ';
         }
         switch ($char) {
           case '\\':
@@ -861,20 +866,19 @@ final class ArcanistDiffParser {
               $hunk->setIsMissingNewNewline(true);
             }
             if (!$new_len) {
-              $advance = true;
               break 2;
             }
             break;
           case '+':
-            if (!$new_len) {
-              break 2;
-            }
             ++$add;
             --$new_len;
             $real[] = $line;
             break;
           case '-':
             if (!$old_len) {
+              // In this case, we've hit "---" from a new file. So don't
+              // advance the line cursor.
+              $hit_next_hunk = true;
               break 2;
             }
             ++$del;
@@ -889,17 +893,14 @@ final class ArcanistDiffParser {
             --$new_len;
             $real[] = $line;
             break;
-          case "\r":
-          case "\n":
-          case '~':
-            $advance = true;
-            break 2;
           default:
+            // We hit something, likely another hunk.
+            $hit_next_hunk = true;
             break 2;
         }
       }
 
-      if ($old_len != 0 || $new_len != 0) {
+      if ($old_len || $new_len) {
         $this->didFailParse("Found the wrong number of hunk lines.");
       }
 
@@ -939,7 +940,7 @@ final class ArcanistDiffParser {
         $change->addHunk($hunk);
       }
 
-      if ($advance) {
+      if (!$hit_next_hunk) {
         $line = $this->nextNonemptyLine();
       }
 

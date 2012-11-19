@@ -536,6 +536,9 @@ EOTEXT
       case 'more-newlines.svndiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'suppress-blank-empty.gitdiff':
+        $this->assertEqual(1, count($changes));
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

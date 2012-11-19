@@ -594,6 +594,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal('up');
   }
 
+  public function addToCommit(array $paths) {
+    $this->execxLocal(
+      'add -- %Ls',
+      $paths);
+  }
+
+  public function doCommit($message) {
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
+    $this->execxLocal(
+      'commit -l %s',
+      $tmp_file);
+  }
+
   public function amendCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
