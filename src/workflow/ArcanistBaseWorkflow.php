@@ -40,6 +40,8 @@ abstract class ArcanistBaseWorkflow {
   const COMMIT_ALLOW = 1;
   const COMMIT_ENABLE = 2;
 
+  const AUTO_COMMIT_TITLE = 'Automatic commit by arc';
+
   private $commitMode = self::COMMIT_DISABLE;
   private $shouldAmend;
 
@@ -827,7 +829,7 @@ abstract class ArcanistBaseWorkflow {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsRelativeLocalCommits()) {
-        $api->doCommit('');
+        $api->doCommit(self::AUTO_COMMIT_TITLE);
       }
     }
   }
@@ -865,7 +867,7 @@ abstract class ArcanistBaseWorkflow {
         $known_commits = $this->getConduit()->callMethodSynchronous(
           'diffusion.getcommits',
           array('commits' => array('r'.$callsign.$commit['commit'])));
-        if ($known_commits) {
+        if (ifilter($known_commits, 'error', $negate = true)) {
           return false;
         }
       }
