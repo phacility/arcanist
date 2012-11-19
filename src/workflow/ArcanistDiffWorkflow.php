@@ -130,6 +130,7 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw disables lint.',
           'never-apply-patches' => '--raw disables lint.',
+          'advice'              => '--raw disables lint.',
           'lintall'             => '--raw disables lint.',
 
           'create'              => '--raw and --create both need stdin. '.
@@ -149,6 +150,7 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw-command disables lint.',
           'never-apply-patches' => '--raw-command disables lint.',
+          'advice'              => '--raw-command disables lint.',
           'lintall'             => '--raw-command disables lint.',
         ),
       ),
@@ -174,6 +176,7 @@ EOTEXT
           "Do not run lint.",
         'conflicts' => array(
           'lintall'   => '--nolint suppresses lint.',
+          'advice'    => '--nolint suppresses lint.',
           'apply-patches' => '--nolint suppresses lint.',
           'never-apply-patches' => '--nolint suppresses lint.',
         ),
@@ -187,6 +190,7 @@ EOTEXT
           'message'   => '--only does not affect revisions.',
           'edit'      => '--only does not affect revisions.',
           'lintall'   => '--only suppresses lint.',
+          'advice'    => '--only suppresses lint.',
           'apply-patches' => '--only suppresses lint.',
           'never-apply-patches' => '--only suppresses lint.',
         ),
@@ -230,6 +234,11 @@ EOTEXT
         'passthru' => array(
           'lint' => true,
         ),
+      ),
+      'advice' => array(
+        'help' =>
+          "Require excuse for lint advice in addition to lint warnings and ".
+          "errors.",
       ),
       'apply-patches' => array(
         'help' =>
@@ -1250,8 +1259,16 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          $this->console->writeOut(
-            "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
+          if ($this->getArgument('advice') &&
+              $lint_workflow->getUnresolvedMessages()) {
+            $this->getErrorExcuse(
+              'lint',
+              "Lint issued unresolved advice.",
+              'lint-excuses');
+          } else {
+            $this->console->writeOut(
+              "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
+          }
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
           $this->getErrorExcuse(
