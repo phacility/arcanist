@@ -940,10 +940,12 @@ abstract class ArcanistBaseWorkflow {
     }
     $bundle = ArcanistBundle::newFromChanges($changes);
     $bundle->setConduit($conduit);
-    $bundle->setProjectID($diff['projectName']);
-    $bundle->setBaseRevision($diff['sourceControlBaseRevision']);
-    $bundle->setRevisionID($diff['revisionID']);
-    $bundle->setAuthor($diff['author']);
+    // since the conduit method has changes, assume that these fields
+    // could be unset
+    $bundle->setProjectID(idx($diff, 'projectName'));
+    $bundle->setBaseRevision(idx($diff, 'sourceControlBaseRevision'));
+    $bundle->setRevisionID(idx($diff, 'revisionID'));
+    $bundle->setAuthor(idx($diff, 'author'));
     return $bundle;
   }
 
