@@ -3,12 +3,12 @@
 /**
  * Manages lint execution. When you run 'arc lint' or 'arc diff', Arcanist
  * checks your .arcconfig to see if you have specified a lint engine in the
- * key "lint_engine". The engine must extend this class. For example:
+ * key "lint.engine". The engine must extend this class. For example:
  *
  *  lang=js
  *  {
  *    // ...
- *    "lint_engine" : "ExampleLintEngine",
+ *    "lint.engine" : "ExampleLintEngine",
  *    // ...
  *  }
  *
