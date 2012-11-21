@@ -3,7 +3,7 @@
 /**
  * PHPUnit wrapper
  *
- * To use, set unit_engine in .arcconfig, or use --engine flag
+ * To use, set unit.engine in .arcconfig, or use --engine flag
  * with arc unit. Currently supports only class & test files
  * (no directory support).
  * To use custom phpunit configuration, set phpunit_config in
