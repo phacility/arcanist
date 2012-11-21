@@ -165,22 +165,6 @@ abstract class ArcanistLintEngine {
     $stopped = array();
     $linters = $this->buildLinters();
 
-    if (!$linters) {
-      throw new ArcanistNoEffectException("No linters to run.");
-    }
-
-    $have_paths = false;
-    foreach ($linters as $linter) {
-      if ($linter->getPaths()) {
-        $have_paths = true;
-        break;
-      }
-    }
-
-    if (!$have_paths) {
-      throw new ArcanistNoEffectException("No paths are lintable.");
-    }
-
     $exceptions = array();
     foreach ($linters as $linter_name => $linter) {
       try {
@@ -251,6 +235,22 @@ abstract class ArcanistLintEngine {
       }
     }
 
+    if (!$linters) {
+      throw new ArcanistNoEffectException("No linters to run.");
+    }
+
+    $have_paths = false;
+    foreach ($linters as $linter) {
+      if ($linter->getPaths()) {
+        $have_paths = true;
+        break;
+      }
+    }
+
+    if (!$have_paths) {
+      throw new ArcanistNoEffectException("No paths are lintable.");
+    }
+
     if ($exceptions) {
       throw new PhutilAggregateException('Some linters failed:', $exceptions);
     }
@@ -291,7 +291,7 @@ abstract class ArcanistLintEngine {
     return false;
   }
 
-  private function getResultForPath($path) {
+  public function getResultForPath($path) {
     if (empty($this->results[$path])) {
       $result = new ArcanistLintResult();
       $result->setPath($path);
@@ -334,6 +334,10 @@ abstract class ArcanistLintEngine {
   public function setPostponedLinters(array $linters) {
     $this->postponedLinters = $linters;
     return $this;
+  }
+
+  public function getCacheVersion() {
+    return 0;
   }
 
   protected function getPEP8WithTextOptions() {

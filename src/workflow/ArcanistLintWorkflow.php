@@ -120,6 +120,10 @@ EOTEXT
             array_keys(ArcanistLintSeverity::getLintSeverities())).
           "'. Defaults to '".self::DEFAULT_SEVERITY."'.",
       ),
+      'cache' => array(
+        'param' => 'bool',
+        'help' => "0 to disable cache (default), 1 to enable.",
+      ),
       '*' => 'paths',
     );
   }
@@ -130,6 +134,15 @@ EOTEXT
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+
+  private function getCacheKey() {
+    return implode("\n", array(
+      get_class($this->engine),
+      $this->getArgument('severity', self::DEFAULT_SEVERITY),
+      $this->getArgument('lintall'),
+      $this->engine->getCacheVersion(),
+    ));
   }
 
   public function run() {
@@ -176,6 +189,25 @@ EOTEXT
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
+    $cached = false;
+    if ($this->getArgument('cache')) {
+      $paths = array_combine($paths, $paths);
+      $cache = $this->readScratchJSONFile('lint-cache.json');
+      $cache = idx($cache, $this->getCacheKey(), array());
+      foreach ($cache as $path => $messages) {
+        $messages = idx($messages, md5_file($engine->getFilePathOnDisk($path)));
+        // TODO: Some linters work with the whole directory.
+        if ($messages !== null) {
+          foreach ($messages as $message) {
+            $engine->getResultForPath($path)->addMessage(
+              ArcanistLintMessage::newFromDictionary($message));
+          }
+          $cached = true;
+          unset($paths[$path]);
+        }
+      }
+    }
+
     // Propagate information about which lines changed to the lint engine.
     // This is used so that the lint engine can drop warning messages
     // concerning lines that weren't in the change.
@@ -201,7 +233,11 @@ EOTEXT
     try {
       $engine->run();
     } catch (Exception $ex) {
-      $failed = $ex;
+      if ($ex instanceof ArcanistNoEffectException && $cached) {
+        // Swallow.
+      } else {
+        $failed = $ex;
+      }
     }
 
     $results = $engine->getResults();
@@ -364,6 +400,24 @@ EOTEXT
       }
     }
     $this->unresolvedMessages = $unresolved;
+
+    if ($this->getArgument('cache')) {
+      $cached = array();
+      foreach ($results as $result) {
+        $path = $result->getPath();
+        $hash = md5_file($engine->getFilePathOnDisk($path));
+        $cached[$path] = array($hash => array());
+        foreach ($result->getMessages() as $message) {
+          if (!$message->isPatchApplied()) {
+            $cached[$path][$hash][] = $message->toDictionary();
+          }
+        }
+      }
+      $cache = $this->readScratchJSONFile('lint-cache.json');
+      $cache[$this->getCacheKey()] = $cached;
+      // TODO: Garbage collection.
+      $this->writeScratchJSONFile('lint-cache.json', $cache);
+    }
 
     // Take the most severe lint message severity and use that
     // as the result code.
