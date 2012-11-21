@@ -81,6 +81,10 @@ abstract class ArcanistLinter {
     return $this->engine;
   }
 
+  public function getCacheVersion() {
+    return 0;
+  }
+
   public function getLintMessageFullCode($short_code) {
     return $this->getLinterName().$short_code;
   }
