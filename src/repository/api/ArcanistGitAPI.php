@@ -561,7 +561,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'diff --name-status --raw %s',
+      'diff --raw %s',
       $since_commit);
     return $this->parseGitStatus($stdout);
   }
