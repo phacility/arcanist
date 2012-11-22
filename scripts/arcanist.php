@@ -41,6 +41,7 @@ $force_conduit = $args->getArg('conduit-uri');
 $force_conduit_version = $args->getArg('conduit-version');
 $conduit_timeout = $args->getArg('conduit-timeout');
 $load = $args->getArg('load-phutil-library');
+$help = $args->getArg('help');
 
 $argv = $args->getUnconsumedArgumentVector();
 $args = array_values($argv);
@@ -59,7 +60,13 @@ try {
     phutil_get_library_root('arcanist'));
 
   if (!$args) {
-    throw new ArcanistUsageException("No command provided. Try 'arc help'.");
+    if ($help) {
+      $args = array('help');
+    } else {
+      throw new ArcanistUsageException("No command provided. Try 'arc help'.");
+    }
+  } else if ($help) {
+    array_unshift($args, 'help');
   }
 
   $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
