@@ -198,6 +198,8 @@ abstract class ArcanistLintEngine {
         }
         $paths = $linter->getPaths();
 
+        $cache_granularity = $linter->getCacheGranularity();
+
         foreach ($paths as $key => $path) {
           // Make sure each path has a result generated, even if it is empty
           // (i.e., the file has no lint messages).
@@ -205,9 +207,10 @@ abstract class ArcanistLintEngine {
           if (isset($stopped[$path])) {
             unset($paths[$key]);
           }
-          // TODO: Some linters work with the whole directory.
           if (isset($this->cachedResults[$path][$this->cacheVersion])) {
-            unset($paths[$key]);
+            if ($cache_granularity == ArcanistLinter::GRANULARITY_FILE) {
+              unset($paths[$key]);
+            }
           }
         }
         $paths = array_values($paths);
@@ -230,6 +233,9 @@ abstract class ArcanistLintEngine {
           }
           if (!$this->isRelevantMessage($message)) {
             continue;
+          }
+          if ($cache_granularity != ArcanistLinter::GRANULARITY_FILE) {
+            $message->setUncacheable(true);
           }
           $result = $this->getResultForPath($message->getPath());
           $result->addMessage($message);

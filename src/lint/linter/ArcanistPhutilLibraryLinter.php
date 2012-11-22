@@ -171,4 +171,9 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   public function lintPath($path) {
     return;
   }
+
+  public function getCacheGranularity() {
+    return self::GRANULARITY_GLOBAL;
+  }
+
 }

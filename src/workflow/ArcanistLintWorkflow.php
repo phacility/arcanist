@@ -192,9 +192,14 @@ EOTEXT
     if ($this->getArgument('cache')) {
       $cache = $this->readScratchJSONFile('lint-cache.json');
       $cache = idx($cache, $this->getCacheKey(), array());
+      $cache = array_intersect_key($cache, array_flip($paths));
       $cached = array();
       foreach ($cache as $path => $messages) {
-        $messages = idx($messages, md5_file($engine->getFilePathOnDisk($path)));
+        $abs_path = $engine->getFilePathOnDisk($path);
+        if (!Filesystem::pathExists($abs_path)) {
+          continue;
+        }
+        $messages = idx($messages, md5_file($abs_path));
         if ($messages !== null) {
           $cached[$path] = $messages;
         }
@@ -400,10 +405,17 @@ EOTEXT
           unset($cached[$path]);
           continue;
         }
-        $hash = md5_file($engine->getFilePathOnDisk($path));
+        $abs_path = $engine->getFilePathOnDisk($path);
+        if (!Filesystem::pathExists($abs_path)) {
+          continue;
+        }
+        $hash = md5_file($abs_path);
         $version = $result->getCacheVersion();
         $cached[$path] = array($hash => array($version => array()));
         foreach ($result->getMessages() as $message) {
+          if ($message->isUncacheable()) {
+            continue;
+          }
           if (!$message->isPatchApplied()) {
             $cached[$path][$hash][$version][] = $message->toDictionary();
           }
