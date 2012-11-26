@@ -594,6 +594,18 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal('up');
   }
 
+  private function getMercurialConfig($key, $default = null) {
+    list($stdout) = $this->execxLocal('showconfig %s', $key);
+    if ($stdout == '') {
+      return $default;
+    }
+    return rtrim($stdout);
+  }
+
+  public function getAuthor() {
+    return $this->getMercurialConfig('ui.username');
+  }
+
   public function addToCommit(array $paths) {
     $this->execxLocal(
       'add -- %Ls',

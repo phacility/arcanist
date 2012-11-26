@@ -48,6 +48,8 @@ final class ArcanistLintMessage {
       'severity'    => $this->getSeverity(),
       'name'        => $this->getName(),
       'description' => $this->getDescription(),
+      'original'    => $this->getOriginalText(),
+      'replacement' => $this->getReplacementText(),
     );
   }
 

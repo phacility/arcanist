@@ -50,6 +50,8 @@ abstract class ArcanistLintEngine {
 
   protected $charToLine = array();
   protected $lineToFirstChar = array();
+  private $cachedResults;
+  private $cacheVersion;
   private $results = array();
   private $minimumSeverity = ArcanistLintSeverity::SEVERITY_DISABLED;
 
@@ -181,6 +183,12 @@ abstract class ArcanistLintEngine {
       throw new ArcanistNoEffectException("No paths are lintable.");
     }
 
+    $versions = array($this->getCacheVersion());
+    foreach ($linters as $linter) {
+      $versions[] = get_class($linter).':'.$linter->getCacheVersion();
+    }
+    $this->cacheVersion = crc32(implode("\n", $versions));
+
     $exceptions = array();
     foreach ($linters as $linter_name => $linter) {
       try {
@@ -195,6 +203,10 @@ abstract class ArcanistLintEngine {
           // (i.e., the file has no lint messages).
           $result = $this->getResultForPath($path);
           if (isset($stopped[$path])) {
+            unset($paths[$key]);
+          }
+          // TODO: Some linters work with the whole directory.
+          if (isset($this->cachedResults[$path][$this->cacheVersion])) {
             unset($paths[$key]);
           }
         }
@@ -230,6 +242,15 @@ abstract class ArcanistLintEngine {
       }
     }
 
+    if ($this->cachedResults) {
+      foreach ($this->cachedResults as $path => $messages) {
+        foreach (idx($messages, $this->cacheVersion, array()) as $message) {
+          $this->getResultForPath($path)->addMessage(
+            ArcanistLintMessage::newFromDictionary($message));
+        }
+      }
+    }
+
     foreach ($this->results as $path => $result) {
       $disk_path = $this->getFilePathOnDisk($path);
       $result->setFilePathOnDisk($disk_path);
@@ -256,6 +277,15 @@ abstract class ArcanistLintEngine {
     }
 
     return $this->results;
+  }
+
+  /**
+   * @param dict<string path, dict<int version, list<dict message>>>
+   * @return this
+   */
+  public function setCachedResults(array $results) {
+    $this->cachedResults = $results;
+    return $this;
   }
 
   public function getResults() {
@@ -291,10 +321,11 @@ abstract class ArcanistLintEngine {
     return false;
   }
 
-  private function getResultForPath($path) {
+  protected function getResultForPath($path) {
     if (empty($this->results[$path])) {
       $result = new ArcanistLintResult();
       $result->setPath($path);
+      $result->setCacheVersion($this->cacheVersion);
       $this->results[$path] = $result;
     }
     return $this->results[$path];
@@ -334,6 +365,10 @@ abstract class ArcanistLintEngine {
   public function setPostponedLinters(array $linters) {
     $this->postponedLinters = $linters;
     return $this;
+  }
+
+  protected function getCacheVersion() {
+    return 0;
   }
 
   protected function getPEP8WithTextOptions() {

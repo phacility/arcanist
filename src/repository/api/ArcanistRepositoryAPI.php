@@ -192,6 +192,10 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  public function getAuthor() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function addToCommit(array $paths) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }

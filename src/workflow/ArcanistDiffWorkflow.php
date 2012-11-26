@@ -354,6 +354,13 @@ EOTEXT
           'Run lint and unit tests on background. '.
           '"0" to disable, "1" to enable (default).',
       ),
+      'cache' => array(
+        'param' => 'bool',
+        'help' => "0 to disable lint cache (default), 1 to enable.",
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
       '*' => 'paths',
     );
 

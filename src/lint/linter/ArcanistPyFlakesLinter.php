@@ -87,7 +87,9 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
 
       $severity = ArcanistLintSeverity::SEVERITY_WARNING;
       $description = $matches[3];
-      if (preg_match('/(^undefined|^duplicate|before assignment$)/', $description)) {
+
+      $error_regexp = '/(^undefined|^duplicate|before assignment$)/';
+      if (preg_match($error_regexp, $description)) {
         $severity = ArcanistLintSeverity::SEVERITY_ERROR;
       }
 

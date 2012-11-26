@@ -795,7 +795,7 @@ abstract class ArcanistBaseWorkflow {
       echo "You have unstaged changes in this working copy.\n\n".
         $working_copy_desc.
         "  Unstaged changes in working copy:\n".
-        "    ".implode("\n    ", $unstaged)."\n\n";
+        "    ".implode("\n    ", $unstaged);
       if ($this->askForAdd()) {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
@@ -815,7 +815,7 @@ abstract class ArcanistBaseWorkflow {
       echo "You have uncommitted changes in this working copy.\n\n".
         $working_copy_desc.
         "  Uncommitted changes in working copy:\n".
-        "    ".implode("\n    ", $uncommitted)."\n\n";
+        "    ".implode("\n    ", $uncommitted);
       if ($this->askForAdd()) {
         $must_commit += array_flip($uncommitted);
       } else {
@@ -853,7 +853,10 @@ abstract class ArcanistBaseWorkflow {
       return false;
     }
 
-    // TODO: Check last commit's author. If not me then return false.
+    if ($api->getAuthor() != $commit['author']) {
+      return false;
+    }
+
     // TODO: Check commits since tracking branch. If empty then return false.
 
     $repository_phid = idx($this->getProjectInfo(), 'repositoryPHID');

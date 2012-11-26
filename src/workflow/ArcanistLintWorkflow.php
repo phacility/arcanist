@@ -16,6 +16,7 @@ class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
   const DEFAULT_SEVERITY = ArcanistLintSeverity::SEVERITY_ADVICE;
 
   private $unresolvedMessages;
+  private $shouldLintAll;
   private $shouldAmendChanges = false;
   private $shouldAmendWithoutPrompt = false;
   private $shouldAmendAutofixesWithoutPrompt = false;
@@ -120,6 +121,10 @@ EOTEXT
             array_keys(ArcanistLintSeverity::getLintSeverities())).
           "'. Defaults to '".self::DEFAULT_SEVERITY."'.",
       ),
+      'cache' => array(
+        'param' => 'bool',
+        'help' => "0 to disable cache (default), 1 to enable.",
+      ),
       '*' => 'paths',
     );
   }
@@ -130,6 +135,14 @@ EOTEXT
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+
+  private function getCacheKey() {
+    return implode("\n", array(
+      get_class($this->engine),
+      $this->getArgument('severity', self::DEFAULT_SEVERITY),
+      $this->shouldLintAll,
+    ));
   }
 
   public function run() {
@@ -152,12 +165,12 @@ EOTEXT
       throw new ArcanistUsageException("Specify either --rev or paths.");
     }
 
-    $should_lint_all = $this->getArgument('lintall');
+    $this->shouldLintAll = $this->getArgument('lintall');
     if ($paths) {
       // NOTE: When the user specifies paths, we imply --lintall and show all
       // warnings for the paths in question. This is easier to deal with for
       // us and less confusing for users.
-      $should_lint_all = true;
+      $this->shouldLintAll = true;
     }
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
@@ -176,11 +189,24 @@ EOTEXT
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
+    if ($this->getArgument('cache')) {
+      $cache = $this->readScratchJSONFile('lint-cache.json');
+      $cache = idx($cache, $this->getCacheKey(), array());
+      $cached = array();
+      foreach ($cache as $path => $messages) {
+        $messages = idx($messages, md5_file($engine->getFilePathOnDisk($path)));
+        if ($messages !== null) {
+          $cached[$path] = $messages;
+        }
+      }
+      $engine->setCachedResults($cached);
+    }
+
     // Propagate information about which lines changed to the lint engine.
     // This is used so that the lint engine can drop warning messages
     // concerning lines that weren't in the change.
     $engine->setPaths($paths);
-    if (!$should_lint_all) {
+    if (!$this->shouldLintAll) {
       foreach ($paths as $path) {
         // Note that getChangedLines() returns null to indicate that a file
         // is binary or a directory (i.e., changed lines are not relevant).
@@ -364,6 +390,29 @@ EOTEXT
       }
     }
     $this->unresolvedMessages = $unresolved;
+
+    $cache = $this->readScratchJSONFile('lint-cache.json');
+    $cached = idx($cache, $this->getCacheKey(), array());
+    if ($cached || $this->getArgument('cache')) {
+      foreach ($results as $result) {
+        $path = $result->getPath();
+        if (!$this->getArgument('cache')) {
+          unset($cached[$path]);
+          continue;
+        }
+        $hash = md5_file($engine->getFilePathOnDisk($path));
+        $version = $result->getCacheVersion();
+        $cached[$path] = array($hash => array($version => array()));
+        foreach ($result->getMessages() as $message) {
+          if (!$message->isPatchApplied()) {
+            $cached[$path][$hash][$version][] = $message->toDictionary();
+          }
+        }
+      }
+      $cache[$this->getCacheKey()] = $cached;
+      // TODO: Garbage collection.
+      $this->writeScratchJSONFile('lint-cache.json', $cache);
+    }
 
     // Take the most severe lint message severity and use that
     // as the result code.

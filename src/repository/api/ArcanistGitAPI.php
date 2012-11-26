@@ -472,6 +472,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->status;
   }
 
+  public function getGitConfig($key, $default = null) {
+    list($stdout) = $this->execxLocal('config %s', $key);
+    if ($stdout == '') {
+      return $default;
+    }
+    return rtrim($stdout);
+  }
+
+  public function getAuthor() {
+    return $this->getGitConfig('user.name');
+  }
+
   public function addToCommit(array $paths) {
     $this->execxLocal(
       'add -- %Ls',
@@ -549,7 +561,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'diff --name-status --raw %s',
+      'diff --raw %s',
       $since_commit);
     return $this->parseGitStatus($stdout);
   }
