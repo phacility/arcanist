@@ -56,14 +56,6 @@ abstract class ArcanistRepositoryAPI {
         "any parent directory. Create an '.arcconfig' file to configure arc.");
     }
 
-    // check if we're in an svn working copy
-    list($err) = exec_manual('svn info');
-    if (!$err) {
-      $api = new ArcanistSubversionAPI($root);
-      $api->workingCopyIdentity = $working_copy;
-      return $api;
-    }
-
     if (Filesystem::pathExists($root.'/.hg')) {
       $api = new ArcanistMercurialAPI($root);
       $api->workingCopyIdentity = $working_copy;
@@ -79,6 +71,14 @@ abstract class ArcanistRepositoryAPI {
       }
 
       $api = new ArcanistGitAPI($root);
+      $api->workingCopyIdentity = $working_copy;
+      return $api;
+    }
+
+    // check if we're in an svn working copy
+    list($err) = exec_manual('svn info');
+    if (!$err) {
+      $api = new ArcanistSubversionAPI($root);
       $api->workingCopyIdentity = $working_copy;
       return $api;
     }
