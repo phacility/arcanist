@@ -173,6 +173,10 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
 
+  public function getUnderlyingWorkingCopyRevision() {
+    return $this->getWorkingCopyRevision();
+  }
+
   /**
    * Set the base commit to a reasonable default value so that working copy
    * status checks can do something meaningful and won't invoke configured

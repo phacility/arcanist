@@ -702,6 +702,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
+  public function getUnderlyingWorkingCopyRevision() {
+    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
+    if (!$err && $stdout) {
+      return rtrim($stdout, "\n");
+    }
+    return $this->getWorkingCopyRevision();
+  }
+
   public function isHistoryDefaultImmutable() {
     return false;
   }
