@@ -30,10 +30,7 @@ final class ArcanistScalaSBTLinter extends ArcanistLinter {
     // Hell. We let the build system handle this for us.
     if (!Filesystem::pathExists('project/Build.scala') &&
       !Filesystem::pathExists('build.sbt')) {
-      throw new ArcanistUsageException(
-        "This directory does not appear to be maintained by SBT, as we can't ".
-        "seem to find a working build file (project/Build.scala or ".
-        "build.sbt).");
+      return false;
     }
     return true;
   }
