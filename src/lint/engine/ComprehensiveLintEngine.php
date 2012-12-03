@@ -45,6 +45,9 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
     $linters[] = id(new ArcanistRubyLinter())
       ->setPaths(preg_grep('/\.rb$/', $paths));
 
+    $linters[] = id(new ArcanistScalaSBTLinter())
+      ->setPaths(preg_grep('/\.scala$/', $paths));
+
     $linters[] = id(new ArcanistJSHintLinter())
       ->setPaths(preg_grep('/\.js$/', $paths));
 
