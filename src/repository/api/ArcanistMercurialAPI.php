@@ -39,6 +39,17 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
+  public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+    if (phutil_is_windows()) {
+      $args[0] = 'set HGPLAIN=1 & hg '.$args[0];
+    } else {
+      $args[0] = 'HGPLAIN=1 hg '.$args[0];
+    }
+
+    return call_user_func_array("phutil_passthru", $args);
+  }
+
   public function getSourceControlSystemName() {
     return 'hg';
   }
@@ -768,17 +779,98 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getActiveBookmark() {
+    $bookmarks = $this->getBookmarks();
+    foreach ($bookmarks as $bookmark) {
+      if ($bookmark['is_active']) {
+        return $bookmark['name'];
+      }
+    }
+
+    return null;
+  }
+
+  public function isBookmark($name) {
+    $bookmarks = $this->getBookmarks();
+    foreach ($bookmarks as $bookmark) {
+      if ($bookmark['name'] === $name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public function isBranch($name) {
+    $branches = $this->getBranches();
+    foreach ($branches as $branch) {
+      if ($branch['name'] === $name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public function getBranches() {
+    $branches = array();
+
+    list($raw_output) = $this->execxLocal('branches');
+    $raw_output = trim($raw_output);
+
+    foreach (explode("\n", $raw_output) as $line) {
+      // example line: default                 0:a5ead76cdf85 (inactive)
+      list($name, $rev_line) = $this->splitBranchOrBookmarkLine($line);
+
+      // strip off the '(inactive)' bit if it exists
+      $rev_parts = explode(' ', $rev_line);
+      $revision = $rev_parts[0];
+
+      $branches[] = array(
+        'name' => $name,
+        'revision' => $revision);
+    }
+
+    return $branches;
+  }
+
+  public function getBookmarks() {
+    $bookmarks = array();
+
     list($raw_output) = $this->execxLocal('bookmarks');
     $raw_output = trim($raw_output);
     if ($raw_output !== 'no bookmarks set') {
       foreach (explode("\n", $raw_output) as $line) {
-        $line = trim($line);
-        if ('*' === $line[0]) {
-          return idx(explode(' ', $line, 3), 1);
+        // example line:  * mybook               2:6b274d49be97
+        list($name, $revision) = $this->splitBranchOrBookmarkLine($line);
+
+        $is_active = false;
+        if ('*' === $name[0]) {
+          $is_active = true;
+          $name = substr($name, 2);
         }
+
+        $bookmarks[] = array(
+          'is_active' => $is_active,
+          'name' => $name,
+          'revision' => $revision);
       }
     }
-    return null;
+
+    return $bookmarks;
   }
 
+  private function splitBranchOrBookmarkLine($line) {
+    // branches and bookmarks are printed in the format:
+    // default                 0:a5ead76cdf85 (inactive)
+    // * mybook               2:6b274d49be97
+    // this code divides the name half from the revision half
+    // it does not parse the * and (inactive) bits
+    $colon_index = strrpos($line, ':');
+    $before_colon = substr($line, 0, $colon_index);
+    $start_rev_index = strrpos($before_colon, ' ');
+    $name = substr($line, 0, $start_rev_index);
+    $rev = substr($line, $start_rev_index);
+
+    return array(trim($name), trim($rev));
+  }
 }
