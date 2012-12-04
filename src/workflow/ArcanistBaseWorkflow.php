@@ -230,7 +230,7 @@ abstract class ArcanistBaseWorkflow {
    * @task conduit
    */
   public function getConduitVersion() {
-    return nonempty($this->forcedConduitVersion, 5);
+    return nonempty($this->forcedConduitVersion, 6);
   }
 
 
