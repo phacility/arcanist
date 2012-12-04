@@ -473,15 +473,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getGitConfig($key, $default = null) {
-    list($stdout) = $this->execxLocal('config %s', $key);
-    if ($stdout == '') {
+    list($err, $stdout) = $this->execManualLocal('config %s', $key);
+    if ($err) {
       return $default;
     }
     return rtrim($stdout);
   }
 
   public function getAuthor() {
-    return $this->getGitConfig('user.name');
+    list($stdout) = $this->execxLocal('var GIT_AUTHOR_IDENT');
+    return preg_replace('/\s+<.*/', '', rtrim($stdout, "\n"));
   }
 
   public function addToCommit(array $paths) {
@@ -700,6 +701,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getWorkingCopyRevision() {
     list($stdout) = $this->execxLocal('rev-parse HEAD');
     return rtrim($stdout, "\n");
+  }
+
+  public function getUnderlyingWorkingCopyRevision() {
+    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
+    if (!$err && $stdout) {
+      return rtrim($stdout, "\n");
+    }
+    return $this->getWorkingCopyRevision();
   }
 
   public function isHistoryDefaultImmutable() {

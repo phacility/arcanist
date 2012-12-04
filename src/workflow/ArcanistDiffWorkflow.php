@@ -240,6 +240,14 @@ EOTEXT
           "Require excuse for lint advice in addition to lint warnings and ".
           "errors.",
       ),
+      'only-new' => array(
+        'param' => 'bool',
+        'help' =>
+          'Display only lint messages not present in the original code.',
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
       'apply-patches' => array(
         'help' =>
           'Apply patches suggested by lint to the working copy without '.

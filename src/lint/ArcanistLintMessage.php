@@ -19,6 +19,7 @@ final class ArcanistLintMessage {
   protected $appliedToDisk;
   protected $dependentMessages = array();
   protected $obsolete;
+  protected $uncacheable;
 
   public static function newFromDictionary(array $dict) {
     $message = new ArcanistLintMessage();
@@ -177,6 +178,15 @@ final class ArcanistLintMessage {
 
   public function isPatchApplied() {
     return $this->appliedToDisk;
+  }
+
+  public function setUncacheable($bool) {
+    $this->uncacheable = $bool;
+    return $this;
+  }
+
+  public function isUncacheable() {
+    return $this->uncacheable;
   }
 
   public function setDependentMessages(array $messages) {

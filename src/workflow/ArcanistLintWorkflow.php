@@ -83,6 +83,11 @@ EOTEXT
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'compiler', show lint warnings in suitable for your editor."
       ),
+      'only-new' => array(
+        'param' => 'bool',
+        'supports' => array('git', 'hg'), // TODO: svn
+        'help' => 'Display only messages not present in the original code.',
+      ),
       'engine' => array(
         'param' => 'classname',
         'help' =>
@@ -127,6 +132,10 @@ EOTEXT
       ),
       '*' => 'paths',
     );
+  }
+
+  public function requiresAuthentication() {
+    return (bool)$this->getArgument('only-new');
   }
 
   public function requiresWorkingCopy() {
@@ -192,9 +201,14 @@ EOTEXT
     if ($this->getArgument('cache')) {
       $cache = $this->readScratchJSONFile('lint-cache.json');
       $cache = idx($cache, $this->getCacheKey(), array());
+      $cache = array_intersect_key($cache, array_flip($paths));
       $cached = array();
       foreach ($cache as $path => $messages) {
-        $messages = idx($messages, md5_file($engine->getFilePathOnDisk($path)));
+        $abs_path = $engine->getFilePathOnDisk($path);
+        if (!Filesystem::pathExists($abs_path)) {
+          continue;
+        }
+        $messages = idx($messages, md5_file($abs_path));
         if ($messages !== null) {
           $cached[$path] = $messages;
         }
@@ -223,6 +237,41 @@ EOTEXT
       $engine->setEnableAsyncLint(false);
     }
 
+    if ($this->getArgument('only-new')) {
+      $conduit = $this->getConduit();
+      $api = $this->getRepositoryAPI();
+      $relative_commit = ($rev ? $rev : $api->resolveBaseCommit());
+      $api->setRelativeCommit($relative_commit);
+      $svn_root = id(new PhutilURI($api->getSourceControlPath()))->getPath();
+
+      $all_paths = array();
+      foreach ($paths as $path) {
+        $path = str_replace(DIRECTORY_SEPARATOR, '/', $path);
+        $full_paths = array($path);
+
+        $change = $this->getChange($path);
+        $type = $change->getType();
+        if (ArcanistDiffChangeType::isOldLocationChangeType($type)) {
+          $full_paths = $change->getAwayPaths();
+        } else if (ArcanistDiffChangeType::isNewLocationChangeType($type)) {
+          continue;
+        } else if (ArcanistDiffChangeType::isDeleteChangeType($type)) {
+          continue;
+        }
+
+        foreach ($full_paths as $full_path) {
+          $all_paths[$svn_root.'/'.$full_path] = $path;
+        }
+      }
+
+      $lint_future = $conduit->callMethod('diffusion.getlintmessages', array(
+        'arcanistProject' => $this->getWorkingCopy()->getProjectID(),
+        'branch' => '', // TODO: Tracking branch.
+        'commit' => $api->getRelativeCommit(),
+        'files' => array_keys($all_paths),
+      ));
+    }
+
     $failed = null;
     try {
       $engine->run();
@@ -231,6 +280,65 @@ EOTEXT
     }
 
     $results = $engine->getResults();
+
+    if ($this->getArgument('only-new')) {
+      $total = 0;
+      foreach ($results as $result) {
+        $total += count($result->getMessages());
+      }
+
+      // Don't wait for response with default value of --only-new.
+      $timeout = null;
+      if ($this->getArgument('only-new') === null || !$total) {
+        $timeout = 0;
+      }
+
+      $raw_messages = $lint_future->resolve($timeout);
+      if ($raw_messages && $total) {
+        $old_messages = array();
+        $line_maps = array();
+        foreach ($raw_messages as $message) {
+          $path = $all_paths[$message['path']];
+          $line = $message['line'];
+          $code = $message['code'];
+
+          if (!isset($line_maps[$path])) {
+            $line_maps[$path] = $this->getChange($path)->buildLineMap();
+          }
+
+          $new_lines = idx($line_maps[$path], $line);
+          if (!$new_lines) { // Unmodified lines after last hunk.
+            $last_old = ($line_maps[$path] ? last_key($line_maps[$path]) : 0);
+            $news = array_filter($line_maps[$path]);
+            $last_new = ($news ? last(end($news)) : 0);
+            $new_lines = array($line + $last_new - $last_old);
+          }
+
+          $error = array($code => array(true));
+          foreach ($new_lines as $new) {
+            if (isset($old_messages[$path][$new])) {
+              $old_messages[$path][$new][$code][] = true;
+              break;
+            }
+            $old_messages[$path][$new] = &$error;
+          }
+          unset($error);
+        }
+
+        foreach ($results as $result) {
+          foreach ($result->getMessages() as $message) {
+            $path = str_replace(DIRECTORY_SEPARATOR, '/', $message->getPath());
+            $line = $message->getLine();
+            $code = $message->getCode();
+            if (!empty($old_messages[$path][$line][$code])) {
+              $message->setObsolete(true);
+              array_pop($old_messages[$path][$line][$code]);
+            }
+          }
+          $result->sortAndFilterMessages();
+        }
+      }
+    }
 
     // It'd be nice to just return a single result from the run method above
     // which contains both the lint messages and the postponed linters.
@@ -400,10 +508,17 @@ EOTEXT
           unset($cached[$path]);
           continue;
         }
-        $hash = md5_file($engine->getFilePathOnDisk($path));
+        $abs_path = $engine->getFilePathOnDisk($path);
+        if (!Filesystem::pathExists($abs_path)) {
+          continue;
+        }
+        $hash = md5_file($abs_path);
         $version = $result->getCacheVersion();
         $cached[$path] = array($hash => array($version => array()));
         foreach ($result->getMessages() as $message) {
+          if ($message->isUncacheable()) {
+            continue;
+          }
           if (!$message->isPatchApplied()) {
             $cached[$path][$hash][$version][] = $message->toDictionary();
           }
