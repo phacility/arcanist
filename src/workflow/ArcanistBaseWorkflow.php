@@ -985,7 +985,7 @@ abstract class ArcanistBaseWorkflow {
     return array_keys($lines);
   }
 
-  private function getChange($path) {
+  protected function getChange($path) {
     $repository_api = $this->getRepositoryAPI();
 
     if ($repository_api instanceof ArcanistSubversionAPI) {

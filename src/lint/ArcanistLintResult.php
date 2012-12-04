@@ -82,7 +82,7 @@ final class ArcanistLintResult {
     return true;
   }
 
-  private function sortAndFilterMessages() {
+  public function sortAndFilterMessages() {
     $messages = $this->messages;
 
     foreach ($messages as $key => $message) {
