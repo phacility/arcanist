@@ -117,8 +117,10 @@ EOTEXT
   public function run() {
     $this->readArguments();
     $this->validate();
-    $this->findRevision();
     $this->pullFromRemote();
+
+    $this->checkoutBranch();
+    $this->findRevision();
 
     if ($this->useSquash) {
       $this->rebase();
@@ -221,6 +223,17 @@ EOTEXT
     $this->requireCleanWorkingCopy();
   }
 
+  private function checkoutBranch() {
+    $repository_api = $this->getRepositoryAPI();
+    $repository_api->execxLocal(
+      'checkout %s',
+      $this->branch);
+
+    echo phutil_console_format(
+      "Switched to branch **%s**. Identifying and merging...\n",
+      $this->branch);
+  }
+
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
@@ -313,30 +326,17 @@ EOTEXT
 
   private function rebase() {
     $repository_api = $this->getRepositoryAPI();
-    $repository_api->execxLocal(
-      'checkout %s',
-      $this->branch);
 
-    echo phutil_console_format(
-      "Switched to branch **%s**. Identifying and merging...\n",
-      $this->branch);
+    chdir($repository_api->getPath());
+    $err = phutil_passthru('git rebase %s', $this->onto);
 
-    if ($this->useSquash) {
-      chdir($repository_api->getPath());
-      $err = phutil_passthru('git rebase %s', $this->onto);
-
-      if ($err) {
-        throw new ArcanistUsageException(
-          "'git rebase {$this->onto}' failed. ".
-          "You can abort with 'git rebase --abort', ".
-          "or resolve conflicts and use 'git rebase ".
-          "--continue' to continue forward. After resolving the rebase, ".
-          "run 'arc land' again.");
-      }
-
-      // Now that we've rebased, the merge-base of origin/master and HEAD may
-      // be different. Reparse the relative commit.
-      $repository_api->parseRelativeLocalCommit(array($this->ontoRemoteBranch));
+    if ($err) {
+      throw new ArcanistUsageException(
+        "'git rebase {$this->onto}' failed. ".
+        "You can abort with 'git rebase --abort', ".
+        "or resolve conflicts and use 'git rebase ".
+        "--continue' to continue forward. After resolving the rebase, ".
+        "run 'arc land' again.");
     }
   }
 
