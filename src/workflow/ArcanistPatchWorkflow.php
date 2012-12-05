@@ -717,7 +717,7 @@ EOTEXT
             $author = sprintf('%s <%s>',
                               $address->getDisplayName(),
                               $address->getAddress());
-            $author_cmd = sprintf('--author=%s ', $author);
+            $author_cmd = csprintf('--author=%s ', $author);
           }
         }
         $commit_message = $this->getCommitMessage($bundle);
