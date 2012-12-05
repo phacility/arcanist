@@ -206,6 +206,14 @@ EOTEXT
           'message'   => '--preview does not update any revision.',
         ),
       ),
+      'plan-changes' => array(
+        'help' =>
+          "Create or update a revision without requesting a code review.",
+        'conflicts' => array(
+          'only'     => '--only does not affect revisions.',
+          'preview'  => '--preview does not affect revisions.',
+        ),
+      ),
       'encoding' => array(
         'param' => 'encoding',
         'help' =>
@@ -514,10 +522,9 @@ EOTEXT
       $revision['diffid'] = $this->getDiffID();
 
       if ($commit_message->getRevisionID()) {
-        $future = $conduit->callMethod(
+        $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
           $revision);
-        $result = $future->resolve();
 
         foreach (array('edit-messages.json', 'update-messages.json') as $file) {
           $messages = $this->readScratchJSONFile($file);
@@ -559,6 +566,16 @@ EOTEXT
       echo phutil_console_format(
         "        **Revision URI:** __%s__\n\n",
         $uri);
+
+      if ($this->getArgument('plan-changes')) {
+        $conduit->callMethodSynchronous(
+          'differential.createcomment',
+          array(
+            'revision_id' => $result['revisionid'],
+            'action' => 'rethink',
+          ));
+        echo "Planned changes to the revision.\n";
+      }
     }
 
     echo "Included changes:\n";
