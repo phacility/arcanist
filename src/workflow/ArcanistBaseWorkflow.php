@@ -1408,11 +1408,24 @@ abstract class ArcanistBaseWorkflow {
       if (!$project_id) {
         $this->projectInfo = array();
       } else {
-        $this->projectInfo = $this->getConduit()->callMethodSynchronous(
-          'arcanist.projectinfo',
-          array(
-            'name' => $project_id,
-          ));
+        try {
+          $this->projectInfo = $this->getConduit()->callMethodSynchronous(
+            'arcanist.projectinfo',
+            array(
+              'name' => $project_id,
+            ));
+        } catch (ConduitClientException $ex) {
+          if ($ex->getErrorCode() != 'ERR-BAD-ARCANIST-PROJECT') {
+            throw $ex;
+          }
+
+          // TODO: Implement a proper query method that doesn't throw on
+          // project not found. We just swallow this because some pathways,
+          // like Git with uncommitted changes in a repository with a new
+          // project ID, may attempt to access project information before
+          // the project is created. See T2153.
+          return array();
+        }
       }
     }
 
