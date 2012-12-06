@@ -499,14 +499,48 @@ EOTEXT
         $this->branch);
     }
     else if ($this->isHg) {
+      // The hg code is a little more complex than git's because we
+      // need to handle the case where the landing branch has child branches:
+      // -a--------b  master
+      //   \
+      //    w--x  mybranch
+      //        \--y  subbranch1
+      //         \--z  subbranch2
+      //
+      // arc land --branch mybranch --onto master :
+      // -a--b--wx  master
+      //          \--y  subbranch1
+      //           \--z  subbranch2
+
       $branch_rev_id = $repository_api->getCanonicalRevisionName($this->branch);
 
+      // At this point $this->onto has been pulled from remote and
+      // $this->branch has been rebased on top of onto(by the rebase()
+      // function). So we're guaranteed to have onto as an ancestor of branch
+      // when we use first((onto::branch)-onto) below.
+      $branch_root = $repository_api->getCanonicalRevisionName(
+        sprintf("first((%s::%s)-%s)",
+          $this->onto,
+          $this->branch,
+          $this->onto));
+
+      $branch_range = sprintf(
+        "(%s::%s)",
+        $branch_root,
+        $this->branch);
+
+      if (!$this->keepBranch) {
+        $this->handleAlternateBranches($branch_root, $branch_range);
+      }
+
+      // Collapse just the landing branch onto master.
+      // Leave its children on the original branch.
       $repository_api->execxLocal(
-        'rebase --collapse --logfile %s -b %s -d %s %s',
+        'rebase --collapse --keep --logfile %s -r %s -d %s',
         $this->messageFile,
-        $this->branch,
-        $this->onto,
-        $this->keepBranch ? '--keep' : '');
+        $branch_range,
+        $this->onto);
+
       if ($repository_api->isBookmark($this->branch)) {
         // a bug in mercurial means bookmarks end up on the revision prior
         // to the collapse when using --collapse with --keep,
@@ -516,12 +550,112 @@ EOTEXT
           'bookmark -f %s',
           $this->onto);
 
-        if ($this->keepBranch) {
+        $repository_api->execxLocal(
+          'bookmark -f %s -r %s',
+          $this->branch,
+          $branch_rev_id);
+      }
+
+      // check if the branch had children
+      list($output) = $repository_api->execxLocal(
+        "log -r %s --template '{node}\\n'",
+        sprintf("children(%s)", $this->branch));
+
+      $child_branch_roots = phutil_split_lines($output, false);
+      $child_branch_roots = array_filter($child_branch_roots);
+      if ($child_branch_roots) {
+        // move the branch's children onto the collapsed commit
+        foreach ($child_branch_roots as $child_root) {
           $repository_api->execxLocal(
-            'bookmark -f %s -r %s',
-            $this->branch,
-            $branch_rev_id);
+            'rebase -d %s -s %s --keep --keepbranches',
+            $this->onto,
+            $child_root);
         }
+      }
+
+      // delete the old branch if necessary
+      if (!$this->keepBranch) {
+        $repository_api->execxLocal(
+          'strip -r %s',
+          $branch_root);
+
+        if ($repository_api->isBookmark($this->branch)) {
+          $repository_api->execxLocal(
+            'bookmark -d %s',
+            $this->branch);
+        }
+      }
+
+      // All the rebases may have moved us to another branch
+      // so we move back.
+      $repository_api->execxLocal('checkout %s', $this->onto);
+    }
+  }
+
+  /**
+   * Detect alternate branches and prompt the user for how to handle
+   * them. An alternate branch is a branch that forks from the landing
+   * branch prior to the landing branch tip.
+   *
+   * In a situation like this:
+   *   -a--------b  master
+   *     \
+   *      w--x  landingbranch
+   *       \  \-- g subbranch
+   *        \--y  altbranch1
+   *         \--z  altbranch2
+   *
+   * y and z are alternate branches and will get deleted by the squash,
+   * so we need to detect them and ask the user what they want to do.
+   *
+   * @param string The revision id of the landing branch's root commit.
+   * @param string The revset specifying all the commits in the landing branch.
+   * @return void
+   */
+  private function handleAlternateBranches($branch_root, $branch_range) {
+    $repository_api = $this->getRepositoryAPI();
+
+    // Using the tree in the doccomment, the revset below resolves as follows:
+    // 1. roots(descendants(w) - descendants(x) - (w::x))
+    // 2. roots({x,g,y,z} - {g} - {w,x})
+    // 3. roots({y,z})
+    // 4. {y,z}
+    $alt_branch_revset = sprintf(
+      'roots(descendants(%s)-descendants(%s)-%s)',
+      $branch_root,
+      $this->branch,
+      $branch_range);
+    list($alt_branches) = $repository_api->execxLocal(
+      "log --template '{node}\n' -r %s",
+       $alt_branch_revset);
+
+    $alt_branches = phutil_split_lines($alt_branches, false);
+    $alt_branches = array_filter($alt_branches);
+
+    $alt_count = count($alt_branches);
+    if ($alt_count > 0) {
+      $input = phutil_console_prompt(
+        "Branch {$this->branch} has {$alt_count} branch(s) forking off of it ".
+        "that would be deleted during a squash. Would you like to keep a ".
+        "non-squashed copy, rebase them on top of {$this->branch}, or abort ".
+        "and deal with them yourself? (k)eep, (r)ebase, (a)bort:");
+
+      if ($input == 'k' || $input == 'keep') {
+        $this->keepBranch = true;
+      } else if ($input == 'r' || $input == 'rebase') {
+        foreach ($alt_branches as $alt_branch) {
+          $repository_api->execxLocal(
+            'rebase --keep --keepbranches -d %s -s %s',
+            $this->branch,
+            $alt_branch);
+        }
+      } else if ($input == 'a' || $input == 'abort') {
+        $branch_string = implode("\n", $alt_branches);
+        echo "\nRemove the branches starting at these revision and ".
+          "run arc land again:\n{$branch_string}\n\n";
+        throw new ArcanistUserAbortException();
+      } else {
+        throw new ArcanistUsageException("Invalid choice. Aborting arc land.");
       }
     }
   }
@@ -636,15 +770,7 @@ EOTEXT
         'branch -D %s',
         $this->branch);
     }
-    else if ($this->isHg) {
-      // named branches were closed as part of the earlier commit
-      // so only worry about bookmarks
-      if ($repository_api->isBookmark($this->branch)) {
-        $repository_api->execxLocal(
-        'bookmark -d %s',
-        $this->branch);
-      }
-    }
+    // hg branches/bookmarks were closed earlier
 
     if ($this->getArgument('delete-remote')) {
       if ($this->isGit) {
