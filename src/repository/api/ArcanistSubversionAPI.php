@@ -46,16 +46,6 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
-
-  public function hasMergeConflicts() {
-    foreach ($this->getSVNStatus() as $path => $mask) {
-      if ($mask & self::FLAG_CONFLICT) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public function getWorkingCopyStatus() {
     return $this->getSVNStatus();
   }
