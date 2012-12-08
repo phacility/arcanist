@@ -7,6 +7,7 @@
  */
 final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
   private $isGit;
+  private $isGitSvn;
   private $isHg;
 
   private $oldBranch;
@@ -170,6 +171,11 @@ EOTEXT
         "'arc land' only supports git and mercurial.");
     }
 
+    if ($this->isGit) {
+      $repository = $this->loadProjectRepository();
+      $this->isGitSvn = (idx($repository, 'vcs') == 'svn');
+    }
+
     $branch = $this->getArgument('branch');
     if (empty($branch)) {
       $branch = $this->getBranchOrBookmark();
@@ -205,7 +211,9 @@ EOTEXT
     }
 
     $this->ontoRemoteBranch = $this->onto;
-    if ($this->isGit) {
+    if ($this->isGitSvn) {
+      $this->ontoRemoteBranch = 'trunk';
+    } else if ($this->isGit) {
       $this->ontoRemoteBranch = $this->remote.'/'.$this->onto;
     }
 
@@ -362,13 +370,14 @@ EOTEXT
     if ($this->isGit) {
       $repository_api->execxLocal('pull --ff-only');
 
-      list($out) = $repository_api->execxLocal(
-        'log %s/%s..%s',
-        $this->remote,
-        $this->onto,
-        $this->onto);
-      if (strlen(trim($out))) {
-        $local_ahead_of_remote = true;
+      if (!$this->isGitSvn) {
+        list($out) = $repository_api->execxLocal(
+          'log %s..%s',
+          $this->ontoRemoteBranch,
+          $this->onto);
+        if (strlen(trim($out))) {
+          $local_ahead_of_remote = true;
+        }
       }
     } else if ($this->isHg) {
       // execManual instead of execx because outgoing returns
@@ -549,7 +558,9 @@ EOTEXT
 
       chdir($repository_api->getPath());
 
-      if ($this->isGit) {
+      if ($this->isGitSvn) {
+        $err = phutil_passthru('git svn dcommit');
+      } else if ($this->isGit) {
         $err = phutil_passthru(
           'git push %s %s',
           $this->remote,

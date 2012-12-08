@@ -859,20 +859,14 @@ abstract class ArcanistBaseWorkflow {
 
     // TODO: Check commits since tracking branch. If empty then return false.
 
-    $repository_phid = idx($this->getProjectInfo(), 'repositoryPHID');
-    if ($repository_phid) {
-      $repositories = $this->getConduit()->callMethodSynchronous(
-        'repository.query',
-        array());
-      $callsigns = ipull($repositories, 'callsign', 'phid');
-      $callsign = idx($callsigns, $repository_phid);
-      if ($callsign) {
-        $known_commits = $this->getConduit()->callMethodSynchronous(
-          'diffusion.getcommits',
-          array('commits' => array('r'.$callsign.$commit['commit'])));
-        if (ifilter($known_commits, 'error', $negate = true)) {
-          return false;
-        }
+    $repository = $this->loadProjectRepository();
+    if ($repository) {
+      $callsign = $repository['callsign'];
+      $known_commits = $this->getConduit()->callMethodSynchronous(
+        'diffusion.getcommits',
+        array('commits' => array('r'.$callsign.$commit['commit'])));
+      if (ifilter($known_commits, 'error', $negate = true)) {
+        return false;
       }
     }
 
@@ -1430,6 +1424,20 @@ abstract class ArcanistBaseWorkflow {
     }
 
     return $this->projectInfo;
+  }
+
+  protected function loadProjectRepository() {
+    $repository_phid = idx($this->getProjectInfo(), 'repositoryPHID');
+    if (!$repository_phid) {
+      return array();
+    }
+
+    $repositories = $this->getConduit()->callMethodSynchronous(
+      'repository.query',
+      array());
+    $repositories = ipull($repositories, null, 'phid');
+
+    return idx($repositories, $repository_phid, array());
   }
 
   protected function newInteractiveEditor($text) {
