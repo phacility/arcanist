@@ -71,6 +71,12 @@ final class ArcanistSettings {
           "'vim'. This setting overrides the EDITOR environmental variable.",
         'example' => '"nano"',
       ),
+      'browser' => array(
+        'type' => 'string',
+        'help' =>
+          "Command to use to invoke a web browser.",
+        'example' => '"gnome-www-browser"',
+      ),
       'events.listeners' => array(
         'type' => 'list',
         'help' => 'List of event listener classes to install at startup.',

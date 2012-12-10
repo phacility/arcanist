@@ -115,17 +115,10 @@ EOTEXT
 
       $actually_close = true;
       if ($is_finalize) {
-        $project_id = $this->getWorkingCopy()->getProjectID();
-        if ($project_id) {
-          $project_info = $conduit->callMethodSynchronous(
-            'arcanist.projectinfo',
-            array(
-              'name' => $project_id,
-            ));
-          if ($project_info['tracked'] ||
-              $revision['status'] != $status_accepted) {
-            $actually_close = false;
-          }
+        $project_info = $this->getProjectInfo();
+        if (idx($project_info, 'tracked') ||
+            $revision['status'] != $status_accepted) {
+          $actually_close = false;
         }
       }
       if ($actually_close) {
