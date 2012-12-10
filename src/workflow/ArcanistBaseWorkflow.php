@@ -1427,7 +1427,13 @@ abstract class ArcanistBaseWorkflow {
   }
 
   protected function loadProjectRepository() {
-    $repository_phid = idx($this->getProjectInfo(), 'repositoryPHID');
+    $project = $this->getProjectInfo();
+    if (isset($project['repository'])) {
+      return $project['repository'];
+    }
+    // NOTE: The rest of the code is here for backwards compatibility.
+
+    $repository_phid = idx($project, 'repositoryPHID');
     if (!$repository_phid) {
       return array();
     }
