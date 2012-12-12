@@ -16,6 +16,7 @@ final class ArcanistBranchWorkflow extends ArcanistBaseWorkflow {
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **branch** [__options__]
+      **branch** __name__ [__start__]
 EOTEXT
       );
   }
@@ -31,6 +32,10 @@ EOTEXT
 
           By default, branches that are "Closed" or "Abandoned" are not
           displayed. You can show them with __--view-all__.
+
+          With __name__, it creates or checks out a branch. If the branch
+          __name__ doesn't exist and is in format D123 then the branch of
+          revision D123 is checked out.
 EOTEXT
       );
   }
@@ -56,6 +61,7 @@ EOTEXT
       'by-status' => array(
         'help' => 'Sort branches by status instead of time.',
       ),
+      '*' => 'names',
     );
   }
 
@@ -64,6 +70,14 @@ EOTEXT
     if (!($repository_api instanceof ArcanistGitAPI)) {
       throw new ArcanistUsageException(
         'arc branch is only supported under git.');
+    }
+
+    $names = $this->getArgument('names');
+    if ($names) {
+      if (count($names) > 2) {
+        throw new ArcanistUsageException("Specify only one branch.");
+      }
+      return $this->checkoutBranch($names);
     }
 
     $branches = $repository_api->getAllBranches();
@@ -78,6 +92,45 @@ EOTEXT
     $this->printBranches($branches, $revisions);
 
     return 0;
+  }
+
+  private function checkoutBranch(array $names) {
+    $api = $this->getRepositoryAPI();
+
+    list($err, $stdout, $stderr) = $api->execManualLocal(
+      'checkout %s',
+      reset($names));
+
+    if ($err) {
+      $match = null;
+      if (preg_match('/^D(\d+)$/', reset($names), $match)) {
+        try {
+          $diff = $this->getConduit()->callMethodSynchronous(
+            'differential.getdiff',
+            array(
+              'revision_id' => $match[1],
+            ));
+
+          if ($diff['branch'] != '') {
+            $names[0] = $diff['branch'];
+            list($err, $stdout, $stderr) = $api->execManualLocal(
+              'checkout %s',
+              reset($names));
+          }
+        } catch (ConduitException $ex) {
+        }
+      }
+    }
+
+    if ($err) {
+      list($err, $stdout, $stderr) = $api->execManualLocal(
+        'checkout -b %Ls',
+        $names);
+    }
+
+    echo $stdout;
+    fprintf(STDERR, $stderr);
+    return $err;
   }
 
   private function loadCommitInfo(array $branches) {
