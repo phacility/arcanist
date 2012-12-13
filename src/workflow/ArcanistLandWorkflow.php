@@ -17,6 +17,7 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
   private $remote;
   private $useSquash;
   private $keepBranch;
+  private $shouldUpdateWithRebase;
 
   private $revision;
   private $messageFile;
@@ -115,6 +116,13 @@ EOTEXT
           'keep-branch' => true,
         ),
       ),
+      'update-with-rebase' => array(
+        'help'    => 'When updating the feature branch, use rebase intead of '.
+                     'merge. This might make things work better in some cases.',
+        'conflicts' => array(
+          'merge' => 'The --merge strategy does not update the feature branch.',
+        ),
+      ),
       'revision' => array(
         'param' => 'id',
         'help'  => 'Use the message from a specific revision, rather than '.
@@ -192,6 +200,7 @@ EOTEXT
     }
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
+    $this->shouldUpdateWithRebase = $this->getArgument('update-with-rebase');
 
     $onto_default = $this->isGit ? 'master' : 'default';
     $onto_default = nonempty(
@@ -323,7 +332,7 @@ EOTEXT
     } else if (count($revisions) > 1) {
       $message =
         "There are multiple revisions on feature branch '{$this->branch}' ".
-        "which are not present on '{$onto}':\n\n".
+        "which are not present on '{$this->onto}':\n\n".
         $this->renderRevisionList($revisions)."\n".
         "Separate these revisions onto different branches, or use ".
         "'--revision <id>' to select one.";
@@ -438,23 +447,41 @@ EOTEXT
 
     chdir($repository_api->getPath());
     if ($this->isGit) {
-      $err = phutil_passthru('git rebase %s', $this->onto);
-    }
-    else if ($this->isHg) {
+      if ($this->shouldUpdateWithRebase) {
+        $err = phutil_passthru('git rebase %s', $this->onto);
+        if ($err) {
+          throw new ArcanistUsageException(
+            "'git rebase {$this->onto}' failed. ".
+            "You can abort with 'git rebase --abort', ".
+            "or resolve conflicts and use 'git rebase ".
+            "--continue' to continue forward. After resolving the rebase, ".
+            "run 'arc land' again.");
+        }
+      } else {
+        $err = phutil_passthru(
+          'git merge %s -m %s',
+          $this->onto,
+          "Automatic merge by 'arc land'");
+        if ($err) {
+          throw new ArcanistUsageException(
+            "'git merge {$this->onto}' failed. ".
+            "To continue: resolve the conflicts, commit the changes, then run ".
+            "'arc land' again. To abort: run 'git merge --abort'.");
+        }
+      }
+    } else if ($this->isHg) {
       // keep branch here so later we can decide whether to remove it
       $err = $repository_api->execPassthru(
         'rebase -d %s --keepbranches',
         $this->onto);
-    }
-
-    if ($err) {
-      $command = $repository_api->getSourceControlSystemName();
-      throw new ArcanistUsageException(
-        "'{$command} rebase {$this->onto}' failed. ".
-        "You can abort with '{$command} rebase --abort', ".
-        "or resolve conflicts and use '{$command} rebase ".
-        "--continue' to continue forward. After resolving the rebase, ".
-        "run 'arc land' again.");
+      if ($err) {
+        throw new ArcanistUsageException(
+          "'hg rebase {$this->onto}' failed. ".
+          "You can abort with 'hg rebase --abort', ".
+          "or resolve conflicts and use 'hg rebase ".
+          "--continue' to continue forward. After resolving the rebase, ".
+          "run 'arc land' again.");
+      }
     }
 
     // Now that we've rebased, the merge-base of origin/master and HEAD may
