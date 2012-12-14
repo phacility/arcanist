@@ -15,6 +15,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   protected $svnDiffRaw = array();
 
   private $svnBaseRevisionNumber;
+  private $statusPaths = array();
 
   public function getSourceControlSystemName() {
     return 'svn';
@@ -63,9 +64,20 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $this->svnBaseRevisions;
   }
 
+  public function limitStatusToPaths(array $paths) {
+    $this->statusPaths = $paths;
+    return $this;
+  }
+
   public function getSVNStatus($with_externals = false) {
     if ($this->svnStatus === null) {
-      list($status) = $this->execxLocal('--xml status');
+      if ($this->statusPaths) {
+        list($status) = $this->execxLocal(
+          '--xml status %Ls',
+          $this->statusPaths);
+      } else {
+        list($status) = $this->execxLocal('--xml status');
+      }
       $xml = new SimpleXMLElement($status);
 
       if (count($xml->target) != 1) {
