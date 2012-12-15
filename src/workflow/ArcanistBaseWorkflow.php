@@ -1466,6 +1466,21 @@ abstract class ArcanistBaseWorkflow {
     return $parser;
   }
 
+  protected function resolveCall(ConduitFuture $method, $timeout = null) {
+    try {
+      return $method->resolve($timeout);
+    } catch (ConduitClientException $ex) {
+      if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
+        echo phutil_console_wrap(
+          "This feature requires a newer version of Phabricator. Please ".
+          "update it using these instructions: ".
+          "http://www.phabricator.com/docs/phabricator/article/".
+          "Installation_Guide.html#updating-phabricator\n\n");
+      }
+      throw $ex;
+    }
+  }
+
   protected function dispatchEvent($type, array $data) {
     $data += array(
       'workflow' => $this,

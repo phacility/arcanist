@@ -293,7 +293,7 @@ EOTEXT
         $timeout = 0;
       }
 
-      $raw_messages = $lint_future->resolve($timeout);
+      $raw_messages = $this->resolveCall($lint_future, $timeout);
       if ($raw_messages && $total) {
         $old_messages = array();
         $line_maps = array();
