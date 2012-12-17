@@ -69,6 +69,18 @@ EOTEXT
         'help' => "Show a detailed coverage report on the CLI. Implies ".
                   "--coverage.",
       ),
+      'json' => array(
+        'help' => 'Report results in JSON format.',
+      ),
+      'everything' => array(
+        'help' => 'Run every test.',
+        'conflicts' => array(
+          'rev' => '--everything runs all tests.',
+        ),
+      ),
+      'ugly' => array(
+        'help' => 'With --json, use uglier (but more efficient) formatting.',
+      ),
       '*' => 'paths',
     );
   }
@@ -101,6 +113,12 @@ EOTEXT
 
     $paths = $this->getArgument('paths');
     $rev = $this->getArgument('rev');
+    $everything = $this->getArgument('everything');
+    if ($everything && $paths) {
+      throw new ArcanistUsageException(
+        "You can not specify paths with --everything. The --everything ".
+        "flag runs every test.");
+    }
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
@@ -113,7 +131,11 @@ EOTEXT
 
     $this->engine = newv($engine_class, array());
     $this->engine->setWorkingCopy($working_copy);
-    $this->engine->setPaths($paths);
+    if ($everything) {
+      $this->engine->setRunAllTests(true);
+    } else {
+      $this->engine->setPaths($paths);
+    }
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
     $enable_coverage = null; // Means "default".
@@ -136,6 +158,12 @@ EOTEXT
     $this->testResults = $results;
 
     $console = PhutilConsole::getConsole();
+
+    $json_output = $this->getArgument('json');
+
+    if ($json_output) {
+      $console->disableOut();
+    }
 
     $unresolved = array();
     $coverage = array();
@@ -231,6 +259,19 @@ EOTEXT
       } else if ($result_code == ArcanistUnitTestResult::RESULT_POSTPONED &&
                  $overall_result != self::RESULT_UNSOUND) {
         $overall_result = self::RESULT_POSTPONED;
+      }
+    }
+
+    if ($json_output) {
+      $console->enableOut();
+
+      $data = array_values(mpull($results, 'toDictionary'));
+
+      if ($this->getArgument('ugly')) {
+        $console->writeOut('%s', json_encode($data));
+      } else {
+        $json = new PhutilJSON();
+        $console->writeOut('%s', $json->encodeFormatted($data));
       }
     }
 
