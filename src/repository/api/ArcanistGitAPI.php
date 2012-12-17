@@ -7,14 +7,13 @@
  */
 final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
-  private $status;
   private $relativeCommit = null;
   private $repositoryHasNoCommits = false;
   const SEARCH_LENGTH_FOR_PARENT_REVISIONS = 16;
 
   /**
    * For the repository's initial commit, 'git diff HEAD^' and similar do
-   * not work. Using this instead does work.
+   * not work. Using this instead does work; it is the hash of the empty tree.
    */
   const GIT_MAGIC_ROOT_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
@@ -384,92 +383,81 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout);
   }
 
-  public function getWorkingCopyStatus() {
-    if (!isset($this->status)) {
+  protected function buildUncommittedStatus() {
+    $diff_options = $this->getDiffBaseOptions();
 
-      $options = $this->getDiffBaseOptions();
-
-      // -- parallelize these slow cpu bound git calls.
-
-      // Find committed changes.
-      $committed_future = $this->buildLocalFuture(
-        array(
-          "diff {$options} --raw %s --",
-          $this->getRelativeCommit(),
-        ));
-
-      // Find uncommitted changes.
-      $uncommitted_future = $this->buildLocalFuture(
-        array(
-          "diff {$options} --raw %s --",
-          $this->repositoryHasNoCommits
-            ? self::GIT_MAGIC_ROOT_COMMIT
-            : 'HEAD',
-        ));
-
-      // Untracked files
-      $untracked_future = $this->buildLocalFuture(
-        array(
-          'ls-files --others --exclude-standard',
-        ));
-
-      // TODO: This doesn't list unstaged adds. It's not clear how to get that
-      // list other than "git status --porcelain" and then parsing it. :/
-
-      // Unstaged changes
-      $unstaged_future = $this->buildLocalFuture(
-        array(
-          'ls-files -m',
-        ));
-
-      $futures = array(
-        $committed_future,
-        $uncommitted_future,
-        $untracked_future,
-        $unstaged_future
-      );
-      Futures($futures)->resolveAll();
-
-
-      // -- read back and process the results
-
-      list($stdout, $stderr) = $committed_future->resolvex();
-      $files = $this->parseGitStatus($stdout);
-
-      list($stdout, $stderr) = $uncommitted_future->resolvex();
-      $uncommitted_files = $this->parseGitStatus($stdout);
-      foreach ($uncommitted_files as $path => $mask) {
-        $mask |= self::FLAG_UNCOMMITTED;
-        if (!isset($files[$path])) {
-          $files[$path] = 0;
-        }
-        $files[$path] |= $mask;
-      }
-
-      list($stdout, $stderr) = $untracked_future->resolvex();
-      $stdout = rtrim($stdout, "\n");
-      if (strlen($stdout)) {
-        $stdout = explode("\n", $stdout);
-        foreach ($stdout as $file) {
-          $files[$file] = self::FLAG_UNTRACKED;
-        }
-      }
-
-      list($stdout, $stderr) = $unstaged_future->resolvex();
-      $stdout = rtrim($stdout, "\n");
-      if (strlen($stdout)) {
-        $stdout = explode("\n", $stdout);
-        foreach ($stdout as $file) {
-          $files[$file] = isset($files[$file])
-            ? ($files[$file] | self::FLAG_UNSTAGED)
-            : self::FLAG_UNSTAGED;
-        }
-      }
-
-      $this->status = $files;
+    if ($this->repositoryHasNoCommits) {
+      $diff_base = self::GIT_MAGIC_ROOT_COMMIT;
+    } else {
+      $diff_base = 'HEAD';
     }
 
-    return $this->status;
+    // Find uncommitted changes.
+    $uncommitted_future = $this->buildLocalFuture(
+      array(
+        'diff %C --raw %s --',
+        $diff_options,
+        $diff_base,
+      ));
+
+    $untracked_future = $this->buildLocalFuture(
+      array(
+        'ls-files --others --exclude-standard',
+      ));
+
+    // TODO: This doesn't list unstaged adds. It's not clear how to get that
+    // list other than "git status --porcelain" and then parsing it. :/
+
+    // Unstaged changes
+    $unstaged_future = $this->buildLocalFuture(
+      array(
+        'ls-files -m',
+      ));
+
+    $futures = array(
+      $uncommitted_future,
+      $untracked_future,
+      $unstaged_future,
+    );
+
+    Futures($futures)->resolveAll();
+
+    $result = new PhutilArrayWithDefaultValue();
+
+    list($stdout) = $uncommitted_future->resolvex();
+    $uncommitted_files = $this->parseGitStatus($stdout);
+    foreach ($uncommitted_files as $path => $mask) {
+      $result[$path] |= ($mask | self::FLAG_UNCOMMITTED);
+    }
+
+    list($stdout) = $untracked_future->resolvex();
+    $stdout = rtrim($stdout, "\n");
+    if (strlen($stdout)) {
+      $stdout = explode("\n", $stdout);
+      foreach ($stdout as $path) {
+        $result[$path] |= self::FLAG_UNTRACKED;
+      }
+    }
+
+    list($stdout, $stderr) = $unstaged_future->resolvex();
+    $stdout = rtrim($stdout, "\n");
+    if (strlen($stdout)) {
+      $stdout = explode("\n", $stdout);
+      foreach ($stdout as $path) {
+        $result[$path] |= self::FLAG_UNSTAGED;
+      }
+    }
+
+    return $result->toArray();
+  }
+
+  protected function buildCommitRangeStatus() {
+    list($stdout, $stderr) = $this->execxLocal(
+      'diff %C --raw %s --',
+      $this->getDiffBaseOptions(),
+      $this->getRelativeCommit());
+
+    return $this->parseGitStatus($stdout);
   }
 
   public function getGitConfig($key, $default = null) {
@@ -497,6 +485,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit --allow-empty-message -F %s',
       $tmp_file);
+
+    $this->reloadWorkingCopy();
+
+    return $this;
   }
 
   public function amendCommit($message) {

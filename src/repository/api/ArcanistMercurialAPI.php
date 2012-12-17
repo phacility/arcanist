@@ -7,7 +7,6 @@
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
-  private $status;
   private $base;
   private $relativeCommit;
   private $branch;
@@ -296,70 +295,66 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $blame;
   }
 
-  public function getWorkingCopyStatus() {
+  protected function buildUncommittedStatus() {
+    list($stdout) = $this->execxLocal('status');
 
-    if (!isset($this->status)) {
-      // A reviewable revision spans multiple local commits in Mercurial, but
-      // there is no way to get file change status across multiple commits, so
-      // just take the entire diff and parse it to figure out what's changed.
+    $results = new PhutilArrayWithDefaultValue();
 
-      // Execute status in the background
-      $status_future = $this->buildLocalFuture(array('status'));
-      $status_future->start();
-
-      $diff = $this->getFullMercurialDiff();
-
-      if (!$diff) {
-        $this->status = array();
-        return $this->status;
+    $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
+    foreach ($working_status as $path => $mask) {
+      if (!($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED)) {
+        // Mark tracked files as uncommitted.
+        $mask |= self::FLAG_UNCOMMITTED;
       }
 
-      $parser = new ArcanistDiffParser();
-      $changes = $parser->parseDiff($diff);
-
-      $status_map = array();
-
-      foreach ($changes as $change) {
-        $flags = 0;
-        switch ($change->getType()) {
-          case ArcanistDiffChangeType::TYPE_ADD:
-          case ArcanistDiffChangeType::TYPE_MOVE_HERE:
-          case ArcanistDiffChangeType::TYPE_COPY_HERE:
-            $flags |= self::FLAG_ADDED;
-            break;
-          case ArcanistDiffChangeType::TYPE_CHANGE:
-          case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
-            $flags |= self::FLAG_MODIFIED;
-            break;
-          case ArcanistDiffChangeType::TYPE_DELETE:
-          case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
-          case ArcanistDiffChangeType::TYPE_MULTICOPY:
-            $flags |= self::FLAG_DELETED;
-            break;
-        }
-        $status_map[$change->getCurrentPath()] = $flags;
-      }
-
-      list($stdout) = $status_future->resolvex();
-
-      $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
-      foreach ($working_status as $path => $status) {
-        if ($status & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          // If the file is untracked, don't mark it uncommitted.
-          continue;
-        }
-        $status |= self::FLAG_UNCOMMITTED;
-        if (!empty($status_map[$path])) {
-          $status_map[$path] |= $status;
-        } else {
-          $status_map[$path] = $status;
-        }
-      }
-
-      $this->status = $status_map;
+      $results[$path] |= $mask;
     }
 
-    return $this->status;
+    return $results->toArray();
+  }
+
+  protected function buildCommitRangeStatus() {
+    // TODO: Possibly we should use "hg status --rev X --rev ." for this
+    // instead, but we must run "hg diff" later anyway in most cases, so
+    // building and caching it shouldn't hurt us.
+
+    $diff = $this->getFullMercurialDiff();
+    if (!$diff) {
+      return array();
+    }
+
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($diff);
+
+    $status_map = array();
+    foreach ($changes as $change) {
+      $flags = 0;
+      switch ($change->getType()) {
+        case ArcanistDiffChangeType::TYPE_ADD:
+        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+        case ArcanistDiffChangeType::TYPE_COPY_HERE:
+          $flags |= self::FLAG_ADDED;
+          break;
+        case ArcanistDiffChangeType::TYPE_CHANGE:
+        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
+          $flags |= self::FLAG_MODIFIED;
+          break;
+        case ArcanistDiffChangeType::TYPE_DELETE:
+        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
+        case ArcanistDiffChangeType::TYPE_MULTICOPY:
+          $flags |= self::FLAG_DELETED;
+          break;
+      }
+      $status_map[$change->getCurrentPath()] = $flags;
+    }
+
+    return $status_map;
+  }
+
+  protected function didReloadWorkingCopy() {
+    // Diffs are against ".", so we need to drop the cache if we change the
+    // working copy.
+    $this->rawDiffCache = array();
   }
 
   private function getDiffOptions() {
@@ -629,6 +624,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit -l %s',
       $tmp_file);
+    $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message) {
