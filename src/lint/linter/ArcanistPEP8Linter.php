@@ -23,6 +23,10 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
     return array();
   }
 
+  public function getCacheVersion() {
+    return '1.3.3';
+  }
+
   public function getPEP8Options() {
     $working_copy = $this->getEngine()->getWorkingCopy();
     $options = $working_copy->getConfig('lint.pep8.options');

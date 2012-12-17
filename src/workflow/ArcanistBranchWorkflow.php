@@ -71,7 +71,7 @@ EOTEXT
       throw new ArcanistUsageException('No branches in this working copy.');
     }
 
-    $branches = $this->loadCommitInfo($branches, $repository_api);
+    $branches = $this->loadCommitInfo($branches);
 
     $revisions = $this->loadRevisions($branches);
 
@@ -80,9 +80,8 @@ EOTEXT
     return 0;
   }
 
-  private function loadCommitInfo(
-    array $branches,
-    ArcanistRepositoryAPI $repository_api) {
+  private function loadCommitInfo(array $branches) {
+    $repository_api = $this->getRepositoryAPI();
 
     $futures = array();
     foreach ($branches as $branch) {
