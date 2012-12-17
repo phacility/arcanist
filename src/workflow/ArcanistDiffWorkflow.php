@@ -518,7 +518,6 @@ EOTEXT
         ob_start();
       }
     } else {
-
       $revision['diffid'] = $this->getDiffID();
 
       if ($commit_message->getRevisionID()) {
@@ -534,8 +533,6 @@ EOTEXT
 
         echo "Updated an existing Differential revision:\n";
       } else {
-        $revision['user'] = $this->getUserPHID();
-
         $revision = $this->dispatchWillCreateRevisionEvent($revision);
 
         $result = $conduit->callMethodSynchronous(
