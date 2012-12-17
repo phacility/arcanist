@@ -240,8 +240,9 @@ EOTEXT
     if ($this->getArgument('only-new')) {
       $conduit = $this->getConduit();
       $api = $this->getRepositoryAPI();
-      $relative_commit = ($rev ? $rev : $api->resolveBaseCommit());
-      $api->setRelativeCommit($relative_commit);
+      if ($rev) {
+        $api->setBaseCommit($rev);
+      }
       $svn_root = id(new PhutilURI($api->getSourceControlPath()))->getPath();
 
       $all_paths = array();
@@ -267,7 +268,7 @@ EOTEXT
       $lint_future = $conduit->callMethod('diffusion.getlintmessages', array(
         'arcanistProject' => $this->getWorkingCopy()->getProjectID(),
         'branch' => '', // TODO: Tracking branch.
-        'commit' => $api->getRelativeCommit(),
+        'commit' => $api->getBaseCommit(),
         'files' => array_keys($all_paths),
       ));
     }

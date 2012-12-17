@@ -34,6 +34,9 @@ abstract class ArcanistRepositoryAPI {
   private $uncommittedStatusCache;
   private $commitRangeStatusCache;
 
+  private $symbolicBaseCommit;
+  private $resolvedBaseCommit;
+
   abstract public function getSourceControlSystemName();
 
   public function getDiffLinesOfContext() {
@@ -257,6 +260,7 @@ abstract class ArcanistRepositoryAPI {
     $this->commitRangeStatusCache = null;
 
     $this->didReloadWorkingCopy();
+    $this->reloadCommitRange();
 
     return $this;
   }
@@ -310,7 +314,6 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getSourceControlPath();
   abstract public function isHistoryDefaultImmutable();
   abstract public function supportsAmend();
-  abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
   abstract public function updateWorkingCopy();
   abstract public function getMetadataPath();
@@ -334,6 +337,8 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
+  abstract public function supportsLocalCommits();
+
   public function doCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
@@ -352,10 +357,6 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function getCommitMessage($commit) {
-    throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
-  public function parseRelativeLocalCommit(array $argv) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
@@ -539,6 +540,47 @@ abstract class ArcanistRepositoryAPI {
 
 /* -(  Base Commits  )------------------------------------------------------- */
 
+  abstract public function supportsCommitRanges();
+
+  final public function setBaseCommit($symbolic_commit) {
+    if (!$this->supportsCommitRanges()) {
+      throw new ArcanistCapabilityNotSupportedException($this);
+    }
+
+    $this->symbolicBaseCommit = $symbolic_commit;
+    $this->reloadCommitRange();
+    return $this;
+  }
+
+  final public function getBaseCommit() {
+    if (!$this->supportsCommitRanges()) {
+      throw new ArcanistCapabilityNotSupportedException($this);
+    }
+
+    if ($this->resolvedBaseCommit === null) {
+      $commit = $this->buildBaseCommit($this->symbolicBaseCommit);
+      $this->resolvedBaseCommit = $commit;
+    }
+
+    return $this->resolvedBaseCommit;
+  }
+
+  final public function reloadCommitRange() {
+    $this->resolvedBaseCommit = null;
+    $this->baseCommitExplanation = null;
+
+    $this->didReloadCommitRange();
+
+    return $this;
+  }
+
+  protected function didReloadCommitRange() {
+    return;
+  }
+
+  protected function buildBaseCommit($symbolic_commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
 
   public function getBaseCommitExplanation() {
     return $this->baseCommitExplanation;

@@ -828,7 +828,7 @@ abstract class ArcanistBaseWorkflow {
       if ($this->shouldAmend) {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
-      } else if ($api->supportsRelativeLocalCommits()) {
+      } else if ($api->supportsLocalCommits()) {
         $api->doCommit(self::AUTO_COMMIT_TITLE);
       }
     }
@@ -982,7 +982,12 @@ abstract class ArcanistBaseWorkflow {
   protected function getChange($path) {
     $repository_api = $this->getRepositoryAPI();
 
-    if ($repository_api instanceof ArcanistSubversionAPI) {
+    // TODO: Very gross
+    $is_git = ($repository_api instanceof ArcanistGitAPI);
+    $is_hg = ($repository_api instanceof ArcanistMercurialAPI);
+    $is_svn = ($repository_api instanceof ArcanistSubversionAPI);
+
+    if ($is_svn) {
       // NOTE: In SVN, we don't currently support a "get all local changes"
       // operation, so special case it.
       if (empty($this->changeCache[$path])) {
@@ -994,7 +999,7 @@ abstract class ArcanistBaseWorkflow {
         }
         $this->changeCache[$path] = reset($changes);
       }
-    } else if ($repository_api->supportsRelativeLocalCommits()) {
+    } else if ($is_git || $is_hg) {
       if (empty($this->changeCache)) {
         $changes = $repository_api->getAllLocalChanges();
         foreach ($changes as $change) {
@@ -1006,7 +1011,7 @@ abstract class ArcanistBaseWorkflow {
     }
 
     if (empty($this->changeCache[$path])) {
-      if ($repository_api instanceof ArcanistGitAPI) {
+      if ($is_git) {
         // This can legitimately occur under git if you make a change, "git
         // commit" it, and then revert the change in the working copy and run
         // "arc lint".
@@ -1257,9 +1262,7 @@ abstract class ArcanistBaseWorkflow {
       }
     } else {
       $repository_api = $this->getRepositoryAPI();
-      if ($rev) {
-        $repository_api->parseRelativeLocalCommit(array($rev));
-      }
+      $this->parseBaseCommitArgument(array($rev));
 
       $paths = $repository_api->getWorkingCopyStatus();
       foreach ($paths as $path => $flags) {
@@ -1490,6 +1493,28 @@ abstract class ArcanistBaseWorkflow {
     PhutilEventEngine::dispatchEvent($event);
 
     return $event;
+  }
+
+  public function parseBaseCommitArgument(array $argv) {
+    if (!count($argv)) {
+      return;
+    }
+
+    $api = $this->getRepositoryAPI();
+    if (!$api->supportsCommitRanges()) {
+      throw new ArcanistUsageException(
+        "This version control system does not support commit ranges.");
+    }
+
+    if (count($argv) > 1) {
+      throw new ArcanistUsageException(
+        "Specify exactly one base commit. The end of the commit range is ".
+        "always the working copy state.");
+    }
+
+    $api->setBaseCommit(head($argv));
+
+    return $this;
   }
 
 }

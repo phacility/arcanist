@@ -605,16 +605,8 @@ EOTEXT
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-
-      // Parse the relative commit as soon as we can, to avoid generating
-      // caches we need to drop later and expensive discovery operations
-      // (particularly in Mercurial).
-
-      $relative = $this->getArgument('paths');
-      if ($relative) {
-        $repository_api->parseRelativeLocalCommit($relative);
-      }
+    if ($repository_api->supportsCommitRanges()) {
+      $this->parseBaseCommitArgument($this->getArgument('paths'));
     }
   }
 
@@ -821,10 +813,8 @@ EOTEXT
         }
       }
 
-    } else if ($repository_api->supportsRelativeLocalCommits()) {
-      $paths = $repository_api->getWorkingCopyStatus();
     } else {
-      throw new Exception("Unknown VCS!");
+      $paths = $repository_api->getWorkingCopyStatus();
     }
 
     foreach ($paths as $path => $mask) {
@@ -1275,9 +1265,9 @@ EOTEXT
     $this->console->writeOut("Linting...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('lint');
-      if ($repository_api->supportsRelativeLocalCommits()) {
+      if ($repository_api->supportsCommitRanges()) {
         $argv[] = '--rev';
-        $argv[] = $repository_api->getRelativeCommit();
+        $argv[] = $repository_api->getBaseCommit();
       }
 
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
@@ -1356,9 +1346,9 @@ EOTEXT
     $this->console->writeOut("Running unit tests...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('unit');
-      if ($repository_api->supportsRelativeLocalCommits()) {
+      if ($repository_api->supportsCommitRanges()) {
         $argv[] = '--rev';
-        $argv[] = $repository_api->getRelativeCommit();
+        $argv[] = $repository_api->getBaseCommit();
       }
       $unit_workflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $unit_workflow->run();

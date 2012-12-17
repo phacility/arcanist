@@ -553,7 +553,11 @@ EODIFF;
     return false;
   }
 
-  public function supportsRelativeLocalCommits() {
+  public function supportsCommitRanges() {
+    return false;
+  }
+
+  public function supportsLocalCommits() {
     return false;
   }
 
