@@ -442,11 +442,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
-  public function setDefaultBaseCommit() {
-    $this->setRelativeCommit('.^');
-    return $this;
-  }
-
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);
@@ -734,6 +729,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "your {$source} 'base' configuration");
               return trim($bookmark_base);
             }
+            break;
+          case 'this':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return '.^';
         }
         break;
       default:

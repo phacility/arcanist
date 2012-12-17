@@ -14,10 +14,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
 
       $api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
         $working_copy);
-
-      if ($api->supportsRelativeLocalCommits()) {
-        $api->setDefaultBaseCommit();
-      }
+      $api->setBaseCommitArgumentRules('arc:this');
 
       $this->assertCorrectState($test, $api);
     }

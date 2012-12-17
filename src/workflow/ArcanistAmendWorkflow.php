@@ -90,10 +90,7 @@ EOTEXT
       $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     }
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-      $repository_api->setDefaultBaseCommit();
-    }
-
+    $repository_api->setBaseCommitArgumentRules('arc:this');
     $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(
       $this->getConduit(),
       array(

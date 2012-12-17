@@ -715,11 +715,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
-  public function setDefaultBaseCommit() {
-    $this->setRelativeCommit('HEAD^');
-    return $this;
-  }
-
   public function hasLocalCommit($commit) {
     try {
       if (!$this->getCanonicalRevisionName($commit)) {
@@ -987,6 +982,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               return $upstream_merge_base;
             }
             break;
+          case 'this':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return 'HEAD^';
         }
       default:
         return null;

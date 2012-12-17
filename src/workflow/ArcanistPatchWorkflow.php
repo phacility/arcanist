@@ -853,10 +853,6 @@ EOTEXT
   private function sanityCheck(ArcanistBundle $bundle) {
     $repository_api = $this->getRepositoryAPI();
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-      $repository_api->setDefaultBaseCommit();
-    }
-
     // Require clean working copy
     $this->requireCleanWorkingCopy();
 

@@ -58,8 +58,12 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       list($commit_hash, $tree_hash, $subject) = explode(' ', $commit, 3);
       execx('git reset --hard %s --', $commit_hash);
 
-      $repository_api = new ArcanistGitAPI($fixture->getPath());
-      $repository_api->setDefaultBaseCommit();
+      $fixture_path = $fixture->getPath();
+      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+
+      $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
+        $working_copy);
+      $repository_api->setBaseCommitArgumentRules('arc:this');
       $diff = $repository_api->getFullGitDiff();
 
       $parser = new ArcanistDiffParser();
