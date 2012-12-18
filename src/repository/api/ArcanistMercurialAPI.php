@@ -85,7 +85,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   protected function buildBaseCommit($symbolic_commit) {
     if ($symbolic_commit !== null) {
       try {
-        $commit = $this->getCanonicalRevisionName($commit);
+        $commit = $this->getCanonicalRevisionName($symbolic_commit);
       } catch (Exception $ex) {
         throw new ArcanistUsageException(
           "Commit '{$commit}' is not a valid Mercurial commit identifier.");
