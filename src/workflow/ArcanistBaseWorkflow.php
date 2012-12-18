@@ -171,7 +171,30 @@ abstract class ArcanistBaseWorkflow {
       $this->conduit->setTimeout($this->conduitTimeout);
     }
 
+    $user = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.user');
+    $pass = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.pass');
+    if ($user !== null && $pass !== null) {
+        $this->conduit->setBasicAuthCredentials($user, $pass);
+    }
+
     return $this;
+  }
+
+  final public function getConfigFromWhateverSourceAvailiable($key) {
+    if ($this->requiresWorkingCopy()) {
+        $working_copy = $this->getWorkingCopy();
+        return $working_copy->getConfigFromAnySource($key);
+    } else {
+        $global_config = $this->readGlobalArcConfig();
+        $pval = idx($global_config, $key);
+
+        if ($pval === null) {
+            $system_config = $this->readSystemArcConfig();
+            $pval = idx($system_config, $key);
+        }
+
+        return $pval;
+    }
   }
 
 
