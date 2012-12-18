@@ -853,10 +853,6 @@ EOTEXT
   private function sanityCheck(ArcanistBundle $bundle) {
     $repository_api = $this->getRepositoryAPI();
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-      $repository_api->setDefaultBaseCommit();
-    }
-
     // Require clean working copy
     $this->requireCleanWorkingCopy();
 
@@ -889,7 +885,7 @@ EOTEXT
 
     // Check to see if the bundle's base revision matches the working copy
     // base revision
-    if ($repository_api->supportsRelativeLocalCommits()) {
+    if ($repository_api->supportsLocalCommits()) {
       $bundle_base_rev = $bundle->getBaseRevision();
       if (empty($bundle_base_rev)) {
         // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version < 2

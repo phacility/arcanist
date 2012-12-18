@@ -7,11 +7,7 @@
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
-  private $status;
-  private $base;
-  private $relativeCommit;
   private $branch;
-  private $workingCopyRevision;
   private $localCommitInfo;
   private $includeDirectoryStateInDiffs;
   private $rawDiffCache = array();
@@ -59,7 +55,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getSourceControlBaseRevision() {
-    return $this->getCanonicalRevisionName($this->getRelativeCommit());
+    return $this->getCanonicalRevisionName($this->getBaseCommit());
   }
 
   public function getCanonicalRevisionName($string) {
@@ -82,107 +78,99 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->branch;
   }
 
-  public function setRelativeCommit($commit) {
-    try {
-      $commit = $this->getCanonicalRevisionName($commit);
-    } catch (Exception $ex) {
-      throw new ArcanistUsageException(
-        "Commit '{$commit}' is not a valid Mercurial commit identifier.");
-    }
-
-    $this->relativeCommit = $commit;
-    $this->status = null;
+  public function didReloadCommitRange() {
     $this->localCommitInfo = null;
-
-    return $this;
   }
 
-  public function getRelativeCommit() {
-    if (empty($this->relativeCommit)) {
-
-      if ($this->getBaseCommitArgumentRules() ||
-          $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
-        $base = $this->resolveBaseCommit();
-        if (!$base) {
-          throw new ArcanistUsageException(
-            "None of the rules in your 'base' configuration matched a valid ".
-            "commit. Adjust rules or specify which commit you want to use ".
-            "explicitly.");
-        }
-        $this->relativeCommit = $base;
-        return $this->relativeCommit;
+  protected function buildBaseCommit($symbolic_commit) {
+    if ($symbolic_commit !== null) {
+      try {
+        $commit = $this->getCanonicalRevisionName($symbolic_commit);
+      } catch (Exception $ex) {
+        throw new ArcanistUsageException(
+          "Commit '{$commit}' is not a valid Mercurial commit identifier.");
       }
-
-      list($err, $stdout) = $this->execManualLocal(
-        'outgoing --branch %s --style default',
-        $this->getBranchName());
-
-      if (!$err) {
-        $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-      } else {
-        // Mercurial (in some versions?) raises an error when there's nothing
-        // outgoing.
-        $logs = array();
-      }
-
-      if (!$logs) {
-
-        $this->setBaseCommitExplanation(
-          "you have no outgoing commits, so arc assumes you intend to submit ".
-          "uncommitted changes in the working copy.");
-        // In Mercurial, we support operations against uncommitted changes.
-        $this->setRelativeCommit($this->getWorkingCopyRevision());
-        return $this->relativeCommit;
-      }
-
-      $outgoing_revs = ipull($logs, 'rev');
-
-      // This is essentially an implementation of a theoretical `hg merge-base`
-      // command.
-      $against = $this->getWorkingCopyRevision();
-      while (true) {
-        // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
-        // new as of July 2011, so do this in a compatible way. Also, "hg log"
-        // and "hg outgoing" don't necessarily show parents (even if given an
-        // explicit template consisting of just the parents token) so we need
-        // to separately execute "hg parents".
-
-        list($stdout) = $this->execxLocal(
-          'parents --style default --rev %s',
-          $against);
-        $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-
-        list($p1, $p2) = array_merge($parents_logs, array(null, null));
-
-        if ($p1 && !in_array($p1['rev'], $outgoing_revs)) {
-          $against = $p1['rev'];
-          break;
-        } else if ($p2 && !in_array($p2['rev'], $outgoing_revs)) {
-          $against = $p2['rev'];
-          break;
-        } else if ($p1) {
-          $against = $p1['rev'];
-        } else {
-          // This is the case where you have a new repository and the entire
-          // thing is outgoing; Mercurial literally accepts "--rev null" as
-          // meaning "diff against the empty state".
-          $against = 'null';
-          break;
-        }
-      }
-
-      if ($against == 'null') {
-        $this->setBaseCommitExplanation(
-          "this is a new repository (all changes are outgoing).");
-      } else {
-        $this->setBaseCommitExplanation(
-          "it is the first commit reachable from the working copy state ".
-          "which is not outgoing.");
-      }
-
-      $this->setRelativeCommit($against);
+      $this->setBaseCommitExplanation("you specified it explicitly.");
+      return $commit;
     }
-    return $this->relativeCommit;
+
+    if ($this->getBaseCommitArgumentRules() ||
+        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+      $base = $this->resolveBaseCommit();
+      if (!$base) {
+        throw new ArcanistUsageException(
+          "None of the rules in your 'base' configuration matched a valid ".
+          "commit. Adjust rules or specify which commit you want to use ".
+          "explicitly.");
+      }
+      return $base;
+    }
+
+    list($err, $stdout) = $this->execManualLocal(
+      'outgoing --branch %s --style default',
+      $this->getBranchName());
+
+    if (!$err) {
+      $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+    } else {
+      // Mercurial (in some versions?) raises an error when there's nothing
+      // outgoing.
+      $logs = array();
+    }
+
+    if (!$logs) {
+      $this->setBaseCommitExplanation(
+        "you have no outgoing commits, so arc assumes you intend to submit ".
+        "uncommitted changes in the working copy.");
+      return $this->getWorkingCopyRevision();
+    }
+
+    $outgoing_revs = ipull($logs, 'rev');
+
+    // This is essentially an implementation of a theoretical `hg merge-base`
+    // command.
+    $against = $this->getWorkingCopyRevision();
+    while (true) {
+      // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
+      // new as of July 2011, so do this in a compatible way. Also, "hg log"
+      // and "hg outgoing" don't necessarily show parents (even if given an
+      // explicit template consisting of just the parents token) so we need
+      // to separately execute "hg parents".
+
+      list($stdout) = $this->execxLocal(
+        'parents --style default --rev %s',
+        $against);
+      $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+
+      list($p1, $p2) = array_merge($parents_logs, array(null, null));
+
+      if ($p1 && !in_array($p1['rev'], $outgoing_revs)) {
+        $against = $p1['rev'];
+        break;
+      } else if ($p2 && !in_array($p2['rev'], $outgoing_revs)) {
+        $against = $p2['rev'];
+        break;
+      } else if ($p1) {
+        $against = $p1['rev'];
+      } else {
+        // This is the case where you have a new repository and the entire
+        // thing is outgoing; Mercurial literally accepts "--rev null" as
+        // meaning "diff against the empty state".
+        $against = 'null';
+        break;
+      }
+    }
+
+    if ($against == 'null') {
+      $this->setBaseCommitExplanation(
+        "this is a new repository (all changes are outgoing).");
+    } else {
+      $this->setBaseCommitExplanation(
+        "it is the first commit reachable from the working copy state ".
+        "which is not outgoing.");
+    }
+
+    return $against;
   }
 
   public function getLocalCommitInformation() {
@@ -191,7 +179,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         "log --template '%C' --rev %s --branch %s --",
         "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
           "{branch}\1{tag}\1{parents}\1{desc}\2",
-        '(ancestors(.) - ancestors('.$this->getRelativeCommit().'))',
+        '(ancestors(.) - ancestors('.$this->getBaseCommit().'))',
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
@@ -272,7 +260,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getBlame($path) {
     list($stdout) = $this->execxLocal(
       'annotate -u -v -c --rev %s -- %s',
-      $this->getRelativeCommit(),
+      $this->getBaseCommit(),
       $path);
 
     $blame = array();
@@ -296,70 +284,67 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $blame;
   }
 
-  public function getWorkingCopyStatus() {
+  protected function buildUncommittedStatus() {
+    list($stdout) = $this->execxLocal('status');
 
-    if (!isset($this->status)) {
-      // A reviewable revision spans multiple local commits in Mercurial, but
-      // there is no way to get file change status across multiple commits, so
-      // just take the entire diff and parse it to figure out what's changed.
+    $results = new PhutilArrayWithDefaultValue();
 
-      // Execute status in the background
-      $status_future = $this->buildLocalFuture(array('status'));
-      $status_future->start();
-
-      $diff = $this->getFullMercurialDiff();
-
-      if (!$diff) {
-        $this->status = array();
-        return $this->status;
+    $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
+    foreach ($working_status as $path => $mask) {
+      if (!($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED)) {
+        // Mark tracked files as uncommitted.
+        $mask |= self::FLAG_UNCOMMITTED;
       }
 
-      $parser = new ArcanistDiffParser();
-      $changes = $parser->parseDiff($diff);
-
-      $status_map = array();
-
-      foreach ($changes as $change) {
-        $flags = 0;
-        switch ($change->getType()) {
-          case ArcanistDiffChangeType::TYPE_ADD:
-          case ArcanistDiffChangeType::TYPE_MOVE_HERE:
-          case ArcanistDiffChangeType::TYPE_COPY_HERE:
-            $flags |= self::FLAG_ADDED;
-            break;
-          case ArcanistDiffChangeType::TYPE_CHANGE:
-          case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
-            $flags |= self::FLAG_MODIFIED;
-            break;
-          case ArcanistDiffChangeType::TYPE_DELETE:
-          case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
-          case ArcanistDiffChangeType::TYPE_MULTICOPY:
-            $flags |= self::FLAG_DELETED;
-            break;
-        }
-        $status_map[$change->getCurrentPath()] = $flags;
-      }
-
-      list($stdout) = $status_future->resolvex();
-
-      $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
-      foreach ($working_status as $path => $status) {
-        if ($status & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          // If the file is untracked, don't mark it uncommitted.
-          continue;
-        }
-        $status |= self::FLAG_UNCOMMITTED;
-        if (!empty($status_map[$path])) {
-          $status_map[$path] |= $status;
-        } else {
-          $status_map[$path] = $status;
-        }
-      }
-
-      $this->status = $status_map;
+      $results[$path] |= $mask;
     }
 
-    return $this->status;
+    return $results->toArray();
+  }
+
+  protected function buildCommitRangeStatus() {
+    // TODO: Possibly we should use "hg status --rev X --rev ." for this
+    // instead, but we must run "hg diff" later anyway in most cases, so
+    // building and caching it shouldn't hurt us.
+
+    $diff = $this->getFullMercurialDiff();
+    if (!$diff) {
+      return array();
+    }
+
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($diff);
+
+    $status_map = array();
+    foreach ($changes as $change) {
+      $flags = 0;
+      switch ($change->getType()) {
+        case ArcanistDiffChangeType::TYPE_ADD:
+        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+        case ArcanistDiffChangeType::TYPE_COPY_HERE:
+          $flags |= self::FLAG_ADDED;
+          break;
+        case ArcanistDiffChangeType::TYPE_CHANGE:
+        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
+          $flags |= self::FLAG_MODIFIED;
+          break;
+        case ArcanistDiffChangeType::TYPE_DELETE:
+        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
+        case ArcanistDiffChangeType::TYPE_MULTICOPY:
+          $flags |= self::FLAG_DELETED;
+          break;
+      }
+      $status_map[$change->getCurrentPath()] = $flags;
+    }
+
+    return $status_map;
+  }
+
+  protected function didReloadWorkingCopy() {
+    // Diffs are against ".", so we need to drop the cache if we change the
+    // working copy.
+    $this->rawDiffCache = array();
+    $this->branch = null;
   }
 
   private function getDiffOptions() {
@@ -378,7 +363,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // copy commit" (i.e., from 'x' to '.'). The latter excludes any dirty
     // changes in the working copy.
 
-    $range = $this->getRelativeCommit();
+    $range = $this->getBaseCommit();
     if (!$this->includeDirectoryStateInDiffs) {
       $range .= '...';
     }
@@ -404,7 +389,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getOriginalFileData($path) {
-    return $this->getFileDataAtRevision($path, $this->getRelativeCommit());
+    return $this->getFileDataAtRevision($path, $this->getBaseCommit());
   }
 
   public function getCurrentFileData($path) {
@@ -443,13 +428,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
-  public function supportsRelativeLocalCommits() {
+  public function supportsCommitRanges() {
     return true;
   }
 
-  public function setDefaultBaseCommit() {
-    $this->setRelativeCommit('.^');
-    return $this;
+  public function supportsLocalCommits() {
+    return true;
   }
 
   public function hasLocalCommit($commit) {
@@ -466,21 +450,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'log --template={desc} --rev %s',
       $commit);
     return $message;
-  }
-
-  public function parseRelativeLocalCommit(array $argv) {
-    if (count($argv) == 0) {
-      return;
-    }
-    if (count($argv) != 1) {
-      throw new ArcanistUsageException("Specify only one commit.");
-    }
-
-    $this->setBaseCommitExplanation("you explicitly specified it.");
-
-    // This does the "hg id" call we need to normalize/validate the revision
-    // identifier.
-    $this->setRelativeCommit(reset($argv));
   }
 
   public function getAllLocalChanges() {
@@ -523,7 +492,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getCommitMessageLog() {
     list($stdout) = $this->execxLocal(
       "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
-      'ancestors(.) - ancestors('.$this->getRelativeCommit().')',
+      'ancestors(.) - ancestors('.$this->getBaseCommit().')',
       $this->getBranchName());
 
     $map = array();
@@ -603,6 +572,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('up');
+    $this->reloadWorkingCopy();
   }
 
   private function getMercurialConfig($key, $default = null) {
@@ -621,6 +591,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'add -- %Ls',
       $paths);
+    $this->reloadWorkingCopy();
   }
 
   public function doCommit($message) {
@@ -629,6 +600,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit -l %s',
       $tmp_file);
+    $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message) {
@@ -637,6 +609,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit --amend -l %s',
       $tmp_file);
+    $this->reloadWorkingCopy();
   }
 
   public function setIncludeDirectoryStateInDiffs($include) {
@@ -738,6 +711,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "your {$source} 'base' configuration");
               return trim($bookmark_base);
             }
+            break;
+          case 'this':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return '.^';
         }
         break;
       default:

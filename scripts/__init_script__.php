@@ -40,7 +40,11 @@ function arcanist_adjust_php_include_path() {
 }
 arcanist_adjust_php_include_path();
 
-@include_once 'libphutil/scripts/__init_script__.php';
+if (getenv('ARC_PHUTIL_PATH')) {
+  @include_once getenv('ARC_PHUTIL_PATH').'/scripts/__init_script__.php';
+} else {
+  @include_once 'libphutil/scripts/__init_script__.php';
+}
 if (!@constant('__LIBPHUTIL__')) {
   echo "ERROR: Unable to load libphutil. Put libphutil/ next to arcanist/, or ".
        "update your PHP 'include_path' to include the parent directory of ".

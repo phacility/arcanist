@@ -58,7 +58,7 @@ EOTEXT
     $config = self::readUserConfigurationFile();
 
     echo "Trying to connect to server...\n";
-    $conduit = new ConduitClient($uri);
+    $conduit = $this->establishConduit()->getConduit();
     try {
       $conduit->callMethodSynchronous('conduit.ping', array());
     } catch (Exception $ex) {

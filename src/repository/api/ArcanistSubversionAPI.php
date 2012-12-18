@@ -46,7 +46,13 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
-  public function getWorkingCopyStatus() {
+  protected function buildCommitRangeStatus() {
+    // In SVN, the commit range is always "uncommitted changes", so these
+    // statuses are equivalent.
+    return $this->getUncommittedStatus();
+  }
+
+  protected function buildUncommittedStatus() {
     return $this->getSVNStatus();
   }
 
@@ -547,7 +553,11 @@ EODIFF;
     return false;
   }
 
-  public function supportsRelativeLocalCommits() {
+  public function supportsCommitRanges() {
+    return false;
+  }
+
+  public function supportsLocalCommits() {
     return false;
   }
 

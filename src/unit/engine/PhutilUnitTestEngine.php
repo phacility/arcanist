@@ -7,9 +7,86 @@
  */
 final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
-  public function run() {
+  protected function supportsRunAllTests() {
+    return true;
+  }
 
-    $bootloader = PhutilBootloader::getInstance();
+  public function run() {
+    if ($this->getRunAllTests()) {
+      $run_tests = $this->getAllTests();
+    } else {
+      $run_tests = $this->getTestsForPaths();
+    }
+
+    if (!$run_tests) {
+      throw new ArcanistNoEffectException("No tests to run.");
+    }
+
+    $enable_coverage = $this->getEnableCoverage();
+    if ($enable_coverage !== false) {
+      if (!function_exists('xdebug_start_code_coverage')) {
+        if ($enable_coverage === true) {
+          throw new ArcanistUsageException(
+            "You specified --coverage but xdebug is not available, so ".
+            "coverage can not be enabled for PhutilUnitTestEngine.");
+        }
+      } else {
+        $enable_coverage = true;
+      }
+    }
+
+    $project_root = $this->getWorkingCopy()->getProjectRoot();
+
+    $results = array();
+    foreach ($run_tests as $test_class) {
+      $test_case = newv($test_class, array());
+      $test_case->setEnableCoverage($enable_coverage);
+      $test_case->setProjectRoot($project_root);
+      if ($this->getPaths()) {
+        $test_case->setPaths($this->getPaths());
+      }
+      $results[] = $test_case->run();
+    }
+
+    $results = array_mergev($results);
+    return $results;
+  }
+
+  private function getAllTests() {
+    $project_root = $this->getWorkingCopy()->getProjectRoot();
+
+    $symbols = id(new PhutilSymbolLoader())
+      ->setType('class')
+      ->setAncestorClass('ArcanistPhutilTestCase')
+      ->setConcreteOnly(true)
+      ->selectSymbolsWithoutLoading();
+
+    $in_working_copy = array();
+
+    $run_tests = array();
+    foreach ($symbols as $symbol) {
+      if (!preg_match('@/__tests__/@', $symbol['where'])) {
+        continue;
+      }
+
+      $library = $symbol['library'];
+
+      if (!isset($in_working_copy[$library])) {
+        $library_root = phutil_get_library_root($library);
+        $in_working_copy[$library] = Filesystem::isDescendant(
+          $library_root,
+          $project_root);
+      }
+
+      if ($in_working_copy[$library]) {
+        $run_tests[] = $symbol['name'];
+      }
+    }
+
+    return $run_tests;
+  }
+
+  private function getTestsForPaths() {
     $project_root = $this->getWorkingCopy()->getProjectRoot();
 
     $look_here = array();
@@ -89,34 +166,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     }
     $run_tests = array_keys($run_tests);
 
-    if (!$run_tests) {
-      throw new ArcanistNoEffectException("No tests to run.");
-    }
-
-    $enable_coverage = $this->getEnableCoverage();
-    if ($enable_coverage !== false) {
-      if (!function_exists('xdebug_start_code_coverage')) {
-        if ($enable_coverage === true) {
-          throw new ArcanistUsageException(
-            "You specified --coverage but xdebug is not available, so ".
-            "coverage can not be enabled for PhutilUnitTestEngine.");
-        }
-      } else {
-        $enable_coverage = true;
-      }
-    }
-
-    $results = array();
-    foreach ($run_tests as $test_class) {
-      $test_case = newv($test_class, array());
-      $test_case->setEnableCoverage($enable_coverage);
-      $test_case->setProjectRoot($project_root);
-      $test_case->setPaths($this->getPaths());
-      $results[] = $test_case->run();
-    }
-
-    $results = array_mergev($results);
-    return $results;
+    return $run_tests;
   }
 
 }

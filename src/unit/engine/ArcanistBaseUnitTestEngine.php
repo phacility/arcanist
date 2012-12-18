@@ -13,6 +13,27 @@ abstract class ArcanistBaseUnitTestEngine {
   protected $diffID;
   private $enableAsyncTests;
   private $enableCoverage;
+  private $runAllTests;
+
+
+  public function setRunAllTests($run_all_tests) {
+    if (!$this->supportsRunAllTests() && $run_all_tests) {
+      $class = get_class($this);
+      throw new Exception(
+        "Engine '{$class}' does not support --everything.");
+    }
+
+    $this->runAllTests = $run_all_tests;
+    return $this;
+  }
+
+  public function getRunAllTests() {
+    return $this->runAllTests;
+  }
+
+  protected function supportsRunAllTests() {
+    return false;
+  }
 
   final public function __construct() {
 

@@ -73,20 +73,15 @@ EOTEXT
 
     $arg_commit = $this->getArgument('commit');
     if (count($arg_commit)) {
-      if (!$repository_api->supportsRelativeLocalCommits()) {
-        throw new ArcanistUsageException(
-          "This version control system does not support relative commits.");
-      } else {
-        $repository_api->parseRelativeLocalCommit($arg_commit);
-      }
+      $this->parseBaseCommitArgument($arg_commit);
     }
     $arg = $arg_commit ? ' '.head($arg_commit) : '';
 
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-      $relative = $repository_api->getRelativeCommit();
+    if ($repository_api->supportsCommitRanges()) {
+      $relative = $repository_api->getBaseCommit();
 
       if ($this->getArgument('show-base')) {
         echo $relative."\n";

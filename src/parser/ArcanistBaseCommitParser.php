@@ -151,6 +151,7 @@ final class ArcanistBaseCommitParser {
       case 'outgoing':
       case 'bookmark':
       case 'amended':
+      case 'this':
         return $this->api->resolveBaseCommitRule($rule, $source);
       default:
         $matches = null;

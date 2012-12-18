@@ -125,4 +125,16 @@ final class ArcanistUnitTestResult {
     return $base;
   }
 
+  public function toDictionary() {
+    return array(
+      'name' => $this->getName(),
+      'link' => $this->getLink(),
+      'result' => $this->getResult(),
+      'duration' => $this->getDuration(),
+      'extra' => $this->getExtraData(),
+      'userData' => $this->getUserData(),
+      'coverage' => $this->getCoverage(),
+    );
+  }
+
 }

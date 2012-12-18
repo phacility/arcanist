@@ -301,7 +301,7 @@ EOTEXT
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
-    $repository_api->parseRelativeLocalCommit(array($this->ontoRemoteBranch));
+    $this->parseBaseCommitArgument(array($this->ontoRemoteBranch));
 
     $revision_id = $this->getArgument('revision');
     if ($revision_id) {
@@ -484,9 +484,7 @@ EOTEXT
       }
     }
 
-    // Now that we've rebased, the merge-base of origin/master and HEAD may
-    // be different. Reparse the relative commit.
-    $repository_api->parseRelativeLocalCommit(array($this->ontoRemoteBranch));
+    $repository_api->reloadWorkingCopy();
   }
 
   private function squash() {

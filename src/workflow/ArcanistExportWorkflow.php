@@ -177,8 +177,7 @@ EOTEXT
         $parser->setRepositoryAPI($repository_api);
 
         if ($repository_api instanceof ArcanistGitAPI) {
-          $repository_api->parseRelativeLocalCommit(
-            $this->getArgument('paths'));
+          $this->parseBaseCommitArgument($this->getArgument('paths'));
           $diff = $repository_api->getFullGitDiff();
           $changes = $parser->parseDiff($diff);
           $authors = $this->getConduit()->callMethodSynchronous(
@@ -191,8 +190,7 @@ EOTEXT
             $author_dict['realName'],
             $repository_api->execxLocal('config user.email'));
         } else if ($repository_api instanceof ArcanistMercurialAPI) {
-          $repository_api->parseRelativeLocalCommit(
-            $this->getArgument('paths'));
+          $repository_api->parseBaseCommitArgument($this->getArgument('paths'));
           $diff = $repository_api->getFullMercurialDiff();
           $changes = $parser->parseDiff($diff);
           $authors = $this->getConduit()->callMethodSynchronous(
