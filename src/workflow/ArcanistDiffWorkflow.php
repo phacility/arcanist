@@ -1605,6 +1605,7 @@ EOTEXT
           ));
       }
     }
+    $old_message = $template;
 
     $included = array();
     if ($included_commits) {
@@ -1673,9 +1674,11 @@ EOTEXT
                        $repository_api instanceof ArcanistGitAPI &&
                        $this->shouldAmend());
       if ($should_amend) {
-        $repository_api->amendCommit($template);
-        $wrote = true;
-        $where = 'commit message';
+        $wrote = (rtrim($old_message) != rtrim($template));
+        if ($wrote) {
+          $repository_api->amendCommit($template);
+          $where = 'commit message';
+        }
       } else {
         $wrote = $this->writeScratchFile('create-message', $template);
         $where = "'".$this->getReadableScratchFilePath('create-message')."'";
