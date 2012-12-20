@@ -372,7 +372,7 @@ EOTEXT
       ),
       'cache' => array(
         'param' => 'bool',
-        'help' => "0 to disable lint cache (default), 1 to enable.",
+        'help' => "0 to disable lint cache, 1 to enable (default).",
         'passthru' => array(
           'lint' => true,
         ),
