@@ -1285,7 +1285,10 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       }
     } else {
       $repository_api = $this->getRepositoryAPI();
-      $this->parseBaseCommitArgument(array($rev));
+
+      if ($rev) {
+        $this->parseBaseCommitArgument(array($rev));
+      }
 
       $paths = $repository_api->getWorkingCopyStatus();
       foreach ($paths as $path => $flags) {
