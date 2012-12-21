@@ -24,7 +24,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return '1.3.3';
+    return '1.3.4';
   }
 
   public function getPEP8Options() {
