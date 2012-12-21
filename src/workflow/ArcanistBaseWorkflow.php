@@ -34,7 +34,7 @@
  * @group workflow
  * @stable
  */
-abstract class ArcanistBaseWorkflow {
+abstract class ArcanistBaseWorkflow extends Phobject {
 
   const COMMIT_DISABLE = 0;
   const COMMIT_ALLOW = 1;
@@ -1285,7 +1285,10 @@ abstract class ArcanistBaseWorkflow {
       }
     } else {
       $repository_api = $this->getRepositoryAPI();
-      $this->parseBaseCommitArgument(array($rev));
+
+      if ($rev) {
+        $this->parseBaseCommitArgument(array($rev));
+      }
 
       $paths = $repository_api->getWorkingCopyStatus();
       foreach ($paths as $path => $flags) {

@@ -83,13 +83,12 @@ abstract class ArcanistRepositoryAPI {
     }
 
     // check if we're in an svn working copy
-    list($err) = id(new ExecFuture('svn info'))
-      ->setCWD($root)
-      ->resolve();
-    if (!$err) {
-      $api = new ArcanistSubversionAPI($root);
-      $api->workingCopyIdentity = $working_copy;
-      return $api;
+    foreach (Filesystem::walkToRoot($root) as $dir) {
+      if (Filesystem::pathExists($dir . '/.svn')) {
+        $api = new ArcanistSubversionAPI($root);
+        $api->workingCopyIdentity = $working_copy;
+        return $api;
+      }
     }
 
     throw new ArcanistUsageException(

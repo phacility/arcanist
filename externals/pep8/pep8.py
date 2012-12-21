@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # pep8.py - Check Python source code formatting, according to PEP 8
-# Copyright (C) 2006 Johann C. Rocholl <johann@rocholl.net>
+# Copyright (C) 2006-2009 Johann C. Rocholl <johann@rocholl.net>
+# Copyright (C) 2009-2012 Florent Xicluna <florent.xicluna@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -93,7 +94,7 @@ for space.
 
 """
 
-__version__ = '1.3.3'
+__version__ = '1.3.4'
 
 import os
 import sys
@@ -148,11 +149,11 @@ WHITESPACE_AFTER_COMMA_REGEX = re.compile(r'[,;:]\s*(?:  |\t)')
 COMPARE_SINGLETON_REGEX = re.compile(r'([=!]=)\s*(None|False|True)')
 COMPARE_TYPE_REGEX = re.compile(r'([=!]=|is|is\s+not)\s*type(?:s\.(\w+)Type'
                                 r'|\(\s*(\(\s*\)|[^)]*[^ )])\s*\))')
-KEYWORD_REGEX = re.compile(r'(?:[^\s])(\s*)\b(?:%s)\b(\s*)' %
+KEYWORD_REGEX = re.compile(r'(?:[^\s]|\b)(\s*)\b(?:%s)\b(\s*)' %
                            r'|'.join(KEYWORDS))
-OPERATOR_REGEX = re.compile(r'(?:[^\s])(\s*)(?:[-+*/|!<=>%&^]+)(\s*)')
+OPERATOR_REGEX = re.compile(r'(?:[^,\s])(\s*)(?:[-+*/|!<=>%&^]+)(\s*)')
 LAMBDA_REGEX = re.compile(r'\blambda\b')
-HUNK_REGEX = re.compile(r'^@@ -\d+,\d+ \+(\d+),(\d+) @@.*$')
+HUNK_REGEX = re.compile(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@.*$')
 
 # Work around Python < 2.6 behaviour, which does not generate NL after
 # a comment which is on a line by itself.
@@ -387,13 +388,15 @@ def missing_whitespace(logical_line):
     Okay: a[1:4:2]
     E231: ['a','b']
     E231: foo(bar,baz)
+    E231: [{'a':'b'}]
     """
     line = logical_line
     for index in range(len(line) - 1):
         char = line[index]
         if char in ',;:' and line[index + 1] not in WHITESPACE:
             before = line[:index]
-            if char == ':' and before.count('[') > before.count(']'):
+            if char == ':' and before.count('[') > before.count(']') and \
+                    before.rfind('{') < before.rfind('['):
                 continue  # Slice syntax, no space required
             if char == ',' and line[index + 1] == ')':
                 continue  # Allow tuple with only one element: (3,)
@@ -472,7 +475,7 @@ def continuation_line_indentation(logical_line, tokens, indent_level, verbose):
     # visual indents
     indent = [indent_level]
     indent_chances = {}
-    last_indent = (0, 0)
+    last_indent = tokens[0][2]
     if verbose >= 3:
         print(">>> " + tokens[0][4].rstrip())
 
@@ -540,13 +543,15 @@ def continuation_line_indentation(logical_line, tokens, indent_level, verbose):
                 yield start, "%s continuation line %s" % error
 
         # look for visual indenting
-        if parens[row] and token_type != tokenize.NL and not indent[depth]:
+        if (parens[row] and token_type not in (tokenize.NL, tokenize.COMMENT)
+                and not indent[depth]):
             indent[depth] = start[1]
             indent_chances[start[1]] = True
             if verbose >= 4:
                 print("bracket depth %s indent to %s" % (depth, start[1]))
         # deal with implicit string concatenation
-        elif token_type == tokenize.STRING or text in ('u', 'ur', 'b', 'br'):
+        elif (token_type in (tokenize.STRING, tokenize.COMMENT) or
+              text in ('u', 'ur', 'b', 'br')):
             indent_chances[start[1]] = str
 
         # keep track of bracket depth
@@ -829,7 +834,7 @@ def imports_on_separate_lines(logical_line):
     line = logical_line
     if line.startswith('import '):
         found = line.find(',')
-        if -1 < found:
+        if -1 < found and ';' not in line[:found]:
             yield found, "E401 multiple imports on one line"
 
 
@@ -1051,7 +1056,9 @@ else:
             f.close()
 
     isidentifier = str.isidentifier
-    stdin_get_value = TextIOWrapper(sys.stdin.buffer, errors='ignore').read
+
+    def stdin_get_value():
+        return TextIOWrapper(sys.stdin.buffer, errors='ignore').read()
 readlines.__doc__ = "    Read the source code."
 
 
@@ -1114,7 +1121,8 @@ def parse_udiff(diff, patterns=None, parent='.'):
                 nrows -= 1
             continue
         if line[:3] == '@@ ':
-            row, nrows = [int(g) for g in HUNK_REGEX.match(line).groups()]
+            hunk_match = HUNK_REGEX.match(line)
+            row, nrows = [int(g or '1') for g in hunk_match.groups()]
             rv[path].update(range(row, row + nrows))
         elif line[:3] == '+++':
             path = line[4:].split('\t', 1)[0]
@@ -1175,6 +1183,9 @@ class Checker(object):
         if filename is None:
             self.filename = 'stdin'
             self.lines = lines or []
+        elif filename == '-':
+            self.filename = 'stdin'
+            self.lines = stdin_get_value().splitlines(True)
         elif lines is None:
             try:
                 self.lines = readlines(filename)
@@ -1610,7 +1621,7 @@ class StyleGuide(object):
                 print('directory ' + root)
             counters['directories'] += 1
             for subdir in sorted(dirs):
-                if self.excluded(subdir):
+                if self.excluded(os.path.join(root, subdir)):
                     dirs.remove(subdir)
             for filename in sorted(files):
                 # contain a pattern that matches?
@@ -1623,7 +1634,10 @@ class StyleGuide(object):
         Check if options.exclude contains a pattern that matches filename.
         """
         basename = os.path.basename(filename)
-        return filename_match(basename, self.options.exclude, default=False)
+        return any((filename_match(filename, self.options.exclude,
+                                   default=False),
+                    filename_match(basename, self.options.exclude,
+                                   default=False)))
 
     def ignore_code(self, code):
         """

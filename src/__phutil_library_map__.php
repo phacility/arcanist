@@ -158,6 +158,7 @@ phutil_register_library_map(array(
     'ArcanistApacheLicenseLinterTestCase' => 'ArcanistArcanistLinterTestCase',
     'ArcanistArcanistLinterTestCase' => 'ArcanistLinterTestCase',
     'ArcanistBaseCommitParserTestCase' => 'ArcanistTestCase',
+    'ArcanistBaseWorkflow' => 'Phobject',
     'ArcanistBranchWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistBrowseWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistBundleTestCase' => 'ArcanistTestCase',

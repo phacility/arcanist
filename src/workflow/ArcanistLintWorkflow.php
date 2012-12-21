@@ -128,7 +128,7 @@ EOTEXT
       ),
       'cache' => array(
         'param' => 'bool',
-        'help' => "0 to disable cache (default), 1 to enable.",
+        'help' => "0 to disable cache, 1 to enable (default).",
       ),
       '*' => 'paths',
     );
@@ -169,6 +169,7 @@ EOTEXT
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
+    $use_cache = $this->getArgument('cache', true);
 
     if ($rev && $paths) {
       throw new ArcanistUsageException("Specify either --rev or paths.");
@@ -198,7 +199,7 @@ EOTEXT
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
-    if ($this->getArgument('cache')) {
+    if ($use_cache) {
       $cache = $this->readScratchJSONFile('lint-cache.json');
       $cache = idx($cache, $this->getCacheKey(), array());
       $cache = array_intersect_key($cache, array_flip($paths));
@@ -502,10 +503,10 @@ EOTEXT
 
     $cache = $this->readScratchJSONFile('lint-cache.json');
     $cached = idx($cache, $this->getCacheKey(), array());
-    if ($cached || $this->getArgument('cache')) {
+    if ($cached || $use_cache) {
       foreach ($results as $result) {
         $path = $result->getPath();
-        if (!$this->getArgument('cache')) {
+        if (!$use_cache) {
           unset($cached[$path]);
           continue;
         }
