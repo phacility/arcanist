@@ -91,12 +91,10 @@ final class ArcanistFlake8Linter extends ArcanistLinter {
         $matches[$key] = trim($match);
       }
 
-      $severity = ArcanistLintSeverity::SEVERITY_WARNING;
-      $description = $matches[3];
-
-      $error_regexp = '/(^undefined|^duplicate|before assignment$)/';
-      if (preg_match($error_regexp, $description)) {
+      if (substr($matches[4], 0, 1) == 'E') {
         $severity = ArcanistLintSeverity::SEVERITY_ERROR;
+      } else {
+        $severity = ArcanistLintSeverity::SEVERITY_WARNING;
       }
 
       $message = new ArcanistLintMessage();
@@ -105,8 +103,8 @@ final class ArcanistFlake8Linter extends ArcanistLinter {
       if (!empty($matches[3]))
         $message->setChar($matches[3]);
       $message->setCode($matches[4]);
-      $message->setName($this->getLinterName().' '.$matches[4]);
-      $message->setDescription($description);
+      $message->setName($this->getLinterName().' '.$matches[3]);
+      $message->setDescription($matches[5]);
       $message->setSeverity($severity);
       $this->addLintMessage($message);
     }
