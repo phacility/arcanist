@@ -1,0 +1,10 @@
+#include "library.cpp"
+#include <stdio>
+
+void main()
+{
+}
+~~~~~~~~~~
+warning:0:
+warning:2:
+warning:5:
