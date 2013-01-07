@@ -79,7 +79,7 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
       "%C %C --inline-suppr --xml-version=2 -q %s",
       $bin,
       $options,
-      $path
+      $this->getEngine()->getFilePathOnDisk($path)
     );
 
     if ($rc === 1) {
