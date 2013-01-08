@@ -429,9 +429,8 @@ EOTEXT
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
       array(
-        'message' => $commit_message
-      )
-    );
+        'message' => $commit_message,
+      ));
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
