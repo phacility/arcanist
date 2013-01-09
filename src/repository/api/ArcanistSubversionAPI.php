@@ -15,6 +15,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   protected $svnDiffRaw = array();
 
   private $svnBaseRevisionNumber;
+  private $statusPaths = array();
 
   public function getSourceControlSystemName() {
     return 'svn';
@@ -63,53 +64,66 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return $this->svnBaseRevisions;
   }
 
+  public function limitStatusToPaths(array $paths) {
+    $this->statusPaths = $paths;
+    return $this;
+  }
+
   public function getSVNStatus($with_externals = false) {
     if ($this->svnStatus === null) {
-      list($status) = $this->execxLocal('--xml status');
-      $xml = new SimpleXMLElement($status);
-
-      if (count($xml->target) != 1) {
-        throw new Exception("Expected exactly one XML status target.");
+      if ($this->statusPaths) {
+        list($status) = $this->execxLocal(
+          '--xml status %Ls',
+          $this->statusPaths);
+      } else {
+        list($status) = $this->execxLocal('--xml status');
       }
+      $xml = new SimpleXMLElement($status);
 
       $externals = array();
       $files = array();
 
-      $target = $xml->target[0];
-      $this->svnBaseRevisions = array();
-      foreach ($target->entry as $entry) {
-        $path = (string)$entry['path'];
-        $mask = 0;
+      foreach ($xml->target as $target) {
+        $this->svnBaseRevisions = array();
+        foreach ($target->entry as $entry) {
+          $path = (string)$entry['path'];
+          // On Windows, we get paths with backslash directory separators here.
+          // Normalize them to the format everything else expects and generates.
+          if (phutil_is_windows()) {
+            $path = str_replace(DIRECTORY_SEPARATOR, '/', $path);
+          }
+          $mask = 0;
 
-        $props = (string)($entry->{'wc-status'}[0]['props']);
-        $item  = (string)($entry->{'wc-status'}[0]['item']);
+          $props = (string)($entry->{'wc-status'}[0]['props']);
+          $item  = (string)($entry->{'wc-status'}[0]['item']);
 
-        $base = (string)($entry->{'wc-status'}[0]['revision']);
-        $this->svnBaseRevisions[$path] = $base;
+          $base = (string)($entry->{'wc-status'}[0]['revision']);
+          $this->svnBaseRevisions[$path] = $base;
 
-        switch ($props) {
-          case 'none':
-          case 'normal':
-            break;
-          case 'modified':
-            $mask |= self::FLAG_MODIFIED;
-            break;
-          default:
-            throw new Exception("Unrecognized property status '{$props}'.");
+          switch ($props) {
+            case 'none':
+            case 'normal':
+              break;
+            case 'modified':
+              $mask |= self::FLAG_MODIFIED;
+              break;
+            default:
+              throw new Exception("Unrecognized property status '{$props}'.");
+          }
+
+          $mask |= $this->parseSVNStatus($item);
+          if ($item == 'external') {
+            $externals[] = $path;
+          }
+
+          // This is new in or around Subversion 1.6.
+          $tree_conflicts = ($entry->{'wc-status'}[0]['tree-conflicted']);
+          if ((string)$tree_conflicts) {
+            $mask |= self::FLAG_CONFLICT;
+          }
+
+          $files[$path] = $mask;
         }
-
-        $mask |= $this->parseSVNStatus($item);
-        if ($item == 'external') {
-          $externals[] = $path;
-        }
-
-        // This is new in or around Subversion 1.6.
-        $tree_conflicts = (string)($entry->{'wc-status'}[0]['tree-conflicted']);
-        if ($tree_conflicts) {
-          $mask |= self::FLAG_CONFLICT;
-        }
-
-        $files[$path] = $mask;
       }
 
       foreach ($files as $path => $mask) {

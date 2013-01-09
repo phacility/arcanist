@@ -135,7 +135,13 @@ EOTEXT
   public function run() {
     $this->readArguments();
     $this->validate();
-    $this->pullFromRemote();
+
+    try {
+      $this->pullFromRemote();
+    } catch (Exception $ex) {
+      $this->restoreBranch();
+      throw $ex;
+    }
 
     $this->checkoutBranch();
     $this->findRevision();
@@ -148,6 +154,7 @@ EOTEXT
     }
 
     $this->push();
+
     if (!$this->keepBranch) {
       $this->cleanupBranch();
     }
@@ -155,13 +162,7 @@ EOTEXT
     // If we were on some branch A and the user ran "arc land B",
     // switch back to A.
     if ($this->oldBranch != $this->branch && $this->oldBranch != $this->onto) {
-      $repository_api = $this->getRepositoryAPI();
-      $repository_api->execxLocal(
-        'checkout %s',
-        $this->oldBranch);
-      echo phutil_console_format(
-        "Switched back to branch **%s**.\n",
-        $this->oldBranch);
+      $this->restoreBranch();
     }
 
     echo "Done.\n";
@@ -698,8 +699,7 @@ EOTEXT
       $repository_api->execxLocal(
         'commit -F %s',
         $this->messageFile);
-    }
-    else if ($this->isHg) {
+    } else if ($this->isHg) {
       // hg rebase produces a commit earlier as part of rebase
       if (!$this->useSquash) {
         $repository_api->execxLocal(
@@ -719,22 +719,25 @@ EOTEXT
 
       if ($this->isGitSvn) {
         $err = phutil_passthru('git svn dcommit');
+        $cmd = "git svn dcommit";
       } else if ($this->isGit) {
         $err = phutil_passthru(
           'git push %s %s',
           $this->remote,
           $this->onto);
-      }
-      else if ($this->isHg) {
+        $cmd = "git push";
+      } else if ($this->isHg) {
         $err = $repository_api->execPassthru(
           'push --new-branch -r %s %s',
           $this->onto,
           $this->remote);
+        $cmd = "hg push";
       }
 
       if ($err) {
-        $repo_command = $repository_api->getSourceControlSystemName();
-        throw new ArcanistUsageException("'{$repo_command} push' failed.");
+        echo phutil_console_format("<bg:red>**   PUSH FAILED!   **</bg>\n");
+        throw new ArcanistUsageException(
+          "'{$cmd}' failed! Fix the error and push this change manually.");
       }
 
       $mark_workflow = $this->buildChildWorkflow(
@@ -792,8 +795,7 @@ EOTEXT
             $this->remote,
             $this->branch);
         }
-      }
-      else if ($this->isHg) {
+      } else if ($this->isHg) {
         // named branches were closed as part of the earlier commit
         // so only worry about bookmarks
         if ($repository_api->isBookmark($this->branch)) {
@@ -814,8 +816,7 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     if ($this->isGit) {
       $branch = $repository_api->getBranchName();
-    }
-    else if ($this->isHg) {
+    } else if ($this->isHg) {
       $branch = $repository_api->getActiveBookmark();
       if (!$branch) {
         $branch = $repository_api->getBranchName();
@@ -824,4 +825,20 @@ EOTEXT
 
     return $branch;
   }
+
+
+  /**
+   * Restore the original branch, e.g. after a successful land or a failed
+   * pull.
+   */
+  private function restoreBranch() {
+    $repository_api = $this->getRepositoryAPI();
+    $repository_api->execxLocal(
+      'checkout %s',
+      $this->oldBranch);
+    echo phutil_console_format(
+      "Switched back to branch **%s**.\n",
+      $this->oldBranch);
+  }
+
 }

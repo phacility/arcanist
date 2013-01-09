@@ -1,0 +1,7 @@
+x = 'y'
+
+def hello():
+    return foo
+~~~~~~~~~~
+warning:1:8
+warning:4:

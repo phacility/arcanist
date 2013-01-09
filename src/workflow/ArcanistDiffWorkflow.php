@@ -428,7 +428,9 @@ EOTEXT
 
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
-      array());
+      array(
+        'message' => $commit_message,
+      ));
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
@@ -616,6 +618,7 @@ EOTEXT
     }
 
     if ($this->requiresWorkingCopy()) {
+      $repository_api = $this->getRepositoryAPI();
       try {
         if ($this->getArgument('add-all')) {
           $this->setCommitMode(self::COMMIT_ENABLE);
@@ -624,9 +627,11 @@ EOTEXT
         } else {
           $this->setCommitMode(self::COMMIT_ALLOW);
         }
+        if ($repository_api instanceof ArcanistSubversionAPI) {
+          $repository_api->limitStatusToPaths($this->getArgument('paths'));
+        }
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
-        $repository_api = $this->getRepositoryAPI();
         if ($repository_api instanceof ArcanistMercurialAPI) {
 
           // Some Mercurial users prefer to use it like SVN, where they don't

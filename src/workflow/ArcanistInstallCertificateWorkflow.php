@@ -52,6 +52,7 @@ EOTEXT
   public function run() {
 
     $uri = $this->determineConduitURI();
+    $this->setConduitURI($uri);
 
     echo "Installing certificate for '{$uri}'...\n";
 
