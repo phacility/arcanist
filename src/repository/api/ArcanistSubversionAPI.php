@@ -87,6 +87,11 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         $this->svnBaseRevisions = array();
         foreach ($target->entry as $entry) {
           $path = (string)$entry['path'];
+          // On Windows, we get paths with backslash directory separators here.
+          // Normalize them to the format everything else expects and generates.
+          if (phutil_is_windows()) {
+            $path = str_replace(DIRECTORY_SEPARATOR, '/', $path);
+          }
           $mask = 0;
 
           $props = (string)($entry->{'wc-status'}[0]['props']);
