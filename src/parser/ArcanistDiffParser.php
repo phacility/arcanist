@@ -188,11 +188,11 @@ final class ArcanistDiffParser {
   }
 
   public function parseDiff($diff) {
-    $this->didStartParse($diff);
-
-    if ($this->getLine() === null) {
-      $this->didFailParse("Can't parse an empty diff!");
+    if (!strlen(trim($diff))) {
+      throw new Exception("Can't parse an empty diff!");
     }
+
+    $this->didStartParse($diff);
 
     do {
       $patterns = array(
