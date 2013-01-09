@@ -80,48 +80,45 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       }
       $xml = new SimpleXMLElement($status);
 
-      if (count($xml->target) != 1) {
-        throw new Exception("Expected exactly one XML status target.");
-      }
-
       $externals = array();
       $files = array();
 
-      $target = $xml->target[0];
-      $this->svnBaseRevisions = array();
-      foreach ($target->entry as $entry) {
-        $path = (string)$entry['path'];
-        $mask = 0;
+      foreach ($xml->target as $target) {
+        $this->svnBaseRevisions = array();
+        foreach ($target->entry as $entry) {
+          $path = (string)$entry['path'];
+          $mask = 0;
 
-        $props = (string)($entry->{'wc-status'}[0]['props']);
-        $item  = (string)($entry->{'wc-status'}[0]['item']);
+          $props = (string)($entry->{'wc-status'}[0]['props']);
+          $item  = (string)($entry->{'wc-status'}[0]['item']);
 
-        $base = (string)($entry->{'wc-status'}[0]['revision']);
-        $this->svnBaseRevisions[$path] = $base;
+          $base = (string)($entry->{'wc-status'}[0]['revision']);
+          $this->svnBaseRevisions[$path] = $base;
 
-        switch ($props) {
-          case 'none':
-          case 'normal':
-            break;
-          case 'modified':
-            $mask |= self::FLAG_MODIFIED;
-            break;
-          default:
-            throw new Exception("Unrecognized property status '{$props}'.");
+          switch ($props) {
+            case 'none':
+            case 'normal':
+              break;
+            case 'modified':
+              $mask |= self::FLAG_MODIFIED;
+              break;
+            default:
+              throw new Exception("Unrecognized property status '{$props}'.");
+          }
+
+          $mask |= $this->parseSVNStatus($item);
+          if ($item == 'external') {
+            $externals[] = $path;
+          }
+
+          // This is new in or around Subversion 1.6.
+          $tree_conflicts = ($entry->{'wc-status'}[0]['tree-conflicted']);
+          if ((string)$tree_conflicts) {
+            $mask |= self::FLAG_CONFLICT;
+          }
+
+          $files[$path] = $mask;
         }
-
-        $mask |= $this->parseSVNStatus($item);
-        if ($item == 'external') {
-          $externals[] = $path;
-        }
-
-        // This is new in or around Subversion 1.6.
-        $tree_conflicts = (string)($entry->{'wc-status'}[0]['tree-conflicted']);
-        if ($tree_conflicts) {
-          $mask |= self::FLAG_CONFLICT;
-        }
-
-        $files[$path] = $mask;
       }
 
       foreach ($files as $path => $mask) {
