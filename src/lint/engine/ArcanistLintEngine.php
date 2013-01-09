@@ -164,7 +164,6 @@ abstract class ArcanistLintEngine {
   }
 
   public function run() {
-    $stopped = array();
     $linters = $this->buildLinters();
 
     if (!$linters) {
@@ -189,40 +188,46 @@ abstract class ArcanistLintEngine {
     }
     $this->cacheVersion = crc32(implode("\n", $versions));
 
+    $linters_paths = array();
+    foreach ($linters as $linter_name => $linter) {
+      $linter->setEngine($this);
+      if (!$linter->canRun()) {
+        continue;
+      }
+      $paths = $linter->getPaths();
+
+      $cache_granularity = $linter->getCacheGranularity();
+
+      foreach ($paths as $key => $path) {
+        // Make sure each path has a result generated, even if it is empty
+        // (i.e., the file has no lint messages).
+        $result = $this->getResultForPath($path);
+        if (isset($this->cachedResults[$path][$this->cacheVersion])) {
+          if ($cache_granularity == ArcanistLinter::GRANULARITY_FILE) {
+            unset($paths[$key]);
+          }
+        }
+      }
+      $paths = array_values($paths);
+      $linters_paths[$linter_name] = $paths;
+
+      if ($paths) {
+        $linter->willLintPaths($paths);
+      }
+    }
+
+    $stopped = array();
     $exceptions = array();
     foreach ($linters as $linter_name => $linter) {
       try {
-        $linter->setEngine($this);
-        if (!$linter->canRun()) {
-          continue;
-        }
-        $paths = $linter->getPaths();
-
-        $cache_granularity = $linter->getCacheGranularity();
-
-        foreach ($paths as $key => $path) {
-          // Make sure each path has a result generated, even if it is empty
-          // (i.e., the file has no lint messages).
-          $result = $this->getResultForPath($path);
+        foreach ($linters_paths[$linter_name] as $path) {
           if (isset($stopped[$path])) {
-            unset($paths[$key]);
+            continue;
           }
-          if (isset($this->cachedResults[$path][$this->cacheVersion])) {
-            if ($cache_granularity == ArcanistLinter::GRANULARITY_FILE) {
-              unset($paths[$key]);
-            }
-          }
-        }
-        $paths = array_values($paths);
-
-        if ($paths) {
-          $linter->willLintPaths($paths);
-          foreach ($paths as $path) {
-            $linter->willLintPath($path);
-            $linter->lintPath($path);
-            if ($linter->didStopAllLinters()) {
-              $stopped[$path] = true;
-            }
+          $linter->willLintPath($path);
+          $linter->lintPath($path);
+          if ($linter->didStopAllLinters()) {
+            $stopped[$path] = true;
           }
         }
 
