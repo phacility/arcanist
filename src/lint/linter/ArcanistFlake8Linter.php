@@ -27,38 +27,30 @@ final class ArcanistFlake8Linter extends ArcanistLinter {
   public function getFlake8Path() {
     $working_copy = $this->getEngine()->getWorkingCopy();
     $prefix = $working_copy->getConfig('lint.flake8.prefix');
-    $bin = $working_copy->getConfig('lint.flake8.bin');
+    $bin = $working_copy->getConfig('lint.flake8.bin', 'flake8');
 
-    if ($bin === null && $prefix === null) {
-      $bin = 'flake8';
-    } else {
-      if ($bin === null) {
-        $bin = 'flake8';
-      }
-
-      if ($prefix !== null) {
-        if (!Filesystem::pathExists($prefix.'/'.$bin)) {
-          throw new ArcanistUsageException(
-            "Unable to find flake8 binary in a specified directory. Make sure ".
-            "that 'lint.flake8.prefix' and 'lint.flake8.bin' keys are set ".
-            "correctly. If you'd rather use a copy of flake8 installed ".
-            "globally, you can just remove these keys from your .arcconfig");
-        }
-
-        $bin = csprintf("%s/%s", $prefix, $bin);
-
-        return $bin;
-      }
-
-      // Look for globally installed flake8
-      list($err) = exec_manual('which %s', $bin);
-      if ($err) {
+    if ($prefix !== null) {
+      if (!Filesystem::pathExists($prefix.'/'.$bin)) {
         throw new ArcanistUsageException(
-          "flake8 does not appear to be installed on this system. Install it ".
-          "(e.g., with 'easy_install flake8') or configure ".
-          "'lint.flake8.prefix' in your .arcconfig to point to the directory ".
-          "where it resides.");
+          "Unable to find flake8 binary in a specified directory. Make sure ".
+          "that 'lint.flake8.prefix' and 'lint.flake8.bin' keys are set ".
+          "correctly. If you'd rather use a copy of flake8 installed ".
+          "globally, you can just remove these keys from your .arcconfig");
       }
+
+      $bin = csprintf("%s/%s", $prefix, $bin);
+
+      return $bin;
+    }
+
+    // Look for globally installed flake8
+    list($err) = exec_manual('which %s', $bin);
+    if ($err) {
+      throw new ArcanistUsageException(
+        "flake8 does not appear to be installed on this system. Install it ".
+        "(e.g., with 'easy_install flake8') or configure ".
+        "'lint.flake8.prefix' in your .arcconfig to point to the directory ".
+        "where it resides.");
     }
 
     return $bin;
