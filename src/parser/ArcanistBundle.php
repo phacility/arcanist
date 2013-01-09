@@ -73,6 +73,30 @@ final class ArcanistBundle {
     return $obj;
   }
 
+  private function getEOL($patch_type) {
+
+    // NOTE: Git always generates "\n" line endings, even under Windows, and
+    // can not parse certain patches with "\r\n" line endings. SVN generates
+    // patches with "\n" line endings on Mac or Linux and "\r\n" line endings
+    // on Windows. (This EOL style is used only for patch metadata lines, not
+    // for the actual patch content.)
+
+    // (On Windows, Mercurial generates \n newlines for `--git` diffs, as it
+    // must, but also \n newlines for unified diffs. We never need to deal with
+    // these as we use Git format for Mercurial, so this case is currently
+    // ignored.)
+
+    switch ($patch_type) {
+      case 'git':
+        return "\n";
+      case 'unified':
+        return phutil_is_windows() ? "\r\n" : "\n";
+      default:
+        throw new Exception(
+          "Unknown patch type '{$patch_type}'!");
+    }
+  }
+
   public static function newFromArcBundle($path) {
     $path = Filesystem::resolvePath($path);
 
@@ -204,11 +228,13 @@ final class ArcanistBundle {
 
   public function toUnifiedDiff() {
 
+    $eol = $this->getEOL('unified');
+
     $result = array();
     $changes = $this->getChanges();
     foreach ($changes as $change) {
 
-      $hunk_changes = $this->buildHunkChanges($change->getHunks());
+      $hunk_changes = $this->buildHunkChanges($change->getHunks(), $eol);
       if (!$hunk_changes) {
         continue;
       }
@@ -222,9 +248,9 @@ final class ArcanistBundle {
       }
 
       $result[] = 'Index: '.$index_path;
-      $result[] = PHP_EOL;
+      $result[] = $eol;
       $result[] = str_repeat('=', 67);
-      $result[] = PHP_EOL;
+      $result[] = $eol;
 
       if ($old_path === null) {
         $old_path = '/dev/null';
@@ -245,8 +271,8 @@ final class ArcanistBundle {
         $old_path = $cur_path;
       }
 
-      $result[] = '--- '.$old_path.PHP_EOL;
-      $result[] = '+++ '.$cur_path.PHP_EOL;
+      $result[] = '--- '.$old_path.$eol;
+      $result[] = '+++ '.$cur_path.$eol;
 
       $result[] = $hunk_changes;
     }
@@ -260,6 +286,8 @@ final class ArcanistBundle {
   }
 
   public function toGitPatch() {
+    $eol = $this->getEOL('git');
+
     $result = array();
     $changes = $this->getChanges();
 
@@ -351,7 +379,7 @@ final class ArcanistBundle {
         $old_binary = idx($binary_sources, $this->getCurrentPath($change));
         $change_body = $this->buildBinaryChange($change, $old_binary);
       } else {
-        $change_body = $this->buildHunkChanges($change->getHunks());
+        $change_body = $this->buildHunkChanges($change->getHunks(), $eol);
       }
       if ($type == ArcanistDiffChangeType::TYPE_COPY_AWAY) {
         // TODO: This is only relevant when patching old Differential diffs
@@ -381,10 +409,10 @@ final class ArcanistBundle {
         $cur_target  = 'b/'.$cur_path;
       }
 
-      $result[] = "diff --git {$old_index} {$cur_index}".PHP_EOL;
+      $result[] = "diff --git {$old_index} {$cur_index}".$eol;
 
       if ($type == ArcanistDiffChangeType::TYPE_ADD) {
-        $result[] = "new file mode {$new_mode}".PHP_EOL;
+        $result[] = "new file mode {$new_mode}".$eol;
       }
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE ||
@@ -392,35 +420,35 @@ final class ArcanistBundle {
           $type == ArcanistDiffChangeType::TYPE_COPY_AWAY ||
           $type == ArcanistDiffChangeType::TYPE_CHANGE) {
         if ($old_mode !== $new_mode) {
-          $result[] = "old mode {$old_mode}".PHP_EOL;
-          $result[] = "new mode {$new_mode}".PHP_EOL;
+          $result[] = "old mode {$old_mode}".$eol;
+          $result[] = "new mode {$new_mode}".$eol;
         }
       }
 
       if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE) {
-        $result[] = "copy from {$old_path}".PHP_EOL;
-        $result[] = "copy to {$cur_path}".PHP_EOL;
+        $result[] = "copy from {$old_path}".$eol;
+        $result[] = "copy to {$cur_path}".$eol;
       } else if ($type == ArcanistDiffChangeType::TYPE_MOVE_HERE) {
-        $result[] = "rename from {$old_path}".PHP_EOL;
-        $result[] = "rename to {$cur_path}".PHP_EOL;
+        $result[] = "rename from {$old_path}".$eol;
+        $result[] = "rename to {$cur_path}".$eol;
       } else if ($type == ArcanistDiffChangeType::TYPE_DELETE ||
                  $type == ArcanistDiffChangeType::TYPE_MULTICOPY) {
         $old_mode = idx($change->getOldProperties(), 'unix:filemode');
         if ($old_mode) {
-          $result[] = "deleted file mode {$old_mode}".PHP_EOL;
+          $result[] = "deleted file mode {$old_mode}".$eol;
         }
       }
 
       if ($change_body) {
         if (!$is_binary) {
-          $result[] = "--- {$old_target}".PHP_EOL;
-          $result[] = "+++ {$cur_target}".PHP_EOL;
+          $result[] = "--- {$old_target}".$eol;
+          $result[] = "+++ {$cur_target}".$eol;
         }
         $result[] = $change_body;
       }
     }
 
-    $diff = implode('', $result).PHP_EOL;
+    $diff = implode('', $result).$eol;
     return $this->convertNonUTF8Diff($diff);
   }
 
@@ -573,7 +601,7 @@ final class ArcanistBundle {
     return $cur_path;
   }
 
-  private function buildHunkChanges(array $hunks) {
+  private function buildHunkChanges(array $hunks, $eol) {
     assert_instances_of($hunks, 'ArcanistDiffHunk');
     $result = array();
     foreach ($hunks as $hunk) {
@@ -601,12 +629,12 @@ final class ArcanistBundle {
           $n_head = "{$n_off},{$n_len}";
         }
 
-        $result[] = "@@ -{$o_head} +{$n_head} @@".PHP_EOL;
+        $result[] = "@@ -{$o_head} +{$n_head} @@".$eol;
         $result[] = $corpus;
 
         $last = substr($corpus, -1);
         if ($last !== false && $last != "\r" && $last != "\n") {
-          $result[] = PHP_EOL;
+          $result[] = $eol;
         }
       }
     }
@@ -648,6 +676,8 @@ final class ArcanistBundle {
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change, $old_binary) {
+    $eol = $this->getEOL('git');
+
     // In Git, when we write out a binary file move or copy, we need the
     // original binary for the source and the current binary for the
     // destination.
@@ -699,19 +729,21 @@ final class ArcanistBundle {
     }
 
     $content = array();
-    $content[] = "index {$old_sha1}..{$new_sha1}".PHP_EOL;
-    $content[] = "GIT binary patch".PHP_EOL;
+    $content[] = "index {$old_sha1}..{$new_sha1}".$eol;
+    $content[] = "GIT binary patch".$eol;
 
-    $content[] = "literal {$new_length}".PHP_EOL;
-    $content[] = $this->emitBinaryDiffBody($new_data).PHP_EOL;
+    $content[] = "literal {$new_length}".$eol;
+    $content[] = $this->emitBinaryDiffBody($new_data).$eol;
 
-    $content[] = "literal {$old_length}".PHP_EOL;
-    $content[] = $this->emitBinaryDiffBody($old_data).PHP_EOL;
+    $content[] = "literal {$old_length}".$eol;
+    $content[] = $this->emitBinaryDiffBody($old_data).$eol;
 
     return implode('', $content);
   }
 
   private function emitBinaryDiffBody($data) {
+    $eol = $this->getEOL('git');
+
     if (!function_exists('gzcompress')) {
       throw new Exception(
         "This patch has binary data. The PHP zlib extension is required to ".
@@ -734,7 +766,7 @@ final class ArcanistBundle {
         $buf .= chr($len - 26 + ord('a') - 1);
       }
       $buf .= self::encodeBase85($line);
-      $buf .= PHP_EOL;
+      $buf .= $eol;
     }
 
     return $buf;
