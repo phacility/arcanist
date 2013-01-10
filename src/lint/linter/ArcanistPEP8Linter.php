@@ -59,7 +59,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
             "Unable to find PEP8 binary in a specified directory. Make sure ".
             "that 'lint.pep8.prefix' and 'lint.pep8.bin' keys are set ".
             "correctly. If you'd rather use a copy of PEP8 installed ".
-            "globally, you can just remove these keys from your .arcconfig");
+            "globally, you can just remove these keys from your .arcconfig.");
         }
 
         $bin = csprintf("%s/%s", $prefix, $bin);

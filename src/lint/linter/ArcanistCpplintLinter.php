@@ -27,43 +27,34 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
   public function getLintPath() {
     $working_copy = $this->getEngine()->getWorkingCopy();
     $prefix = $working_copy->getConfig('lint.cpplint.prefix');
-    $bin = $working_copy->getConfig('lint.cpplint.bin');
+    $bin = $working_copy->getConfig('lint.cpplint.bin', 'cpplint.py');
 
-    if ($bin === null && $prefix === null) {
-      $bin = 'cpplint.py';
-    } else {
-      if ($bin === null) {
-        $bin = 'cpplint.py';
-      }
-
-      if ($prefix !== null) {
-        if (!Filesystem::pathExists($prefix.'/'.$bin)) {
-          throw new ArcanistUsageException(
-            "Unable to find cpplint.py binary in a specified directory. Make ".
-            "sure that 'lint.cpplint.prefix' and 'lint.cpplint.bin' keys are ".
-            "set correctly. If you'd rather use a copy of cpplint installed ".
-            "globally, you can just remove these keys from your .arcconfig");
-        }
-
-        $bin = csprintf("%s/%s", $prefix, $bin);
-
-        return $bin;
-      }
-
-      // Look for globally installed cpplint.py
-      list($err) = exec_manual('which %s', $bin);
-      if ($err) {
+    if ($prefix !== null) {
+      if (!Filesystem::pathExists($prefix.'/'.$bin)) {
         throw new ArcanistUsageException(
-          "cpplint.py does not appear to be installed on this system. Install".
-          "it (e.g., with 'wget \"http://google-styleguide.googlecode.com/".
-          "svn/trunk/cpplint/cpplint.py\"') or configure 'lint.cpplint.prefix'".
-          "in your .arcconfig to point to the directory where it resides.  ".
-          "Also don't forget to chmod a+x cpplint.py!");
+          "Unable to find cpplint.py binary in a specified directory. Make ".
+          "sure that 'lint.cpplint.prefix' and 'lint.cpplint.bin' keys are ".
+          "set correctly. If you'd rather use a copy of cpplint installed ".
+          "globally, you can just remove these keys from your .arcconfig.");
       }
+
+      $bin = csprintf("%s/%s", $prefix, $bin);
+
+      return $bin;
+    }
+
+    // Look for globally installed cpplint.py
+    list($err) = exec_manual('which %s', $bin);
+    if ($err) {
+      throw new ArcanistUsageException(
+        "cpplint.py does not appear to be installed on this system. Install ".
+        "it (e.g., with 'wget \"http://google-styleguide.googlecode.com/".
+        "svn/trunk/cpplint/cpplint.py\"') or configure 'lint.cpplint.prefix' ".
+        "in your .arcconfig to point to the directory where it resides. ".
+        "Also don't forget to chmod a+x cpplint.py!");
     }
 
     return $bin;
-
   }
 
   public function lintPath($path) {
