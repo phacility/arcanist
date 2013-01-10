@@ -305,27 +305,42 @@ abstract class ArcanistLintEngine {
 
   abstract protected function buildLinters();
 
-  private function isRelevantMessage($message) {
+  private function isRelevantMessage(ArcanistLintMessage $message) {
     // When a user runs "arc lint", we default to raising only warnings on
     // lines they have changed (errors are still raised anywhere in the
     // file). The list of $changed lines may be null, to indicate that the
     // path is a directory or a binary file so we should not exclude
     // warnings.
 
-    $changed = $this->getPathChangedLines($message->getPath());
-
-    if ($changed === null || $message->isError() || !$message->getLine()) {
+    if (!$this->changedLines || $message->isError()) {
       return true;
     }
 
-    $last_line = $message->getLine();
-    if ($message->getOriginalText()) {
-      $last_line += substr_count($message->getOriginalText(), "\n");
-    }
+    $locations = $message->getOtherLocations();
+    $locations[] = $message->toDictionary();
 
-    for ($l = $message->getLine(); $l <= $last_line; $l++) {
-      if (!empty($changed[$l])) {
+    foreach ($locations as $location) {
+      $path = idx($location, 'path', $message->getPath());
+
+      if (!array_key_exists($path, $this->changedLines)) {
+        continue;
+      }
+
+      $changed = $this->getPathChangedLines($path);
+
+      if ($changed === null || !$location['line']) {
         return true;
+      }
+
+      $last_line = $location['line'];
+      if (isset($location['original'])) {
+        $last_line += substr_count($location['original'], "\n");
+      }
+
+      for ($l = $location['line']; $l <= $last_line; $l++) {
+        if (!empty($changed[$l])) {
+          return true;
+        }
       }
     }
 
