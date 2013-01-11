@@ -206,6 +206,10 @@ abstract class ArcanistLinter {
   abstract public function lintPath($path);
   abstract public function getLinterName();
 
+  public function didRunLinters() {
+    // This is a hook.
+  }
+
   public function getLintSeverityMap() {
     return array();
   }
