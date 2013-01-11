@@ -35,7 +35,7 @@ final class ArcanistFlake8Linter extends ArcanistLinter {
           "Unable to find flake8 binary in a specified directory. Make sure ".
           "that 'lint.flake8.prefix' and 'lint.flake8.bin' keys are set ".
           "correctly. If you'd rather use a copy of flake8 installed ".
-          "globally, you can just remove these keys from your .arcconfig");
+          "globally, you can just remove these keys from your .arcconfig.");
       }
 
       $bin = csprintf("%s/%s", $prefix, $bin);
