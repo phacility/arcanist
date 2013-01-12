@@ -142,6 +142,7 @@ final class ArcanistLintMessage {
    * @param dict Keys 'path', 'line', 'char', 'original'.
    */
   public function setOtherLocations(array $locations) {
+    assert_instances_of($locations, 'array');
     $this->otherLocations = $locations;
     return $this;
   }
