@@ -91,45 +91,33 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   public function getLintSeverityMap() {
-    return array(
-      self::LINT_TODO_COMMENT => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_UNABLE_TO_PARSE
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_NAMING_CONVENTIONS
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PREG_QUOTE_MISUSE
-        => ArcanistLintSeverity::SEVERITY_ADVICE,
-      self::LINT_BRACE_FORMATTING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PARENTHESES_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_CONTROL_STATEMENT_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_BINARY_EXPRESSION_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_ARRAY_INDEX_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_IMPLICIT_FALLTHROUGH
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PHT_WITH_DYNAMIC_STRING
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_SLOWNESS
-        => ArcanistLintSeverity::SEVERITY_WARNING,
+    $disabled = ArcanistLintSeverity::SEVERITY_DISABLED;
+    $advice   = ArcanistLintSeverity::SEVERITY_ADVICE;
+    $warning  = ArcanistLintSeverity::SEVERITY_WARNING;
 
-      self::LINT_COMMENT_SPACING
-        => ArcanistLintSeverity::SEVERITY_ADVICE,
+    return array(
+      self::LINT_TODO_COMMENT              => $disabled,
+      self::LINT_UNABLE_TO_PARSE           => $warning,
+      self::LINT_NAMING_CONVENTIONS        => $warning,
+      self::LINT_PREG_QUOTE_MISUSE         => $advice,
+      self::LINT_BRACE_FORMATTING          => $warning,
+      self::LINT_PARENTHESES_SPACING       => $warning,
+      self::LINT_CONTROL_STATEMENT_SPACING => $warning,
+      self::LINT_BINARY_EXPRESSION_SPACING => $warning,
+      self::LINT_ARRAY_INDEX_SPACING       => $warning,
+      self::LINT_IMPLICIT_FALLTHROUGH      => $warning,
+      self::LINT_PHT_WITH_DYNAMIC_STRING   => $disabled,
+      self::LINT_SLOWNESS                  => $warning,
+      self::LINT_COMMENT_SPACING           => $advice,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
-      self::LINT_RAGGED_CLASSTREE_EDGE
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_RAGGED_CLASSTREE_EDGE     => $disabled,
 
       // This is disabled by default because projects don't necessarily target
       // a specific minimum version.
-      self::LINT_PHP_53_FEATURES
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_PHP_54_FEATURES
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_PHP_53_FEATURES           => $disabled,
+      self::LINT_PHP_54_FEATURES           => $disabled,
     );
   }
 

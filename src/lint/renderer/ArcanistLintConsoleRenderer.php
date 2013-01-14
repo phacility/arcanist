@@ -36,14 +36,24 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
         $message->getSeverity());
       $code = $message->getCode();
       $name = $message->getName();
-      $description = phutil_console_wrap($message->getDescription(), 4);
+      $description = $message->getDescription();
+
+      if ($message->getOtherLocations()) {
+        $locations = array();
+        foreach ($message->getOtherLocations() as $location) {
+          $locations[] =
+            idx($location, 'path', $path).
+            (!empty($location['line']) ? ":{$location['line']}" : "");
+        }
+        $description .= "\nOther locations: ".implode(', ', $locations);
+      }
 
       $text[] = phutil_console_format(
         "  **<bg:{$color}> %s </bg>** (%s) __%s__\n%s\n",
         $severity,
         $code,
         $name,
-        $description);
+        phutil_console_wrap($description, 4));
 
       if ($message->hasFileContext()) {
         $text[] = $this->renderContext($message, $lines);

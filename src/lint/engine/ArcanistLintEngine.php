@@ -188,68 +188,68 @@ abstract class ArcanistLintEngine {
     }
     $this->cacheVersion = crc32(implode("\n", $versions));
 
-    $linters_paths = array();
-    foreach ($linters as $linter_name => $linter) {
-      $linter->setEngine($this);
-      if (!$linter->canRun()) {
-        continue;
-      }
-      $paths = $linter->getPaths();
-
-      $cache_granularity = $linter->getCacheGranularity();
-
-      foreach ($paths as $key => $path) {
-        // Make sure each path has a result generated, even if it is empty
-        // (i.e., the file has no lint messages).
-        $result = $this->getResultForPath($path);
-        if (isset($this->cachedResults[$path][$this->cacheVersion])) {
-          if ($cache_granularity == ArcanistLinter::GRANULARITY_FILE) {
-            unset($paths[$key]);
-          }
-        }
-      }
-      $paths = array_values($paths);
-      $linters_paths[$linter_name] = $paths;
-
-      if ($paths) {
-        $linter->willLintPaths($paths);
-      }
-    }
-
     $stopped = array();
     $exceptions = array();
     foreach ($linters as $linter_name => $linter) {
       try {
-        foreach ($linters_paths[$linter_name] as $path) {
+        $linter->setEngine($this);
+        if (!$linter->canRun()) {
+          continue;
+        }
+        $paths = $linter->getPaths();
+
+        $cache_granularity = $linter->getCacheGranularity();
+
+        foreach ($paths as $key => $path) {
+          // Make sure each path has a result generated, even if it is empty
+          // (i.e., the file has no lint messages).
+          $result = $this->getResultForPath($path);
           if (isset($stopped[$path])) {
-            continue;
+            unset($paths[$key]);
           }
-          $linter->willLintPath($path);
-          $linter->lintPath($path);
-          if ($linter->didStopAllLinters()) {
-            $stopped[$path] = true;
+          if (isset($this->cachedResults[$path][$this->cacheVersion])) {
+            if ($cache_granularity == ArcanistLinter::GRANULARITY_FILE) {
+              unset($paths[$key]);
+            }
+          }
+        }
+        $paths = array_values($paths);
+
+        if ($paths) {
+          $linter->willLintPaths($paths);
+          foreach ($paths as $path) {
+            $linter->willLintPath($path);
+            $linter->lintPath($path);
+            if ($linter->didStopAllLinters()) {
+              $stopped[$path] = true;
+            }
           }
         }
 
-        $minimum = $this->minimumSeverity;
-        foreach ($linter->getLintMessages() as $message) {
-          if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
-            continue;
-          }
-          if (!$this->isRelevantMessage($message)) {
-            continue;
-          }
-          if ($cache_granularity != ArcanistLinter::GRANULARITY_FILE) {
-            $message->setUncacheable(true);
-          }
-          $result = $this->getResultForPath($message->getPath());
-          $result->addMessage($message);
-        }
       } catch (Exception $ex) {
         if (!is_string($linter_name)) {
           $linter_name = get_class($linter);
         }
         $exceptions[$linter_name] = $ex;
+      }
+    }
+
+    $this->didRunLinters($linters);
+
+    foreach ($linters as $linter) {
+      $minimum = $this->minimumSeverity;
+      foreach ($linter->getLintMessages() as $message) {
+        if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
+          continue;
+        }
+        if (!$this->isRelevantMessage($message)) {
+          continue;
+        }
+        if ($cache_granularity != ArcanistLinter::GRANULARITY_FILE) {
+          $message->setUncacheable(true);
+        }
+        $result = $this->getResultForPath($message->getPath());
+        $result->addMessage($message);
       }
     }
 
@@ -305,27 +305,49 @@ abstract class ArcanistLintEngine {
 
   abstract protected function buildLinters();
 
-  private function isRelevantMessage($message) {
+  protected function didRunLinters(array $linters) {
+    assert_instances_of($linters, 'ArcanistLinter');
+    foreach ($linters as $linter) {
+      $linter->didRunLinters();
+    }
+  }
+
+  private function isRelevantMessage(ArcanistLintMessage $message) {
     // When a user runs "arc lint", we default to raising only warnings on
     // lines they have changed (errors are still raised anywhere in the
     // file). The list of $changed lines may be null, to indicate that the
     // path is a directory or a binary file so we should not exclude
     // warnings.
 
-    $changed = $this->getPathChangedLines($message->getPath());
-
-    if ($changed === null || $message->isError() || !$message->getLine()) {
+    if (!$this->changedLines || $message->isError()) {
       return true;
     }
 
-    $last_line = $message->getLine();
-    if ($message->getOriginalText()) {
-      $last_line += substr_count($message->getOriginalText(), "\n");
-    }
+    $locations = $message->getOtherLocations();
+    $locations[] = $message->toDictionary();
 
-    for ($l = $message->getLine(); $l <= $last_line; $l++) {
-      if (!empty($changed[$l])) {
+    foreach ($locations as $location) {
+      $path = idx($location, 'path', $message->getPath());
+
+      if (!array_key_exists($path, $this->changedLines)) {
+        continue;
+      }
+
+      $changed = $this->getPathChangedLines($path);
+
+      if ($changed === null || !$location['line']) {
         return true;
+      }
+
+      $last_line = $location['line'];
+      if (isset($location['original'])) {
+        $last_line += substr_count($location['original'], "\n");
+      }
+
+      for ($l = $location['line']; $l <= $last_line; $l++) {
+        if (!empty($changed[$l])) {
+          return true;
+        }
       }
     }
 
