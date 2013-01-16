@@ -399,8 +399,7 @@ EOTEXT
       // $err === 0 means something is outgoing
       if ($err === 0) {
         $local_ahead_of_remote = true;
-      }
-      else {
+      } else {
         try {
           $repository_api->execxLocal('pull -u');
         } catch (CommandException $ex) {
@@ -496,8 +495,7 @@ EOTEXT
       $repository_api->execxLocal(
         'merge --squash --ff-only %s',
         $this->branch);
-    }
-    else if ($this->isHg) {
+    } else if ($this->isHg) {
       // The hg code is a little more complex than git's because we
       // need to handle the case where the landing branch has child branches:
       // -a--------b  master
@@ -678,8 +676,7 @@ EOTEXT
           "merged state. You can: abort with 'git merge --abort'; or follow ".
           "the instructions to complete the merge.");
       }
-    }
-    else if ($this->isHg) {
+    } else if ($this->isHg) {
       // HG arc land currently doesn't support --merge.
       // When merging a bookmark branch to a master branch that
       // hasn't changed since the fork, mercurial fails to merge.
