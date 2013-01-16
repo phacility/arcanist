@@ -185,6 +185,7 @@ abstract class ArcanistLintEngine {
 
     $versions = array($this->getCacheVersion());
     foreach ($linters as $linter) {
+      $linter->setEngine($this);
       $versions[] = get_class($linter).':'.$linter->getCacheVersion();
     }
     $this->cacheVersion = crc32(implode("\n", $versions));
@@ -196,7 +197,6 @@ abstract class ArcanistLintEngine {
         $linter_name = get_class($linter);
       }
       try {
-        $linter->setEngine($this);
         if (!$linter->canRun()) {
           continue;
         }

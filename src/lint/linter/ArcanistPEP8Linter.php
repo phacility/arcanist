@@ -24,7 +24,8 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return '1.3.4';
+    list($stdout) = execx('%C --version', $this->getPEP8Path());
+    return $stdout.$this->getPEP8Options();
   }
 
   public function getPEP8Options() {
