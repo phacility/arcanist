@@ -504,6 +504,7 @@ EOTEXT
     $cache = $this->readScratchJSONFile('lint-cache.json');
     $cached = idx($cache, $this->getCacheKey(), array());
     if ($cached || $use_cache) {
+      $stopped = $engine->getStoppedPaths();
       foreach ($results as $result) {
         $path = $result->getPath();
         if (!$use_cache) {
@@ -517,6 +518,9 @@ EOTEXT
         $hash = md5_file($abs_path);
         $version = $result->getCacheVersion();
         $cached[$path] = array($hash => array($version => array()));
+        if (isset($stopped[$path])) {
+          $cached[$path][$hash][$version]['stopped'] = $stopped[$path];
+        }
         foreach ($result->getMessages() as $message) {
           if ($message->isUncacheable()) {
             continue;

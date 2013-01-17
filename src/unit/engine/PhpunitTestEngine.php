@@ -233,8 +233,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         } else {
           if ((int) $line->getAttribute('count') == 0) {
             $coverage .= 'U';
-          }
-          else if ((int) $line->getAttribute('count') > 0) {
+          } else if ((int) $line->getAttribute('count') > 0) {
             $coverage .= 'C';
           }
         }

@@ -24,7 +24,8 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return '1.3.4';
+    list($stdout) = execx('%C --version', $this->getPEP8Path());
+    return $stdout.$this->getPEP8Options();
   }
 
   public function getPEP8Options() {
@@ -47,8 +48,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       $bin = csprintf('/usr/bin/env python2.6 %s',
                phutil_get_library_root('arcanist').
                '/../externals/pep8/pep8.py');
-    }
-    else {
+    } else {
       if ($bin === null) {
         $bin = 'pep8';
       }

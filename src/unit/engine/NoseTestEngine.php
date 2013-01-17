@@ -218,8 +218,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
 
         if (intval($line->getAttribute("hits")) == 0) {
           $coverage .= "U";
-        }
-        else if (intval($line->getAttribute("hits")) > 0) {
+        } else if (intval($line->getAttribute("hits")) > 0) {
           $coverage .= "C";
         }
 

@@ -294,8 +294,13 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         continue;
       }
 
+      // TODO: Desceptively, n_STRING_SCALAR may include variables, mostly
+      // because I was lazy when implementing the parser. We should perform more
+      // strict checks here, and/or enhance the parser.
+
       $identifier = $parameters->getChildByIndex(0);
-      if ($identifier->getTypeName() == 'n_STRING_SCALAR') {
+      if ($identifier->getTypeName() == 'n_STRING_SCALAR' ||
+          $identifier->getTypeName() == 'n_HEREDOC') {
         continue;
       }
 
