@@ -35,7 +35,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getMetadataPath() {
-    return $this->getPath('.git');
+    static $path = null;
+    if ($path === null) {
+      list($stdout) = $this->execxLocal('rev-parse --git-dir');
+      $path = rtrim($stdout, "\n");
+      // the output of git rev-parse --git-dir is an absolute path, unless
+      // the cwd is the root of the repository, in which case it uses the
+      // relative path of .git. If we get this relative path, turn it into
+      // an absolute path.
+      if ($path === '.git') {
+        $path = $this->getPath('.git');
+      }
+    }
+    return $path;
   }
 
   public function getHasCommits() {

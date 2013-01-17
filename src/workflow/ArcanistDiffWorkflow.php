@@ -445,7 +445,9 @@ EOTEXT
       list($err) = $lint_unit->resolve();
       $data = $this->readScratchJSONFile('diff-result.json');
       if ($err || !$data) {
-        return 1;
+        throw new Exception(
+          'Unable to read results from background linting and unit testing. '.
+          'You can try running arc diff again with --background 0');
       }
     } else {
       $server = $this->console->getServer();
