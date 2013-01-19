@@ -156,7 +156,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return '1-'.md5_file(xhpast_get_binary_path());
+    return '2-'.md5_file(xhpast_get_binary_path());
   }
 
   public function lintPath($path) {
@@ -298,23 +298,9 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         continue;
       }
 
-      // TODO: Desceptively, n_STRING_SCALAR may include variables, mostly
-      // because I was lazy when implementing the parser. We should perform more
-      // strict checks here, and/or enhance the parser.
-
       $identifier = $parameters->getChildByIndex(0);
-      if ($identifier->getTypeName() == 'n_STRING_SCALAR' ||
-          $identifier->getTypeName() == 'n_HEREDOC') {
+      if ($this->isConstantString($identifier)) {
         continue;
-      }
-
-      if ($identifier->getTypeName() == 'n_CONCATENATION_LIST') {
-        foreach ($identifier->getChildren() as $child) {
-          if ($child->getTypeName() == 'n_STRING_SCALAR' ||
-              $child->getTypeName() == 'n_OPERATOR') {
-            continue 2;
-          }
-        }
       }
 
       $this->raiseLintAtNode(
@@ -323,6 +309,42 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         "The first parameter of pht() can be only a scalar string, ".
           "otherwise it can't be extracted.");
     }
+  }
+
+  private function isConstantString(XHPASTNode $node) {
+    $value = $node->getConcreteString();
+
+    switch ($node->getTypeName()) {
+      case 'n_HEREDOC':
+        if ($value[3] == "'") { // Nowdoc: <<<'EOT'
+          return true;
+        }
+        $value = preg_replace('/^.+\n|\n.*$/', '', $value);
+        break;
+
+      case 'n_STRING_SCALAR':
+        if ($value[0] == "'") {
+          return true;
+        }
+        $value = substr($value, 1, -1);
+        break;
+
+      case 'n_CONCATENATION_LIST':
+        foreach ($node->getChildren() as $child) {
+          if ($child->getTypeName() == 'n_OPERATOR') {
+            continue;
+          }
+          if (!$this->isConstantString($child)) {
+            return false;
+          }
+        }
+        return true;
+
+      default:
+        return false;
+    }
+
+    return preg_match('/^((?>[^$\\\\]*)|\\\\.)*$/s', $value);
   }
 
   public function lintPHP53Features($root) {
