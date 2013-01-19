@@ -1,0 +1,6 @@
+<?php
+echo <<<'EOT'
+Hello World!
+EOT;
+~~~~~~~~~~
+disabled:2:6

@@ -155,6 +155,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     return idx($this->trees, $path);
   }
 
+  public function getCacheVersion() {
+    return '1-'.md5_file(xhpast_get_binary_path());
+  }
+
   public function lintPath($path) {
     if (empty($this->trees[$path])) {
       return;
@@ -390,6 +394,17 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           self::LINT_PHP_53_FEATURES,
           'This codebase targets PHP 5.2, but short ternary was not '.
           'introduced until PHP 5.3.');
+      }
+    }
+
+    $heredocs = $root->selectDescendantsOfType('n_HEREDOC');
+    foreach ($heredocs as $heredoc) {
+      if (preg_match('/^<<<[\'"]/', $heredoc->getConcreteString())) {
+        $this->raiseLintAtNode(
+          $heredoc,
+          self::LINT_PHP_53_FEATURES,
+          'This codebase targets PHP 5.2, but nowdoc was not introduced until '.
+          'PHP 5.3.');
       }
     }
 
