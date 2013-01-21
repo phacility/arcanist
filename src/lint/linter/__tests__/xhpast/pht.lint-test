@@ -5,7 +5,23 @@ pht('a'.'b');
 pht(f());
 pht();
 pht($a);
+pht('a'.$a);
+pht('$a');
+pht("$a");
 pht('%s', $a);
+
+pht(<<<EOT
+a
+EOT
+);
+
+pht(<<<EOT
+$a
+EOT
+);
 ~~~~~~~~~~
 disabled:5:1
 disabled:7:1
+disabled:8:1
+disabled:10:1
+disabled:18:1

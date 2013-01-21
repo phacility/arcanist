@@ -246,6 +246,7 @@ abstract class ArcanistLintEngine {
 
     foreach ($linters as $linter) {
       $minimum = $this->minimumSeverity;
+      $cache_granularity = $linter->getCacheGranularity();
       foreach ($linter->getLintMessages() as $message) {
         if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
           continue;
