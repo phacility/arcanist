@@ -210,7 +210,6 @@ final class ArcanistDiffParser {
         '(?P<binary>Binary) files '.
           '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
           '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
-
         // This is a normal Mercurial text change, probably from "hg diff". It
         // may have two "-r" blocks if it came from "hg diff -r x:y".
         '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?:-r [a-f0-9]+ )?(?P<cur>.+)',
@@ -226,7 +225,7 @@ final class ArcanistDiffParser {
         // contains some meta information and comment at the beginning
         // (isFirstNonEmptyLine() to check for beginning). Actual mercurial
         // code detects where comment ends and unified diff starts by
-        // searching "diff -r" in the text.
+        // searching for "diff -r" or "diff --git" in the text.
         $this->saveLine();
         $line = $this->nextLineThatLooksLikeDiffStart();
         if (!$this->tryMatchHeader($patterns, $line, $match)) {
@@ -1049,7 +1048,7 @@ final class ArcanistDiffParser {
 
   protected function nextLineThatLooksLikeDiffStart() {
     while (($line = $this->nextLine()) !== null) {
-      if (preg_match('/^\s*diff\s+-r/', $line)) {
+      if (preg_match('/^\s*diff\s+-(?:r|-git)/', $line)) {
         break;
       }
     }

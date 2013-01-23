@@ -470,17 +470,26 @@ EOTEXT
         }
       }
     } else if ($this->isHg) {
-      // keep branch here so later we can decide whether to remove it
-      $err = $repository_api->execPassthru(
-        'rebase -d %s --keepbranches',
-        $this->onto);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "'hg rebase {$this->onto}' failed. ".
-          "You can abort with 'hg rebase --abort', ".
-          "or resolve conflicts and use 'hg rebase ".
-          "--continue' to continue forward. After resolving the rebase, ".
-          "run 'arc land' again.");
+      $onto_tip = $repository_api->getCanonicalRevisionName($this->onto);
+      $common_ancestor = $repository_api->getCanonicalRevisionName(
+        sprintf("ancestor('%s','%s')",
+          $this->onto,
+          $this->branch));
+
+      // Only rebase if the local branch is not at the tip of the onto branch.
+      if ($onto_tip != $common_ancestor) {
+        // keep branch here so later we can decide whether to remove it
+        $err = $repository_api->execPassthru(
+          'rebase -d %s --keepbranches',
+          $this->onto);
+        if ($err) {
+          throw new ArcanistUsageException(
+            "'hg rebase {$this->onto}' failed. ".
+            "You can abort with 'hg rebase --abort', ".
+            "or resolve conflicts and use 'hg rebase ".
+            "--continue' to continue forward. After resolving the rebase, ".
+            "run 'arc land' again.");
+        }
       }
     }
 

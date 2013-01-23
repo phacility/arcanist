@@ -156,7 +156,12 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return '2-'.md5_file(xhpast_get_binary_path());
+    $version = '2';
+    $path = xhpast_get_binary_path();
+    if (Filesystem::pathExists($path)) {
+      $version .= '-'.md5_file($path);
+    }
+    return $version;
   }
 
   public function lintPath($path) {
