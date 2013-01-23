@@ -1,0 +1,17 @@
+# HG changeset patch
+# Date 1358829820 0
+# Node ID 0c4c74e145f5e842a855330f600dba87b2f80fc9
+# Parent  80034eb49c320ccd43a1635471baf5c359f43cb5
+Added .arcconfig
+
+diff --git a/.arcconfig b/.arcconfig
+new file mode 100644
+--- /dev/null
++++ b/.arcconfig
+@@ -0,0 +1,5 @@
++{
++  "project_id" : "TestProject",
++  "conduit_uri" : "http://phabricator.example.com/",
++  "history.immutable" : true
++}
+
