@@ -263,6 +263,9 @@ try {
   $config->didRunWorkflow($command, $workflow, $err);
   exit((int)$err);
 
+} catch (ArcanistNoEffectException $ex) {
+  echo $ex->getMessage()."\n";
+
 } catch (Exception $ex) {
   $is_usage = ($ex instanceof ArcanistUsageException);
   if ($is_usage) {

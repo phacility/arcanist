@@ -1336,7 +1336,7 @@ EOTEXT
     } catch (ArcanistNoEngineException $ex) {
       $this->console->writeOut("No lint engine configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No paths to lint.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;
@@ -1411,7 +1411,7 @@ EOTEXT
       $this->console->writeOut(
         "No unit test engine is configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No tests to run.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;
