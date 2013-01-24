@@ -416,10 +416,18 @@ EOTEXT
         array_unshift($argv, '--ansi');
       }
 
-      $lint_unit = new ExecFuture(
-        'php %s --recon diff --no-diff %Ls',
-        phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
-        $argv);
+      $script = phutil_get_library_root('arcanist').'/../scripts/arcanist.php';
+      if ($argv) {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff %Ls',
+          $script,
+          $argv);
+      } else {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff',
+          $script);
+      }
+
       $lint_unit->write('', true);
       $lint_unit->start();
     }
