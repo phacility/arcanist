@@ -9,6 +9,7 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
   private $isGit;
   private $isGitSvn;
   private $isHg;
+  private $isHgSvn;
 
   private $oldBranch;
   private $branch;
@@ -183,6 +184,11 @@ EOTEXT
     if ($this->isGit) {
       $repository = $this->loadProjectRepository();
       $this->isGitSvn = (idx($repository, 'vcs') == 'svn');
+    }
+
+    if ($this->isHg) {
+      list ($err) = $repository_api->execManualLocal('svn info');
+      $this->isHgSvn = !$err;
     }
 
     $branch = $this->getArgument('branch');
@@ -732,9 +738,17 @@ EOTEXT
           $this->remote,
           $this->onto);
         $cmd = "git push";
+      } else if ($this->isHgSvn) {
+        // hg-svn doesn't support 'push -r', so we do a normal push
+        // which hg-svn modifies to only push the current branch and
+        // ancestors.
+        $err = $repository_api->execPassthru(
+          'push %s',
+          $this->remote);
+        $cmd = "hg push";
       } else if ($this->isHg) {
         $err = $repository_api->execPassthru(
-          'push --new-branch -r %s %s',
+          'push -r %s %s',
           $this->onto,
           $this->remote);
         $cmd = "hg push";
