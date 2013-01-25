@@ -70,6 +70,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $changeCache = array();
 
 
+  public function __construct() {
+
+  }
+
+
   abstract public function run();
 
   /**
