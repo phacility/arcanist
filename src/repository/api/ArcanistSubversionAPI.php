@@ -182,9 +182,17 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function addToCommit(array $paths) {
-    $this->execxLocal(
-      'add -- %Ls',
-      $paths);
+    $add = array_filter($paths, 'Filesystem::pathExists');
+    if ($add) {
+      $this->execxLocal(
+        'add -- %Ls',
+        $add);
+    }
+    if ($add != $paths) {
+      $this->execxLocal(
+        'delete -- %Ls',
+        array_diff($paths, $add));
+    }
   }
 
   public function getSVNProperty($path, $property) {

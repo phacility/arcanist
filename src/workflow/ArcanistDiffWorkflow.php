@@ -416,10 +416,18 @@ EOTEXT
         array_unshift($argv, '--ansi');
       }
 
-      $lint_unit = new ExecFuture(
-        'php %s --recon diff --no-diff %Ls',
-        phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
-        $argv);
+      $script = phutil_get_library_root('arcanist').'/../scripts/arcanist.php';
+      if ($argv) {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff %Ls',
+          $script,
+          $argv);
+      } else {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff',
+          $script);
+      }
+
       $lint_unit->write('', true);
       $lint_unit->start();
     }
@@ -1328,7 +1336,7 @@ EOTEXT
     } catch (ArcanistNoEngineException $ex) {
       $this->console->writeOut("No lint engine configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No paths to lint.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;
@@ -1403,7 +1411,7 @@ EOTEXT
       $this->console->writeOut(
         "No unit test engine is configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No tests to run.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;

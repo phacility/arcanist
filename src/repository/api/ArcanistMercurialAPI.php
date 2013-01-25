@@ -589,7 +589,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function addToCommit(array $paths) {
     $this->execxLocal(
-      'add -- %Ls',
+      'addremove -- %Ls',
       $paths);
     $this->reloadWorkingCopy();
   }

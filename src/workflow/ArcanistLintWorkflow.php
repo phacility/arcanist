@@ -195,6 +195,7 @@ EOTEXT
     $engine = newv($engine, array());
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
+    $engine->setRepositoryVersion($this->getRepositoryVersion());
 
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
@@ -517,18 +518,20 @@ EOTEXT
         }
         $hash = md5_file($abs_path);
         $version = $result->getCacheVersion();
-        $cached[$path] = array($hash => array($version => array()));
+        $cached_path = array();
         if (isset($stopped[$path])) {
-          $cached[$path][$hash][$version]['stopped'] = $stopped[$path];
+          $cached_path['stopped'] = $stopped[$path];
         }
+        $cached_path['repository_version'] = $this->getRepositoryVersion();
         foreach ($result->getMessages() as $message) {
           if ($message->isUncacheable()) {
             continue;
           }
           if (!$message->isPatchApplied()) {
-            $cached[$path][$hash][$version][] = $message->toDictionary();
+            $cached_path[] = $message->toDictionary();
           }
         }
+        $cached[$path] = array($hash => array($version => $cached_path));
       }
       $cache[$this->getCacheKey()] = $cached;
       // TODO: Garbage collection.

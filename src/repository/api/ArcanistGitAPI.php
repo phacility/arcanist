@@ -495,7 +495,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function addToCommit(array $paths) {
     $this->execxLocal(
-      'add -- %Ls',
+      'add -A -- %Ls',
       $paths);
     $this->reloadWorkingCopy();
     return $this;

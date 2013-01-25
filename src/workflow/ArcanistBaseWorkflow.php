@@ -65,6 +65,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $arcanistConfiguration;
   private $parentWorkflow;
   private $workingDirectory;
+  private $repositoryVersion;
 
   private $changeCache = array();
 
@@ -1541,6 +1542,20 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $api->setBaseCommit(head($argv));
 
     return $this;
+  }
+
+  protected function getRepositoryVersion() {
+    if (!$this->repositoryVersion) {
+      $api = $this->getRepositoryAPI();
+      $versions = array('' => $api->getSourceControlBaseRevision());
+      foreach ($api->getUncommittedStatus() as $path => $mask) {
+        $versions[$path] = (Filesystem::pathExists($path)
+          ? md5_file($path)
+          : '');
+      }
+      $this->repositoryVersion = md5(json_encode($versions));
+    }
+    return $this->repositoryVersion;
   }
 
 }
