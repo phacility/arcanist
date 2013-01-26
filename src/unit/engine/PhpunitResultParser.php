@@ -71,10 +71,10 @@ final class PhpunitResultParser {
             $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
           }
         } else if ('error' == $event->status) {
-          if ('Skipped Test' == $event->message) {
+          if (strpos($event->message, 'Skipped Test') !== false) {
             $status = ArcanistUnitTestResult::RESULT_SKIP;
             $user_data .= $event->message;
-          } else if ('Incomplete Test' == $event->message) {
+          } else if (strpos($event->message, 'Incomplete Test') !== false) {
             $status = ArcanistUnitTestResult::RESULT_SKIP;
             $user_data .= $event->message;
           } else {
