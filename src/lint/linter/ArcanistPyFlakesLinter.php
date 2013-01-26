@@ -35,7 +35,7 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
 
     // Default to just finding pyflakes in the users path
     $pyflakes_bin = 'pyflakes';
-    $python_path = '';
+    $python_path = array();
 
     // If a pyflakes path was specified, then just use that as the
     // pyflakes binary and assume that the libraries will be imported
@@ -50,9 +50,13 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
       $pyflakes_bin = $pyflakes_path;
     } else if ($pyflakes_prefix !== null) {
       $pyflakes_bin = $pyflakes_prefix.'/bin/pyflakes';
-      $python_path = $pyflakes_prefix.'/lib/python2.6/site-packages:';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.7/site-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.7/dist-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.6/site-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.6/dist-packages';
     }
-
+    $python_path[] = '';
+    $python_path = implode(':', $python_path);
     $options = $this->getPyFlakesOptions();
 
     $f = new ExecFuture(

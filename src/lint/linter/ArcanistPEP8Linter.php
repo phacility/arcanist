@@ -45,7 +45,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
     $bin = $working_copy->getConfig('lint.pep8.bin');
 
     if ($bin === null && $prefix === null) {
-      $bin = csprintf('/usr/bin/env python2.6 %s',
+      $bin = csprintf('/usr/bin/env python %s',
                phutil_get_library_root('arcanist').
                '/../externals/pep8/pep8.py');
     } else {

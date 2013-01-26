@@ -133,7 +133,10 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     $python_path = array();
     foreach ($prefixes as $prefix) {
       if ($prefix !== null) {
+        $python_path[] = $prefix.'/lib/python2.7/site-packages';
+        $python_path[] = $prefix.'/lib/python2.7/dist-packages';
         $python_path[] = $prefix.'/lib/python2.6/site-packages';
+        $python_path[] = $prefix.'/lib/python2.6/dist-packages';
       }
     }
 
