@@ -65,6 +65,7 @@ class PhutilLintEngine extends ArcanistLintEngine {
       ArcanistXHPASTLinter::LINT_COMMENT_SPACING          => $error,
       ArcanistXHPASTLinter::LINT_RAGGED_CLASSTREE_EDGE    => $warning,
       ArcanistXHPASTLinter::LINT_TODO_COMMENT             => $advice,
+      ArcanistXHPASTLinter::LINT_ARRAY_COMBINE            => $warning,
     );
   }
 }

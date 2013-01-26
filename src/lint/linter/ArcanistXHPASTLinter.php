@@ -44,6 +44,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_COMMENT_SPACING           = 34;
   const LINT_PHP_54_FEATURES           = 35;
   const LINT_SLOWNESS                  = 36;
+  const LINT_ARRAY_COMBINE             = 37;
 
 
   public function getLintNameMap() {
@@ -83,6 +84,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
       self::LINT_SLOWNESS                  => 'Slow Construct',
+      self::LINT_ARRAY_COMBINE             => 'array_combine() Unreliable',
     );
   }
 
@@ -118,6 +120,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       // a specific minimum version.
       self::LINT_PHP_53_FEATURES           => $disabled,
       self::LINT_PHP_54_FEATURES           => $disabled,
+
+      // This message specifically recommends array_fuse(), a libphutil
+      // function.
+      self::LINT_ARRAY_COMBINE             => $disabled,
     );
   }
 
@@ -203,6 +209,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintPHT($root);
     $this->lintStrposUsedForStart($root);
     $this->lintStrstrUsedForCheck($root);
+    $this->lintArrayCombine($root);
   }
 
   public function lintStrstrUsedForCheck($root) {
@@ -1798,6 +1805,32 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
     }
   }
+
+  protected function lintArrayCombine($root) {
+    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    foreach ($function_calls as $call) {
+      $name = $call->getChildByIndex(0)->getConcreteString();
+      if (strtolower($name) === 'array_combine') {
+        $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+        if (count($parameter_list->getChildren()) !== 2) {
+          // Wrong number of parameters, but raise that elsewhere if we want.
+          continue;
+        }
+
+        $first = $parameter_list->getChildByIndex(0);
+        $second = $parameter_list->getChildByIndex(1);
+
+        if ($first->getConcreteString() == $second->getConcreteString()) {
+          $this->raiseLintAtNode(
+            $call,
+            self::LINT_ARRAY_COMBINE,
+            'Prior to PHP 5.4, array_combine() fails when given empty '.
+            'arrays. Prefer to write array_combine(x, x) as array_fuse(x).');
+        }
+      }
+    }
+  }
+
 
   /**
    * Exit is parsed as an expression, but using it as such is almost always

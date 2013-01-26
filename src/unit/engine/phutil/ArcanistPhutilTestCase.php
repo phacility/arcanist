@@ -252,7 +252,7 @@ abstract class ArcanistPhutilTestCase {
     $callable,
     $exception_class = 'Exception') {
     return $this->tryTestCases(
-      array_combine(array_keys($map), array_keys($map)),
+      array_fuse(array_keys($map)),
       array_values($map),
       $callable,
       $exception_class);
