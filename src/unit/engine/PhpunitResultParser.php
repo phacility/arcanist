@@ -11,105 +11,79 @@
  * engine, see PhpunitTestEngine.
  *
  */
-final class PhpunitResultParser {
-
-  private $enableCoverage;
-  private $projectRoot;
-
-  public function setEnableCoverage($enable_coverage) {
-    $this->enableCoverage = $enable_coverage;
-
-    return $this;
-  }
-
-  public function setProjectRoot($project_root) {
-    $this->projectRoot = $project_root;
-
-    return $this;
-  }
+final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
   /**
    * Parse test results from phpunit json report
    *
    * @param string $path Path to test
-   * @param string $json_path Path to phpunit json report
-   * @param string $clover_tmp Path to phpunit clover report
-   * @param array $affected_tests Array of the tests affected by this run
-   * @param bool $enable_coverage Option to enable coverage in results
+   * @param string $test_results String containing phpunit json report
    *
    * @return array
    */
-  public function parseTestResults(
-    $path,
-    $json_tmp,
-    $clover_tmp,
-    $affected_tests) {
+  public function parseTestResults($path, $test_results) {
 
-      $test_results = Filesystem::readFile($json_tmp);
+    $report = $this->getJsonReport($test_results);
 
-      $report = $this->getJsonReport($json_tmp);
+    // coverage is for all testcases in the executed $path
+    $coverage = array();
+    if ($this->enableCoverage !== false) {
+      $coverage = $this->readCoverage();
+    }
 
-      // coverage is for all testcases in the executed $path
-      $coverage = array();
-      if ($this->enableCoverage !== false) {
-        $coverage = $this->readCoverage($clover_tmp, $affected_tests);
+    $results = array();
+    foreach ($report as $event) {
+      if ('test' != $event->event) {
+        continue;
       }
 
-      $results = array();
-      foreach ($report as $event) {
-        if ('test' != $event->event) {
-          continue;
+      $status = ArcanistUnitTestResult::RESULT_PASS;
+      $user_data = '';
+
+      if ('fail' == $event->status) {
+        $status = ArcanistUnitTestResult::RESULT_FAIL;
+        $user_data  .= $event->message . "\n";
+        foreach ($event->trace as $trace) {
+          $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
         }
-
-        $status = ArcanistUnitTestResult::RESULT_PASS;
-        $user_data = '';
-
-        if ('fail' == $event->status) {
-          $status = ArcanistUnitTestResult::RESULT_FAIL;
-          $user_data  .= $event->message . "\n";
+      } else if ('error' == $event->status) {
+        if (strpos($event->message, 'Skipped Test') !== false) {
+          $status = ArcanistUnitTestResult::RESULT_SKIP;
+          $user_data .= $event->message;
+        } else if (strpos($event->message, 'Incomplete Test') !== false) {
+          $status = ArcanistUnitTestResult::RESULT_SKIP;
+          $user_data .= $event->message;
+        } else {
+          $status = ArcanistUnitTestResult::RESULT_BROKEN;
+          $user_data  .= $event->message;
           foreach ($event->trace as $trace) {
             $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
           }
-        } else if ('error' == $event->status) {
-          if (strpos($event->message, 'Skipped Test') !== false) {
-            $status = ArcanistUnitTestResult::RESULT_SKIP;
-            $user_data .= $event->message;
-          } else if (strpos($event->message, 'Incomplete Test') !== false) {
-            $status = ArcanistUnitTestResult::RESULT_SKIP;
-            $user_data .= $event->message;
-          } else {
-            $status = ArcanistUnitTestResult::RESULT_BROKEN;
-            $user_data  .= $event->message;
-            foreach ($event->trace as $trace) {
-              $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
-            }
-          }
         }
-
-        $name = preg_replace('/ \(.*\)/', '', $event->test);
-
-        $result = new ArcanistUnitTestResult();
-        $result->setName($name);
-        $result->setResult($status);
-        $result->setDuration($event->time);
-        $result->setCoverage($coverage);
-        $result->setUserData($user_data);
-
-        $results[] = $result;
       }
 
-      return $results;
+      $name = preg_replace('/ \(.*\)/', '', $event->test);
+
+      $result = new ArcanistUnitTestResult();
+      $result->setName($name);
+      $result->setResult($status);
+      $result->setDuration($event->time);
+      $result->setCoverage($coverage);
+      $result->setUserData($user_data);
+
+      $results[] = $result;
     }
+
+    return $results;
+  }
 
   /**
    * Read the coverage from phpunit generated clover report
    *
-   * @param string $path Path to report
-   *
    * @return array
    */
-  private function readCoverage($path, $affected_tests) {
-    $test_results = Filesystem::readFile($path);
+  private function readCoverage() {
+    $test_results = Filesystem::readFile($this->coverageFile);
     if (empty($test_results)) {
       throw new Exception('Clover coverage XML report file is empty, '
         . 'it probably means that phpunit failed to run tests. '
@@ -127,10 +101,10 @@ final class PhpunitResultParser {
 
     foreach ($files as $file) {
       $class_path = $file->getAttribute('name');
-      if (empty($affected_tests[$class_path])) {
+      if (empty($this->affectedTests[$class_path])) {
         continue;
       }
-      $test_path = $affected_tests[$file->getAttribute('name')];
+      $test_path = $this->affectedTests[$file->getAttribute('name')];
       // get total line count in file
       $line_count = count(file($class_path));
 
@@ -172,12 +146,11 @@ final class PhpunitResultParser {
    * We need this non-sense to make json generated by phpunit
    * valid.
    *
-   * @param string $json_tmp Path to JSON report
+   * @param string $json String containing JSON report
    *
    * @return array JSON decoded array
    */
-  private function getJsonReport($json_tmp) {
-    $json = Filesystem::readFile($json_tmp);
+  private function getJsonReport($json) {
 
     if (empty($json)) {
       throw new Exception('JSON report file is empty, '

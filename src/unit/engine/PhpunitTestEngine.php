@@ -100,10 +100,13 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
    * @return array
    */
   private function parseTestResults($path, $json_tmp, $clover_tmp) {
+    $test_results = Filesystem::readFile($json_tmp);
     return id(new PhpunitResultParser())
       ->setEnableCoverage($this->getEnableCoverage())
       ->setProjectRoot($this->projectRoot)
-      ->parseTestResults($path, $json_tmp, $clover_tmp, $this->affectedTests);
+      ->setCoverageFile($clover_tmp)
+      ->setAffectedTests($this->affectedTests)
+      ->parseTestResults($path, $test_results);
   }
 
 
