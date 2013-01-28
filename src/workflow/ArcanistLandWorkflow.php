@@ -384,17 +384,23 @@ EOTEXT
 
     $local_ahead_of_remote = false;
     if ($this->isGit) {
-      $repository_api->execxLocal('pull --ff-only');
-
-      if (!$this->isGitSvn) {
+      try {
+        $repository_api->execxLocal('pull --ff-only');
+      } catch (CommandException $ex) {
+        if (!$this->isGitSvn) {
+          throw $ex;
+        }
         list($out) = $repository_api->execxLocal(
           'log %s..%s',
           $this->ontoRemoteBranch,
           $this->onto);
         if (strlen(trim($out))) {
           $local_ahead_of_remote = true;
+        } else {
+          $repository_api->execxLocal('svn rebase');
         }
       }
+
     } else if ($this->isHg) {
       // execManual instead of execx because outgoing returns
       // code 1 when there is nothing outgoing
