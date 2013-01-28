@@ -637,4 +637,19 @@ EODIFF;
     $this->execxLocal('up');
   }
 
+  public static function escapeFileNamesForSVN(array $files) {
+    // SVN interprets "x@1" as meaning "file x at revision 1", which is not
+    // intended for files named "sprite@2x.png" or similar. For files with an
+    // "@" in their names, escape them by adding "@" at the end, which SVN
+    // interprets as "at the working copy revision". There is a special case
+    // where ".@" means "fail with an error" instead of ". at the working copy
+    // revision", so avoid escaping "." into ".@".
+    foreach ($files as $k => $file) {
+      if (strpos($file, '@') !== false) {
+        $files[$k] = $file.'@';
+      }
+    }
+    return $files;
+  }
+
 }
