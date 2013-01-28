@@ -142,7 +142,7 @@ abstract class ArcanistRepositoryAPI {
    */
   final public function getUncommittedStatus() {
     if ($this->uncommittedStatusCache === null) {
-      $status = $this->buildUncommittedStatus();;
+      $status = $this->buildUncommittedStatus();
       ksort($status);
       $this->uncommittedStatusCache = $status;
     }
