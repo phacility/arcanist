@@ -478,7 +478,7 @@ EOTEXT
     } else if ($this->isHg) {
       $onto_tip = $repository_api->getCanonicalRevisionName($this->onto);
       $common_ancestor = $repository_api->getCanonicalRevisionName(
-        sprintf("ancestor('%s','%s')",
+        hgsprintf("ancestor(%s, %s)",
           $this->onto,
           $this->branch));
 
@@ -531,12 +531,12 @@ EOTEXT
       // function). So we're guaranteed to have onto as an ancestor of branch
       // when we use first((onto::branch)-onto) below.
       $branch_root = $repository_api->getCanonicalRevisionName(
-        sprintf("first((%s::%s)-%s)",
+        hgsprintf("first((%s::%s)-%s)",
           $this->onto,
           $this->branch,
           $this->onto));
 
-      $branch_range = sprintf(
+      $branch_range = hgsprintf(
         "(%s::%s)",
         $branch_root,
         $this->branch);
@@ -571,7 +571,7 @@ EOTEXT
       // check if the branch had children
       list($output) = $repository_api->execxLocal(
         "log -r %s --template '{node}\\n'",
-        sprintf("children(%s)", $this->branch));
+        hgsprintf("children(%s)", $this->branch));
 
       $child_branch_roots = phutil_split_lines($output, false);
       $child_branch_roots = array_filter($child_branch_roots);
@@ -632,8 +632,8 @@ EOTEXT
     // 2. roots({x,g,y,z} - {g} - {w,x})
     // 3. roots({y,z})
     // 4. {y,z}
-    $alt_branch_revset = sprintf(
-      'roots(descendants(%s)-descendants(%s)-%s)',
+    $alt_branch_revset = hgsprintf(
+      'roots(descendants(%s)-descendants(%s)-%R)',
       $branch_root,
       $this->branch,
       $branch_range);
