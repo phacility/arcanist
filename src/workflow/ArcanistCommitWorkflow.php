@@ -245,10 +245,8 @@ EOTEXT
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }
 
-    $files = array();
-    foreach ($commit_paths as $file => $ignored) {
-      $files[] = $file.'@'; // make SVN accept commits like foo@2x.png
-    }
+    $files = array_keys($commit_paths);
+    $files = ArcanistSubversionAPI::escapeFileNamesForSVN($files);
 
     if (empty($files)) {
       throw new ArcanistUsageException(

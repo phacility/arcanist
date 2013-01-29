@@ -1,0 +1,12 @@
+=== RUN TestFoo1
+--- PASS: TestFoo1 (0.03 seconds)
+=== RUN TestBar1
+--- PASS: TestBar1 (0.01 seconds)
+PASS
+ok  	package/subpackage1	0.042s
+=== RUN TestFoo2
+--- FAIL: TestFoo2 (0.02 seconds)
+	subpackage2_test.go:53: got: 2, want: 1
+FAIL
+exit status 1
+FAIL	package/subpackage2	0.020s

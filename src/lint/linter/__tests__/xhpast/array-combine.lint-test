@@ -1,0 +1,6 @@
+<?php
+
+array_combine($x, $x);
+array_combine($x, $y);
+~~~~~~~~~~
+disabled:3:1
