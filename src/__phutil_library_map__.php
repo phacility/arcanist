@@ -108,6 +108,7 @@ phutil_register_library_map(array(
     'ArcanistPhutilTestTerminatedException' => 'unit/engine/phutil/testcase/ArcanistPhutilTestTerminatedException.php',
     'ArcanistPyFlakesLinter' => 'lint/linter/ArcanistPyFlakesLinter.php',
     'ArcanistPyLintLinter' => 'lint/linter/ArcanistPyLintLinter.php',
+    'ArcanistRepoUtilsTestCase' => 'repository/util/__tests__/ArcanistRepoUtilsTestCase.php',
     'ArcanistRepositoryAPI' => 'repository/api/ArcanistRepositoryAPI.php',
     'ArcanistRepositoryAPIMiscTestCase' => 'repository/api/__tests__/ArcanistRepositoryAPIMiscTestCase.php',
     'ArcanistRepositoryAPIStateTestCase' => 'repository/api/__tests__/ArcanistRepositoryAPIStateTestCase.php',
@@ -158,6 +159,8 @@ phutil_register_library_map(array(
   ),
   'function' =>
   array(
+    'hgsprintf' => 'repository/util/hgsprintf.php',
+    'xsprintf_mercurial' => 'repository/util/hgsprintf.php',
   ),
   'xmap' =>
   array(
@@ -233,6 +236,7 @@ phutil_register_library_map(array(
     'ArcanistPhutilTestTerminatedException' => 'Exception',
     'ArcanistPyFlakesLinter' => 'ArcanistLinter',
     'ArcanistPyLintLinter' => 'ArcanistLinter',
+    'ArcanistRepoUtilsTestCase' => 'ArcanistTestCase',
     'ArcanistRepositoryAPIMiscTestCase' => 'ArcanistTestCase',
     'ArcanistRepositoryAPIStateTestCase' => 'ArcanistTestCase',
     'ArcanistRubyLinter' => 'ArcanistLinter',
