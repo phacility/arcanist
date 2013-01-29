@@ -1547,11 +1547,9 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   protected function getRepositoryVersion() {
     if (!$this->repositoryVersion) {
       $api = $this->getRepositoryAPI();
-      $versions = array('' => $api->getSourceControlBaseRevision());
-      foreach ($api->getUncommittedStatus() as $path => $mask) {
-        if ($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          continue;
-        }
+      $commit = $api->getSourceControlBaseRevision();
+      $versions = array('' => $commit);
+      foreach ($api->getChangedFiles($commit) as $path => $mask) {
         $versions[$path] = (Filesystem::pathExists($path)
           ? md5_file($path)
           : '');
