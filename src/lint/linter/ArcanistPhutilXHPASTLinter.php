@@ -72,7 +72,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
 
       $identifier = $parameters->getChildByIndex(0);
-      if ($this->isConstantString($identifier)) {
+      if ($identifier->isConstantString()) {
         continue;
       }
 
@@ -82,42 +82,6 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
         "The first parameter of pht() can be only a scalar string, ".
           "otherwise it can't be extracted.");
     }
-  }
-
-  private function isConstantString(XHPASTNode $node) {
-    $value = $node->getConcreteString();
-
-    switch ($node->getTypeName()) {
-      case 'n_HEREDOC':
-        if ($value[3] == "'") { // Nowdoc: <<<'EOT'
-          return true;
-        }
-        $value = preg_replace('/^.+\n|\n.*$/', '', $value);
-        break;
-
-      case 'n_STRING_SCALAR':
-        if ($value[0] == "'") {
-          return true;
-        }
-        $value = substr($value, 1, -1);
-        break;
-
-      case 'n_CONCATENATION_LIST':
-        foreach ($node->getChildren() as $child) {
-          if ($child->getTypeName() == 'n_OPERATOR') {
-            continue;
-          }
-          if (!$this->isConstantString($child)) {
-            return false;
-          }
-        }
-        return true;
-
-      default:
-        return false;
-    }
-
-    return preg_match('/^((?>[^$\\\\]*)|\\\\.)*$/s', $value);
   }
 
 
