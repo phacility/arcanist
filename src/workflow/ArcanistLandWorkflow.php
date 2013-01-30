@@ -762,6 +762,12 @@ EOTEXT
 
       if ($err) {
         echo phutil_console_format("<bg:red>**   PUSH FAILED!   **</bg>\n");
+        if ($this->isGit) {
+          $repository_api->execxLocal('reset --hard HEAD^');
+          $this->restoreBranch();
+          throw new ArcanistUsageException(
+            "'{$cmd}' failed! Fix the error and run 'arc land' again.");
+        }
         throw new ArcanistUsageException(
           "'{$cmd}' failed! Fix the error and push this change manually.");
       }

@@ -5,7 +5,7 @@
  *
  * @group linter
  */
-final class ArcanistXHPASTLinter extends ArcanistLinter {
+final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   protected $trees = array();
 
@@ -40,11 +40,9 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
   const LINT_PHP_53_FEATURES           = 31;
   const LINT_REUSED_AS_ITERATOR        = 32;
-  const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
   const LINT_COMMENT_SPACING           = 34;
   const LINT_PHP_54_FEATURES           = 35;
   const LINT_SLOWNESS                  = 36;
-  const LINT_ARRAY_COMBINE             = 37;
 
 
   public function getLintNameMap() {
@@ -81,10 +79,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
       self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
-      self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
       self::LINT_SLOWNESS                  => 'Slow Construct',
-      self::LINT_ARRAY_COMBINE             => 'array_combine() Unreliable',
     );
   }
 
@@ -108,7 +104,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_BINARY_EXPRESSION_SPACING => $warning,
       self::LINT_ARRAY_INDEX_SPACING       => $warning,
       self::LINT_IMPLICIT_FALLTHROUGH      => $warning,
-      self::LINT_PHT_WITH_DYNAMIC_STRING   => $disabled,
       self::LINT_SLOWNESS                  => $warning,
       self::LINT_COMMENT_SPACING           => $advice,
 
@@ -120,24 +115,27 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       // a specific minimum version.
       self::LINT_PHP_53_FEATURES           => $disabled,
       self::LINT_PHP_54_FEATURES           => $disabled,
-
-      // This message specifically recommends array_fuse(), a libphutil
-      // function.
-      self::LINT_ARRAY_COMBINE             => $disabled,
     );
   }
 
   public function willLintPaths(array $paths) {
     $futures = array();
     foreach ($paths as $path) {
+      if (array_key_exists($path, $this->trees)) {
+        continue;
+      }
       $futures[$path] = xhpast_get_parser_future($this->getData($path));
     }
     foreach (Futures($futures)->limit(8) as $path => $future) {
       $this->willLintPath($path);
+      $this->trees[$path] = null;
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
           $this->getData($path),
           $future->resolve());
+        $root = $this->trees[$path]->getRootNode();
+        $root->buildSelectCache();
+        $root->buildTokenCache();
       } catch (XHPASTSyntaxErrorException $ex) {
         $this->raiseLintAtLine(
           $ex->getErrorLine(),
@@ -171,14 +169,11 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    if (empty($this->trees[$path])) {
+    if (!$this->trees[$path]) {
       return;
     }
 
     $root = $this->trees[$path]->getRootNode();
-
-    $root->buildSelectCache();
-    $root->buildTokenCache();
 
     $this->lintUseOfThisInStaticMethods($root);
     $this->lintDynamicDefines($root);
@@ -206,10 +201,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     $this->lintImplicitFallthrough($root);
     $this->lintPHP53Features($root);
     $this->lintPHP54Features($root);
-    $this->lintPHT($root);
     $this->lintStrposUsedForStart($root);
     $this->lintStrstrUsedForCheck($root);
-    $this->lintArrayCombine($root);
   }
 
   public function lintStrstrUsedForCheck($root) {
@@ -295,68 +288,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
             "something.");
       }
     }
-  }
-
-  public function lintPHT($root) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    foreach ($calls as $call) {
-      $name = strtolower($call->getChildByIndex(0)->getConcreteString());
-      if ($name != 'pht') {
-        continue;
-      }
-
-      $parameters = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-      if (!$parameters->getChildren()) {
-        continue;
-      }
-
-      $identifier = $parameters->getChildByIndex(0);
-      if ($this->isConstantString($identifier)) {
-        continue;
-      }
-
-      $this->raiseLintAtNode(
-        $call,
-        self::LINT_PHT_WITH_DYNAMIC_STRING,
-        "The first parameter of pht() can be only a scalar string, ".
-          "otherwise it can't be extracted.");
-    }
-  }
-
-  private function isConstantString(XHPASTNode $node) {
-    $value = $node->getConcreteString();
-
-    switch ($node->getTypeName()) {
-      case 'n_HEREDOC':
-        if ($value[3] == "'") { // Nowdoc: <<<'EOT'
-          return true;
-        }
-        $value = preg_replace('/^.+\n|\n.*$/', '', $value);
-        break;
-
-      case 'n_STRING_SCALAR':
-        if ($value[0] == "'") {
-          return true;
-        }
-        $value = substr($value, 1, -1);
-        break;
-
-      case 'n_CONCATENATION_LIST':
-        foreach ($node->getChildren() as $child) {
-          if ($child->getTypeName() == 'n_OPERATOR') {
-            continue;
-          }
-          if (!$this->isConstantString($child)) {
-            return false;
-          }
-        }
-        return true;
-
-      default:
-        return false;
-    }
-
-    return preg_match('/^((?>[^$\\\\]*)|\\\\.)*$/s', $value);
   }
 
   public function lintPHP53Features($root) {
@@ -1806,32 +1737,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintArrayCombine($root) {
-    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    foreach ($function_calls as $call) {
-      $name = $call->getChildByIndex(0)->getConcreteString();
-      if (strtolower($name) === 'array_combine') {
-        $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-        if (count($parameter_list->getChildren()) !== 2) {
-          // Wrong number of parameters, but raise that elsewhere if we want.
-          continue;
-        }
-
-        $first = $parameter_list->getChildByIndex(0);
-        $second = $parameter_list->getChildByIndex(1);
-
-        if ($first->getConcreteString() == $second->getConcreteString()) {
-          $this->raiseLintAtNode(
-            $call,
-            self::LINT_ARRAY_COMBINE,
-            'Prior to PHP 5.4, array_combine() fails when given empty '.
-            'arrays. Prefer to write array_combine(x, x) as array_fuse(x).');
-        }
-      }
-    }
-  }
-
-
   /**
    * Exit is parsed as an expression, but using it as such is almost always
    * wrong. That is, this is valid:
@@ -2056,32 +1961,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           "a docblock marking it '@concrete-extensible'.");
       }
     }
-  }
-
-  protected function raiseLintAtToken(
-    XHPASTToken $token,
-    $code,
-    $desc,
-    $replace = null) {
-    return $this->raiseLintAtOffset(
-      $token->getOffset(),
-      $code,
-      $desc,
-      $token->getValue(),
-      $replace);
-  }
-
-  protected function raiseLintAtNode(
-    XHPASTNode $node,
-    $code,
-    $desc,
-    $replace = null) {
-    return $this->raiseLintAtOffset(
-      $node->getOffset(),
-      $code,
-      $desc,
-      $node->getConcreteString(),
-      $replace);
   }
 
   public function getSuperGlobalNames() {

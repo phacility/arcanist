@@ -20,8 +20,8 @@ $a
 EOT
 );
 ~~~~~~~~~~
-disabled:5:1
-disabled:7:1
-disabled:8:1
-disabled:10:1
-disabled:18:1
+error:5:1
+error:7:1
+error:8:1
+error:10:1
+error:18:1
