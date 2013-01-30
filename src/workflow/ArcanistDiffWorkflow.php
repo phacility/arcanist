@@ -377,6 +377,21 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'coverage' => array(
+        'help' => 'Always enable coverage information.',
+        'conflicts' => array(
+          'no-coverage' => null,
+        ),
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
+      'no-coverage' => array(
+        'help' => 'Always disable coverage information.',
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
       '*' => 'paths',
     );
 
