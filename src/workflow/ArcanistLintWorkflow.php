@@ -195,7 +195,10 @@ EOTEXT
     $engine = newv($engine, array());
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
-    $engine->setRepositoryVersion($this->getRepositoryVersion());
+
+    if ($use_cache) {
+      $engine->setRepositoryVersion($this->getRepositoryVersion());
+    }
 
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));

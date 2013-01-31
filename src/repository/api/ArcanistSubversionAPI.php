@@ -494,10 +494,16 @@ EODIFF;
   }
 
   public function getChangedFiles($since_commit) {
+    $url = '';
+    $match = null;
+    if (preg_match('/(.*)@(.*)/', $since_commit, $match)) {
+      list(, $url, $since_commit) = $match;
+    }
     // TODO: Handle paths with newlines.
     list($stdout) = $this->execxLocal(
-      '--xml diff --revision %s:HEAD --summarize',
-      $since_commit);
+      '--xml diff --revision %s:HEAD --summarize %s',
+      $since_commit,
+      $url);
     $xml = new SimpleXMLElement($stdout);
 
     $return = array();
