@@ -453,6 +453,26 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function getAllBranches() {
+    list($branch_info) = $this->execxLocal('bookmarks');
+    $matches = null;
+    preg_match_all(
+      '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
+      $branch_info,
+      $matches,
+      PREG_SET_ORDER);
+
+    $return = array();
+    foreach ($matches as $match) {
+      list(, $current, $name) = $match;
+      $return[] = array(
+        'current' => (bool)$current,
+        'name'    => rtrim($name),
+      );
+    }
+    return $return;
+  }
+
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);
