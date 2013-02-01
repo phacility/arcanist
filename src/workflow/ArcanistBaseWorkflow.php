@@ -492,7 +492,9 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
 
-  public function setArcanistConfiguration($arcanist_configuration) {
+  public function setArcanistConfiguration(
+    ArcanistConfiguration $arcanist_configuration) {
+
     $this->arcanistConfiguration = $arcanist_configuration;
     return $this;
   }
