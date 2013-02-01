@@ -8,6 +8,8 @@ h(function /* ! */ () use ($c) {});
 static::m();
 1 ? 1 : 2;
 1 ?: 2;
+$a = 'stdClass';
+$a::m();
 ~~~~~~~~~~
 disabled:3:1
 disabled:4:5
