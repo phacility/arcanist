@@ -685,6 +685,10 @@ EOTEXT
         }
       }
     }
+
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_DIFF_DIDCOLLECTCHANGES,
+      array());
   }
 
   private function buildRevisionFromCommitMessage(
