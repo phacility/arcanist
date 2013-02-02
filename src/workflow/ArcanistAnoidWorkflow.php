@@ -25,8 +25,8 @@ EOTEXT
 
   public function run() {
     phutil_passthru(
-      dirname(phutil_get_library_root('arcanist')) . '/scripts/breakout.py'
-    );
+      '%s/scripts/breakout.py',
+      dirname(phutil_get_library_root('arcanist')));
   }
 
 }

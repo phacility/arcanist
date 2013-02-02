@@ -868,7 +868,7 @@ EOTEXT
         fwrite(STDERR, "Reading diff from stdin...\n");
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
-        list($raw_diff) = execx($this->getArgument('raw-command'));
+        list($raw_diff) = execx('%C', $this->getArgument('raw-command'));
       } else {
         throw new Exception("Unknown raw diff source.");
       }

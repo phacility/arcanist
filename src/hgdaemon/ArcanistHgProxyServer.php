@@ -395,9 +395,8 @@ final class ArcanistHgProxyServer {
     // NOTE: "cmdserver.log=-" makes Mercurial use the 'd'ebug channel for
     // log messages.
 
-    $command = 'HGPLAIN=1 hg --config cmdserver.log=- serve --cmdserver pipe';
-
-    $future = new ExecFuture($command);
+    $future = new ExecFuture(
+      'HGPLAIN=1 hg --config cmdserver.log=- serve --cmdserver pipe');
     $future->setCWD($this->workingCopy);
 
     $channel = new PhutilExecChannel($future);

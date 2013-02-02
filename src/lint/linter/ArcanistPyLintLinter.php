@@ -206,9 +206,11 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
     try {
       list($stdout, $_) = execx(
-          "/usr/bin/env PYTHONPATH=%s\$PYTHONPATH ".
-            "{$pylint_bin} {$options} {$path_on_disk}",
-          $python_path);
+        '/usr/bin/env PYTHONPATH=%s$PYTHONPATH %s %C %s',
+        $python_path,
+        $pylint_bin,
+        $options,
+        $path_on_disk);
     } catch (CommandException $e) {
       if ($e->getError() == 32) {
         // According to ##man pylint## the exit status of 32 means there was a

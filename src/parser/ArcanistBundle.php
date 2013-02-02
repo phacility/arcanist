@@ -101,17 +101,15 @@ final class ArcanistBundle {
     $path = Filesystem::resolvePath($path);
 
     $future = new ExecFuture(
-      csprintf(
-        'tar tfO %s',
-        $path));
+      'tar tfO %s',
+      $path);
     list($stdout, $file_list) = $future->resolvex();
     $file_list = explode("\n", trim($file_list));
 
     if (in_array('meta.json', $file_list)) {
       $future = new ExecFuture(
-        csprintf(
-          'tar xfO %s meta.json',
-          $path));
+        'tar xfO %s meta.json',
+        $path);
       $meta_info = $future->resolveJSON();
       $version       = idx($meta_info, 'version', 0);
       $project_name  = idx($meta_info, 'projectName');
@@ -130,9 +128,8 @@ final class ArcanistBundle {
     }
 
     $future = new ExecFuture(
-      csprintf(
-        'tar xfO %s changes.json',
-        $path));
+      'tar xfO %s changes.json',
+      $path);
     $changes = $future->resolveJSON();
 
     foreach ($changes as $change_key => $change) {
