@@ -7,6 +7,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   const LINT_PHT_WITH_DYNAMIC_STRING = 1;
   const LINT_ARRAY_COMBINE           = 2;
+  const LINT_UNSAFE_DYNAMIC_STRING   = 4;
 
   private $xhpastLinter;
 
@@ -28,17 +29,25 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return array(
       self::LINT_PHT_WITH_DYNAMIC_STRING => 'Use of pht() on Dynamic String',
       self::LINT_ARRAY_COMBINE           => 'array_combine() Unreliable',
+      self::LINT_UNSAFE_DYNAMIC_STRING   => 'Unsafe Usage of Dynamic String',
     );
   }
 
   public function getLintSeverityMap() {
+    $warning = ArcanistLintSeverity::SEVERITY_WARNING;
+
     return array(
-      self::LINT_ARRAY_COMBINE => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_ARRAY_COMBINE           => $warning,
+      self::LINT_UNSAFE_DYNAMIC_STRING   => $warning,
     );
   }
 
   public function getLinterName() {
     return 'PHLXHP';
+  }
+
+  public function getCacheVersion() {
+    return 1;
   }
 
   public function willLintPaths(array $paths) {
@@ -55,6 +64,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $this->lintPHT($root);
     $this->lintArrayCombine($root);
+    $this->lintUnsafeDynamicString($root);
   }
 
 
@@ -81,6 +91,65 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_PHT_WITH_DYNAMIC_STRING,
         "The first parameter of pht() can be only a scalar string, ".
           "otherwise it can't be extracted.");
+    }
+  }
+
+
+  private function lintUnsafeDynamicString($root) {
+    $safe = array(
+      'hsprintf' => 0,
+
+      'csprintf' => 0,
+      'vcsprintf' => 0,
+      'execx' => 0,
+      'exec_manual' => 0,
+      'phutil_passthru' => 0,
+
+      'qsprintf' => 1,
+      'vqsprintf' => 1,
+      'queryfx' => 1,
+      'vqueryfx' => 1,
+      'queryfx_all' => 1,
+      'vqueryfx_all' => 1,
+      'queryfx_one' => 1,
+    );
+
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $this->lintUnsafeDynamicStringCall($calls, $safe);
+
+    $safe = array(
+      'execfuture' => 0,
+    );
+
+    $news = $root->selectDescendantsOfType('n_NEW');
+    $this->lintUnsafeDynamicStringCall($news, $safe);
+  }
+
+  private function lintUnsafeDynamicStringCall(
+    AASTNodeList $calls,
+    array $safe) {
+
+    foreach ($calls as $call) {
+      $name = $call->getChildByIndex(0)->getConcreteString();
+      $param = idx($safe, strtolower($name));
+
+      if ($param === null) {
+        continue;
+      }
+
+      $parameters = $call->getChildByIndex(1);
+      if (count($parameters->getChildren()) <= $param) {
+        continue;
+      }
+
+      $identifier = $parameters->getChildByIndex($param);
+      if (!$identifier->isConstantString()) {
+        $this->raiseLintAtNode(
+          $call,
+          self::LINT_UNSAFE_DYNAMIC_STRING,
+          "Parameter ".($param + 1)." of {$name}() should be a scalar string, ".
+            "otherwise it's not safe.");
+      }
     }
   }
 
