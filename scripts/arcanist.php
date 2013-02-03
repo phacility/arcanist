@@ -555,12 +555,17 @@ function reenter_if_this_is_arcanist_or_libphutil(
     $libphutil_path = dirname(phutil_get_library_root('phutil'));
   }
 
-  $err = phutil_passthru(
-    phutil_is_windows()
-      ? 'set ARC_PHUTIL_PATH=%s & %Ls'
-      : 'ARC_PHUTIL_PATH=%s %Ls',
-    $libphutil_path,
-    $original_argv);
+  if (phutil_is_windows()) {
+    $err = phutil_passthru(
+      'set ARC_PHUTIL_PATH=%s & %Ls',
+      $libphutil_path,
+      $original_argv);
+  } else {
+    $err = phutil_passthru(
+      'ARC_PHUTIL_PATH=%s %Ls',
+      $libphutil_path,
+      $original_argv);
+  }
 
   exit($err);
 }
