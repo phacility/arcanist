@@ -60,8 +60,10 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
     $options = $this->getPyFlakesOptions();
 
     $f = new ExecFuture(
-          "/usr/bin/env PYTHONPATH=%s\$PYTHONPATH ".
-            "{$pyflakes_bin} {$options}", $python_path);
+      '/usr/bin/env PYTHONPATH=%s$PYTHONPATH %s %C',
+      $python_path,
+      $pyflakes_bin,
+      $options);
     $f->write($this->getData($path));
 
     try {

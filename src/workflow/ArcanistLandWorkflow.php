@@ -385,7 +385,7 @@ EOTEXT
     $local_ahead_of_remote = false;
     if ($this->isGit) {
       try {
-        $repository_api->execxLocal('pull --ff-only');
+        $repository_api->execxLocal('pull --ff-only --no-stat');
       } catch (CommandException $ex) {
         if (!$this->isGitSvn) {
           throw $ex;

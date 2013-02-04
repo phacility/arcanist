@@ -377,6 +377,21 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'coverage' => array(
+        'help' => 'Always enable coverage information.',
+        'conflicts' => array(
+          'no-coverage' => null,
+        ),
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
+      'no-coverage' => array(
+        'help' => 'Always disable coverage information.',
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
       '*' => 'paths',
     );
 
@@ -670,6 +685,10 @@ EOTEXT
         }
       }
     }
+
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_DIFF_DIDCOLLECTCHANGES,
+      array());
   }
 
   private function buildRevisionFromCommitMessage(
@@ -849,7 +868,7 @@ EOTEXT
         fwrite(STDERR, "Reading diff from stdin...\n");
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
-        list($raw_diff) = execx($this->getArgument('raw-command'));
+        list($raw_diff) = execx('%C', $this->getArgument('raw-command'));
       } else {
         throw new Exception("Unknown raw diff source.");
       }

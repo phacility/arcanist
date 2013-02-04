@@ -40,10 +40,27 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     }
 
     $archive = dirname(__FILE__).'/bundle.git.tgz';
-    $patches = dirname(__FILE__).'/patches/';
     $fixture = PhutilDirectoryFixture::newFromArchive($archive);
 
+    $old_dir = getcwd();
     chdir($fixture->getPath());
+
+    $caught = null;
+    try {
+      $this->runGitRepositoryTests($fixture);
+    } catch (Exception $ex) {
+      $caught = $ex;
+    }
+
+    chdir($old_dir);
+
+    if ($caught) {
+      throw $ex;
+    }
+  }
+
+  private function runGitRepositoryTests(PhutilDirectoryFixture $fixture) {
+    $patches = dirname(__FILE__).'/patches/';
 
     list($commits) = execx(
       'git log --format=%s',

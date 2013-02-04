@@ -14,6 +14,10 @@ final class ArcanistWorkingCopyIdentity {
   protected $projectConfig;
   protected $projectRoot;
 
+  public static function newDummyWorkingCopy() {
+    return new ArcanistWorkingCopyIdentity('/', array());
+  }
+
   public static function newFromPath($path) {
     $project_id = null;
     $project_root = null;

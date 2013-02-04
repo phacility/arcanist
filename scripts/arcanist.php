@@ -19,6 +19,9 @@ $args->parsePartial(
       'repeat'  => true,
     ),
     array(
+      'name'    => 'skip-arcconfig',
+    ),
+    array(
       'name'    => 'conduit-uri',
       'param'   => 'uri',
       'help'    => 'Connect to Phabricator install specified by __uri__.',
@@ -40,6 +43,7 @@ $config_trace_mode = $args->getArg('trace');
 $force_conduit = $args->getArg('conduit-uri');
 $force_conduit_version = $args->getArg('conduit-version');
 $conduit_timeout = $args->getArg('conduit-timeout');
+$skip_arcconfig = $args->getArg('skip-arcconfig');
 $load = $args->getArg('load-phutil-library');
 $help = $args->getArg('help');
 
@@ -72,7 +76,12 @@ try {
 
   $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
   $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
-  $working_copy = ArcanistWorkingCopyIdentity::newFromPath($working_directory);
+  if ($skip_arcconfig) {
+    $working_copy = ArcanistWorkingCopyIdentity::newDummyWorkingCopy();
+  } else {
+    $working_copy =
+      ArcanistWorkingCopyIdentity::newFromPath($working_directory);
+  }
 
   reenter_if_this_is_arcanist_or_libphutil(
     $console,
@@ -546,12 +555,17 @@ function reenter_if_this_is_arcanist_or_libphutil(
     $libphutil_path = dirname(phutil_get_library_root('phutil'));
   }
 
-  $err = phutil_passthru(
-    phutil_is_windows()
-      ? 'set ARC_PHUTIL_PATH=%s & %Ls'
-      : 'ARC_PHUTIL_PATH=%s %Ls',
-    $libphutil_path,
-    $original_argv);
+  if (phutil_is_windows()) {
+    $err = phutil_passthru(
+      'set ARC_PHUTIL_PATH=%s & %Ls',
+      $libphutil_path,
+      $original_argv);
+  } else {
+    $err = phutil_passthru(
+      'ARC_PHUTIL_PATH=%s %Ls',
+      $libphutil_path,
+      $original_argv);
+  }
 
   exit($err);
 }

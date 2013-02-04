@@ -204,7 +204,7 @@ class ArcanistConfiguration {
     asort($distances);
     $best = min($max_distance, reset($distances));
     foreach ($distances as $option => $distance) {
-      if ($distance > $best) {
+      if ($distance > $best || strlen($option) <= 2 * $distance) {
         unset($distances[$option]);
       }
     }

@@ -1,5 +1,5 @@
 garbage garbage
-<?
+<?php
 
 ?>
 ~~~~~~~~~~
@@ -7,6 +7,6 @@ error:1:1
 error:4:1
 ~~~~~~~~~~
 garbage garbage
-<?
+<?php
 
 ?>
