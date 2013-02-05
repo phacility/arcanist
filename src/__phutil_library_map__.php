@@ -145,6 +145,7 @@ phutil_register_library_map(array(
     'ArcanistWorkingCopyIdentity' => 'workingcopyidentity/ArcanistWorkingCopyIdentity.php',
     'ArcanistXHPASTLintNamingHook' => 'lint/linter/xhpast/ArcanistXHPASTLintNamingHook.php',
     'ArcanistXHPASTLintNamingHookTestCase' => 'lint/linter/xhpast/__tests__/ArcanistXHPASTLintNamingHookTestCase.php',
+    'ArcanistXHPASTLintSwitchHook' => 'lint/linter/xhpast/ArcanistXHPASTLintSwitchHook.php',
     'ArcanistXHPASTLinter' => 'lint/linter/ArcanistXHPASTLinter.php',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/__tests__/ArcanistXHPASTLinterTestCase.php',
     'ComprehensiveLintEngine' => 'lint/engine/ComprehensiveLintEngine.php',

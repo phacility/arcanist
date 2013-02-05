@@ -452,6 +452,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintImplicitFallthrough($root) {
+    $hook_obj = null;
+    $working_copy = $this->getEngine()->getWorkingCopy();
+    if ($working_copy) {
+      $hook_class = $working_copy->getConfig('lint.xhpast.switchhook');
+      if ($hook_class) {
+        $hook_obj = newv($hook_class, array());
+        assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
+      }
+    }
+
     $switches = $root->selectDescendantsOfType('n_SWITCH');
     foreach ($switches as $switch) {
       $blocks = array();
@@ -574,7 +584,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
           if ($tok_type == 'T_RETURN'   ||
               $tok_type == 'T_THROW'    ||
-              $tok_type == 'T_EXIT') {
+              $tok_type == 'T_EXIT'     ||
+              ($hook_obj && $hook_obj->checkSwitchToken($token))) {
             if (empty($different_scope_tokens[$token_id])) {
               $statement_ok = true;
               $block_ok = true;
