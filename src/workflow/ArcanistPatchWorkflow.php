@@ -706,23 +706,15 @@ EOTEXT
       }
 
       if ($this->shouldCommit()) {
-        // git is really, really finicky about the author information so we
-        // make sure it is in the
-        // "George Washington <gwashington@example.com> format or don't use it.
-        $author_cmd = '';
-        $author = $bundle->getAuthor();
-        if ($author) {
-          $address = new PhutilEmailAddress($author);
-          if ($address->getDisplayName() && $address->getAddress()) {
-            $author = sprintf('%s <%s>',
-                              $address->getDisplayName(),
-                              $address->getAddress());
-            $author_cmd = csprintf('--author=%s ', $author);
-          }
+        if ($bundle->getFullAuthor()) {
+          $author_cmd = csprintf('--author=%s', $bundle->getFullAuthor());
+        } else {
+          $author_cmd = '';
         }
+
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -a %C-F -',
+          'commit -a %C -F -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
@@ -773,14 +765,16 @@ EOTEXT
       }
 
       if ($this->shouldCommit()) {
-        $author_cmd = '';
-        $author = $bundle->getAuthor();
-        if ($author) {
-          $author_cmd = sprintf('-u %s ', $author);
+        $author = coalesce($bundle->getFullAuthor(), $bundle->getAuthorName());
+        if ($author !== null) {
+          $author_cmd = csprintf('-u %s', $author);
+        } else {
+          $author_cmd = '';
         }
+
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -A %C-l -',
+          'commit -A %C -l -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();

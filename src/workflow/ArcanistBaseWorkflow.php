@@ -970,7 +970,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $bundle->setProjectID(idx($diff, 'projectName'));
     $bundle->setBaseRevision(idx($diff, 'sourceControlBaseRevision'));
     $bundle->setRevisionID(idx($diff, 'revisionID'));
-    $bundle->setAuthor(idx($diff, 'author'));
+    $bundle->setAuthorName(idx($diff, 'authorName'));
+    $bundle->setAuthorEmail(idx($diff, 'authorEmail'));
     return $bundle;
   }
 
