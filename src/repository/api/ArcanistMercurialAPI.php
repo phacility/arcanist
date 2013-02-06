@@ -177,9 +177,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($this->localCommitInfo === null) {
       list($info) = $this->execxLocal(
         "log --template '%C' --rev %s --branch %s --",
-        "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
-          "{branch}\1{tag}\1{parents}\1{desc}\2",
-        '(ancestors(.) - ancestors('.$this->getBaseCommit().'))',
+        "{node}\1{rev}\1{author|emailuser}\1{author|email}\1".
+          "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
+        hgsprintf(
+          '(ancestors(.) - ancestors(%s))',
+          $this->getBaseCommit()),
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
@@ -189,8 +191,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       $commits = array();
       foreach ($logs as $log) {
-        list($node, $rev, $author, $date, $branch, $tag, $parents, $desc) =
-          explode("\1", $log);
+        list($node, $rev, $author, $author_email, $date, $branch, $tag,
+          $parents, $desc) = explode("\1", $log, 9);
 
         // NOTE: If a commit has only one parent, {parents} returns empty.
         // If it has two parents, {parents} returns revs and short hashes, not
@@ -222,6 +224,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           'parents' => $commit_parents,
           'summary' => head(explode("\n", $desc)),
           'message' => $desc,
+          'authorEmail' => $author_email,
         );
 
         $last_node = $node;
