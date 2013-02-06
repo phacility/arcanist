@@ -203,8 +203,6 @@ abstract class ArcanistLintEngine {
         }
         $paths = $linter->getPaths();
 
-        $cache_granularity = $linter->getCacheGranularity();
-
         foreach ($paths as $key => $path) {
           // Make sure each path has a result generated, even if it is empty
           // (i.e., the file has no lint messages).
@@ -215,19 +213,9 @@ abstract class ArcanistLintEngine {
           if (isset($this->cachedResults[$path][$this->cacheVersion])) {
             $cached_result = $this->cachedResults[$path][$this->cacheVersion];
 
-            switch ($cache_granularity) {
-              case ArcanistLinter::GRANULARITY_FILE:
-                $use_cache = true;
-                break;
-              case ArcanistLinter::GRANULARITY_DIRECTORY:
-              case ArcanistLinter::GRANULARITY_REPOSITORY:
-                $repository_version = idx($cached_result, 'repository_version');
-                $use_cache = ($this->repositoryVersion == $repository_version);
-                break;
-              default:
-                $use_cache = false;
-                break;
-            }
+            $use_cache = $this->shouldUseCache(
+              $linter->getCacheGranularity(),
+              idx($cached_result, 'repository_version'));
 
             if ($use_cache) {
               unset($paths[$key]);
@@ -260,7 +248,6 @@ abstract class ArcanistLintEngine {
 
     foreach ($linters as $linter) {
       $minimum = $this->minimumSeverity;
-      $cache_granularity = $linter->getCacheGranularity();
       foreach ($linter->getLintMessages() as $message) {
         if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
           continue;
@@ -268,9 +255,7 @@ abstract class ArcanistLintEngine {
         if (!$this->isRelevantMessage($message)) {
           continue;
         }
-        if ($cache_granularity == ArcanistLinter::GRANULARITY_GLOBAL) {
-          $message->setUncacheable(true);
-        }
+        $message->setGranularity($linter->getCacheGranularity());
         $result = $this->getResultForPath($message->getPath());
         $result->addMessage($message);
       }
@@ -279,11 +264,17 @@ abstract class ArcanistLintEngine {
     if ($this->cachedResults) {
       foreach ($this->cachedResults as $path => $messages) {
         $messages = idx($messages, $this->cacheVersion, array());
+        $repository_version = idx($messages, 'repository_version');
         unset($messages['stopped']);
         unset($messages['repository_version']);
         foreach ($messages as $message) {
-          $this->getResultForPath($path)->addMessage(
-            ArcanistLintMessage::newFromDictionary($message));
+          $use_cache = $this->shouldUseCache(
+            idx($message, 'granularity'),
+            $repository_version);
+          if ($use_cache) {
+            $this->getResultForPath($path)->addMessage(
+              ArcanistLintMessage::newFromDictionary($message));
+          }
         }
       }
     }
@@ -314,6 +305,18 @@ abstract class ArcanistLintEngine {
     }
 
     return $this->results;
+  }
+
+  private function shouldUseCache($cache_granularity, $repository_version) {
+    switch ($cache_granularity) {
+      case ArcanistLinter::GRANULARITY_FILE:
+        return true;
+      case ArcanistLinter::GRANULARITY_DIRECTORY:
+      case ArcanistLinter::GRANULARITY_REPOSITORY:
+        return ($this->repositoryVersion == $repository_version);
+      default:
+        return false;
+    }
   }
 
   /**
