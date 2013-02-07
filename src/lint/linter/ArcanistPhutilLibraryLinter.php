@@ -154,7 +154,9 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               $offset,
               self::LINT_UNKNOWN_SYMBOL,
               "Use of unknown {$type} '{$symbol}'. This symbol is not defined ".
-              "in any loaded phutil library.");
+              "in any loaded phutil library. It might be misspelled, or it ".
+              "may have been added recently. Make sure libphutil and other ".
+              "libraries are up to date.");
           }
         }
       }
