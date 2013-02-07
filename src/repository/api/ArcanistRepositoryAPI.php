@@ -288,10 +288,11 @@ abstract class ArcanistRepositoryAPI {
 
       return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
     } catch (CommandException $ex) {
-      if (preg_match('/^fatal: Not a git repository/', $ex->getStdErr())) {
-        return null;
-      }
-      throw $ex;
+      // This might be because the $root isn't a Git working copy, or the user
+      // might not have Git installed at all so the `git` command fails. Assume
+      // that users trying to work with git working copies will have a working
+      // `git` binary.
+      return null;
     }
   }
 

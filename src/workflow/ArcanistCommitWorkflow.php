@@ -144,15 +144,20 @@ EOTEXT
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
 
-    $command = $this->getSVNCommitCommand();
+    $command = csprintf(
+      'svn commit %Ls --encoding utf-8 -F %s',
+      $files,
+      $tmp_file);
+
+    // make sure to specify LANG on non-windows systems to surpress any fancy
+    // warnings; see @{method:getSVNLangEnvVar}.
+    if (!phutil_is_windows()) {
+      $command = csprintf('LANG=%C %C', $this->getSVNLangEnvVar(), $command);
+    }
+
     chdir($repository_api->getPath());
 
-    $err = phutil_passthru(
-      $command,
-      $files,
-      $tmp_file
-    );
-
+    $err = phutil_passthru('%C', $command);
     if ($err) {
       throw new Exception("Executing 'svn commit' failed!");
     }
@@ -294,16 +299,6 @@ EOTEXT
       // Ignore.
     }
     return $locale;
-  }
-
-  private function getSVNCommitCommand() {
-    $command = 'svn commit %Ls --encoding utf-8 -F %s';
-    // make sure to specify LANG on non-windows systems to surpress any fancy
-    // warnings; see @{method:getSVNLangEnvVar}.
-    if (!phutil_is_windows()) {
-      $command = 'LANG='.$this->getSVNLangEnvVar().' '.$command;
-    }
-    return $command;
   }
 
   private function runSanityChecks(array $revision) {

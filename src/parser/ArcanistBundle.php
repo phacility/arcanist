@@ -16,14 +16,48 @@ final class ArcanistBundle {
   private $revisionID;
   private $encoding;
   private $loadFileDataCallback;
-  private $author;
+  private $authorName;
+  private $authorEmail;
 
-  public function setAuthor($author) {
-    $this->author = $author;
+  public function setAuthorEmail($author_email) {
+    $this->authorEmail = $author_email;
     return $this;
   }
-  public function getAuthor() {
-    return $this->author;
+
+  public function getAuthorEmail() {
+    return $this->authorEmail;
+  }
+
+  public function setAuthorName($author_name) {
+    $this->authorName = $author_name;
+    return $this;
+  }
+
+  public function getAuthorName() {
+    return $this->authorName;
+  }
+
+  public function getFullAuthor() {
+    $author_name = $this->getAuthorName();
+    if ($author_name === null) {
+      return null;
+    }
+
+    $author_email = $this->getAuthorEmail();
+    if ($author_email === null) {
+      return null;
+    }
+
+    $full_author = sprintf('%s <%s>', $author_name, $author_email);
+
+    // Because git is very picky about the author being in a valid format,
+    // verify that we can parse it.
+    $address = new PhutilEmailAddress($full_author);
+    if (!$address->getDisplayName() || !$address->getAddress()) {
+      return null;
+    }
+
+    return $full_author;
   }
 
   public function setConduit(ConduitClient $conduit) {
@@ -116,9 +150,10 @@ final class ArcanistBundle {
       $base_revision = idx($meta_info, 'baseRevision');
       $revision_id   = idx($meta_info, 'revisionID');
       $encoding      = idx($meta_info, 'encoding');
-      $author        = idx($meta_info, 'author');
-    // this arc bundle was probably made before we started storing meta info
+      $author_name   = idx($meta_info, 'authorName');
+      $author_email  = idx($meta_info, 'authorEmail');
     } else {
+      // this arc bundle was probably made before we started storing meta info
       $version       = 0;
       $project_name  = null;
       $base_revision = null;
@@ -197,12 +232,13 @@ final class ArcanistBundle {
     }
 
     $meta_info = array(
-      'version'      => 4,
+      'version'      => 5,
       'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
       'revisionID'   => $this->getRevisionID(),
       'encoding'     => $this->getEncoding(),
-      'author'       => $this->getAuthor(),
+      'authorName'   => $this->getAuthorName(),
+      'authorEmail'  => $this->getAuthorEmail(),
     );
 
     $dir = Filesystem::createTemporaryDirectory();
