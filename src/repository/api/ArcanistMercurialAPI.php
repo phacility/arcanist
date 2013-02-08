@@ -85,12 +85,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   protected function buildBaseCommit($symbolic_commit) {
     if ($symbolic_commit !== null) {
       try {
-        $commit = $this->getCanonicalRevisionName($symbolic_commit);
+        $commit = $this->getCanonicalRevisionName(
+          hgsprintf('ancestor(%s,.)', $symbolic_commit));
       } catch (Exception $ex) {
         throw new ArcanistUsageException(
           "Commit '{$commit}' is not a valid Mercurial commit identifier.");
       }
-      $this->setBaseCommitExplanation("you specified it explicitly.");
+
+      $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
+        "the working directory and the commit you specified explicitly.");
       return $commit;
     }
 
