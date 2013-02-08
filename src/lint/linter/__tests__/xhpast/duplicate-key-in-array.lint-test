@@ -34,16 +34,9 @@ $f = array(
   $a => 'var2',
 );
 ~~~~~~~~~~
-error:3:3
 error:5:3
-error:6:3
-error:7:3
 error:8:3
-error:14:3
 error:15:3
-error:19:3
 error:20:3
-error:24:3
 error:25:3
-error:32:3
 error:34:3

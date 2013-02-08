@@ -787,7 +787,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $bin_exprs = $for_expr->selectDescendantsOfType('n_BINARY_EXPRESSION');
       foreach ($bin_exprs as $bin_expr) {
         if ($bin_expr->getChildByIndex(1)->getConcreteString() == '=') {
-          $var_map[$bin_expr->getChildByIndex(0)->getConcreteString()] = true;
+          $var = $bin_expr->getChildByIndex(0);
+          $var_map[$var->getConcreteString()] = $var;
         }
       }
 
@@ -812,7 +813,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         }
         $name = $var->getConcreteString();
         $name = trim($name, '&'); // Get rid of ref silliness.
-        $var_map[$name] = true;
+        $var_map[$name] = $var;
       }
 
       $used_vars[$foreach_loop->getID()] = $var_map;
@@ -830,12 +831,18 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $shared = array_intersect_key($outer_vars, $inner_vars);
         if ($shared) {
           $shared_desc = implode(', ', array_keys($shared));
-          $this->raiseLintAtNode(
+          $message = $this->raiseLintAtNode(
             $inner_loop->getChildByIndex(0),
             self::LINT_REUSED_ITERATORS,
             "This loop reuses iterator variables ({$shared_desc}) from an ".
             "outer loop. You might be clobbering the outer iterator. Change ".
             "the inner loop to use a different iterator name.");
+
+          $locations = array();
+          foreach ($shared as $var) {
+            $locations[] = $this->getOtherLocation($var->getOffset());
+          }
+          $message->setOtherLocations($locations);
         }
       }
     }
@@ -1129,12 +1136,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           if ($declarations[$concrete] < $offset) {
             if (!empty($uses[$concrete]) &&
                 max($uses[$concrete]) > $offset) {
-              $this->raiseLintAtNode(
+              $message = $this->raiseLintAtNode(
                 $var,
                 self::LINT_REUSED_AS_ITERATOR,
                 'This iterator variable is a previously declared local '.
                 'variable. To avoid overwriting locals, do not reuse them '.
                 'as iterator variables.');
+              $message->setOtherLocations(array(
+                $this->getOtherLocation($declarations[$concrete]),
+                $this->getOtherLocation(max($uses[$concrete])),
+              ));
             }
           }
         }
@@ -1930,13 +1941,18 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
 
       foreach ($keys_warn as $key => $_) {
-        foreach ($nodes_by_key[$key] as $node) {
-          $this->raiseLintAtNode(
-            $node,
-            self::LINT_DUPLICATE_KEYS_IN_ARRAY,
-            "Duplicate key in array initializer. PHP will ignore all ".
+        $node = array_pop($nodes_by_key[$key]);
+        $message = $this->raiseLintAtNode(
+          $node,
+          self::LINT_DUPLICATE_KEYS_IN_ARRAY,
+          "Duplicate key in array initializer. PHP will ignore all ".
             "but the last entry.");
+
+        $locations = array();
+        foreach ($nodes_by_key[$key] as $node) {
+          $locations[] = $this->getOtherLocation($node->getOffset());
         }
+        $message->setOtherLocations($locations);
       }
     }
   }
