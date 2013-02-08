@@ -85,12 +85,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   protected function buildBaseCommit($symbolic_commit) {
     if ($symbolic_commit !== null) {
       try {
-        $commit = $this->getCanonicalRevisionName($symbolic_commit);
+        $commit = $this->getCanonicalRevisionName(
+          hgsprintf('ancestor(%s,.)', $symbolic_commit));
       } catch (Exception $ex) {
         throw new ArcanistUsageException(
           "Commit '{$commit}' is not a valid Mercurial commit identifier.");
       }
-      $this->setBaseCommitExplanation("you specified it explicitly.");
+
+      $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
+        "the working directory and the commit you specified explicitly.");
       return $commit;
     }
 
@@ -106,9 +109,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       return $base;
     }
 
-    list($err, $stdout) = $this->execManualLocal(
-      'outgoing --branch %s --style default',
+    // Mercurial 2.1 and up have phases which indicate if something is
+    // published or not. To find which revs are outgoing, it's much
+    // faster to check the phase instead of actually checking the server.
+    list($err) = $this->execManualLocal('help phase');
+    if (!$err) {
+      list($err, $stdout) = $this->execManualLocal(
+        'log --branch %s -r %s --style default',
+        $this->getBranchName(),
+        'draft()');
+    } else {
+      list($err, $stdout) = $this->execManualLocal(
+        'outgoing --branch %s --style default',
       $this->getBranchName());
+    }
 
     if (!$err) {
       $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
@@ -175,13 +189,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getLocalCommitInformation() {
     if ($this->localCommitInfo === null) {
+      $base_commit = $this->getBaseCommit();
       list($info) = $this->execxLocal(
         "log --template '%C' --rev %s --branch %s --",
         "{node}\1{rev}\1{author|emailuser}\1{author|email}\1".
           "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
-        hgsprintf(
-          '(ancestors(.) - ancestors(%s))',
-          $this->getBaseCommit()),
+        hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
@@ -493,9 +506,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCommitMessageLog() {
+    $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
       "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
-      'ancestors(.) - ancestors('.$this->getBaseCommit().')',
+      hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
 
     $map = array();

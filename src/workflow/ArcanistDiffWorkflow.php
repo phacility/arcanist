@@ -41,9 +41,9 @@ EOTEXT
           Supports: git, svn, hg
           Generate a Differential diff or revision from local changes.
 
-          Under git, you can specify a commit (like __HEAD^^^__ or __master__)
-          and Differential will generate a diff against the merge base of that
-          commit and HEAD.
+          Under git and mercurial, you can specify a commit (like __HEAD^^^__
+          or __master__) and Differential will generate a diff against the
+          merge base of that commit and your current working directory parent.
 
           Under svn, you can choose to include only some of the modified files
           in the working copy in the diff by specifying their paths. If you
@@ -1090,27 +1090,28 @@ EOTEXT
       }
     }
 
-    foreach ($changes as $change) {
+    $upload_futures = array();
+
+    foreach ($changes as $key => $change) {
       if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
         continue;
       }
 
       $path = $change->getCurrentPath();
-
       $name = basename($path);
 
       $old_file = $change->getOriginalFileData();
       $old_dict = $this->uploadFile($old_file, $name, 'old binary');
-      if ($old_dict['guid']) {
-        $change->setMetadata('old:binary-phid', $old_dict['guid']);
+      if ($old_dict['future']) {
+        $upload_futures['old-'.$key] = $old_dict['future'];
       }
       $change->setMetadata('old:file:size',      $old_dict['size']);
       $change->setMetadata('old:file:mime-type', $old_dict['mime']);
 
       $new_file = $change->getCurrentFileData();
       $new_dict = $this->uploadFile($new_file, $name, 'new binary');
-      if ($new_dict['guid']) {
-        $change->setMetadata('new:binary-phid', $new_dict['guid']);
+      if ($new_dict['future']) {
+        $upload_futures['new-'.$key] = $new_dict['future'];
       }
       $change->setMetadata('new:file:size',      $new_dict['size']);
       $change->setMetadata('new:file:mime-type', $new_dict['mime']);
@@ -1121,12 +1122,31 @@ EOTEXT
       }
     }
 
+    foreach (Futures($upload_futures)->limit(4) as $key => $future) {
+      list($version, $key) = explode('-', $key, 2);
+      $change = $changes[$key];
+      $name = basename($change->getCurrentPath());
+
+      try {
+        $guid = $future->resolve();
+        $change->setMetadata($version.':binary-phid', $guid);
+      } catch (Exception $e) {
+        echo "Failed to upload {$version} binary '{$name}'.\n";
+
+        if (!phutil_console_confirm('Continue?', $default_no = false)) {
+          throw new ArcanistUsageException(
+            'Aborted due to file upload failure. You can use --skip-binaries '.
+            'to skip binary uploads.');
+        }
+      }
+    }
+
     return $changes;
   }
 
   private function uploadFile($data, $name, $desc) {
     $result = array(
-      'guid' => null,
+      'future' => null,
       'mime' => null,
       'size' => null
     );
@@ -1147,24 +1167,13 @@ EOTEXT
 
     echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
 
-    try {
-      $guid = $this->getConduit()->callMethodSynchronous(
-        'file.upload',
-        array(
-          'data_base64' => base64_encode($data),
-          'name'        => $name,
-      ));
+    $result['future'] = $this->getConduit()->callMethod(
+      'file.upload',
+      array(
+        'data_base64' => base64_encode($data),
+        'name'        => $name,
+    ));
 
-      $result['guid'] = $guid;
-    } catch (Exception $e) {
-      echo "Failed to upload {$desc} '{$name}'.\n";
-
-      if (!phutil_console_confirm('Continue?', $default_no = false)) {
-        throw new ArcanistUsageException(
-          'Aborted due to file upload failure. You can use --skip-binaries '.
-          'to skip binary uploads.');
-      }
-    }
     return $result;
   }
 
@@ -1176,7 +1185,6 @@ EOTEXT
       'uuid'          => null,
     );
 
-    $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
     $parser = $this->newDiffParser();

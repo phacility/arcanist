@@ -160,10 +160,12 @@ EOTEXT
       $this->cleanupBranch();
     }
 
-    // If we were on some branch A and the user ran "arc land B",
-    // switch back to A.
-    if ($this->oldBranch != $this->branch && $this->oldBranch != $this->onto) {
-      $this->restoreBranch();
+    if ($this->oldBranch != $this->onto) {
+      // If we were on some branch A and the user ran "arc land B",
+      // switch back to A.
+      if ($this->keepBranch || $this->oldBranch != $this->branch) {
+        $this->restoreBranch();
+      }
     }
 
     echo "Done.\n";
