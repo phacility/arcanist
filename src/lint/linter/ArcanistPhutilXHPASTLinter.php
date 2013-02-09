@@ -30,7 +30,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return array(
       self::LINT_PHT_WITH_DYNAMIC_STRING => 'Use of pht() on Dynamic String',
       self::LINT_ARRAY_COMBINE           => 'array_combine() Unreliable',
-      self::LINT_DEPRECATED_FUNCTION     => 'Use of deprecated function',
+      self::LINT_DEPRECATED_FUNCTION     => 'Use of Deprecated Function',
       self::LINT_UNSAFE_DYNAMIC_STRING   => 'Unsafe Usage of Dynamic String',
     );
   }
@@ -198,6 +198,10 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'phabricator_render_form' =>
         'The phabricator_render_form() function is deprecated and unsafe. '.
         'Use phabricator_form() instead.',
+
+      'phutil_escape_html' =>
+        'The phutil_escape_html() function is deprecated. Raw strings passed '.
+        'to phutil_tag() or hsprintf() are escaped automatically.',
     );
 
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
