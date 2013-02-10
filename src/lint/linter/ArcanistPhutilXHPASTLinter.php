@@ -11,9 +11,27 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_UNSAFE_DYNAMIC_STRING   = 4;
 
   private $xhpastLinter;
+  private $deprecatedFunctions = array();
+  private $dynamicStringFunctions = array();
+  private $dynamicStringClasses = array();
 
   public function setXHPASTLinter(ArcanistXHPASTLinter $linter) {
     $this->xhpastLinter = $linter;
+    return $this;
+  }
+
+  public function setDeprecatedFunctions($map) {
+    $this->deprecatedFunctions = $map;
+    return $this;
+  }
+
+  public function setDynamicStringFunctions($map) {
+    $this->dynamicStringFunctions = $map;
+    return $this;
+  }
+
+  public function setDynamicStringClasses($map) {
+    $this->dynamicStringClasses = $map;
     return $this;
   }
 
@@ -99,7 +117,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
 
   private function lintUnsafeDynamicString($root) {
-    $safe = array(
+    $safe = $this->dynamicStringFunctions + array(
       'hsprintf' => 0,
 
       'csprintf' => 0,
@@ -120,8 +138,8 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     $this->lintUnsafeDynamicStringCall($calls, $safe);
 
-    $safe = array(
-      'execfuture' => 0,
+    $safe = $this->dynamicStringClasses + array(
+      'ExecFuture' => 0,
     );
 
     $news = $root->selectDescendantsOfType('n_NEW');
@@ -131,6 +149,10 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private function lintUnsafeDynamicStringCall(
     AASTNodeList $calls,
     array $safe) {
+
+    $safe = array_combine(
+      array_map('strtolower', array_keys($safe)),
+      $safe);
 
     foreach ($calls as $call) {
       $name = $call->getChildByIndex(0)->getConcreteString();
@@ -183,25 +205,10 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintDeprecatedFunctions($root) {
-    $map = array(
-      // Silly; for unit testing.
-      'deprecated_function' => 'This function is most likely deprecated.',
-
+    $map = $this->deprecatedFunctions + array(
       'phutil_render_tag' =>
         'The phutil_render_tag() function is deprecated and unsafe. '.
         'Use phutil_tag() instead.',
-
-      'javelin_render_tag' =>
-        'The javelin_render_tag() function is deprecated and unsafe. '.
-        'Use javelin_tag() instead.',
-
-      'phabricator_render_form' =>
-        'The phabricator_render_form() function is deprecated and unsafe. '.
-        'Use phabricator_form() instead.',
-
-      'phutil_escape_html' =>
-        'The phutil_escape_html() function is deprecated. Raw strings passed '.
-        'to phutil_tag() or hsprintf() are escaped automatically.',
     );
 
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');

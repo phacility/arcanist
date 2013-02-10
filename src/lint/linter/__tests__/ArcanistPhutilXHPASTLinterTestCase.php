@@ -9,6 +9,9 @@ final class ArcanistPhutilXHPASTLinterTestCase
   public function testPhutilXHPASTLint() {
     $linter = new ArcanistPhutilXHPASTLinter();
     $linter->setXHPASTLinter(new ArcanistXHPASTLinter());
+    $linter->setDeprecatedFunctions(array(
+      'deprecated_function' => 'This function is most likely deprecated.',
+    ));
 
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
