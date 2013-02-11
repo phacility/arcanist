@@ -294,6 +294,7 @@ EOTEXT
         ),
       ),
       'add-all' => array(
+        'short' => 'a',
         'help' =>
           'Automatically add all untracked, unstaged and uncommitted files to '.
           'the commit.',
