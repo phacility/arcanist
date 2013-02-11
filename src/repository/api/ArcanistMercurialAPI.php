@@ -89,7 +89,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           hgsprintf('ancestor(%s,.)', $symbolic_commit));
       } catch (Exception $ex) {
         throw new ArcanistUsageException(
-          "Commit '{$commit}' is not a valid Mercurial commit identifier.");
+          "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+          "identifier.");
       }
 
       $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
