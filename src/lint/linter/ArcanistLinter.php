@@ -42,6 +42,22 @@ abstract class ArcanistLinter {
     return $this->activePath;
   }
 
+  public function getOtherLocation($offset, $path = null) {
+    if ($path === null) {
+      $path = $this->getActivePath();
+    }
+
+    list($line, $char) = $this->getEngine()->getLineAndCharFromOffset(
+      $path,
+      $offset);
+
+    return array(
+      'path' => $path,
+      'line' => $line + 1,
+      'char' => $char,
+    );
+  }
+
   public function stopAllLinters() {
     $this->stopAllLinters = true;
     return $this;

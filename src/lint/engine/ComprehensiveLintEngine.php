@@ -33,9 +33,6 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
     $linters[] = id(new ArcanistXHPASTLinter())
       ->setPaths(preg_grep('/\.php$/', $paths));
 
-    $linters[] = id(new ArcanistApacheLicenseLinter())
-      ->setPaths(preg_grep('/\.(php|cpp|hpp|l|y)$/', $paths));
-
     $py_paths = preg_grep('/\.py$/', $paths);
     $linters[] = id(new ArcanistPyFlakesLinter())->setPaths($py_paths);
     $linters[] = id(new ArcanistPEP8Linter())

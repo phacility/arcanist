@@ -113,6 +113,7 @@ EOTEXT
       'edit' => array(
         'supports'    => array(
           'git',
+          'hg',
         ),
         'nosupport'   => array(
           'svn' => 'Edit revisions via the web interface when using SVN.',

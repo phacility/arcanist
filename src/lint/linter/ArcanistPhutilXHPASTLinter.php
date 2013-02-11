@@ -7,6 +7,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   const LINT_PHT_WITH_DYNAMIC_STRING = 1;
   const LINT_ARRAY_COMBINE           = 2;
+  const LINT_DEPRECATED_FUNCTION     = 3;
   const LINT_UNSAFE_DYNAMIC_STRING   = 4;
 
   private $xhpastLinter;
@@ -29,15 +30,16 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return array(
       self::LINT_PHT_WITH_DYNAMIC_STRING => 'Use of pht() on Dynamic String',
       self::LINT_ARRAY_COMBINE           => 'array_combine() Unreliable',
+      self::LINT_DEPRECATED_FUNCTION     => 'Use of Deprecated Function',
       self::LINT_UNSAFE_DYNAMIC_STRING   => 'Unsafe Usage of Dynamic String',
     );
   }
 
   public function getLintSeverityMap() {
     $warning = ArcanistLintSeverity::SEVERITY_WARNING;
-
     return array(
       self::LINT_ARRAY_COMBINE           => $warning,
+      self::LINT_DEPRECATED_FUNCTION     => $warning,
       self::LINT_UNSAFE_DYNAMIC_STRING   => $warning,
     );
   }
@@ -47,7 +49,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    return 1;
+    return 2;
   }
 
   public function willLintPaths(array $paths) {
@@ -65,6 +67,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $this->lintPHT($root);
     $this->lintArrayCombine($root);
     $this->lintUnsafeDynamicString($root);
+    $this->lintDeprecatedFunctions($root);
   }
 
 
@@ -176,6 +179,44 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
             'arrays. Prefer to write array_combine(x, x) as array_fuse(x).');
         }
       }
+    }
+  }
+
+  private function lintDeprecatedFunctions($root) {
+    $map = array(
+      // Silly; for unit testing.
+      'deprecated_function' => 'This function is most likely deprecated.',
+
+      'phutil_render_tag' =>
+        'The phutil_render_tag() function is deprecated and unsafe. '.
+        'Use phutil_tag() instead.',
+
+      'javelin_render_tag' =>
+        'The javelin_render_tag() function is deprecated and unsafe. '.
+        'Use javelin_tag() instead.',
+
+      'phabricator_render_form' =>
+        'The phabricator_render_form() function is deprecated and unsafe. '.
+        'Use phabricator_form() instead.',
+
+      'phutil_escape_html' =>
+        'The phutil_escape_html() function is deprecated. Raw strings passed '.
+        'to phutil_tag() or hsprintf() are escaped automatically.',
+    );
+
+    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    foreach ($function_calls as $call) {
+      $name = $call->getChildByIndex(0)->getConcreteString();
+
+      $name = strtolower($name);
+      if (empty($map[$name])) {
+        continue;
+      }
+
+      $this->raiseLintAtNode(
+        $call,
+        self::LINT_DEPRECATED_FUNCTION,
+        $map[$name]);
     }
   }
 

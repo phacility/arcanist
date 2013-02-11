@@ -1,0 +1,6 @@
+<?php
+
+deprecated_function();
+modern_function();
+~~~~~~~~~~
+warning:3:1
