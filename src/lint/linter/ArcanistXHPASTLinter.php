@@ -440,6 +440,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $left = $index->getChildByIndex(0);
       switch ($left->getTypeName()) {
         case 'n_FUNCTION_CALL':
+        case 'n_METHOD_CALL':
           $this->raiseLintAtNode(
             $index->getChildByIndex(1),
             self::LINT_PHP_54_FEATURES,
