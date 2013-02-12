@@ -5,7 +5,6 @@
  */
 final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
-  const LINT_PHT_WITH_DYNAMIC_STRING = 1;
   const LINT_ARRAY_COMBINE           = 2;
   const LINT_DEPRECATED_FUNCTION     = 3;
   const LINT_UNSAFE_DYNAMIC_STRING   = 4;
@@ -46,7 +45,6 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_PHT_WITH_DYNAMIC_STRING => 'Use of pht() on Dynamic String',
       self::LINT_ARRAY_COMBINE           => 'array_combine() Unreliable',
       self::LINT_DEPRECATED_FUNCTION     => 'Use of Deprecated Function',
       self::LINT_UNSAFE_DYNAMIC_STRING   => 'Unsafe Usage of Dynamic String',
@@ -82,42 +80,16 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $root = $tree->getRootNode();
 
-    $this->lintPHT($root);
     $this->lintArrayCombine($root);
     $this->lintUnsafeDynamicString($root);
     $this->lintDeprecatedFunctions($root);
   }
 
 
-  private function lintPHT($root) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    foreach ($calls as $call) {
-      $name = $call->getChildByIndex(0)->getConcreteString();
-      if (strcasecmp($name, 'pht') != 0) {
-        continue;
-      }
-
-      $parameters = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-      if (!$parameters->getChildren()) {
-        continue;
-      }
-
-      $identifier = $parameters->getChildByIndex(0);
-      if ($identifier->isConstantString()) {
-        continue;
-      }
-
-      $this->raiseLintAtNode(
-        $call,
-        self::LINT_PHT_WITH_DYNAMIC_STRING,
-        "The first parameter of pht() can be only a scalar string, ".
-          "otherwise it can't be extracted.");
-    }
-  }
-
-
   private function lintUnsafeDynamicString($root) {
     $safe = $this->dynamicStringFunctions + array(
+      'pht' => 0,
+
       'hsprintf' => 0,
 
       'csprintf' => 0,
