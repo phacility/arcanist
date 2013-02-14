@@ -916,11 +916,12 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private function askForAdd() {
     if ($this->commitMode == self::COMMIT_DISABLE) {
       return false;
-    } else if ($this->commitMode == self::COMMIT_ENABLE) {
-      return true;
     }
     if ($this->shouldAmend === null) {
       $this->shouldAmend = $this->shouldAmend();
+    }
+    if ($this->commitMode == self::COMMIT_ENABLE) {
+      return true;
     }
     if ($this->shouldAmend) {
       $prompt = "Do you want to amend these files to the commit?";
