@@ -195,15 +195,11 @@ EOTEXT
     $engine = newv($engine, array());
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
-
-    if ($use_cache) {
-      $engine->setRepositoryVersion($this->getRepositoryVersion());
-    }
-
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
     if ($use_cache) {
+      $engine->setRepositoryVersion($this->getRepositoryVersion());
       $cache = $this->readScratchJSONFile('lint-cache.json');
       $cache = idx($cache, $this->getCacheKey(), array());
       $cache = array_intersect_key($cache, array_flip($paths));
@@ -527,7 +523,8 @@ EOTEXT
         }
         $cached_path['repository_version'] = $this->getRepositoryVersion();
         foreach ($result->getMessages() as $message) {
-          if ($message->isUncacheable()) {
+          $granularity = $message->getGranularity();
+          if ($granularity == ArcanistLinter::GRANULARITY_GLOBAL) {
             continue;
           }
           if (!$message->isPatchApplied()) {

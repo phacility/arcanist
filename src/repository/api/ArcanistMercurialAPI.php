@@ -453,6 +453,26 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function getAllBranches() {
+    list($branch_info) = $this->execxLocal('bookmarks');
+    $matches = null;
+    preg_match_all(
+      '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
+      $branch_info,
+      $matches,
+      PREG_SET_ORDER);
+
+    $return = array();
+    foreach ($matches as $match) {
+      list(, $current, $name) = $match;
+      $return[] = array(
+        'current' => (bool)$current,
+        'name'    => rtrim($name),
+      );
+    }
+    return $return;
+  }
+
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);
@@ -652,6 +672,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function resolveBaseCommitRule($rule, $source) {
     list($type, $name) = explode(':', $rule, 2);
 
+    // NOTE: This function MUST return node hashes or symbolic commits (like
+    // branch names or the word "tip"), not revsets. This includes ".^" and
+    // similar, which a revset, not a symbolic commit identifier. If you return
+    // a revset it will be escaped later and looked up literally.
+
     switch ($type) {
       case 'hg':
         $matches = null;
@@ -708,7 +733,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "configuration.");
               // NOTE: This should be safe because Mercurial doesn't support
               // amend until 2.2.
-              return '.^';
+              return $this->getCanonicalRevisionName('.^');
             }
             break;
           case 'bookmark':
@@ -734,7 +759,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             $this->setBaseCommitExplanation(
               "you specified '{$rule}' in your {$source} 'base' ".
               "configuration.");
-            return '.^';
+            return $this->getCanonicalRevisionName('.^');
         }
         break;
       default:

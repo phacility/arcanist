@@ -20,7 +20,7 @@ final class ArcanistLintMessage {
   protected $dependentMessages = array();
   protected $otherLocations = array();
   protected $obsolete;
-  protected $uncacheable;
+  protected $granularity;
 
   public static function newFromDictionary(array $dict) {
     $message = new ArcanistLintMessage();
@@ -38,6 +38,7 @@ final class ArcanistLintMessage {
     if (isset($dict['replacement'])) {
       $message->setReplacementText($dict['replacement']);
     }
+    $message->setGranularity(idx($dict, 'granularity'));
     $message->setOtherLocations(idx($dict, 'locations', array()));
     return $message;
   }
@@ -53,6 +54,7 @@ final class ArcanistLintMessage {
       'description' => $this->getDescription(),
       'original'    => $this->getOriginalText(),
       'replacement' => $this->getReplacementText(),
+      'granularity' => $this->getGranularity(),
       'locations'   => $this->getOtherLocations(),
     );
   }
@@ -196,13 +198,13 @@ final class ArcanistLintMessage {
     return $this->appliedToDisk;
   }
 
-  public function setUncacheable($bool) {
-    $this->uncacheable = $bool;
+  public function setGranularity($granularity) {
+    $this->granularity = $granularity;
     return $this;
   }
 
-  public function isUncacheable() {
-    return $this->uncacheable;
+  public function getGranularity() {
+    return $this->granularity;
   }
 
   public function setDependentMessages(array $messages) {

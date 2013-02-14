@@ -771,15 +771,15 @@ abstract class ArcanistBaseWorkflow extends Phobject {
           echo phutil_console_wrap(
             "Since you don't have '.gitignore' rules for these files and have ".
             "not listed them in '.git/info/exclude', you may have forgotten ".
-            "to 'git add' them to your commit.");
+            "to 'git add' them to your commit.\n");
         } else if ($api instanceof ArcanistSubversionAPI) {
           echo phutil_console_wrap(
             "Since you don't have 'svn:ignore' rules for these files, you may ".
-            "have forgotten to 'svn add' them.");
+            "have forgotten to 'svn add' them.\n");
         } else if ($api instanceof ArcanistMercurialAPI) {
           echo phutil_console_wrap(
             "Since you don't have '.hgignore' rules for these files, you ".
-            "may have forgotten to 'hg add' them to your commit.");
+            "may have forgotten to 'hg add' them to your commit.\n");
         }
 
         if ($this->askForAdd()) {
@@ -821,7 +821,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       echo "You have unstaged changes in this working copy.\n\n".
         $working_copy_desc.
         "  Unstaged changes in working copy:\n".
-        "    ".implode("\n    ", $unstaged);
+        "    ".implode("\n    ", $unstaged)."\n";
       if ($this->askForAdd()) {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
@@ -841,7 +841,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       echo "You have uncommitted changes in this working copy.\n\n".
         $working_copy_desc.
         "  Uncommitted changes in working copy:\n".
-        "    ".implode("\n    ", $uncommitted);
+        "    ".implode("\n    ", $uncommitted)."\n";
       if ($this->askForAdd()) {
         $must_commit += array_flip($uncommitted);
       } else {
@@ -916,11 +916,12 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private function askForAdd() {
     if ($this->commitMode == self::COMMIT_DISABLE) {
       return false;
-    } else if ($this->commitMode == self::COMMIT_ENABLE) {
-      return true;
     }
     if ($this->shouldAmend === null) {
       $this->shouldAmend = $this->shouldAmend();
+    }
+    if ($this->commitMode == self::COMMIT_ENABLE) {
+      return true;
     }
     if ($this->shouldAmend) {
       $prompt = "Do you want to amend these files to the commit?";

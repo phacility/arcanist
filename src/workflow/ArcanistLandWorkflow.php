@@ -596,7 +596,7 @@ EOTEXT
       // delete the old branch if necessary
       if (!$this->keepBranch) {
         $repository_api->execxLocal(
-          'strip -r %s',
+          '--config extensions.mq= strip -r %s',
           $branch_root);
 
         if ($repository_api->isBookmark($this->branch)) {

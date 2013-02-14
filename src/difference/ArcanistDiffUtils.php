@@ -123,6 +123,12 @@ final class ArcanistDiffUtils {
     $highlight_o = '<span class="bright">';
     $highlight_c = '</span>';
 
+    $is_html = false;
+    if ($str instanceof PhutilSafeHTML) {
+      $is_html = true;
+      $str = $str->getHTMLContent();
+    }
+
     $n = strlen($str);
     for ($i = 0; $i < $n; $i++) {
 
@@ -176,6 +182,11 @@ final class ArcanistDiffUtils {
         $highlight = false;
       }
     }
+
+    if ($is_html) {
+      return phutil_safe_html($buf);
+    }
+
     return $buf;
   }
 
