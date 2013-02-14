@@ -33,9 +33,7 @@ final class ArcanistLintSeverity {
     return $map[$severity_code];
   }
 
-  public static function isAtLeastAsSevere(
-    ArcanistLintMessage $message,
-    $level) {
+  public static function isAtLeastAsSevere($message_sev, $level) {
 
     static $map = array(
       self::SEVERITY_DISABLED => 10,
@@ -45,7 +43,6 @@ final class ArcanistLintSeverity {
       self::SEVERITY_ERROR    => 40,
     );
 
-    $message_sev = $message->getSeverity();
     if (empty($map[$message_sev])) {
       return true;
     }
