@@ -80,9 +80,20 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $root = $tree->getRootNode();
 
-    $this->lintArrayCombine($root);
-    $this->lintUnsafeDynamicString($root);
-    $this->lintDeprecatedFunctions($root);
+    $method_codes = array(
+      'lintArrayCombine' => self::LINT_ARRAY_COMBINE,
+      'lintUnsafeDynamicString' => self::LINT_UNSAFE_DYNAMIC_STRING,
+      'lintDeprecatedFunctions' => self::LINT_DEPRECATED_FUNCTION,
+    );
+
+    foreach ($method_codes as $method => $codes) {
+      foreach ((array)$codes as $code) {
+        if ($this->isCodeEnabled($code)) {
+          call_user_func(array($this, $method), $root);
+          break;
+        }
+      }
+    }
   }
 
 

@@ -118,6 +118,10 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
+    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
+      return;
+    }
+
     $jshint_bin = $this->getJSHintPath();
     $jshint_options = $this->getJSHintOptions();
     $futures = array();
@@ -137,6 +141,10 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
+      return;
+    }
+
     list($rc, $stdout, $stderr) = $this->results[$path];
 
     if ($rc === 0) {
