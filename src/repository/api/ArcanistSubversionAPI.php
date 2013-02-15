@@ -151,6 +151,8 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   private function parseSVNStatus($item) {
     switch ($item) {
+      case 'none':
+        // We can get 'none' for property changes on a directory.
       case 'normal':
         return 0;
       case 'external':
