@@ -247,9 +247,8 @@ abstract class ArcanistLintEngine {
     $this->didRunLinters($linters);
 
     foreach ($linters as $linter) {
-      $minimum = $this->minimumSeverity;
       foreach ($linter->getLintMessages() as $message) {
-        if (!ArcanistLintSeverity::isAtLeastAsSevere($message, $minimum)) {
+        if (!$this->isSeverityEnabled($message->getSeverity())) {
           continue;
         }
         if (!$this->isRelevantMessage($message)) {
@@ -305,6 +304,11 @@ abstract class ArcanistLintEngine {
     }
 
     return $this->results;
+  }
+
+  public function isSeverityEnabled($severity) {
+    $minimum = $this->minimumSeverity;
+    return ArcanistLintSeverity::isAtLeastAsSevere($severity, $minimum);
   }
 
   private function shouldUseCache($cache_granularity, $repository_version) {

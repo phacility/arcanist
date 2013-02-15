@@ -226,6 +226,11 @@ abstract class ArcanistLinter {
     // This is a hook.
   }
 
+  protected function isCodeEnabled($code) {
+    $severity = $this->getLintMessageSeverity($code);
+    return $this->getEngine()->isSeverityEnabled($severity);
+  }
+
   public function getLintSeverityMap() {
     return array();
   }

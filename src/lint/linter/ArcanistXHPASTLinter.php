@@ -175,34 +175,57 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $root = $this->trees[$path]->getRootNode();
 
-    $this->lintUseOfThisInStaticMethods($root);
-    $this->lintDynamicDefines($root);
-    $this->lintSurpriseConstructors($root);
-    $this->lintPHPTagUse($root);
-    $this->lintVariableVariables($root);
-    $this->lintTODOComments($root);
-    $this->lintExitExpressions($root);
-    $this->lintSpaceAroundBinaryOperators($root);
-    $this->lintSpaceAfterControlStatementKeywords($root);
-    $this->lintParenthesesShouldHugExpressions($root);
-    $this->lintNamingConventions($root);
-    $this->lintPregQuote($root);
-    $this->lintUndeclaredVariables($root);
-    $this->lintArrayIndexWhitespace($root);
-    $this->lintCommentSpaces($root);
-    $this->lintHashComments($root);
-    $this->lintPrimaryDeclarationFilenameMatch($root);
-    $this->lintTautologicalExpressions($root);
-    $this->lintPlusOperatorOnStrings($root);
-    $this->lintDuplicateKeysInArray($root);
-    $this->lintReusedIterators($root);
-    $this->lintBraceFormatting($root);
-    $this->lintRaggedClasstreeEdges($root);
-    $this->lintImplicitFallthrough($root);
-    $this->lintPHP53Features($root);
-    $this->lintPHP54Features($root);
-    $this->lintStrposUsedForStart($root);
-    $this->lintStrstrUsedForCheck($root);
+    $method_codes = array(
+      'lintStrstrUsedForCheck' => self::LINT_SLOWNESS,
+      'lintStrposUsedForStart' => self::LINT_SLOWNESS,
+      'lintPHP53Features' => self::LINT_PHP_53_FEATURES,
+      'lintPHP54Features' => self::LINT_PHP_54_FEATURES,
+      'lintImplicitFallthrough' => self::LINT_IMPLICIT_FALLTHROUGH,
+      'lintBraceFormatting' => self::LINT_BRACE_FORMATTING,
+      'lintTautologicalExpressions' => self::LINT_TAUTOLOGICAL_EXPRESSION,
+      'lintCommentSpaces' => self::LINT_COMMENT_SPACING,
+      'lintHashComments' => self::LINT_COMMENT_STYLE,
+      'lintReusedIterators' => self::LINT_REUSED_ITERATORS,
+      'lintVariableVariables' => self::LINT_VARIABLE_VARIABLE,
+      'lintUndeclaredVariables' => array(
+        self::LINT_EXTRACT_USE,
+        self::LINT_REUSED_AS_ITERATOR,
+        self::LINT_UNDECLARED_VARIABLE,
+      ),
+      'lintPHPTagUse' => array(
+        self::LINT_PHP_SHORT_TAG,
+        self::LINT_PHP_ECHO_TAG,
+        self::LINT_PHP_OPEN_TAG,
+        self::LINT_PHP_CLOSE_TAG,
+      ),
+      'lintNamingConventions' => self::LINT_NAMING_CONVENTIONS,
+      'lintSurpriseConstructors' => self::LINT_IMPLICIT_CONSTRUCTOR,
+      'lintParenthesesShouldHugExpressions' => self::LINT_PARENTHESES_SPACING,
+      'lintSpaceAfterControlStatementKeywords' =>
+        self::LINT_CONTROL_STATEMENT_SPACING,
+      'lintSpaceAroundBinaryOperators' => self::LINT_BINARY_EXPRESSION_SPACING,
+      'lintDynamicDefines' => self::LINT_DYNAMIC_DEFINE,
+      'lintUseOfThisInStaticMethods' => self::LINT_STATIC_THIS,
+      'lintPregQuote' => self::LINT_PREG_QUOTE_MISUSE,
+      'lintExitExpressions' => self::LINT_EXIT_EXPRESSION,
+      'lintArrayIndexWhitespace' => self::LINT_ARRAY_INDEX_SPACING,
+      'lintTODOComments' => self::LINT_TODO_COMMENT,
+      'lintPrimaryDeclarationFilenameMatch' =>
+        self::LINT_CLASS_FILENAME_MISMATCH,
+      'lintPlusOperatorOnStrings' => self::LINT_PLUS_OPERATOR_ON_STRINGS,
+      'lintDuplicateKeysInArray' => self::LINT_DUPLICATE_KEYS_IN_ARRAY,
+      'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
+    );
+
+    foreach ($method_codes as $method => $codes) {
+      foreach ((array)$codes as $code) {
+        if ($this->isCodeEnabled($code)) {
+          call_user_func(array($this, $method), $root);
+          break;
+        }
+      }
+    }
+
   }
 
   public function lintStrstrUsedForCheck($root) {

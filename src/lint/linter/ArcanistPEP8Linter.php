@@ -82,6 +82,12 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    $severity = ArcanistLintSeverity::SEVERITY_WARNING;
+
+    if (!$this->getEngine()->isSeverityEnabled($severity)) {
+      return;
+    }
+
     $pep8_bin = $this->getPEP8Path();
     $options = $this->getPEP8Options();
 
@@ -111,7 +117,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       $message->setCode($matches[4]);
       $message->setName('PEP8 '.$matches[4]);
       $message->setDescription($matches[5]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $message->setSeverity($severity);
       $this->addLintMessage($message);
     }
   }

@@ -73,13 +73,20 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   public function lintPath($path) {
     foreach ($this->partialWordRules as $severity => $wordlist) {
       if ($severity >= $this->severity) {
+        if (!$this->isCodeEnabled($severity)) {
+          continue;
+        }
         foreach ($wordlist as $misspell => $correct) {
           $this->checkPartialWord($path, $misspell, $correct, $severity);
         }
       }
     }
+
     foreach ($this->wholeWordRules as $severity => $wordlist) {
       if ($severity >= $this->severity) {
+        if (!$this->isCodeEnabled($severity)) {
+          continue;
+        }
         foreach ($wordlist as $misspell => $correct) {
           $this->checkWholeWord($path, $misspell, $correct, $severity);
         }
