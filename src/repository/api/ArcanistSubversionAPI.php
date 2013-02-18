@@ -385,7 +385,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       if ($mime != 'application/octet-stream') {
         execx(
           'svn propset svn:mime-type application/octet-stream %s',
-          $this->getPath($path));
+          self::escapeFileNameForSVN($this->getPath($path)));
       }
     }
 
