@@ -43,7 +43,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_COMMENT_SPACING           = 34;
   const LINT_PHP_54_FEATURES           = 35;
   const LINT_SLOWNESS                  = 36;
-
+  const LINT_CLOSING_CALL_PAREN        = 37;
+  const LINT_CLOSING_DECL_PAREN        = 38;
 
   public function getLintNameMap() {
     return array(
@@ -81,6 +82,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
       self::LINT_SLOWNESS                  => 'Slow Construct',
+      self::LINT_CLOSING_CALL_PAREN        => 'Call Formatting',
+      self::LINT_CLOSING_DECL_PAREN        => 'Declaration Formatting',
     );
   }
 
@@ -106,6 +109,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_IMPLICIT_FALLTHROUGH      => $warning,
       self::LINT_SLOWNESS                  => $warning,
       self::LINT_COMMENT_SPACING           => $advice,
+      self::LINT_CLOSING_CALL_PAREN        => $warning,
+      self::LINT_CLOSING_DECL_PAREN        => $warning,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -160,7 +165,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    $version = '2';
+    $version = '3';
     $path = xhpast_get_binary_path();
     if (Filesystem::pathExists($path)) {
       $version .= '-'.md5_file($path);
@@ -215,6 +220,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintPlusOperatorOnStrings' => self::LINT_PLUS_OPERATOR_ON_STRINGS,
       'lintDuplicateKeysInArray' => self::LINT_DUPLICATE_KEYS_IN_ARRAY,
       'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
+      'lintClosingCallParen' => self::LINT_CLOSING_CALL_PAREN,
+      'lintClosingDeclarationParen' => self::LINT_CLOSING_DECL_PAREN,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2016,6 +2023,64 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
+
+  private function lintClosingCallParen($root) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $calls = $calls->add($root->selectDescendantsOfType('n_METHOD_CALL'));
+
+    foreach ($calls as $call) {
+
+      // If the last parameter of a call is a HEREDOC, don't apply this rule.
+      $params = $call
+        ->getChildOfType(1, 'n_CALL_PARAMETER_LIST')
+        ->getChildren();
+
+      if ($params) {
+        $last_param = last($params);
+        if ($last_param->getTypeName() == 'n_HEREDOC') {
+          continue;
+        }
+      }
+
+      $tokens = $call->getTokens();
+      $last = array_pop($tokens);
+
+      $trailing = $last->getNonsemanticTokensBefore();
+      $trailing_text = implode('', mpull($trailing, 'getValue'));
+      if (preg_match('/^\s+$/', $trailing_text)) {
+        $this->raiseLintAtOffset(
+          $last->getOffset() - strlen($trailing_text),
+          self::LINT_CLOSING_CALL_PAREN,
+          'Convention: no spaces before closing parenthesis in calls.',
+          $trailing_text,
+          '');
+      }
+    }
+  }
+
+  private function lintClosingDeclarationParen($root) {
+    $decs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+    $decs = $decs->add($root->selectDescendantsOfType('n_METHOD_DECLARATION'));
+
+    foreach ($decs as $dec) {
+      $params = $dec->getChildOfType(3, 'n_DECLARATION_PARAMETER_LIST');
+      $tokens = $params->getTokens();
+      $last = array_pop($tokens);
+
+      $trailing = $last->getNonsemanticTokensBefore();
+      $trailing_text = implode('', mpull($trailing, 'getValue'));
+      if (preg_match('/^\s+$/', $trailing_text)) {
+        $this->raiseLintAtOffset(
+          $last->getOffset() - strlen($trailing_text),
+          self::LINT_CLOSING_DECL_PAREN,
+          'Convention: no spaces before closing parenthesis in function and '.
+          'method declarations.',
+          $trailing_text,
+          '');
+      }
+    }
+  }
+
 
   public function getSuperGlobalNames() {
     return array(
