@@ -56,8 +56,7 @@ final class ArcanistConduitLinter extends ArcanistLinter {
       self::CONDUIT_METHOD,
       array(
         'file_contents' => $this->data,
-      )
-    );
+      ));
   }
 
   public function lintPath($path) {

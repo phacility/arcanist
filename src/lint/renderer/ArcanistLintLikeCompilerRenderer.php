@@ -23,8 +23,7 @@ final class ArcanistLintLikeCompilerRenderer implements ArcanistLintRenderer {
         $line,
         $severity,
         $code,
-        $description
-      );
+        $description);
     }
 
     return implode('', $lines);

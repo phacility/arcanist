@@ -123,8 +123,7 @@ EOTEXT
         array(
           'revision_id' => $revision_id,
           'edit'        => false,
-        )
-      );
+        ));
     } catch (ConduitClientException $ex) {
       if (strpos($ex->getMessage(), 'ERR_NOT_FOUND') === false) {
         throw $ex;

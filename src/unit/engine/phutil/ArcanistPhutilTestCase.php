@@ -127,8 +127,7 @@ abstract class ArcanistPhutilTestCase {
       array('assertException' => array()),
       array(false),
       $callable,
-      $expected_exception_class
-    );
+      $expected_exception_class);
   }
 
   /**

@@ -1903,8 +1903,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $decl_name,
       self::LINT_CLASS_FILENAME_MISMATCH,
       "The name of this file differs from the name of the class or interface ".
-      "it declares. Rename the file to '{$rename}'."
-    );
+      "it declares. Rename the file to '{$rename}'.");
   }
 
   private function lintPlusOperatorOnStrings($root) {

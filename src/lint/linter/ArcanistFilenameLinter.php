@@ -14,7 +14,7 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
   }
 
   public function getLinterName() {
-    return 'NAM';
+    return 'NAME';
   }
 
   public function getLintSeverityMap() {

@@ -733,8 +733,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           case 'outgoing':
             list($err, $outgoing_base) = $this->execManualLocal(
               'log --template={node} --rev %s',
-              'limit(reverse(ancestors(.) - outgoing()), 1)'
-            );
+              'limit(reverse(ancestors(.) - outgoing()), 1)');
             if (!$err) {
               $this->setBaseCommitExplanation(
                 "it is the first ancestor of the working copy that is not ".
