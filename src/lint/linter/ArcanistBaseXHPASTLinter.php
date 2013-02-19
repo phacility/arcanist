@@ -3,7 +3,7 @@
 /**
  * @group linter
  */
-abstract class ArcanistBaseXHPASTLinter extends ArcanistLinter {
+abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
   protected function raiseLintAtToken(
     XHPASTToken $token,

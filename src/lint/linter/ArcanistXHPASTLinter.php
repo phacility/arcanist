@@ -7,7 +7,8 @@
  */
 final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
-  protected $trees = array();
+  private $futures = array();
+  private $trees = array();
 
   const LINT_PHP_SYNTAX_ERROR          = 1;
   const LINT_UNABLE_TO_PARSE           = 2;
@@ -123,21 +124,25 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     );
   }
 
-  public function willLintPaths(array $paths) {
-    $futures = array();
+  protected function buildFutures(array $paths) {
+    $futures = Futures(array())->limit(8);
     foreach ($paths as $path) {
-      if (array_key_exists($path, $this->trees)) {
-        continue;
+      if (!isset($this->futures[$path])) {
+        $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
       }
-      $futures[$path] = xhpast_get_parser_future($this->getData($path));
+      $futures->addFuture($this->futures[$path], $path);
     }
-    foreach (Futures($futures)->limit(8) as $path => $future) {
+    return $futures;
+  }
+
+  public function getXHPASTTreeForPath($path) {
+    if (!array_key_exists($path, $this->trees)) {
       $this->willLintPath($path);
       $this->trees[$path] = null;
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
           $this->getData($path),
-          $future->resolve());
+          $this->futures[$path]->resolve());
         $root = $this->trees[$path]->getRootNode();
         $root->buildSelectCache();
         $root->buildTokenCache();
@@ -147,21 +152,15 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           1,
           self::LINT_PHP_SYNTAX_ERROR,
           'This file contains a syntax error: '.$ex->getMessage());
-        $this->stopAllLinters();
-        return;
       } catch (Exception $ex) {
         $this->raiseLintAtPath(
           self::LINT_UNABLE_TO_PARSE,
           'XHPAST could not parse this file, probably because the AST is too '.
           'deep. Some lint issues may not have been detected. You may safely '.
           'ignore this warning.');
-        return;
       }
     }
-  }
-
-  public function getXHPASTTreeForPath($path) {
-    return idx($this->trees, $path);
+    return $this->trees[$path];
   }
 
   public function getCacheVersion() {
@@ -173,12 +172,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return $version;
   }
 
-  public function lintPath($path) {
-    if (!$this->trees[$path]) {
+  protected function resolveFuture($path, Future $future) {
+    $tree = $this->getXHPASTTreeForPath($path);
+    if (!$tree) {
       return;
     }
 
-    $root = $this->trees[$path]->getRootNode();
+    $root = $tree->getRootNode();
 
     $method_codes = array(
       'lintStrstrUsedForCheck' => self::LINT_SLOWNESS,
