@@ -4,8 +4,8 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
 
   private $futures;
 
-  abstract function buildFutures(array $paths);
-  abstract function resolveFuture($path, Future $future);
+  abstract protected function buildFutures(array $paths);
+  abstract protected function resolveFuture($path, Future $future);
 
   public function willLintPaths(array $paths) {
     $this->futures = $this->buildFutures($paths);

@@ -77,7 +77,7 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
     return $bin;
   }
 
-  public function buildFutures(array $paths) {
+  protected function buildFutures(array $paths) {
     $severity = ArcanistLintSeverity::SEVERITY_WARNING;
     if (!$this->getEngine()->isSeverityEnabled($severity)) {
       return;
@@ -101,7 +101,7 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
     return $futures;
   }
 
-  public function resolveFuture($path, Future $future) {
+  protected function resolveFuture($path, Future $future) {
     list($rc, $stdout) = $future->resolve();
     $lines = explode("\n", $stdout);
     $messages = array();
