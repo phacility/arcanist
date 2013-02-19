@@ -377,10 +377,17 @@ final class ArcanistDiffParser {
         break;
       }
 
+      // NOTE: Before 1.5, SVN uses "Name". At 1.5 and later, SVN uses
+      // "Modified", "Added" and "Deleted".
+
       $matches = null;
-      $ok = preg_match('/^(Modified|Added|Deleted): (.*)$/', $line, $matches);
+      $ok = preg_match(
+        '/^(Name|Modified|Added|Deleted): (.*)$/',
+        $line,
+        $matches);
       if (!$ok) {
-        $this->didFailParse("Expected 'Added', 'Deleted', or 'Modified'.");
+        $this->didFailParse(
+          "Expected 'Name', 'Added', 'Deleted', or 'Modified'.");
       }
 
       $op = $matches[1];

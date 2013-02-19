@@ -190,6 +190,24 @@ Merged /tfb/branches/ads-create-v3/www/html/js/help/UIFaq.js:r140558-142418
 EOTEXT
           ));
         break;
+      case 'svn-property-older-than-1.5.svndiff':
+        // In SVN 1.5, the format for property diffs changed to use the words
+        // "Added", "Deleted" and "Modified" instead of "Name". This is an old
+        // property change diff which uses "Name".
+        $this->assertEqual(1, count($changes));
+        $change = reset($changes);
+
+        $this->assertEqual(count($change->getHunks()), 0);
+        $this->assertEqual(
+          $change->getOldProperties(),
+          array(
+          ));
+        $this->assertEqual(
+          $change->getNewProperties(),
+          array(
+            'svn:executable' => '*',
+          ));
+        break;
       case 'svn-binary-add.svndiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
