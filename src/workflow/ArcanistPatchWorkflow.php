@@ -578,8 +578,8 @@ EOTEXT
           csprintf(
             '(cd %s; svn cp %s %s)',
             $repository_api->getPath(),
-            $src,
-            $dst));
+            ArcanistSubversionAPI::escapeFileNameForSVN($src),
+            ArcanistSubversionAPI::escapeFileNameForSVN($dst)));
       }
 
       foreach ($deletes as $delete) {
@@ -587,7 +587,7 @@ EOTEXT
           csprintf(
             '(cd %s; svn rm %s)',
             $repository_api->getPath(),
-            $delete));
+            ArcanistSubversionAPI::escapeFileNameForSVN($delete)));
       }
 
       foreach ($symlinks as $symlink) {
@@ -636,7 +636,7 @@ EOTEXT
           csprintf(
             '(cd %s; svn add %s)',
             $repository_api->getPath(),
-            $add));
+            ArcanistSubversionAPI::escapeFileNameForSVN($add)));
       }
 
       foreach ($propset as $path => $changes) {
@@ -652,7 +652,7 @@ EOTEXT
                 '(cd %s; svn propdel %s %s)',
                 $repository_api->getPath(),
                 $prop,
-                $path));
+                ArcanistSubversionAPI::escapeFileNameForSVN($path)));
           } else {
             passthru(
               csprintf(
@@ -660,7 +660,7 @@ EOTEXT
                 $repository_api->getPath(),
                 $prop,
                 $value,
-                $path));
+                ArcanistSubversionAPI::escapeFileNameForSVN($path)));
           }
         }
       }

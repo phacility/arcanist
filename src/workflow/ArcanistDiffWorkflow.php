@@ -1128,7 +1128,6 @@ EOTEXT
       list($version, $key) = explode('-', $key, 2);
       $change = $changes[$key];
       $name = basename($change->getCurrentPath());
-
       try {
         $guid = $future->resolve();
         $change->setMetadata($version.':binary-phid', $guid);
@@ -1168,6 +1167,20 @@ EOTEXT
     $result['mime'] = $mime_type;
 
     echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
+
+    // Reuse storage if possible
+    // Try to upload file using content hash
+    $contentHash = sha1($data);
+    $call_result = $this->getConduit()->callMethodSynchronous(
+      'file.uploadhash',
+      array(
+        'hash' => $contentHash,
+        'name' => $name,
+    ));
+    if ($call_result) {
+      $result['future'] = new ImmediateFuture($call_result);
+      return $result;
+    }
 
     $result['future'] = $this->getConduit()->callMethod(
       'file.upload',
