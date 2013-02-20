@@ -57,6 +57,15 @@ class PhutilLintEngine extends ArcanistLintEngine {
       ->setXHPASTLinter($xhpast_linter)
       ->setPaths($php_paths);
 
+    $merge_conflict_linter = id(new ArcanistMergeConflictLinter());
+
+    foreach ($paths as $path) {
+      $merge_conflict_linter->addPath($path);
+      $merge_conflict_linter->addData($path, $this->loadData($path));
+    }
+
+    $linters[] = $merge_conflict_linter;
+
     return $linters;
   }
 

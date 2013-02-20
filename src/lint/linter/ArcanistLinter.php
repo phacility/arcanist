@@ -243,4 +243,9 @@ abstract class ArcanistLinter {
     return self::GRANULARITY_FILE;
   }
 
+  public function isBinaryFile($path) {
+    // Note that we need the lint engine set before this can be used.
+    return ArcanistDiffUtils::isHeuristicBinaryFile($this->getData($path));
+  }
+
 }
