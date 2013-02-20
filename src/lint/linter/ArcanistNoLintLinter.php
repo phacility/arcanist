@@ -25,6 +25,10 @@ final class ArcanistNoLintLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if ($this->isBinaryFile($path)) {
+      return;
+    }
+
     $data = $this->getData($path);
 
     if (preg_match('/@'.'nolint/', $data)) {

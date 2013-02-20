@@ -40,11 +40,10 @@ class PhutilLintEngine extends ArcanistLintEngine {
       }
     }
 
-    $text_paths = preg_grep('/\.(php|css|js|hpp|cpp|l|y)$/', $paths);
-    $linters[] = id(new ArcanistGeneratedLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistNoLintLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistTextLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistSpellingLinter())->setPaths($text_paths);
+    $linters[] = id(new ArcanistGeneratedLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistNoLintLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistTextLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistSpellingLinter())->setPaths($paths);
 
     $php_paths = preg_grep('/\.php$/', $paths);
 

@@ -71,6 +71,10 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if ($this->isBinaryFile($path)) {
+      return;
+    }
+
     foreach ($this->partialWordRules as $severity => $wordlist) {
       if ($severity >= $this->severity) {
         if (!$this->isCodeEnabled($severity)) {
