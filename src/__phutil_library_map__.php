@@ -162,7 +162,6 @@ phutil_register_library_map(array(
     'PhutilLintEngine' => 'lint/engine/PhutilLintEngine.php',
     'PhutilUnitTestEngine' => 'unit/engine/PhutilUnitTestEngine.php',
     'PhutilUnitTestEngineTestCase' => 'unit/engine/__tests__/PhutilUnitTestEngineTestCase.php',
-    'TimerEventType' => 'events/constant/TimerEventType.php',
     'UnitTestableArcanistLintEngine' => 'lint/engine/UnitTestableArcanistLintEngine.php',
   ),
   'function' =>
@@ -291,7 +290,6 @@ phutil_register_library_map(array(
     'PhutilLintEngine' => 'ArcanistLintEngine',
     'PhutilUnitTestEngine' => 'ArcanistBaseUnitTestEngine',
     'PhutilUnitTestEngineTestCase' => 'ArcanistTestCase',
-    'TimerEventType' => 'PhutilEventType',
     'UnitTestableArcanistLintEngine' => 'ArcanistLintEngine',
   ),
 ));
