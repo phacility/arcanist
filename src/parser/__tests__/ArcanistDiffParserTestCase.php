@@ -546,6 +546,9 @@ EOTEXT
       case 'suppress-blank-empty.gitdiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'svn-property-windows.svndiff':
+        $this->assertEqual(1, count($changes));
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

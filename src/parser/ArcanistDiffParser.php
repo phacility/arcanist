@@ -365,7 +365,7 @@ final class ArcanistDiffParser {
    * (or any other parser) with a carefully constructed property change.
    */
   protected function parsePropertyHunk(ArcanistDiffChange $change) {
-    $line = $this->getLine();
+    $line = $this->getLineTrimmed();
     if (!preg_match('/^_+$/', $line)) {
       $this->didFailParse("Expected '______________________'.");
     }
