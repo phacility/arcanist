@@ -105,9 +105,14 @@ EOTEXT
       $command = 'checkout %s';
     }
 
-    list($err, $stdout, $stderr) = $api->execManualLocal(
-      $command,
-      reset($names));
+    $err = 1;
+
+    $branches = $api->getAllBranches();
+    if (in_array(reset($names), ipull($branches, 'name'))) {
+      list($err, $stdout, $stderr) = $api->execManualLocal(
+        $command,
+        reset($names));
+    }
 
     if ($err) {
       $match = null;
@@ -134,13 +139,17 @@ EOTEXT
       if ($api instanceof ArcanistMercurialAPI) {
         $rev = '';
         if (isset($names[1])) {
-          $rev = csprintf('-r %s', hgsprintf($names[1]));
+          $rev = csprintf('-r %s', $names[1]);
         }
+
         $exec = $api->execManualLocal(
-          'update %C %s',
+          'bookmark %C %s',
           $rev,
           $names[0]);
 
+        if (!$exec[0] && isset($names[1])) {
+          $api->execxLocal('update %s', $names[0]);
+        }
       } else {
         $exec = $api->execManualLocal(
           'checkout -b %Ls',
