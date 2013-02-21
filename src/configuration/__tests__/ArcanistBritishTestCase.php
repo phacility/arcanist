@@ -4,7 +4,7 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
 
   public function testCompletion() {
     $this->assertCompletion(
-      array('land', 'amend'),
+      array('land'),
       'alnd',
       array('land', 'amend'));
 
@@ -17,6 +17,26 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
       array(),
       'test',
       array('list', 'unit'));
+
+    $this->assertCompletion(
+      array('list'),
+      'lists',
+      array('list'));
+
+    $this->assertCompletion(
+      array('diff'),
+      'dfif',
+      array('diff'));
+
+    $this->assertCompletion(
+      array('unit'),
+      'uint',
+      array('unit', 'lint', 'list'));
+
+    $this->assertCompletion(
+      array('list', 'lint'),
+      'nilt',
+      array('unit', 'lint', 'list'));
   }
 
   private function assertCompletion($expect, $input, $commands) {

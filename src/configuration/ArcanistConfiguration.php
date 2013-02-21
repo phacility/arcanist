@@ -196,9 +196,25 @@ class ArcanistConfiguration {
     array $options,
     $max_distance) {
 
+    // Adjust to the scaled edit costs we use below, so "2" roughly means
+    // "2 edits".
+    $max_distance = $max_distance * 3;
+
+    // These costs are somewhat made up, but the theory is that it is far more
+    // likely you will mis-strike a key ("lans" for "land") or press two keys
+    // out of order ("alnd" for "land") than omit keys or press extra keys.
+    $matrix = id(new PhutilEditDistanceMatrix())
+      ->setInsertCost(4)
+      ->setDeleteCost(4)
+      ->setReplaceCost(3)
+      ->setTransposeCost(2);
+
     $distances = array();
+    $commandv = str_split($command);
     foreach ($options as $option) {
-      $distances[$option] = levenshtein($option, $command);
+      $optionv = str_split($option);
+      $matrix->setSequences($optionv, $commandv);
+      $distances[$option] = $matrix->getEditDistance();
     }
 
     asort($distances);
@@ -218,7 +234,7 @@ class ArcanistConfiguration {
     }
 
     foreach ($distances as $option => $distance) {
-      if (strlen($option) <= 2 * $distance) {
+      if (strlen($option) < $distance) {
         unset($distances[$option]);
       }
     }
