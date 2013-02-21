@@ -153,11 +153,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_PHP_SYNTAX_ERROR,
           'This file contains a syntax error: '.$ex->getMessage());
       } catch (Exception $ex) {
-        $this->raiseLintAtPath(
-          self::LINT_UNABLE_TO_PARSE,
-          'XHPAST could not parse this file, probably because the AST is too '.
-          'deep. Some lint issues may not have been detected. You may safely '.
-          'ignore this warning.');
+        $this->raiseLintAtPath(self::LINT_UNABLE_TO_PARSE, $ex->getMessage());
       }
     }
     return $this->trees[$path];
