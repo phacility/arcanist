@@ -5,7 +5,7 @@
  *
  * @group workflow
  */
-class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
 
   const RESULT_OKAY       = 0;
   const RESULT_WARNINGS   = 1;
