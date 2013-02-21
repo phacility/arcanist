@@ -12,6 +12,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $includeDirectoryStateInDiffs;
   private $rawDiffCache = array();
 
+  private $supportsRebase;
+  private $supportsPhases;
+
   protected function buildLocalFuture(array $argv) {
 
     // Mercurial has a "defaults" feature which basically breaks automation by
@@ -113,8 +116,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // Mercurial 2.1 and up have phases which indicate if something is
     // published or not. To find which revs are outgoing, it's much
     // faster to check the phase instead of actually checking the server.
-    list($err) = $this->execManualLocal('help phase');
-    if (!$err) {
+    if (!$this->supportsPhases()) {
       list($err, $stdout) = $this->execManualLocal(
         'log --branch %s -r %s --style default',
         $this->getBranchName(),
@@ -445,6 +447,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
+  public function supportsRebase() {
+    if ($this->supportsRebase === null) {
+      list ($err) = $this->execManualLocal("help rebase");
+      $this->supportsRebase = $err === 0;
+    }
+
+    return $this->supportsRebase;
+  }
+
+  public function supportsPhases() {
+    if ($this->supportsPhases === null) {
+      list ($err) = $this->execManualLocal("help phase");
+      $this->supportsPhases = $err === 0;
+    }
+
+    return $this->supportsPhases;
+  }
+
   public function supportsCommitRanges() {
     return true;
   }
@@ -713,8 +733,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           case 'outgoing':
             list($err, $outgoing_base) = $this->execManualLocal(
               'log --template={node} --rev %s',
-              'limit(reverse(ancestors(.) - outgoing()), 1)'
-            );
+              'limit(reverse(ancestors(.) - outgoing()), 1)');
             if (!$err) {
               $this->setBaseCommitExplanation(
                 "it is the first ancestor of the working copy that is not ".
@@ -768,6 +787,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return null;
 
+  }
+
+  public function isHgSubversionRepo() {
+    return file_exists($this->getPath('.hg/svn'));
   }
 
   public function getSubversionInfo() {

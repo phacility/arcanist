@@ -152,7 +152,7 @@ class ArcanistConfiguration {
 
     // We haven't found a real command, alias, or unique prefix. Try similar
     // spellings.
-    $corrected = $this->correctCommandSpelling($command, $all, 2);
+    $corrected = self::correctCommandSpelling($command, $all, 2);
     if (count($corrected) == 1) {
       $console->writeErr(
         pht(
@@ -191,20 +191,50 @@ class ArcanistConfiguration {
     return array_keys($is_prefix);
   }
 
-  private function correctCommandSpelling(
+  public static function correctCommandSpelling(
     $command,
     array $options,
     $max_distance) {
 
+    // Adjust to the scaled edit costs we use below, so "2" roughly means
+    // "2 edits".
+    $max_distance = $max_distance * 3;
+
+    // These costs are somewhat made up, but the theory is that it is far more
+    // likely you will mis-strike a key ("lans" for "land") or press two keys
+    // out of order ("alnd" for "land") than omit keys or press extra keys.
+    $matrix = id(new PhutilEditDistanceMatrix())
+      ->setInsertCost(4)
+      ->setDeleteCost(4)
+      ->setReplaceCost(3)
+      ->setTransposeCost(2);
+
     $distances = array();
+    $commandv = str_split($command);
     foreach ($options as $option) {
-      $distances[$option] = levenshtein($option, $command);
+      $optionv = str_split($option);
+      $matrix->setSequences($optionv, $commandv);
+      $distances[$option] = $matrix->getEditDistance();
     }
 
     asort($distances);
     $best = min($max_distance, reset($distances));
     foreach ($distances as $option => $distance) {
-      if ($distance > $best || strlen($option) <= 2 * $distance) {
+      if ($distance > $best) {
+        unset($distances[$option]);
+      }
+    }
+
+    // Before filtering, check if we have multiple equidistant matches and
+    // return them if we do. This prevents us from, e.g., matching "alnd" with
+    // both "land" and "amend", then dropping "land" for being too short, and
+    // incorrectly completing to "amend".
+    if (count($distances) > 1) {
+      return array_keys($distances);
+    }
+
+    foreach ($distances as $option => $distance) {
+      if (strlen($option) < $distance) {
         unset($distances[$option]);
       }
     }

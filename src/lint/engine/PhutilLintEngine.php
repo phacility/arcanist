@@ -40,11 +40,10 @@ class PhutilLintEngine extends ArcanistLintEngine {
       }
     }
 
-    $text_paths = preg_grep('/\.(php|css|js|hpp|cpp|l|y)$/', $paths);
-    $linters[] = id(new ArcanistGeneratedLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistNoLintLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistTextLinter())->setPaths($text_paths);
-    $linters[] = id(new ArcanistSpellingLinter())->setPaths($text_paths);
+    $linters[] = id(new ArcanistGeneratedLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistNoLintLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistTextLinter())->setPaths($paths);
+    $linters[] = id(new ArcanistSpellingLinter())->setPaths($paths);
 
     $php_paths = preg_grep('/\.php$/', $paths);
 
@@ -56,6 +55,15 @@ class PhutilLintEngine extends ArcanistLintEngine {
     $linters[] = id(new ArcanistPhutilXHPASTLinter())
       ->setXHPASTLinter($xhpast_linter)
       ->setPaths($php_paths);
+
+    $merge_conflict_linter = id(new ArcanistMergeConflictLinter());
+
+    foreach ($paths as $path) {
+      $merge_conflict_linter->addPath($path);
+      $merge_conflict_linter->addData($path, $this->loadData($path));
+    }
+
+    $linters[] = $merge_conflict_linter;
 
     return $linters;
   }

@@ -23,8 +23,7 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
     // You will for sure want some options.  The below default tends to be ok
     $options = $working_copy->getConfig(
       'lint.cppcheck.options',
-      '-j2 --inconclusive --enable=performance,style,portability,information'
-    );
+      '-j2 --inconclusive --enable=performance,style,portability,information');
 
     return $options;
   }
@@ -70,8 +69,7 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
       "%C %C --inline-suppr --xml-version=2 -q %s",
       $bin,
       $options,
-      $this->getEngine()->getFilePathOnDisk($path)
-    );
+      $this->getEngine()->getFilePathOnDisk($path));
 
     if ($rc === 1) {
       throw new Exception("cppcheck failed to run correctly:\n".$stderr);

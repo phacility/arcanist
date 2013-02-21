@@ -189,8 +189,7 @@ EOTEXT
     }
 
     if ($this->isHg) {
-      list ($err) = $repository_api->execManualLocal('svn info');
-      $this->isHgSvn = !$err;
+      $this->isHgSvn = $repository_api->isHgSubversionRepo();
     }
 
     $branch = $this->getArgument('branch');
@@ -255,8 +254,7 @@ EOTEXT
 
     if ($this->isHg) {
       if ($this->useSquash) {
-        list ($err) = $repository_api->execManualLocal("rebase --help");
-        if ($err) {
+        if (!$repository_api->supportsRebase()) {
           throw new ArcanistUsageException(
             "You must enable the rebase extension to use ".
             "the --squash strategy.");
@@ -298,9 +296,11 @@ EOTEXT
 
   private function checkoutBranch() {
     $repository_api = $this->getRepositoryAPI();
-    $repository_api->execxLocal(
-      'checkout %s',
-      $this->branch);
+    if ($this->getBranchOrBookmark() != $this->branch) {
+      $repository_api->execxLocal(
+        'checkout %s',
+        $this->branch);
+    }
 
     echo phutil_console_format(
       "Switched to branch **%s**. Identifying and merging...\n",
@@ -378,14 +378,15 @@ EOTEXT
 
   private function pullFromRemote() {
     $repository_api = $this->getRepositoryAPI();
-    $repository_api->execxLocal('checkout %s', $this->onto);
-
-    echo phutil_console_format(
-      "Switched to branch **%s**. Updating branch...\n",
-      $this->onto);
 
     $local_ahead_of_remote = false;
     if ($this->isGit) {
+      $repository_api->execxLocal('checkout %s', $this->onto);
+
+      echo phutil_console_format(
+        "Switched to branch **%s**. Updating branch...\n",
+        $this->onto);
+
       try {
         $repository_api->execxLocal('pull --ff-only --no-stat');
       } catch (CommandException $ex) {
@@ -404,18 +405,32 @@ EOTEXT
       }
 
     } else if ($this->isHg) {
-      // execManual instead of execx because outgoing returns
-      // code 1 when there is nothing outgoing
-      list($err, $out) = $repository_api->execManualLocal(
-        'outgoing -r %s',
+      echo phutil_console_format(
+        "Updating **%s**...\n",
         $this->onto);
 
-      // $err === 0 means something is outgoing
-      if ($err === 0) {
-        $local_ahead_of_remote = true;
+      if ($repository_api->supportsPhases()) {
+        list($out) = $repository_api->execxLocal(
+          'log -r %s --template {phase}', $this->onto);
+        if ($out != 'public') {
+          $local_ahead_of_remote = true;
+        }
       } else {
+        // execManual instead of execx because outgoing returns
+        // code 1 when there is nothing outgoing
+        list($err, $out) = $repository_api->execManualLocal(
+          'outgoing -r %s',
+          $this->onto);
+
+        // $err === 0 means something is outgoing
+        if ($err === 0) {
+          $local_ahead_of_remote = true;
+        }
+      }
+
+      if (!$local_ahead_of_remote) {
         try {
-          $repository_api->execxLocal('pull -u');
+          $repository_api->execxLocal('pull');
         } catch (CommandException $ex) {
           $err = $ex->getError();
           $stdout = $ex->getStdOut();
@@ -512,9 +527,9 @@ EOTEXT
 
   private function squash() {
     $repository_api = $this->getRepositoryAPI();
-    $repository_api->execxLocal('checkout %s', $this->onto);
 
     if ($this->isGit) {
+      $repository_api->execxLocal('checkout %s', $this->onto);
       $repository_api->execxLocal(
         'merge --squash --ff-only %s',
         $this->branch);

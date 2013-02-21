@@ -1092,104 +1092,9 @@ EOTEXT
       }
     }
 
-    $upload_futures = array();
-
-    foreach ($changes as $key => $change) {
-      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
-        continue;
-      }
-
-      $path = $change->getCurrentPath();
-      $name = basename($path);
-
-      $old_file = $change->getOriginalFileData();
-      $old_dict = $this->uploadFile($old_file, $name, 'old binary');
-      if ($old_dict['future']) {
-        $upload_futures['old-'.$key] = $old_dict['future'];
-      }
-      $change->setMetadata('old:file:size',      $old_dict['size']);
-      $change->setMetadata('old:file:mime-type', $old_dict['mime']);
-
-      $new_file = $change->getCurrentFileData();
-      $new_dict = $this->uploadFile($new_file, $name, 'new binary');
-      if ($new_dict['future']) {
-        $upload_futures['new-'.$key] = $new_dict['future'];
-      }
-      $change->setMetadata('new:file:size',      $new_dict['size']);
-      $change->setMetadata('new:file:mime-type', $new_dict['mime']);
-
-      $mime_type = coalesce($new_dict['mime'], $old_dict['mime']);
-      if (preg_match('@^image/@', $mime_type)) {
-        $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
-      }
-    }
-
-    foreach (Futures($upload_futures)->limit(4) as $key => $future) {
-      list($version, $key) = explode('-', $key, 2);
-      $change = $changes[$key];
-      $name = basename($change->getCurrentPath());
-      try {
-        $guid = $future->resolve();
-        $change->setMetadata($version.':binary-phid', $guid);
-      } catch (Exception $e) {
-        echo "Failed to upload {$version} binary '{$name}'.\n";
-
-        if (!phutil_console_confirm('Continue?', $default_no = false)) {
-          throw new ArcanistUsageException(
-            'Aborted due to file upload failure. You can use --skip-binaries '.
-            'to skip binary uploads.');
-        }
-      }
-    }
+    $this->uploadFilesForChanges($changes);
 
     return $changes;
-  }
-
-  private function uploadFile($data, $name, $desc) {
-    $result = array(
-      'future' => null,
-      'mime' => null,
-      'size' => null
-    );
-
-    if ($this->getArgument('skip-binaries')) {
-      return $result;
-    }
-
-    $result['size'] = $size = strlen($data);
-    if (!$size) {
-      return $result;
-    }
-
-    $tmp = new TempFile();
-    Filesystem::writeFile($tmp, $data);
-    $mime_type = Filesystem::getMimeType($tmp);
-    $result['mime'] = $mime_type;
-
-    echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
-
-    // Reuse storage if possible
-    // Try to upload file using content hash
-    $contentHash = sha1($data);
-    $call_result = $this->getConduit()->callMethodSynchronous(
-      'file.uploadhash',
-      array(
-        'hash' => $contentHash,
-        'name' => $name,
-    ));
-    if ($call_result) {
-      $result['future'] = new ImmediateFuture($call_result);
-      return $result;
-    }
-
-    $result['future'] = $this->getConduit()->callMethod(
-      'file.upload',
-      array(
-        'data_base64' => base64_encode($data),
-        'name'        => $name,
-    ));
-
-    return $result;
   }
 
   private function getGitParentLogInfo() {
@@ -2505,6 +2410,155 @@ EOTEXT
       "You don't own revision D{$id} '{$title}'. You can only update ".
       "revisions you own. You can 'Commandeer' this revision from the web ".
       "interface if you want to become the owner.");
+  }
+
+
+/* -(  File Uploads  )------------------------------------------------------- */
+
+
+  private function uploadFilesForChanges(array $changes) {
+    assert_instances_of($changes, 'ArcanistDiffChange');
+
+    // Collect all the files we need to upload.
+
+    $need_upload = array();
+    foreach ($changes as $key => $change) {
+      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
+        continue;
+      }
+
+      if ($this->getArgument('skip-binaries')) {
+        continue;
+      }
+
+      $name = basename($change->getCurrentPath());
+
+      $need_upload[] = array(
+        'type' => 'old',
+        'name' => $name,
+        'data' => $change->getOriginalFileData(),
+        'change' => $change,
+      );
+
+      $need_upload[] = array(
+        'type' => 'new',
+        'name' => $name,
+        'data' => $change->getCurrentFileData(),
+        'change' => $change,
+      );
+    }
+
+    if (!$need_upload) {
+      return;
+    }
+
+    // Determine mime types and file sizes. Update changes from "binary" to
+    // "image" if the file is an image. Set image metadata.
+
+    $type_image = ArcanistDiffChangeType::FILE_IMAGE;
+    foreach ($need_upload as $key => $spec) {
+      $change = $need_upload[$key]['change'];
+
+      $type = $spec['type'];
+      $size = strlen($spec['data']);
+
+      $change->setMetadata("{$type}:file:size", $size);
+      if ($spec['data'] === null) {
+        // This covers the case where a file was added or removed; we don't
+        // need to upload it. (This is distinct from an empty file, which we
+        // do upload.)
+        unset($need_upload[$key]);
+        continue;
+      }
+
+      $mime = $this->getFileMimeType($spec['data']);
+      if (preg_match('@^image/@', $mime)) {
+        $change->setFileType($type_image);
+      }
+
+      $change->setMetadata("{$type}:file:mime-type", $mime);
+    }
+
+    echo pht("Uploading %d files...", count($need_upload))."\n";
+
+    // Now we're ready to upload the actual file data. If possible, we'll just
+    // transmit a hash of the file instead of the actual file data. If the data
+    // already exists, Phabricator can share storage. Check if we can use
+    // "file.uploadhash" yet (i.e., if the server is up to date enough).
+    // TODO: Drop this check once we bump the protocol version.
+    $conduit_methods = $this->getConduit()->callMethodSynchronous(
+      'conduit.query',
+      array());
+    $can_use_hash_upload = isset($conduit_methods['file.uploadhash']);
+
+    if ($can_use_hash_upload) {
+      $hash_futures = array();
+      foreach ($need_upload as $key => $spec) {
+        $hash_futures[$key] = $this->getConduit()->callMethod(
+          'file.uploadhash',
+          array(
+            'name' => $spec['name'],
+            'hash' => sha1($spec['data']),
+          ));
+      }
+
+      foreach (Futures($hash_futures)->limit(8) as $key => $future) {
+        $type = $need_upload[$key]['type'];
+        $change = $need_upload[$key]['change'];
+        $name = $need_upload[$key]['name'];
+
+        $phid = null;
+        try {
+          $phid = $future->resolve();
+        } catch (Exception $e) {
+          // Just try uploading normally if the hash upload failed.
+          continue;
+        }
+
+        if ($phid) {
+          $change->setMetadata("{$type}:binary-phid", $phid);
+          unset($need_upload[$key]);
+          echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
+        }
+      }
+    }
+
+    $upload_futures = array();
+    foreach ($need_upload as $key => $spec) {
+      $upload_futures[$key] = $this->getConduit()->callMethod(
+        'file.upload',
+        array(
+          'name' => $spec['name'],
+          'data_base64' => base64_encode($spec['data']),
+        ));
+    }
+
+    foreach (Futures($upload_futures)->limit(4) as $key => $future) {
+      $type = $need_upload[$key]['type'];
+      $change = $need_upload[$key]['change'];
+      $name = $need_upload[$key]['name'];
+
+      try {
+        $phid = $future->resolve();
+        $change->setMetadata("{$type}:binary-phid", $phid);
+        echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
+      } catch (Exception $e) {
+        echo "Failed to upload {$type} binary '{$name}'.\n";
+        if (!phutil_console_confirm('Continue?', $default_no = false)) {
+          throw new ArcanistUsageException(
+            'Aborted due to file upload failure. You can use --skip-binaries '.
+            'to skip binary uploads.');
+        }
+      }
+    }
+
+    echo pht("Upload complete.")."\n";
+  }
+
+  private function getFileMimeType($data) {
+    $tmp = new TempFile();
+    Filesystem::writeFile($tmp, $data);
+    return Filesystem::getMimeType($tmp);
   }
 
 }

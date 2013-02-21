@@ -68,11 +68,11 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return 2;
   }
 
-  public function willLintPaths(array $paths) {
-    $this->xhpastLinter->willLintPaths($paths);
+  protected function buildFutures(array $paths) {
+    return $this->xhpastLinter->buildFutures($paths);
   }
 
-  public function lintPath($path) {
+  protected function resolveFuture($path, Future $future) {
     $tree = $this->xhpastLinter->getXHPASTTreeForPath($path);
     if (!$tree) {
       return;

@@ -151,17 +151,6 @@ abstract class ArcanistLinter {
     return $this->messages;
   }
 
-  protected function newLintAtLine($line, $char, $code, $desc) {
-    return id(new ArcanistLintMessage())
-      ->setPath($this->getActivePath())
-      ->setLine($line)
-      ->setChar($char)
-      ->setCode($this->getLintMessageFullCode($code))
-      ->setSeverity($this->getLintMessageSeverity($code))
-      ->setName($this->getLintMessageName($code))
-      ->setDescription($desc);
-  }
-
   protected function raiseLintAtLine(
     $line,
     $char,
@@ -170,7 +159,14 @@ abstract class ArcanistLinter {
     $original = null,
     $replacement = null) {
 
-    $message = $this->newLintAtLine($line, $char, $code, $desc)
+    $message = id(new ArcanistLintMessage())
+      ->setPath($this->getActivePath())
+      ->setLine($line)
+      ->setChar($char)
+      ->setCode($this->getLintMessageFullCode($code))
+      ->setSeverity($this->getLintMessageSeverity($code))
+      ->setName($this->getLintMessageName($code))
+      ->setDescription($desc)
       ->setOriginalText($original)
       ->setReplacementText($replacement);
 
@@ -241,6 +237,11 @@ abstract class ArcanistLinter {
 
   public function getCacheGranularity() {
     return self::GRANULARITY_FILE;
+  }
+
+  public function isBinaryFile($path) {
+    // Note that we need the lint engine set before this can be used.
+    return ArcanistDiffUtils::isHeuristicBinaryFile($this->getData($path));
   }
 
 }

@@ -94,7 +94,7 @@ EOTEXT
     $browser = $this->getBrowserCommand();
 
     foreach ($paths as $path) {
-      $ret_code = phutil_passthru("%s %s", $browser, $base_uri . $path );
+      $ret_code = phutil_passthru("%s %s", $browser, $base_uri . $path);
       if ($ret_code) {
         throw new ArcanistUsageException(
           "It seems we failed to open the browser; Perhaps you should try to ".
@@ -124,7 +124,7 @@ EOTEXT
 
     $branch = $this->getArgument('branch', 'master');
 
-    return $repo_info[$repo_phid]['uri'] . 'browse/' . $branch .'/';
+    return $repo_info[$repo_phid]['uri'].'browse/'.$branch.'/';
   }
 
   private function getBrowserCommand() {

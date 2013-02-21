@@ -71,6 +71,10 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if ($this->isBinaryFile($path)) {
+      return;
+    }
+
     foreach ($this->partialWordRules as $severity => $wordlist) {
       if ($severity >= $this->severity) {
         if (!$this->isCodeEnabled($severity)) {
@@ -110,11 +114,9 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
         sprintf(
           "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
-          $correct_word
-        ),
+          $correct_word),
         $original,
-        $replacement
-      );
+        $replacement);
       $pos = $next + 1;
     }
   }
@@ -126,8 +128,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
       '#\b' . preg_quote($word, '#') . '\b#i',
       $text,
       $matches,
-      PREG_OFFSET_CAPTURE
-    );
+      PREG_OFFSET_CAPTURE);
     if (!$num_matches) {
       return;
     }
@@ -140,11 +141,9 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
         sprintf(
           "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
-          $correct_word
-        ),
+          $correct_word),
         $original,
-        $replacement
-      );
+        $replacement);
     }
   }
 

@@ -230,9 +230,21 @@ abstract class ArcanistLintEngine {
 
         if ($paths) {
           $linter->willLintPaths($paths);
+          $profiler = PhutilServiceProfiler::getInstance();
           foreach ($paths as $path) {
             $linter->willLintPath($path);
-            $linter->lintPath($path);
+            $call_id = $profiler->beginServiceCall(array(
+              'type' => 'lint',
+              'linter' => get_class($linter),
+              'path' => $path,
+              ));
+            try {
+              $linter->lintPath($path);
+            } catch (Exception $ex) {
+              $profiler->endServiceCall($call_id, array());
+              throw $ex;
+            }
+            $profiler->endServiceCall($call_id, array());
             if ($linter->didStopAllLinters()) {
               $this->stopped[$path] = $linter_name;
             }

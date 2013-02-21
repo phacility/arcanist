@@ -260,8 +260,7 @@ EOTEXT
       // no error means git rev-parse found a branch
       if (!$err) {
         echo phutil_console_format(
-          "Branch name {$proposed_name} already exists; trying a new name.\n"
-        );
+          "Branch name {$proposed_name} already exists; trying a new name.\n");
         continue;
       } else {
         $branch_name = $proposed_name;
@@ -299,8 +298,8 @@ EOTEXT
       // no error means hg log found a bookmark
       if (!$err) {
         echo phutil_console_format(
-          "Bookmark name {$proposed_name} already exists; trying a new name.\n"
-        );
+          "Bookmark name %s already exists; trying a new name.\n",
+          $proposed_name);
         continue;
       } else {
         $bookmark_name = $proposed_name;
@@ -870,8 +869,7 @@ EOTEXT
       }
       $ok = phutil_console_confirm(
         "{$issue} Still try to apply the patch?",
-        $default_no = false
-      );
+        $default_no = false);
       if (!$ok) {
         throw new ArcanistUserAbortException();
       }
@@ -931,8 +929,7 @@ EOTEXT
           "This diff is against commit {$bundle_base_rev_str}, but the ".
           "commit is nowhere in the working copy. Try to apply it against ".
           "the current working copy state? ({$source_base_rev_str})",
-          $default_no = false
-        );
+          $default_no = false);
         if (!$ok) {
           throw new ArcanistUserAbortException();
         }
@@ -979,8 +976,7 @@ EOTEXT
       'differential.query',
       array(
         'commitHashes' => array($hash),
-      )
-    );
+      ));
 
 
     // grab the latest closed revision only

@@ -85,8 +85,7 @@ EOTEXT
         'differential.getrevision',
         array(
           'revision_id' => $revision_id,
-        )
-      );
+        ));
     } catch (Exception $ex) {
       if (!$is_finalize) {
         throw new ArcanistUsageException(

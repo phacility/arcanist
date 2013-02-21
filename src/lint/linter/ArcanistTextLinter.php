@@ -50,6 +50,10 @@ final class ArcanistTextLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if ($this->isBinaryFile($path)) {
+      return;
+    }
+
     if (!strlen($this->getData($path))) {
       // If the file is empty, don't bother; particularly, don't require
       // the user to add a newline.

@@ -126,13 +126,11 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
       $text = substr(
         $text,
         $same_at_front,
-        $text_strlen - $same_at_end - $same_at_front
-      );
+        $text_strlen - $same_at_end - $same_at_front);
       $patch = substr(
         $patch,
         $same_at_front,
-        $patch_strlen - $same_at_end - $same_at_front
-      );
+        $patch_strlen - $same_at_end - $same_at_front);
     }
     // Print out the impacted region itself.
     $diff = $message->isPatchable() ? '-' : null;
@@ -191,8 +189,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
       foreach (array_slice($patch_lines, 1) as $patch_line) {
         $out[] = $this->renderLine(
           null,
-          phutil_console_format('##%s##', $patch_line), false, '+'
-        );
+          phutil_console_format('##%s##', $patch_line), false, '+');
       }
     }
 
