@@ -125,19 +125,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   protected function buildFutures(array $paths) {
-    $futures = Futures(array())->limit(8);
     foreach ($paths as $path) {
       if (!isset($this->futures[$path])) {
         $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
       }
-      $futures->addFuture($this->futures[$path], $path);
     }
-    return $futures;
+    return array_select_keys($this->futures, $paths);
   }
 
   public function getXHPASTTreeForPath($path) {
     if (!array_key_exists($path, $this->trees)) {
-      $this->willLintPath($path);
       $this->trees[$path] = null;
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
