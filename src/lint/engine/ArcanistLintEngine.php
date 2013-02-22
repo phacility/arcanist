@@ -229,26 +229,27 @@ abstract class ArcanistLintEngine {
         $paths = array_values($paths);
 
         if ($paths) {
-          $linter->willLintPaths($paths);
           $profiler = PhutilServiceProfiler::getInstance();
-          foreach ($paths as $path) {
-            $linter->willLintPath($path);
-            $call_id = $profiler->beginServiceCall(array(
-              'type' => 'lint',
-              'linter' => get_class($linter),
-              'path' => $path,
-              ));
-            try {
+          $call_id = $profiler->beginServiceCall(array(
+            'type' => 'lint',
+            'linter' => get_class($linter),
+            'paths' => $paths,
+          ));
+
+          try {
+            $linter->willLintPaths($paths);
+            foreach ($paths as $path) {
+              $linter->willLintPath($path);
               $linter->lintPath($path);
-            } catch (Exception $ex) {
-              $profiler->endServiceCall($call_id, array());
-              throw $ex;
+              if ($linter->didStopAllLinters()) {
+                $this->stopped[$path] = $linter_name;
+              }
             }
+          } catch (Exception $ex) {
             $profiler->endServiceCall($call_id, array());
-            if ($linter->didStopAllLinters()) {
-              $this->stopped[$path] = $linter_name;
-            }
+            throw $ex;
           }
+          $profiler->endServiceCall($call_id, array());
         }
 
       } catch (Exception $ex) {
@@ -356,8 +357,15 @@ abstract class ArcanistLintEngine {
 
   protected function didRunLinters(array $linters) {
     assert_instances_of($linters, 'ArcanistLinter');
+
+    $profiler = PhutilServiceProfiler::getInstance();
     foreach ($linters as $linter) {
+      $call_id = $profiler->beginServiceCall(array(
+        'type' => 'lint',
+        'linter' => get_class($linter),
+      ));
       $linter->didRunLinters();
+      $profiler->endServiceCall($call_id, array());
     }
   }
 
