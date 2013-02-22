@@ -534,9 +534,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $tokens = $block->getTokens();
         $last = end($tokens);
         while ($last && $last = $last->getNextToken()) {
-          if (!$last->isSemantic()) {
-            $tokens[$last->getTokenID()] = $last;
+          if ($last->isSemantic()) {
+            break;
           }
+          $tokens[$last->getTokenID()] = $last;
         }
 
         $blocks[$key] = array(
