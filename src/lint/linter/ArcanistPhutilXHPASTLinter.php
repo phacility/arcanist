@@ -102,6 +102,9 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'pht' => 0,
 
       'hsprintf' => 0,
+      'jsprintf' => 0,
+
+      'hgsprintf' => 0,
 
       'csprintf' => 0,
       'vcsprintf' => 0,
