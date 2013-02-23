@@ -5,7 +5,7 @@
  *
  * @group lint
  */
-final class ArcanistLintJSONRenderer implements ArcanistLintRenderer {
+final class ArcanistLintJSONRenderer extends ArcanistLintRenderer {
   const LINES_OF_CONTEXT = 3;
 
   public function renderLintResult(ArcanistLintResult $result) {
