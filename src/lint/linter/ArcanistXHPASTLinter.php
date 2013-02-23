@@ -157,7 +157,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    $version = '3';
+    $version = '4';
     $path = xhpast_get_binary_path();
     if (Filesystem::pathExists($path)) {
       $version .= '-'.md5_file($path);
@@ -480,6 +480,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $working_copy = $this->getEngine()->getWorkingCopy();
     if ($working_copy) {
       $hook_class = $working_copy->getConfig('lint.xhpast.switchhook');
+      $hook_class = $this->getConfig('switchhook', $hook_class);
       if ($hook_class) {
         $hook_obj = newv($hook_class, array());
         assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
