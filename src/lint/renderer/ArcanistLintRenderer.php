@@ -5,7 +5,9 @@
  *
  * @group lint
  */
-interface ArcanistLintRenderer {
-  public function renderLintResult(ArcanistLintResult $result);
-  public function renderOkayResult();
+abstract class ArcanistLintRenderer {
+
+  abstract public function renderLintResult(ArcanistLintResult $result);
+  abstract public function renderOkayResult();
+
 }

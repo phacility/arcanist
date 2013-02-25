@@ -115,7 +115,6 @@ phutil_register_library_map(array(
     'ArcanistPhutilXHPASTLinterTestCase' => 'lint/linter/__tests__/ArcanistPhutilXHPASTLinterTestCase.php',
     'ArcanistPyFlakesLinter' => 'lint/linter/ArcanistPyFlakesLinter.php',
     'ArcanistPyLintLinter' => 'lint/linter/ArcanistPyLintLinter.php',
-    'ArcanistRepoUtilsTestCase' => 'repository/util/__tests__/ArcanistRepoUtilsTestCase.php',
     'ArcanistRepositoryAPI' => 'repository/api/ArcanistRepositoryAPI.php',
     'ArcanistRepositoryAPIMiscTestCase' => 'repository/api/__tests__/ArcanistRepositoryAPIMiscTestCase.php',
     'ArcanistRepositoryAPIStateTestCase' => 'repository/api/__tests__/ArcanistRepositoryAPIStateTestCase.php',
@@ -150,6 +149,7 @@ phutil_register_library_map(array(
     'ArcanistXHPASTLintNamingHook' => 'lint/linter/xhpast/ArcanistXHPASTLintNamingHook.php',
     'ArcanistXHPASTLintNamingHookTestCase' => 'lint/linter/xhpast/__tests__/ArcanistXHPASTLintNamingHookTestCase.php',
     'ArcanistXHPASTLintSwitchHook' => 'lint/linter/xhpast/ArcanistXHPASTLintSwitchHook.php',
+    'ArcanistXHPASTLintTestSwitchHook' => 'lint/linter/__tests__/ArcanistXHPASTLintTestSwitchHook.php',
     'ArcanistXHPASTLinter' => 'lint/linter/ArcanistXHPASTLinter.php',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/__tests__/ArcanistXHPASTLinterTestCase.php',
     'ComprehensiveLintEngine' => 'lint/engine/ComprehensiveLintEngine.php',
@@ -167,8 +167,6 @@ phutil_register_library_map(array(
   ),
   'function' =>
   array(
-    'hgsprintf' => 'repository/util/hgsprintf.php',
-    'xsprintf_mercurial' => 'repository/util/hgsprintf.php',
   ),
   'xmap' =>
   array(
@@ -179,7 +177,7 @@ phutil_register_library_map(array(
     'ArcanistArcanistLinterTestCase' => 'ArcanistLinterTestCase',
     'ArcanistBaseCommitParserTestCase' => 'ArcanistTestCase',
     'ArcanistBaseWorkflow' => 'Phobject',
-    'ArcanistBaseXHPASTLinter' => 'ArcanistLinter',
+    'ArcanistBaseXHPASTLinter' => 'ArcanistFutureLinter',
     'ArcanistBookmarkWorkflow' => 'ArcanistFeatureWorkflow',
     'ArcanistBranchWorkflow' => 'ArcanistFeatureWorkflow',
     'ArcanistBritishTestCase' => 'ArcanistTestCase',
@@ -251,7 +249,6 @@ phutil_register_library_map(array(
     'ArcanistPhutilXHPASTLinterTestCase' => 'ArcanistArcanistLinterTestCase',
     'ArcanistPyFlakesLinter' => 'ArcanistLinter',
     'ArcanistPyLintLinter' => 'ArcanistLinter',
-    'ArcanistRepoUtilsTestCase' => 'ArcanistTestCase',
     'ArcanistRepositoryAPIMiscTestCase' => 'ArcanistTestCase',
     'ArcanistRepositoryAPIStateTestCase' => 'ArcanistTestCase',
     'ArcanistRubyLinter' => 'ArcanistLinter',
@@ -279,6 +276,7 @@ phutil_register_library_map(array(
     'ArcanistUserAbortException' => 'ArcanistUsageException',
     'ArcanistWhichWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistXHPASTLintNamingHookTestCase' => 'ArcanistTestCase',
+    'ArcanistXHPASTLintTestSwitchHook' => 'ArcanistXHPASTLintSwitchHook',
     'ArcanistXHPASTLinter' => 'ArcanistBaseXHPASTLinter',
     'ArcanistXHPASTLinterTestCase' => 'ArcanistArcanistLinterTestCase',
     'ComprehensiveLintEngine' => 'ArcanistLintEngine',

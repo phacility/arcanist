@@ -78,6 +78,10 @@ switch ($x) {
     do {
       break 2;
     } while (true);
+  case 7:
+    /* fallthrough */
+  case 8:
+    throw_exception();
 }
 ~~~~~~~~~~
 warning:41:3
@@ -88,3 +92,6 @@ warning:66:3
 disabled:68:7 # PHP 5.3 features
 warning:71:3
 warning:75:3
+~~~~~~~~~~
+~~~~~~~~~~
+{"config":{"switchhook":"ArcanistXHPASTLintTestSwitchHook"}}

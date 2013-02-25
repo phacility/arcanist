@@ -86,16 +86,14 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
     $pep8_bin = $this->getPEP8Path();
     $options = $this->getPEP8Options();
 
-    $futures = Futures(array())->limit(8);
+    $futures = array();
 
     foreach ($paths as $path) {
-      $future = new ExecFuture(
+      $futures[$path] = new ExecFuture(
         "%C %C %s",
         $pep8_bin,
         $options,
         $this->getEngine()->getFilePathOnDisk($path));
-
-      $futures->addFuture($future, $path);
     }
 
     return $futures;

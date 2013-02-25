@@ -1855,6 +1855,9 @@ EOTEXT
     $local = $repository_api->getLocalCommitInformation();
     if ($local) {
       $result = $this->parseCommitMessagesIntoFields($local);
+      if ($this->getArgument('create')) {
+        unset($result[0]['revisionID']);
+      }
     }
 
     $result[0] = $this->dispatchWillBuildEvent($result[0]);

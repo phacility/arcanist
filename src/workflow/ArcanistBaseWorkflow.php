@@ -871,15 +871,20 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     if (!$commits) {
       return false;
     }
-    $commit = reset($commits);
 
+    $commit = reset($commits);
     $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
       $commit['message']);
+
     if ($message->getGitSVNBaseRevision()) {
       return false;
     }
 
     if ($api->getAuthor() != $commit['author']) {
+      return false;
+    }
+
+    if ($message->getRevisionID() && $this->getArgument('create')) {
       return false;
     }
 

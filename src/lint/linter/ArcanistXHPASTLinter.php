@@ -125,19 +125,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   protected function buildFutures(array $paths) {
-    $futures = Futures(array())->limit(8);
     foreach ($paths as $path) {
       if (!isset($this->futures[$path])) {
         $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
       }
-      $futures->addFuture($this->futures[$path], $path);
     }
-    return $futures;
+    return array_select_keys($this->futures, $paths);
   }
 
   public function getXHPASTTreeForPath($path) {
     if (!array_key_exists($path, $this->trees)) {
-      $this->willLintPath($path);
       $this->trees[$path] = null;
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
@@ -160,7 +157,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    $version = '3';
+    $version = '4';
     $path = xhpast_get_binary_path();
     if (Filesystem::pathExists($path)) {
       $version .= '-'.md5_file($path);
@@ -483,6 +480,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $working_copy = $this->getEngine()->getWorkingCopy();
     if ($working_copy) {
       $hook_class = $working_copy->getConfig('lint.xhpast.switchhook');
+      $hook_class = $this->getConfig('switchhook', $hook_class);
       if ($hook_class) {
         $hook_obj = newv($hook_class, array());
         assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
@@ -537,9 +535,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $tokens = $block->getTokens();
         $last = end($tokens);
         while ($last && $last = $last->getNextToken()) {
-          if (!$last->isSemantic()) {
-            $tokens[$last->getTokenID()] = $last;
+          if ($last->isSemantic()) {
+            break;
           }
+          $tokens[$last->getTokenID()] = $last;
         }
 
         $blocks[$key] = array(

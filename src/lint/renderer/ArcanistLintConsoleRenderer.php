@@ -5,7 +5,7 @@
  *
  * @group lint
  */
-final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
+final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
   private $showAutofixPatches = false;
 
   public function setShowAutofixPatches($show_autofix_patches) {
@@ -138,7 +138,9 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
     $text_lines = explode("\n", $text);
     $text_length = count($text_lines);
 
-    if ($text) {
+    $intraline = ($text != '' || $start || !preg_match('/\n$/', $patch));
+
+    if ($intraline) {
       for (; $cursor < $line_num + $text_length; $cursor++) {
         $chevron = ($cursor == $line_num);
         // We may not have any data if, e.g., the old file does not exist.
@@ -176,7 +178,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
 
       $patched = phutil_console_format('##%s##', $patch_line);
 
-      if ($text) {
+      if ($intraline) {
         $patched = substr_replace(
           $line_data[$line_num],
           $patched,
