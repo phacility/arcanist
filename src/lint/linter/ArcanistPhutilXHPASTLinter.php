@@ -65,7 +65,12 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    return 2;
+    $version = '2';
+    $path = xhpast_get_binary_path();
+    if (Filesystem::pathExists($path)) {
+      $version .= '-'.md5_file($path);
+    }
+    return $version;
   }
 
   protected function buildFutures(array $paths) {

@@ -81,6 +81,7 @@ EOTEXT
         'help' =>
           "With 'summary', show lint warnings in a more compact format. ".
           "With 'json', show lint warnings in machine-readable JSON format. ".
+          "With 'none', show no lint warnings. ".
           "With 'compiler', show lint warnings in suitable for your editor."
       ),
       'only-new' => array(
@@ -384,6 +385,11 @@ EOTEXT
       case 'summary':
         $renderer = new ArcanistLintSummaryRenderer();
         break;
+      case 'none':
+        $prompt_patches = false;
+        $apply_patches = $this->getArgument('apply-patches');
+        $renderer = new ArcanistLintNoneRenderer();
+        break;
       case 'compiler':
         $renderer = new ArcanistLintLikeCompilerRenderer();
         $prompt_patches = false;
@@ -480,6 +486,11 @@ EOTEXT
     }
 
     if ($failed) {
+      if ($failed instanceof ArcanistNoEffectException) {
+        if ($renderer instanceof ArcanistLintNoneRenderer) {
+          return 0;
+        }
+      }
       throw $failed;
     }
 
