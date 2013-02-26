@@ -232,7 +232,7 @@ abstract class ArcanistLintEngine {
           $profiler = PhutilServiceProfiler::getInstance();
           $call_id = $profiler->beginServiceCall(array(
             'type' => 'lint',
-            'linter' => get_class($linter),
+            'linter' => $linter_name,
             'paths' => $paths,
           ));
 
@@ -257,7 +257,7 @@ abstract class ArcanistLintEngine {
       }
     }
 
-    $this->didRunLinters($linters);
+    $exceptions += $this->didRunLinters($linters);
 
     foreach ($linters as $linter) {
       foreach ($linter->getLintMessages() as $message) {
@@ -358,15 +358,28 @@ abstract class ArcanistLintEngine {
   protected function didRunLinters(array $linters) {
     assert_instances_of($linters, 'ArcanistLinter');
 
+    $exceptions = array();
     $profiler = PhutilServiceProfiler::getInstance();
-    foreach ($linters as $linter) {
+
+    foreach ($linters as $linter_name => $linter) {
+      if (!is_string($linter_name)) {
+        $linter_name = get_class($linter);
+      }
+
       $call_id = $profiler->beginServiceCall(array(
         'type' => 'lint',
-        'linter' => get_class($linter),
+        'linter' => $linter_name,
       ));
-      $linter->didRunLinters();
+
+      try {
+        $linter->didRunLinters();
+      } catch (Exception $ex) {
+        $exceptions[$linter_name] = $ex;
+      }
       $profiler->endServiceCall($call_id, array());
     }
+
+    return $exceptions;
   }
 
   public function setRepositoryVersion($version) {
