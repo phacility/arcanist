@@ -185,10 +185,24 @@ abstract class ArcanistLintEngine {
     }
 
     $versions = array($this->getCacheVersion());
+
     foreach ($linters as $linter) {
       $linter->setEngine($this);
-      $versions[] = get_class($linter).':'.$linter->getCacheVersion();
+      $version = get_class($linter).':'.$linter->getCacheVersion();
+
+      $symbols = id(new PhutilSymbolLoader())
+        ->setType('class')
+        ->setName(get_class($linter))
+        ->selectSymbolsWithoutLoading();
+      $symbol = idx($symbols, 'class$'.get_class($linter));
+      if ($symbol) {
+        $version .= ':'.md5_file(
+          phutil_get_library_root($symbol['library']).'/'.$symbol['where']);
+      }
+
+      $versions[] = $version;
     }
+
     $this->cacheVersion = crc32(implode("\n", $versions));
 
     $this->stopped = array();
