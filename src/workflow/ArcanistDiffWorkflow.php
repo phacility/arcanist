@@ -660,12 +660,6 @@ EOTEXT
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
         if ($repository_api instanceof ArcanistMercurialAPI) {
-
-          // Some Mercurial users prefer to use it like SVN, where they don't
-          // commit changes before sending them for review. This would be a
-          // pretty bad workflow in Git, but Mercurial users are significantly
-          // more expert at change management.
-
           $use_dirty_changes = false;
           if ($this->getArgument('uncommitted')) {
             // OK.
@@ -680,7 +674,6 @@ EOTEXT
             }
           }
 
-          $repository_api->setIncludeDirectoryStateInDiffs(true);
           $this->haveUncommittedChanges = true;
         } else {
           throw $ex;

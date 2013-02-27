@@ -89,9 +89,9 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
     }
 
     $text = $message->getOriginalText();
+    $start = $message->getChar() - 1;
     // Refine original and replacement text to eliminate start and end in common
     if ($message->isPatchable()) {
-      $start = $message->getChar() - 1;
       $patch = $message->getReplacementText();
       $text_strlen = strlen($text);
       $patch_strlen = strlen($patch);
@@ -152,9 +152,7 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
           $data = substr_replace(
             $data,
             phutil_console_format('##%s##', $text_line),
-            ($cursor == $line_num)
-              ? ($message->isPatchable() ? $start : $message->getChar() - 1)
-              : 0,
+            ($cursor == $line_num ? $start : 0),
             strlen($text_line));
         }
 
