@@ -9,7 +9,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   private $branch;
   private $localCommitInfo;
-  private $includeDirectoryStateInDiffs;
   private $rawDiffCache = array();
 
   private $supportsRebase;
@@ -377,15 +376,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRawDiffText($path) {
     $options = $this->getDiffOptions();
 
-    // NOTE: In Mercurial, "--rev x" means "diff between x and the working
-    // copy state", while "--rev x..." means "diff between x and the working
-    // copy commit" (i.e., from 'x' to '.'). The latter excludes any dirty
-    // changes in the working copy.
-
     $range = $this->getBaseCommit();
-    if (!$this->includeDirectoryStateInDiffs) {
-      $range .= '...';
-    }
 
     $raw_diff_cache_key = $options.' '.$range.' '.$path;
     if (idx($this->rawDiffCache, $raw_diff_cache_key)) {
@@ -668,11 +659,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'commit --amend -l %s',
       $tmp_file);
     $this->reloadWorkingCopy();
-  }
-
-  public function setIncludeDirectoryStateInDiffs($include) {
-    $this->includeDirectoryStateInDiffs = $include;
-    return $this;
   }
 
   public function getCommitSummary($commit) {
