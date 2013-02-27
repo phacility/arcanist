@@ -20,6 +20,7 @@ abstract class ArcanistPhutilTestCase {
   private $coverage = array();
   private $projectRoot;
   private $paths;
+  private $renderer;
 
 
 /* -(  Making Test Assertions  )--------------------------------------------- */
@@ -372,6 +373,10 @@ abstract class ArcanistPhutilTestCase {
     $result->setDuration(microtime(true) - $this->testStartTime);
     $result->setUserData($reason);
     $this->results[] = $result;
+
+    if ($this->renderer) {
+      echo $this->renderer->renderUnitResult($result);
+    }
   }
 
 
@@ -528,6 +533,11 @@ abstract class ArcanistPhutilTestCase {
 
   protected function getLink($method) {
     return null;
+  }
+
+  public function setRenderer(ArcanistUnitRenderer $renderer) {
+    $this->renderer = $renderer;
+    return $this;
   }
 
 }

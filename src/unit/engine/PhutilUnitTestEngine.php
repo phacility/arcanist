@@ -45,6 +45,9 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       if ($this->getPaths()) {
         $test_case->setPaths($this->getPaths());
       }
+      if ($this->renderer) {
+        $test_case->setRenderer($this->renderer);
+      }
       $results[] = $test_case->run();
     }
 
@@ -167,6 +170,10 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $run_tests = array_keys($run_tests);
 
     return $run_tests;
+  }
+
+  public function shouldEchoTestResults() {
+    return !$this->renderer;
   }
 
 }
