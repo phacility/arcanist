@@ -376,6 +376,7 @@
             "name": "Yiding Jia"
         }
     ], 
+    "bin": ["bin/arc"],
     "minimum-stability": "dev",
     "include-path" : ["src/"],
     "require": {
