@@ -296,6 +296,33 @@ abstract class ArcanistRepositoryAPI {
     }
   }
 
+  /**
+   * Fetches the original file data for each path provided.
+   *
+   * @return map<string, string> Map from path to file data.
+   */
+  public function getBulkOriginalFileData($paths) {
+    $filedata = array();
+    foreach ($paths as $path) {
+      $filedata[$path] = $this->getOriginalFileData($path);
+    }
+
+    return $filedata;
+  }
+
+  /**
+   * Fetches the current file data for each path provided.
+   *
+   * @return map<string, string> Map from path to file data.
+   */
+  public function getBulkCurrentFileData($paths) {
+    $filedata = array();
+    foreach ($paths as $path) {
+      $filedata[$path] = $this->getCurrentFileData($path);
+    }
+
+    return $filedata;
+  }
 
   /**
    * @return Traversable
