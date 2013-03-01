@@ -115,7 +115,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // Mercurial 2.1 and up have phases which indicate if something is
     // published or not. To find which revs are outgoing, it's much
     // faster to check the phase instead of actually checking the server.
-    if (!$this->supportsPhases()) {
+    if ($this->supportsPhases()) {
       list($err, $stdout) = $this->execManualLocal(
         'log --branch %s -r %s --style default',
         $this->getBranchName(),
