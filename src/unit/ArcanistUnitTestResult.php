@@ -50,18 +50,6 @@ final class ArcanistUnitTestResult {
     return $this->result;
   }
 
-  public function getConsoleFormattedResult() {
-    static $status_codes = array(
-      self::RESULT_PASS => '<bg:green>** PASS **</bg>',
-      self::RESULT_FAIL => '<bg:red>** FAIL **</bg>',
-      self::RESULT_SKIP => '<bg:yellow>** SKIP **</bg>',
-      self::RESULT_BROKEN => '<bg:red>** BROKEN **</bg>',
-      self::RESULT_UNSOUND => '<bg:yellow>** UNSOUND **</bg>',
-      self::RESULT_POSTPONED => '<bg:yellow>** POSTPONED **</bg>',
-    );
-    return phutil_console_format($status_codes[$this->result]);
-  }
-
   public function setDuration($duration) {
     $this->duration = $duration;
     return $this;

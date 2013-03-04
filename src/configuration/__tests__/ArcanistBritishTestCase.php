@@ -2,44 +2,44 @@
 
 final class ArcanistBritishTestCase extends ArcanistTestCase {
 
-  public function testCompletion() {
-    $this->assertCompletion(
+  public function testCommandCompletion() {
+    $this->assertCommandCompletion(
       array('land'),
       'alnd',
       array('land', 'amend'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array('branch'),
       'brnach',
       array('branch', 'browse'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array(),
       'test',
       array('list', 'unit'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array('list'),
       'lists',
       array('list'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array('diff'),
       'dfif',
       array('diff'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array('unit'),
       'uint',
       array('unit', 'lint', 'list'));
 
-    $this->assertCompletion(
+    $this->assertCommandCompletion(
       array('list', 'lint'),
       'nilt',
       array('unit', 'lint', 'list'));
   }
 
-  private function assertCompletion($expect, $input, $commands) {
+  private function assertCommandCompletion($expect, $input, $commands) {
     $result = ArcanistConfiguration::correctCommandSpelling(
       $input,
       $commands,
@@ -56,5 +56,43 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
       "Correction of {$input} against: {$commands}");
   }
 
+
+  public function testArgumentCompletion() {
+    $this->assertArgumentCompletion(
+      array('nolint'),
+      'no-lint',
+      array('nolint', 'nounit'));
+
+    $this->assertArgumentCompletion(
+      array('reviewers'),
+      'reviewer',
+      array('reviewers', 'cc'));
+
+    $this->assertArgumentCompletion(
+      array(),
+      'onlint',
+      array('nolint'));
+
+    $this->assertArgumentCompletion(
+      array(),
+      'nolind',
+      array('nolint'));
+  }
+
+  private function assertArgumentCompletion($expect, $input, $arguments) {
+    $result = ArcanistConfiguration::correctArgumentSpelling(
+      $input,
+      $arguments);
+
+    sort($result);
+    sort($expect);
+
+    $arguments = implode(', ', $arguments);
+
+    $this->assertEqual(
+      $expect,
+      $result,
+      "Correction of {$input} against: {$arguments}");
+  }
 
 }

@@ -1142,6 +1142,8 @@ final class ArcanistDiffParser {
       return;
     }
 
+    $imagechanges = array();
+
     $changes = $this->changes;
     foreach ($changes as $change) {
       $path = $change->getCurrentPath();
@@ -1183,8 +1185,22 @@ final class ArcanistDiffParser {
         continue;
       }
 
-      $change->setOriginalFileData($repository_api->getOriginalFileData($path));
-      $change->setCurrentFileData($repository_api->getCurrentFileData($path));
+      $imagechanges[$path] = $change;
+    }
+
+    // Fetch the actual file contents in batches so repositories
+    // that have slow random file accesses (i.e. mercurial) can
+    // optimize the retrieval.
+    $paths = array_keys($imagechanges);
+
+    $filedata = $repository_api->getBulkOriginalFileData($paths);
+    foreach ($filedata as $path => $data) {
+      $imagechanges[$path]->setOriginalFileData($data);
+    }
+
+    $filedata = $repository_api->getBulkCurrentFileData($paths);
+    foreach ($filedata as $path => $data) {
+      $imagechanges[$path]->setCurrentFileData($data);
     }
 
     $this->changes = $changes;

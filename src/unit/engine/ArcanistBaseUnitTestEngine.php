@@ -14,6 +14,7 @@ abstract class ArcanistBaseUnitTestEngine {
   private $enableAsyncTests;
   private $enableCoverage;
   private $runAllTests;
+  protected $renderer;
 
 
   public function setRunAllTests($run_all_tests) {
@@ -84,6 +85,11 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getEnableCoverage() {
     return $this->enableCoverage;
+  }
+
+  public function setRenderer(ArcanistUnitRenderer $renderer) {
+    $this->renderer = $renderer;
+    return $this;
   }
 
   abstract public function run();

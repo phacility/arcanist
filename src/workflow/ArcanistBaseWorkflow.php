@@ -636,8 +636,20 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       } else if (!strncmp($arg, '--', 2)) {
         $arg_key = substr($arg, 2);
         if (!array_key_exists($arg_key, $spec)) {
-          throw new ArcanistUsageException(
-            "Unknown argument '{$arg_key}'. Try 'arc help'.");
+          $corrected = ArcanistConfiguration::correctArgumentSpelling(
+            $arg_key,
+            array_keys($spec));
+          if (count($corrected) == 1) {
+            PhutilConsole::getConsole()->writeErr(
+              pht(
+                "(Assuming '%s' is the British spelling of '%s'.)",
+                '--'.$arg_key,
+                '--'.head($corrected))."\n");
+            $arg_key = head($corrected);
+          } else {
+            throw new ArcanistUsageException(
+              "Unknown argument '{$arg_key}'. Try 'arc help'.");
+          }
         }
       } else if (!strncmp($arg, '-', 1)) {
         $arg_key = substr($arg, 1);
