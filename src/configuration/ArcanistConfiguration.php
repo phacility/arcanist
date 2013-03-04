@@ -209,11 +209,34 @@ class ArcanistConfiguration {
       ->setReplaceCost(3)
       ->setTransposeCost(2);
 
+    return self::correctSpelling($command, $options, $matrix, $max_distance);
+  }
+
+  public static function correctArgumentSpelling($command, array $options) {
+    $max_distance = 1;
+
+    // We are stricter with arguments - we allow only one inserted or deleted
+    // character. It is mainly to handle cases like --no-lint versus --nolint
+    // or --reviewer versus --reviewers.
+    $matrix = id(new PhutilEditDistanceMatrix())
+      ->setInsertCost(1)
+      ->setDeleteCost(1)
+      ->setReplaceCost(10);
+
+    return self::correctSpelling($command, $options, $matrix, $max_distance);
+  }
+
+  public static function correctSpelling(
+    $input,
+    array $options,
+    PhutilEditDistanceMatrix $matrix,
+    $max_distance) {
+
     $distances = array();
-    $commandv = str_split($command);
+    $inputv = str_split($input);
     foreach ($options as $option) {
       $optionv = str_split($option);
-      $matrix->setSequences($optionv, $commandv);
+      $matrix->setSequences($optionv, $inputv);
       $distances[$option] = $matrix->getEditDistance();
     }
 

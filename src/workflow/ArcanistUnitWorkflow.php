@@ -138,6 +138,9 @@ EOTEXT
     }
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
+    $renderer = new ArcanistUnitConsoleRenderer();
+    $this->engine->setRenderer($renderer);
+
     $enable_coverage = null; // Means "default".
     if ($this->getArgument('coverage') ||
         $this->getArgument('detailed-coverage')) {
@@ -175,19 +178,9 @@ EOTEXT
         $unresolved[] = $result;
       } else {
         if ($this->engine->shouldEchoTestResults()) {
-          $duration = '';
-          if ($result_code == ArcanistUnitTestResult::RESULT_PASS) {
-            $duration = ' '.self::formatTestDuration($result->getDuration());
-          }
-          $console->writeOut(
-            "  %s %s\n",
-            $result->getConsoleFormattedResult().$duration,
-            $result->getName());
+          $console->writeOut('%s', $renderer->renderUnitResult($result));
         }
         if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
-          if ($this->engine->shouldEchoTestResults()) {
-            $console->writeOut("%s\n", $result->getUserData());
-          }
           $unresolved[] = $result;
         }
       }
@@ -198,12 +191,9 @@ EOTEXT
       }
     }
     if ($postponed_count) {
-      $postponed = id(new ArcanistUnitTestResult())
-        ->setResult(ArcanistUnitTestResult::RESULT_POSTPONED);
       $console->writeOut(
-        "%s %s\n",
-        $postponed->getConsoleFormattedResult(),
-        pht('%d test(s)', $postponed_count));
+        '%s',
+        $renderer->renderPostponedResult($postponed_count));
     }
 
     if ($coverage) {
@@ -284,44 +274,6 @@ EOTEXT
 
   public function getTestResults() {
     return $this->testResults;
-  }
-
-  private static function formatTestDuration($seconds) {
-    // Very carefully define inclusive upper bounds on acceptable unit test
-    // durations. Times are in milliseconds and are in increasing order.
-    $acceptableness = array(
-      50   => "<fg:green>%s</fg><fg:yellow>\xE2\x98\x85</fg> ",
-      200  => '<fg:green>%s</fg>  ',
-      500  => '<fg:yellow>%s</fg>  ',
-      INF  => '<fg:red>%s</fg>  ',
-    );
-
-    $milliseconds = $seconds * 1000;
-    $duration = self::formatTime($seconds);
-    foreach ($acceptableness as $upper_bound => $formatting) {
-      if ($milliseconds <= $upper_bound) {
-        return phutil_console_format($formatting, $duration);
-      }
-    }
-    return phutil_console_format(end($acceptableness), $duration);
-  }
-
-  private static function formatTime($seconds) {
-    if ($seconds >= 60) {
-      $minutes = floor($seconds / 60);
-      return sprintf('%dm%02ds', $minutes, round($seconds % 60));
-    }
-
-    if ($seconds >= 1) {
-      return sprintf('%4.1fs', $seconds);
-    }
-
-    $milliseconds = $seconds * 1000;
-    if ($milliseconds >= 1) {
-      return sprintf('%3dms', round($milliseconds));
-    }
-
-    return ' <1ms';
   }
 
   private function renderDetailedCoverageReport($data, $report) {

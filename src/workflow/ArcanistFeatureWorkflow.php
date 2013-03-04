@@ -152,7 +152,7 @@ EOTEXT
         }
       } else {
         $exec = $api->execManualLocal(
-          'checkout -b %Ls',
+          'checkout --track -b %Ls',
           $names);
       }
 

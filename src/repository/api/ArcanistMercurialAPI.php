@@ -115,7 +115,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     // Mercurial 2.1 and up have phases which indicate if something is
     // published or not. To find which revs are outgoing, it's much
     // faster to check the phase instead of actually checking the server.
-    if (!$this->supportsPhases()) {
+    if ($this->supportsPhases()) {
       list($err, $stdout) = $this->execManualLocal(
         'log --branch %s -r %s --style default',
         $this->getBranchName(),
@@ -406,6 +406,50 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->getFileDataAtRevision(
       $path,
       $this->getWorkingCopyRevision());
+  }
+
+  public function getBulkOriginalFileData($paths) {
+    return $this->getBulkFileDataAtRevision($paths, $this->getBaseCommit());
+  }
+
+  public function getBulkCurrentFileData($paths) {
+    return $this->getBulkFileDataAtRevision(
+      $paths,
+      $this->getWorkingCopyRevision());
+  }
+
+  private function getBulkFileDataAtRevision($paths, $revision) {
+    // Calling 'hg cat' on each file individually is slow (1 second per file
+    // on a large repo) because mercurial has to decompress and parse the
+    // entire manifest every time.  Do it in one large batch instead.
+
+    // hg cat will write the file data to files in a temp directory
+    $tmpdir = Filesystem::createTemporaryDirectory();
+
+    // Mercurial doesn't create the directories for us :(
+    foreach ($paths as $path) {
+      $tmppath = $tmpdir.'/'.$path;
+      Filesystem::createDirectory(dirname($tmppath), 0755, true);
+    }
+
+    list($err, $stdout) = $this->execManualLocal(
+      'cat --rev %s --output %s -- %C',
+      $revision,
+      // %p is the formatter for the repo-relative filepath
+      $tmpdir.'/%p',
+      implode(' ', $paths));
+
+    $filedata = array();
+    foreach ($paths as $path) {
+      $tmppath = $tmpdir.'/'.$path;
+      if (Filesystem::pathExists($tmppath)) {
+        $filedata[$path] = Filesystem::readFile($tmppath);
+      }
+    }
+
+    Filesystem::remove($tmpdir);
+
+    return $filedata;
   }
 
   private function getFileDataAtRevision($path, $revision) {
