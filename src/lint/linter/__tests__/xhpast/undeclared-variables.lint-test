@@ -171,6 +171,7 @@ error:46:5
 error:47:5
 error:48:10
 error:53:10 worst ever
+warning:65:3
 error:91:3 This stuff is basically testing the lexer/parser for function decls.
 error:108:15 Variables in instance derefs should be checked, static should not.
 error:121:3 isset() and empty() should not trigger errors.
