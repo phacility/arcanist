@@ -193,7 +193,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($this->localCommitInfo === null) {
       $base_commit = $this->getBaseCommit();
       list($info) = $this->execxLocal(
-        "log --template '%C' --rev %s --branch %s --",
+        "log --template \"%C\" --rev %s --branch %s --",
         "{node}\1{rev}\1{author|emailuser}\1{author|email}\1".
           "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
         hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
