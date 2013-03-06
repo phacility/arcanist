@@ -310,6 +310,29 @@ abstract class ArcanistPhutilTestCase {
   }
 
 
+  /**
+   * This hook is invoked once, before any test cases execute. It gives you
+   * an opportunity to perform setup steps for the entire suite of test cases.
+   *
+   * @return void
+   * @task hook
+   */
+  public function willRunTestCases(array $test_cases) {
+    return;
+  }
+
+
+  /**
+   * This hook is invoked once, after all test cases execute.
+   *
+   * @return void
+   * @task hook
+   */
+  public function didRunTestCases(array $test_cases) {
+    return;
+  }
+
+
 /* -(  Internals  )---------------------------------------------------------- */
 
 
