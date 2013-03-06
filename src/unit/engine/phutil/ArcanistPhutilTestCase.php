@@ -314,6 +314,7 @@ abstract class ArcanistPhutilTestCase {
    * This hook is invoked once, before any test cases execute. It gives you
    * an opportunity to perform setup steps for the entire suite of test cases.
    *
+   * @param list<ArcanistPhutilTestCase> List of test cases to be run.
    * @return void
    * @task hook
    */
@@ -325,6 +326,7 @@ abstract class ArcanistPhutilTestCase {
   /**
    * This hook is invoked once, after all test cases execute.
    *
+   * @param list<ArcanistPhutilTestCase> List of test cases that ran.
    * @return void
    * @task hook
    */
