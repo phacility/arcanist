@@ -508,8 +508,12 @@ abstract class ArcanistPhutilTestCase {
       $coverage[substr($file, strlen($this->projectRoot) + 1)] = $str;
     }
 
-    // Only keep coverage information for files modified by the change.
-    $coverage = array_select_keys($coverage, $this->paths);
+    // Only keep coverage information for files modified by the change. In
+    // the case of --everything, we won't have paths, so just return all the
+    // coverage data.
+    if ($this->paths) {
+      $coverage = array_select_keys($coverage, $this->paths);
+    }
 
     return $coverage;
   }
