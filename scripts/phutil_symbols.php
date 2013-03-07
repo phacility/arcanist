@@ -237,12 +237,22 @@ foreach ($classes as $class) {
   }
 }
 
+$magic_names = array(
+  'static' => true,
+  'parent' => true,
+  'self'   => true,
+);
+
 // This is "new X()".
 $uses_of_new = $root->selectDescendantsOfType('n_NEW');
 foreach ($uses_of_new as $new_operator) {
   $name = $new_operator->getChildByIndex(0);
   if ($name->getTypeName() == 'n_VARIABLE' ||
       $name->getTypeName() == 'n_VARIABLE_VARIABLE') {
+    continue;
+  }
+  $name_concrete = strtolower($name->getConcreteString());
+  if (isset($magic_names[$name_concrete])) {
     continue;
   }
   $need[] = array(
@@ -258,12 +268,7 @@ foreach ($static_uses as $static_use) {
   if ($name->getTypeName() != 'n_CLASS_NAME') {
     continue;
   }
-  $name_concrete = $name->getConcreteString();
-  $magic_names = array(
-    'static' => true,
-    'parent' => true,
-    'self'   => true,
-  );
+  $name_concrete = strtolower($name->getConcreteString());
   if (isset($magic_names[$name_concrete])) {
     continue;
   }
