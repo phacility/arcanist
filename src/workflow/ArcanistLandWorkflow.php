@@ -352,6 +352,7 @@ EOTEXT
     $rev_status = $this->revision['status'];
     $rev_id = $this->revision['id'];
     $rev_title = $this->revision['title'];
+    $rev_auxiliary = idx($this->revision, 'auxiliary', array());
 
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(
@@ -359,6 +360,42 @@ EOTEXT
         "accepted. Continue anyway?");
       if (!$ok) {
         throw new ArcanistUserAbortException();
+      }
+    }
+
+    if ($rev_auxiliary) {
+      $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
+
+      $dep_on_revs = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
+         array(
+           'phids' => $phids,
+           'status' => 'status-open',
+         ));
+
+      $open_dep_revs = array();
+      foreach ($dep_on_revs as $dep_on_rev) {
+        $dep_on_rev_id = $dep_on_rev['id'];
+        $dep_on_rev_title = $dep_on_rev['title'];
+        $dep_on_rev_status = $dep_on_rev['status'];
+        $open_dep_revs[$dep_on_rev_id] = $dep_on_rev_title;
+      }
+
+      if (!empty($open_dep_revs)) {
+        $open_revs = array();
+        foreach ($open_dep_revs as $id => $title) {
+          $open_revs[] = "    - D".$id.": ".$title;
+        }
+        $open_revs = implode("\n", $open_revs);
+
+        echo "Revision 'D{$rev_id}: {$rev_title}' depends ".
+             "on open revisions:\n\n";
+        echo $open_revs;
+
+        $ok = phutil_console_confirm("Continue anyway?");
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
       }
     }
 
