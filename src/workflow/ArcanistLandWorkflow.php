@@ -343,7 +343,8 @@ EOTEXT
         "'{$this->branch}' which are not present on '{$this->onto}':\n\n".
         $this->renderRevisionList($revisions)."\n".
         "Separate these revisions onto different {$this->branchType}s, or use ".
-        "'--revision <id>' to select one.";
+        "'--revision <id>' to use the commit message from <id> and land them ".
+        "all.";
       throw new ArcanistUsageException($message);
     }
 
