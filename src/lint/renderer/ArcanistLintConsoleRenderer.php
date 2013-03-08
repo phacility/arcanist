@@ -90,6 +90,7 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
 
     $text = $message->getOriginalText();
     $start = $message->getChar() - 1;
+    $patch = '';
     // Refine original and replacement text to eliminate start and end in common
     if ($message->isPatchable()) {
       $patch = $message->getReplacementText();
