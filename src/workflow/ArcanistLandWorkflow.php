@@ -782,6 +782,18 @@ EOTEXT
       }
     }
 
+    // We dispatch this event so we can run checks on the merged revision, right
+    // before it gets pushed out. It's easier to do this in arc land than to
+    // try to hook into git/hg.
+    try {
+      $this->dispatchEvent(
+        ArcanistEventType::TYPE_LAND_WILLPUSHREVISION,
+        array());
+    } catch (Exception $ex) {
+      $this->executeCleanupAfterFailedPush();
+      throw $ex;
+    }
+
     if ($this->getArgument('hold')) {
       echo phutil_console_format(
         "Holding change in **%s**: it has NOT been pushed yet.\n",
@@ -818,9 +830,8 @@ EOTEXT
 
       if ($err) {
         echo phutil_console_format("<bg:red>**   PUSH FAILED!   **</bg>\n");
+        $this->executeCleanupAfterFailedPush();
         if ($this->isGit) {
-          $repository_api->execxLocal('reset --hard HEAD^');
-          $this->restoreBranch();
           throw new ArcanistUsageException(
             "'{$cmd}' failed! Fix the error and run 'arc land' again.");
         }
@@ -838,6 +849,14 @@ EOTEXT
       $mark_workflow->run();
 
       echo "\n";
+    }
+  }
+
+  private function executeCleanupAfterFailedPush() {
+    if ($this->isGit) {
+      $repository_api = $this->getRepositoryAPI();
+      $repository_api->execxLocal('reset --hard HEAD^');
+      $this->restoreBranch();
     }
   }
 
