@@ -199,18 +199,24 @@ EOTEXT
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
+    $file_hashes = array();
     if ($use_cache) {
       $engine->setRepositoryVersion($this->getRepositoryVersion());
       $cache = $this->readScratchJSONFile('lint-cache.json');
       $cache = idx($cache, $this->getCacheKey(), array());
-      $cache = array_intersect_key($cache, array_flip($paths));
       $cached = array();
-      foreach ($cache as $path => $messages) {
+
+      foreach ($paths as $path) {
         $abs_path = $engine->getFilePathOnDisk($path);
         if (!Filesystem::pathExists($abs_path)) {
           continue;
         }
-        $messages = idx($messages, md5_file($abs_path));
+        $file_hashes[$abs_path] = md5_file($abs_path);
+
+        if (!isset($cache[$path])) {
+          continue;
+        }
+        $messages = idx($cache[$path], $file_hashes[$abs_path]);
         if ($messages !== null) {
           $cached[$path] = $messages;
         }
@@ -423,10 +429,10 @@ EOTEXT
 
       if ($apply_patches && $result->isPatchable()) {
         $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
+        $old_file = $result->getFilePathOnDisk();
 
         if ($prompt_patches &&
             !($result_all_autofix && !$prompt_autofix_patches)) {
-          $old_file = $result->getFilePathOnDisk();
           if (!Filesystem::pathExists($old_file)) {
             $old_file = '/dev/null';
           }
@@ -451,6 +457,7 @@ EOTEXT
 
         $patcher->writePatchToDisk();
         $wrote_to_disk = true;
+        $file_hashes[$old_file] = md5_file($old_file);
       }
     }
 
@@ -526,7 +533,6 @@ EOTEXT
         if (!Filesystem::pathExists($abs_path)) {
           continue;
         }
-        $hash = md5_file($abs_path);
         $version = $result->getCacheVersion();
         $cached_path = array();
         if (isset($stopped[$path])) {
@@ -542,6 +548,7 @@ EOTEXT
             $cached_path[] = $message->toDictionary();
           }
         }
+        $hash = $file_hashes[$abs_path];
         $cached[$path] = array($hash => array($version => $cached_path));
       }
       $cache[$this->getCacheKey()] = $cached;
