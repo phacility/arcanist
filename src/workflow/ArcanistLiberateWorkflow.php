@@ -156,7 +156,7 @@ EOTEXT
     $bin = $this->getScriptPath('scripts/phutil_rebuild_map.php');
 
     return phutil_passthru(
-      '%s %C %s',
+      'php %s %C %s',
       $bin,
       $this->getArgument('all') ? '--drop-cache' : '',
       $path);

@@ -127,6 +127,12 @@ final class ArcanistMercurialParser {
           // format is otherwise identical to "hg log".
           continue;
         }
+
+        if (preg_match('/^remote:/', $line)) {
+          // This indicates remote error in "hg outgoing".
+          continue;
+        }
+
         list($name, $value) = explode(':', $line, 2);
         $value = trim($value);
         switch ($name) {
