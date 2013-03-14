@@ -33,8 +33,8 @@ EOTEXT
           With __name__, it creates or checks out a branch. If the branch
           __name__ doesn't exist and is in format D123 then the branch of
           revision D123 is checked out. Use __start__ to specify where the new
-          branch will start. Using 'arc.land.onto.default' to set the default
-          land location will also set the default feature start location.
+          branch will start. Use 'arc.feature.start.default' to set the default
+          feature start location.
 EOTEXT
       );
   }
@@ -110,7 +110,7 @@ EOTEXT
       $start = $names[1];
     } else {
       $start = $this->getWorkingCopy()->getConfigFromAnySource(
-        'arc.land.onto.default');
+        'arc.feature.start.default');
     }
 
     $branches = $api->getAllBranches();

@@ -57,7 +57,7 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
       // Do these one at a time since they individually fanout to saturate
       // available system resources.
       $future = new ExecFuture(
-        '%s --show --quiet --ugly -- %s',
+        'php %s --show --quiet --ugly -- %s',
         $bin,
         phutil_get_library_root($lib));
       $symbols[$lib] = $future->resolveJSON();

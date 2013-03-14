@@ -310,6 +310,31 @@ abstract class ArcanistPhutilTestCase {
   }
 
 
+  /**
+   * This hook is invoked once, before any test cases execute. It gives you
+   * an opportunity to perform setup steps for the entire suite of test cases.
+   *
+   * @param list<ArcanistPhutilTestCase> List of test cases to be run.
+   * @return void
+   * @task hook
+   */
+  public function willRunTestCases(array $test_cases) {
+    return;
+  }
+
+
+  /**
+   * This hook is invoked once, after all test cases execute.
+   *
+   * @param list<ArcanistPhutilTestCase> List of test cases that ran.
+   * @return void
+   * @task hook
+   */
+  public function didRunTestCases(array $test_cases) {
+    return;
+  }
+
+
 /* -(  Internals  )---------------------------------------------------------- */
 
 
@@ -508,8 +533,12 @@ abstract class ArcanistPhutilTestCase {
       $coverage[substr($file, strlen($this->projectRoot) + 1)] = $str;
     }
 
-    // Only keep coverage information for files modified by the change.
-    $coverage = array_select_keys($coverage, $this->paths);
+    // Only keep coverage information for files modified by the change. In
+    // the case of --everything, we won't have paths, so just return all the
+    // coverage data.
+    if ($this->paths) {
+      $coverage = array_select_keys($coverage, $this->paths);
+    }
 
     return $coverage;
   }

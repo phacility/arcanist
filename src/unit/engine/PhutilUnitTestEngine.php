@@ -37,7 +37,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $project_root = $this->getWorkingCopy()->getProjectRoot();
 
-    $results = array();
+    $test_cases = array();
     foreach ($run_tests as $test_class) {
       $test_case = newv($test_class, array());
       $test_case->setEnableCoverage($enable_coverage);
@@ -48,10 +48,23 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       if ($this->renderer) {
         $test_case->setRenderer($this->renderer);
       }
-      $results[] = $test_case->run();
+      $test_cases[] = $test_case;
     }
 
+    foreach ($test_cases as $test_case) {
+      $test_case->willRunTestCases($test_cases);
+    }
+
+    $results = array();
+    foreach ($test_cases as $test_case) {
+      $results[] = $test_case->run();
+    }
     $results = array_mergev($results);
+
+    foreach ($test_cases as $test_case) {
+      $test_case->didRunTestCases($test_cases);
+    }
+
     return $results;
   }
 

@@ -352,7 +352,7 @@ final class PhutilLibraryMapBuilder {
     $absolute_file = $this->getPath($file);
     $bin = dirname(dirname(__FILE__)).'/phutil_symbols.php';
 
-    return new ExecFuture('%s --ugly -- %s', $bin, $absolute_file);
+    return new ExecFuture('php %s --ugly -- %s', $bin, $absolute_file);
   }
 
 

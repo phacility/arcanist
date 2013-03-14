@@ -343,7 +343,8 @@ EOTEXT
         "'{$this->branch}' which are not present on '{$this->onto}':\n\n".
         $this->renderRevisionList($revisions)."\n".
         "Separate these revisions onto different {$this->branchType}s, or use ".
-        "'--revision <id>' to select one.";
+        "'--revision <id>' to use the commit message from <id> and land them ".
+        "all.";
       throw new ArcanistUsageException($message);
     }
 
@@ -352,6 +353,7 @@ EOTEXT
     $rev_status = $this->revision['status'];
     $rev_id = $this->revision['id'];
     $rev_title = $this->revision['title'];
+    $rev_auxiliary = idx($this->revision, 'auxiliary', array());
 
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(
@@ -359,6 +361,43 @@ EOTEXT
         "accepted. Continue anyway?");
       if (!$ok) {
         throw new ArcanistUserAbortException();
+      }
+    }
+
+    if ($rev_auxiliary) {
+      $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
+      if ($phids) {
+        $dep_on_revs = $this->getConduit()->callMethodSynchronous(
+          'differential.query',
+           array(
+             'phids' => $phids,
+             'status' => 'status-open',
+           ));
+
+        $open_dep_revs = array();
+        foreach ($dep_on_revs as $dep_on_rev) {
+          $dep_on_rev_id = $dep_on_rev['id'];
+          $dep_on_rev_title = $dep_on_rev['title'];
+          $dep_on_rev_status = $dep_on_rev['status'];
+          $open_dep_revs[$dep_on_rev_id] = $dep_on_rev_title;
+        }
+
+        if (!empty($open_dep_revs)) {
+          $open_revs = array();
+          foreach ($open_dep_revs as $id => $title) {
+            $open_revs[] = "    - D".$id.": ".$title;
+          }
+          $open_revs = implode("\n", $open_revs);
+
+          echo "Revision 'D{$rev_id}: {$rev_title}' depends ".
+               "on open revisions:\n\n";
+          echo $open_revs;
+
+          $ok = phutil_console_confirm("Continue anyway?");
+          if (!$ok) {
+            throw new ArcanistUserAbortException();
+          }
+        }
       }
     }
 
@@ -743,6 +782,18 @@ EOTEXT
       }
     }
 
+    // We dispatch this event so we can run checks on the merged revision, right
+    // before it gets pushed out. It's easier to do this in arc land than to
+    // try to hook into git/hg.
+    try {
+      $this->dispatchEvent(
+        ArcanistEventType::TYPE_LAND_WILLPUSHREVISION,
+        array());
+    } catch (Exception $ex) {
+      $this->executeCleanupAfterFailedPush();
+      throw $ex;
+    }
+
     if ($this->getArgument('hold')) {
       echo phutil_console_format(
         "Holding change in **%s**: it has NOT been pushed yet.\n",
@@ -779,9 +830,8 @@ EOTEXT
 
       if ($err) {
         echo phutil_console_format("<bg:red>**   PUSH FAILED!   **</bg>\n");
+        $this->executeCleanupAfterFailedPush();
         if ($this->isGit) {
-          $repository_api->execxLocal('reset --hard HEAD^');
-          $this->restoreBranch();
           throw new ArcanistUsageException(
             "'{$cmd}' failed! Fix the error and run 'arc land' again.");
         }
@@ -799,6 +849,14 @@ EOTEXT
       $mark_workflow->run();
 
       echo "\n";
+    }
+  }
+
+  private function executeCleanupAfterFailedPush() {
+    if ($this->isGit) {
+      $repository_api = $this->getRepositoryAPI();
+      $repository_api->execxLocal('reset --hard HEAD^');
+      $this->restoreBranch();
     }
   }
 

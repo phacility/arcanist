@@ -38,7 +38,7 @@ final class ArcanistDiffUtils {
     Filesystem::writeFile($file_new, (string)$new."\n");
 
     list($err, $stdout) = exec_manual(
-      '/usr/bin/diff %C -U %s %s %s',
+      'diff %C -U %s %s %s',
       $diff_options,
       $context_lines,
       $file_old,
