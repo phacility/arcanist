@@ -549,6 +549,20 @@ EOTEXT
       case 'svn-property-windows.svndiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'rcs-addline.rcsdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
+      case 'rcs-deleteline.rcsdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

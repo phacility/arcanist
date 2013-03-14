@@ -13,6 +13,7 @@ final class ArcanistDiffParser {
   protected $lineSaved;
   protected $isGit;
   protected $isMercurial;
+  protected $isRCS;
   protected $detectBinaryFiles = false;
   protected $tryEncoding;
   protected $rawDiff;
@@ -205,6 +206,8 @@ final class ArcanistDiffParser {
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
         '(?P<type>diff --git) (?P<oldnew>.*)',
+        // RCS Diff
+        '(?P<type>rcsdiff -u) (?P<oldnew>.*)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
         '(?P<binary>Binary) files '.
@@ -301,6 +304,10 @@ final class ArcanistDiffParser {
           break;
         case 'diff -r':
           $this->setIsMercurial(true);
+          $this->parseIndexHunk($change);
+          break;
+        case 'rcsdiff -u':
+          $this->isRCS = true;
           $this->parseIndexHunk($change);
           break;
         default:
@@ -734,8 +741,19 @@ final class ArcanistDiffParser {
       }
     }
 
+    if ($this->isRCS) {
+      // Skip the RCS headers.
+      $this->nextLine();
+      $this->nextLine();
+      $this->nextLine();
+    }
+
     $old_file = $this->parseHunkTarget();
     $new_file = $this->parseHunkTarget();
+
+    if ($this->isRCS) {
+      $change->setCurrentPath($new_file);
+    }
 
     $change->setOldPath($old_file);
 
@@ -775,12 +793,15 @@ final class ArcanistDiffParser {
       // Something like "Fri Aug 26 01:20:50 2005 -0700", don't bother trying
       // to parse it.
       $remainder = '\t.*';
+    } else if ($this->isRCS) {
+      $remainder = '\s.*';
     }
 
     $ok = preg_match(
       '@^[-+]{3} (?:[ab]/)?(?P<path>.*?)'.$remainder.'$@',
       $line,
       $matches);
+
     if (!$ok) {
       $this->didFailParse(
         "Expected hunk target '+++ path/to/file.ext (revision N)'.");
