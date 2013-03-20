@@ -74,6 +74,13 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
       }
     }
 
+    list(, $stderr) = execx('/usr/bin/env python -V');
+    if ($stderr < 'Python 2.5') {
+      throw new ArcanistUsageException(
+        "Python 2.5 or greater is required to run the PEP8 Python linter, but ".
+        rtrim($stderr)." was found instead.");
+    }
+
     return $bin;
   }
 
