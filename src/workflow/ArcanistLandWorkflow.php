@@ -447,6 +447,45 @@ EOTEXT
         "Updating **%s**...\n",
         $this->onto);
 
+      try {
+        list($out, $err) = $repository_api->execxLocal('pull');
+
+        $divergedbookmark = $this->onto.'@'.$repository_api->getBranchName();
+        if (strpos($err, $divergedbookmark) !== false) {
+          throw new ArcanistUsageException(phutil_console_format(
+            "Local bookmark **{$this->onto}** has diverged from the ".
+            "server's **{$this->onto}** (now labeled ".
+            "**{$divergedbookmark}**). Please resolve this divergence and ".
+            "run 'arc land' again."));
+        }
+      } catch (CommandException $ex) {
+        $err = $ex->getError();
+        $stdout = $ex->getStdOut();
+
+        // Copied from: PhabricatorRepositoryPullLocalDaemon.php
+        // NOTE: Between versions 2.1 and 2.1.1, Mercurial changed the
+        // behavior of "hg pull" to return 1 in case of a successful pull
+        // with no changes. This behavior has been reverted, but users who
+        // updated between Feb 1, 2012 and Mar 1, 2012 will have the
+        // erroring version. Do a dumb test against stdout to check for this
+        // possibility.
+        // See: https://github.com/facebook/phabricator/issues/101/
+
+        // NOTE: Mercurial has translated versions, which translate this error
+        // string. In a translated version, the string will be something else,
+        // like "aucun changement trouve". There didn't seem to be an easy way
+        // to handle this (there are hard ways but this is not a common
+        // problem and only creates log spam, not application failures).
+        // Assume English.
+
+        // TODO: Remove this once we're far enough in the future that
+        // deployment of 2.1 is exceedingly rare?
+        if ($err != 1 || !preg_match('/no changes found/', $stdout)) {
+          throw $ex;
+        }
+      }
+
+      // Pull succeeded.  Now make sure master is not on an outgoing change
       if ($repository_api->supportsPhases()) {
         list($out) = $repository_api->execxLocal(
           'log -r %s --template {phase}', $this->onto);
@@ -465,39 +504,6 @@ EOTEXT
           $local_ahead_of_remote = true;
         }
       }
-
-      if (!$local_ahead_of_remote) {
-        try {
-          $repository_api->execxLocal('pull');
-        } catch (CommandException $ex) {
-          $err = $ex->getError();
-          $stdout = $ex->getStdOut();
-
-          // Copied from: PhabricatorRepositoryPullLocalDaemon.php
-          // NOTE: Between versions 2.1 and 2.1.1, Mercurial changed the
-          // behavior of "hg pull" to return 1 in case of a successful pull
-          // with no changes. This behavior has been reverted, but users who
-          // updated between Feb 1, 2012 and Mar 1, 2012 will have the
-          // erroring version. Do a dumb test against stdout to check for this
-          // possibility.
-          // See: https://github.com/facebook/phabricator/issues/101/
-
-          // NOTE: Mercurial has translated versions, which translate this error
-          // string. In a translated version, the string will be something else,
-          // like "aucun changement trouve". There didn't seem to be an easy way
-          // to handle this (there are hard ways but this is not a common
-          // problem and only creates log spam, not application failures).
-          // Assume English.
-
-          // TODO: Remove this once we're far enough in the future that
-          // deployment of 2.1 is exceedingly rare?
-          if ($err == 1 && preg_match('/no changes found/', $stdout)) {
-            return;
-          } else {
-            throw $ex;
-          }
-        }
-      }
     }
 
     if ($local_ahead_of_remote) {
@@ -511,6 +517,11 @@ EOTEXT
 
   private function rebase() {
     $repository_api = $this->getRepositoryAPI();
+
+    echo phutil_console_format(
+        "Rebasing **%s** onto **%s**\n",
+        $this->branch,
+        $this->onto);
 
     chdir($repository_api->getPath());
     if ($this->isGit) {
@@ -550,12 +561,15 @@ EOTEXT
           'rebase -d %s --keepbranches',
           $this->onto);
         if ($err) {
+          echo phutil_console_format("Aborting rebase\n");
+          $repository_api->execManualLocal(
+            'rebase --abort');
+          $this->restoreBranch();
           throw new ArcanistUsageException(
-            "'hg rebase {$this->onto}' failed. ".
-            "You can abort with 'hg rebase --abort', ".
-            "or resolve conflicts and use 'hg rebase ".
-            "--continue' to continue forward. After resolving the rebase, ".
-            "run 'arc land' again.");
+            "'hg rebase {$this->onto}' failed and the rebase was aborted. ".
+            "This is most likely due to conflicts. Manually rebase ".
+            "{$this->branch} onto {$this->onto}, resolve the conflicts, ".
+            "then run 'arc land' again.");
         }
       }
     }
@@ -608,11 +622,20 @@ EOTEXT
 
       // Collapse just the landing branch onto master.
       // Leave its children on the original branch.
-      $repository_api->execxLocal(
+      $err = $repository_api->execPassthru(
         'rebase --collapse --keep --logfile %s -r %s -d %s',
         $this->messageFile,
         $branch_range,
         $this->onto);
+
+      if ($err) {
+        $repository_api->execManualLocal(
+          'rebase --abort');
+        $this->restoreBranch();
+        throw new ArcanistUsageException(
+          "Squashing the commits under {$this->branch} failed. ".
+          "Manually squash your commits and run 'arc land' again.");
+      }
 
       if ($repository_api->isBookmark($this->branch)) {
         // a bug in mercurial means bookmarks end up on the revision prior
@@ -643,19 +666,6 @@ EOTEXT
             'rebase -d %s -s %s --keep --keepbranches',
             $this->onto,
             $child_root);
-        }
-      }
-
-      // delete the old branch if necessary
-      if (!$this->keepBranch) {
-        $repository_api->execxLocal(
-          '--config extensions.mq= strip -r %s',
-          $branch_root);
-
-        if ($repository_api->isBookmark($this->branch)) {
-          $repository_api->execxLocal(
-            'bookmark -d %s',
-            $this->branch);
         }
       }
 
@@ -853,9 +863,14 @@ EOTEXT
   }
 
   private function executeCleanupAfterFailedPush() {
+    $repository_api = $this->getRepositoryAPI();
     if ($this->isGit) {
-      $repository_api = $this->getRepositoryAPI();
       $repository_api->execxLocal('reset --hard HEAD^');
+      $this->restoreBranch();
+    } else if ($this->isHg) {
+      $repository_api->execxLocal(
+        '--config extensions.mq= strip %s',
+        $this->onto);
       $this->restoreBranch();
     }
   }
@@ -877,8 +892,28 @@ EOTEXT
       $repository_api->execxLocal(
         'branch -D %s',
         $this->branch);
+    } else if ($this->isHg) {
+      $common_ancestor = $repository_api->getCanonicalRevisionName(
+        hgsprintf("ancestor(%s,%s)",
+          $this->onto,
+          $this->branch));
+
+      $branch_root = $repository_api->getCanonicalRevisionName(
+        hgsprintf("first((%s::%s)-%s)",
+          $common_ancestor,
+          $this->branch,
+          $common_ancestor));
+
+      $repository_api->execxLocal(
+        '--config extensions.mq= strip -r %s',
+        $branch_root);
+
+      if ($repository_api->isBookmark($this->branch)) {
+        $repository_api->execxLocal(
+          'bookmark -d %s',
+          $this->branch);
+      }
     }
-    // hg branches/bookmarks were closed earlier
 
     if ($this->getArgument('delete-remote')) {
       if ($this->isGit) {
