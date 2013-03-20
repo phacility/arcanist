@@ -773,7 +773,7 @@ EOTEXT
 
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -A %C -l -',
+          'commit %C -l -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
