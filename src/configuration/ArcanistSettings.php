@@ -94,6 +94,16 @@ final class ArcanistSettings {
           "Password to use for basic auth over http transports",
         'example' => '"bobhasasecret"',
       ),
+      'arc.autostash' => array(
+        'type' => 'bool',
+        'help' =>
+          'Whether arc should permit the automatic stashing of changes in '.
+          'the working directory when requiring a clean working copy.  '.
+          'This option should only be used when users understand how '.
+          'to restore their working directory from the local stash if '.
+          'an Arcanist operation causes an unrecoverable error.',
+        'example' => 'false',
+      ),
     );
   }
 
