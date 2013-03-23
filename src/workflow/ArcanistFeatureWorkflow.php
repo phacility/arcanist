@@ -48,7 +48,7 @@ EOTEXT
   }
 
   public function requiresAuthentication() {
-    return true;
+    return !$this->getArgument('names');
   }
 
 
