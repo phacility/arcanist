@@ -61,6 +61,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
+    $match = null;
+    if ($this->isHgSubversionRepo() &&
+        preg_match('/@([0-9]+)$/', $string, $match)) {
+      $string = hgsprintf('svnrev(%s)', $match[1]);
+    }
+
     list($stdout) = $this->execxLocal(
       'log -l 1 --template %s -r %s --',
       '{node}',

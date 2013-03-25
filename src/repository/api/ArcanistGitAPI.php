@@ -1000,4 +1000,17 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return null;
   }
 
+  public function canStashChanges() {
+    return true;
+  }
+
+  public function stashChanges() {
+    $this->execxLocal('stash');
+    $this->reloadWorkingCopy();
+  }
+
+  public function unstashChanges() {
+    $this->execxLocal('stash pop');
+  }
+
 }

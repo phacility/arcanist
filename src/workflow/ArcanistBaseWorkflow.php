@@ -60,6 +60,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $passedArguments;
   private $command;
 
+  private $stashed;
+
   private $projectInfo;
 
   private $arcanistConfiguration;
@@ -76,6 +78,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
 
   abstract public function run();
+
+  /**
+   * Finalizes any cleanup operations that need to occur regardless of
+   * whether the command succeeded or failed.
+   */
+  public function finalize() {
+    $this->finalizeWorkingCopy();
+  }
 
   /**
    * Return the command used to invoke this workflow from the command like,
@@ -761,6 +771,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this;
   }
 
+  public function finalizeWorkingCopy() {
+    if ($this->stashed) {
+      $api = $this->getRepositoryAPI();
+      $api->unstashChanges();
+      echo "Restored stashed changes to the working directory.\n";
+    }
+  }
+
   public function requireCleanWorkingCopy() {
     $api = $this->getRepositoryAPI();
 
@@ -838,8 +856,18 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
       } else {
-        throw new ArcanistUsageException(
-          "Stage and commit (or revert) them before proceeding.");
+        $permit_autostash = $this->getWorkingCopy()->getConfigFromAnySource(
+          'arc.autostash',
+          false);
+        if ($permit_autostash && $api->canStashChanges()) {
+          echo "Stashing uncommitted changes. (You can restore them with ".
+               "`git stash pop`.)\n";
+          $api->stashChanges();
+          $this->stashed = true;
+        } else {
+          throw new ArcanistUsageException(
+            "Stage and commit (or revert) them before proceeding.");
+        }
       }
     }
 

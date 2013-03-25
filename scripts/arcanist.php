@@ -268,8 +268,14 @@ try {
 
   $config->willRunWorkflow($command, $workflow);
   $workflow->willRunWorkflow();
-  $err = $workflow->run();
-  $config->didRunWorkflow($command, $workflow, $err);
+  try {
+    $err = $workflow->run();
+    $config->didRunWorkflow($command, $workflow, $err);
+  } catch (Exception $e) {
+    $workflow->finalize();
+    throw $e;
+  }
+  $workflow->finalize();
   exit((int)$err);
 
 } catch (ArcanistNoEffectException $ex) {

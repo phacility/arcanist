@@ -95,26 +95,13 @@ EOTEXT
       ),
       'nobranch' => array(
         'supports' => array(
-          'git'
+          'git', 'hg'
         ),
         'help' =>
-          "Normally under git, a new branch is created and then the patch ".
-          "is applied and committed in the new branch. This flag ".
-          "cherry-picks the resultant commit onto the original branch and ".
-          "deletes the temporary branch.",
-        'conflicts' => array(
-          'update' => true,
-        ),
-      ),
-      'bookmark' => array(
-        'supports' => array(
-          'hg'
-        ),
-        'help' =>
-          "Normally under hg, a new bookmark is not created and the patch ".
-          "is applied and committed in the current bookmark. With this flag, ".
-          "a new bookmark is created and the patch is applied and committed ".
-          "in the new bookmark.",
+          "Normally, a new branch (git) or bookmark (hg) is created and then ".
+          "the patch is applied and committed in the new branch/bookmark. ".
+          "This flag cherry-picks the resultant commit onto the original ".
+          "branch and deletes the temporary branch.",
         'conflicts' => array(
           'update' => true,
         ),
@@ -208,12 +195,9 @@ EOTEXT
   }
 
   private function canBranch() {
-    // git only for now
     $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI)) {
-      return false;
-    }
-    return true;
+    return ($repository_api instanceof ArcanistGitAPI) ||
+           ($repository_api instanceof ArcanistMercurialAPI);
   }
 
   private function shouldBranch() {
@@ -223,22 +207,6 @@ EOTEXT
     }
     return true;
   }
-
-  private function shouldBookmark() {
-    // specific to hg
-    $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistMercurialAPI)) {
-      return false;
-    }
-
-    $bookmark = $this->getArgument('bookmark', false);
-    if ($bookmark) {
-      return true;
-    }
-
-    return false;
-  }
-
 
   private function getBranchName(ArcanistBundle $bundle) {
     $branch_name    = null;
@@ -322,52 +290,68 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     // verify the base revision is valid
-    // in a working copy that uses the git-svn bridge, the base revision might
-    // be a svn uri instead of a git ref
+    if ($repository_api instanceof ArcanistGitAPI) {
+      // in a working copy that uses the git-svn bridge, the base revision might
+      // be a svn uri instead of a git ref
 
-    // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
-    // always "verifies" any properly-formatted commit even if it does not
-    // exist.
-    list($err) = $repository_api->execManualLocal(
-      'cat-file -t %s',
-      $base_revision);
-    return !$err;
+      // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
+      // always "verifies" any properly-formatted commit even if it does not
+      // exist.
+      list($err) = $repository_api->execManualLocal(
+        'cat-file -t %s',
+        $base_revision);
+      return !$err;
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      return $repository_api->hasLocalCommit($base_revision);
+    }
+
+    return false;
   }
 
   private function createBranch(ArcanistBundle $bundle, $has_base_revision) {
-    $branch_name = $this->getBranchName($bundle);
-    $base_revision = $bundle->getBaseRevision();
     $repository_api = $this->getRepositoryAPI();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      $branch_name = $this->getBranchName($bundle);
+      $base_revision = $bundle->getBaseRevision();
 
-    if ($base_revision && $has_base_revision) {
+      if ($base_revision && $has_base_revision) {
+        $repository_api->execxLocal(
+          'checkout -b %s %s',
+          $branch_name,
+          $base_revision);
+      } else {
+        $repository_api->execxLocal(
+          'checkout -b %s',
+          $branch_name);
+      }
+
+      echo phutil_console_format(
+        "Created and checked out branch %s.\n",
+        $branch_name);
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      $branch_name = $this->getBookmarkName($bundle);
+      $base_revision = $bundle->getBaseRevision();
+
+      if ($base_revision && $has_base_revision) {
+        $base_revision = $repository_api->getCanonicalRevisionName(
+          $base_revision);
+
+        echo "Updating to the revision's base commit\n";
+        $repository_api->execPassthru(
+          'update %s',
+          $base_revision);
+      }
+
       $repository_api->execxLocal(
-        'checkout -b %s %s',
-        $branch_name,
-        $base_revision);
-    } else {
-      $repository_api->execxLocal(
-        'checkout -b %s',
+        'bookmark %s',
+        $branch_name);
+
+      echo phutil_console_format(
+        "Created and checked out bookmark %s.\n",
         $branch_name);
     }
 
-    echo phutil_console_format(
-      "Created and checked out branch %s.\n",
-      $branch_name);
-
     return $branch_name;
-  }
-
-  private function createBookmark(ArcanistBundle $bundle) {
-    $bookmark_name    = $this->getBookmarkName($bundle);
-    $repository_api = $this->getRepositoryAPI();
-
-    $repository_api->execxLocal(
-      'bookmark %s',
-      $bookmark_name);
-
-    echo phutil_console_format(
-      "Created and applied bookmark %s.\n",
-      $bookmark_name);
   }
 
   private function shouldUpdateWorkingCopy() {
@@ -458,17 +442,23 @@ EOTEXT
         $this->canBranch() &&
         ($this->shouldBranch() || $has_base_revision)) {
 
-      $original_branch = $repository_api->getBranchName();
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $original_branch = $repository_api->getBranchName();
+      } else if ($repository_api instanceof ArcanistMercurialAPI) {
+        $original_branch = $repository_api->getActiveBookmark();
+      }
+
       // If we weren't on a branch, then record the ref we'll return to
       // instead.
       if ($original_branch === null) {
-        $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+        if ($repository_api instanceof ArcanistGitAPI) {
+          $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+        } else if ($repository_api instanceof ArcanistMercurialAPI) {
+          $original_branch = $repository_api->getCanonicalRevisionName('.');
+        }
       }
-      $new_branch = $this->createBranch($bundle, $has_base_revision);
-    }
 
-    if ($this->shouldBookmark()) {
-      $this->createBookmark($bundle);
+      $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
 
     if ($repository_api instanceof ArcanistSubversionAPI) {
@@ -773,14 +763,38 @@ EOTEXT
 
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -A %C -l -',
+          'commit %C -l -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
+
+        if (!$this->shouldBranch() && $has_base_revision) {
+          $original_rev = $repository_api->getCanonicalRevisionName(
+            $original_branch);
+          $current_parent = $repository_api->getCanonicalRevisionName(
+            hgsprintf('%s^', $new_branch));
+
+          $err = 0;
+          if ($original_rev != $current_parent) {
+            list($err) = $repository_api->execManualLocal(
+              'rebase --dest %s --rev %s',
+              hgsprintf('%s', $original_branch),
+              hgsprintf('%s', $new_branch));
+          }
+
+          $repository_api->execxLocal('bookmark --delete %s', $new_branch);
+          if ($err) {
+            $repository_api->execManualLocal('rebase --abort');
+            throw new ArcanistUsageException(phutil_console_format(
+              "\n<bg:red>** Rebase onto $original_branch failed!**</bg>\n"));
+          }
+        }
+
         $verb = 'committed';
       } else {
         $verb = 'applied';
       }
+
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
 
