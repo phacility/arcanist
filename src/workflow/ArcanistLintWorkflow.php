@@ -548,7 +548,10 @@ EOTEXT
             $cached_path[] = $message->toDictionary();
           }
         }
-        $hash = $file_hashes[$abs_path];
+        $hash = idx($file_hashes, $abs_path);
+        if (!$hash) {
+          $hash = md5_file($abs_path);
+        }
         $cached[$path] = array($hash => array($version => $cached_path));
       }
       $cache[$this->getCacheKey()] = $cached;
