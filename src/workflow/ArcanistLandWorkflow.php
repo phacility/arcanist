@@ -21,6 +21,7 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
   private $shouldUpdateWithRebase;
   private $branchType;
   private $ontoType;
+  private $preview;
 
   private $revision;
   private $messageFile;
@@ -131,6 +132,10 @@ EOTEXT
         'help'  => 'Use the message from a specific revision, rather than '.
                    'inferring the revision based on branch content.',
       ),
+      'preview' => array(
+        'help' => 'Prints the commits that would be landed. Does not actually '.
+                  'modify or land the commits.'
+      ),
       '*' => 'branch',
     );
   }
@@ -144,6 +149,12 @@ EOTEXT
     } catch (Exception $ex) {
       $this->restoreBranch();
       throw $ex;
+    }
+
+    $this->printPendingCommits();
+    if ($this->preview) {
+      $this->restoreBranch();
+      return 0;
     }
 
     $this->checkoutBranch();
@@ -212,6 +223,7 @@ EOTEXT
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
     $this->shouldUpdateWithRebase = $this->getArgument('update-with-rebase');
+    $this->preview = $this->getArgument('preview');
 
     if (!$this->branchType) {
       $this->branchType = $this->getBranchType($this->branch);
@@ -304,6 +316,42 @@ EOTEXT
     echo phutil_console_format(
       "Switched to {$this->branchType} **%s**. Identifying and merging...\n",
       $this->branch);
+  }
+
+  private function printPendingCommits() {
+    $repository_api = $this->getRepositoryAPI();
+
+    if ($repository_api instanceof ArcanistGitAPI) {
+      list($out) = $repository_api->execxLocal(
+        'log --oneline %s ^%s',
+        $this->branch,
+        $this->onto);
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      $common_ancestor = $repository_api->getCanonicalRevisionName(
+        hgsprintf('ancestor(%s,%s)',
+          $this->onto,
+          $this->branch));
+
+      $branch_range = hgsprintf(
+        'reverse((%s::%s) - %s)',
+        $common_ancestor,
+        $this->branch,
+        $common_ancestor);
+
+      list($out) = $repository_api->execxLocal(
+        'log -r %s --template %s',
+        $branch_range,
+        '{node|short} {desc|firstline}\n');
+    }
+
+    if (!trim($out)) {
+      $this->restoreBranch();
+      throw new ArcanistUsageException(
+          "No commits to land from {$this->branch}.");
+    }
+
+    echo phutil_console_format(
+      "The following commit(s) will be landed:\n\n{$out}\n");
   }
 
   private function findRevision() {
