@@ -1,0 +1,385 @@
+{
+    "name": "facebook/arcanist",
+    "description": "Arcanist is the CLI to Differential, Facebook's code review tool. Currently an unstable preview release.",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "email": "ahupp@fb.com", 
+            "name": "Adam Hupp"
+        }, 
+        {
+            "email": "simpkins@fb.com", 
+            "name": "Adam Simpkins"
+        }, 
+        {
+            "email": "aran@fb.com", 
+            "name": "adonohue"
+        }, 
+        {
+            "email": "alanh@alanhmbp13.local", 
+            "name": "Alan Huang"
+        }, 
+        {
+            "email": "alanh@dev3174.snc6.facebook.com", 
+            "name": "Alan Huang"
+        }, 
+        {
+            "email": "alanh@devrs314.snc6.facebook.com", 
+            "name": "Alan Huang"
+        }, 
+        {
+            "email": "alanh@fb.com", 
+            "name": "Alan Huang"
+        }, 
+        {
+            "email": "agallagher@fb.com", 
+            "name": "Andrew Gallagher"
+        }, 
+        {
+            "email": "asukhachev@fb.com", 
+            "name": "Andrey Sukhachev"
+        }, 
+        {
+            "email": "anton@kovalyov.net", 
+            "name": "Anton Kovalyov"
+        }, 
+        {
+            "email": "aran@facebook.com", 
+            "name": "Aran Donohue"
+        }, 
+        {
+            "email": "asherkin@limetech.org", 
+            "name": "Asher Baker"
+        }, 
+        {
+            "email": "aurelijus@astdev.lt", 
+            "name": "Aurelijus"
+        }, 
+        {
+            "email": "avivey@gmail.com", 
+            "name": "Aviv Eyal"
+        }, 
+        {
+            "email": "beng@fb.com", 
+            "name": "Ben Gertzfield"
+        }, 
+        {
+            "email": "bob.trahan@gmail.com", 
+            "name": "Bob Trahan"
+        }, 
+        {
+            "email": "BPedersen@novell.com", 
+            "name": "Brandon Pedersen"
+        }, 
+        {
+            "email": "brennan@mobiata.com", 
+            "name": "Brennan Taylor"
+        }, 
+        {
+            "email": "blc72@cornell.edu", 
+            "name": "Bryan Cuccioli"
+        }, 
+        {
+            "email": "tenorviol@yahoo.com", 
+            "name": "Chris Johnson"
+        }, 
+        {
+            "email": "cpiro@airtime.com", 
+            "name": "Chris Piro"
+        }, 
+        {
+            "email": "dcramer@gmail.com", 
+            "name": "David Cramer"
+        }, 
+        {
+            "email": "david@upsys.dk", 
+            "name": "David Reuss"
+        }, 
+        {
+            "email": "killme2008@gmail.com", 
+            "name": "dennis zhuang"
+        }, 
+        {
+            "email": "dereckson@espace-win.org", 
+            "name": "Dereckson"
+        }, 
+        {
+            "email": "dschleimer@fb.com", 
+            "name": "dschleimer"
+        }, 
+        {
+            "email": "dschleimer@fb.com", 
+            "name": "dschleimer-fb"
+        }, 
+        {
+            "email": "durham@fb.com", 
+            "name": "durham"
+        }, 
+        {
+            "email": "edward@fb.com", 
+            "name": "Edward Speyer"
+        }, 
+        {
+            "email": "ehren@fb.com", 
+            "name": "Ehren Kret"
+        }, 
+        {
+            "email": "emil@fb.com", 
+            "name": "Emil Hesslow"
+        }, 
+        {
+            "email": "epriestley@javelinjs.com", 
+            "name": "epriestley"
+        }, 
+        {
+            "email": "epriestley@phabricator.com", 
+            "name": "epriestley"
+        }, 
+        {
+            "email": "git@epriestley.com", 
+            "name": "epriestley"
+        }, 
+        {
+            "email": "epriestley@javelinjs.com", 
+            "name": "Evan Priestley"
+        }, 
+        {
+            "email": "felipekde@gmail.com", 
+            "name": "Felipe Oliveira Carvalho"
+        }, 
+        {
+            "email": "fdeliege@fb.com", 
+            "name": "Fran\u00e7ois Deli\u00e8ge"
+        }, 
+        {
+            "email": "git@fb.com", 
+            "name": "Git user"
+        }, 
+        {
+            "email": "gregor@fb.com", 
+            "name": "Gregor Stocks"
+        }, 
+        {
+            "email": "grglr@fb.com", 
+            "name": "grglr"
+        }, 
+        {
+            "email": "grigory.v.p@gmail.com", 
+            "name": "Grigory"
+        }, 
+        {
+            "email": "indiefan@gmail.com", 
+            "name": "indiefan"
+        }, 
+        {
+            "email": "ifraimow@ubermind.com", 
+            "name": "Izzy Fraimow"
+        }, 
+        {
+            "email": "jack@facebook.com", 
+            "name": "Jack Lindamood"
+        }, 
+        {
+            "email": "jack@quora.com", 
+            "name": "Jack Lindamood"
+        }, 
+        {
+            "email": "jlindamood@fb.com", 
+            "name": "Jack Lindamood"
+        }, 
+        {
+            "email": "jakubv@fb.com", 
+            "name": "Jakub Vrana"
+        }, 
+        {
+            "email": "jakub@vrana.cz", 
+            "name": "Jakub Vrana"
+        }, 
+        {
+            "email": "ide+github@jameside.com", 
+            "name": "James Ide"
+        }, 
+        {
+            "email": "jamie.lf.wong@gmail.com", 
+            "name": "Jamie Wong"
+        }, 
+        {
+            "email": "jungejason@fb.com", 
+            "name": "Jason Ge"
+        }, 
+        {
+            "email": "jmullan@visi.com", 
+            "name": "Jesse Mullan"
+        }, 
+        {
+            "email": "meyering@fb.com", 
+            "name": "Jim Meyering"
+        }, 
+        {
+            "email": "john@compwhizii.net", 
+            "name": "John Du Hart"
+        }, 
+        {
+            "email": "julius@seporaitis.net", 
+            "name": "Julius Seporaitis"
+        }, 
+        {
+            "email": "jun.ge.jason@fb.com", 
+            "name": "jungejason"
+        }, 
+        {
+            "email": "jungejason@fb.com", 
+            "name": "jungejason"
+        }, 
+        {
+            "email": "kzak@fb.com", 
+            "name": "katherine"
+        }, 
+        {
+            "email": "keegancsmith@fb.com", 
+            "name": "keegancsmith"
+        }, 
+        {
+            "email": "kevin@tenxer.com", 
+            "name": "Kevin Deggelman"
+        }, 
+        {
+            "email": "owenestea@gmail.com", 
+            "name": "Kiyoto Tamura"
+        }, 
+        {
+            "email": "korvin@concrete5.org", 
+            "name": "Koolvin"
+        }, 
+        {
+            "email": "kunalb@fb.com", 
+            "name": "Kunal Bhalla"
+        }, 
+        {
+            "email": "kwadwon@gmail.com", 
+            "name": "kwadwo"
+        }, 
+        {
+            "email": "leahxue@fb.com", 
+            "name": "Leah Xue"
+        }, 
+        {
+            "email": "lovro.puzar@gmail.com", 
+            "name": "Lovro Puzar"
+        }, 
+        {
+            "email": "mareksapota@fb.com", 
+            "name": "Marek Sapota"
+        }, 
+        {
+            "email": "indiefan@gmail.com", 
+            "name": "Marke Hallowell"
+        }, 
+        {
+            "email": "mark.e.lewandowski@gmail.com", 
+            "name": "Mark Lewandowski"
+        }, 
+        {
+            "email": "mgummelt@fb.com", 
+            "name": "mgummelt"
+        }, 
+        {
+            "email": "natthu@fb.com", 
+            "name": "Natthu Bharambe"
+        }, 
+        {
+            "email": "nharper@fb.com", 
+            "name": "Nicholas Harper"
+        }, 
+        {
+            "email": "nharper@fb.com", 
+            "name": "Nick Harper"
+        }, 
+        {
+            "email": "nharper@nharper.org", 
+            "name": "Nick Harper"
+        }, 
+        {
+            "email": "nickpell@alum.mit.edu", 
+            "name": "Nick Pellegrino"
+        }, 
+        {
+            "email": "ruibalp@gmail.com", 
+            "name": "Peter Ruibal"
+        }, 
+        {
+            "email": "r@rafiksalama.com", 
+            "name": "Rafik Salama"
+        }, 
+        {
+            "email": "ricky@elrod.me", 
+            "name": "Ricky Elrod"
+        }, 
+        {
+            "email": "lisp@fb.com", 
+            "name": "Robert Smith"
+        }, 
+        {
+            "email": "royw@fb.com", 
+            "name": "Roy Williams"
+        }, 
+        {
+            "email": "dereckson@espace-win.org", 
+            "name": "S\u00e9bastien Santoro"
+        }, 
+        {
+            "email": "sergio@correia.cc", 
+            "name": "Sergio Correia"
+        }, 
+        {
+            "email": "slawek.biel@facebook.com", 
+            "name": "slawekbiel"
+        }, 
+        {
+            "email": "slawekbiel@fb.com", 
+            "name": "slawekbiel"
+        }, 
+        {
+            "email": "vissi@vissi.su", 
+            "name": "Stanislav Vorobyev"
+        }, 
+        {
+            "email": "svemir@deveblog.com", 
+            "name": "Svemir Brkic"
+        }, 
+        {
+            "email": "tuomas.pelkonen@fb.com", 
+            "name": "tuomaspelkonen"
+        }, 
+        {
+            "email": "tuomaspelkonen@fb.com", 
+            "name": "tuomaspelkonen"
+        }, 
+        {
+            "email": "vissi@vissi.su", 
+            "name": "vissi"
+        }, 
+        {
+            "email": "jakubv@fb.com", 
+            "name": "vrana"
+        }, 
+        {
+            "email": "wez@fb.com", 
+            "name": "Wez Furlong"
+        }, 
+        {
+            "email": "xingyao@dev1163.prn1.facebook.com", 
+            "name": "Xingyao Ye"
+        }, 
+        {
+            "email": "yidingjia@fb.com", 
+            "name": "Yiding Jia"
+        }
+    ], 
+    "bin": ["bin/arc"],
+    "minimum-stability": "dev",
+    "include-path" : ["src/"],
+    "require": {
+        "facebook/libphutil" : "*"
+    }
+}
