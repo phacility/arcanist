@@ -186,11 +186,14 @@ EOTEXT
               'phids' => array($this->getUserPHID()),
             ));
           $author_dict = reset($authors);
+
+          list($email) = $repository_api->execxLocal('config user.email');
+
           $author = sprintf('%s <%s>',
             $author_dict['realName'],
-            $repository_api->execxLocal('config user.email'));
+            $email);
         } else if ($repository_api instanceof ArcanistMercurialAPI) {
-          $repository_api->parseBaseCommitArgument($this->getArgument('paths'));
+          $this->parseBaseCommitArgument($this->getArgument('paths'));
           $diff = $repository_api->getFullMercurialDiff();
           $changes = $parser->parseDiff($diff);
           $authors = $this->getConduit()->callMethodSynchronous(
@@ -198,10 +201,8 @@ EOTEXT
             array(
               'phids' => array($this->getUserPHID()),
             ));
-          $author_dict = reset($authors);
-          $author = sprintf('%s <%s>',
-            $author_dict['realName'],
-            $repository_api->execxLocal('showconfig ui.username'));
+
+          list($author) = $repository_api->execxLocal('showconfig ui.username');
         } else {
           // TODO: paths support
           $paths = $repository_api->getWorkingCopyStatus();
@@ -216,7 +217,10 @@ EOTEXT
         $bundle->setBaseRevision(
           $repository_api->getSourceControlBaseRevision());
         // note we can't get a revision ID for SOURCE_LOCAL
-        $bundle->setAuthor($author);
+
+        $parser = new PhutilEmailAddress($author);
+        $bundle->setAuthorName($parser->getDisplayName());
+        $bundle->setAuthorEmail($parser->getAddress());
         break;
       case self::SOURCE_REVISION:
         $bundle = $this->loadRevisionBundleFromConduit(
