@@ -350,8 +350,7 @@ EOTEXT
           "No commits to land from {$this->branch}.");
     }
 
-    echo phutil_console_format(
-      "The following commit(s) will be landed:\n\n{$out}\n");
+    echo "The following commit(s) will be landed:\n\n{$out}\n";
   }
 
   private function findRevision() {
