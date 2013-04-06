@@ -584,7 +584,7 @@ EOTEXT
         }
       } else {
         $err = phutil_passthru(
-          'git merge %s -m %s',
+          'git merge --no-stat %s -m %s',
           $this->onto,
           "Automatic merge by 'arc land'");
         if ($err) {
@@ -630,7 +630,7 @@ EOTEXT
     if ($this->isGit) {
       $repository_api->execxLocal('checkout %s', $this->onto);
       $repository_api->execxLocal(
-        'merge --squash --ff-only %s',
+        'merge --no-stat --squash --ff-only %s',
         $this->branch);
     } else if ($this->isHg) {
       // The hg code is a little more complex than git's because we
@@ -801,7 +801,7 @@ EOTEXT
     chdir($repository_api->getPath());
     if ($this->isGit) {
       $err = phutil_passthru(
-        'git merge --no-ff --no-commit %s',
+        'git merge --no-stat --no-ff --no-commit %s',
         $this->branch);
 
       if ($err) {
