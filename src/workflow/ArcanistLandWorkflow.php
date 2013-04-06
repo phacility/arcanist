@@ -323,9 +323,9 @@ EOTEXT
 
     if ($repository_api instanceof ArcanistGitAPI) {
       list($out) = $repository_api->execxLocal(
-        'log --oneline %s ^%s',
+        'log --oneline %s %s',
         $this->branch,
-        $this->onto);
+        '^'.$this->onto);
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $common_ancestor = $repository_api->getCanonicalRevisionName(
         hgsprintf('ancestor(%s,%s)',
