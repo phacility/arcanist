@@ -789,6 +789,7 @@ EOTEXT
   }
 
   private function merge() {
+    $rev_id = $this->revision['id'];
     $repository_api = $this->getRepositoryAPI();
       // In immutable histories, do a --no-ff merge to force a merge commit with
       // the right message.
@@ -796,7 +797,7 @@ EOTEXT
       chdir($repository_api->getPath());
     if ($this->isGit) {
       $err = phutil_passthru(
-        "git merge --log --no-ff --edit -m 'Merging revision https://cr.goindex.com/D{$rev_id} from {$branch}' %s",
+        "git merge --log --no-ff --edit --no-commit -m 'Merging revision https://cr.goindex.com/D{$rev_id} from {$this->branch}' %s",
         $this->branch);
       if ($err) {
         $err = phutil_passthru(
