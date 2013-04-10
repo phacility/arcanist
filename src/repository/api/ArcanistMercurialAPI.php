@@ -96,9 +96,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $commit = $this->getCanonicalRevisionName(
           hgsprintf('ancestor(%s,.)', $symbolic_commit));
       } catch (Exception $ex) {
-        throw new ArcanistUsageException(
-          "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
-          "identifier.");
+        // Try it as a revset instead of a commit id
+        try {
+          $commit = $this->getCanonicalRevisionName(
+            hgsprintf('ancestor(%R,.)', $symbolic_commit));
+        } catch (Exception $ex) {
+          throw new ArcanistUsageException(
+            "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+            "identifier.");
+        }
       }
 
       $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
@@ -752,14 +758,21 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             return trim($merge_base);
           }
         } else {
-          list($err) = $this->execManualLocal(
-            'id -r %s',
-            $name);
+          list($err, $commit) = $this->execManualLocal(
+            'log --template {node} --rev %s',
+            hgsprintf('%s', $name));
+
+          if ($err) {
+            list($err, $commit) = $this->execManualLocal(
+              'log --template {node} --rev %s',
+              $name);
+          }
+
           if (!$err) {
             $this->setBaseCommitExplanation(
               "it is specified by '{$rule}' in your {$source} 'base' ".
               "configuration.");
-            return $name;
+            return trim($commit);
           }
         }
         break;
