@@ -41,9 +41,9 @@ EOTEXT
           Supports: git, svn, hg
           Generate a Differential diff or revision from local changes.
 
-          Under git, you can specify a commit (like __HEAD^^^__ or __master__)
-          and Differential will generate a diff against the merge base of that
-          commit and HEAD.
+          Under git and mercurial, you can specify a commit (like __HEAD^^^__
+          or __master__) and Differential will generate a diff against the
+          merge base of that commit and your current working directory parent.
 
           Under svn, you can choose to include only some of the modified files
           in the working copy in the diff by specifying their paths. If you
@@ -113,6 +113,7 @@ EOTEXT
       'edit' => array(
         'supports'    => array(
           'git',
+          'hg',
         ),
         'nosupport'   => array(
           'svn' => 'Edit revisions via the web interface when using SVN.',
@@ -130,6 +131,7 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw disables lint.',
           'never-apply-patches' => '--raw disables lint.',
+          'advice'              => '--raw disables lint.',
           'lintall'             => '--raw disables lint.',
 
           'create'              => '--raw and --create both need stdin. '.
@@ -149,6 +151,7 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => '--raw-command disables lint.',
           'never-apply-patches' => '--raw-command disables lint.',
+          'advice'              => '--raw-command disables lint.',
           'lintall'             => '--raw-command disables lint.',
         ),
       ),
@@ -174,6 +177,7 @@ EOTEXT
           "Do not run lint.",
         'conflicts' => array(
           'lintall'   => '--nolint suppresses lint.',
+          'advice'    => '--nolint suppresses lint.',
           'apply-patches' => '--nolint suppresses lint.',
           'never-apply-patches' => '--nolint suppresses lint.',
         ),
@@ -187,6 +191,7 @@ EOTEXT
           'message'   => '--only does not affect revisions.',
           'edit'      => '--only does not affect revisions.',
           'lintall'   => '--only suppresses lint.',
+          'advice'    => '--only suppresses lint.',
           'apply-patches' => '--only suppresses lint.',
           'never-apply-patches' => '--only suppresses lint.',
         ),
@@ -200,6 +205,14 @@ EOTEXT
           'only'      => null,
           'edit'      => '--preview does affect revisions.',
           'message'   => '--preview does not update any revision.',
+        ),
+      ),
+      'plan-changes' => array(
+        'help' =>
+          "Create or update a revision without requesting a code review.",
+        'conflicts' => array(
+          'only'     => '--only does not affect revisions.',
+          'preview'  => '--preview does not affect revisions.',
         ),
       ),
       'encoding' => array(
@@ -227,6 +240,19 @@ EOTEXT
       'lintall' => array(
         'help' =>
           "Raise all lint warnings, not just those on lines you changed.",
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
+      'advice' => array(
+        'help' =>
+          "Require excuse for lint advice in addition to lint warnings and ".
+          "errors.",
+      ),
+      'only-new' => array(
+        'param' => 'bool',
+        'help' =>
+          'Display only lint messages not present in the original code.',
         'passthru' => array(
           'lint' => true,
         ),
@@ -267,12 +293,18 @@ EOTEXT
           'lint' => true,
         ),
       ),
+      'add-all' => array(
+        'short' => 'a',
+        'help' =>
+          'Automatically add all untracked, unstaged and uncommitted files to '.
+          'the commit.',
+      ),
       'json' => array(
         'help' =>
           'Emit machine-readable JSON. EXPERIMENTAL! Probably does not work!',
       ),
       'no-amend' => array(
-        'help' => 'Never amend commits in the working copy.',
+        'help' => 'Never amend commits in the working copy with lint patches.',
       ),
       'uncommitted' => array(
         'help' => 'Suppress warning about uncommitted changes.',
@@ -340,6 +372,28 @@ EOTEXT
           'Run lint and unit tests on background. '.
           '"0" to disable, "1" to enable (default).',
       ),
+      'cache' => array(
+        'param' => 'bool',
+        'help' => "0 to disable lint cache, 1 to enable (default).",
+        'passthru' => array(
+          'lint' => true,
+        ),
+      ),
+      'coverage' => array(
+        'help' => 'Always enable coverage information.',
+        'conflicts' => array(
+          'no-coverage' => null,
+        ),
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
+      'no-coverage' => array(
+        'help' => 'Always disable coverage information.',
+        'passthru' => array(
+          'unit' => true,
+        ),
+      ),
       '*' => 'paths',
     );
 
@@ -379,10 +433,18 @@ EOTEXT
         array_unshift($argv, '--ansi');
       }
 
-      $lint_unit = new ExecFuture(
-        'php %s --recon diff --no-diff %Ls',
-        phutil_get_library_root('arcanist').'/../scripts/arcanist.php',
-        $argv);
+      $script = phutil_get_library_root('arcanist').'/../scripts/arcanist.php';
+      if ($argv) {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff %Ls',
+          $script,
+          $argv);
+      } else {
+        $lint_unit = new ExecFuture(
+          'php %s --recon diff --no-diff',
+          $script);
+      }
+
       $lint_unit->write('', true);
       $lint_unit->start();
     }
@@ -391,7 +453,9 @@ EOTEXT
 
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
-      array());
+      array(
+        'message' => $commit_message,
+      ));
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
@@ -406,7 +470,9 @@ EOTEXT
       list($err) = $lint_unit->resolve();
       $data = $this->readScratchJSONFile('diff-result.json');
       if ($err || !$data) {
-        return 1;
+        throw new Exception(
+          'Unable to read results from background linting and unit testing. '.
+          'You can try running arc diff again with --background 0');
       }
     } else {
       $server = $this->console->getServer();
@@ -481,14 +547,12 @@ EOTEXT
         ob_start();
       }
     } else {
-
       $revision['diffid'] = $this->getDiffID();
 
       if ($commit_message->getRevisionID()) {
-        $future = $conduit->callMethod(
+        $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
           $revision);
-        $result = $future->resolve();
 
         foreach (array('edit-messages.json', 'update-messages.json') as $file) {
           $messages = $this->readScratchJSONFile($file);
@@ -498,8 +562,6 @@ EOTEXT
 
         echo "Updated an existing Differential revision:\n";
       } else {
-        $revision['user'] = $this->getUserPHID();
-
         $revision = $this->dispatchWillCreateRevisionEvent($revision);
 
         $result = $conduit->callMethodSynchronous(
@@ -530,6 +592,16 @@ EOTEXT
       echo phutil_console_format(
         "        **Revision URI:** __%s__\n\n",
         $uri);
+
+      if ($this->getArgument('plan-changes')) {
+        $conduit->callMethodSynchronous(
+          'differential.createcomment',
+          array(
+            'revision_id' => $result['revisionid'],
+            'action' => 'rethink',
+          ));
+        echo "Planned changes to the revision.\n";
+      }
     }
 
     echo "Included changes:\n";
@@ -559,16 +631,8 @@ EOTEXT
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-
-      // Parse the relative commit as soon as we can, to avoid generating
-      // caches we need to drop later and expensive discovery operations
-      // (particularly in Mercurial).
-
-      $relative = $this->getArgument('paths');
-      if ($relative) {
-        $repository_api->parseRelativeLocalCommit($relative);
-      }
+    if ($repository_api->supportsCommitRanges()) {
+      $this->parseBaseCommitArgument($this->getArgument('paths'));
     }
   }
 
@@ -581,17 +645,21 @@ EOTEXT
     }
 
     if ($this->requiresWorkingCopy()) {
+      $repository_api = $this->getRepositoryAPI();
       try {
+        if ($this->getArgument('add-all')) {
+          $this->setCommitMode(self::COMMIT_ENABLE);
+        } else if ($this->getArgument('uncommitted')) {
+          $this->setCommitMode(self::COMMIT_DISABLE);
+        } else {
+          $this->setCommitMode(self::COMMIT_ALLOW);
+        }
+        if ($repository_api instanceof ArcanistSubversionAPI) {
+          $repository_api->limitStatusToPaths($this->getArgument('paths'));
+        }
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
-        $repository_api = $this->getRepositoryAPI();
         if ($repository_api instanceof ArcanistMercurialAPI) {
-
-          // Some Mercurial users prefer to use it like SVN, where they don't
-          // commit changes before sending them for review. This would be a
-          // pretty bad workflow in Git, but Mercurial users are significantly
-          // more expert at change management.
-
           $use_dirty_changes = false;
           if ($this->getArgument('uncommitted')) {
             // OK.
@@ -606,13 +674,16 @@ EOTEXT
             }
           }
 
-          $repository_api->setIncludeDirectoryStateInDiffs(true);
           $this->haveUncommittedChanges = true;
         } else {
           throw $ex;
         }
       }
     }
+
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_DIFF_DIDCOLLECTCHANGES,
+      array());
   }
 
   private function buildRevisionFromCommitMessage(
@@ -768,10 +839,8 @@ EOTEXT
         }
       }
 
-    } else if ($repository_api->supportsRelativeLocalCommits()) {
-      $paths = $repository_api->getWorkingCopyStatus();
     } else {
-      throw new Exception("Unknown VCS!");
+      $paths = $repository_api->getWorkingCopyStatus();
     }
 
     foreach ($paths as $path => $mask) {
@@ -794,7 +863,7 @@ EOTEXT
         fwrite(STDERR, "Reading diff from stdin...\n");
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
-        list($raw_diff) = execx($this->getArgument('raw-command'));
+        list($raw_diff) = execx('%C', $this->getArgument('raw-command'));
       } else {
         throw new Exception("Unknown raw diff source.");
       }
@@ -1016,82 +1085,9 @@ EOTEXT
       }
     }
 
-    foreach ($changes as $change) {
-      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
-        continue;
-      }
-
-      $path = $change->getCurrentPath();
-
-      $name = basename($path);
-
-      $old_file = $change->getOriginalFileData();
-      $old_dict = $this->uploadFile($old_file, $name, 'old binary');
-      if ($old_dict['guid']) {
-        $change->setMetadata('old:binary-phid', $old_dict['guid']);
-      }
-      $change->setMetadata('old:file:size',      $old_dict['size']);
-      $change->setMetadata('old:file:mime-type', $old_dict['mime']);
-
-      $new_file = $change->getCurrentFileData();
-      $new_dict = $this->uploadFile($new_file, $name, 'new binary');
-      if ($new_dict['guid']) {
-        $change->setMetadata('new:binary-phid', $new_dict['guid']);
-      }
-      $change->setMetadata('new:file:size',      $new_dict['size']);
-      $change->setMetadata('new:file:mime-type', $new_dict['mime']);
-
-      $mime_type = coalesce($new_dict['mime'], $old_dict['mime']);
-      if (preg_match('@^image/@', $mime_type)) {
-        $change->setFileType(ArcanistDiffChangeType::FILE_IMAGE);
-      }
-    }
+    $this->uploadFilesForChanges($changes);
 
     return $changes;
-  }
-
-  private function uploadFile($data, $name, $desc) {
-    $result = array(
-      'guid' => null,
-      'mime' => null,
-      'size' => null
-    );
-
-    if ($this->getArgument('skip-binaries')) {
-      return $result;
-    }
-
-    $result['size'] = $size = strlen($data);
-    if (!$size) {
-      return $result;
-    }
-
-    $tmp = new TempFile();
-    Filesystem::writeFile($tmp, $data);
-    $mime_type = Filesystem::getMimeType($tmp);
-    $result['mime'] = $mime_type;
-
-    echo "Uploading {$desc} '{$name}' ({$mime_type}, {$size} bytes)...\n";
-
-    try {
-      $guid = $this->getConduit()->callMethodSynchronous(
-        'file.upload',
-        array(
-          'data_base64' => base64_encode($data),
-          'name'        => $name,
-      ));
-
-      $result['guid'] = $guid;
-    } catch (Exception $e) {
-      echo "Failed to upload {$desc} '{$name}'.\n";
-
-      if (!phutil_console_confirm('Continue?', $default_no = false)) {
-        throw new ArcanistUsageException(
-          'Aborted due to file upload failure. You can use --skip-binaries '.
-          'to skip binary uploads.');
-      }
-    }
-    return $result;
   }
 
   private function getGitParentLogInfo() {
@@ -1102,7 +1098,6 @@ EOTEXT
       'uuid'          => null,
     );
 
-    $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
     $parser = $this->newDiffParser();
@@ -1222,9 +1217,9 @@ EOTEXT
     $this->console->writeOut("Linting...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('lint');
-      if ($repository_api->supportsRelativeLocalCommits()) {
+      if ($repository_api->supportsCommitRanges()) {
         $argv[] = '--rev';
-        $argv[] = $repository_api->getRelativeCommit();
+        $argv[] = $repository_api->getBaseCommit();
       }
 
       $lint_workflow = $this->buildChildWorkflow('lint', $argv);
@@ -1238,8 +1233,16 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          $this->console->writeOut(
-            "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
+          if ($this->getArgument('advice') &&
+              $lint_workflow->getUnresolvedMessages()) {
+            $this->getErrorExcuse(
+              'lint',
+              "Lint issued unresolved advice.",
+              'lint-excuses');
+          } else {
+            $this->console->writeOut(
+              "<bg:green>** LINT OKAY **</bg> No lint problems.\n");
+          }
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
           $this->getErrorExcuse(
@@ -1273,7 +1276,7 @@ EOTEXT
     } catch (ArcanistNoEngineException $ex) {
       $this->console->writeOut("No lint engine configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No paths to lint.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;
@@ -1295,9 +1298,9 @@ EOTEXT
     $this->console->writeOut("Running unit tests...\n");
     try {
       $argv = $this->getPassthruArgumentsAsArgv('unit');
-      if ($repository_api->supportsRelativeLocalCommits()) {
+      if ($repository_api->supportsCommitRanges()) {
         $argv[] = '--rev';
-        $argv[] = $repository_api->getRelativeCommit();
+        $argv[] = $repository_api->getBaseCommit();
       }
       $unit_workflow = $this->buildChildWorkflow('unit', $argv);
       $unit_result = $unit_workflow->run();
@@ -1348,7 +1351,7 @@ EOTEXT
       $this->console->writeOut(
         "No unit test engine is configured for this project.\n");
     } catch (ArcanistNoEffectException $ex) {
-      $this->console->writeOut("No tests to run.\n");
+      $this->console->writeOut($ex->getMessage()."\n");
     }
 
     return null;
@@ -1557,6 +1560,7 @@ EOTEXT
           ));
       }
     }
+    $old_message = $template;
 
     $included = array();
     if ($included_commits) {
@@ -1625,9 +1629,11 @@ EOTEXT
                        $repository_api instanceof ArcanistGitAPI &&
                        $this->shouldAmend());
       if ($should_amend) {
-        $repository_api->amendCommit($template);
-        $wrote = true;
-        $where = 'commit message';
+        $wrote = (rtrim($old_message) != rtrim($template));
+        if ($wrote) {
+          $repository_api->amendCommit($template);
+          $where = 'commit message';
+        }
       } else {
         $wrote = $this->writeScratchFile('create-message', $template);
         $where = "'".$this->getReadableScratchFilePath('create-message')."'";
@@ -1842,6 +1848,9 @@ EOTEXT
     $local = $repository_api->getLocalCommitInformation();
     if ($local) {
       $result = $this->parseCommitMessagesIntoFields($local);
+      if ($this->getArgument('create')) {
+        unset($result[0]['revisionID']);
+      }
     }
 
     $result[0] = $this->dispatchWillBuildEvent($result[0]);
@@ -1904,6 +1913,9 @@ EOTEXT
     $messages = array();
     foreach ($local as $hash => $info) {
       $text = $info['message'];
+      if (trim($text) == self::AUTO_COMMIT_TITLE) {
+        continue;
+      }
       $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
       $messages[$hash] = $obj;
     }
@@ -2134,6 +2146,9 @@ EOTEXT
     foreach ($usable as $message) {
       // Pick the first line out of each message.
       $text = trim($message);
+      if ($text == self::AUTO_COMMIT_TITLE) {
+        continue;
+      }
       $text = head(explode("\n", $text));
       $default[] = '  - '.$text."\n";
     }
@@ -2391,6 +2406,155 @@ EOTEXT
       "You don't own revision D{$id} '{$title}'. You can only update ".
       "revisions you own. You can 'Commandeer' this revision from the web ".
       "interface if you want to become the owner.");
+  }
+
+
+/* -(  File Uploads  )------------------------------------------------------- */
+
+
+  private function uploadFilesForChanges(array $changes) {
+    assert_instances_of($changes, 'ArcanistDiffChange');
+
+    // Collect all the files we need to upload.
+
+    $need_upload = array();
+    foreach ($changes as $key => $change) {
+      if ($change->getFileType() != ArcanistDiffChangeType::FILE_BINARY) {
+        continue;
+      }
+
+      if ($this->getArgument('skip-binaries')) {
+        continue;
+      }
+
+      $name = basename($change->getCurrentPath());
+
+      $need_upload[] = array(
+        'type' => 'old',
+        'name' => $name,
+        'data' => $change->getOriginalFileData(),
+        'change' => $change,
+      );
+
+      $need_upload[] = array(
+        'type' => 'new',
+        'name' => $name,
+        'data' => $change->getCurrentFileData(),
+        'change' => $change,
+      );
+    }
+
+    if (!$need_upload) {
+      return;
+    }
+
+    // Determine mime types and file sizes. Update changes from "binary" to
+    // "image" if the file is an image. Set image metadata.
+
+    $type_image = ArcanistDiffChangeType::FILE_IMAGE;
+    foreach ($need_upload as $key => $spec) {
+      $change = $need_upload[$key]['change'];
+
+      $type = $spec['type'];
+      $size = strlen($spec['data']);
+
+      $change->setMetadata("{$type}:file:size", $size);
+      if ($spec['data'] === null) {
+        // This covers the case where a file was added or removed; we don't
+        // need to upload it. (This is distinct from an empty file, which we
+        // do upload.)
+        unset($need_upload[$key]);
+        continue;
+      }
+
+      $mime = $this->getFileMimeType($spec['data']);
+      if (preg_match('@^image/@', $mime)) {
+        $change->setFileType($type_image);
+      }
+
+      $change->setMetadata("{$type}:file:mime-type", $mime);
+    }
+
+    echo pht("Uploading %d files...", count($need_upload))."\n";
+
+    // Now we're ready to upload the actual file data. If possible, we'll just
+    // transmit a hash of the file instead of the actual file data. If the data
+    // already exists, Phabricator can share storage. Check if we can use
+    // "file.uploadhash" yet (i.e., if the server is up to date enough).
+    // TODO: Drop this check once we bump the protocol version.
+    $conduit_methods = $this->getConduit()->callMethodSynchronous(
+      'conduit.query',
+      array());
+    $can_use_hash_upload = isset($conduit_methods['file.uploadhash']);
+
+    if ($can_use_hash_upload) {
+      $hash_futures = array();
+      foreach ($need_upload as $key => $spec) {
+        $hash_futures[$key] = $this->getConduit()->callMethod(
+          'file.uploadhash',
+          array(
+            'name' => $spec['name'],
+            'hash' => sha1($spec['data']),
+          ));
+      }
+
+      foreach (Futures($hash_futures)->limit(8) as $key => $future) {
+        $type = $need_upload[$key]['type'];
+        $change = $need_upload[$key]['change'];
+        $name = $need_upload[$key]['name'];
+
+        $phid = null;
+        try {
+          $phid = $future->resolve();
+        } catch (Exception $e) {
+          // Just try uploading normally if the hash upload failed.
+          continue;
+        }
+
+        if ($phid) {
+          $change->setMetadata("{$type}:binary-phid", $phid);
+          unset($need_upload[$key]);
+          echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
+        }
+      }
+    }
+
+    $upload_futures = array();
+    foreach ($need_upload as $key => $spec) {
+      $upload_futures[$key] = $this->getConduit()->callMethod(
+        'file.upload',
+        array(
+          'name' => $spec['name'],
+          'data_base64' => base64_encode($spec['data']),
+        ));
+    }
+
+    foreach (Futures($upload_futures)->limit(4) as $key => $future) {
+      $type = $need_upload[$key]['type'];
+      $change = $need_upload[$key]['change'];
+      $name = $need_upload[$key]['name'];
+
+      try {
+        $phid = $future->resolve();
+        $change->setMetadata("{$type}:binary-phid", $phid);
+        echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
+      } catch (Exception $e) {
+        echo "Failed to upload {$type} binary '{$name}'.\n";
+        if (!phutil_console_confirm('Continue?', $default_no = false)) {
+          throw new ArcanistUsageException(
+            'Aborted due to file upload failure. You can use --skip-binaries '.
+            'to skip binary uploads.');
+        }
+      }
+    }
+
+    echo pht("Upload complete.")."\n";
+  }
+
+  private function getFileMimeType($data) {
+    $tmp = new TempFile();
+    Filesystem::writeFile($tmp, $data);
+    return Filesystem::getMimeType($tmp);
   }
 
 }

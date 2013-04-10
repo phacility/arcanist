@@ -12,7 +12,12 @@ final class ArcanistWorkingCopyIdentity {
 
   protected $localConfig;
   protected $projectConfig;
+  protected $runtimeConfig;
   protected $projectRoot;
+
+  public static function newDummyWorkingCopy() {
+    return new ArcanistWorkingCopyIdentity('/', array());
+  }
 
   public static function newFromPath($path) {
     $project_id = null;
@@ -83,6 +88,7 @@ final class ArcanistWorkingCopyIdentity {
     $this->projectRoot    = $root;
     $this->projectConfig  = $config;
     $this->localConfig    = array();
+    $this->runtimeConfig = array();
 
     $vc_dirs = array(
       '.git',
@@ -210,8 +216,13 @@ final class ArcanistWorkingCopyIdentity {
   public function getConfigFromAnySource($key, $default = null) {
     $settings = new ArcanistSettings();
 
-    // try local config first
-    $pval = $this->getLocalConfig($key);
+    // try runtime config first
+    $pval = idx($this->runtimeConfig, $key);
+
+    // try local config
+    if ($pval === null) {
+      $pval = $this->getLocalConfig($key);
+    }
 
     // then per-project config
     if ($pval === null) {
@@ -238,6 +249,21 @@ final class ArcanistWorkingCopyIdentity {
 
     return $pval;
 
+  }
+
+  /**
+   * Sets a runtime config value that takes precedence over any static
+   * config values.
+   *
+   * @param key   Key to set.
+   * @param value The value of the key.
+   *
+   * @task config
+   */
+  public function setRuntimeConfig($key, $value) {
+    $this->runtimeConfig[$key] = $value;
+
+    return $this;
   }
 
 }

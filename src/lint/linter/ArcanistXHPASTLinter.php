@@ -5,9 +5,10 @@
  *
  * @group linter
  */
-final class ArcanistXHPASTLinter extends ArcanistLinter {
+final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
-  protected $trees = array();
+  private $futures = array();
+  private $trees = array();
 
   const LINT_PHP_SYNTAX_ERROR          = 1;
   const LINT_UNABLE_TO_PARSE           = 2;
@@ -40,11 +41,12 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
   const LINT_PHP_53_FEATURES           = 31;
   const LINT_REUSED_AS_ITERATOR        = 32;
-  const LINT_PHT_WITH_DYNAMIC_STRING   = 33;
   const LINT_COMMENT_SPACING           = 34;
   const LINT_PHP_54_FEATURES           = 35;
   const LINT_SLOWNESS                  = 36;
-
+  const LINT_CLOSING_CALL_PAREN        = 37;
+  const LINT_CLOSING_DECL_PAREN        = 38;
+  const LINT_REUSED_ITERATOR_REFERENCE = 39;
 
   public function getLintNameMap() {
     return array(
@@ -80,9 +82,11 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
       self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
-      self::LINT_PHT_WITH_DYNAMIC_STRING   => 'Use of pht() on Dynamic String',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
       self::LINT_SLOWNESS                  => 'Slow Construct',
+      self::LINT_CLOSING_CALL_PAREN        => 'Call Formatting',
+      self::LINT_CLOSING_DECL_PAREN        => 'Declaration Formatting',
+      self::LINT_REUSED_ITERATOR_REFERENCE => 'Reuse of Iterator References',
     );
   }
 
@@ -91,121 +95,141 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   public function getLintSeverityMap() {
-    return array(
-      self::LINT_TODO_COMMENT => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_UNABLE_TO_PARSE
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_NAMING_CONVENTIONS
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PREG_QUOTE_MISUSE
-        => ArcanistLintSeverity::SEVERITY_ADVICE,
-      self::LINT_BRACE_FORMATTING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PARENTHESES_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_CONTROL_STATEMENT_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_BINARY_EXPRESSION_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_ARRAY_INDEX_SPACING
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_IMPLICIT_FALLTHROUGH
-        => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_PHT_WITH_DYNAMIC_STRING
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_SLOWNESS
-        => ArcanistLintSeverity::SEVERITY_WARNING,
+    $disabled = ArcanistLintSeverity::SEVERITY_DISABLED;
+    $advice   = ArcanistLintSeverity::SEVERITY_ADVICE;
+    $warning  = ArcanistLintSeverity::SEVERITY_WARNING;
 
-      self::LINT_COMMENT_SPACING
-        => ArcanistLintSeverity::SEVERITY_ADVICE,
+    return array(
+      self::LINT_TODO_COMMENT              => $disabled,
+      self::LINT_UNABLE_TO_PARSE           => $warning,
+      self::LINT_NAMING_CONVENTIONS        => $warning,
+      self::LINT_PREG_QUOTE_MISUSE         => $advice,
+      self::LINT_BRACE_FORMATTING          => $warning,
+      self::LINT_PARENTHESES_SPACING       => $warning,
+      self::LINT_CONTROL_STATEMENT_SPACING => $warning,
+      self::LINT_BINARY_EXPRESSION_SPACING => $warning,
+      self::LINT_ARRAY_INDEX_SPACING       => $warning,
+      self::LINT_IMPLICIT_FALLTHROUGH      => $warning,
+      self::LINT_SLOWNESS                  => $warning,
+      self::LINT_COMMENT_SPACING           => $advice,
+      self::LINT_CLOSING_CALL_PAREN        => $warning,
+      self::LINT_CLOSING_DECL_PAREN        => $warning,
+      self::LINT_REUSED_ITERATOR_REFERENCE => $warning,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
-      self::LINT_RAGGED_CLASSTREE_EDGE
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_RAGGED_CLASSTREE_EDGE     => $disabled,
 
       // This is disabled by default because projects don't necessarily target
       // a specific minimum version.
-      self::LINT_PHP_53_FEATURES
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
-      self::LINT_PHP_54_FEATURES
-        => ArcanistLintSeverity::SEVERITY_DISABLED,
+      self::LINT_PHP_53_FEATURES           => $disabled,
+      self::LINT_PHP_54_FEATURES           => $disabled,
     );
   }
 
-  public function willLintPaths(array $paths) {
-    $futures = array();
+  protected function buildFutures(array $paths) {
     foreach ($paths as $path) {
-      $futures[$path] = xhpast_get_parser_future($this->getData($path));
+      if (!isset($this->futures[$path])) {
+        $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
+      }
     }
-    foreach (Futures($futures)->limit(8) as $path => $future) {
-      $this->willLintPath($path);
+    return array_select_keys($this->futures, $paths);
+  }
+
+  public function getXHPASTTreeForPath($path) {
+    if (!array_key_exists($path, $this->trees)) {
+      $this->trees[$path] = null;
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
           $this->getData($path),
-          $future->resolve());
+          $this->futures[$path]->resolve());
+        $root = $this->trees[$path]->getRootNode();
+        $root->buildSelectCache();
+        $root->buildTokenCache();
       } catch (XHPASTSyntaxErrorException $ex) {
         $this->raiseLintAtLine(
           $ex->getErrorLine(),
           1,
           self::LINT_PHP_SYNTAX_ERROR,
           'This file contains a syntax error: '.$ex->getMessage());
-        $this->stopAllLinters();
-        return;
       } catch (Exception $ex) {
-        $this->raiseLintAtPath(
-          self::LINT_UNABLE_TO_PARSE,
-          'XHPAST could not parse this file, probably because the AST is too '.
-          'deep. Some lint issues may not have been detected. You may safely '.
-          'ignore this warning.');
-        return;
+        $this->raiseLintAtPath(self::LINT_UNABLE_TO_PARSE, $ex->getMessage());
       }
     }
+    return $this->trees[$path];
   }
 
-  public function getXHPASTTreeForPath($path) {
-    return idx($this->trees, $path);
+  public function getCacheVersion() {
+    $version = '4';
+    $path = xhpast_get_binary_path();
+    if (Filesystem::pathExists($path)) {
+      $version .= '-'.md5_file($path);
+    }
+    return $version;
   }
 
-  public function lintPath($path) {
-    if (empty($this->trees[$path])) {
+  protected function resolveFuture($path, Future $future) {
+    $tree = $this->getXHPASTTreeForPath($path);
+    if (!$tree) {
       return;
     }
 
-    $root = $this->trees[$path]->getRootNode();
+    $root = $tree->getRootNode();
 
-    $root->buildSelectCache();
-    $root->buildTokenCache();
+    $method_codes = array(
+      'lintStrstrUsedForCheck' => self::LINT_SLOWNESS,
+      'lintStrposUsedForStart' => self::LINT_SLOWNESS,
+      'lintPHP53Features' => self::LINT_PHP_53_FEATURES,
+      'lintPHP54Features' => self::LINT_PHP_54_FEATURES,
+      'lintImplicitFallthrough' => self::LINT_IMPLICIT_FALLTHROUGH,
+      'lintBraceFormatting' => self::LINT_BRACE_FORMATTING,
+      'lintTautologicalExpressions' => self::LINT_TAUTOLOGICAL_EXPRESSION,
+      'lintCommentSpaces' => self::LINT_COMMENT_SPACING,
+      'lintHashComments' => self::LINT_COMMENT_STYLE,
+      'lintReusedIterators' => self::LINT_REUSED_ITERATORS,
+      'lintReusedIteratorReferences' => self::LINT_REUSED_ITERATOR_REFERENCE,
+      'lintVariableVariables' => self::LINT_VARIABLE_VARIABLE,
+      'lintUndeclaredVariables' => array(
+        self::LINT_EXTRACT_USE,
+        self::LINT_REUSED_AS_ITERATOR,
+        self::LINT_UNDECLARED_VARIABLE,
+      ),
+      'lintPHPTagUse' => array(
+        self::LINT_PHP_SHORT_TAG,
+        self::LINT_PHP_ECHO_TAG,
+        self::LINT_PHP_OPEN_TAG,
+        self::LINT_PHP_CLOSE_TAG,
+      ),
+      'lintNamingConventions' => self::LINT_NAMING_CONVENTIONS,
+      'lintSurpriseConstructors' => self::LINT_IMPLICIT_CONSTRUCTOR,
+      'lintParenthesesShouldHugExpressions' => self::LINT_PARENTHESES_SPACING,
+      'lintSpaceAfterControlStatementKeywords' =>
+        self::LINT_CONTROL_STATEMENT_SPACING,
+      'lintSpaceAroundBinaryOperators' => self::LINT_BINARY_EXPRESSION_SPACING,
+      'lintDynamicDefines' => self::LINT_DYNAMIC_DEFINE,
+      'lintUseOfThisInStaticMethods' => self::LINT_STATIC_THIS,
+      'lintPregQuote' => self::LINT_PREG_QUOTE_MISUSE,
+      'lintExitExpressions' => self::LINT_EXIT_EXPRESSION,
+      'lintArrayIndexWhitespace' => self::LINT_ARRAY_INDEX_SPACING,
+      'lintTODOComments' => self::LINT_TODO_COMMENT,
+      'lintPrimaryDeclarationFilenameMatch' =>
+        self::LINT_CLASS_FILENAME_MISMATCH,
+      'lintPlusOperatorOnStrings' => self::LINT_PLUS_OPERATOR_ON_STRINGS,
+      'lintDuplicateKeysInArray' => self::LINT_DUPLICATE_KEYS_IN_ARRAY,
+      'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
+      'lintClosingCallParen' => self::LINT_CLOSING_CALL_PAREN,
+      'lintClosingDeclarationParen' => self::LINT_CLOSING_DECL_PAREN,
+    );
 
-    $this->lintUseOfThisInStaticMethods($root);
-    $this->lintDynamicDefines($root);
-    $this->lintSurpriseConstructors($root);
-    $this->lintPHPTagUse($root);
-    $this->lintVariableVariables($root);
-    $this->lintTODOComments($root);
-    $this->lintExitExpressions($root);
-    $this->lintSpaceAroundBinaryOperators($root);
-    $this->lintSpaceAfterControlStatementKeywords($root);
-    $this->lintParenthesesShouldHugExpressions($root);
-    $this->lintNamingConventions($root);
-    $this->lintPregQuote($root);
-    $this->lintUndeclaredVariables($root);
-    $this->lintArrayIndexWhitespace($root);
-    $this->lintCommentSpaces($root);
-    $this->lintHashComments($root);
-    $this->lintPrimaryDeclarationFilenameMatch($root);
-    $this->lintTautologicalExpressions($root);
-    $this->lintPlusOperatorOnStrings($root);
-    $this->lintDuplicateKeysInArray($root);
-    $this->lintReusedIterators($root);
-    $this->lintBraceFormatting($root);
-    $this->lintRaggedClasstreeEdges($root);
-    $this->lintImplicitFallthrough($root);
-    $this->lintPHP53Features($root);
-    $this->lintPHP54Features($root);
-    $this->lintPHT($root);
-    $this->lintStrposUsedForStart($root);
-    $this->lintStrstrUsedForCheck($root);
+    foreach ($method_codes as $method => $codes) {
+      foreach ((array)$codes as $code) {
+        if ($this->isCodeEnabled($code)) {
+          call_user_func(array($this, $method), $root);
+          break;
+        }
+      }
+    }
+
   }
 
   public function lintStrstrUsedForCheck($root) {
@@ -293,41 +317,6 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     }
   }
 
-  public function lintPHT($root) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    foreach ($calls as $call) {
-      $name = strtolower($call->getChildByIndex(0)->getConcreteString());
-      if ($name != 'pht') {
-        continue;
-      }
-
-      $parameters = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-      if (!$parameters->getChildren()) {
-        continue;
-      }
-
-      $identifier = $parameters->getChildByIndex(0);
-      if ($identifier->getTypeName() == 'n_STRING_SCALAR') {
-        continue;
-      }
-
-      if ($identifier->getTypeName() == 'n_CONCATENATION_LIST') {
-        foreach ($identifier->getChildren() as $child) {
-          if ($child->getTypeName() == 'n_STRING_SCALAR' ||
-              $child->getTypeName() == 'n_OPERATOR') {
-            continue 2;
-          }
-        }
-      }
-
-      $this->raiseLintAtNode(
-        $call,
-        self::LINT_PHT_WITH_DYNAMIC_STRING,
-        "The first parameter of pht() can be only a scalar string, ".
-          "otherwise it can't be extracted.");
-    }
-  }
-
   public function lintPHP53Features($root) {
 
     $functions = $root->selectTokensOfType('T_FUNCTION');
@@ -378,7 +367,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
     $statics = $root->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
     foreach ($statics as $static) {
-      $name = $static->getChildOfType(0, 'n_CLASS_NAME');
+      $name = $static->getChildByIndex(0);
+      if ($name->getTypeName() != 'n_CLASS_NAME') {
+        continue;
+      }
       if ($name->getConcreteString() == 'static') {
         $this->raiseLintAtNode(
           $name,
@@ -397,6 +389,17 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           self::LINT_PHP_53_FEATURES,
           'This codebase targets PHP 5.2, but short ternary was not '.
           'introduced until PHP 5.3.');
+      }
+    }
+
+    $heredocs = $root->selectDescendantsOfType('n_HEREDOC');
+    foreach ($heredocs as $heredoc) {
+      if (preg_match('/^<<<[\'"]/', $heredoc->getConcreteString())) {
+        $this->raiseLintAtNode(
+          $heredoc,
+          self::LINT_PHP_53_FEATURES,
+          'This codebase targets PHP 5.2, but nowdoc was not introduced until '.
+          'PHP 5.3.');
       }
     }
 
@@ -464,6 +467,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       $left = $index->getChildByIndex(0);
       switch ($left->getTypeName()) {
         case 'n_FUNCTION_CALL':
+        case 'n_METHOD_CALL':
           $this->raiseLintAtNode(
             $index->getChildByIndex(1),
             self::LINT_PHP_54_FEATURES,
@@ -476,6 +480,17 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
   }
 
   private function lintImplicitFallthrough($root) {
+    $hook_obj = null;
+    $working_copy = $this->getEngine()->getWorkingCopy();
+    if ($working_copy) {
+      $hook_class = $working_copy->getConfig('lint.xhpast.switchhook');
+      $hook_class = $this->getConfig('switchhook', $hook_class);
+      if ($hook_class) {
+        $hook_obj = newv($hook_class, array());
+        assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
+      }
+    }
+
     $switches = $root->selectDescendantsOfType('n_SWITCH');
     foreach ($switches as $switch) {
       $blocks = array();
@@ -524,9 +539,10 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         $tokens = $block->getTokens();
         $last = end($tokens);
         while ($last && $last = $last->getNextToken()) {
-          if (!$last->isSemantic()) {
-            $tokens[$last->getTokenID()] = $last;
+          if ($last->isSemantic()) {
+            break;
           }
+          $tokens[$last->getTokenID()] = $last;
         }
 
         $blocks[$key] = array(
@@ -598,7 +614,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
 
           if ($tok_type == 'T_RETURN'   ||
               $tok_type == 'T_THROW'    ||
-              $tok_type == 'T_EXIT') {
+              $tok_type == 'T_EXIT'     ||
+              ($hook_obj && $hook_obj->checkSwitchToken($token))) {
             if (empty($different_scope_tokens[$token_id])) {
               $statement_ok = true;
               $block_ok = true;
@@ -800,7 +817,8 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       $bin_exprs = $for_expr->selectDescendantsOfType('n_BINARY_EXPRESSION');
       foreach ($bin_exprs as $bin_expr) {
         if ($bin_expr->getChildByIndex(1)->getConcreteString() == '=') {
-          $var_map[$bin_expr->getChildByIndex(0)->getConcreteString()] = true;
+          $var = $bin_expr->getChildByIndex(0);
+          $var_map[$var->getConcreteString()] = $var;
         }
       }
 
@@ -825,7 +843,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         }
         $name = $var->getConcreteString();
         $name = trim($name, '&'); // Get rid of ref silliness.
-        $var_map[$name] = true;
+        $var_map[$name] = $var;
       }
 
       $used_vars[$foreach_loop->getID()] = $var_map;
@@ -843,14 +861,191 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
         $shared = array_intersect_key($outer_vars, $inner_vars);
         if ($shared) {
           $shared_desc = implode(', ', array_keys($shared));
-          $this->raiseLintAtNode(
+          $message = $this->raiseLintAtNode(
             $inner_loop->getChildByIndex(0),
             self::LINT_REUSED_ITERATORS,
             "This loop reuses iterator variables ({$shared_desc}) from an ".
             "outer loop. You might be clobbering the outer iterator. Change ".
             "the inner loop to use a different iterator name.");
+
+          $locations = array();
+          foreach ($shared as $var) {
+            $locations[] = $this->getOtherLocation($var->getOffset());
+          }
+          $message->setOtherLocations($locations);
         }
       }
+    }
+  }
+
+  /**
+   * Find cases where a foreach loop is being iterated using a variable
+   * reference and the same variable is used outside of the loop without
+   * calling unset() or reassigning the variable to another variable
+   * reference.
+   *
+   *  COUNTEREXAMPLE
+   *  foreach ($ar as &$a) {
+   *    // ...
+   *  }
+   *  $a = 1; // <-- Raises an error for using $a
+   *
+   */
+  protected function lintReusedIteratorReferences($root) {
+
+    $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+    $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
+    $defs = $fdefs->add($mdefs);
+
+    foreach ($defs as $def) {
+
+      $body = $def->getChildByIndex(5);
+      if ($body->getTypeName() == 'n_EMPTY') {
+        // Abstract method declaration.
+        continue;
+      }
+
+      $exclude = array();
+
+      // Exclude uses of variables, unsets, and foreach loops
+      // within closures - they are checked on their own
+      $func_defs = $body->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+      foreach ($func_defs as $func_def) {
+        $vars = $func_def->selectDescendantsOfType('n_VARIABLE');
+        foreach ($vars as $var) {
+          $exclude[$var->getID()] = true;
+        }
+
+        $unset_lists = $func_def->selectDescendantsOfType('n_UNSET_LIST');
+        foreach ($unset_lists as $unset_list) {
+          $exclude[$unset_list->getID()] = true;
+        }
+
+        $foreaches = $func_def->selectDescendantsOfType('n_FOREACH');
+        foreach ($foreaches as $foreach) {
+          $exclude[$foreach->getID()] = true;
+        }
+      }
+
+      // Find all variables that are unset within the scope
+      $unset_vars = array();
+      $unset_lists = $body->selectDescendantsOfType('n_UNSET_LIST');
+      foreach ($unset_lists as $unset_list) {
+        if (isset($exclude[$unset_list->getID()])) {
+          continue;
+        }
+
+        $unset_list_vars = $unset_list->selectDescendantsOfType('n_VARIABLE');
+        foreach ($unset_list_vars as $var) {
+          $concrete = $this->getConcreteVariableString($var);
+          $unset_vars[$concrete][] = $var->getOffset();
+          $exclude[$var->getID()] = true;
+        }
+      }
+
+      // Find all reference variables in foreach expressions
+      $reference_vars = array();
+      $foreaches = $body->selectDescendantsOfType('n_FOREACH');
+      foreach ($foreaches as $foreach) {
+        if (isset($exclude[$foreach->getID()])) {
+          continue;
+        }
+
+        $foreach_expr = $foreach->getChildOfType(0, 'n_FOREACH_EXPRESSION');
+        $var = $foreach_expr->getChildByIndex(2);
+        if ($var->getTypeName() != 'n_VARIABLE_REFERENCE') {
+          continue;
+        }
+
+        $reference = $var->getChildByIndex(0);
+        if ($reference->getTypeName() != 'n_VARIABLE') {
+          continue;
+        }
+
+        $reference_name = $this->getConcreteVariableString($reference);
+        $reference_vars[$reference_name][] = $reference->getOffset();
+        $exclude[$reference->getID()] = true;
+
+        // Exclude uses of the reference variable within the foreach loop
+        $foreach_vars = $foreach->selectDescendantsOfType('n_VARIABLE');
+        foreach ($foreach_vars as $var) {
+          $name = $this->getConcreteVariableString($var);
+          if ($name == $reference_name) {
+            $exclude[$var->getID()] = true;
+          }
+        }
+      }
+
+      // Allow usage if the reference variable is assigned to another
+      // reference variable
+      $binary = $body->selectDescendantsOfType('n_BINARY_EXPRESSION');
+      foreach ($binary as $expr) {
+        if ($expr->getChildByIndex(1)->getConcreteString() != '=') {
+          continue;
+        }
+        $lval = $expr->getChildByIndex(0);
+        if ($lval->getTypeName() != 'n_VARIABLE') {
+          continue;
+        }
+        $rval = $expr->getChildByIndex(2);
+        if ($rval->getTypeName() != 'n_VARIABLE_REFERENCE') {
+          continue;
+        }
+
+        // Counts as unsetting a variable
+        $concrete = $this->getConcreteVariableString($lval);
+        $unset_vars[$concrete][] = $lval->getOffset();
+        $exclude[$lval->getID()] = true;
+      }
+
+      $all_vars = array();
+      $all = $body->selectDescendantsOfType('n_VARIABLE');
+      foreach ($all as $var) {
+        if (isset($exclude[$var->getID()])) {
+          continue;
+        }
+
+        $name = $this->getConcreteVariableString($var);
+
+        if (!isset($reference_vars[$name])) {
+          continue;
+        }
+
+        // Find the closest reference offset to this variable
+        $reference_offset = null;
+        foreach ($reference_vars[$name] as $offset) {
+          if ($offset < $var->getOffset()) {
+            $reference_offset = $offset;
+          } else {
+            break;
+          }
+        }
+        if (!$reference_offset) {
+          continue;
+        }
+
+        // Check if an unset exists between reference and usage of this
+        // variable
+        $warn = true;
+        if (isset($unset_vars[$name])) {
+          foreach ($unset_vars[$name] as $unset_offset) {
+            if ($unset_offset > $reference_offset &&
+                $unset_offset < $var->getOffset()) {
+                $warn = false;
+                break;
+            }
+          }
+        }
+        if ($warn) {
+          $this->raiseLintAtNode(
+            $var,
+            self::LINT_REUSED_ITERATOR_REFERENCE,
+            'This variable was used already as a by-reference iterator ' .
+            'variable. Such variables survive outside the foreach loop, ' .
+            'do not reuse.');
+        }
+      }
+
     }
   }
 
@@ -1111,7 +1306,11 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           //    foreach ($a as $b => &$c) { ... }
           // Reach into the n_VARIABLE_REFERENCE node to grab the n_VARIABLE
           // node.
-          $foreach_vars[] = $value_var->getChildOfType(0, 'n_VARIABLE');
+          $var = $value_var->getChildByIndex(0);
+          if ($var->getTypeName() == 'n_VARIABLE_VARIABLE') {
+            $var = $var->getChildByIndex(0);
+          }
+          $foreach_vars[] = $var;
         }
 
         // Remove all uses of the iterators inside of the foreach() loop from
@@ -1142,12 +1341,16 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
           if ($declarations[$concrete] < $offset) {
             if (!empty($uses[$concrete]) &&
                 max($uses[$concrete]) > $offset) {
-              $this->raiseLintAtNode(
+              $message = $this->raiseLintAtNode(
                 $var,
                 self::LINT_REUSED_AS_ITERATOR,
                 'This iterator variable is a previously declared local '.
                 'variable. To avoid overwriting locals, do not reuse them '.
                 'as iterator variables.');
+              $message->setOtherLocations(array(
+                $this->getOtherLocation($declarations[$concrete]),
+                $this->getOtherLocation(max($uses[$concrete])),
+              ));
             }
           }
         }
@@ -1874,8 +2077,7 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       $decl_name,
       self::LINT_CLASS_FILENAME_MISMATCH,
       "The name of this file differs from the name of the class or interface ".
-      "it declares. Rename the file to '{$rename}'."
-    );
+      "it declares. Rename the file to '{$rename}'.");
   }
 
   private function lintPlusOperatorOnStrings($root) {
@@ -1943,13 +2145,18 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
       }
 
       foreach ($keys_warn as $key => $_) {
-        foreach ($nodes_by_key[$key] as $node) {
-          $this->raiseLintAtNode(
-            $node,
-            self::LINT_DUPLICATE_KEYS_IN_ARRAY,
-            "Duplicate key in array initializer. PHP will ignore all ".
+        $node = array_pop($nodes_by_key[$key]);
+        $message = $this->raiseLintAtNode(
+          $node,
+          self::LINT_DUPLICATE_KEYS_IN_ARRAY,
+          "Duplicate key in array initializer. PHP will ignore all ".
             "but the last entry.");
+
+        $locations = array();
+        foreach ($nodes_by_key[$key] as $node) {
+          $locations[] = $this->getOtherLocation($node->getOffset());
         }
+        $message->setOtherLocations($locations);
       }
     }
   }
@@ -1990,31 +2197,63 @@ final class ArcanistXHPASTLinter extends ArcanistLinter {
     }
   }
 
-  protected function raiseLintAtToken(
-    XHPASTToken $token,
-    $code,
-    $desc,
-    $replace = null) {
-    return $this->raiseLintAtOffset(
-      $token->getOffset(),
-      $code,
-      $desc,
-      $token->getValue(),
-      $replace);
+  private function lintClosingCallParen($root) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $calls = $calls->add($root->selectDescendantsOfType('n_METHOD_CALL'));
+
+    foreach ($calls as $call) {
+
+      // If the last parameter of a call is a HEREDOC, don't apply this rule.
+      $params = $call
+        ->getChildOfType(1, 'n_CALL_PARAMETER_LIST')
+        ->getChildren();
+
+      if ($params) {
+        $last_param = last($params);
+        if ($last_param->getTypeName() == 'n_HEREDOC') {
+          continue;
+        }
+      }
+
+      $tokens = $call->getTokens();
+      $last = array_pop($tokens);
+
+      $trailing = $last->getNonsemanticTokensBefore();
+      $trailing_text = implode('', mpull($trailing, 'getValue'));
+      if (preg_match('/^\s+$/', $trailing_text)) {
+        $this->raiseLintAtOffset(
+          $last->getOffset() - strlen($trailing_text),
+          self::LINT_CLOSING_CALL_PAREN,
+          'Convention: no spaces before closing parenthesis in calls.',
+          $trailing_text,
+          '');
+      }
+    }
   }
 
-  protected function raiseLintAtNode(
-    XHPASTNode $node,
-    $code,
-    $desc,
-    $replace = null) {
-    return $this->raiseLintAtOffset(
-      $node->getOffset(),
-      $code,
-      $desc,
-      $node->getConcreteString(),
-      $replace);
+  private function lintClosingDeclarationParen($root) {
+    $decs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+    $decs = $decs->add($root->selectDescendantsOfType('n_METHOD_DECLARATION'));
+
+    foreach ($decs as $dec) {
+      $params = $dec->getChildOfType(3, 'n_DECLARATION_PARAMETER_LIST');
+      $tokens = $params->getTokens();
+      $last = array_pop($tokens);
+
+      $trailing = $last->getNonsemanticTokensBefore();
+      $trailing_text = implode('', mpull($trailing, 'getValue'));
+      if (preg_match('/^\s+$/', $trailing_text)) {
+        $this->raiseLintAtOffset(
+          $last->getOffset() - strlen($trailing_text),
+          self::LINT_CLOSING_DECL_PAREN,
+          'Convention: no spaces before closing parenthesis in function and '.
+          'method declarations.',
+          $trailing_text,
+          '');
+      }
+    }
   }
+
 
   public function getSuperGlobalNames() {
     return array(

@@ -52,13 +52,14 @@ EOTEXT
   public function run() {
 
     $uri = $this->determineConduitURI();
+    $this->setConduitURI($uri);
 
     echo "Installing certificate for '{$uri}'...\n";
 
     $config = self::readUserConfigurationFile();
 
     echo "Trying to connect to server...\n";
-    $conduit = new ConduitClient($uri);
+    $conduit = $this->establishConduit()->getConduit();
     try {
       $conduit->callMethodSynchronous('conduit.ping', array());
     } catch (Exception $ex) {

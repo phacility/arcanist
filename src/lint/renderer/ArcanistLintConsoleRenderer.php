@@ -5,7 +5,7 @@
  *
  * @group lint
  */
-final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
+final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
   private $showAutofixPatches = false;
 
   public function setShowAutofixPatches($show_autofix_patches) {
@@ -36,14 +36,24 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
         $message->getSeverity());
       $code = $message->getCode();
       $name = $message->getName();
-      $description = phutil_console_wrap($message->getDescription(), 4);
+      $description = $message->getDescription();
+
+      if ($message->getOtherLocations()) {
+        $locations = array();
+        foreach ($message->getOtherLocations() as $location) {
+          $locations[] =
+            idx($location, 'path', $path).
+            (!empty($location['line']) ? ":{$location['line']}" : "");
+        }
+        $description .= "\nOther locations: ".implode(', ', $locations);
+      }
 
       $text[] = phutil_console_format(
         "  **<bg:{$color}> %s </bg>** (%s) __%s__\n%s\n",
         $severity,
         $code,
         $name,
-        $description);
+        phutil_console_wrap($description, 4));
 
       if ($message->hasFileContext()) {
         $text[] = $this->renderContext($message, $lines);
@@ -79,9 +89,10 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
     }
 
     $text = $message->getOriginalText();
+    $start = $message->getChar() - 1;
+    $patch = '';
     // Refine original and replacement text to eliminate start and end in common
     if ($message->isPatchable()) {
-      $start = $message->getChar() - 1;
       $patch = $message->getReplacementText();
       $text_strlen = strlen($text);
       $patch_strlen = strlen($patch);
@@ -116,13 +127,11 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
       $text = substr(
         $text,
         $same_at_front,
-        $text_strlen - $same_at_end - $same_at_front
-      );
+        $text_strlen - $same_at_end - $same_at_front);
       $patch = substr(
         $patch,
         $same_at_front,
-        $patch_strlen - $same_at_end - $same_at_front
-      );
+        $patch_strlen - $same_at_end - $same_at_front);
     }
     // Print out the impacted region itself.
     $diff = $message->isPatchable() ? '-' : null;
@@ -130,7 +139,9 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
     $text_lines = explode("\n", $text);
     $text_length = count($text_lines);
 
-    if ($text) {
+    $intraline = ($text != '' || $start || !preg_match('/\n$/', $patch));
+
+    if ($intraline) {
       for (; $cursor < $line_num + $text_length; $cursor++) {
         $chevron = ($cursor == $line_num);
         // We may not have any data if, e.g., the old file does not exist.
@@ -142,9 +153,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
           $data = substr_replace(
             $data,
             phutil_console_format('##%s##', $text_line),
-            ($cursor == $line_num)
-              ? ($message->isPatchable() ? $start : $message->getChar() - 1)
-              : 0,
+            ($cursor == $line_num ? $start : 0),
             strlen($text_line));
         }
 
@@ -168,7 +177,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
 
       $patched = phutil_console_format('##%s##', $patch_line);
 
-      if ($text) {
+      if ($intraline) {
         $patched = substr_replace(
           $line_data[$line_num],
           $patched,
@@ -181,8 +190,7 @@ final class ArcanistLintConsoleRenderer implements ArcanistLintRenderer {
       foreach (array_slice($patch_lines, 1) as $patch_line) {
         $out[] = $this->renderLine(
           null,
-          phutil_console_format('##%s##', $patch_line), false, '+'
-        );
+          phutil_console_format('##%s##', $patch_line), false, '+');
       }
     }
 

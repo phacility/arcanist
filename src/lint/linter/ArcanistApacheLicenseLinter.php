@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Adds the Apache license to source files.
- *
- * @group linter
+ * @deprecated
  */
 final class ArcanistApacheLicenseLinter extends ArcanistLicenseLinter {
   public function getLinterName() {

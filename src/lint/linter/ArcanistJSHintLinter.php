@@ -62,12 +62,14 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     $config = $working_copy->getConfig('lint.jshint.config');
 
     if ($config !== null) {
-      $config = Filesystem::resolvePath($config, $working_copy->getProjectRoot());
+      $config = Filesystem::resolvePath(
+        $config,
+        $working_copy->getProjectRoot());
 
       if (!Filesystem::pathExists($config)) {
         throw new ArcanistUsageException(
-          "Unable to find custom options file defined by 'lint.jshint.config'. ".
-          "Make sure that the path is correct.");
+          "Unable to find custom options file defined by ".
+          "'lint.jshint.config'. Make sure that the path is correct.");
       }
 
       $options .= ' --config '.$config;
@@ -92,16 +94,18 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
         throw new ArcanistUsageException(
           "Unable to find JSHint binary in a specified directory. Make sure ".
           "that 'lint.jshint.prefix' and 'lint.jshint.bin' keys are set ".
-          "correctly. If you'd rather use a copy of JSHint installed globally, ".
-          "you can just remove these keys from your .arcconfig");
+          "correctly. If you'd rather use a copy of JSHint installed ".
+          "globally, you can just remove these keys from your .arcconfig");
       }
 
       return $bin;
     }
 
     // Look for globally installed JSHint
-    $cmd = (phutil_is_windows()) ? 'where %s' : 'which %s';
-    list($err) = exec_manual($cmd, $bin);
+    list($err) = (phutil_is_windows()
+      ? exec_manual('where %s', $bin)
+      : exec_manual('which %s', $bin));
+
     if ($err) {
       throw new ArcanistUsageException(
         "JSHint does not appear to be installed on this system. Install it ".
@@ -114,13 +118,21 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
+    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
+      return;
+    }
+
     $jshint_bin = $this->getJSHintPath();
     $jshint_options = $this->getJSHintOptions();
     $futures = array();
 
     foreach ($paths as $path) {
       $filepath = $this->getEngine()->getFilePathOnDisk($path);
-      $futures[$path] = new ExecFuture("{$jshint_bin} {$filepath} ${jshint_options}");
+      $futures[$path] = new ExecFuture(
+        "%s %s %C",
+        $jshint_bin,
+        $filepath,
+        $jshint_options);
     }
 
     foreach (Futures($futures)->limit(8) as $path => $future) {
@@ -129,6 +141,10 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
+    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
+      return;
+    }
+
     list($rc, $stdout, $stderr) = $this->results[$path];
 
     if ($rc === 0) {

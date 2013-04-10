@@ -50,10 +50,6 @@ EOTEXT
       $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
         $working_copy);
 
-      if ($repository_api->supportsRelativeLocalCommits()) {
-        $repository_api->setDefaultBaseCommit();
-      }
-
       $this->setRepositoryAPI($repository_api);
 
       // Require no local changes.

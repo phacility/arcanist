@@ -35,7 +35,7 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
 
     // Default to just finding pyflakes in the users path
     $pyflakes_bin = 'pyflakes';
-    $python_path = '';
+    $python_path = array();
 
     // If a pyflakes path was specified, then just use that as the
     // pyflakes binary and assume that the libraries will be imported
@@ -50,14 +50,20 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
       $pyflakes_bin = $pyflakes_path;
     } else if ($pyflakes_prefix !== null) {
       $pyflakes_bin = $pyflakes_prefix.'/bin/pyflakes';
-      $python_path = $pyflakes_prefix.'/lib/python2.6/site-packages:';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.7/site-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.7/dist-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.6/site-packages';
+      $python_path[] = $pyflakes_prefix.'/lib/python2.6/dist-packages';
     }
-
+    $python_path[] = '';
+    $python_path = implode(':', $python_path);
     $options = $this->getPyFlakesOptions();
 
     $f = new ExecFuture(
-          "/usr/bin/env PYTHONPATH=%s\$PYTHONPATH ".
-            "{$pyflakes_bin} {$options}", $python_path);
+      '/usr/bin/env PYTHONPATH=%s$PYTHONPATH %s %C',
+      $python_path,
+      $pyflakes_bin,
+      $options);
     $f->write($this->getData($path));
 
     try {
@@ -87,7 +93,9 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
 
       $severity = ArcanistLintSeverity::SEVERITY_WARNING;
       $description = $matches[3];
-      if (preg_match('/(^undefined|^duplicate|before assignment$)/', $description)) {
+
+      $error_regexp = '/(^undefined|^duplicate|before assignment$)/';
+      if (preg_match($error_regexp, $description)) {
         $severity = ArcanistLintSeverity::SEVERITY_ERROR;
       }
 

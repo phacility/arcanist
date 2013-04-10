@@ -108,8 +108,7 @@ EOCORPUS;
           array(
             'duck' => 'quack',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'svn-property-modify.svndiff':
         $this->assertEqual(2, count($changes));
@@ -120,14 +119,12 @@ EOCORPUS;
           array(
             'svn:ignore' => '*.phpz',
           ),
-          $change->getOldProperties()
-        );
+          $change->getOldProperties());
         $this->assertEqual(
           array(
             'svn:ignore' => '*.php',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
 
         $change = array_shift($changes);
         $this->assertEqual(0, count($change->getHunks()));
@@ -135,14 +132,12 @@ EOCORPUS;
           array(
             'svn:special' => '*',
           ),
-          $change->getOldProperties()
-        );
+          $change->getOldProperties());
         $this->assertEqual(
           array(
             'svn:special' => 'moo',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'svn-property-delete.svndiff':
         $this->assertEqual(1, count($changes));
@@ -190,6 +185,24 @@ Merged /tfb/branches/ads-create-v3/www/html/js/help/UIFaq.js:r140558-142418
 EOTEXT
           ));
         break;
+      case 'svn-property-older-than-1.5.svndiff':
+        // In SVN 1.5, the format for property diffs changed to use the words
+        // "Added", "Deleted" and "Modified" instead of "Name". This is an old
+        // property change diff which uses "Name".
+        $this->assertEqual(1, count($changes));
+        $change = reset($changes);
+
+        $this->assertEqual(count($change->getHunks()), 0);
+        $this->assertEqual(
+          $change->getOldProperties(),
+          array(
+          ));
+        $this->assertEqual(
+          $change->getNewProperties(),
+          array(
+            'svn:executable' => '*',
+          ));
+        break;
       case 'svn-binary-add.svndiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
@@ -201,8 +214,7 @@ EOTEXT
           array(
             'svn:mime-type' => 'application/octet-stream',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'svn-binary-diff.svndiff':
         $this->assertEqual(1, count($changes));
@@ -239,14 +251,12 @@ EOTEXT
           array(
             'unix:filemode' => '100644',
           ),
-          $change->getOldProperties()
-        );
+          $change->getOldProperties());
         $this->assertEqual(
           array(
             'unix:filemode' => '100755',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'git-filemode-change-only.gitdiff':
         $this->assertEqual(count($changes), 2);
@@ -256,14 +266,12 @@ EOTEXT
           array(
             'unix:filemode' => '100644',
           ),
-          $change->getOldProperties()
-        );
+          $change->getOldProperties());
         $this->assertEqual(
           array(
             'unix:filemode' => '100755',
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'svn-empty-file.svndiff':
         $this->assertEqual(2, count($changes));
@@ -313,8 +321,7 @@ EOTEXT
         $this->assertEqual(0, count($change->getHunks()));
         $this->assertEqual(
           ArcanistDiffChangeType::TYPE_MOVE_AWAY,
-          $change->getType()
-        );
+          $change->getType());
 
         $this->assertEqual(
           $change->getCurrentPath(),
@@ -392,14 +399,12 @@ EOTEXT
           array(
             'svn:ignore' => 'tags',
           ),
-          $change->getOldProperties()
-        );
+          $change->getOldProperties());
         $this->assertEqual(
           array(
             'svn:ignore' => "tags\nasdf\nlol\nwhat",
           ),
-          $change->getNewProperties()
-        );
+          $change->getNewProperties());
         break;
       case 'git-empty-files.gitdiff':
         $this->assertEqual(2, count($changes));
@@ -454,8 +459,7 @@ DiffCamp Revision: 94064
 
 git-svn-id: svn+ssh://tubbs/svnroot/tfb/trunk/www@223593 2c7ba8d8
 EOTEXT
-          , $change->getMetadata('message')
-        );
+          , $change->getMetadata('message'));
         break;
       case 'git-binary.gitdiff':
         $this->assertEqual(1, count($changes));
@@ -526,6 +530,9 @@ EOTEXT
       case 'hg-patch.hgdiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'hg-patch-git.hgdiff':
+        $this->assertEqual(1, count($changes));
+        break;
       case 'custom-prefixes.gitdiff':
         $this->assertEqual(1, count($changes));
         $change = head($changes);
@@ -535,6 +542,26 @@ EOTEXT
         break;
       case 'more-newlines.svndiff':
         $this->assertEqual(1, count($changes));
+        break;
+      case 'suppress-blank-empty.gitdiff':
+        $this->assertEqual(1, count($changes));
+        break;
+      case 'svn-property-windows.svndiff':
+        $this->assertEqual(1, count($changes));
+        break;
+      case 'rcs-addline.rcsdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
+      case 'rcs-deleteline.rcsdiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
         break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");

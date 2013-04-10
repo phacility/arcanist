@@ -40,10 +40,27 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     }
 
     $archive = dirname(__FILE__).'/bundle.git.tgz';
-    $patches = dirname(__FILE__).'/patches/';
     $fixture = PhutilDirectoryFixture::newFromArchive($archive);
 
+    $old_dir = getcwd();
     chdir($fixture->getPath());
+
+    $caught = null;
+    try {
+      $this->runGitRepositoryTests($fixture);
+    } catch (Exception $ex) {
+      $caught = $ex;
+    }
+
+    chdir($old_dir);
+
+    if ($caught) {
+      throw $ex;
+    }
+  }
+
+  private function runGitRepositoryTests(PhutilDirectoryFixture $fixture) {
+    $patches = dirname(__FILE__).'/patches/';
 
     list($commits) = execx(
       'git log --format=%s',
@@ -58,8 +75,12 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       list($commit_hash, $tree_hash, $subject) = explode(' ', $commit, 3);
       execx('git reset --hard %s --', $commit_hash);
 
-      $repository_api = new ArcanistGitAPI($fixture->getPath());
-      $repository_api->setDefaultBaseCommit();
+      $fixture_path = $fixture->getPath();
+      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+
+      $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
+        $working_copy);
+      $repository_api->setBaseCommitArgumentRules('arc:this');
       $diff = $repository_api->getFullGitDiff();
 
       $parser = new ArcanistDiffParser();

@@ -1,11 +1,10 @@
 <?php
 
 /**
- * Adds a license or copyright header to source files.
- *
- * @group linter
+ * @deprecated
  */
 abstract class ArcanistLicenseLinter extends ArcanistLinter {
+
   const LINT_NO_LICENSE_HEADER = 1;
 
   public function willLintPaths(array $paths) {
@@ -22,16 +21,7 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
     );
   }
 
-  /**
-   * Given the name of the copyright holder, return appropriate license header
-   * text.
-   */
   abstract protected function getLicenseText($copyright_holder);
-  /**
-   * Return an array of regular expressions that, if matched, indicate
-   * that a copyright header is required. The appropriate match will be
-   * stripped from the input when comparing against the expected license.
-   */
   abstract protected function getLicensePatterns();
 
   public function lintPath($path) {

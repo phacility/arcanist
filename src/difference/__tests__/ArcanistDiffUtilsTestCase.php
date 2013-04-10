@@ -92,8 +92,9 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
     foreach ($tests as $test) {
       $this->assertEqual(
         $test[2],
-        ArcanistDiffUtils::buildLevenshteinDifferenceString($test[0], $test[1])
-      );
+        ArcanistDiffUtils::buildLevenshteinDifferenceString(
+          $test[0],
+          $test[1]));
     }
   }
 }

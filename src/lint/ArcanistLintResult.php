@@ -10,6 +10,7 @@ final class ArcanistLintResult {
   protected $path;
   protected $data;
   protected $filePathOnDisk;
+  protected $cacheVersion;
   protected $messages = array();
   protected $effectiveMessages = array();
   private $needsSort;
@@ -54,6 +55,15 @@ final class ArcanistLintResult {
     return $this->filePathOnDisk;
   }
 
+  public function setCacheVersion($version) {
+    $this->cacheVersion = $version;
+    return $this;
+  }
+
+  public function getCacheVersion() {
+    return $this->cacheVersion;
+  }
+
   public function isPatchable() {
     foreach ($this->messages as $message) {
       if ($message->isPatchable()) {
@@ -72,7 +82,7 @@ final class ArcanistLintResult {
     return true;
   }
 
-  private function sortAndFilterMessages() {
+  public function sortAndFilterMessages() {
     $messages = $this->messages;
 
     foreach ($messages as $key => $message) {

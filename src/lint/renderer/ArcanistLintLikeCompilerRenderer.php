@@ -5,7 +5,7 @@
  *
  * @group lint
  */
-final class ArcanistLintLikeCompilerRenderer implements ArcanistLintRenderer {
+final class ArcanistLintLikeCompilerRenderer extends ArcanistLintRenderer {
   public function renderLintResult(ArcanistLintResult $result) {
     $lines = array();
     $messages = $result->getMessages();
@@ -23,8 +23,7 @@ final class ArcanistLintLikeCompilerRenderer implements ArcanistLintRenderer {
         $line,
         $severity,
         $code,
-        $description
-      );
+        $description);
     }
 
     return implode('', $lines);

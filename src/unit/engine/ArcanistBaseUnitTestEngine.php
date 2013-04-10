@@ -13,6 +13,28 @@ abstract class ArcanistBaseUnitTestEngine {
   protected $diffID;
   private $enableAsyncTests;
   private $enableCoverage;
+  private $runAllTests;
+  protected $renderer;
+
+
+  public function setRunAllTests($run_all_tests) {
+    if (!$this->supportsRunAllTests() && $run_all_tests) {
+      $class = get_class($this);
+      throw new Exception(
+        "Engine '{$class}' does not support --everything.");
+    }
+
+    $this->runAllTests = $run_all_tests;
+    return $this;
+  }
+
+  public function getRunAllTests() {
+    return $this->runAllTests;
+  }
+
+  protected function supportsRunAllTests() {
+    return false;
+  }
 
   final public function __construct() {
 
@@ -63,6 +85,11 @@ abstract class ArcanistBaseUnitTestEngine {
 
   final public function getEnableCoverage() {
     return $this->enableCoverage;
+  }
+
+  public function setRenderer(ArcanistUnitRenderer $renderer) {
+    $this->renderer = $renderer;
+    return $this;
   }
 
   abstract public function run();

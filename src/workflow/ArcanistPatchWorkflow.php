@@ -95,26 +95,13 @@ EOTEXT
       ),
       'nobranch' => array(
         'supports' => array(
-          'git'
+          'git', 'hg'
         ),
         'help' =>
-          "Normally under git, a new branch is created and then the patch ".
-          "is applied and committed in the new branch. This flag ".
-          "cherry-picks the resultant commit onto the original branch and ".
-          "deletes the temporary branch.",
-        'conflicts' => array(
-          'update' => true,
-        ),
-      ),
-      'bookmark' => array(
-        'supports' => array(
-          'hg'
-        ),
-        'help' =>
-          "Normally under hg, a new bookmark is not created and the patch ".
-          "is applied and committed in the current bookmark. With this flag, ".
-          "a new bookmark is created and the patch is applied and committed ".
-          "in the new bookmark.",
+          "Normally, a new branch (git) or bookmark (hg) is created and then ".
+          "the patch is applied and committed in the new branch/bookmark. ".
+          "This flag cherry-picks the resultant commit onto the original ".
+          "branch and deletes the temporary branch.",
         'conflicts' => array(
           'update' => true,
         ),
@@ -208,12 +195,9 @@ EOTEXT
   }
 
   private function canBranch() {
-    // git only for now
     $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI)) {
-      return false;
-    }
-    return true;
+    return ($repository_api instanceof ArcanistGitAPI) ||
+           ($repository_api instanceof ArcanistMercurialAPI);
   }
 
   private function shouldBranch() {
@@ -223,22 +207,6 @@ EOTEXT
     }
     return true;
   }
-
-  private function shouldBookmark() {
-    // specific to hg
-    $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistMercurialAPI)) {
-      return false;
-    }
-
-    $bookmark = $this->getArgument('bookmark', false);
-    if ($bookmark) {
-      return true;
-    }
-
-    return false;
-  }
-
 
   private function getBranchName(ArcanistBundle $bundle) {
     $branch_name    = null;
@@ -260,8 +228,7 @@ EOTEXT
       // no error means git rev-parse found a branch
       if (!$err) {
         echo phutil_console_format(
-          "Branch name {$proposed_name} already exists; trying a new name.\n"
-        );
+          "Branch name {$proposed_name} already exists; trying a new name.\n");
         continue;
       } else {
         $branch_name = $proposed_name;
@@ -299,8 +266,8 @@ EOTEXT
       // no error means hg log found a bookmark
       if (!$err) {
         echo phutil_console_format(
-          "Bookmark name {$proposed_name} already exists; trying a new name.\n"
-        );
+          "Bookmark name %s already exists; trying a new name.\n",
+          $proposed_name);
         continue;
       } else {
         $bookmark_name = $proposed_name;
@@ -323,52 +290,68 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     // verify the base revision is valid
-    // in a working copy that uses the git-svn bridge, the base revision might
-    // be a svn uri instead of a git ref
+    if ($repository_api instanceof ArcanistGitAPI) {
+      // in a working copy that uses the git-svn bridge, the base revision might
+      // be a svn uri instead of a git ref
 
-    // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
-    // always "verifies" any properly-formatted commit even if it does not
-    // exist.
-    list($err) = $repository_api->execManualLocal(
-      'cat-file -t %s',
-      $base_revision);
-    return !$err;
+      // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
+      // always "verifies" any properly-formatted commit even if it does not
+      // exist.
+      list($err) = $repository_api->execManualLocal(
+        'cat-file -t %s',
+        $base_revision);
+      return !$err;
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      return $repository_api->hasLocalCommit($base_revision);
+    }
+
+    return false;
   }
 
   private function createBranch(ArcanistBundle $bundle, $has_base_revision) {
-    $branch_name = $this->getBranchName($bundle);
-    $base_revision = $bundle->getBaseRevision();
     $repository_api = $this->getRepositoryAPI();
+    if ($repository_api instanceof ArcanistGitAPI) {
+      $branch_name = $this->getBranchName($bundle);
+      $base_revision = $bundle->getBaseRevision();
 
-    if ($base_revision && $has_base_revision) {
+      if ($base_revision && $has_base_revision) {
+        $repository_api->execxLocal(
+          'checkout -b %s %s',
+          $branch_name,
+          $base_revision);
+      } else {
+        $repository_api->execxLocal(
+          'checkout -b %s',
+          $branch_name);
+      }
+
+      echo phutil_console_format(
+        "Created and checked out branch %s.\n",
+        $branch_name);
+    } else if ($repository_api instanceof ArcanistMercurialAPI) {
+      $branch_name = $this->getBookmarkName($bundle);
+      $base_revision = $bundle->getBaseRevision();
+
+      if ($base_revision && $has_base_revision) {
+        $base_revision = $repository_api->getCanonicalRevisionName(
+          $base_revision);
+
+        echo "Updating to the revision's base commit\n";
+        $repository_api->execPassthru(
+          'update %s',
+          $base_revision);
+      }
+
       $repository_api->execxLocal(
-        'checkout -b %s %s',
-        $branch_name,
-        $base_revision);
-    } else {
-      $repository_api->execxLocal(
-        'checkout -b %s',
+        'bookmark %s',
+        $branch_name);
+
+      echo phutil_console_format(
+        "Created and checked out bookmark %s.\n",
         $branch_name);
     }
 
-    echo phutil_console_format(
-      "Created and checked out branch %s.\n",
-      $branch_name);
-
     return $branch_name;
-  }
-
-  private function createBookmark(ArcanistBundle $bundle) {
-    $bookmark_name    = $this->getBookmarkName($bundle);
-    $repository_api = $this->getRepositoryAPI();
-
-    $repository_api->execxLocal(
-      'bookmark %s',
-      $bookmark_name);
-
-    echo phutil_console_format(
-      "Created and applied bookmark %s.\n",
-      $bookmark_name);
   }
 
   private function shouldUpdateWorkingCopy() {
@@ -459,17 +442,23 @@ EOTEXT
         $this->canBranch() &&
         ($this->shouldBranch() || $has_base_revision)) {
 
-      $original_branch = $repository_api->getBranchName();
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $original_branch = $repository_api->getBranchName();
+      } else if ($repository_api instanceof ArcanistMercurialAPI) {
+        $original_branch = $repository_api->getActiveBookmark();
+      }
+
       // If we weren't on a branch, then record the ref we'll return to
       // instead.
       if ($original_branch === null) {
-        $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+        if ($repository_api instanceof ArcanistGitAPI) {
+          $original_branch = $repository_api->getCanonicalRevisionName('HEAD');
+        } else if ($repository_api instanceof ArcanistMercurialAPI) {
+          $original_branch = $repository_api->getCanonicalRevisionName('.');
+        }
       }
-      $new_branch = $this->createBranch($bundle, $has_base_revision);
-    }
 
-    if ($this->shouldBookmark()) {
-      $this->createBookmark($bundle);
+      $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
 
     if ($repository_api instanceof ArcanistSubversionAPI) {
@@ -578,8 +567,8 @@ EOTEXT
           csprintf(
             '(cd %s; svn cp %s %s)',
             $repository_api->getPath(),
-            $src,
-            $dst));
+            ArcanistSubversionAPI::escapeFileNameForSVN($src),
+            ArcanistSubversionAPI::escapeFileNameForSVN($dst)));
       }
 
       foreach ($deletes as $delete) {
@@ -587,7 +576,7 @@ EOTEXT
           csprintf(
             '(cd %s; svn rm %s)',
             $repository_api->getPath(),
-            $delete));
+            ArcanistSubversionAPI::escapeFileNameForSVN($delete)));
       }
 
       foreach ($symlinks as $symlink) {
@@ -636,7 +625,7 @@ EOTEXT
           csprintf(
             '(cd %s; svn add %s)',
             $repository_api->getPath(),
-            $add));
+            ArcanistSubversionAPI::escapeFileNameForSVN($add)));
       }
 
       foreach ($propset as $path => $changes) {
@@ -652,7 +641,7 @@ EOTEXT
                 '(cd %s; svn propdel %s %s)',
                 $repository_api->getPath(),
                 $prop,
-                $path));
+                ArcanistSubversionAPI::escapeFileNameForSVN($path)));
           } else {
             passthru(
               csprintf(
@@ -660,7 +649,7 @@ EOTEXT
                 $repository_api->getPath(),
                 $prop,
                 $value,
-                $path));
+                ArcanistSubversionAPI::escapeFileNameForSVN($path)));
           }
         }
       }
@@ -706,23 +695,15 @@ EOTEXT
       }
 
       if ($this->shouldCommit()) {
-        // git is really, really finicky about the author information so we
-        // make sure it is in the
-        // "George Washington <gwashington@example.com> format or don't use it.
-        $author_cmd = '';
-        $author = $bundle->getAuthor();
-        if ($author) {
-          $address = new PhutilEmailAddress($author);
-          if ($address->getDisplayName() && $address->getAddress()) {
-            $author = sprintf('%s <%s>',
-                              $address->getDisplayName(),
-                              $address->getAddress());
-            $author_cmd = sprintf('--author=%s ', $author);
-          }
+        if ($bundle->getFullAuthor()) {
+          $author_cmd = csprintf('--author=%s', $bundle->getFullAuthor());
+        } else {
+          $author_cmd = '';
         }
+
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -a %C-F -',
+          'commit -a %C -F -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
@@ -773,21 +754,47 @@ EOTEXT
       }
 
       if ($this->shouldCommit()) {
-        $author_cmd = '';
-        $author = $bundle->getAuthor();
-        if ($author) {
-          $author_cmd = sprintf('-u %s ', $author);
+        $author = coalesce($bundle->getFullAuthor(), $bundle->getAuthorName());
+        if ($author !== null) {
+          $author_cmd = csprintf('-u %s', $author);
+        } else {
+          $author_cmd = '';
         }
+
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -A %C-l -',
+          'commit %C -l -',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
+
+        if (!$this->shouldBranch() && $has_base_revision) {
+          $original_rev = $repository_api->getCanonicalRevisionName(
+            $original_branch);
+          $current_parent = $repository_api->getCanonicalRevisionName(
+            hgsprintf('%s^', $new_branch));
+
+          $err = 0;
+          if ($original_rev != $current_parent) {
+            list($err) = $repository_api->execManualLocal(
+              'rebase --dest %s --rev %s',
+              hgsprintf('%s', $original_branch),
+              hgsprintf('%s', $new_branch));
+          }
+
+          $repository_api->execxLocal('bookmark --delete %s', $new_branch);
+          if ($err) {
+            $repository_api->execManualLocal('rebase --abort');
+            throw new ArcanistUsageException(phutil_console_format(
+              "\n<bg:red>** Rebase onto $original_branch failed!**</bg>\n"));
+          }
+        }
+
         $verb = 'committed';
       } else {
         $verb = 'applied';
       }
+
       echo phutil_console_format(
         "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
 
@@ -853,10 +860,6 @@ EOTEXT
   private function sanityCheck(ArcanistBundle $bundle) {
     $repository_api = $this->getRepositoryAPI();
 
-    if ($repository_api->supportsRelativeLocalCommits()) {
-      $repository_api->setDefaultBaseCommit();
-    }
-
     // Require clean working copy
     $this->requireCleanWorkingCopy();
 
@@ -880,8 +883,7 @@ EOTEXT
       }
       $ok = phutil_console_confirm(
         "{$issue} Still try to apply the patch?",
-        $default_no = false
-      );
+        $default_no = false);
       if (!$ok) {
         throw new ArcanistUserAbortException();
       }
@@ -889,7 +891,7 @@ EOTEXT
 
     // Check to see if the bundle's base revision matches the working copy
     // base revision
-    if ($repository_api->supportsRelativeLocalCommits()) {
+    if ($repository_api->supportsLocalCommits()) {
       $bundle_base_rev = $bundle->getBaseRevision();
       if (empty($bundle_base_rev)) {
         // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version < 2
@@ -941,8 +943,7 @@ EOTEXT
           "This diff is against commit {$bundle_base_rev_str}, but the ".
           "commit is nowhere in the working copy. Try to apply it against ".
           "the current working copy state? ({$source_base_rev_str})",
-          $default_no = false
-        );
+          $default_no = false);
         if (!$ok) {
           throw new ArcanistUserAbortException();
         }
@@ -989,8 +990,7 @@ EOTEXT
       'differential.query',
       array(
         'commitHashes' => array($hash),
-      )
-    );
+      ));
 
 
     // grab the latest closed revision only

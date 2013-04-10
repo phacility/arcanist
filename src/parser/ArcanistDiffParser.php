@@ -13,6 +13,7 @@ final class ArcanistDiffParser {
   protected $lineSaved;
   protected $isGit;
   protected $isMercurial;
+  protected $isRCS;
   protected $detectBinaryFiles = false;
   protected $tryEncoding;
   protected $rawDiff;
@@ -188,11 +189,11 @@ final class ArcanistDiffParser {
   }
 
   public function parseDiff($diff) {
-    $this->didStartParse($diff);
-
-    if ($this->getLine() === null) {
-      $this->didFailParse("Can't parse an empty diff!");
+    if (!strlen(trim($diff))) {
+      throw new Exception("Can't parse an empty diff!");
     }
+
+    $this->didStartParse($diff);
 
     do {
       $patterns = array(
@@ -205,12 +206,13 @@ final class ArcanistDiffParser {
         // This is a git diff, probably from "git show" or "git diff".
         // Note that the filenames may appear quoted.
         '(?P<type>diff --git) (?P<oldnew>.*)',
+        // RCS Diff
+        '(?P<type>rcsdiff -u) (?P<oldnew>.*)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
         '(?P<binary>Binary) files '.
           '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
           '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
-
         // This is a normal Mercurial text change, probably from "hg diff". It
         // may have two "-r" blocks if it came from "hg diff -r x:y".
         '(?P<type>diff -r) (?P<hgrev>[a-f0-9]+) (?:-r [a-f0-9]+ )?(?P<cur>.+)',
@@ -226,7 +228,7 @@ final class ArcanistDiffParser {
         // contains some meta information and comment at the beginning
         // (isFirstNonEmptyLine() to check for beginning). Actual mercurial
         // code detects where comment ends and unified diff starts by
-        // searching "diff -r" in the text.
+        // searching for "diff -r" or "diff --git" in the text.
         $this->saveLine();
         $line = $this->nextLineThatLooksLikeDiffStart();
         if (!$this->tryMatchHeader($patterns, $line, $match)) {
@@ -304,6 +306,10 @@ final class ArcanistDiffParser {
           $this->setIsMercurial(true);
           $this->parseIndexHunk($change);
           break;
+        case 'rcsdiff -u':
+          $this->isRCS = true;
+          $this->parseIndexHunk($change);
+          break;
         default:
           $this->didFailParse("Unknown diff type.");
           break;
@@ -366,7 +372,7 @@ final class ArcanistDiffParser {
    * (or any other parser) with a carefully constructed property change.
    */
   protected function parsePropertyHunk(ArcanistDiffChange $change) {
-    $line = $this->getLine();
+    $line = $this->getLineTrimmed();
     if (!preg_match('/^_+$/', $line)) {
       $this->didFailParse("Expected '______________________'.");
     }
@@ -378,10 +384,17 @@ final class ArcanistDiffParser {
         break;
       }
 
+      // NOTE: Before 1.5, SVN uses "Name". At 1.5 and later, SVN uses
+      // "Modified", "Added" and "Deleted".
+
       $matches = null;
-      $ok = preg_match('/^(Modified|Added|Deleted): (.*)$/', $line, $matches);
+      $ok = preg_match(
+        '/^(Name|Modified|Added|Deleted): (.*)$/',
+        $line,
+        $matches);
       if (!$ok) {
-        $this->didFailParse("Expected 'Added', 'Deleted', or 'Modified'.");
+        $this->didFailParse(
+          "Expected 'Name', 'Added', 'Deleted', or 'Modified'.");
       }
 
       $op = $matches[1];
@@ -728,8 +741,19 @@ final class ArcanistDiffParser {
       }
     }
 
+    if ($this->isRCS) {
+      // Skip the RCS headers.
+      $this->nextLine();
+      $this->nextLine();
+      $this->nextLine();
+    }
+
     $old_file = $this->parseHunkTarget();
     $new_file = $this->parseHunkTarget();
+
+    if ($this->isRCS) {
+      $change->setCurrentPath($new_file);
+    }
 
     $change->setOldPath($old_file);
 
@@ -769,12 +793,15 @@ final class ArcanistDiffParser {
       // Something like "Fri Aug 26 01:20:50 2005 -0700", don't bother trying
       // to parse it.
       $remainder = '\t.*';
+    } else if ($this->isRCS) {
+      $remainder = '\s.*';
     }
 
     $ok = preg_match(
       '@^[-+]{3} (?:[ab]/)?(?P<path>.*?)'.$remainder.'$@',
       $line,
       $matches);
+
     if (!$ok) {
       $this->didFailParse(
         "Expected hunk target '+++ path/to/file.ext (revision N)'.");
@@ -840,12 +867,17 @@ final class ArcanistDiffParser {
       $add = 0;
       $del = 0;
 
-      $advance = false;
+      $hit_next_hunk = false;
       while ((($line = $this->nextLine()) !== null)) {
-        if (strlen($line)) {
+        if (strlen(rtrim($line, "\r\n"))) {
           $char = $line[0];
         } else {
-          $char = '~';
+          // Normally, we do not encouter empty lines in diffs, because
+          // unchanged lines have an initial space. However, in Git, with
+          // the option `diff.suppress-blank-empty` set, unchanged blank lines
+          // emit as completely empty. If we encounter a completely empty line,
+          // treat it as a ' ' (i.e., unchanged empty line) line.
+          $char = ' ';
         }
         switch ($char) {
           case '\\':
@@ -861,20 +893,19 @@ final class ArcanistDiffParser {
               $hunk->setIsMissingNewNewline(true);
             }
             if (!$new_len) {
-              $advance = true;
               break 2;
             }
             break;
           case '+':
-            if (!$new_len) {
-              break 2;
-            }
             ++$add;
             --$new_len;
             $real[] = $line;
             break;
           case '-':
             if (!$old_len) {
+              // In this case, we've hit "---" from a new file. So don't
+              // advance the line cursor.
+              $hit_next_hunk = true;
               break 2;
             }
             ++$del;
@@ -889,17 +920,14 @@ final class ArcanistDiffParser {
             --$new_len;
             $real[] = $line;
             break;
-          case "\r":
-          case "\n":
-          case '~':
-            $advance = true;
-            break 2;
           default:
+            // We hit something, likely another hunk.
+            $hit_next_hunk = true;
             break 2;
         }
       }
 
-      if ($old_len != 0 || $new_len != 0) {
+      if ($old_len || $new_len) {
         $this->didFailParse("Found the wrong number of hunk lines.");
       }
 
@@ -939,7 +967,7 @@ final class ArcanistDiffParser {
         $change->addHunk($hunk);
       }
 
-      if ($advance) {
+      if (!$hit_next_hunk) {
         $line = $this->nextNonemptyLine();
       }
 
@@ -1048,7 +1076,7 @@ final class ArcanistDiffParser {
 
   protected function nextLineThatLooksLikeDiffStart() {
     while (($line = $this->nextLine()) !== null) {
-      if (preg_match('/^\s*diff\s+-r/', $line)) {
+      if (preg_match('/^\s*diff\s+-(?:r|-git)/', $line)) {
         break;
       }
     }
@@ -1135,6 +1163,8 @@ final class ArcanistDiffParser {
       return;
     }
 
+    $imagechanges = array();
+
     $changes = $this->changes;
     foreach ($changes as $change) {
       $path = $change->getCurrentPath();
@@ -1176,8 +1206,22 @@ final class ArcanistDiffParser {
         continue;
       }
 
-      $change->setOriginalFileData($repository_api->getOriginalFileData($path));
-      $change->setCurrentFileData($repository_api->getCurrentFileData($path));
+      $imagechanges[$path] = $change;
+    }
+
+    // Fetch the actual file contents in batches so repositories
+    // that have slow random file accesses (i.e. mercurial) can
+    // optimize the retrieval.
+    $paths = array_keys($imagechanges);
+
+    $filedata = $repository_api->getBulkOriginalFileData($paths);
+    foreach ($filedata as $path => $data) {
+      $imagechanges[$path]->setOriginalFileData($data);
+    }
+
+    $filedata = $repository_api->getBulkCurrentFileData($paths);
+    foreach ($filedata as $path => $data) {
+      $imagechanges[$path]->setCurrentFileData($data);
     }
 
     $this->changes = $changes;

@@ -38,7 +38,9 @@ final class ArcanistDiffUtils {
     Filesystem::writeFile($file_new, (string)$new."\n");
 
     list($err, $stdout) = exec_manual(
-      "/usr/bin/diff {$diff_options} -U {$context_lines} %s %s",
+      'diff %C -U %s %s %s',
+      $diff_options,
+      $context_lines,
       $file_old,
       $file_new);
 
@@ -121,6 +123,12 @@ final class ArcanistDiffUtils {
     $highlight_o = '<span class="bright">';
     $highlight_c = '</span>';
 
+    $is_html = false;
+    if ($str instanceof PhutilSafeHTML) {
+      $is_html = true;
+      $str = $str->getHTMLContent();
+    }
+
     $n = strlen($str);
     for ($i = 0; $i < $n; $i++) {
 
@@ -174,6 +182,11 @@ final class ArcanistDiffUtils {
         $highlight = false;
       }
     }
+
+    if ($is_html) {
+      return phutil_safe_html($buf);
+    }
+
     return $buf;
   }
 
@@ -242,10 +255,10 @@ final class ArcanistDiffUtils {
 
     $m = array_fill(0, $ol + 1, array_fill(0, $nl + 1, array()));
 
-    $T_D = 'd';
-    $T_I = 'i';
-    $T_S = 's';
-    $T_X = 'x';
+    $t_d = 'd';
+    $t_i = 'i';
+    $t_s = 's';
+    $t_x = 'x';
 
     $m[0][0] = array(
       0,
@@ -254,13 +267,13 @@ final class ArcanistDiffUtils {
     for ($ii = 1; $ii <= $ol; $ii++) {
       $m[$ii][0] = array(
         $ii * 1000,
-        $T_D);
+        $t_d);
     }
 
     for ($jj = 1; $jj <= $nl; $jj++) {
       $m[0][$jj] = array(
         $jj * 1000,
-        $T_I);
+        $t_i);
     }
 
     $ii = 1;
@@ -269,10 +282,10 @@ final class ArcanistDiffUtils {
       do {
         if ($o[$ii - 1] == $n[$jj - 1]) {
           $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 0;
-          $sub_t      = $T_S;
+          $sub_t      = $t_s;
         } else {
           $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 2000;
-          $sub_t      = $T_X;
+          $sub_t      = $t_x;
         }
 
         if ($m[$ii - 1][$jj - 1][1] != $sub_t) {
@@ -280,12 +293,12 @@ final class ArcanistDiffUtils {
         }
 
         $del_t_cost = $m[$ii - 1][$jj][0] + 1000;
-        if ($m[$ii - 1][$jj][1] != $T_D) {
+        if ($m[$ii - 1][$jj][1] != $t_d) {
           $del_t_cost += 1;
         }
 
         $ins_t_cost = $m[$ii][$jj - 1][0] + 1000;
-        if ($m[$ii][$jj - 1][1] != $T_I) {
+        if ($m[$ii][$jj - 1][1] != $t_i) {
           $ins_t_cost += 1;
         }
 
@@ -296,11 +309,11 @@ final class ArcanistDiffUtils {
         } else if ($ins_t_cost <= $del_t_cost) {
           $m[$ii][$jj] = array(
             $ins_t_cost,
-            $T_I);
+            $t_i);
         } else {
           $m[$ii][$jj] = array(
             $del_t_cost,
-            $T_D);
+            $t_d);
         }
       } while ($jj++ < $nl);
     } while ($ii++ < $ol);
@@ -312,15 +325,15 @@ final class ArcanistDiffUtils {
       $r = $m[$ii][$jj][1];
       $result .= $r;
       switch ($r) {
-        case $T_S:
-        case $T_X:
+        case $t_s:
+        case $t_x:
           $ii--;
           $jj--;
           break;
-        case $T_I:
+        case $t_i:
           $jj--;
           break;
-        case $T_D:
+        case $t_d:
           $ii--;
           break;
       }

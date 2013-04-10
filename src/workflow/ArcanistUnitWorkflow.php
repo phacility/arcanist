@@ -69,6 +69,18 @@ EOTEXT
         'help' => "Show a detailed coverage report on the CLI. Implies ".
                   "--coverage.",
       ),
+      'json' => array(
+        'help' => 'Report results in JSON format.',
+      ),
+      'everything' => array(
+        'help' => 'Run every test.',
+        'conflicts' => array(
+          'rev' => '--everything runs all tests.',
+        ),
+      ),
+      'ugly' => array(
+        'help' => 'With --json, use uglier (but more efficient) formatting.',
+      ),
       '*' => 'paths',
     );
   }
@@ -101,6 +113,12 @@ EOTEXT
 
     $paths = $this->getArgument('paths');
     $rev = $this->getArgument('rev');
+    $everything = $this->getArgument('everything');
+    if ($everything && $paths) {
+      throw new ArcanistUsageException(
+        "You can not specify paths with --everything. The --everything ".
+        "flag runs every test.");
+    }
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
@@ -113,8 +131,15 @@ EOTEXT
 
     $this->engine = newv($engine_class, array());
     $this->engine->setWorkingCopy($working_copy);
-    $this->engine->setPaths($paths);
+    if ($everything) {
+      $this->engine->setRunAllTests(true);
+    } else {
+      $this->engine->setPaths($paths);
+    }
     $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
+
+    $renderer = new ArcanistUnitConsoleRenderer();
+    $this->engine->setRenderer($renderer);
 
     $enable_coverage = null; // Means "default".
     if ($this->getArgument('coverage') ||
@@ -137,6 +162,12 @@ EOTEXT
 
     $console = PhutilConsole::getConsole();
 
+    $json_output = $this->getArgument('json');
+
+    if ($json_output) {
+      $console->disableOut();
+    }
+
     $unresolved = array();
     $coverage = array();
     $postponed_count = 0;
@@ -147,19 +178,9 @@ EOTEXT
         $unresolved[] = $result;
       } else {
         if ($this->engine->shouldEchoTestResults()) {
-          $duration = '';
-          if ($result_code == ArcanistUnitTestResult::RESULT_PASS) {
-            $duration = ' '.self::formatTestDuration($result->getDuration());
-          }
-          $console->writeOut(
-            "  %s %s\n",
-            $result->getConsoleFormattedResult().$duration,
-            $result->getName());
+          $console->writeOut('%s', $renderer->renderUnitResult($result));
         }
         if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
-          if ($this->engine->shouldEchoTestResults()) {
-            $console->writeOut("%s\n", $result->getUserData());
-          }
           $unresolved[] = $result;
         }
       }
@@ -170,12 +191,9 @@ EOTEXT
       }
     }
     if ($postponed_count) {
-      $postponed = id(new ArcanistUnitTestResult())
-        ->setResult(ArcanistUnitTestResult::RESULT_POSTPONED);
       $console->writeOut(
-        "%s %s\n",
-        $postponed->getConsoleFormattedResult(),
-        pht('%d test(s)', $postponed_count));
+        '%s',
+        $renderer->renderPostponedResult($postponed_count));
     }
 
     if ($coverage) {
@@ -234,6 +252,19 @@ EOTEXT
       }
     }
 
+    if ($json_output) {
+      $console->enableOut();
+
+      $data = array_values(mpull($results, 'toDictionary'));
+
+      if ($this->getArgument('ugly')) {
+        $console->writeOut('%s', json_encode($data));
+      } else {
+        $json = new PhutilJSON();
+        $console->writeOut('%s', $json->encodeFormatted($data));
+      }
+    }
+
     return $overall_result;
   }
 
@@ -243,44 +274,6 @@ EOTEXT
 
   public function getTestResults() {
     return $this->testResults;
-  }
-
-  private static function formatTestDuration($seconds) {
-    // Very carefully define inclusive upper bounds on acceptable unit test
-    // durations. Times are in milliseconds and are in increasing order.
-    $acceptableness = array(
-      50   => "<fg:green>%s</fg><fg:yellow>\xE2\x98\x85</fg> ",
-      200  => '<fg:green>%s</fg>  ',
-      500  => '<fg:yellow>%s</fg>  ',
-      INF  => '<fg:red>%s</fg>  ',
-    );
-
-    $milliseconds = $seconds * 1000;
-    $duration = self::formatTime($seconds);
-    foreach ($acceptableness as $upper_bound => $formatting) {
-      if ($milliseconds <= $upper_bound) {
-        return phutil_console_format($formatting, $duration);
-      }
-    }
-    return phutil_console_format(end($acceptableness), $duration);
-  }
-
-  private static function formatTime($seconds) {
-    if ($seconds >= 60) {
-      $minutes = floor($seconds / 60);
-      return sprintf('%dm%02ds', $minutes, round($seconds % 60));
-    }
-
-    if ($seconds >= 1) {
-      return sprintf('%4.1fs', $seconds);
-    }
-
-    $milliseconds = $seconds * 1000;
-    if ($milliseconds >= 1) {
-      return sprintf('%3dms', round($milliseconds));
-    }
-
-    return ' <1ms';
   }
 
   private function renderDetailedCoverageReport($data, $report) {

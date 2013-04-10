@@ -151,12 +151,13 @@ final class ArcanistBaseCommitParser {
       case 'outgoing':
       case 'bookmark':
       case 'amended':
+      case 'this':
         return $this->api->resolveBaseCommitRule($rule, $source);
       default:
         $matches = null;
         if (preg_match('/^exec\((.*)\)$/', $name, $matches)) {
           $root = $this->api->getWorkingCopyIdentity()->getProjectRoot();
-          $future = new ExecFuture($matches[1]);
+          $future = new ExecFuture('%C', $matches[1]);
           $future->setCWD($root);
           list($err, $stdout) = $future->resolve();
           if (!$err) {

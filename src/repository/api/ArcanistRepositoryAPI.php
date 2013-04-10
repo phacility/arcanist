@@ -3,6 +3,7 @@
 /**
  * Interfaces with the VCS in the working copy.
  *
+ * @task  status      Path Status
  * @group workingcopy
  */
 abstract class ArcanistRepositoryAPI {
@@ -30,6 +31,12 @@ abstract class ArcanistRepositoryAPI {
   private $workingCopyIdentity;
   private $baseCommitArgumentRules;
 
+  private $uncommittedStatusCache;
+  private $commitRangeStatusCache;
+
+  private $symbolicBaseCommit;
+  private $resolvedBaseCommit;
+
   abstract public function getSourceControlSystemName();
 
   public function getDiffLinesOfContext() {
@@ -56,14 +63,6 @@ abstract class ArcanistRepositoryAPI {
         "any parent directory. Create an '.arcconfig' file to configure arc.");
     }
 
-    // check if we're in an svn working copy
-    list($err) = exec_manual('svn info');
-    if (!$err) {
-      $api = new ArcanistSubversionAPI($root);
-      $api->workingCopyIdentity = $working_copy;
-      return $api;
-    }
-
     if (Filesystem::pathExists($root.'/.hg')) {
       $api = new ArcanistMercurialAPI($root);
       $api->workingCopyIdentity = $working_copy;
@@ -81,6 +80,15 @@ abstract class ArcanistRepositoryAPI {
       $api = new ArcanistGitAPI($root);
       $api->workingCopyIdentity = $working_copy;
       return $api;
+    }
+
+    // check if we're in an svn working copy
+    foreach (Filesystem::walkToRoot($root) as $dir) {
+      if (Filesystem::pathExists($dir . '/.svn')) {
+        $api = new ArcanistSubversionAPI($root);
+        $api->workingCopyIdentity = $working_copy;
+        return $api;
+      }
     }
 
     throw new ArcanistUsageException(
@@ -101,35 +109,174 @@ abstract class ArcanistRepositoryAPI {
     }
   }
 
-  public function getUntrackedChanges() {
-    return $this->getWorkingCopyFilesWithMask(self::FLAG_UNTRACKED);
+
+/* -(  Path Status  )-------------------------------------------------------- */
+
+
+  abstract protected function buildUncommittedStatus();
+  abstract protected function buildCommitRangeStatus();
+
+
+  /**
+   * Get a list of uncommitted paths in the working copy that have been changed
+   * or are affected by other status effects, like conflicts or untracked
+   * files.
+   *
+   * Convenience methods @{method:getUntrackedChanges},
+   * @{method:getUnstagedChanges}, @{method:getUncommittedChanges},
+   * @{method:getMergeConflicts}, and @{method:getIncompleteChanges} allow
+   * simpler selection of paths in a specific state.
+   *
+   * This method returns a map of paths to bitmasks with status, using
+   * `FLAG_` constants. For example:
+   *
+   *   array(
+   *     'some/uncommitted/file.txt' => ArcanistRepositoryAPI::FLAG_UNSTAGED,
+   *   );
+   *
+   * A file may be in several states. Not all states are possible with all
+   * version control systems.
+   *
+   * @return map<string, bitmask> Map of paths, see above.
+   * @task status
+   */
+  final public function getUncommittedStatus() {
+    if ($this->uncommittedStatusCache === null) {
+      $status = $this->buildUncommittedStatus();
+      ksort($status);
+      $this->uncommittedStatusCache = $status;
+    }
+    return $this->uncommittedStatusCache;
   }
 
-  public function getUnstagedChanges() {
-    return $this->getWorkingCopyFilesWithMask(self::FLAG_UNSTAGED);
+
+  /**
+   * @task status
+   */
+  final public function getUntrackedChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_UNTRACKED);
   }
 
-  public function getUncommittedChanges() {
-    return $this->getWorkingCopyFilesWithMask(self::FLAG_UNCOMMITTED);
+
+  /**
+   * @task status
+   */
+  final public function getUnstagedChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_UNSTAGED);
   }
 
-  public function getMergeConflicts() {
-    return $this->getWorkingCopyFilesWithMask(self::FLAG_CONFLICT);
+
+  /**
+   * @task status
+   */
+  final public function getUncommittedChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_UNCOMMITTED);
   }
 
-  public function getIncompleteChanges() {
-    return $this->getWorkingCopyFilesWithMask(self::FLAG_INCOMPLETE);
+
+  /**
+   * @task status
+   */
+  final public function getMergeConflicts() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_CONFLICT);
   }
 
-  private function getWorkingCopyFilesWithMask($mask) {
+
+  /**
+   * @task status
+   */
+  final public function getIncompleteChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_INCOMPLETE);
+  }
+
+
+  /**
+   * @task status
+   */
+  private function getUncommittedPathsWithMask($mask) {
     $match = array();
-    foreach ($this->getWorkingCopyStatus() as $file => $flags) {
+    foreach ($this->getUncommittedStatus() as $path => $flags) {
       if ($flags & $mask) {
-        $match[] = $file;
+        $match[] = $path;
       }
     }
     return $match;
   }
+
+
+  /**
+   * Get a list of paths affected by the commits in the current commit range.
+   *
+   * See @{method:getUncommittedStatus} for a description of the return value.
+   *
+   * @return map<string, bitmask> Map from paths to status.
+   * @task status
+   */
+  final public function getCommitRangeStatus() {
+    if ($this->commitRangeStatusCache === null) {
+      $status = $this->buildCommitRangeStatus();
+      ksort($status);
+      $this->commitRangeStatusCache = $status;
+    }
+    return $this->commitRangeStatusCache;
+  }
+
+
+  /**
+   * Get a list of paths affected by commits in the current commit range, or
+   * uncommitted changes in the working copy. See @{method:getUncommittedStatus}
+   * or @{method:getCommitRangeStatus} to retreive smaller parts of the status.
+   *
+   * See @{method:getUncommittedStatus} for a description of the return value.
+   *
+   * @return map<string, bitmask> Map from paths to status.
+   * @task status
+   */
+  final public function getWorkingCopyStatus() {
+    $range_status = $this->getCommitRangeStatus();
+    $uncommitted_status = $this->getUncommittedStatus();
+
+    $result = new PhutilArrayWithDefaultValue($range_status);
+    foreach ($uncommitted_status as $path => $mask) {
+      $result[$path] |= $mask;
+    }
+
+    $result = $result->toArray();
+    ksort($result);
+    return $result;
+  }
+
+
+  /**
+   * Drops caches after changes to the working copy. By default, some queries
+   * against the working copy are cached. They
+   *
+   * @return this
+   * @task status
+   */
+  final public function reloadWorkingCopy() {
+    $this->uncommittedStatusCache = null;
+    $this->commitRangeStatusCache = null;
+
+    $this->didReloadWorkingCopy();
+    $this->reloadCommitRange();
+
+    return $this;
+  }
+
+
+  /**
+   * Hook for implementations to dirty working copy caches after the working
+   * copy has been updated.
+   *
+   * @return this
+   * @task status
+   */
+  protected function didReloadWorkingCopy() {
+    return;
+  }
+
+
 
   private static function discoverGitBaseDirectory($root) {
     try {
@@ -141,11 +288,40 @@ abstract class ArcanistRepositoryAPI {
 
       return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
     } catch (CommandException $ex) {
-      if (preg_match('/^fatal: Not a git repository/', $ex->getStdErr())) {
-        return null;
-      }
-      throw $ex;
+      // This might be because the $root isn't a Git working copy, or the user
+      // might not have Git installed at all so the `git` command fails. Assume
+      // that users trying to work with git working copies will have a working
+      // `git` binary.
+      return null;
     }
+  }
+
+  /**
+   * Fetches the original file data for each path provided.
+   *
+   * @return map<string, string> Map from path to file data.
+   */
+  public function getBulkOriginalFileData($paths) {
+    $filedata = array();
+    foreach ($paths as $path) {
+      $filedata[$path] = $this->getOriginalFileData($path);
+    }
+
+    return $filedata;
+  }
+
+  /**
+   * Fetches the current file data for each path provided.
+   *
+   * @return map<string, string> Map from path to file data.
+   */
+  public function getBulkCurrentFileData($paths) {
+    $filedata = array();
+    foreach ($paths as $path) {
+      $filedata[$path] = $this->getCurrentFileData($path);
+    }
+
+    return $filedata;
   }
 
   /**
@@ -154,7 +330,7 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getAllFiles();
 
   abstract public function getBlame($path);
-  abstract public function getWorkingCopyStatus();
+
   abstract public function getRawDiffText($path);
   abstract public function getOriginalFileData($path);
   abstract public function getCurrentFileData($path);
@@ -165,7 +341,6 @@ abstract class ArcanistRepositoryAPI {
   abstract public function getSourceControlPath();
   abstract public function isHistoryDefaultImmutable();
   abstract public function supportsAmend();
-  abstract public function supportsRelativeLocalCommits();
   abstract public function getWorkingCopyRevision();
   abstract public function updateWorkingCopy();
   abstract public function getMetadataPath();
@@ -173,22 +348,25 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
 
-  /**
-   * Set the base commit to a reasonable default value so that working copy
-   * status checks can do something meaningful and won't invoke configured
-   * 'base' rules.
-   *
-   * This is primarily useful for workflows which do not operate on commit
-   * ranges but need to verify the working copy is not dirty, like "amend",
-   * "upgrade" and "patch".
-   *
-   * @return this
-   */
-  public function setDefaultBaseCommit() {
-    throw new ArcanistCapabilityNotSupportedException($this);
+  public function getUnderlyingWorkingCopyRevision() {
+    return $this->getWorkingCopyRevision();
   }
 
   public function getChangedFiles($since_commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function getAuthor() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function addToCommit(array $paths) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  abstract public function supportsLocalCommits();
+
+  public function doCommit($message) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
@@ -206,10 +384,6 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function getCommitMessage($commit) {
-    throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
-  public function parseRelativeLocalCommit(array $argv) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
@@ -248,6 +422,17 @@ abstract class ArcanistRepositoryAPI {
 
   abstract protected function buildLocalFuture(array $argv);
 
+  public function canStashChanges() {
+    return false;
+  }
+
+  public function stashChanges() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function unstashChanges() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
 
 /* -(  Scratch Files  )------------------------------------------------------ */
 
@@ -393,6 +578,47 @@ abstract class ArcanistRepositoryAPI {
 
 /* -(  Base Commits  )------------------------------------------------------- */
 
+  abstract public function supportsCommitRanges();
+
+  final public function setBaseCommit($symbolic_commit) {
+    if (!$this->supportsCommitRanges()) {
+      throw new ArcanistCapabilityNotSupportedException($this);
+    }
+
+    $this->symbolicBaseCommit = $symbolic_commit;
+    $this->reloadCommitRange();
+    return $this;
+  }
+
+  final public function getBaseCommit() {
+    if (!$this->supportsCommitRanges()) {
+      throw new ArcanistCapabilityNotSupportedException($this);
+    }
+
+    if ($this->resolvedBaseCommit === null) {
+      $commit = $this->buildBaseCommit($this->symbolicBaseCommit);
+      $this->resolvedBaseCommit = $commit;
+    }
+
+    return $this->resolvedBaseCommit;
+  }
+
+  final public function reloadCommitRange() {
+    $this->resolvedBaseCommit = null;
+    $this->baseCommitExplanation = null;
+
+    $this->didReloadCommitRange();
+
+    return $this;
+  }
+
+  protected function didReloadCommitRange() {
+    return;
+  }
+
+  protected function buildBaseCommit($symbolic_commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
 
   public function getBaseCommitExplanation() {
     return $this->baseCommitExplanation;

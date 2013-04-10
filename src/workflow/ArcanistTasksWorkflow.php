@@ -234,8 +234,7 @@ EOTEXT
 
     $tasks = $conduit->callMethodSynchronous(
       'maniphest.find',
-      $find_params
-      );
+      $find_params);
     return $tasks;
   }
 

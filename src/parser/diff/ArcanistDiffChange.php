@@ -190,6 +190,42 @@ final class ArcanistDiffChange {
     return $this->hunks;
   }
 
+  /**
+   * @return array $old => array($new, )
+   */
+  public function buildLineMap() {
+    $line_map = array();
+    $old = 1;
+    $new = 1;
+    foreach ($this->getHunks() as $hunk) {
+      for ($n = $old; $n < $hunk->getOldOffset(); $n++) {
+        $line_map[$n] = array($n + $new - $old);
+      }
+      $old = $hunk->getOldOffset();
+      $new = $hunk->getNewOffset();
+      $olds = array();
+      $news = array();
+      $lines = explode("\n", $hunk->getCorpus());
+      foreach ($lines as $line) {
+        $type = substr($line, 0, 1);
+        if ($type == '-' || $type == ' ') {
+          $olds[] = $old;
+          $old++;
+        }
+        if ($type == '+' || $type == ' ') {
+          $news[] = $new;
+          $new++;
+        }
+        if ($type == ' ' || $type == '') {
+          $line_map += array_fill_keys($olds, $news);
+          $olds = array();
+          $news = array();
+        }
+      }
+    }
+    return $line_map;
+  }
+
   public function convertToBinaryChange() {
     $this->hunks = array();
     $this->setFileType(ArcanistDiffChangeType::FILE_BINARY);

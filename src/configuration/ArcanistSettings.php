@@ -71,10 +71,38 @@ final class ArcanistSettings {
           "'vim'. This setting overrides the EDITOR environmental variable.",
         'example' => '"nano"',
       ),
+      'browser' => array(
+        'type' => 'string',
+        'help' =>
+          "Command to use to invoke a web browser.",
+        'example' => '"gnome-www-browser"',
+      ),
       'events.listeners' => array(
         'type' => 'list',
         'help' => 'List of event listener classes to install at startup.',
         'example' => '["ExampleEventListener"]',
+      ),
+      'http.basicauth.user' => array(
+        'type' => 'string',
+        'help' =>
+          "Username to use for basic auth over http transports",
+        'example' => '"bob"',
+      ),
+      'http.basicauth.pass' => array(
+        'type' => 'string',
+        'help' =>
+          "Password to use for basic auth over http transports",
+        'example' => '"bobhasasecret"',
+      ),
+      'arc.autostash' => array(
+        'type' => 'bool',
+        'help' =>
+          'Whether arc should permit the automatic stashing of changes in '.
+          'the working directory when requiring a clean working copy.  '.
+          'This option should only be used when users understand how '.
+          'to restore their working directory from the local stash if '.
+          'an Arcanist operation causes an unrecoverable error.',
+        'example' => 'false',
       ),
     );
   }

@@ -70,9 +70,7 @@ EOTEXT
     $in_rev = $this->getArgument('rev');
 
     if ($in_rev) {
-      // Although selectPathsForWorkflow() may set this, we want to set it
-      // explicitly so we blame against the correct relative commit.
-      $repository_api->parseRelativeLocalCommit(array($in_rev));
+      $this->parseBaseCommitArgument(array($in_rev));
     }
 
     $paths = $this->selectPathsForWorkflow(

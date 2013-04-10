@@ -1,0 +1,11 @@
+Index: .arcconfig
+===================================================================
+--- .arcconfig  (revision 1957)
++++ .arcconfig  (working copy)
+
+Property changes on: .arcconfig
+___________________________________________________________________
+Added: herp
+## -0,0 +1 ##
++derp
+\ No newline at end of property

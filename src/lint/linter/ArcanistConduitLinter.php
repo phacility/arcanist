@@ -29,6 +29,7 @@
  *  'name'
  *  'description'
  *  'original' & 'replacement' => optional patch information
+ *  'locations' => other locations of the same error (in the same format)
  *
  * This class is intended for customization via instantiation, not via
  * subclassing.
@@ -55,8 +56,7 @@ final class ArcanistConduitLinter extends ArcanistLinter {
       self::CONDUIT_METHOD,
       array(
         'file_contents' => $this->data,
-      )
-    );
+      ));
   }
 
   public function lintPath($path) {

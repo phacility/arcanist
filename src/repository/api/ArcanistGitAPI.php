@@ -7,14 +7,12 @@
  */
 final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
-  private $status;
-  private $relativeCommit = null;
   private $repositoryHasNoCommits = false;
   const SEARCH_LENGTH_FOR_PARENT_REVISIONS = 16;
 
   /**
    * For the repository's initial commit, 'git diff HEAD^' and similar do
-   * not work. Using this instead does work.
+   * not work. Using this instead does work; it is the hash of the empty tree.
    */
   const GIT_MAGIC_ROOT_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
@@ -37,16 +35,23 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getMetadataPath() {
-    return $this->getPath('.git');
+    static $path = null;
+    if ($path === null) {
+      list($stdout) = $this->execxLocal('rev-parse --git-dir');
+      $path = rtrim($stdout, "\n");
+      // the output of git rev-parse --git-dir is an absolute path, unless
+      // the cwd is the root of the repository, in which case it uses the
+      // relative path of .git. If we get this relative path, turn it into
+      // an absolute path.
+      if ($path === '.git') {
+        $path = $this->getPath('.git');
+      }
+    }
+    return $path;
   }
 
   public function getHasCommits() {
     return !$this->repositoryHasNoCommits;
-  }
-
-  public function setRelativeCommit($relative_commit) {
-    $this->relativeCommit = $relative_commit;
-    return $this;
   }
 
   public function getLocalCommitInformation() {
@@ -55,7 +60,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       throw new Exception(
         "You can't get local commit information for a repository with no ".
         "commits.");
-    } else if ($this->relativeCommit == self::GIT_MAGIC_ROOT_COMMIT) {
+    } else if ($this->getBaseCommit() == self::GIT_MAGIC_ROOT_COMMIT) {
       // One commit.
       $against = 'HEAD';
     } else {
@@ -80,7 +85,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // this as being the commits X and Y. If we log "B..Y", we only show
       // Y. With "Y --not B", we show X and Y.
 
-      $against = csprintf('%s --not %s', 'HEAD', $this->getRelativeCommit());
+      $against = csprintf('%s --not %s', 'HEAD', $this->getBaseCommit());
     }
 
     // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
@@ -96,7 +101,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         : 'log %C --format=%s --',
       $against,
       // NOTE: "%B" is somewhat new, use "%s%n%n%b" instead.
-      '%H%x01%T%x01%P%x01%at%x01%an%x01%s%x01%s%n%n%b%x02');
+      '%H%x01%T%x01%P%x01%at%x01%an%x01%aE%x01%s%x01%s%n%n%b%x02');
 
     $commits = array();
 
@@ -107,8 +112,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     $info = explode("\2", $info);
     foreach ($info as $line) {
-      list($commit, $tree, $parents, $time, $author, $title, $message)
-        = explode("\1", trim($line), 7);
+      list($commit, $tree, $parents, $time, $author, $author_email,
+        $title, $message) = explode("\1", trim($line), 8);
       $message = rtrim($message);
 
       $commits[$commit] = array(
@@ -119,155 +124,164 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         'author'  => $author,
         'summary' => $title,
         'message' => $message,
+        'authorEmail' => $author_email,
       );
     }
 
     return $commits;
   }
 
-  public function getRelativeCommit() {
-    if ($this->relativeCommit === null) {
-
-      // Detect zero-commit or one-commit repositories. There is only one
-      // relative-commit value that makes any sense in these repositories: the
-      // empty tree.
-      list($err) = $this->execManualLocal('rev-parse --verify HEAD^');
-      if ($err) {
-        list($err) = $this->execManualLocal('rev-parse --verify HEAD');
-        if ($err) {
-          $this->repositoryHasNoCommits = true;
-        }
-
-        $this->relativeCommit = self::GIT_MAGIC_ROOT_COMMIT;
-
-        if ($this->repositoryHasNoCommits) {
-          $this->setBaseCommitExplanation(
-            "the repository has no commits.");
-        } else {
-          $this->setBaseCommitExplanation(
-            "the repository has only one commit.");
-        }
-
-        return $this->relativeCommit;
-      }
-
-      if ($this->getBaseCommitArgumentRules() ||
-          $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
-        $base = $this->resolveBaseCommit();
-        if (!$base) {
-          throw new ArcanistUsageException(
-            "None of the rules in your 'base' configuration matched a valid ".
-            "commit. Adjust rules or specify which commit you want to use ".
-            "explicitly.");
-        }
-        $this->relativeCommit = $base;
-        return $this->relativeCommit;
-      }
-
-      $do_write = false;
-      $default_relative = null;
-      $working_copy = $this->getWorkingCopyIdentity();
-      if ($working_copy) {
-        $default_relative = $working_copy->getConfig(
-          'git.default-relative-commit');
+  protected function buildBaseCommit($symbolic_commit) {
+    if ($symbolic_commit !== null) {
+      if ($symbolic_commit == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
         $this->setBaseCommitExplanation(
-          "it is the merge-base of '{$default_relative}' and HEAD, as ".
-          "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
-          "setting overrides other settings.");
+          "you explicitly specified the empty tree.");
+        return $symbolic_commit;
       }
 
-      if (!$default_relative) {
-        list($err, $upstream) = $this->execManualLocal(
-          "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
-
-        if (!$err) {
-          $default_relative = trim($upstream);
-          $this->setBaseCommitExplanation(
-            "it is the merge-base of '{$default_relative}' (the Git upstream ".
-            "of the current branch) HEAD.");
-        }
-      }
-
-      if (!$default_relative) {
-        $default_relative = $this->readScratchFile('default-relative-commit');
-        $default_relative = trim($default_relative);
-        if ($default_relative) {
-          $this->setBaseCommitExplanation(
-            "it is the merge-base of '{$default_relative}' and HEAD, as ".
-            "specified in '.git/arc/default-relative-commit'.");
-        }
-      }
-
-      if (!$default_relative) {
-
-        // TODO: Remove the history lesson soon.
-
-        echo phutil_console_format(
-          "<bg:green>** Select a Default Commit Range **</bg>\n\n");
-        echo phutil_console_wrap(
-          "You're running a command which operates on a range of revisions ".
-          "(usually, from some revision to HEAD) but have not specified the ".
-          "revision that should determine the start of the range.\n\n".
-          "Previously, arc assumed you meant 'HEAD^' when you did not specify ".
-          "a start revision, but this behavior does not make much sense in ".
-          "most workflows outside of Facebook's historic git-svn workflow.\n\n".
-          "arc no longer assumes 'HEAD^'. You must specify a relative commit ".
-          "explicitly when you invoke a command (e.g., `arc diff HEAD^`, not ".
-          "just `arc diff`) or select a default for this working copy.\n\n".
-          "In most cases, the best default is 'origin/master'. You can also ".
-          "select 'HEAD^' to preserve the old behavior, or some other remote ".
-          "or branch. But you almost certainly want to select ".
-          "'origin/master'.\n\n".
-          "(Technically: the merge-base of the selected revision and HEAD is ".
-          "used to determine the start of the commit range.)");
-
-        $prompt = "What default do you want to use? [origin/master]";
-        $default = phutil_console_prompt($prompt);
-
-        if (!strlen(trim($default))) {
-          $default = 'origin/master';
-        }
-
-        $default_relative = $default;
-        $do_write = true;
-      }
-
-      list($object_type) = $this->execxLocal(
-        'cat-file -t %s',
-        $default_relative);
-
-      if (trim($object_type) !== 'commit') {
-        throw new Exception(
-          "Relative commit '{$default_relative}' is not the name of a commit!");
-      }
-
-      if ($do_write) {
-        // Don't perform this write until we've verified that the object is a
-        // valid commit name.
-        $this->writeScratchFile('default-relative-commit', $default_relative);
-        $this->setBaseCommitExplanation(
-          "it is the merge-base of '{$default_relative}' and HEAD, as you ".
-          "just specified.");
-      }
-
-      list($merge_base) = $this->execxLocal(
+      list($err, $merge_base) = $this->execManualLocal(
         'merge-base %s HEAD',
-        $default_relative);
+        $symbolic_commit);
+      if ($err) {
+        throw new ArcanistUsageException(
+          "Unable to find any git commit named '{$symbolic_commit}' in ".
+          "this repository.");
+      }
 
-      $this->relativeCommit = trim($merge_base);
+      $this->setBaseCommitExplanation(
+        "it is the merge-base of '{$symbolic_commit}' and HEAD, as you ".
+        "explicitly specified.");
+      return trim($merge_base);
     }
 
-    return $this->relativeCommit;
+    // Detect zero-commit or one-commit repositories. There is only one
+    // relative-commit value that makes any sense in these repositories: the
+    // empty tree.
+    list($err) = $this->execManualLocal('rev-parse --verify HEAD^');
+    if ($err) {
+      list($err) = $this->execManualLocal('rev-parse --verify HEAD');
+      if ($err) {
+        $this->repositoryHasNoCommits = true;
+      }
+
+      if ($this->repositoryHasNoCommits) {
+        $this->setBaseCommitExplanation(
+          "the repository has no commits.");
+      } else {
+        $this->setBaseCommitExplanation(
+          "the repository has only one commit.");
+      }
+
+      return self::GIT_MAGIC_ROOT_COMMIT;
+    }
+
+    if ($this->getBaseCommitArgumentRules() ||
+        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+      $base = $this->resolveBaseCommit();
+      if (!$base) {
+        throw new ArcanistUsageException(
+          "None of the rules in your 'base' configuration matched a valid ".
+          "commit. Adjust rules or specify which commit you want to use ".
+          "explicitly.");
+      }
+      return $base;
+    }
+
+    $do_write = false;
+    $default_relative = null;
+    $working_copy = $this->getWorkingCopyIdentity();
+    if ($working_copy) {
+      $default_relative = $working_copy->getConfig(
+        'git.default-relative-commit');
+      $this->setBaseCommitExplanation(
+        "it is the merge-base of '{$default_relative}' and HEAD, as ".
+        "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
+        "setting overrides other settings.");
+    }
+
+    if (!$default_relative) {
+      list($err, $upstream) = $this->execManualLocal(
+        "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+
+      if (!$err) {
+        $default_relative = trim($upstream);
+        $this->setBaseCommitExplanation(
+          "it is the merge-base of '{$default_relative}' (the Git upstream ".
+          "of the current branch) HEAD.");
+      }
+    }
+
+    if (!$default_relative) {
+      $default_relative = $this->readScratchFile('default-relative-commit');
+      $default_relative = trim($default_relative);
+      if ($default_relative) {
+        $this->setBaseCommitExplanation(
+          "it is the merge-base of '{$default_relative}' and HEAD, as ".
+          "specified in '.git/arc/default-relative-commit'.");
+      }
+    }
+
+    if (!$default_relative) {
+
+      // TODO: Remove the history lesson soon.
+
+      echo phutil_console_format(
+        "<bg:green>** Select a Default Commit Range **</bg>\n\n");
+      echo phutil_console_wrap(
+        "You're running a command which operates on a range of revisions ".
+        "(usually, from some revision to HEAD) but have not specified the ".
+        "revision that should determine the start of the range.\n\n".
+        "Previously, arc assumed you meant 'HEAD^' when you did not specify ".
+        "a start revision, but this behavior does not make much sense in ".
+        "most workflows outside of Facebook's historic git-svn workflow.\n\n".
+        "arc no longer assumes 'HEAD^'. You must specify a relative commit ".
+        "explicitly when you invoke a command (e.g., `arc diff HEAD^`, not ".
+        "just `arc diff`) or select a default for this working copy.\n\n".
+        "In most cases, the best default is 'origin/master'. You can also ".
+        "select 'HEAD^' to preserve the old behavior, or some other remote ".
+        "or branch. But you almost certainly want to select ".
+        "'origin/master'.\n\n".
+        "(Technically: the merge-base of the selected revision and HEAD is ".
+        "used to determine the start of the commit range.)");
+
+      $prompt = "What default do you want to use? [origin/master]";
+      $default = phutil_console_prompt($prompt);
+
+      if (!strlen(trim($default))) {
+        $default = 'origin/master';
+      }
+
+      $default_relative = $default;
+      $do_write = true;
+    }
+
+    list($object_type) = $this->execxLocal(
+      'cat-file -t %s',
+      $default_relative);
+
+    if (trim($object_type) !== 'commit') {
+      throw new Exception(
+        "Relative commit '{$default_relative}' is not the name of a commit!");
+    }
+
+    if ($do_write) {
+      // Don't perform this write until we've verified that the object is a
+      // valid commit name.
+      $this->writeScratchFile('default-relative-commit', $default_relative);
+      $this->setBaseCommitExplanation(
+        "it is the merge-base of '{$default_relative}' and HEAD, as you ".
+        "just specified.");
+    }
+
+    list($merge_base) = $this->execxLocal(
+      'merge-base %s HEAD',
+      $default_relative);
+
+    return trim($merge_base);
   }
 
-  private function getDiffFullCommand($detect_moves_and_renames = true) {
-    $diff_cmd = array(
-      // Our diff parser relies on the trailing spaces that are suppressed
-      // when the diff.suppress-blank-empty boolean is set to "true".
-      // Without the following, "arc lint" would always fail with this:
-      // "Diff Parse Exception: Found the wrong number of hunk lines."
-      '-c diff.suppress-blank-empty=false',
-      'diff',
+  private function getDiffFullOptions($detect_moves_and_renames = true) {
+    $options = array(
       self::getDiffBaseOptions(),
       '--no-color',
       '--src-prefix=a/',
@@ -276,11 +290,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     );
 
     if ($detect_moves_and_renames) {
-      $diff_cmd[] = '-M';
-      $diff_cmd[] = '-C';
+      $options[] = '-M';
+      $options[] = '-C';
     }
 
-    return implode(' ', $diff_cmd);
+    return implode(' ', $options);
   }
 
   private function getDiffBaseOptions() {
@@ -298,10 +312,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getFullGitDiff() {
-    $diff_cmd = $this->getDiffFullCommand();
+    $options = $this->getDiffFullOptions();
     list($stdout) = $this->execxLocal(
-      "{$diff_cmd} %s --",
-      $this->getRelativeCommit());
+      "diff {$options} %s --",
+      $this->getBaseCommit());
     return $stdout;
   }
 
@@ -312,10 +326,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    *               generate real diff text.
    */
   public function getRawDiffText($path, $detect_moves_and_renames = true) {
-    $diff_cmd = $this->getDiffFullCommand($detect_moves_and_renames);
+    $options = $this->getDiffFullOptions($detect_moves_and_renames);
     list($stdout) = $this->execxLocal(
-      "{$diff_cmd} %s -- %s",
-      $this->getRelativeCommit(),
+      "diff {$options} %s -- %s",
+      $this->getBaseCommit(),
       $path);
     return $stdout;
   }
@@ -343,7 +357,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getGitCommitLog() {
-    $relative = $this->getRelativeCommit();
+    $relative = $this->getBaseCommit();
     if ($this->repositoryHasNoCommits) {
       // No commits yet.
       return '';
@@ -355,7 +369,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // 2..N commits.
       list($stdout) = $this->execxLocal(
         'log --first-parent --format=medium %s..HEAD',
-        $this->getRelativeCommit());
+        $this->getBaseCommit());
     }
     return $stdout;
   }
@@ -364,14 +378,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'log --format=medium -n%d %s',
       self::SEARCH_LENGTH_FOR_PARENT_REVISIONS,
-      $this->getRelativeCommit());
+      $this->getBaseCommit());
     return $stdout;
   }
 
   public function getSourceControlBaseRevision() {
     list($stdout) = $this->execxLocal(
       'rev-parse %s',
-      $this->getRelativeCommit());
+      $this->getBaseCommit());
     return rtrim($stdout, "\n");
   }
 
@@ -390,92 +404,114 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout);
   }
 
-  public function getWorkingCopyStatus() {
-    if (!isset($this->status)) {
+  protected function buildUncommittedStatus() {
+    $diff_options = $this->getDiffBaseOptions();
 
-      $options = $this->getDiffBaseOptions();
-
-      // -- parallelize these slow cpu bound git calls.
-
-      // Find committed changes.
-      $committed_future = $this->buildLocalFuture(
-        array(
-          "diff {$options} --raw %s --",
-          $this->getRelativeCommit(),
-        ));
-
-      // Find uncommitted changes.
-      $uncommitted_future = $this->buildLocalFuture(
-        array(
-          "diff {$options} --raw %s --",
-          $this->repositoryHasNoCommits
-            ? self::GIT_MAGIC_ROOT_COMMIT
-            : 'HEAD',
-        ));
-
-      // Untracked files
-      $untracked_future = $this->buildLocalFuture(
-        array(
-          'ls-files --others --exclude-standard',
-        ));
-
-      // TODO: This doesn't list unstaged adds. It's not clear how to get that
-      // list other than "git status --porcelain" and then parsing it. :/
-
-      // Unstaged changes
-      $unstaged_future = $this->buildLocalFuture(
-        array(
-          'ls-files -m',
-        ));
-
-      $futures = array(
-        $committed_future,
-        $uncommitted_future,
-        $untracked_future,
-        $unstaged_future
-      );
-      Futures($futures)->resolveAll();
-
-
-      // -- read back and process the results
-
-      list($stdout, $stderr) = $committed_future->resolvex();
-      $files = $this->parseGitStatus($stdout);
-
-      list($stdout, $stderr) = $uncommitted_future->resolvex();
-      $uncommitted_files = $this->parseGitStatus($stdout);
-      foreach ($uncommitted_files as $path => $mask) {
-        $mask |= self::FLAG_UNCOMMITTED;
-        if (!isset($files[$path])) {
-          $files[$path] = 0;
-        }
-        $files[$path] |= $mask;
-      }
-
-      list($stdout, $stderr) = $untracked_future->resolvex();
-      $stdout = rtrim($stdout, "\n");
-      if (strlen($stdout)) {
-        $stdout = explode("\n", $stdout);
-        foreach ($stdout as $file) {
-          $files[$file] = self::FLAG_UNTRACKED;
-        }
-      }
-
-      list($stdout, $stderr) = $unstaged_future->resolvex();
-      $stdout = rtrim($stdout, "\n");
-      if (strlen($stdout)) {
-        $stdout = explode("\n", $stdout);
-        foreach ($stdout as $file) {
-          $files[$file] = isset($files[$file])
-            ? ($files[$file] | self::FLAG_UNSTAGED)
-            : self::FLAG_UNSTAGED;
-        }
-      }
-
-      $this->status = $files;
+    if ($this->repositoryHasNoCommits) {
+      $diff_base = self::GIT_MAGIC_ROOT_COMMIT;
+    } else {
+      $diff_base = 'HEAD';
     }
 
-    return $this->status;
+    // Find uncommitted changes.
+    $uncommitted_future = $this->buildLocalFuture(
+      array(
+        'diff %C --raw %s --',
+        $diff_options,
+        $diff_base,
+      ));
+
+    $untracked_future = $this->buildLocalFuture(
+      array(
+        'ls-files --others --exclude-standard',
+      ));
+
+    // TODO: This doesn't list unstaged adds. It's not clear how to get that
+    // list other than "git status --porcelain" and then parsing it. :/
+
+    // Unstaged changes
+    $unstaged_future = $this->buildLocalFuture(
+      array(
+        'ls-files -m',
+      ));
+
+    $futures = array(
+      $uncommitted_future,
+      $untracked_future,
+      $unstaged_future,
+    );
+
+    Futures($futures)->resolveAll();
+
+    $result = new PhutilArrayWithDefaultValue();
+
+    list($stdout) = $uncommitted_future->resolvex();
+    $uncommitted_files = $this->parseGitStatus($stdout);
+    foreach ($uncommitted_files as $path => $mask) {
+      $result[$path] |= ($mask | self::FLAG_UNCOMMITTED);
+    }
+
+    list($stdout) = $untracked_future->resolvex();
+    $stdout = rtrim($stdout, "\n");
+    if (strlen($stdout)) {
+      $stdout = explode("\n", $stdout);
+      foreach ($stdout as $path) {
+        $result[$path] |= self::FLAG_UNTRACKED;
+      }
+    }
+
+    list($stdout, $stderr) = $unstaged_future->resolvex();
+    $stdout = rtrim($stdout, "\n");
+    if (strlen($stdout)) {
+      $stdout = explode("\n", $stdout);
+      foreach ($stdout as $path) {
+        $result[$path] |= self::FLAG_UNSTAGED;
+      }
+    }
+
+    return $result->toArray();
+  }
+
+  protected function buildCommitRangeStatus() {
+    list($stdout, $stderr) = $this->execxLocal(
+      'diff %C --raw %s --',
+      $this->getDiffBaseOptions(),
+      $this->getBaseCommit());
+
+    return $this->parseGitStatus($stdout);
+  }
+
+  public function getGitConfig($key, $default = null) {
+    list($err, $stdout) = $this->execManualLocal('config %s', $key);
+    if ($err) {
+      return $default;
+    }
+    return rtrim($stdout);
+  }
+
+  public function getAuthor() {
+    list($stdout) = $this->execxLocal('var GIT_AUTHOR_IDENT');
+    return preg_replace('/\s+<.*/', '', rtrim($stdout, "\n"));
+  }
+
+  public function addToCommit(array $paths) {
+    $this->execxLocal(
+      'add -A -- %Ls',
+      $paths);
+    $this->reloadWorkingCopy();
+    return $this;
+  }
+
+  public function doCommit($message) {
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
+    $this->execxLocal(
+      'commit --allow-empty-message -F %s',
+      $tmp_file);
+
+    $this->reloadWorkingCopy();
+
+    return $this;
   }
 
   public function amendCommit($message) {
@@ -484,6 +520,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit --amend --allow-empty -F %s',
       $tmp_file);
+    $this->reloadWorkingCopy();
+    return $this;
   }
 
   public function getPreReceiveHookStatus($old_ref, $new_ref) {
@@ -541,7 +579,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'diff --name-status --raw %s',
+      'diff --raw %s',
       $since_commit);
     return $this->parseGitStatus($stdout);
   }
@@ -550,7 +588,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
       'blame --date=iso -w -M %s -- %s',
-      $this->getRelativeCommit(),
+      $this->getBaseCommit(),
       $path);
 
     $blame = array();
@@ -584,7 +622,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getOriginalFileData($path) {
-    return $this->getFileDataAtRevision($path, $this->getRelativeCommit());
+    return $this->getFileDataAtRevision($path, $this->getBaseCommit());
   }
 
   public function getCurrentFileData($path) {
@@ -682,6 +720,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
+  public function getUnderlyingWorkingCopyRevision() {
+    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
+    if (!$err && $stdout) {
+      return rtrim($stdout, "\n");
+    }
+    return $this->getWorkingCopyRevision();
+  }
+
   public function isHistoryDefaultImmutable() {
     return false;
   }
@@ -690,13 +736,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
-  public function supportsRelativeLocalCommits() {
+  public function supportsCommitRanges() {
     return true;
   }
 
-  public function setDefaultBaseCommit() {
-    $this->setRelativeCommit('HEAD^');
-    return $this;
+  public function supportsLocalCommits() {
+    return true;
   }
 
   public function hasLocalCommit($commit) {
@@ -708,33 +753,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       return false;
     }
     return true;
-  }
-
-  public function parseRelativeLocalCommit(array $argv) {
-    if (count($argv) == 0) {
-      return;
-    }
-    if (count($argv) != 1) {
-      throw new ArcanistUsageException("Specify only one commit.");
-    }
-    $base = reset($argv);
-    if ($base == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
-      $merge_base = $base;
-      $this->setBaseCommitExplanation(
-        "you explicitly specified the empty tree.");
-    } else {
-      list($err, $merge_base) = $this->execManualLocal(
-        'merge-base %s HEAD',
-        $base);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "Unable to find any git commit named '{$base}' in this repository.");
-      }
-      $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$base}' and HEAD, as you explicitly ".
-        "specified.");
-    }
-    $this->setRelativeCommit(trim($merge_base));
   }
 
   public function getAllLocalChanges() {
@@ -843,6 +861,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('pull');
+    $this->reloadWorkingCopy();
   }
 
   public function getCommitSummary($commit) {
@@ -956,9 +975,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             list($err, $upstream) = $this->execManualLocal(
               "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
             if (!$err) {
+              $upstream = rtrim($upstream);
               list($upstream_merge_base) = $this->execxLocal(
                 'merge-base %s HEAD',
                 $upstream);
+              $upstream_merge_base = rtrim($upstream_merge_base);
               $this->setBaseCommitExplanation(
                 "it is the merge-base of the upstream of the current branch ".
                 "and HEAD, and matched the rule '{$rule}' in your {$source} ".
@@ -966,12 +987,30 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               return $upstream_merge_base;
             }
             break;
+          case 'this':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return 'HEAD^';
         }
       default:
         return null;
     }
 
     return null;
+  }
+
+  public function canStashChanges() {
+    return true;
+  }
+
+  public function stashChanges() {
+    $this->execxLocal('stash');
+    $this->reloadWorkingCopy();
+  }
+
+  public function unstashChanges() {
+    $this->execxLocal('stash pop');
   }
 
 }

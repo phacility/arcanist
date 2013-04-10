@@ -168,8 +168,7 @@ EOTEXT
       }
       $flag = $conduit->callMethodSynchronous(
         'flag.edit',
-        $flag_params
-      );
+        $flag_params);
       self::flagWasEdited($flag, $flag['new'] ? 'created' : 'edited');
     } else {
       // Okay, list mode. Let's find the flags, which we didn't need to do

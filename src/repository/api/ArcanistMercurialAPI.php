@@ -7,14 +7,12 @@
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
-  private $status;
-  private $base;
-  private $relativeCommit;
   private $branch;
-  private $workingCopyRevision;
   private $localCommitInfo;
-  private $includeDirectoryStateInDiffs;
   private $rawDiffCache = array();
+
+  private $supportsRebase;
+  private $supportsPhases;
 
   protected function buildLocalFuture(array $argv) {
 
@@ -39,6 +37,17 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
+  public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+    if (phutil_is_windows()) {
+      $args[0] = 'set HGPLAIN=1 & hg '.$args[0];
+    } else {
+      $args[0] = 'HGPLAIN=1 hg '.$args[0];
+    }
+
+    return call_user_func_array("phutil_passthru", $args);
+  }
+
   public function getSourceControlSystemName() {
     return 'hg';
   }
@@ -48,10 +57,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getSourceControlBaseRevision() {
-    return $this->getCanonicalRevisionName($this->getRelativeCommit());
+    return $this->getCanonicalRevisionName($this->getBaseCommit());
   }
 
   public function getCanonicalRevisionName($string) {
+    $match = null;
+    if ($this->isHgSubversionRepo() &&
+        preg_match('/@([0-9]+)$/', $string, $match)) {
+      $string = hgsprintf('svnrev(%s)', $match[1]);
+    }
+
     list($stdout) = $this->execxLocal(
       'log -l 1 --template %s -r %s --',
       '{node}',
@@ -71,116 +86,129 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->branch;
   }
 
-  public function setRelativeCommit($commit) {
-    try {
-      $commit = $this->getCanonicalRevisionName($commit);
-    } catch (Exception $ex) {
-      throw new ArcanistUsageException(
-        "Commit '{$commit}' is not a valid Mercurial commit identifier.");
-    }
-
-    $this->relativeCommit = $commit;
-    $this->status = null;
+  public function didReloadCommitRange() {
     $this->localCommitInfo = null;
-
-    return $this;
   }
 
-  public function getRelativeCommit() {
-    if (empty($this->relativeCommit)) {
-
-      if ($this->getBaseCommitArgumentRules() ||
-          $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
-        $base = $this->resolveBaseCommit();
-        if (!$base) {
+  protected function buildBaseCommit($symbolic_commit) {
+    if ($symbolic_commit !== null) {
+      try {
+        $commit = $this->getCanonicalRevisionName(
+          hgsprintf('ancestor(%s,.)', $symbolic_commit));
+      } catch (Exception $ex) {
+        // Try it as a revset instead of a commit id
+        try {
+          $commit = $this->getCanonicalRevisionName(
+            hgsprintf('ancestor(%R,.)', $symbolic_commit));
+        } catch (Exception $ex) {
           throw new ArcanistUsageException(
-            "None of the rules in your 'base' configuration matched a valid ".
-            "commit. Adjust rules or specify which commit you want to use ".
-            "explicitly.");
+            "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+            "identifier.");
         }
-        $this->relativeCommit = $base;
-        return $this->relativeCommit;
       }
 
+      $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
+        "the working directory and the commit you specified explicitly.");
+      return $commit;
+    }
+
+    if ($this->getBaseCommitArgumentRules() ||
+        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+      $base = $this->resolveBaseCommit();
+      if (!$base) {
+        throw new ArcanistUsageException(
+          "None of the rules in your 'base' configuration matched a valid ".
+          "commit. Adjust rules or specify which commit you want to use ".
+          "explicitly.");
+      }
+      return $base;
+    }
+
+    // Mercurial 2.1 and up have phases which indicate if something is
+    // published or not. To find which revs are outgoing, it's much
+    // faster to check the phase instead of actually checking the server.
+    if ($this->supportsPhases()) {
+      list($err, $stdout) = $this->execManualLocal(
+        'log --branch %s -r %s --style default',
+        $this->getBranchName(),
+        'draft()');
+    } else {
       list($err, $stdout) = $this->execManualLocal(
         'outgoing --branch %s --style default',
-        $this->getBranchName());
-
-      if (!$err) {
-        $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-      } else {
-        // Mercurial (in some versions?) raises an error when there's nothing
-        // outgoing.
-        $logs = array();
-      }
-
-      if (!$logs) {
-
-        $this->setBaseCommitExplanation(
-          "you have no outgoing commits, so arc assumes you intend to submit ".
-          "uncommitted changes in the working copy.");
-        // In Mercurial, we support operations against uncommitted changes.
-        $this->setRelativeCommit($this->getWorkingCopyRevision());
-        return $this->relativeCommit;
-      }
-
-      $outgoing_revs = ipull($logs, 'rev');
-
-      // This is essentially an implementation of a theoretical `hg merge-base`
-      // command.
-      $against = $this->getWorkingCopyRevision();
-      while (true) {
-        // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
-        // new as of July 2011, so do this in a compatible way. Also, "hg log"
-        // and "hg outgoing" don't necessarily show parents (even if given an
-        // explicit template consisting of just the parents token) so we need
-        // to separately execute "hg parents".
-
-        list($stdout) = $this->execxLocal(
-          'parents --style default --rev %s',
-          $against);
-        $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
-
-        list($p1, $p2) = array_merge($parents_logs, array(null, null));
-
-        if ($p1 && !in_array($p1['rev'], $outgoing_revs)) {
-          $against = $p1['rev'];
-          break;
-        } else if ($p2 && !in_array($p2['rev'], $outgoing_revs)) {
-          $against = $p2['rev'];
-          break;
-        } else if ($p1) {
-          $against = $p1['rev'];
-        } else {
-          // This is the case where you have a new repository and the entire
-          // thing is outgoing; Mercurial literally accepts "--rev null" as
-          // meaning "diff against the empty state".
-          $against = 'null';
-          break;
-        }
-      }
-
-      if ($against == 'null') {
-        $this->setBaseCommitExplanation(
-          "this is a new repository (all changes are outgoing).");
-      } else {
-        $this->setBaseCommitExplanation(
-          "it is the first commit reachable from the working copy state ".
-          "which is not outgoing.");
-      }
-
-      $this->setRelativeCommit($against);
+      $this->getBranchName());
     }
-    return $this->relativeCommit;
+
+    if (!$err) {
+      $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+    } else {
+      // Mercurial (in some versions?) raises an error when there's nothing
+      // outgoing.
+      $logs = array();
+    }
+
+    if (!$logs) {
+      $this->setBaseCommitExplanation(
+        "you have no outgoing commits, so arc assumes you intend to submit ".
+        "uncommitted changes in the working copy.");
+      return $this->getWorkingCopyRevision();
+    }
+
+    $outgoing_revs = ipull($logs, 'rev');
+
+    // This is essentially an implementation of a theoretical `hg merge-base`
+    // command.
+    $against = $this->getWorkingCopyRevision();
+    while (true) {
+      // NOTE: The "^" and "~" syntaxes were only added in hg 1.9, which is
+      // new as of July 2011, so do this in a compatible way. Also, "hg log"
+      // and "hg outgoing" don't necessarily show parents (even if given an
+      // explicit template consisting of just the parents token) so we need
+      // to separately execute "hg parents".
+
+      list($stdout) = $this->execxLocal(
+        'parents --style default --rev %s',
+        $against);
+      $parents_logs = ArcanistMercurialParser::parseMercurialLog($stdout);
+
+      list($p1, $p2) = array_merge($parents_logs, array(null, null));
+
+      if ($p1 && !in_array($p1['rev'], $outgoing_revs)) {
+        $against = $p1['rev'];
+        break;
+      } else if ($p2 && !in_array($p2['rev'], $outgoing_revs)) {
+        $against = $p2['rev'];
+        break;
+      } else if ($p1) {
+        $against = $p1['rev'];
+      } else {
+        // This is the case where you have a new repository and the entire
+        // thing is outgoing; Mercurial literally accepts "--rev null" as
+        // meaning "diff against the empty state".
+        $against = 'null';
+        break;
+      }
+    }
+
+    if ($against == 'null') {
+      $this->setBaseCommitExplanation(
+        "this is a new repository (all changes are outgoing).");
+    } else {
+      $this->setBaseCommitExplanation(
+        "it is the first commit reachable from the working copy state ".
+        "which is not outgoing.");
+    }
+
+    return $against;
   }
 
   public function getLocalCommitInformation() {
     if ($this->localCommitInfo === null) {
+      $base_commit = $this->getBaseCommit();
       list($info) = $this->execxLocal(
-        "log --template '%C' --rev %s --branch %s --",
-        "{node}\1{rev}\1{author}\1{date|rfc822date}\1".
-          "{branch}\1{tag}\1{parents}\1{desc}\2",
-        '(ancestors(.) - ancestors('.$this->getRelativeCommit().'))',
+        "log --template %s --rev %s --branch %s --",
+        "{node}\1{rev}\1{author}\1".
+          "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
+        hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
         $this->getBranchName());
       $logs = array_filter(explode("\2", $info));
 
@@ -190,8 +218,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       $commits = array();
       foreach ($logs as $log) {
-        list($node, $rev, $author, $date, $branch, $tag, $parents, $desc) =
-          explode("\1", $log);
+        list($node, $rev, $full_author, $date, $branch, $tag,
+          $parents, $desc) = explode("\1", $log, 9);
+
+        $email = new PhutilEmailAddress($full_author);
+        $author = $email->getDisplayName();
+        $author_email = $email->getAddress();
 
         // NOTE: If a commit has only one parent, {parents} returns empty.
         // If it has two parents, {parents} returns revs and short hashes, not
@@ -223,6 +255,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           'parents' => $commit_parents,
           'summary' => head(explode("\n", $desc)),
           'message' => $desc,
+          'authorEmail' => $author_email,
         );
 
         $last_node = $node;
@@ -261,7 +294,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getBlame($path) {
     list($stdout) = $this->execxLocal(
       'annotate -u -v -c --rev %s -- %s',
-      $this->getRelativeCommit(),
+      $this->getBaseCommit(),
       $path);
 
     $blame = array();
@@ -285,70 +318,67 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $blame;
   }
 
-  public function getWorkingCopyStatus() {
+  protected function buildUncommittedStatus() {
+    list($stdout) = $this->execxLocal('status');
 
-    if (!isset($this->status)) {
-      // A reviewable revision spans multiple local commits in Mercurial, but
-      // there is no way to get file change status across multiple commits, so
-      // just take the entire diff and parse it to figure out what's changed.
+    $results = new PhutilArrayWithDefaultValue();
 
-      // Execute status in the background
-      $status_future = $this->buildLocalFuture(array('status'));
-      $status_future->start();
-
-      $diff = $this->getFullMercurialDiff();
-
-      if (!$diff) {
-        $this->status = array();
-        return $this->status;
+    $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
+    foreach ($working_status as $path => $mask) {
+      if (!($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED)) {
+        // Mark tracked files as uncommitted.
+        $mask |= self::FLAG_UNCOMMITTED;
       }
 
-      $parser = new ArcanistDiffParser();
-      $changes = $parser->parseDiff($diff);
-
-      $status_map = array();
-
-      foreach ($changes as $change) {
-        $flags = 0;
-        switch ($change->getType()) {
-          case ArcanistDiffChangeType::TYPE_ADD:
-          case ArcanistDiffChangeType::TYPE_MOVE_HERE:
-          case ArcanistDiffChangeType::TYPE_COPY_HERE:
-            $flags |= self::FLAG_ADDED;
-            break;
-          case ArcanistDiffChangeType::TYPE_CHANGE:
-          case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
-            $flags |= self::FLAG_MODIFIED;
-            break;
-          case ArcanistDiffChangeType::TYPE_DELETE:
-          case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
-          case ArcanistDiffChangeType::TYPE_MULTICOPY:
-            $flags |= self::FLAG_DELETED;
-            break;
-        }
-        $status_map[$change->getCurrentPath()] = $flags;
-      }
-
-      list($stdout) = $status_future->resolvex();
-
-      $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
-      foreach ($working_status as $path => $status) {
-        if ($status & ArcanistRepositoryAPI::FLAG_UNTRACKED) {
-          // If the file is untracked, don't mark it uncommitted.
-          continue;
-        }
-        $status |= self::FLAG_UNCOMMITTED;
-        if (!empty($status_map[$path])) {
-          $status_map[$path] |= $status;
-        } else {
-          $status_map[$path] = $status;
-        }
-      }
-
-      $this->status = $status_map;
+      $results[$path] |= $mask;
     }
 
-    return $this->status;
+    return $results->toArray();
+  }
+
+  protected function buildCommitRangeStatus() {
+    // TODO: Possibly we should use "hg status --rev X --rev ." for this
+    // instead, but we must run "hg diff" later anyway in most cases, so
+    // building and caching it shouldn't hurt us.
+
+    $diff = $this->getFullMercurialDiff();
+    if (!$diff) {
+      return array();
+    }
+
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($diff);
+
+    $status_map = array();
+    foreach ($changes as $change) {
+      $flags = 0;
+      switch ($change->getType()) {
+        case ArcanistDiffChangeType::TYPE_ADD:
+        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
+        case ArcanistDiffChangeType::TYPE_COPY_HERE:
+          $flags |= self::FLAG_ADDED;
+          break;
+        case ArcanistDiffChangeType::TYPE_CHANGE:
+        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
+          $flags |= self::FLAG_MODIFIED;
+          break;
+        case ArcanistDiffChangeType::TYPE_DELETE:
+        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
+        case ArcanistDiffChangeType::TYPE_MULTICOPY:
+          $flags |= self::FLAG_DELETED;
+          break;
+      }
+      $status_map[$change->getCurrentPath()] = $flags;
+    }
+
+    return $status_map;
+  }
+
+  protected function didReloadWorkingCopy() {
+    // Diffs are against ".", so we need to drop the cache if we change the
+    // working copy.
+    $this->rawDiffCache = array();
+    $this->branch = null;
   }
 
   private function getDiffOptions() {
@@ -362,15 +392,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getRawDiffText($path) {
     $options = $this->getDiffOptions();
 
-    // NOTE: In Mercurial, "--rev x" means "diff between x and the working
-    // copy state", while "--rev x..." means "diff between x and the working
-    // copy commit" (i.e., from 'x' to '.'). The latter excludes any dirty
-    // changes in the working copy.
-
-    $range = $this->getRelativeCommit();
-    if (!$this->includeDirectoryStateInDiffs) {
-      $range .= '...';
-    }
+    $range = $this->getBaseCommit();
 
     $raw_diff_cache_key = $options.' '.$range.' '.$path;
     if (idx($this->rawDiffCache, $raw_diff_cache_key)) {
@@ -393,13 +415,57 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getOriginalFileData($path) {
-    return $this->getFileDataAtRevision($path, $this->getRelativeCommit());
+    return $this->getFileDataAtRevision($path, $this->getBaseCommit());
   }
 
   public function getCurrentFileData($path) {
     return $this->getFileDataAtRevision(
       $path,
       $this->getWorkingCopyRevision());
+  }
+
+  public function getBulkOriginalFileData($paths) {
+    return $this->getBulkFileDataAtRevision($paths, $this->getBaseCommit());
+  }
+
+  public function getBulkCurrentFileData($paths) {
+    return $this->getBulkFileDataAtRevision(
+      $paths,
+      $this->getWorkingCopyRevision());
+  }
+
+  private function getBulkFileDataAtRevision($paths, $revision) {
+    // Calling 'hg cat' on each file individually is slow (1 second per file
+    // on a large repo) because mercurial has to decompress and parse the
+    // entire manifest every time.  Do it in one large batch instead.
+
+    // hg cat will write the file data to files in a temp directory
+    $tmpdir = Filesystem::createTemporaryDirectory();
+
+    // Mercurial doesn't create the directories for us :(
+    foreach ($paths as $path) {
+      $tmppath = $tmpdir.'/'.$path;
+      Filesystem::createDirectory(dirname($tmppath), 0755, true);
+    }
+
+    list($err, $stdout) = $this->execManualLocal(
+      'cat --rev %s --output %s -- %C',
+      $revision,
+      // %p is the formatter for the repo-relative filepath
+      $tmpdir.'/%p',
+      implode(' ', $paths));
+
+    $filedata = array();
+    foreach ($paths as $path) {
+      $tmppath = $tmpdir.'/'.$path;
+      if (Filesystem::pathExists($tmppath)) {
+        $filedata[$path] = Filesystem::readFile($tmppath);
+      }
+    }
+
+    Filesystem::remove($tmpdir);
+
+    return $filedata;
   }
 
   private function getFileDataAtRevision($path, $revision) {
@@ -432,13 +498,50 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
-  public function supportsRelativeLocalCommits() {
+  public function supportsRebase() {
+    if ($this->supportsRebase === null) {
+      list ($err) = $this->execManualLocal("help rebase");
+      $this->supportsRebase = $err === 0;
+    }
+
+    return $this->supportsRebase;
+  }
+
+  public function supportsPhases() {
+    if ($this->supportsPhases === null) {
+      list ($err) = $this->execManualLocal("help phase");
+      $this->supportsPhases = $err === 0;
+    }
+
+    return $this->supportsPhases;
+  }
+
+  public function supportsCommitRanges() {
     return true;
   }
 
-  public function setDefaultBaseCommit() {
-    $this->setRelativeCommit('.^');
-    return $this;
+  public function supportsLocalCommits() {
+    return true;
+  }
+
+  public function getAllBranches() {
+    list($branch_info) = $this->execxLocal('bookmarks');
+    $matches = null;
+    preg_match_all(
+      '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
+      $branch_info,
+      $matches,
+      PREG_SET_ORDER);
+
+    $return = array();
+    foreach ($matches as $match) {
+      list(, $current, $name) = $match;
+      $return[] = array(
+        'current' => (bool)$current,
+        'name'    => rtrim($name),
+      );
+    }
+    return $return;
   }
 
   public function hasLocalCommit($commit) {
@@ -455,21 +558,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'log --template={desc} --rev %s',
       $commit);
     return $message;
-  }
-
-  public function parseRelativeLocalCommit(array $argv) {
-    if (count($argv) == 0) {
-      return;
-    }
-    if (count($argv) != 1) {
-      throw new ArcanistUsageException("Specify only one commit.");
-    }
-
-    $this->setBaseCommitExplanation("you explicitly specified it.");
-
-    // This does the "hg id" call we need to normalize/validate the revision
-    // identifier.
-    $this->setRelativeCommit(reset($argv));
   }
 
   public function getAllLocalChanges() {
@@ -510,9 +598,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCommitMessageLog() {
+    $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
       "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
-      'ancestors(.) - ancestors('.$this->getRelativeCommit().')',
+      hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
 
     $map = array();
@@ -592,6 +681,35 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function updateWorkingCopy() {
     $this->execxLocal('up');
+    $this->reloadWorkingCopy();
+  }
+
+  private function getMercurialConfig($key, $default = null) {
+    list($stdout) = $this->execxLocal('showconfig %s', $key);
+    if ($stdout == '') {
+      return $default;
+    }
+    return rtrim($stdout);
+  }
+
+  public function getAuthor() {
+    return $this->getMercurialConfig('ui.username');
+  }
+
+  public function addToCommit(array $paths) {
+    $this->execxLocal(
+      'addremove -- %Ls',
+      $paths);
+    $this->reloadWorkingCopy();
+  }
+
+  public function doCommit($message) {
+    $tmp_file = new TempFile();
+    Filesystem::writeFile($tmp_file, $message);
+    $this->execxLocal(
+      'commit -l %s',
+      $tmp_file);
+    $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message) {
@@ -600,11 +718,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->execxLocal(
       'commit --amend -l %s',
       $tmp_file);
-  }
-
-  public function setIncludeDirectoryStateInDiffs($include) {
-    $this->includeDirectoryStateInDiffs = $include;
-    return $this;
+    $this->reloadWorkingCopy();
   }
 
   public function getCommitSummary($commit) {
@@ -624,6 +738,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function resolveBaseCommitRule($rule, $source) {
     list($type, $name) = explode(':', $rule, 2);
 
+    // NOTE: This function MUST return node hashes or symbolic commits (like
+    // branch names or the word "tip"), not revsets. This includes ".^" and
+    // similar, which a revset, not a symbolic commit identifier. If you return
+    // a revset it will be escaped later and looked up literally.
+
     switch ($type) {
       case 'hg':
         $matches = null;
@@ -639,14 +758,21 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             return trim($merge_base);
           }
         } else {
-          list($err) = $this->execManualLocal(
-            'id -r %s',
-            $name);
+          list($err, $commit) = $this->execManualLocal(
+            'log --template {node} --rev %s',
+            hgsprintf('%s', $name));
+
+          if ($err) {
+            list($err, $commit) = $this->execManualLocal(
+              'log --template {node} --rev %s',
+              $name);
+          }
+
           if (!$err) {
             $this->setBaseCommitExplanation(
               "it is specified by '{$rule}' in your {$source} 'base' ".
               "configuration.");
-            return $name;
+            return trim($commit);
           }
         }
         break;
@@ -660,8 +786,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           case 'outgoing':
             list($err, $outgoing_base) = $this->execManualLocal(
               'log --template={node} --rev %s',
-              'limit(reverse(ancestors(.) - outgoing()), 1)'
-            );
+              'limit(reverse(ancestors(.) - outgoing()), 1)');
             if (!$err) {
               $this->setBaseCommitExplanation(
                 "it is the first ancestor of the working copy that is not ".
@@ -680,7 +805,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "configuration.");
               // NOTE: This should be safe because Mercurial doesn't support
               // amend until 2.2.
-              return '.^';
+              return $this->getCanonicalRevisionName('.^');
             }
             break;
           case 'bookmark':
@@ -701,6 +826,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 "your {$source} 'base' configuration");
               return trim($bookmark_base);
             }
+            break;
+          case 'this':
+            $this->setBaseCommitExplanation(
+              "you specified '{$rule}' in your {$source} 'base' ".
+              "configuration.");
+            return $this->getCanonicalRevisionName('.^');
         }
         break;
       default:
@@ -709,6 +840,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return null;
 
+  }
+
+  public function isHgSubversionRepo() {
+    return file_exists($this->getPath('.hg/svn'));
   }
 
   public function getSubversionInfo() {
@@ -742,17 +877,98 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getActiveBookmark() {
+    $bookmarks = $this->getBookmarks();
+    foreach ($bookmarks as $bookmark) {
+      if ($bookmark['is_active']) {
+        return $bookmark['name'];
+      }
+    }
+
+    return null;
+  }
+
+  public function isBookmark($name) {
+    $bookmarks = $this->getBookmarks();
+    foreach ($bookmarks as $bookmark) {
+      if ($bookmark['name'] === $name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public function isBranch($name) {
+    $branches = $this->getBranches();
+    foreach ($branches as $branch) {
+      if ($branch['name'] === $name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public function getBranches() {
+    $branches = array();
+
+    list($raw_output) = $this->execxLocal('branches');
+    $raw_output = trim($raw_output);
+
+    foreach (explode("\n", $raw_output) as $line) {
+      // example line: default                 0:a5ead76cdf85 (inactive)
+      list($name, $rev_line) = $this->splitBranchOrBookmarkLine($line);
+
+      // strip off the '(inactive)' bit if it exists
+      $rev_parts = explode(' ', $rev_line);
+      $revision = $rev_parts[0];
+
+      $branches[] = array(
+        'name' => $name,
+        'revision' => $revision);
+    }
+
+    return $branches;
+  }
+
+  public function getBookmarks() {
+    $bookmarks = array();
+
     list($raw_output) = $this->execxLocal('bookmarks');
     $raw_output = trim($raw_output);
     if ($raw_output !== 'no bookmarks set') {
       foreach (explode("\n", $raw_output) as $line) {
-        $line = trim($line);
-        if ('*' === $line[0]) {
-          return idx(explode(' ', $line, 3), 1);
+        // example line:  * mybook               2:6b274d49be97
+        list($name, $revision) = $this->splitBranchOrBookmarkLine($line);
+
+        $is_active = false;
+        if ('*' === $name[0]) {
+          $is_active = true;
+          $name = substr($name, 2);
         }
+
+        $bookmarks[] = array(
+          'is_active' => $is_active,
+          'name' => $name,
+          'revision' => $revision);
       }
     }
-    return null;
+
+    return $bookmarks;
   }
 
+  private function splitBranchOrBookmarkLine($line) {
+    // branches and bookmarks are printed in the format:
+    // default                 0:a5ead76cdf85 (inactive)
+    // * mybook               2:6b274d49be97
+    // this code divides the name half from the revision half
+    // it does not parse the * and (inactive) bits
+    $colon_index = strrpos($line, ':');
+    $before_colon = substr($line, 0, $colon_index);
+    $start_rev_index = strrpos($before_colon, ' ');
+    $name = substr($line, 0, $start_rev_index);
+    $rev = substr($line, $start_rev_index);
+
+    return array(trim($name), trim($rev));
+  }
 }

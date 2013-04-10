@@ -5,11 +5,7 @@
  *
  * @group linter
  */
-final class ArcanistPEP8Linter extends ArcanistLinter {
-
-  public function willLintPaths(array $paths) {
-    return;
-  }
+final class ArcanistPEP8Linter extends ArcanistFutureLinter {
 
   public function getLinterName() {
     return 'PEP8';
@@ -21,6 +17,11 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array();
+  }
+
+  public function getCacheVersion() {
+    list($stdout) = execx('%C --version', $this->getPEP8Path());
+    return $stdout.$this->getPEP8Options();
   }
 
   public function getPEP8Options() {
@@ -40,11 +41,10 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
     $bin = $working_copy->getConfig('lint.pep8.bin');
 
     if ($bin === null && $prefix === null) {
-      $bin = csprintf('/usr/bin/env python2.6 %s',
+      $bin = csprintf('/usr/bin/env python %s',
                phutil_get_library_root('arcanist').
                '/../externals/pep8/pep8.py');
-    }
-    else {
+    } else {
       if ($bin === null) {
         $bin = 'pep8';
       }
@@ -55,7 +55,7 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
             "Unable to find PEP8 binary in a specified directory. Make sure ".
             "that 'lint.pep8.prefix' and 'lint.pep8.bin' keys are set ".
             "correctly. If you'd rather use a copy of PEP8 installed ".
-            "globally, you can just remove these keys from your .arcconfig");
+            "globally, you can just remove these keys from your .arcconfig.");
         }
 
         $bin = csprintf("%s/%s", $prefix, $bin);
@@ -74,19 +74,40 @@ final class ArcanistPEP8Linter extends ArcanistLinter {
       }
     }
 
+    list(, $stderr) = execx('/usr/bin/env python -V');
+    if ($stderr < 'Python 2.5') {
+      throw new ArcanistUsageException(
+        "Python 2.5 or greater is required to run the PEP8 Python linter, but ".
+        rtrim($stderr)." was found instead.");
+    }
+
     return $bin;
   }
 
-  public function lintPath($path) {
+  protected function buildFutures(array $paths) {
+    $severity = ArcanistLintSeverity::SEVERITY_WARNING;
+    if (!$this->getEngine()->isSeverityEnabled($severity)) {
+      return;
+    }
+
     $pep8_bin = $this->getPEP8Path();
     $options = $this->getPEP8Options();
 
-    list($rc, $stdout) = exec_manual(
-      "%C %C %s",
-      $pep8_bin,
-      $options,
-      $this->getEngine()->getFilePathOnDisk($path));
+    $futures = array();
 
+    foreach ($paths as $path) {
+      $futures[$path] = new ExecFuture(
+        "%C %C %s",
+        $pep8_bin,
+        $options,
+        $this->getEngine()->getFilePathOnDisk($path));
+    }
+
+    return $futures;
+  }
+
+  protected function resolveFuture($path, Future $future) {
+    list($rc, $stdout) = $future->resolve();
     $lines = explode("\n", $stdout);
     $messages = array();
     foreach ($lines as $line) {

@@ -18,4 +18,4 @@ while [ -h "$SOURCE" ]; do
 done;
 DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
-exec $DIR/../scripts/arcanist.php "$@"
+exec "$DIR/../scripts/arcanist.php" "$@"

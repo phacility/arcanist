@@ -1,0 +1,10 @@
+=== RUN TestFoo1
+--- PASS: TestFoo1 (0.03 seconds)
+=== RUN TestBar1
+--- PASS: TestBar1 (0.01 seconds)
+PASS
+ok  	package/subpackage1	0.042s
+=== RUN TestFoo2
+--- PASS: TestFoo2 (0.02 seconds)
+PASS
+ok  	package/subpackage2	0.021s
