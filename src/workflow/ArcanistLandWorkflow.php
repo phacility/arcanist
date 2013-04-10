@@ -242,7 +242,7 @@ EOTEXT
     } else if ($this->getArgument('squash')) {
       $this->useSquash = true;
     } else {
-      $this->useSquash = !$this->isHistoryImmutable();
+      $this->useSquash = false;
     }
 
     $this->ontoRemoteBranch = $this->onto;
