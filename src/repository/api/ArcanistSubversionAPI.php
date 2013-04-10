@@ -195,6 +195,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         'delete -- %Ls',
         array_diff($paths, $add));
     }
+    $this->svnStatus = null;
   }
 
   public function getSVNProperty($path, $property) {

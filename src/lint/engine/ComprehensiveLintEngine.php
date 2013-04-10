@@ -23,7 +23,7 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
       }
     }
 
-    $text_paths = preg_grep('/\.(php|css|hpp|cpp|l|y)$/', $paths);
+    $text_paths = preg_grep('/\.(php|css|hpp|cpp|l|y|py|pl)$/', $paths);
     $linters[] = id(new ArcanistGeneratedLinter())->setPaths($text_paths);
     $linters[] = id(new ArcanistNoLintLinter())->setPaths($text_paths);
     $linters[] = id(new ArcanistTextLinter())->setPaths($text_paths);
