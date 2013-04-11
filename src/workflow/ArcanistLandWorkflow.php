@@ -803,7 +803,7 @@ EOTEXT
         $err = phutil_passthru(
           'git merge --abort');
         $err = phutil_passthru(
-          'git checkout %s', $branch);
+          'git checkout %s', $this->branch);
         throw new ArcanistUsageException(
           "'git merge' failed. Your working copy has been left in a partially ".
           "merged state. You can: abort with 'git merge --abort'; or follow ".
