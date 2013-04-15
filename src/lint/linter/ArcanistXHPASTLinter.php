@@ -47,6 +47,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_CLOSING_CALL_PAREN        = 37;
   const LINT_CLOSING_DECL_PAREN        = 38;
   const LINT_REUSED_ITERATOR_REFERENCE = 39;
+  const LINT_KEYWORD_CASING            = 40;
 
   public function getLintNameMap() {
     return array(
@@ -87,6 +88,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CLOSING_CALL_PAREN        => 'Call Formatting',
       self::LINT_CLOSING_DECL_PAREN        => 'Declaration Formatting',
       self::LINT_REUSED_ITERATOR_REFERENCE => 'Reuse of Iterator References',
+      self::LINT_KEYWORD_CASING            => 'Keyword Conventions',
     );
   }
 
@@ -115,6 +117,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CLOSING_CALL_PAREN        => $warning,
       self::LINT_CLOSING_DECL_PAREN        => $warning,
       self::LINT_REUSED_ITERATOR_REFERENCE => $warning,
+      self::LINT_KEYWORD_CASING            => $warning,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -219,6 +222,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
       'lintClosingCallParen' => self::LINT_CLOSING_CALL_PAREN,
       'lintClosingDeclarationParen' => self::LINT_CLOSING_DECL_PAREN,
+      'lintKeywordCasing' => self::LINT_KEYWORD_CASING,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2254,6 +2258,54 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  private function lintKeywordCasing($root) {
+    $keywords = array();
+
+    $symbols = $root->selectDescendantsOfType('n_SYMBOL_NAME');
+    foreach ($symbols as $symbol) {
+      $keywords[] = head($symbol->getTokens());
+    }
+
+    $arrays = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
+    foreach ($arrays as $array) {
+      $keywords[] = head($array->getTokens());
+    }
+
+    $typehints = $root->selectDescendantsOfType('n_TYPE_NAME');
+    foreach ($typehints as $typehint) {
+      $keywords[] = head($typehint->getTokens());
+    }
+
+    // NOTE: Although PHP generally allows arbitrary casing for all language
+    // keywords, it's exceedingly rare for anyone to type, e.g., "CLASS" or
+    // "cLaSs" in the wild. This list just attempts to cover unconventional
+    // spellings which see some level of use, not all keywords exhaustively.
+    // There is no token or node type which spans all keywords, so this is
+    // significantly simpler.
+
+    static $keyword_map = array(
+      'true'  => 'true',
+      'false' => 'false',
+      'null'  => 'null',
+      'array' => 'array',
+    );
+
+    foreach ($keywords as $keyword) {
+      $value = $keyword->getValue();
+      $value_key = strtolower($value);
+      if (!isset($keyword_map[$value_key])) {
+        continue;
+      }
+      $expected_spelling = $keyword_map[$value_key];
+      if ($value !== $expected_spelling) {
+        $this->raiseLintAtToken(
+          $keyword,
+          self::LINT_KEYWORD_CASING,
+          "Convention: spell keyword '{$value}' as '{$expected_spelling}'.",
+          $expected_spelling);
+      }
+    }
+  }
 
   public function getSuperGlobalNames() {
     return array(
