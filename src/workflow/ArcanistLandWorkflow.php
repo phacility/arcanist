@@ -121,10 +121,29 @@ EOTEXT
         ),
       ),
       'update-with-rebase' => array(
-        'help'    => 'When updating the feature branch, use rebase intead of '.
-                     'merge. This might make things work better in some cases.',
+        'help'    => 'When updating the feature branch, use rebase instead of '.
+                     'merge. This might make things work better in some cases.'.
+                     'Set arc.land.update.default to \'rebase\' to make this '.
+                     'default.',
         'conflicts' => array(
           'merge' => 'The --merge strategy does not update the feature branch.',
+          'update-with-merge' => 'Cannot be used with --update-with-merge.',
+        ),
+        'supports' => array(
+          'git',
+        ),
+      ),
+      'update-with-merge' => array(
+        'help'    => 'When updating the feature branch, use merge instead of '.
+                     'rebase. This is the default behavior. '.
+                     'Setting arc.land.update.default to \'merge\' can also '.
+                     'be used to make this the default.',
+        'conflicts' => array(
+          'merge' => 'The --merge strategy does not update the feature branch.',
+          'update-with-rebase' => 'Cannot be used with --update-with-rebase.',
+        ),
+        'supports' => array(
+          'git',
         ),
       ),
       'revision' => array(
@@ -222,7 +241,18 @@ EOTEXT
     }
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
-    $this->shouldUpdateWithRebase = $this->getArgument('update-with-rebase');
+
+    $working_copy = $this->getWorkingCopy();
+    $update_strategy = $working_copy->getConfigFromAnySource(
+      'arc.land.update.default',
+      'merge');
+    $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
+    if ($this->getArgument('update-with-rebase')) {
+      $this->shouldUpdateWithRebase = true;
+    } else if ($this->getArgument('update-with-merge')) {
+      $this->shouldUpdateWithRebase = false;
+    }
+
     $this->preview = $this->getArgument('preview');
 
     if (!$this->branchType) {
@@ -231,7 +261,7 @@ EOTEXT
 
     $onto_default = $this->isGit ? 'master' : 'default';
     $onto_default = nonempty(
-      $this->getWorkingCopy()->getConfigFromAnySource('arc.land.onto.default'),
+      $working_copy->getConfigFromAnySource('arc.land.onto.default'),
       $onto_default);
     $this->onto = $this->getArgument('onto', $onto_default);
     $this->ontoType = $this->getBranchType($this->onto);

@@ -832,7 +832,35 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
               "you specified '{$rule}' in your {$source} 'base' ".
               "configuration.");
             return $this->getCanonicalRevisionName('.^');
-        }
+          default:
+            if (preg_match('/^nodiff\((.+)\)$/', $name, $matches)) {
+              list($results) = $this->execxLocal(
+                'log --template %s --rev %s',
+                '{node}\1{desc}\2',
+                sprintf('ancestor(.,%s)::.^', $matches[1]));
+              $results = array_reverse(explode("\2", trim($results)));
+
+              foreach ($results as $result) {
+                if (empty($result)) {
+                  continue;
+                }
+
+                list($node, $desc) = explode("\1", $result, 2);
+
+                $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+                  $desc);
+                if ($message->getRevisionID()) {
+                  $this->setBaseCommitExplanation(
+                    "it is the first ancestor of . that has a diff ".
+                    "and is the gca or a descendant of the gca with ".
+                    "'{$matches[1]}', specified by '{$rule}' in your ".
+                    "{$source} 'base' configuration.");
+                  return $node;
+                }
+              }
+            }
+            break;
+          }
         break;
       default:
         return null;
