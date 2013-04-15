@@ -1065,7 +1065,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       // operation, so special case it.
       if (empty($this->changeCache[$path])) {
         $diff = $repository_api->getRawDiffText($path);
-        $parser = new ArcanistDiffParser();
+        $parser = $this->newDiffParser();
         $changes = $parser->parseDiff($diff);
         if (count($changes) != 1) {
           throw new Exception("Expected exactly one change.");
