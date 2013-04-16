@@ -715,7 +715,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->reloadWorkingCopy();
   }
 
-  public function amendCommit($message) {
+  public function amendCommit($message = null) {
+    if ($message === null) {
+      $message = $this->getCommitMessage('.');
+    }
+
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
     $this->execxLocal(
