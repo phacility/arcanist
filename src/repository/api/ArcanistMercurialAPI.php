@@ -693,7 +693,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getAuthor() {
-    return $this->getMercurialConfig('ui.username');
+    $full_author = $this->getMercurialConfig('ui.username');
+    $email = new PhutilEmailAddress($full_author);
+    $author = $email->getDisplayName();
+    return $author;
   }
 
   public function addToCommit(array $paths) {
