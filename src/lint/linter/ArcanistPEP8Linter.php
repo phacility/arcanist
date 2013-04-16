@@ -41,7 +41,7 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
     $bin = $working_copy->getConfig('lint.pep8.bin');
 
     if ($bin === null && $prefix === null) {
-      $bin = csprintf('/usr/bin/env python %s',
+      $bin = csprintf('/usr/bin/env python2.6 %s',
                phutil_get_library_root('arcanist').
                '/../externals/pep8/pep8.py');
     } else {
@@ -72,13 +72,6 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
           "'lint.pep8.prefix' in your .arcconfig to point to the directory ".
           "where it resides.");
       }
-    }
-
-    list(, $stderr) = execx('/usr/bin/env python -V');
-    if ($stderr < 'Python 2.5') {
-      throw new ArcanistUsageException(
-        "Python 2.5 or greater is required to run the PEP8 Python linter, but ".
-        rtrim($stderr)." was found instead.");
     }
 
     return $bin;
