@@ -380,6 +380,12 @@ EOTEXT
       $prompt_autofix_patches = true;
     }
 
+    $repository_api = $this->getRepositoryAPI();
+    if ($this->shouldAmendChanges) {
+      $this->shouldAmendChanges = $repository_api->supportsAmend() &&
+        !$this->isHistoryImmutable();
+    }
+
     $wrote_to_disk = false;
 
     switch ($this->getArgument('output')) {
@@ -461,11 +467,7 @@ EOTEXT
       }
     }
 
-    $repository_api = $this->getRepositoryAPI();
-    if ($wrote_to_disk &&
-        ($repository_api instanceof ArcanistGitAPI) &&
-        $this->shouldAmendChanges) {
-
+    if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
           ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
         $console->writeOut(
@@ -477,9 +479,12 @@ EOTEXT
       }
 
       if ($amend) {
-        execx(
-          '(cd %s; git commit -a --amend -C HEAD)',
-          $repository_api->getPath());
+        if ($repository_api instanceof ArcanistGitAPI) {
+          // Add the changes to the index before amending
+          $repository_api->execxLocal('add -A');
+        }
+
+        $repository_api->amendCommit();
       } else {
         throw new ArcanistUsageException(
           "Sort out the lint changes that were applied to the working ".

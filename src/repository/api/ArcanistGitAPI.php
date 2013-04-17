@@ -514,12 +514,17 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
-  public function amendCommit($message) {
-    $tmp_file = new TempFile();
-    Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal(
-      'commit --amend --allow-empty -F %s',
-      $tmp_file);
+  public function amendCommit($message = null) {
+    if ($message === null) {
+      $this->execxLocal('commit --amend --allow-empty -C HEAD');
+    } else {
+      $tmp_file = new TempFile();
+      Filesystem::writeFile($tmp_file, $message);
+      $this->execxLocal(
+        'commit --amend --allow-empty -F %s',
+        $tmp_file);
+    }
+
     $this->reloadWorkingCopy();
     return $this;
   }

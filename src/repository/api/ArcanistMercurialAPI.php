@@ -693,7 +693,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getAuthor() {
-    return $this->getMercurialConfig('ui.username');
+    $full_author = $this->getMercurialConfig('ui.username');
+    $email = new PhutilEmailAddress($full_author);
+    $author = $email->getDisplayName();
+    return $author;
   }
 
   public function addToCommit(array $paths) {
@@ -712,7 +715,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $this->reloadWorkingCopy();
   }
 
-  public function amendCommit($message) {
+  public function amendCommit($message = null) {
+    if ($message === null) {
+      $message = $this->getCommitMessage('.');
+    }
+
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
     $this->execxLocal(
