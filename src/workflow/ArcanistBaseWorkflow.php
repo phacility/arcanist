@@ -1165,11 +1165,9 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   public static function getSystemArcConfigLocation() {
     if (phutil_is_windows()) {
-      // this is a horrible place to put this, but there doesn't seem to be a
-      // non-horrible place on Windows
       return Filesystem::resolvePath(
         'Phabricator/Arcanist/config',
-        getenv('PROGRAMFILES'));
+        getenv('ProgramData'));
     } else {
       return '/etc/arcconfig';
     }
