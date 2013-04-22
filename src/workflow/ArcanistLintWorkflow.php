@@ -481,7 +481,7 @@ EOTEXT
       if ($amend) {
         if ($repository_api instanceof ArcanistGitAPI) {
           // Add the changes to the index before amending
-          $repository_api->execxLocal('add -A');
+          $repository_api->execxLocal('add -u');
         }
 
         $repository_api->amendCommit();
