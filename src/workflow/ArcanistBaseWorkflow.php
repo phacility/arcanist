@@ -816,8 +816,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
           $api->addToCommit($untracked);
           $must_commit += array_flip($untracked);
         } else if ($this->commitMode == self::COMMIT_DISABLE) {
-          $prompt = "Do you want to continue without adding these files?";
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
+          $prompt = "Do you want to add these files before continuing?";
+          if (phutil_console_confirm($prompt)) {
             throw new ArcanistUserAbortException();
           }
         }
