@@ -69,6 +69,16 @@ final class ArcanistSettings {
           'branch. Supports \'rebase\' and \'merge\' strategies.',
         'example' => '"rebase"',
       ),
+      'arc.lint.cache' => array(
+        'type' => 'bool',
+        'help' =>
+          "Enable the lint cache by default. When enabled, 'arc lint' ".
+          "attempts to use cached results if possible. Currently, the cache ".
+          "is not always invalidated correctly and may cause 'arc lint' to ".
+          "report incorrect results, particularly while developing linters. ".
+          "This is probably worth enabling only if your linters are very slow.",
+        'example' => 'false',
+      ),
       'history.immutable' => array(
         'type' => 'bool',
         'legacy' => 'immutable_history',
