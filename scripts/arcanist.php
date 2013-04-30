@@ -96,6 +96,9 @@ try {
   // is configured. This is basically a debugging feature to let you force
   // specific libraries to load regardless of the state of the world.
   if ($load) {
+    $console->writeLog(
+      "Using '--load-phutil-library' flag, configuration will be ignored ".
+      "and configured libraries will not be loaded."."\n");
     // Load the flag libraries. These must load, since the user specified them
     // explicitly.
     arcanist_load_libraries(
