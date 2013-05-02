@@ -10,6 +10,7 @@ import cStringIO
 import copy
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -24,10 +25,15 @@ arc_contents = open(os.path.join(g_arc_root, 'khan-bin', 'arc')).read()
 arc_contents = arc_contents.replace('__main__', '__not_main__')
 exec(arc_contents)
 # These are just to quiet lint.  They also document what we imported
-_get_user_info = _get_user_info              # @Nolint
-normalize_usernames = normalize_usernames    # @Nolint
-normalize_rr_flags = normalize_rr_flags      # @Nolint
-_update_arcrc = _update_arcrc                # @Nolint
+_conduit_call = _conduit_call                   # @Nolint
+NotGitError = NotGitError                       # @Nolint
+_git_call = _git_call                           # @Nolint
+_get_user_info = _get_user_info                 # @Nolint
+_pick_a_number = _pick_a_number                 # @Nolint
+normalize_usernames = normalize_usernames       # @Nolint
+normalize_rr_flags = normalize_rr_flags         # @Nolint
+add_onto_for_arc_land = add_onto_for_arc_land   # @Nolint
+_update_arcrc = _update_arcrc                   # @Nolint
 
 
 def FakeConduitCall(arc_root, conduit_name, json_input={}):
@@ -237,6 +243,58 @@ class NormalizeRRFlagsTestCase(unittest.TestCase):
         self.assertEqual(['diff', '--reviewers', 'csilvers,echo,toom',
                           '--verbatim', '--dry_run'],
                          actual)
+
+
+class ArcLandTestCase(unittest.TestCase):
+    def setUp(self):
+        self._orig_git_call = _git_call
+        super(ArcLandTestCase, self).setUp()
+
+    def tearDown(self):
+        global _git_call
+        super(ArcLandTestCase, self).tearDown()
+        _git_call = self._orig_git_call
+
+    def set_git_retval(self, retval):
+        global _git_call
+        _git_call = lambda *args, **kwargs: retval
+
+    def set_git_raises(self, exception_type, *args, **kwargs):
+        def raise_error():
+            raise exception_type(*args, **kwargs)
+
+        global _git_call
+        _git_call = lambda *args, **kwargs: raise_error()
+
+    def test_feature_branch(self):
+        self.set_git_retval('master')
+        self.assertEqual(['land', '--onto', 'master'],
+                         add_onto_for_arc_land(['land']))
+        
+        self.set_git_retval('some_other_branch')
+        self.assertEqual(['land', '--onto', 'some_other_branch'],
+                         add_onto_for_arc_land(['land']))
+
+    def test_remote_branch(self):
+        self.set_git_retval('origin/master')
+        with self.assertRaises(RuntimeError):
+            add_onto_for_arc_land(['land'])
+
+    def test_nontracking_branch(self):
+        self.set_git_raises(subprocess.CalledProcessError, None, None)
+        with self.assertRaises(RuntimeError):
+            add_onto_for_arc_land(['land'])
+
+    def test_not_a_git_repo(self):
+        self.set_git_raises(NotGitError)
+        self.assertEqual(['land'], add_onto_for_arc_land(['land']))
+
+    def test_already_has_onto(self):
+        self.set_git_retval('unused_branch')
+        self.assertEqual(['land', '--onto', 'master'],
+                         add_onto_for_arc_land(['land', '--onto', 'master']))
+        self.assertEqual(['land', '--onto=master'],
+                         add_onto_for_arc_land(['land', '--onto=master']))
 
 
 class UpdateArcrcTest(unittest.TestCase):

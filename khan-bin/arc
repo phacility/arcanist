@@ -150,6 +150,23 @@ def _conduit_call(arc_root, conduit_name, json_input={}):
     return retval['response']
 
 
+class NotGitError(Exception):
+    """Called git when not in a git repository."""
+
+
+def _git_call(git_args):
+    """Make a 'git' call and return the result.
+
+    Raises NotGitError if run outside a git repo, or CalledProcessError
+    if the git command fails for some other reason."""
+    try:
+        return subprocess.check_output(['git'] + git_args)
+    except subprocess.CalledProcessError, why:
+        if 'Not a git repository' in str(why):
+            raise NotGitError()
+        raise
+
+
 def _get_user_info(arc_root):
     """Retrieve a list of (username, realname) pairs of all phab. users."""
     user_info = _conduit_call(arc_root, 'user.query')
@@ -299,6 +316,37 @@ def normalize_rr_flags(arc_root, arc_args):
     return retval
 
 
+def add_onto_for_arc_land(arc_args):
+    """Figure out the 'parent' of this branch, and land onto that."""
+    assert arc_args[0] == 'land'
+    # If --onto is already in arc_args, don't add it
+    for arg in arc_args:
+        if arg.startswith('--onto'):
+            return arc_args
+
+    # This gives an error for if this branch isn't a tracking branch.
+    # In that case, we'll require an explicit '--onto'.  cf.
+    # http://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
+    try:
+        parent = _git_call(['rev-parse', '--abbrev-ref',
+                            '--symbolic-full-name', '@{u}'])
+    except NotGitError:
+        # If we're an .hg repo or something, don't worry about --onto.
+        return arc_args
+    except subprocess.CalledProcessError:
+        raise RuntimeError('You must explicitly specify --onto when landing'
+                           ' a non-tracking branch (but better is to set'
+                           ' branch:autosetupmerge in your .gitconfig!).')
+    if '/' in parent:
+        # If the parent is remote, then can't run 'arc land' at all; they
+        # should run 'arc amend; git push' instead.
+        raise RuntimeError("You can't call 'arc land' from a remote tracking"
+                           " branch (you should call it from a local feature"
+                           " branch).  Run 'arc amend' + 'git push' instead.")
+
+    return arc_args + ['--onto', parent.strip()]
+    
+
 def main(arc_args, arc_root=None):
     if arc_root is None:
         arc_root = _DEFAULT_ARC_ROOT
@@ -307,6 +355,9 @@ def main(arc_args, arc_root=None):
 
     # Handle any --rr flags that may be in arc_args (--rr is a khan extension).
     arc_args = normalize_rr_flags(arc_root, arc_args)
+
+    if arc_args[0] == 'land':
+        arc_args = add_onto_for_arc_land(arc_args)
 
     # Now run the 'real' (arcanist) arc.
     arcanist_arc = os.path.join(arc_root, 'bin', 'arc')
