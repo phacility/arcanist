@@ -760,7 +760,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           if (!$err) {
             $this->setBaseCommitExplanation(
               "it is the greatest common ancestor of '{$matches[1]}' and ., as".
-              "specified by '{$rule}' in your {$source} 'base' ".
+              " specified by '{$rule}' in your {$source} 'base' ".
               "configuration.");
             return trim($merge_base);
           }

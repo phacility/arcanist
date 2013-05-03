@@ -123,7 +123,7 @@ EOTEXT
       'update-with-rebase' => array(
         'help'    => 'When updating the feature branch, use rebase instead of '.
                      'merge. This might make things work better in some cases.'.
-                     'Set arc.land.update.default to \'rebase\' to make this '.
+                     ' Set arc.land.update.default to \'rebase\' to make this '.
                      'default.',
         'conflicts' => array(
           'merge' => 'The --merge strategy does not update the feature branch.',
@@ -292,9 +292,9 @@ EOTEXT
 
     if ($this->onto == $this->branch) {
       $message =
-        "You can not land a {$this->branchType} onto itself -- you are trying".
-        "to land '{$this->branch}' onto '{$this->onto}'. For more".
-        "information on how to push changes, see 'Pushing and Closing".
+        "You can not land a {$this->branchType} onto itself -- you are trying ".
+        "to land '{$this->branch}' onto '{$this->onto}'. For more ".
+        "information on how to push changes, see 'Pushing and Closing ".
         "Revisions' in 'Arcanist User Guide: arc diff' in the documentation.";
       if (!$this->isHistoryImmutable()) {
         $message .= " You may be able to 'arc amend' instead.";
