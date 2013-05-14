@@ -38,13 +38,17 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       }
     }
 
-    if (empty($affected_tests)) {
+    return $this->runTests($affected_tests, './');
+  }
+
+  public function runTests($test_paths, $source_path) {
+    if (empty($test_paths)) {
       return array();
     }
 
     $futures = array();
     $tmpfiles = array();
-    foreach ($affected_tests as $test_path) {
+    foreach ($test_paths as $test_path) {
       $xunit_tmp = new TempFile();
       $cover_tmp = new TempFile();
 
@@ -73,7 +77,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       $xunit_tmp = $tmpfiles[$test_path]['xunit'];
       $cover_tmp = $tmpfiles[$test_path]['cover'];
 
-      $results[] = $this->parseTestResults($test_path,
+      $results[] = $this->parseTestResults($source_path,
                                            $xunit_tmp,
                                            $cover_tmp);
     }
@@ -94,7 +98,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     return new ExecFuture("%C %s", $cmd_line, $path);
   }
 
-  public function parseTestResults($path, $xunit_tmp, $cover_tmp) {
+  public function parseTestResults($source_path, $xunit_tmp, $cover_tmp) {
     // xunit xsd: https://gist.github.com/959290
     $xunit_dom = new DOMDocument();
     $xunit_dom->loadXML(Filesystem::readFile($xunit_tmp));
@@ -102,7 +106,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     // coverage is for all testcases in the executed $path
     $coverage = array();
     if ($this->getEnableCoverage() !== false) {
-      $coverage = $this->readCoverage($cover_tmp);
+      $coverage = $this->readCoverage($cover_tmp, $source_path);
     }
 
     $results = array();
@@ -168,9 +172,9 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     return $results;
   }
 
-  public function readCoverage($path) {
+  public function readCoverage($cover_file, $source_path) {
     $coverage_dom = new DOMDocument();
-    $coverage_dom->loadXML(Filesystem::readFile($path));
+    $coverage_dom->loadXML(Filesystem::readFile($cover_file));
 
     $reports = array();
     $classes = $coverage_dom->getElementsByTagName("class");
@@ -180,7 +184,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       // e.g.: tornado.web.py
       $relative_path = explode(".", $class->getAttribute("filename"));
       array_pop($relative_path);
-      $relative_path = implode("/", $relative_path);
+      $relative_path = $source_path .'/'. implode("/", $relative_path);
 
       // first we check if the path is a directory (a Python package), if it is
       // set relative and absolute paths to have __init__.py at the end.
