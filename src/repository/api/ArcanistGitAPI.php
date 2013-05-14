@@ -531,8 +531,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
+
+    // NOTE: "--allow-empty-message" was introduced some time after 1.7.0.4,
+    // so we do not provide it and thus require a message.
+
     $this->execxLocal(
-      'commit --allow-empty-message -F %s',
+      'commit -F %s',
       $tmp_file);
 
     $this->reloadWorkingCopy();
