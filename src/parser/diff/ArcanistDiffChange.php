@@ -88,6 +88,14 @@ final class ArcanistDiffChange {
     return $obj;
   }
 
+  public static function newFromConduit(array $dicts) {
+    $changes = array();
+    foreach ($dicts as $dict) {
+      $changes[] = self::newFromDictionary($dict);
+    }
+    return $changes;
+  }
+
   public function getChangedLines($type) {
     $lines = array();
     foreach ($this->hunks as $hunk) {
