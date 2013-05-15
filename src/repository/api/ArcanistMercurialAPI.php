@@ -74,6 +74,32 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
+  public function getHashFromFromSVNRevisionNumber($revision_id) {
+    $matches = array();
+    $string = hgsprintf('svnrev(%s)', $revision_id);
+    list($stdout) = $this->execxLocal(
+      'log -l 1 --template %s -r %s --',
+      '{node}',
+       $string);
+    if (!$stdout) {
+      throw new ArcanistUsageException("Cannot find the HG equivalent "
+                                       ."of {$revision_id} given.");
+    }
+    return $stdout;
+  }
+
+
+  public function getSVNRevisionNumberFromHash($hash) {
+    $matches = array();
+    list($stdout) = $this->execxLocal(
+      'log -r %s --template {svnrev}', $hash);
+    if (!$stdout) {
+      throw new ArcanistUsageException("Cannot find the SVN equivalent "
+                                       ."of {$hash} given.");
+    }
+    return $stdout;
+  }
+
   public function getSourceControlPath() {
     return '/';
   }
@@ -102,8 +128,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             hgsprintf('ancestor(%R,.)', $symbolic_commit));
         } catch (Exception $ex) {
           throw new ArcanistUsageException(
-            "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
-            "identifier.");
+          "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+          "identifier.");
         }
       }
 
@@ -742,6 +768,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return trim($summary);
   }
 
+  public function backoutCommit($commit_hash) {
+    $this->execxLocal(
+      'backout -r %s', $commit_hash);
+    $this->reloadWorkingCopy();
+    if (!$this->getUncommittedStatus()) {
+      throw new ArcanistUsageException(
+        "{$commit_hash} has already been reverted.");
+    }
+  }
+
+  public function getBackoutMessage($commit_hash) {
+    return "Backed out changeset ".$commit_hash.".";
+  }
+
   public function resolveBaseCommitRule($rule, $source) {
     list($type, $name) = explode(':', $rule, 2);
 
@@ -774,7 +814,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
               'log --template {node} --rev %s',
               $name);
           }
-
           if (!$err) {
             $this->setBaseCommitExplanation(
               "it is specified by '{$rule}' in your {$source} 'base' ".

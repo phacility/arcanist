@@ -392,9 +392,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function getCanonicalRevisionName($string) {
     $match = null;
     if (preg_match('/@([0-9]+)$/', $string, $match)) {
-      list($stdout) = $this->execxLocal(
-        'svn find-rev r%d',
-        $match[1]);
+      $stdout = $this->getHashFromFromSVNRevisionNumber($match[1]);
     } else {
       list($stdout) = $this->execxLocal(
         'show -s --format=%C %s',
@@ -403,6 +401,34 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
     return rtrim($stdout);
   }
+
+  private function executeSVNFindRev($input, $vcs) {
+    $match = array();
+    list($stdout) = $this->execxLocal(
+      'svn find-rev %s',
+      $input);
+    if (!$stdout) {
+      throw new ArcanistUsageException("Cannot find the {$vcs} equivalent "
+                                       ."of {$input}.");
+    }
+    // When git performs a partial-rebuild during svn
+    // look-up, we need to parse the final line
+    $lines = explode("\n", $stdout);
+    $stdout = $lines[count($lines) - 2];
+    return rtrim($stdout);
+  }
+
+  // Convert svn revision number to git hash
+  public function getHashFromFromSVNRevisionNumber($revision_id) {
+    return $this->executeSVNFindRev("r".$revision_id, "Git");
+  }
+
+
+  // Convert a git hash to svn revision number
+  public function getSVNRevisionNumberFromHash($hash) {
+    return $this->executeSVNFindRev($hash, "SVN");
+  }
+
 
   protected function buildUncommittedStatus() {
     $diff_options = $this->getDiffBaseOptions();
@@ -505,8 +531,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
+
+    // NOTE: "--allow-empty-message" was introduced some time after 1.7.0.4,
+    // so we do not provide it and thus require a message.
+
     $this->execxLocal(
-      'commit --allow-empty-message -F %s',
+      'commit -F %s',
       $tmp_file);
 
     $this->reloadWorkingCopy();
@@ -880,6 +910,24 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $commit);
 
     return trim($summary);
+  }
+
+  public function backoutCommit($commit_hash) {
+    $this->execxLocal(
+      'revert %s -n --no-edit', $commit_hash);
+    $this->reloadWorkingCopy();
+    if (!$this->getUncommittedStatus()) {
+      throw new ArcanistUsageException(
+        "{$commit_hash} has already been reverted.");
+    }
+  }
+
+  public function getBackoutMessage($commit_hash) {
+    return "This reverts commit ".$commit_hash.".";
+  }
+
+  public function isGitSubversionRepo() {
+    return Filesystem::pathExists($this->getPath('.git/svn'));
   }
 
   public function resolveBaseCommitRule($rule, $source) {
