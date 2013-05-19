@@ -439,12 +439,12 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
               "of `{$name}()` was not introduced until PHP {$version}.");
           }
         }
-      } else if ($windows_version !== null) {
+      } else if (version_compare($windows_version, '5.3.0') > 0) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_53_FEATURES,
-          "This codebase targets PHP 5.2.3, but `{$name}()` is not available ".
-          "on Windows".
+          "This codebase targets PHP 5.3.0 on Windows, but `{$name}()` is not ".
+          "available there.".
           ($windows_version ? " until PHP {$windows_version}" : "").".");
       }
     }
