@@ -339,6 +339,9 @@ abstract class ArcanistLintEngine {
   }
 
   private function shouldUseCache($cache_granularity, $repository_version) {
+    if ($this->commitHookMode) {
+      return false;
+    }
     switch ($cache_granularity) {
       case ArcanistLinter::GRANULARITY_FILE:
         return true;

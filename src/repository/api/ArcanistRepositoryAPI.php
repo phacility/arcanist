@@ -370,7 +370,7 @@ abstract class ArcanistRepositoryAPI {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function amendCommit($message) {
+  public function amendCommit($message = null) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 

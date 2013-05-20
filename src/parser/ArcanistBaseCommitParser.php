@@ -165,6 +165,8 @@ final class ArcanistBaseCommitParser {
           } else {
             return null;
           }
+        } else if (preg_match('/^nodiff\((.*)\)$/', $name, $matches)) {
+          return $this->api->resolveBaseCommitRule($rule, $source);
         }
 
         throw new ArcanistUsageException(

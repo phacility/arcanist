@@ -48,12 +48,36 @@ final class ArcanistSettings {
           'engine is specified by the current project.',
         'example' => '"ExampleUnitTestEngine"',
       ),
+      'arc.feature.start.default' => array(
+        'type' => 'string',
+        'help' =>
+          'The name of the default branch to create the new feature branch '.
+          'off of.',
+        'example' => '"develop"',
+      ),
       'arc.land.onto.default' => array(
         'type' => 'string',
         'help' =>
           'The name of the default branch to land changes onto when '.
           '`arc land` is run.',
         'example' => '"develop"',
+      ),
+      'arc.land.update.default' => array(
+        'type' => 'string',
+        'help' =>
+          'The default strategy to use when arc land updates the feature '.
+          'branch. Supports \'rebase\' and \'merge\' strategies.',
+        'example' => '"rebase"',
+      ),
+      'arc.lint.cache' => array(
+        'type' => 'bool',
+        'help' =>
+          "Enable the lint cache by default. When enabled, 'arc lint' ".
+          "attempts to use cached results if possible. Currently, the cache ".
+          "is not always invalidated correctly and may cause 'arc lint' to ".
+          "report incorrect results, particularly while developing linters. ".
+          "This is probably worth enabling only if your linters are very slow.",
+        'example' => 'false',
       ),
       'history.immutable' => array(
         'type' => 'bool',

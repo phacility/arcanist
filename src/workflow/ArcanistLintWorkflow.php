@@ -129,7 +129,10 @@ EOTEXT
       ),
       'cache' => array(
         'param' => 'bool',
-        'help' => "0 to disable cache, 1 to enable (default).",
+        'help' =>
+          "0 to disable cache, 1 to enable. The default value is ".
+          "determined by 'arc.lint.cache' in configuration, which defaults ".
+          "to off. See notes in 'arc.lint.cache'.",
       ),
       '*' => 'paths',
     );
@@ -156,6 +159,7 @@ EOTEXT
   }
 
   public function run() {
+    $console = PhutilConsole::getConsole();
     $working_copy = $this->getWorkingCopy();
 
     $engine = $this->getArgument('engine');
@@ -170,7 +174,12 @@ EOTEXT
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
-    $use_cache = $this->getArgument('cache', true);
+    $use_cache = $this->getArgument('cache', null);
+    if ($use_cache === null) {
+      $use_cache = (bool)$working_copy->getConfigFromAnySource(
+        'arc.lint.cache',
+        false);
+    }
 
     if ($rev && $paths) {
       throw new ArcanistUsageException("Specify either --rev or paths.");
@@ -221,6 +230,12 @@ EOTEXT
           $cached[$path] = $messages;
         }
       }
+
+      if ($cached) {
+        $console->writeErr(
+          pht("Using lint cache, use '--cache 0' to disable it.")."\n");
+      }
+
       $engine->setCachedResults($cached);
     }
 
@@ -380,6 +395,12 @@ EOTEXT
       $prompt_autofix_patches = true;
     }
 
+    $repository_api = $this->getRepositoryAPI();
+    if ($this->shouldAmendChanges) {
+      $this->shouldAmendChanges = $repository_api->supportsAmend() &&
+        !$this->isHistoryImmutable();
+    }
+
     $wrote_to_disk = false;
 
     switch ($this->getArgument('output')) {
@@ -408,8 +429,6 @@ EOTEXT
     }
 
     $all_autofix = true;
-
-    $console = PhutilConsole::getConsole();
 
     foreach ($results as $result) {
       $result_all_autofix = $result->isAllAutofix();
@@ -461,11 +480,7 @@ EOTEXT
       }
     }
 
-    $repository_api = $this->getRepositoryAPI();
-    if ($wrote_to_disk &&
-        ($repository_api instanceof ArcanistGitAPI) &&
-        $this->shouldAmendChanges) {
-
+    if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
           ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
         $console->writeOut(
@@ -477,9 +492,12 @@ EOTEXT
       }
 
       if ($amend) {
-        execx(
-          '(cd %s; git commit -a --amend -C HEAD)',
-          $repository_api->getPath());
+        if ($repository_api instanceof ArcanistGitAPI) {
+          // Add the changes to the index before amending
+          $repository_api->execxLocal('add -u');
+        }
+
+        $repository_api->amendCommit();
       } else {
         throw new ArcanistUsageException(
           "Sort out the lint changes that were applied to the working ".

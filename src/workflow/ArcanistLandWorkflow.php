@@ -51,6 +51,7 @@ EOTEXT
           immutable repositories (or when --merge is provided), it will perform
           a --no-ff merge (the branch will always be merged into __master__ with
           a merge commit).
+
           Under hg, bookmarks can be landed the same way as branches.
 EOTEXT
       );
@@ -120,10 +121,29 @@ EOTEXT
         ),
       ),
       'update-with-rebase' => array(
-        'help'    => 'When updating the feature branch, use rebase intead of '.
-                     'merge. This might make things work better in some cases.',
+        'help'    => 'When updating the feature branch, use rebase instead of '.
+                     'merge. This might make things work better in some cases.'.
+                     ' Set arc.land.update.default to \'rebase\' to make this '.
+                     'default.',
         'conflicts' => array(
           'merge' => 'The --merge strategy does not update the feature branch.',
+          'update-with-merge' => 'Cannot be used with --update-with-merge.',
+        ),
+        'supports' => array(
+          'git',
+        ),
+      ),
+      'update-with-merge' => array(
+        'help'    => 'When updating the feature branch, use merge instead of '.
+                     'rebase. This is the default behavior. '.
+                     'Setting arc.land.update.default to \'merge\' can also '.
+                     'be used to make this the default.',
+        'conflicts' => array(
+          'merge' => 'The --merge strategy does not update the feature branch.',
+          'update-with-rebase' => 'Cannot be used with --update-with-rebase.',
+        ),
+        'supports' => array(
+          'git',
         ),
       ),
       'revision' => array(
@@ -207,6 +227,7 @@ EOTEXT
     $branch = $this->getArgument('branch');
     if (empty($branch)) {
       $branch = $this->getBranchOrBookmark();
+
       if ($branch) {
         $this->branchType = $this->getBranchType($branch);
         echo "Landing current {$this->branchType} '{$branch}'.\n";
@@ -220,7 +241,16 @@ EOTEXT
     }
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
-    $this->shouldUpdateWithRebase = $this->getArgument('update-with-rebase');
+    $working_copy = $this->getWorkingCopy();
+    $update_strategy = $working_copy->getConfigFromAnySource(
+      'arc.land.update.default',
+      'merge');
+    $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
+    if ($this->getArgument('update-with-rebase')) {
+      $this->shouldUpdateWithRebase = true;
+    } else if ($this->getArgument('update-with-merge')) {
+      $this->shouldUpdateWithRebase = false;
+    }
     $this->preview = $this->getArgument('preview');
 
     if (!$this->branchType) {
@@ -229,7 +259,7 @@ EOTEXT
 
     $onto_default = $this->isGit ? 'master' : 'default';
     $onto_default = nonempty(
-      $this->getWorkingCopy()->getConfigFromAnySource('arc.land.onto.default'),
+      $working_copy->getConfigFromAnySource('arc.land.onto.default'),
       $onto_default);
     $this->onto = $this->getArgument('onto', $onto_default);
     $this->ontoType = $this->getBranchType($this->onto);
@@ -260,9 +290,9 @@ EOTEXT
 
     if ($this->onto == $this->branch) {
       $message =
-        "You can not land a {$this->branchType} onto itself -- you are trying".
-        "to land '{$this->branch}' onto '{$this->onto}'. For more".
-        "information on how to push changes, see 'Pushing and Closing".
+        "You can not land a {$this->branchType} onto itself -- you are trying ".
+        "to land '{$this->branch}' onto '{$this->onto}'. For more ".
+        "information on how to push changes, see 'Pushing and Closing ".
         "Revisions' in 'Arcanist User Guide: arc diff' in the documentation.";
       if (!$this->isHistoryImmutable()) {
         $message .= " You may be able to 'arc amend' instead.";
@@ -277,7 +307,7 @@ EOTEXT
             "You must enable the rebase extension to use ".
             "the --squash strategy.");
         }
-    }
+      }
 
       if ($this->branchType != $this->ontoType) {
         throw new ArcanistUsageException(
@@ -290,11 +320,11 @@ EOTEXT
     }
 
     if ($this->isGit) {
-    list($err) = $repository_api->execManualLocal(
-      'rev-parse --verify %s',
+      list($err) = $repository_api->execManualLocal(
+        'rev-parse --verify %s',
         $this->branch);
 
-    if ($err) {
+      if ($err) {
         throw new ArcanistUsageException(
           "Branch '{$this->branch}' does not exist.");
       }
@@ -320,8 +350,8 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     if ($repository_api instanceof ArcanistGitAPI) {
-    list($out) = $repository_api->execxLocal(
-        'log --oneline %s %s',
+      list($out) = $repository_api->execxLocal(
+        'log --oneline %s %s --',
         $this->branch,
         '^'.$this->onto);
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
@@ -344,17 +374,18 @@ EOTEXT
 
     if (!trim($out)) {
       $this->restoreBranch();
-        throw new ArcanistUsageException(
+      throw new ArcanistUsageException(
           "No commits to land from {$this->branch}.");
-      }
+    }
 
     echo "The following commit(s) will be landed:\n\n{$out}\n";
-    }
+  }
 
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
     $this->parseBaseCommitArgument(array($this->ontoRemoteBranch));
+
     $revision_id = $this->getArgument('revision');
     if ($revision_id) {
       $revision_id = $this->normalizeRevisionID($revision_id);
@@ -791,14 +822,17 @@ EOTEXT
   private function merge() {
     $rev_id = $this->revision['id'];
     $repository_api = $this->getRepositoryAPI();
-      // In immutable histories, do a --no-ff merge to force a merge commit with
-      // the right message.
+
+    // In immutable histories, do a --no-ff merge to force a merge commit with
+    // the right message.
     $repository_api->execxLocal('checkout %s', $this->onto);
-      chdir($repository_api->getPath());
+
+    chdir($repository_api->getPath());
     if ($this->isGit) {
       $err = phutil_passthru(
         "git merge --log --no-ff --edit --no-commit -m 'Merging revision https://cr.goindex.com/D{$rev_id} from {$this->branch}' %s",
         $this->branch);
+
       if ($err) {
         $err = phutil_passthru(
           'git merge --abort');
@@ -826,8 +860,8 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     if ($this->isGit) {
-    $repository_api->execxLocal(
-      'commit -F %s',
+      $repository_api->execxLocal(
+        'commit -F %s',
         $this->messageFile);
     } else if ($this->isHg) {
       // hg rebase produces a commit earlier as part of rebase
@@ -858,12 +892,13 @@ EOTEXT
       echo "Pushing change...\n\n";
 
       chdir($repository_api->getPath());
+
       if ($this->isGitSvn) {
         $err = phutil_passthru('git svn dcommit');
         $cmd = "git svn dcommit";
       } else if ($this->isGit) {
-      $err = phutil_passthru(
-        'git push %s %s',
+        $err = phutil_passthru(
+          'git push %s %s',
           $this->remote,
           $this->onto);
         $cmd = "git push";
@@ -933,7 +968,6 @@ EOTEXT
         'git checkout -b %s %s',
         $this->branch,
         $ref);
-
       echo "Cleaning up feature branch...\n";
       echo "(Use `{$recovery_command}` if you want it back.)\n";
       $repository_api->execxLocal(
@@ -962,7 +996,7 @@ EOTEXT
       }
     }
 
-      if ($this->getArgument('delete-remote')) {
+    if ($this->getArgument('delete-remote')) {
       if ($this->isGit) {
         list($err, $ref) = $repository_api->execManualLocal(
           'rev-parse --verify %s/%s',
@@ -993,13 +1027,13 @@ EOTEXT
             $this->branch,
             $this->remote);
         }
-        }
       }
     }
+  }
 
   protected function getSupportedRevisionControlSystems() {
     return array('git', 'hg');
-    }
+  }
 
   private function getBranchOrBookmark() {
     $repository_api = $this->getRepositoryAPI();
