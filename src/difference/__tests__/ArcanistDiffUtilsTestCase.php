@@ -97,4 +97,117 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
           $test[1]));
     }
   }
+
+  public function testGenerateUTF8IntralineDiff() {
+    // Both Strings Empty.
+    $left = "";
+    $right = "";
+    $result = array(
+                array(array(0, 0)),
+                array(array(0, 0))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // Left String Empty.
+    $left = "";
+    $right = "Grumpy\xCD\xA0at";
+    $result = array(
+                array(array(0, 0)),
+                array(array(0, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // Right String Empty.
+    $left = "Grumpy\xCD\xA0at";
+    $right = "";
+    $result = array(
+                array(array(0, 10)),
+                array(array(0, 0))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // Both Strings Same
+    $left = "Grumpy\xCD\xA0at";
+    $right = "Grumpy\xCD\xA0at";
+    $result = array(
+                array(array(0, 10)),
+                array(array(0, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // Both Strings are different.
+    $left = "Grumpy\xCD\xA0at";
+    $right = "Smiling Dog";
+    $result = array(
+                array(array(1, 10)),
+                array(array(1, 11))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // String with one difference in the middle.
+    $left = "GrumpyCat";
+    $right = "Grumpy\xCD\xA0at";
+    $result = array(
+                array(array(0, 6), array(1, 1), array(0, 2)),
+                array(array(0, 6), array(1, 2), array(0, 2))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // Differences in middle, not connected to each other.
+    $left = "GrumpyCat";
+    $right = "Grumpy\xCD\xA0a\xCD\xA0t";
+    $result = array(
+                array(array(0, 6), array(1, 2), array(0, 1)),
+                array(array(0, 6), array(1, 5), array(0, 1))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // String with difference at the beginning.
+    $left = "GrumpyC\xCD\xA0t";
+    $right = "DrumpyC\xCD\xA0t";
+    $result = array(
+                array(array(1, 10)),
+                array(array(1, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // String with difference at the end.
+    $left = "GrumpyC\xCD\xA0t";
+    $right = "GrumpyC\xCD\xA0P";
+    $result = array(
+                array(array(1, 10)),
+                array(array(1, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+    // String with differences at the beginning and end.
+    $left = "GrumpyC\xCD\xA0t";
+    $right = "DrumpyC\xCD\xA0P";
+    $result = array(
+                array(array(1, 10)),
+                array(array(1, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateUTF8IntralineDiff($left, $right));
+
+  }
 }

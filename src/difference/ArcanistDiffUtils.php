@@ -59,10 +59,7 @@ final class ArcanistDiffUtils {
     // mark all the text as changed if either string has multibyte characters
     // in it. TODO: Fix this so that this algorithm is UTF-8 aware.
     if (preg_match('/[\x80-\xFF]/', $o.$n)) {
-      return array(
-        array(array(1, strlen($o))),
-        array(array(1, strlen($n))),
-      );
+      return self::generateUTF8IntralineDiff($o, $n);
     }
 
     $result = self::buildLevenshteinDifferenceString($o, $n);
@@ -340,6 +337,82 @@ final class ArcanistDiffUtils {
     } while ($ii || $jj);
 
     return $prefix.strrev($result).$suffix;
+  }
+
+  public static function generateUTF8IntralineDiff($o, $n) {
+    if (!strlen($o) || !strlen($n)) {
+      return array(
+        array(array(0, strlen($o))),
+        array(array(0, strlen($n)))
+      );
+    }
+
+    // Breaking both the strings into their component characters
+    $old_characters = phutil_utf8v($o);
+    $new_characters = phutil_utf8v($n);
+
+    $old_count = count($old_characters);
+    $new_count = count($new_characters);
+
+    $prefix_match_length = 0;
+    $suffix_match_length = 0;
+
+    // Prefix matching.
+    for ($i = 0; $i < $old_count; $i++) {
+      if ($old_characters[$i] != $new_characters[$i]) {
+        $prefix_match_length = $i;
+        break;
+      }
+    }
+
+    // Return no change.
+    if ($old_count == $new_count && $i == $old_count) {
+      return array(
+               array(array(0, strlen($o))),
+               array(array(0, strlen($n)))
+             );
+    }
+
+    // Suffix Matching.
+    $i = $old_count - 1;
+    $j = $new_count - 1;
+
+    while ($i >= 0 && $j >= 0) {
+      if ($old_characters[$i] != $new_characters[$j]) {
+        break;
+      }
+
+      $i--;
+      $j--;
+      $suffix_match_length++;
+
+    }
+
+    // Just a temporary fix for the edge cases where, the strings differ
+    // only at beginnning, only in the end and both at the beginning and end.
+    if (!$prefix_match_length || !$suffix_match_length) {
+      return array(
+               array(array(1, strlen($o))),
+               array(array(1, strlen($n)))
+             );
+    }
+
+    $old_length = strlen($o);
+    $new_length = strlen($n);
+
+    return array(
+      array(
+        array(0, $prefix_match_length),
+        array(1, $old_length - $prefix_match_length - $suffix_match_length),
+        array(0, $suffix_match_length),
+      ),
+      array(
+        array(0, $prefix_match_length),
+        array(1, $new_length - $prefix_match_length - $suffix_match_length),
+        array(0, $suffix_match_length),
+      )
+    );
+
   }
 
 }
