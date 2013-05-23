@@ -48,69 +48,17 @@ final class ArcanistDiffUtils {
   }
 
   public static function generateIntralineDiff($o, $n) {
-    if (!strlen($o) || !strlen($n)) {
+    $ol = strlen($o);
+    $nl = strlen($n);
+
+    if (($o === $n) || !$ol || !$nl) {
       return array(
-        array(array(0, strlen($o))),
-        array(array(0, strlen($n)))
+        array(array(0, $ol)),
+        array(array(0, $nl))
       );
     }
 
-    // This algorithm is byte-oriented and thus not safe for UTF-8, so just
-    // mark all the text as changed if either string has multibyte characters
-    // in it. TODO: Fix this so that this algorithm is UTF-8 aware.
-    if (preg_match('/[\x80-\xFF]/', $o.$n)) {
-      return self::generateUTF8IntralineDiff($o, $n);
-    }
-
-    $result = self::buildLevenshteinDifferenceString($o, $n);
-
-    do {
-      $orig = $result;
-      $result = preg_replace(
-        '/([xdi])(s{3})([xdi])/',
-        '$1xxx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{2})([xdi])/',
-        '$1xx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{1})([xdi])/',
-        '$1x$3',
-        $result);
-    } while ($result != $orig);
-
-    $o_bright = array();
-    $n_bright  = array();
-    $rlen   = strlen($result);
-    $len = -1;
-    $cur = $result[0];
-    $result .= '-';
-    for ($ii = 0; $ii < strlen($result); $ii++) {
-      $len++;
-      $now = $result[$ii];
-      if ($result[$ii] == $cur) {
-        continue;
-      }
-      if ($cur == 's') {
-        $o_bright[] = array(0, $len);
-        $n_bright[] = array(0, $len);
-      } else if ($cur == 'd') {
-        $o_bright[] = array(1, $len);
-      } else if ($cur == 'i') {
-        $n_bright[] = array(1, $len);
-      } else if ($cur == 'x') {
-        $o_bright[] = array(1, $len);
-        $n_bright[] = array(1, $len);
-      }
-      $cur = $now;
-      $len = 0;
-    }
-
-    $o_bright = self::collapseIntralineRuns($o_bright);
-    $n_bright = self::collapseIntralineRuns($n_bright);
-
-    return array($o_bright, $n_bright);
+    return self::computeIntralineEdits($o, $n);
   }
 
   public static function applyIntralineDiff($str, $intra_stack) {
@@ -198,108 +146,111 @@ final class ArcanistDiffUtils {
     return array_values($runs);
   }
 
-  public static function buildLevenshteinDifferenceString($o, $n) {
-    $olt = strlen($o);
-    $nlt = strlen($n);
-
-    if (!$olt) {
-      return str_repeat('i', $nlt);
-    }
-
-    if (!$nlt) {
-      return str_repeat('d', $olt);
-    }
-
-    if ($o === $n) {
-      return str_repeat('s', $olt);
-    }
-
-    $ov = str_split($o);
-    $nv = str_split($n);
-
+  public static function generateEditString(array $ov, array $nv, $max = 80) {
     return id(new PhutilEditDistanceMatrix())
       ->setComputeString(true)
-      ->setAlterCost(0.001)
+      ->setAlterCost(1 / ($max * 2))
       ->setReplaceCost(2)
-      ->setMaximumLength(80)
+      ->setMaximumLength($max)
       ->setSequences($ov, $nv)
       ->getEditString();
   }
 
-  public static function generateUTF8IntralineDiff($o, $n) {
-    if (!strlen($o) || !strlen($n)) {
-      return array(
-        array(array(0, strlen($o))),
-        array(array(0, strlen($n)))
-      );
+  public static function computeIntralineEdits($o, $n) {
+    if (preg_match('/[\x80-\xFF]/', $o.$n)) {
+      $ov = phutil_utf8v_combined($o);
+      $nv = phutil_utf8v_combined($n);
+      $multibyte = true;
+    } else {
+      $ov = str_split($o);
+      $nv = str_split($n);
+      $multibyte = false;
     }
 
-    // Breaking both the strings into their component characters
-    $old_characters = phutil_utf8v($o);
-    $new_characters = phutil_utf8v($n);
+    $result = self::generateEditString($ov, $nv);
 
-    $old_count = count($old_characters);
-    $new_count = count($new_characters);
+    // Smooth the string out, by replacing short runs of similar characters
+    // with 'x' operations. This makes the result more readable to humans, since
+    // there are fewer choppy runs of short added and removed substrings.
+    do {
+      $original = $result;
+      $result = preg_replace(
+        '/([xdi])(s{3})([xdi])/',
+        '$1xxx$3',
+        $result);
+      $result = preg_replace(
+        '/([xdi])(s{2})([xdi])/',
+        '$1xx$3',
+        $result);
+      $result = preg_replace(
+        '/([xdi])(s{1})([xdi])/',
+        '$1x$3',
+        $result);
+    } while ($result != $original);
 
-    $prefix_match_length = 0;
-    $suffix_match_length = 0;
+    // Now we have a character-based description of the edit. We need to
+    // convert into a byte-based description. Walk through the edit string and
+    // adjust each operation to reflect the number of bytes in the underlying
+    // character.
 
-    // Prefix matching.
-    for ($i = 0; $i < $old_count; $i++) {
-      if ($old_characters[$i] != $new_characters[$i]) {
-        $prefix_match_length = $i;
-        break;
+    $o_pos = 0;
+    $n_pos = 0;
+    $result_len = strlen($result);
+    $o_run = array();
+    $n_run = array();
+
+    $old_char_len = 1;
+    $new_char_len = 1;
+
+    for ($ii = 0; $ii < $result_len; $ii++) {
+      $c = $result[$ii];
+
+      if ($multibyte) {
+        $old_char_len = strlen($ov[$o_pos]);
+        $new_char_len = strlen($nv[$n_pos]);
+      }
+
+      switch ($c) {
+        case 's':
+        case 'x':
+          $byte_o = $old_char_len;
+          $byte_n = $new_char_len;
+          $o_pos++;
+          $n_pos++;
+          break;
+        case 'i':
+          $byte_o = 0;
+          $byte_n = $new_char_len;
+          $n_pos++;
+          break;
+        case 'd':
+          $byte_o = $old_char_len;
+          $byte_n = 0;
+          $o_pos++;
+          break;
+      }
+
+      if ($byte_o) {
+        if ($c == 's') {
+          $o_run[] = array(0, $byte_o);
+        } else {
+          $o_run[] = array(1, $byte_o);
+        }
+      }
+
+      if ($byte_n) {
+        if ($c == 's') {
+          $n_run[] = array(0, $byte_n);
+        } else {
+          $n_run[] = array(1, $byte_n);
+        }
       }
     }
 
-    // Return no change.
-    if ($old_count == $new_count && $i == $old_count) {
-      return array(
-               array(array(0, strlen($o))),
-               array(array(0, strlen($n)))
-             );
-    }
+    $o_run = self::collapseIntralineRuns($o_run);
+    $n_run = self::collapseIntralineRuns($n_run);
 
-    // Suffix Matching.
-    $i = $old_count - 1;
-    $j = $new_count - 1;
-
-    while ($i >= 0 && $j >= 0) {
-      if ($old_characters[$i] != $new_characters[$j]) {
-        break;
-      }
-
-      $i--;
-      $j--;
-      $suffix_match_length++;
-
-    }
-
-    // Just a temporary fix for the edge cases where, the strings differ
-    // only at beginnning, only in the end and both at the beginning and end.
-    if (!$prefix_match_length || !$suffix_match_length) {
-      return array(
-               array(array(1, strlen($o))),
-               array(array(1, strlen($n)))
-             );
-    }
-
-    $old_length = strlen($o);
-    $new_length = strlen($n);
-
-    return array(
-      array(
-        array(0, $prefix_match_length),
-        array(1, $old_length - $prefix_match_length - $suffix_match_length),
-        array(0, $suffix_match_length),
-      ),
-      array(
-        array(0, $prefix_match_length),
-        array(1, $new_length - $prefix_match_length - $suffix_match_length),
-        array(0, $suffix_match_length),
-      )
-    );
-
+    return array($o_run, $n_run);
   }
 
 }
