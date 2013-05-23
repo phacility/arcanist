@@ -68,7 +68,7 @@ abstract class ArcanistPhutilTestCase {
 
     if (strpos($expect, "\n") === false && strpos($result, "\n") === false) {
       $output .= "Expected: {$expect}\n";
-      $output .= "Actual: {$result}";
+      $output .= "  Actual: {$result}";
     } else {
       $output .= "Expected vs Actual Output Diff\n";
       $output .= ArcanistDiffUtils::renderDifferences(

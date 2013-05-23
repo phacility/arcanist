@@ -94,7 +94,8 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
         $test[2],
         ArcanistDiffUtils::buildLevenshteinDifferenceString(
           $test[0],
-          $test[1]));
+          $test[1]),
+        "'{$test[0]}' vs '{$test[1]}'");
     }
   }
 

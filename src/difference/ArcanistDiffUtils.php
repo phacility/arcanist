@@ -210,133 +210,20 @@ final class ArcanistDiffUtils {
       return str_repeat('d', $olt);
     }
 
-    $min = min($olt, $nlt);
-    $t_start = microtime(true);
-
-    $pre = 0;
-    while ($pre < $min && $o[$pre] == $n[$pre]) {
-      $pre++;
+    if ($o === $n) {
+      return str_repeat('s', $olt);
     }
 
-    $end = 0;
-    while ($end < $min && $o[($olt - 1) - $end] == $n[($nlt - 1) - $end]) {
-      $end++;
-    }
+    $ov = str_split($o);
+    $nv = str_split($n);
 
-    if ($end + $pre >= $min) {
-      $end = min($end, $min - $pre);
-      $prefix = str_repeat('s', $pre);
-      $suffix = str_repeat('s', $end);
-      $infix = null;
-      if ($olt > $nlt) {
-        $infix = str_repeat('d', $olt - ($end + $pre));
-      } else if ($nlt > $olt) {
-        $infix = str_repeat('i', $nlt - ($end + $pre));
-      }
-      return $prefix.$infix.$suffix;
-    }
-
-    if ($min - ($end + $pre) > 80) {
-      $max = max($olt, $nlt);
-      return str_repeat('x', $min) .
-          str_repeat($olt < $nlt ? 'i' : 'd', $max - $min);
-    }
-
-    $prefix = str_repeat('s', $pre);
-    $suffix = str_repeat('s', $end);
-    $o = substr($o, $pre, $olt - $end - $pre);
-    $n = substr($n, $pre, $nlt - $end - $pre);
-
-    $ol = strlen($o);
-    $nl = strlen($n);
-
-    $m = array_fill(0, $ol + 1, array_fill(0, $nl + 1, array()));
-
-    $t_d = 'd';
-    $t_i = 'i';
-    $t_s = 's';
-    $t_x = 'x';
-
-    $m[0][0] = array(
-      0,
-      null);
-
-    for ($ii = 1; $ii <= $ol; $ii++) {
-      $m[$ii][0] = array(
-        $ii * 1000,
-        $t_d);
-    }
-
-    for ($jj = 1; $jj <= $nl; $jj++) {
-      $m[0][$jj] = array(
-        $jj * 1000,
-        $t_i);
-    }
-
-    $ii = 1;
-    do {
-      $jj = 1;
-      do {
-        if ($o[$ii - 1] == $n[$jj - 1]) {
-          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 0;
-          $sub_t      = $t_s;
-        } else {
-          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 2000;
-          $sub_t      = $t_x;
-        }
-
-        if ($m[$ii - 1][$jj - 1][1] != $sub_t) {
-          $sub_t_cost += 1;
-        }
-
-        $del_t_cost = $m[$ii - 1][$jj][0] + 1000;
-        if ($m[$ii - 1][$jj][1] != $t_d) {
-          $del_t_cost += 1;
-        }
-
-        $ins_t_cost = $m[$ii][$jj - 1][0] + 1000;
-        if ($m[$ii][$jj - 1][1] != $t_i) {
-          $ins_t_cost += 1;
-        }
-
-        if ($sub_t_cost <= $del_t_cost && $sub_t_cost <= $ins_t_cost) {
-          $m[$ii][$jj] = array(
-            $sub_t_cost,
-            $sub_t);
-        } else if ($ins_t_cost <= $del_t_cost) {
-          $m[$ii][$jj] = array(
-            $ins_t_cost,
-            $t_i);
-        } else {
-          $m[$ii][$jj] = array(
-            $del_t_cost,
-            $t_d);
-        }
-      } while ($jj++ < $nl);
-    } while ($ii++ < $ol);
-
-    $result = '';
-    $ii = $ol;
-    $jj = $nl;
-    do {
-      $r = $m[$ii][$jj][1];
-      $result .= $r;
-      switch ($r) {
-        case $t_s:
-        case $t_x:
-          $ii--;
-          $jj--;
-          break;
-        case $t_i:
-          $jj--;
-          break;
-        case $t_d:
-          $ii--;
-          break;
-      }
-    } while ($ii || $jj);
-
-    return $prefix.strrev($result).$suffix;
+    return id(new PhutilEditDistanceMatrix())
+      ->setComputeString(true)
+      ->setAlterCost(0.001)
+      ->setReplaceCost(2)
+      ->setMaximumLength(80)
+      ->setSequences($ov, $nv)
+      ->getEditString();
   }
 
   public static function generateUTF8IntralineDiff($o, $n) {
