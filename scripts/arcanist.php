@@ -233,12 +233,17 @@ try {
 
   if ($need_auth) {
     if (!$user_name || !$certificate) {
+      $arc = 'arc';
+      if ($force_conduit) {
+        $arc .= csprintf(' --conduit-uri=%s', $conduit_uri);
+      }
+
       throw new ArcanistUsageException(
         phutil_console_format(
           "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR\n\n".
           "You are trying to connect to '{$conduit_uri}' but do not have ".
           "a certificate installed for this host. Run:\n\n".
-          "      $ **arc install-certificate**\n\n".
+          "      $ **{$arc} install-certificate**\n\n".
           "...to install one."));
     }
     $workflow->authenticateConduit();
