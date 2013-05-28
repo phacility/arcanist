@@ -52,6 +52,9 @@ EOTEXT
         'help' =>
           "Only show tasks assigned to the given username, ".
             "also accepts @all to show all, default is you.",
+        'conflict' => array(
+          "unassigned" => "--owner supresses unassigned",
+        ),
       ),
       'order' => array(
         'param' => 'task_order',
@@ -63,6 +66,9 @@ EOTEXT
         'param' => 'n',
         'paramtype' => 'int',
         'help' => "Limit the amount of tasks outputted, default is all.",
+      ),
+      'unassigned' => array(
+        'help' => "Only show tasks that are not assigned (upforgrabs).",
       )
     );
   }
@@ -70,13 +76,23 @@ EOTEXT
   public function run() {
     $output = array();
 
-    $status = $this->getArgument('status');
-    $owner = $this->getArgument('owner');
-    $order = $this->getArgument('order');
-    $limit = $this->getArgument('limit');
+    $status     = $this->getArgument('status');
+    $owner      = $this->getArgument('owner');
+    $order      = $this->getArgument('order');
+    $limit      = $this->getArgument('limit');
+    $unassigned = $this->getArgument('unassigned');
+
+    if ($owner) {
+      $ownerPHID = $this->findOwnerPhid($owner);
+    } elseif ($unassigned) {
+      $ownerPHID = null;
+    } else {
+      $ownerPHID = $this->getUserPHID();
+    }
+
     $this->tasks = $this->loadManiphestTasks(
       ($status == 'all' ? 'any' : $status),
-      ($owner ? $this->findOwnerPhid($owner) : $this->getUserPHID()),
+      $ownerPHID,
       $order,
       $limit);
 

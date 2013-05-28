@@ -48,72 +48,17 @@ final class ArcanistDiffUtils {
   }
 
   public static function generateIntralineDiff($o, $n) {
-    if (!strlen($o) || !strlen($n)) {
+    $ol = strlen($o);
+    $nl = strlen($n);
+
+    if (($o === $n) || !$ol || !$nl) {
       return array(
-        array(array(0, strlen($o))),
-        array(array(0, strlen($n)))
+        array(array(0, $ol)),
+        array(array(0, $nl))
       );
     }
 
-    // This algorithm is byte-oriented and thus not safe for UTF-8, so just
-    // mark all the text as changed if either string has multibyte characters
-    // in it. TODO: Fix this so that this algorithm is UTF-8 aware.
-    if (preg_match('/[\x80-\xFF]/', $o.$n)) {
-      return array(
-        array(array(1, strlen($o))),
-        array(array(1, strlen($n))),
-      );
-    }
-
-    $result = self::buildLevenshteinDifferenceString($o, $n);
-
-    do {
-      $orig = $result;
-      $result = preg_replace(
-        '/([xdi])(s{3})([xdi])/',
-        '$1xxx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{2})([xdi])/',
-        '$1xx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{1})([xdi])/',
-        '$1x$3',
-        $result);
-    } while ($result != $orig);
-
-    $o_bright = array();
-    $n_bright  = array();
-    $rlen   = strlen($result);
-    $len = -1;
-    $cur = $result[0];
-    $result .= '-';
-    for ($ii = 0; $ii < strlen($result); $ii++) {
-      $len++;
-      $now = $result[$ii];
-      if ($result[$ii] == $cur) {
-        continue;
-      }
-      if ($cur == 's') {
-        $o_bright[] = array(0, $len);
-        $n_bright[] = array(0, $len);
-      } else if ($cur == 'd') {
-        $o_bright[] = array(1, $len);
-      } else if ($cur == 'i') {
-        $n_bright[] = array(1, $len);
-      } else if ($cur == 'x') {
-        $o_bright[] = array(1, $len);
-        $n_bright[] = array(1, $len);
-      }
-      $cur = $now;
-      $len = 0;
-    }
-
-    $o_bright = self::collapseIntralineRuns($o_bright);
-    $n_bright = self::collapseIntralineRuns($n_bright);
-
-    return array($o_bright, $n_bright);
+    return self::computeIntralineEdits($o, $n);
   }
 
   public static function applyIntralineDiff($str, $intra_stack) {
@@ -201,145 +146,111 @@ final class ArcanistDiffUtils {
     return array_values($runs);
   }
 
-  public static function buildLevenshteinDifferenceString($o, $n) {
-    $olt = strlen($o);
-    $nlt = strlen($n);
+  public static function generateEditString(array $ov, array $nv, $max = 80) {
+    return id(new PhutilEditDistanceMatrix())
+      ->setComputeString(true)
+      ->setAlterCost(1 / ($max * 2))
+      ->setReplaceCost(2)
+      ->setMaximumLength($max)
+      ->setSequences($ov, $nv)
+      ->getEditString();
+  }
 
-    if (!$olt) {
-      return str_repeat('i', $nlt);
+  public static function computeIntralineEdits($o, $n) {
+    if (preg_match('/[\x80-\xFF]/', $o.$n)) {
+      $ov = phutil_utf8v_combined($o);
+      $nv = phutil_utf8v_combined($n);
+      $multibyte = true;
+    } else {
+      $ov = str_split($o);
+      $nv = str_split($n);
+      $multibyte = false;
     }
 
-    if (!$nlt) {
-      return str_repeat('d', $olt);
-    }
+    $result = self::generateEditString($ov, $nv);
 
-    $min = min($olt, $nlt);
-    $t_start = microtime(true);
+    // Smooth the string out, by replacing short runs of similar characters
+    // with 'x' operations. This makes the result more readable to humans, since
+    // there are fewer choppy runs of short added and removed substrings.
+    do {
+      $original = $result;
+      $result = preg_replace(
+        '/([xdi])(s{3})([xdi])/',
+        '$1xxx$3',
+        $result);
+      $result = preg_replace(
+        '/([xdi])(s{2})([xdi])/',
+        '$1xx$3',
+        $result);
+      $result = preg_replace(
+        '/([xdi])(s{1})([xdi])/',
+        '$1x$3',
+        $result);
+    } while ($result != $original);
 
-    $pre = 0;
-    while ($pre < $min && $o[$pre] == $n[$pre]) {
-      $pre++;
-    }
+    // Now we have a character-based description of the edit. We need to
+    // convert into a byte-based description. Walk through the edit string and
+    // adjust each operation to reflect the number of bytes in the underlying
+    // character.
 
-    $end = 0;
-    while ($end < $min && $o[($olt - 1) - $end] == $n[($nlt - 1) - $end]) {
-      $end++;
-    }
+    $o_pos = 0;
+    $n_pos = 0;
+    $result_len = strlen($result);
+    $o_run = array();
+    $n_run = array();
 
-    if ($end + $pre >= $min) {
-      $end = min($end, $min - $pre);
-      $prefix = str_repeat('s', $pre);
-      $suffix = str_repeat('s', $end);
-      $infix = null;
-      if ($olt > $nlt) {
-        $infix = str_repeat('d', $olt - ($end + $pre));
-      } else if ($nlt > $olt) {
-        $infix = str_repeat('i', $nlt - ($end + $pre));
+    $old_char_len = 1;
+    $new_char_len = 1;
+
+    for ($ii = 0; $ii < $result_len; $ii++) {
+      $c = $result[$ii];
+
+      if ($multibyte) {
+        $old_char_len = strlen($ov[$o_pos]);
+        $new_char_len = strlen($nv[$n_pos]);
       }
-      return $prefix.$infix.$suffix;
-    }
 
-    if ($min - ($end + $pre) > 80) {
-      $max = max($olt, $nlt);
-      return str_repeat('x', $min) .
-          str_repeat($olt < $nlt ? 'i' : 'd', $max - $min);
-    }
-
-    $prefix = str_repeat('s', $pre);
-    $suffix = str_repeat('s', $end);
-    $o = substr($o, $pre, $olt - $end - $pre);
-    $n = substr($n, $pre, $nlt - $end - $pre);
-
-    $ol = strlen($o);
-    $nl = strlen($n);
-
-    $m = array_fill(0, $ol + 1, array_fill(0, $nl + 1, array()));
-
-    $t_d = 'd';
-    $t_i = 'i';
-    $t_s = 's';
-    $t_x = 'x';
-
-    $m[0][0] = array(
-      0,
-      null);
-
-    for ($ii = 1; $ii <= $ol; $ii++) {
-      $m[$ii][0] = array(
-        $ii * 1000,
-        $t_d);
-    }
-
-    for ($jj = 1; $jj <= $nl; $jj++) {
-      $m[0][$jj] = array(
-        $jj * 1000,
-        $t_i);
-    }
-
-    $ii = 1;
-    do {
-      $jj = 1;
-      do {
-        if ($o[$ii - 1] == $n[$jj - 1]) {
-          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 0;
-          $sub_t      = $t_s;
-        } else {
-          $sub_t_cost = $m[$ii - 1][$jj - 1][0] + 2000;
-          $sub_t      = $t_x;
-        }
-
-        if ($m[$ii - 1][$jj - 1][1] != $sub_t) {
-          $sub_t_cost += 1;
-        }
-
-        $del_t_cost = $m[$ii - 1][$jj][0] + 1000;
-        if ($m[$ii - 1][$jj][1] != $t_d) {
-          $del_t_cost += 1;
-        }
-
-        $ins_t_cost = $m[$ii][$jj - 1][0] + 1000;
-        if ($m[$ii][$jj - 1][1] != $t_i) {
-          $ins_t_cost += 1;
-        }
-
-        if ($sub_t_cost <= $del_t_cost && $sub_t_cost <= $ins_t_cost) {
-          $m[$ii][$jj] = array(
-            $sub_t_cost,
-            $sub_t);
-        } else if ($ins_t_cost <= $del_t_cost) {
-          $m[$ii][$jj] = array(
-            $ins_t_cost,
-            $t_i);
-        } else {
-          $m[$ii][$jj] = array(
-            $del_t_cost,
-            $t_d);
-        }
-      } while ($jj++ < $nl);
-    } while ($ii++ < $ol);
-
-    $result = '';
-    $ii = $ol;
-    $jj = $nl;
-    do {
-      $r = $m[$ii][$jj][1];
-      $result .= $r;
-      switch ($r) {
-        case $t_s:
-        case $t_x:
-          $ii--;
-          $jj--;
+      switch ($c) {
+        case 's':
+        case 'x':
+          $byte_o = $old_char_len;
+          $byte_n = $new_char_len;
+          $o_pos++;
+          $n_pos++;
           break;
-        case $t_i:
-          $jj--;
+        case 'i':
+          $byte_o = 0;
+          $byte_n = $new_char_len;
+          $n_pos++;
           break;
-        case $t_d:
-          $ii--;
+        case 'd':
+          $byte_o = $old_char_len;
+          $byte_n = 0;
+          $o_pos++;
           break;
       }
-    } while ($ii || $jj);
 
-    return $prefix.strrev($result).$suffix;
+      if ($byte_o) {
+        if ($c == 's') {
+          $o_run[] = array(0, $byte_o);
+        } else {
+          $o_run[] = array(1, $byte_o);
+        }
+      }
+
+      if ($byte_n) {
+        if ($c == 's') {
+          $n_run[] = array(0, $byte_n);
+        } else {
+          $n_run[] = array(1, $byte_n);
+        }
+      }
+    }
+
+    $o_run = self::collapseIntralineRuns($o_run);
+    $n_run = self::collapseIntralineRuns($n_run);
+
+    return array($o_run, $n_run);
   }
 
 }

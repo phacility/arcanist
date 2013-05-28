@@ -29,8 +29,8 @@ foreach (array('functions', 'classes', 'interfaces') as $type) {
     if (version_compare($min, $required) > 0) {
       $output[$type][$name] = $min;
     }
-    if ($type == 'functions' && isset($versions[2])) {
-      $params = explode(', ', $versions[2]);
+    if ($type == 'functions' && isset($versions[4])) {
+      $params = explode(', ', $versions[4]);
       foreach ($params as $i => $version) {
         if (version_compare($version, $required) > 0) {
           $output['params'][$name][$i] = $version;
@@ -71,6 +71,6 @@ $output['functions_windows'] = array(
 
 file_put_contents(
   phutil_get_library_root('arcanist').'/../'.$target,
-  json_encode($output));
+  id(new PhutilJSON())->encodeFormatted($output));
 
 echo "Done.\n";
