@@ -672,26 +672,24 @@ EOTEXT
 
       return $patch_err;
     } else if ($repository_api instanceof ArcanistGitAPI) {
-      $future = $repository_api->execFutureLocal(
-        'apply --index --reject');
-      $future->write($bundle->toGitPatch());
 
-      try {
-        $future->resolvex();
-      } catch (CommandException $ex) {
+      $patchfile = new TempFile();
+      Filesystem::writeFile($patchfile, $bundle->toGitPatch());
+
+      $err = $repository_api->execPassthru(
+        'apply --index --reject -- %s',
+        $patchfile);
+
+      if ($err) {
         echo phutil_console_format(
           "\n<bg:red>** Patch Failed! **</bg>\n");
-        $stderr = $ex->getStdErr();
-        if (preg_match('/already exists in working directory/', $stderr)) {
-          echo phutil_console_wrap(
-            phutil_console_format(
-              "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
-              "because it attempts to change the case of a filename (for ".
-              "instance, from 'example.c' to 'Example.c'). Git cannot apply ".
-              "patches like this on case-insensitive filesystems. You must ".
-              "apply this patch manually.\n"));
-        }
-        throw $ex;
+
+        // NOTE: Git patches may fail if they change the case of a filename
+        // (for instance, from 'example.c' to 'Example.c'). As of now, Git
+        // can not apply these patches on case-insensitive filesystems and
+        // there is no way to build a patch which works.
+
+        throw new ArcanistUsageException("Unable to apply patch!");
       }
 
       if ($this->shouldCommit()) {

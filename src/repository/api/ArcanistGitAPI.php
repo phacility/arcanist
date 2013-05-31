@@ -29,6 +29,27 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
+  public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+
+    static $git = null;
+    if ($git === null) {
+      if (phutil_is_windows()) {
+        // NOTE: On Windows, phutil_passthru() uses 'bypass_shell' because
+        // everything goes to hell if we don't. We must provide an absolute
+        // path to Git for this to work properly.
+        $git = Filesystem::resolveBinary('git');
+        $git = csprintf('%s', $git);
+      } else {
+        $git = 'git';
+      }
+    }
+
+    $args[0] = $git.' '.$args[0];
+
+    return call_user_func_array('phutil_passthru', $args);
+  }
+
 
   public function getSourceControlSystemName() {
     return 'git';
