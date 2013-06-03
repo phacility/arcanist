@@ -47,8 +47,13 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
   private function formatTestDuration($seconds) {
     // Very carefully define inclusive upper bounds on acceptable unit test
     // durations. Times are in milliseconds and are in increasing order.
+    $star = "\xE2\x98\x85";
+    if (phutil_is_windows()) {
+      // Fall-back to normal asterisk for Windows consoles.
+      $star = "*";
+    }
     $acceptableness = array(
-      50   => "<fg:green>%s</fg><fg:yellow>\xE2\x98\x85</fg> ",
+      50   => "<fg:green>%s</fg><fg:yellow>{$star}</fg> ",
       200  => '<fg:green>%s</fg>  ',
       500  => '<fg:yellow>%s</fg>  ',
       INF  => '<fg:red>%s</fg>  ',

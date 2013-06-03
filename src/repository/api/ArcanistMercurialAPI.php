@@ -45,7 +45,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $args[0] = 'HGPLAIN=1 hg '.$args[0];
     }
 
-    return call_user_func_array("phutil_passthru", $args);
+    return call_user_func_array('phutil_passthru', $args);
   }
 
   public function getSourceControlSystemName() {
