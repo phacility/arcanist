@@ -53,7 +53,7 @@ EOTEXT
           "Only show tasks assigned to the given username, ".
             "also accepts @all to show all, default is you.",
         'conflict' => array(
-          "unassigned" => "--owner supresses unassigned",
+          "unassigned" => "--owner suppresses unassigned",
         ),
       ),
       'order' => array(
@@ -83,16 +83,16 @@ EOTEXT
     $unassigned = $this->getArgument('unassigned');
 
     if ($owner) {
-      $ownerPHID = $this->findOwnerPhid($owner);
+      $owner_phid = $this->findOwnerPhid($owner);
     } elseif ($unassigned) {
-      $ownerPHID = null;
+      $owner_phid = null;
     } else {
-      $ownerPHID = $this->getUserPHID();
+      $owner_phid = $this->getUserPHID();
     }
 
     $this->tasks = $this->loadManiphestTasks(
       ($status == 'all' ? 'any' : $status),
-      $ownerPHID,
+      $owner_phid,
       $order,
       $limit);
 
@@ -225,32 +225,37 @@ EOTEXT
     echo $table;
   }
 
-  private function findOwnerPhid($owner) {
+  private function findOwnerPHID($owner) {
     $conduit = $this->getConduit();
+
     $owner_phid = $conduit->callMethodSynchronous(
       'user.find',
       array(
         'aliases' => array($owner),
       ));
-    return (isset($owner_phid[$owner])?$owner_phid[$owner]:false);
+
+    return idx($owner_phid, $owner);
   }
 
   private function loadManiphestTasks($status, $owner_phid, $order, $limit) {
     $conduit = $this->getConduit();
 
     $find_params = array();
-    if ($owner_phid !== false) {
+    if ($owner_phid !== null) {
       $find_params['ownerPHIDs'] = array($owner_phid);
     }
+
     if ($limit !== false) {
       $find_params['limit'] = $limit;
     }
-    $find_params['order'] = ($order?"order-".$order:"order-priority");
-    $find_params['status'] = ($status?"status-".$status:"status-open");
+
+    $find_params['order'] = ($order ? "order-".$order : "order-priority");
+    $find_params['status'] = ($status ? "status-".$status : "status-open");
 
     $tasks = $conduit->callMethodSynchronous(
       'maniphest.find',
       $find_params);
+
     return $tasks;
   }
 

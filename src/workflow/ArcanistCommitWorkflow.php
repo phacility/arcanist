@@ -149,7 +149,7 @@ EOTEXT
       $files,
       $tmp_file);
 
-    // make sure to specify LANG on non-windows systems to surpress any fancy
+    // make sure to specify LANG on non-windows systems to suppress any fancy
     // warnings; see @{method:getSVNLangEnvVar}.
     if (!phutil_is_windows()) {
       $command = csprintf('LANG=%C %C', $this->getSVNLangEnvVar(), $command);

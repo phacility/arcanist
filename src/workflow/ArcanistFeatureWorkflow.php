@@ -181,7 +181,7 @@ EOTEXT
         $futures[$branch['name']] = $repository_api->execFutureLocal(
           "log -l 1 --template '%C' -r %s",
           "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
-          hgsprintf($branch['name']));
+          hgsprintf('%s', $branch['name']));
 
       } else {
         // NOTE: "-s" is an option deep in git's diff argument parser that
