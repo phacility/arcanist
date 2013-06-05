@@ -141,12 +141,13 @@ foreach ($functions as $function) {
 
 // Find functions used by this file. Uses:
 //
-//   - Explicit Call
-//   - String literal passed to call_user_func() or call_user_func_array()
+//  - Explicit Call
+//  - String literal passed to call_user_func() or call_user_func_array()
+//  - String literal in array literal in call_user_func()/call_user_func_array()
 //
 // TODO: Possibly support these:
 //
-//   - String literal in ReflectionFunction().
+//  - String literal in ReflectionFunction().
 
 // This is "f();".
 $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
@@ -170,10 +171,22 @@ foreach ($calls as $call) {
       continue;
     }
     $symbol = array_shift($params);
+    $type = 'function';
     $symbol_value = $symbol->getStringLiteralValue();
-    if ($symbol_value) {
+    $pos = strpos($symbol_value, '::');
+    if ($pos) {
+      $type = 'class';
+      $symbol_value = substr($symbol_value, 0, $pos);
+    } else if ($symbol->getTypeName() == 'n_ARRAY_LITERAL') {
+      try {
+        $type = 'class';
+        $symbol_value = idx($symbol->evalStatic(), 0);
+      } catch (Exception $ex) {
+      }
+    }
+    if ($symbol_value && strpos($symbol_value, '$') === false) {
       $need[] = array(
-        'type'    => 'function',
+        'type'    => $type,
         'name'    => $symbol_value,
         'symbol'  => $symbol,
       );
@@ -218,7 +231,6 @@ foreach ($classes as $class) {
 //  - instanceof
 //  - catch
 //  - String literal in ReflectionClass().
-//  - String literal in array literal in call_user_func()/call_user_func_array()
 
 
 // This is "class X ... { ... }".
@@ -237,22 +249,12 @@ foreach ($classes as $class) {
   }
 }
 
-$magic_names = array(
-  'static' => true,
-  'parent' => true,
-  'self'   => true,
-);
-
 // This is "new X()".
 $uses_of_new = $root->selectDescendantsOfType('n_NEW');
 foreach ($uses_of_new as $new_operator) {
   $name = $new_operator->getChildByIndex(0);
   if ($name->getTypeName() == 'n_VARIABLE' ||
       $name->getTypeName() == 'n_VARIABLE_VARIABLE') {
-    continue;
-  }
-  $name_concrete = strtolower($name->getConcreteString());
-  if (isset($magic_names[$name_concrete])) {
     continue;
   }
   $need[] = array(
@@ -266,10 +268,6 @@ $static_uses = $root->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
 foreach ($static_uses as $static_use) {
   $name = $static_use->getChildByIndex(0);
   if ($name->getTypeName() != 'n_CLASS_NAME') {
-    continue;
-  }
-  $name_concrete = strtolower($name->getConcreteString());
-  if (isset($magic_names[$name_concrete])) {
     continue;
   }
   $need[] = array(
@@ -434,6 +432,10 @@ function phutil_symbols_get_builtins() {
 
   return array(
     'class'     => array_fill_keys($builtin['classes'], true) + array(
+      'static' => true,
+      'parent' => true,
+      'self'   => true,
+
       'PhutilBootloader' => true,
     ),
     'function'  => array_filter(
