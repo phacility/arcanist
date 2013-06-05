@@ -211,10 +211,10 @@ foreach ($classes as $class) {
 //  - Static method call
 //  - Static property access
 //  - Use of class constant
+//  - typehints
 //
 // TODO: Possibly support these:
 //
-//  - typehints
 //  - instanceof
 //  - catch
 //  - String literal in ReflectionClass().
@@ -273,8 +273,21 @@ foreach ($static_uses as $static_use) {
     continue;
   }
   $need[] = array(
-    'type'    => 'class',
+    'type'    => 'class/interface',
     'symbol'  => $name,
+  );
+}
+
+// This is "function (X $x)".
+$parameters = $root->selectDescendantsOfType('n_DECLARATION_PARAMETER');
+foreach ($parameters as $parameter) {
+  $hint = $parameter->getChildByIndex(0);
+  if ($hint->getTypeName() != 'n_CLASS_NAME') {
+    continue;
+  }
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $hint,
   );
 }
 
@@ -355,23 +368,25 @@ foreach ($need as $key => $spec) {
   }
 
   $type = $spec['type'];
-  if (!$show_all) {
-    if (!empty($externals[$type][$name])) {
-      // Ignore symbols declared as externals.
-      continue;
+  foreach (explode('/', $type) as $libtype) {
+    if (!$show_all) {
+      if (!empty($externals[$libtype][$name])) {
+        // Ignore symbols declared as externals.
+        continue 2;
+      }
+      if (!empty($builtins[$libtype][$name])) {
+        // Ignore symbols declared as builtins.
+        continue 2;
+      }
     }
-    if (!empty($builtins[$type][$name])) {
-      // Ignore symbols declared as builtins.
-      continue;
+    if (!empty($declared_symbols[$libtype][$name])) {
+      // We declare this symbol, so don't treat it as a requirement.
+      continue 2;
     }
   }
   if (!empty($required_symbols[$type][$name])) {
     // Report only the first use of a symbol, since reporting all of them
     // isn't terribly informative.
-    continue;
-  }
-  if (!empty($declared_symbols[$type][$name])) {
-    // We declare this symbol, so don't treat it as a requirement.
     continue;
   }
   $required_symbols[$type][$name] = $spec['symbol']->getOffset();
