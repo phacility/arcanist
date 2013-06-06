@@ -225,11 +225,12 @@ foreach ($classes as $class) {
 //  - Static property access
 //  - Use of class constant
 //  - typehints
+//  - catch
+//  - instanceof
+//  - newv()
 //
 // TODO: Possibly support these:
 //
-//  - instanceof
-//  - catch
 //  - String literal in ReflectionClass().
 
 
@@ -287,6 +288,54 @@ foreach ($parameters as $parameter) {
     'type'    => 'class/interface',
     'symbol'  => $hint,
   );
+}
+
+// This is "catch (Exception $ex)".
+$catches = $root->selectDescendantsOfType('n_CATCH');
+foreach ($catches as $catch) {
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $catch->getChildOfType(0, 'n_CLASS_NAME'),
+  );
+}
+
+// This is "$x instanceof X".
+$instanceofs = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+foreach ($instanceofs as $instanceof) {
+  $operator = $instanceof->getChildOfType(1, 'n_OPERATOR');
+  if ($operator->getConcreteString() != 'instanceof') {
+    continue;
+  }
+  $class = $instanceof->getChildByIndex(2);
+  if ($class->getTypeName() != 'n_CLASS_NAME') {
+    continue;
+  }
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $class,
+  );
+}
+
+// This is "newv('X')".
+$calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+foreach ($calls as $call) {
+  $call_name = $call->getChildByIndex(0)->getConcreteString();
+  if ($call_name != 'newv') {
+    continue;
+  }
+  $params = $call->getChildByIndex(1)->getChildren();
+  if (!count($params)) {
+    continue;
+  }
+  $symbol = reset($params);
+  $symbol_value = $symbol->getStringLiteralValue();
+  if ($symbol_value && strpos($symbol_value, '$') === false) {
+    $need[] = array(
+      'type'    => 'class',
+      'name'    => $symbol_value,
+      'symbol'  => $symbol,
+    );
+  }
 }
 
 
