@@ -21,6 +21,7 @@ final class ArcanistLintMessage {
   protected $otherLocations = array();
   protected $obsolete;
   protected $granularity;
+  protected $bypassChangedLineFiltering;
 
   public static function newFromDictionary(array $dict) {
     $message = new ArcanistLintMessage();
@@ -40,6 +41,9 @@ final class ArcanistLintMessage {
     }
     $message->setGranularity(idx($dict, 'granularity'));
     $message->setOtherLocations(idx($dict, 'locations', array()));
+    if (isset($dict['bypassChangedLineFiltering'])) {
+      $message->bypassChangedLineFiltering($dict['bypassChangedLineFiltering']);
+    }
     return $message;
   }
 
@@ -56,6 +60,7 @@ final class ArcanistLintMessage {
       'replacement' => $this->getReplacementText(),
       'granularity' => $this->getGranularity(),
       'locations'   => $this->getOtherLocations(),
+      'bypassChangedLineFiltering' => $this->shouldBypassChangedLineFiltering(),
     );
   }
 
@@ -211,6 +216,15 @@ final class ArcanistLintMessage {
     assert_instances_of($messages, 'ArcanistLintMessage');
     $this->dependentMessages = $messages;
     return $this;
+  }
+
+  public function setBypassChangedLineFiltering($bypass_changed_lines) {
+    $this->bypassChangedLineFiltering = $bypass_changed_lines;
+    return $this;
+  }
+
+  public function shouldBypassChangedLineFiltering() {
+    return $this->bypassChangedLineFiltering;
   }
 
 }

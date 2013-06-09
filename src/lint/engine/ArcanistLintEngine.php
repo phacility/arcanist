@@ -411,7 +411,9 @@ abstract class ArcanistLintEngine {
     // path is a directory or a binary file so we should not exclude
     // warnings.
 
-    if (!$this->changedLines || $message->isError()) {
+    if (!$this->changedLines ||
+        $message->isError() ||
+        $message->shouldBypassChangedLineFiltering()) {
       return true;
     }
 
