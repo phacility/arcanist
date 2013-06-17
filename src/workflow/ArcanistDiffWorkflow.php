@@ -2104,6 +2104,12 @@ EOTEXT
 
     $messages = $repository_api->getCommitMessageLog();
 
+    if (count($messages) == 1) {
+      // If there's only one message, assume this is an amend-based workflow and
+      // that using it to prefill doesn't make sense.
+      return null;
+    }
+
     $local = $this->loadActiveLocalCommitInfo();
     $hashes = ipull($local, null, 'commit');
 
