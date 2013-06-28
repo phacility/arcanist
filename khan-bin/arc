@@ -197,6 +197,10 @@ def normalize_usernames(arc_root, names):
     If it's not unique, we ask the user to pick.  If there are no matches,
     we raise an exception.
 
+    If the input name ends with @, it's taken to be a phabricator
+    username only, and no expansion is done.  It must match exactly in
+    that case.
+
     Arguments:
       arc_root: the root of the arcanist repository on the local filesystem.
       names: a list (or anything iterable) of strings.
@@ -209,24 +213,30 @@ def normalize_usernames(arc_root, names):
     Raises:
       NameError: if an input name matches no name in the phabricator db.
     """
+    # This code is adapted from github.com:Khan/kiln-review's review.py
     if not names:
         return []
 
-    # This code is adopted from github.com:Khan/kiln-review's review.py
     retval = []
-    user_info = _get_user_info(arc_root)
-    # For ease of searching, we'll create a map from lowercase
-    # username to username/realname, and also from lowercase realname
-    # to username/realname.
-    all_people = {}
-    for (username, realname) in user_info:
-        all_people[username.lower()] = (username, realname)
-        all_people[realname.lower()] = (username, realname)
+    # Small optimization: if all args end with '@', no need for user-info.
+    if not all(n.strip().endswith('@') for n in names):
+        user_info = _get_user_info(arc_root)
+        # For ease of searching, we'll create a map from lowercase
+        # username to username/realname, and also from lowercase realname
+        # to username/realname.
+        all_people = {}
+        for (username, realname) in user_info:
+            all_people[username.lower()] = (username, realname)
+            all_people[realname.lower()] = (username, realname)
 
     # For each asked-for reviewer, find the set of people records that
     # reviewer could be referring to.  Hopefully it's exactly one!
     for name in names:
         name = name.strip().lower()
+        if name.endswith('@'):           # indicates an exact match desired
+            retval.append(name[:-1])
+            continue
+
         candidate_reviewers = set()  # all people whose name match 'name'
         for (person, username_and_realname) in all_people.iteritems():
             if name in person:    # name is a subset of 'person'
@@ -247,6 +257,63 @@ def normalize_usernames(arc_root, names):
             retval.append(candidate_reviewers[0][0])
 
     return retval
+
+
+def _extract_flag(arc_args, extract, comma_separate=False):
+    """A mini getopt-style parser that leaves all other args alone.
+
+    Like getopt.getopt, but ignores flag values it doesn't recognize.
+    TODO(csilvers): use argparse.parse_known_args() instead:
+       http://docs.python.org/2/library/argparse.html#partial-parsing
+
+    Arguments:
+        arc_args: the arg-list for arc: sys.argv[1:]
+        extract: the flag to extract, e.g. '--rr'
+        comma_separate: if True, split arg values on commas.  This
+           causes us to return ['v1', 'v2', 'v3'] for each of these:
+              --extract=v1,v2,v3
+              --extract=v1 --extract=v2 --extract=v3
+              --extract=v1,v2 --extract=v3
+
+    Returns:
+       A pair: (new_arc_args, extract_values).
+       new_arc_args is the same as arc_args, but with extract and its
+       argument removed.  If extract occurs more than once, all
+       occurrences are removed.  extract_values are the arguments
+       found for extract, as a list.  (The list will have 0 values if
+       extract never occurs, 1 if it occurs once, 2 if it occurs
+       twice, etc.)  Duplicates are removed from extract_values;
+       otherwise, order is preserved.
+    """
+    new_arc_args = []
+    extract_args = []
+    i = 0
+    while i < len(arc_args):
+        if arc_args[i] == extract:
+            extract_arg = arc_args[i + 1]
+            i += 2
+        elif arc_args[i].startswith(extract + '='):
+            extract_arg = arc_args[i][len(extract + '='):]
+            i += 1
+        else:
+            extract_arg = None
+            new_arc_args.append(arc_args[i])
+            i += 1
+
+        if extract_arg is not None:
+            if comma_separate:
+                new_args = [a.strip() for a in extract_arg.split(',')
+                            if a.strip()]
+            else:
+                new_args = [extract_arg]
+            # We only add in the arg if it's not already in extract_args.
+            # This removes dups while preserving relative ordering of
+            # the arguments, in case that's meaningful to the author.
+            for arg in new_args:
+                if arg not in extract_args: # could be made more efficient...
+                    extract_args.append(arg)
+
+    return (new_arc_args, extract_args)
 
 
 def normalize_rr_flags(arc_root, arc_args):
@@ -272,49 +339,35 @@ def normalize_rr_flags(arc_root, arc_args):
     Arguments:
       arc_root: the root of the arcanist repository on the local filesystem.
       arc_args: the arguments pass to arc (argv[1+]).
+      rr: what flag to search for: could be --cc, etc.
 
     Returns:
       A modified version of arc_args, with --rr flags replaces if any
       are present.  If none are present, arc_args is returned verbatim.
     """
-    retval = []
-    rr_args = []
-    i = 0
-    while i < len(arc_args):
-        if arc_args[i] == '--rr':
-            rr_arg = arc_args[i + 1]
-            i += 2
-        elif arc_args[i].startswith('--rr='):
-            rr_arg = arc_args[i][len('--rr='):]
-            i += 1
-        else:
-            rr_arg = None
-            retval.append(arc_args[i])
-            i += 1
+    (retval, rr_args) = _extract_flag(arc_args, '--rr', comma_separate=True)
 
-        if rr_arg:
-            # We only add in the arg if it's not already in rr_args.
-            # This removes dups while preserving relative ordering of
-            # reviewers, in case that's meaningful to the author.
-            for arg in rr_arg.split(','):
-                arg = arg.strip()
-                if arg not in rr_args:    # could be made more efficient...
-                    rr_args.append(arg)
+    if rr_args:
+        # We need to convert our permissive reviewer args with phab usernames.
+        reviewer_args = normalize_usernames(arc_root, rr_args)
+        # It should always be ok to put --reviewers as the first arg to diff,
+        # right after the 'diff' arg itself (which is arc_args[0])
+        retval.insert(1, '--reviewers')
+        retval.insert(2, ','.join(reviewer_args))
 
-    if not rr_args:
-        return arc_args
-
-    # We need to convert our permissive reviewer args with phab usernames.
-    # TODO(csilvers): allow args ending in '@', indicating an exact username
-    #                 match -- for those, just take off the @ and don't pass
-    #                 to normalize_usernames.
-    reviewer_args = normalize_usernames(arc_root, rr_args)
-    # It should always be ok to put --reviewers as the first arg to diff,
-    # right after the 'diff' arg itself (which is arc_args[0])
-    retval.insert(1, '--reviewers')
-    retval.insert(2, ','.join(reviewer_args))
     return retval
 
+
+def normalize_cc_flags(arc_root, arc_args):
+    """Like normalize_rr_flags, but for --cc."""
+    (retval, cc_args) = _extract_flag(arc_args, '--cc', comma_separate=True)
+    if cc_args:
+        # TODO(csilvers): support mailing lists too, when conduit adds that.
+        reviewer_args = normalize_usernames(arc_root, cc_args)
+        retval.insert(1, '--cc')
+        retval.insert(2, ','.join(reviewer_args))
+    return retval
+    
 
 def add_onto_for_arc_land(arc_args):
     """Figure out the 'parent' of this branch, and land onto that."""
@@ -354,7 +407,10 @@ def main(arc_args, arc_root=None):
     _sync_arc(arc_root)
 
     # Handle any --rr flags that may be in arc_args (--rr is a khan extension).
+    # Likewise with --cc; while --cc is a standard arc flag, we're more
+    # permissive in what we accept (real names, not just usernames).
     arc_args = normalize_rr_flags(arc_root, arc_args)
+    arc_args = normalize_cc_flags(arc_root, arc_args)    
 
     if arc_args[0] == 'land':
         arc_args = add_onto_for_arc_land(arc_args)
