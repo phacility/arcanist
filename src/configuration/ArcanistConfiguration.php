@@ -33,28 +33,25 @@ class ArcanistConfiguration {
   }
 
   public function buildAllWorkflows() {
-    $symbols = id(new PhutilSymbolLoader())
-      ->setType('class')
-      ->setAncestorClass('ArcanistBaseWorkflow')
-      ->selectAndLoadSymbols();
+    $workflows_by_name = array();
 
-    $workflows = array();
-    foreach ($symbols as $symbol) {
-      $class = $symbol['name'];
-      $workflow = newv($class, array());
+    $workflows_by_class_name = id(new PhutilSymbolLoader())
+      ->setAncestorClass('ArcanistBaseWorkflow')
+      ->loadObjects();
+    foreach ($workflows_by_class_name as $class => $workflow) {
       $name = $workflow->getWorkflowName();
 
-      if (isset($workflows[$name])) {
-        $other = get_class($workflows[$name]);
+      if (isset($workflows_by_name[$name])) {
+        $other = get_class($workflows_by_name[$name]);
         throw new Exception(
           "Workflows {$class} and {$other} both implement workflows named ".
           "{$name}.");
       }
 
-      $workflows[$workflow->getWorkflowName()] = $workflow;
+      $workflows_by_name[$name] = $workflow;
     }
 
-    return $workflows;
+    return $workflows_by_name;
   }
 
   final public function isValidWorkflow($workflow) {
