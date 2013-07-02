@@ -253,7 +253,7 @@ EOTEXT
     $find_params['status'] = ($status ? "status-".$status : "status-open");
 
     $tasks = $conduit->callMethodSynchronous(
-      'maniphest.find',
+      'maniphest.query',
       $find_params);
 
     return $tasks;
