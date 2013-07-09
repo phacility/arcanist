@@ -8,7 +8,7 @@
  *
  * Based on ArcanistPhpcsLinter.php
  *
- *   lint.cssling.options
+ *   lint.csslint.options
  *   lint.csslint.bin
  *
  * @group linter
