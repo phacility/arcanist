@@ -160,6 +160,12 @@ function arrow($o, $x) {
   echo $o->{$x->{$x->{$x.$x->{$x}}.$x}};
 }
 
+function strings() {
+  $a = 1;
+  echo "$a";
+  echo "$b";
+}
+
 ~~~~~~~~~~
 disabled:3:1
 error:30:3
@@ -178,3 +184,4 @@ error:121:3 isset() and empty() should not trigger errors.
 error:125:3 Should only warn once in this function.
 error:146:8
 error:152:9
+error:166:9
