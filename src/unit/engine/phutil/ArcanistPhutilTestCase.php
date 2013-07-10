@@ -52,8 +52,12 @@ abstract class ArcanistPhutilTestCase {
     $expect = PhutilReadableSerializer::printableValue($expect);
     $result = PhutilReadableSerializer::printableValue($result);
 
-    $where = debug_backtrace();
-    $where = array_shift($where);
+    foreach (debug_backtrace() as $location) {
+      if (!preg_match('/^assert[A-Z]/', idx($location, 'function'))) {
+        break;
+      }
+      $where = $location;
+    }
 
     $line = idx($where, 'line');
     $file = basename(idx($where, 'file'));
