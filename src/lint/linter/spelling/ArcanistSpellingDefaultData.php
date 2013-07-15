@@ -51,7 +51,7 @@ class ArcanistSpellingDefaultData {
        "albumns" => "albums",
        "alegorical" => "allegorical",
        "algorith" => "algorithm",
-       "algorithmical" => "algorithmically",
+       "algorithmical" => "algorithmic",
        "algoritm" => "algorithm",
        "algoritms" => "algorithms",
        "algorrithm" => "algorithm",

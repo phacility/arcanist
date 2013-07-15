@@ -1100,6 +1100,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     // because the function calls extract() or uses dynamic variables,
     // preventing us from keeping track of which variables are defined) so we
     // can stop issuing warnings after that.
+    //
+    // TODO: Support functions defined inside other functions which is commonly
+    // used with anonymous functions.
 
     $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
     $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
@@ -1232,7 +1235,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $declaration_tokens[$var->getID()] = true;
       }
 
-      // Excluded tokens are ones we don't "count" as being uses, described
+      // Excluded tokens are ones we don't "count" as being used, described
       // above. Put them into $exclude_tokens.
 
       $class_statics = $body
@@ -1260,7 +1263,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         // declared before a loop after the loop, even if you're just assigning
         // to it.
 
-        $concrete = $var->getConcreteString();
+        $concrete = $this->getConcreteVariableString($var);
         $uses[$concrete][$var->getID()] = $var->getOffset();
 
         if (isset($declaration_tokens[$var->getID()])) {
@@ -1272,7 +1275,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           continue;
         }
 
-        $all[$var->getID()] = $var;
+        $all[$var->getOffset()] = $concrete;
       }
 
 
@@ -1361,7 +1364,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
         // This is a declaration, exclude it from the "declare variables prior
         // to use" check below.
-        unset($all[$var->getID()]);
+        unset($all[$var->getOffset()]);
 
         $vars[] = $var;
       }
@@ -1376,21 +1379,28 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $declaration_tokens[$var->getID()] = true;
       }
 
+      foreach (array('n_STRING_SCALAR', 'n_HEREDOC') as $type) {
+        foreach ($body->selectDescendantsOfType($type) as $string) {
+          foreach ($string->getStringVariables() as $offset => $var) {
+            $all[$string->getOffset() + $offset - 1] = '$'.$var;
+          }
+        }
+      }
+
       // Issue a warning for every variable token, unless it appears in a
       // declaration, we know about a prior declaration, we have explicitly
       // exlcuded it, or scope has been made unknowable before it appears.
 
       $issued_warnings = array();
-      foreach ($all as $id => $var) {
-        if ($var->getOffset() >= $scope_destroyed_at) {
+      foreach ($all as $offset => $concrete) {
+        if ($offset >= $scope_destroyed_at) {
           // This appears after an extract() or $$var so we have no idea
           // whether it's legitimate or not. We raised a harshly-worded warning
           // when scope was made unknowable, so just ignore anything we can't
           // figure out.
           continue;
         }
-        $concrete = $this->getConcreteVariableString($var);
-        if ($var->getOffset() >= idx($declarations, $concrete, PHP_INT_MAX)) {
+        if ($offset >= idx($declarations, $concrete, PHP_INT_MAX)) {
           // The use appears after the variable is declared, so it's fine.
           continue;
         }
@@ -1399,12 +1409,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           // to issue another one.
           continue;
         }
-        $this->raiseLintAtNode(
-          $var,
+        $this->raiseLintAtOffset(
+          $offset,
           self::LINT_UNDECLARED_VARIABLE,
           'Declare variables prior to use (even if you are passing them '.
           'as reference parameters). You may have misspelled this '.
-          'variable name.');
+          'variable name.',
+          $concrete);
         $issued_warnings[$concrete] = true;
       }
     }
