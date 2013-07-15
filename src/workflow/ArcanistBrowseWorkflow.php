@@ -79,6 +79,7 @@ EOTEXT
     $in_paths = $this->getArgument('paths');
     $paths = array();
     foreach ($in_paths as $key => $path) {
+      $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
       $full_path = Filesystem::resolvePath($path);
 
       $paths[$key] = Filesystem::readablePath(
@@ -87,7 +88,7 @@ EOTEXT
     }
 
     if (!$paths) {
-      throw new ArcanistUsageException("Specify a path to browse");
+      throw new ArcanistUsageException("Specify a path to browse.");
     }
 
     $base_uri = $this->getBaseURI();
@@ -97,7 +98,7 @@ EOTEXT
       $ret_code = phutil_passthru("%s %s", $browser, $base_uri . $path);
       if ($ret_code) {
         throw new ArcanistUsageException(
-          "It seems we failed to open the browser; Perhaps you should try to ".
+          "It seems we failed to open the browser; perhaps you should try to ".
           "set the 'browser' config option. The command we tried to use was: ".
           $browser);
       }
@@ -115,16 +116,10 @@ EOTEXT
         'name' => $project_id,
       ));
 
-    $repo_phid = $project_info['repositoryPHID'];
-    $repo_info = $this->getConduit()->callMethodSynchronous(
-      'phid.query',
-      array(
-        'phids' => array($repo_phid),
-      ));
-
+    $repo_info = $project_info['repository'];
     $branch = $this->getArgument('branch', 'master');
 
-    return $repo_info[$repo_phid]['uri'].'browse/'.$branch.'/';
+    return $repo_info['uri'].'browse/'.$branch.'/';
   }
 
   private function getBrowserCommand() {
