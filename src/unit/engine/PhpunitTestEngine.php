@@ -85,7 +85,8 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
 
       list($err, $stdout, $stderr) = $future->resolve();
 
-      $results[] = $this->parseTestResults($test_path,
+      $results[] = $this->parseTestResults(
+        $test,
         $tmpfiles[$test]['json'],
         $tmpfiles[$test]['clover']);
     }
