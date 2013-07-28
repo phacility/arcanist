@@ -196,11 +196,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintDeprecatedFunctions($root) {
-    $map = $this->deprecatedFunctions + array(
-      'phutil_render_tag' =>
-        'The phutil_render_tag() function is deprecated and unsafe. '.
-        'Use phutil_tag() instead.',
-    );
+    $map = $this->deprecatedFunctions;
 
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($function_calls as $call) {
