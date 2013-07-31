@@ -201,12 +201,18 @@ EOTEXT
         $paths,
         0);
       $file_reports = array();
+      $total_covearge = 0;
+      $total_lines = 0;
+      $total_files = 0;
       foreach ($coverage as $file => $reports) {
         $report = ArcanistUnitTestResult::mergeCoverage($reports);
         $cov = substr_count($report, 'C');
         $uncov = substr_count($report, 'U');
         if ($cov + $uncov) {
           $coverage = $cov / ($cov + $uncov);
+          $total_coverage += $cov;
+          $total_lines += $cov + $uncov;
+          $total_files += 1;
         } else {
           $coverage = 0;
         }
@@ -232,6 +238,12 @@ EOTEXT
               Filesystem::readFile($full_path),
               $file_reports[$file]));
         }
+      }
+      if ($total_lines) {
+        $console->writeOut("\nTotal coverage: %d lines (%d%% of %d files)\n",
+          $total_coverage,
+          (int)(($total_coverage*100)/$total_lines),
+          $total_files);
       }
     }
 
