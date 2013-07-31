@@ -201,7 +201,7 @@ EOTEXT
         $paths,
         0);
       $file_reports = array();
-      $total_covearge = 0;
+      $total_coverage = 0;
       $total_lines = 0;
       $total_files = 0;
       foreach ($coverage as $file => $reports) {
