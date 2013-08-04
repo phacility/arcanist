@@ -233,6 +233,13 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranchName() {
+    $info = $this->getSVNInfo('/');
+    $repo_root = idx($info, 'Repository Root');
+    $repo_root_length = strlen($repo_root);
+    $url = idx($info, 'URL');
+    if (substr($url, 0, $repo_root_length) == $repo_root) {
+      return substr($url, $repo_root_length);
+    }
     return 'svn';
   }
 
@@ -329,6 +336,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         '/^(Last Changed Date): (.+) \(.+\)$/m',
         '/^(Copied From URL): (\S+)$/m',
         '/^(Copied From Rev): (\d+)$/m',
+        '/^(Repository Root): (\S+)$/m',
         '/^(Repository UUID): (\S+)$/m',
         '/^(Node Kind): (\S+)$/m',
       );
