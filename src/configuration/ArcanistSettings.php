@@ -95,6 +95,14 @@ final class ArcanistSettings {
           "'vim'. This setting overrides the EDITOR environmental variable.",
         'example' => '"nano"',
       ),
+      'https.cabundle' => array(
+        'type' => 'string',
+        'help' =>
+          "Path to a custom CA bundle file to be used for arcanist's cURL ".
+          "calls. This is used primarily when your conduit endpoint is ".
+          "behind https signed by your organization's internal CA.",
+        'example' => 'support/yourca.pem'
+      ),
       'browser' => array(
         'type' => 'string',
         'help' =>
