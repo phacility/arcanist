@@ -255,7 +255,7 @@ EOTEXT
       $base_name .= "-D{$revision_id}";
     }
 
-    $suffixes = array(null, '-1', '-2', '-3');
+    $suffixes = array(null, '_1', '_2', '_3');
     foreach ($suffixes as $suffix) {
       $proposed_name = $base_name.$suffix;
 
