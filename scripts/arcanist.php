@@ -201,6 +201,13 @@ try {
   }
   $workflow->setConduitURI($conduit_uri);
 
+  // Apply global CA bundle from configs.
+  if ($ca_bundle = $working_copy->getConfigFromAnySource('https.cabundle')) {
+    $ca_bundle = Filesystem::resolvePath(
+      $ca_bundle, $working_copy->getProjectRoot());
+    HTTPSFuture::setGlobalCABundleFromPath($ca_bundle);
+  }
+
   if ($need_conduit) {
     if (!$conduit_uri) {
 

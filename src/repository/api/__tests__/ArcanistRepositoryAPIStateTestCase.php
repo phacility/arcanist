@@ -2,22 +2,42 @@
 
 final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
 
-  public function testStateParsing() {
-    $dir = dirname(__FILE__).'/state/';
-
-    $tests = Filesystem::listDirectory($dir, $include_hidden = false);
-    foreach ($tests as $test) {
-      $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
-
-      $fixture_path = $fixture->getPath();
-      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
-
-      $api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-        $working_copy);
-      $api->setBaseCommitArgumentRules('arc:this');
-
-      $this->assertCorrectState($test, $api);
+  public function testGitStateParsing() {
+    if (Filesystem::binaryExists('git')) {
+      $this->parseState('git_basic.git.tgz');
+    } else {
+      $this->assertSkipped('Git is not installed');
     }
+  }
+
+  public function testHgStateParsing() {
+    if (Filesystem::binaryExists('hg')) {
+      $this->parseState('hg_basic.hg.tgz');
+    } else {
+      $this->assertSkipped('Mercurial is not installed');
+    }
+  }
+
+  public function testSvnStateParsing() {
+    if (Filesystem::binaryExists('svn')) {
+      $this->parseState('svn_basic.svn.tgz');
+    } else {
+      $this->assertSkipped('Subversion is not installed');
+    }
+  }
+
+  private function parseState($test) {
+    $dir = dirname(__FILE__) . '/state/';
+    $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
+
+    $fixture_path = $fixture->getPath();
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+
+    $api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
+      $working_copy);
+    $api->setBaseCommitArgumentRules('arc:this');
+
+    $this->assertCorrectState($test, $api);
   }
 
   private function assertCorrectState($test, ArcanistRepositoryAPI $api) {

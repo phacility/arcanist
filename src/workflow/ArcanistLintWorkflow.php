@@ -118,6 +118,13 @@ EOTEXT
           'When linting git repositories, amend HEAD with autofix '.
           'patches suggested by lint without prompting.',
       ),
+      'everything' => array(
+        'help' => 'Lint all files in the project.',
+        'conflicts' => array(
+          'cache' => '--everything lints all files',
+          'rev' => '--everything lints all files'
+        ),
+      ),
       'severity' => array(
         'param' => 'string',
         'help' =>
@@ -175,6 +182,12 @@ EOTEXT
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
     $use_cache = $this->getArgument('cache', null);
+    $everything = $this->getArgument('everything');
+    if ($everything && $paths) {
+      throw new ArcanistUsageException(
+        "You can not specify paths with --everything. The --everything ".
+        "flag lints every file.");
+    }
     if ($use_cache === null) {
       $use_cache = (bool)$working_copy->getConfigFromAnySource(
         'arc.lint.cache',
@@ -193,7 +206,25 @@ EOTEXT
       $this->shouldLintAll = true;
     }
 
-    $paths = $this->selectPathsForWorkflow($paths, $rev);
+    if ($everything) {
+      // Recurse through project from root
+      switch ($this->getRepositoryApi()->getSourceControlSystemName()) {
+        case 'git':
+          $filter = '*/.git';
+          break;
+        case 'svn':
+          $filter = '*/.svn';
+          break;
+        case 'hg':
+          $filter = '*/.hg';
+          break;
+      }
+      $paths = id(new FileFinder($working_copy->getProjectRoot()))
+        ->excludePath($filter)
+        ->find();
+    } else {
+      $paths = $this->selectPathsForWorkflow($paths, $rev);
+    }
 
     if (!class_exists($engine) ||
         !is_subclass_of($engine, 'ArcanistLintEngine')) {

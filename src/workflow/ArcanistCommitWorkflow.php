@@ -320,8 +320,8 @@ EOTEXT
         "Commit this revision anyway?";
     }
 
-    $revision_source = idx($revision, 'sourcePath');
-    $current_source = $repository_api->getPath();
+    $revision_source = idx($revision, 'branch');
+    $current_source = $repository_api->getSourceControlPath();
     if ($revision_source != $current_source) {
       $confirm[] =
         "Revision 'D{$revision_id}: {$revision_title}' was generated from ".
