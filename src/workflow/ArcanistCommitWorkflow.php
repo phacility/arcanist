@@ -321,7 +321,7 @@ EOTEXT
     }
 
     $revision_source = idx($revision, 'branch');
-    $current_source = $repository_api->getSourceControlPath();
+    $current_source = $repository_api->getBranchName();
     if ($revision_source != $current_source) {
       $confirm[] =
         "Revision 'D{$revision_id}: {$revision_title}' was generated from ".
