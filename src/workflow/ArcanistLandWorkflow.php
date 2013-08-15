@@ -565,7 +565,7 @@ EOTEXT
       // Pull succeeded.  Now make sure master is not on an outgoing change
       if ($repository_api->supportsPhases()) {
         list($out) = $repository_api->execxLocal(
-          'log -r %s --template {phase}', $this->onto);
+          'log -r %s --template %s', $this->onto, "{phase}");
         if ($out != 'public') {
           $local_ahead_of_remote = true;
         }
@@ -731,8 +731,9 @@ EOTEXT
 
       // check if the branch had children
       list($output) = $repository_api->execxLocal(
-        "log -r %s --template '{node}\\n'",
-        hgsprintf("children(%s)", $this->branch));
+        "log -r %s --template %s",
+        hgsprintf("children(%s)", $this->branch),
+        '{node}\n');
 
       $child_branch_roots = phutil_split_lines($output, false);
       $child_branch_roots = array_filter($child_branch_roots);
@@ -786,7 +787,8 @@ EOTEXT
       $this->branch,
       $branch_range);
     list($alt_branches) = $repository_api->execxLocal(
-      "log --template '{node}\n' -r %s",
+      "log --template %s -r %s",
+      '{node}\n',
        $alt_branch_revset);
 
     $alt_branches = phutil_split_lines($alt_branches, false);

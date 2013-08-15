@@ -40,7 +40,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function execPassthru($pattern /* , ... */) {
     $args = func_get_args();
     if (phutil_is_windows()) {
-      $args[0] = 'set HGPLAIN=1 & hg '.$args[0];
+      $args[0] = 'hg '.$args[0];
     } else {
       $args[0] = 'HGPLAIN=1 hg '.$args[0];
     }
