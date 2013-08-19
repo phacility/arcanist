@@ -222,6 +222,7 @@ EOTEXT
       $paths = id(new FileFinder($working_copy->getProjectRoot()))
         ->excludePath($filter)
         ->find();
+      $this->shouldLintAll = true;
     } else {
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }
