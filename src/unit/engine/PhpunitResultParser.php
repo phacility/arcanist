@@ -62,7 +62,7 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
         }
       }
 
-      $name = preg_replace('/ \(.*\)/', '', $event->test);
+      $name = preg_replace('/ \(.*\)/s', '', $event->test);
 
       $result = new ArcanistUnitTestResult();
       $result->setName($name);
