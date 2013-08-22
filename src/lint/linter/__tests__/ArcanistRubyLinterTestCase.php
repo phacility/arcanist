@@ -8,12 +8,9 @@
 final class ArcanistRubyLinterTestCase extends ArcanistArcanistLinterTestCase {
 
   public function testRubyLint() {
-    $linter = new ArcanistRubyLinter();
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/ruby/',
-      $linter,
-      $working_copy);
+      new ArcanistRubyLinter());
   }
 
 }

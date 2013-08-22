@@ -13,11 +13,9 @@ final class ArcanistPhutilXHPASTLinterTestCase
       'deprecated_function' => 'This function is most likely deprecated.',
     ));
 
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/phlxhp/',
-      $linter,
-      $working_copy);
+      $linter);
   }
 
 }

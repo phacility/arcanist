@@ -13,11 +13,10 @@ final class ArcanistSpellingLinterTestCase
     $linter->removeLintRule('acc'.'out');
     $linter->addPartialWordRule('supermn', 'superman');
     $linter->addWholeWordRule('batmn', 'batman');
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
+
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/spelling/',
-      $linter,
-      $working_copy);
+      $linter);
   }
 
   public function testFixLetterCase() {

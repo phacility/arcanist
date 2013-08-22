@@ -58,7 +58,12 @@ final class ArcanistWorkingCopyIdentity {
     $config_raw,
     $from_where) {
 
-    $config = self::parseRawConfigFile($config_raw, $from_where);
+    if ($config_raw === null) {
+      $config = array();
+    } else {
+      $config = self::parseRawConfigFile($config_raw, $from_where);
+    }
+
     return new ArcanistWorkingCopyIdentity($root, $config);
   }
 

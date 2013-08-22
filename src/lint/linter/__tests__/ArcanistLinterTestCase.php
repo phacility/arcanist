@@ -7,13 +7,13 @@
  */
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
-  public function executeTestsInDirectory($root, $linter, $working_copy) {
+  public function executeTestsInDirectory($root, ArcanistLinter $linter) {
     foreach (Filesystem::listDirectory($root, $hidden = false) as $file) {
-      $this->lintFile($root.$file, $linter, $working_copy);
+      $this->lintFile($root.$file, $linter);
     }
   }
 
-  private function lintFile($file, $linter, $working_copy) {
+  private function lintFile($file, $linter) {
     $linter = clone $linter;
 
     $contents = Filesystem::readFile($file);
@@ -39,17 +39,13 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $config = array();
     }
 
-    /* TODO: ?
-    validate_parameter_list(
+    PhutilTypeSpec::checkMap(
       $config,
       array(
-      ),
-      array(
-        'project' => true,
-        'path' => true,
-        'hook' => true,
+        'project' => 'optional string',
+        'hook' => 'optional bool',
+        'config' => 'optional wild',
       ));
-    */
 
     $exception = null;
     $after_lint = null;
@@ -58,7 +54,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $caught_exception = false;
     try {
 
-      $path = idx($config, 'path', 'lint/'.$basename.'.php');
+      $tmp = new TempFile($basename);
+      Filesystem::writeFile($tmp, $data);
+      $full_path = (string)$tmp;
+
+      $dir = dirname($full_path);
+      $path = basename($full_path);
+      $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
+        $dir,
+        null,
+        'Unit Test');
 
       $engine = new UnitTestableArcanistLintEngine();
       $engine->setWorkingCopy($working_copy);
@@ -74,6 +79,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $engine->addFileData($path, $data);
 
       $results = $engine->run();
+
       $this->assertEqual(
         1,
         count($results),
