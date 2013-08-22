@@ -244,4 +244,16 @@ abstract class ArcanistLinter {
     return ArcanistDiffUtils::isHeuristicBinaryFile($this->getData($path));
   }
 
+  /**
+   * If this linter is selectable via `.arclint` configuration files, return
+   * a short, human-readable name to identify it. For example, `"jshint"` or
+   * `"pep8"`.
+   *
+   * If you do not implement this method, the linter will not be selectable
+   * through `.arclint` files.
+   */
+  public function getLinterConfigurationName() {
+    return null;
+  }
+
 }

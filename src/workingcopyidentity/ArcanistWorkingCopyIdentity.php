@@ -140,6 +140,10 @@ final class ArcanistWorkingCopyIdentity {
     return $this->projectRoot;
   }
 
+  public function getProjectPath($to_file) {
+    return $this->projectRoot.'/'.$to_file;
+  }
+
   public function getConduitURI() {
     return $this->getConfig('conduit_uri');
   }

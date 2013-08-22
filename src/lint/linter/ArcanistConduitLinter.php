@@ -41,7 +41,11 @@ final class ArcanistConduitLinter extends ArcanistLinter {
   private $linterName;
   private $lintByPath; // array(/pa/th/ => <lint>), valid after willLintPaths().
 
-  public function __construct($conduit_uri, $linter_name) {
+  public function __construct($conduit_uri = null, $linter_name = null) {
+
+    // TODO: Facebook uses this (probably?) but we need to be able to
+    // construct it without arguments for ".arclint".
+
     $this->conduitURI = $conduit_uri;
     $this->linterName = $linter_name;
   }

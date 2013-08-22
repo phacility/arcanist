@@ -172,11 +172,18 @@ EOTEXT
     $engine = $this->getArgument('engine');
     if (!$engine) {
       $engine = $working_copy->getConfigFromAnySource('lint.engine');
-      if (!$engine) {
-        throw new ArcanistNoEngineException(
-          "No lint engine configured for this project. Edit .arcconfig to ".
-          "specify a lint engine.");
+    }
+
+    if (!$engine) {
+      if (Filesystem::pathExists($working_copy->getProjectPath('.arclint'))) {
+        $engine = 'ArcanistConfigurationDrivenLintEngine';
       }
+    }
+
+    if (!$engine) {
+      throw new ArcanistNoEngineException(
+        "No lint engine configured for this project. Edit '.arcconfig' to ".
+        "specify a lint engine, or create an '.arclint' file.");
     }
 
     $rev = $this->getArgument('rev');

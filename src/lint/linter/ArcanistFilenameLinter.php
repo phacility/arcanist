@@ -21,6 +21,10 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     return array();
   }
 
+  public function getLinterConfigurationName() {
+    return 'filename';
+  }
+
   public function getLintNameMap() {
     return array(
       self::LINT_BAD_FILENAME   => 'Bad Filename',
