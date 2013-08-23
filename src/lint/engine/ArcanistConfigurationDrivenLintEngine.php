@@ -36,23 +36,46 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     $built_linters = array();
     $all_paths = $this->getPaths();
     foreach ($config['linters'] as $name => $spec) {
+      $type = idx($spec, 'type');
+      if ($type !== null) {
+        if (empty($linters[$type])) {
+          $list = implode(', ', array_keys($linters));
+          throw new Exception(
+            "Linter '{$name}' specifies invalid type '{$type}'. Available ".
+            "linters are: {$list}.");
+        }
+
+        $linter = clone $linters[$type];
+        $linter->setEngine($this);
+        $more = $linter->getLinterConfigurationOptions();
+      } else {
+        // We'll raise an error below about the invalid "type" key.
+        $linter = null;
+        $more = array();
+      }
+
       PhutilTypeSpec::checkMap(
         $spec,
         array(
           'type' => 'string',
           'include' => 'optional string | list<string>',
           'exclude' => 'optional string | list<string>',
-        ));
+        ) + $more);
 
-      $type = $spec['type'];
-      if (empty($linters[$type])) {
-        $list = implode(', ', array_keys($linters));
-        throw new Exception(
-          "Linter '{$name}' specifies invalid type '{$type}'. Available ".
-          "linters are: {$list}.");
+      foreach ($more as $key => $value) {
+        if (array_key_exists($key, $spec)) {
+          try {
+            $linter->setLinterConfigurationValue($key, $spec);
+          } catch (Exception $ex) {
+            $message = pht(
+              'Error in parsing ".arclint" file, in key "%s" for '.
+              'linter "%s".',
+              $key,
+              $name);
+            throw new PhutilProxyException($message, $ex);
+          }
+        }
       }
-
-      $linter = clone $linters[$type];
 
       $include = (array)idx($spec, 'include', array());
       $exclude = (array)idx($spec, 'exclude', array());
@@ -68,6 +91,7 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         $name);
 
       $linter->setPaths($paths);
+
 
       $built_linters[] = $linter;
     }
@@ -179,5 +203,6 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     $argv[0] .= "\n";
     call_user_func_array(array($console, 'writeErr'), $argv);
   }
+
 
 }

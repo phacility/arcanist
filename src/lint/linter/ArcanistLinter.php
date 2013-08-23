@@ -256,4 +256,12 @@ abstract class ArcanistLinter {
     return null;
   }
 
+  public function getLinterConfigurationOptions() {
+    return array();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    throw new Exception("Incomplete implementation: {$key}!");
+  }
+
 }
