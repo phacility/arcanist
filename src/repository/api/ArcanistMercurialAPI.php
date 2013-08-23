@@ -917,7 +917,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function isHgSubversionRepo() {
-    return file_exists($this->getPath('.hg/svn'));
+    return file_exists($this->getPath('.hg/svn/rev_map'));
   }
 
   public function getSubversionInfo() {
