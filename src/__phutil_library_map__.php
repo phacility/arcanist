@@ -221,7 +221,7 @@ phutil_register_library_map(array(
     'ArcanistFeatureWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistFilenameLinter' => 'ArcanistLinter',
     'ArcanistFlagWorkflow' => 'ArcanistBaseWorkflow',
-    'ArcanistFlake8Linter' => 'ArcanistLinter',
+    'ArcanistFlake8Linter' => 'ArcanistExternalLinter',
     'ArcanistFlake8LinterTestCase' => 'ArcanistArcanistLinterTestCase',
     'ArcanistFutureLinter' => 'ArcanistLinter',
     'ArcanistGeneratedLinter' => 'ArcanistLinter',

@@ -9,7 +9,7 @@ final class ArcanistFlake8LinterTestCase
 
   public function testFlake8Lint() {
     return $this->executeTestsInDirectory(
-      dirname(__FILE__).'/python/',
+      dirname(__FILE__).'/flake8/',
       new ArcanistFlake8Linter());
   }
 

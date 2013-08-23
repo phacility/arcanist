@@ -371,7 +371,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
           '%C %C',
           $bin,
           $this->getReadDataFromStdinFilename());
-        $future->write($this->getFileData($path));
+        $future->write($this->getEngine()->loadData($path));
       } else {
         // TODO: In commit hook mode, we need to do more handling here.
         $disk_path = $this->getEngine()->getFilePathOnDisk($path);
