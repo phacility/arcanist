@@ -12,6 +12,10 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return 'flake8';
   }
 
+  public function getLinterConfigurationName() {
+    return 'flake8';
+  }
+
   public function getDefaultFlags() {
     // TODO: Deprecated.
 
@@ -66,12 +70,6 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
         $matches[$key] = trim($match);
       }
 
-      if (substr($matches[4], 0, 1) == 'E') {
-        $severity = ArcanistLintSeverity::SEVERITY_ERROR;
-      } else {
-        $severity = ArcanistLintSeverity::SEVERITY_WARNING;
-      }
-
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
@@ -81,7 +79,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
       $message->setCode($matches[4]);
       $message->setName($this->getLinterName().' '.$matches[3]);
       $message->setDescription($matches[5]);
-      $message->setSeverity($severity);
+      $message->setSeverity($this->getLintMessageSeverity($matches[4]));
 
       $messages[] = $message;
     }
@@ -91,6 +89,36 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     }
 
     return $messages;
+  }
+
+  protected function getDefaultMessageSeverity($code) {
+    if (preg_match('/^C/', $code)) {
+      // "C": Cyclomatic complexity
+      return ArcanistLintSeverity::SEVERITY_ADVICE;
+    } else if (preg_match('/^W/', $code)) {
+      // "W": PEP8 Warning
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else {
+      // "E": PEP8 Error
+      // "F": PyFlakes Error
+      return ArcanistLintSeverity::SEVERITY_ERROR;
+    }
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('/^(E|W|C|F)\d+$/', $code)) {
+      throw new Exception(
+        pht(
+          'Unrecognized lint message code "%s". Expected a valid flake8 '.
+          'lint code like "%s", or "%s", or "%s", or "%s".',
+          $code,
+          "E225",
+          "W291",
+          "F811",
+          "C901"));
+    }
+
+    return $code;
   }
 
 }

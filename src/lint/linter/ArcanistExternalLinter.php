@@ -393,8 +393,12 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     $messages = $this->parseLinterOutput($path, $err, $stdout, $stderr);
 
     if ($messages === false) {
-      $future->resolvex();
-      return;
+      if ($err) {
+        $future->resolvex();
+      } else {
+        throw new Exception(
+          "Linter failed to parse output!\n\n{$stdout}\n\n{$stderr}");
+      }
     }
 
     foreach ($messages as $message) {
@@ -407,6 +411,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     $options = array(
       'bin' => 'optional string | list<string>',
       'flags' => 'optional string',
+      'severity' => 'optional map<string, string>',
     );
 
     if ($this->shouldUseInterpreter()) {
@@ -464,10 +469,50 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         if (strlen($value)) {
           $this->setFlags($value);
         }
-        break;
+        return;
+      case 'severity':
+        $sev_map = array(
+          'error' => ArcanistLintSeverity::SEVERITY_ERROR,
+          'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
+          'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+          'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
+          'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
+        );
+
+        $custom = array();
+        foreach ($value as $code => $severity) {
+          if (empty($sev_map[$severity])) {
+            $valid = implode(', ', array_keys($sev_map));
+            throw new Exception(
+              pht(
+                'Unknown lint severity "%s". Valid severities are: %s.',
+                $severity,
+                $valid));
+          }
+          $code = $this->getLintCodeFromLinterConfigurationKey($code);
+          $custom[$code] = $severity;
+        }
+
+        $this->setCustomSeverityMap($custom);
+        return;
     }
 
     return parent::setLinterConfigurationValue($key, $value);
+  }
+
+
+  /**
+   * Map a configuration lint code to an `arc` lint code. Primarily, this is
+   * intended for validation, but can also be used to normalize case or
+   * otherwise be more permissive in accepted inputs.
+   *
+   * If the code is not recognized, you should throw an exception.
+   *
+   * @param string  Code specified in configuration.
+   * @return string  Normalized code to use in severity map.
+   */
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    return $code;
   }
 
 }

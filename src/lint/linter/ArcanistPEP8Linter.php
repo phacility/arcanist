@@ -11,6 +11,10 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'PEP8';
   }
 
+  public function getLinterConfigurationName() {
+    return 'pep8';
+  }
+
   public function getCacheVersion() {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
     return $stdout.$this->getCommandFlags();
@@ -76,9 +80,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
-      if (!$this->isMessageEnabled($matches[4])) {
-        continue;
-      }
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
@@ -86,7 +87,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       $message->setCode($matches[4]);
       $message->setName('PEP8 '.$matches[4]);
       $message->setDescription($matches[5]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $message->setSeverity($this->getLintMessageSeverity($matches[4]));
 
       $messages[] = $message;
     }
@@ -96,6 +97,33 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     }
 
     return $messages;
+  }
+
+  protected function getDefaultMessageSeverity($code) {
+    if (preg_match('/^W/', $code)) {
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else {
+
+      // TODO: Once severities/.arclint are more usable, restore this to
+      // "ERROR".
+      // return ArcanistLintSeverity::SEVERITY_ERROR;
+
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    }
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('/^(E|W)\d+$/', $code)) {
+      throw new Exception(
+        pht(
+          'Unrecognized lint message code "%s". Expected a valid PEP8 '.
+          'lint code like "%s" or "%s".',
+          $code,
+          "E101",
+          "W291"));
+    }
+
+    return $code;
   }
 
 }

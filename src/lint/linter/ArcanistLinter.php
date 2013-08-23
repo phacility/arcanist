@@ -121,6 +121,10 @@ abstract class ArcanistLinter {
       return $map[$code];
     }
 
+    return $this->getDefaultMessageSeverity($code);
+  }
+
+  protected function getDefaultMessageSeverity($code) {
     return ArcanistLintSeverity::SEVERITY_ERROR;
   }
 

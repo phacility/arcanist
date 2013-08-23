@@ -65,13 +65,14 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
       foreach ($more as $key => $value) {
         if (array_key_exists($key, $spec)) {
           try {
-            $linter->setLinterConfigurationValue($key, $spec);
+            $linter->setLinterConfigurationValue($key, $spec[$key]);
           } catch (Exception $ex) {
             $message = pht(
               'Error in parsing ".arclint" file, in key "%s" for '.
-              'linter "%s".',
+              'linter "%s": %s',
               $key,
-              $name);
+              $name,
+              $ex->getMessage());
             throw new PhutilProxyException($message, $ex);
           }
         }

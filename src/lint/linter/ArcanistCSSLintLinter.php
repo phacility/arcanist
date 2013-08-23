@@ -19,6 +19,10 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
     return 'CSSLint';
   }
 
+  public function getLinterConfigurationName() {
+    return 'csslint';
+  }
+
   public function getMandatoryFlags() {
     return '--format=lint-xml';
   }
@@ -65,7 +69,7 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
         $data = $this->getData($path);
         $lines = explode("\n", $data);
-        $name = $this->getLinterName() . ' - ' . $child->getAttribute('reason');
+        $name = $child->getAttribute('reason');
         $severity = ($child->getAttribute('severity') == 'warning')
           ? ArcanistLintSeverity::SEVERITY_WARNING
           : ArcanistLintSeverity::SEVERITY_ERROR;
@@ -74,11 +78,8 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
         $message->setPath($path);
         $message->setLine($child->getAttribute('line'));
         $message->setChar($child->getAttribute('char'));
-        $message->setCode($child->getAttribute('severity'));
-        $message->setName($name);
-        $message->setDescription(
-          $child->getAttribute('reason').
-          "\nEvidence:".$child->getAttribute('evidence'));
+        $message->setCode('CSSLint');
+        $message->setDescription($child->getAttribute('reason'));
         $message->setSeverity($severity);
 
         if ($child->hasAttribute('line')) {
@@ -93,4 +94,20 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+
+    // NOTE: We can't figure out which rule generated each message, so we
+    // can not customize severities. I opened a pull request to add this
+    // ability; see:
+    //
+    // https://github.com/stubbornella/csslint/pull/409
+
+    throw new Exception(
+      pht(
+        "CSSLint does not currently support custom severity levels, because ".
+        "rules can't be identified from messages in output. ".
+        "See Pull Request #409."));
+  }
+
 }
