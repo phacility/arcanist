@@ -10,7 +10,6 @@ final class ArcanistSpellingLinterTestCase
 
   public function testSpellingLint() {
     $linter = new ArcanistSpellingLinter();
-    $linter->removeLintRule('acc'.'out');
     $linter->addPartialWordRule('supermn', 'superman');
     $linter->addWholeWordRule('batmn', 'batman');
 

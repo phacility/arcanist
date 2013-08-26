@@ -411,14 +411,13 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     $options = array(
       'bin' => 'optional string | list<string>',
       'flags' => 'optional string',
-      'severity' => 'optional map<string, string>',
     );
 
     if ($this->shouldUseInterpreter()) {
       $options['interpreter'] = 'optional string | list<string>';
     }
 
-    return $options;
+    return $options + parent::getLinterConfigurationOptions();
   }
 
   public function setLinterConfigurationValue($key, $value) {
@@ -469,31 +468,6 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         if (strlen($value)) {
           $this->setFlags($value);
         }
-        return;
-      case 'severity':
-        $sev_map = array(
-          'error' => ArcanistLintSeverity::SEVERITY_ERROR,
-          'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
-          'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-          'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
-          'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
-        );
-
-        $custom = array();
-        foreach ($value as $code => $severity) {
-          if (empty($sev_map[$severity])) {
-            $valid = implode(', ', array_keys($sev_map));
-            throw new Exception(
-              pht(
-                'Unknown lint severity "%s". Valid severities are: %s.',
-                $severity,
-                $valid));
-          }
-          $code = $this->getLintCodeFromLinterConfigurationKey($code);
-          $custom[$code] = $severity;
-        }
-
-        $this->setCustomSeverityMap($custom);
         return;
     }
 

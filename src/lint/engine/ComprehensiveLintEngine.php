@@ -13,9 +13,6 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
     $paths = $this->getPaths();
 
     foreach ($paths as $key => $path) {
-      if (!$this->pathExists($path)) {
-        unset($paths[$key]);
-      }
       if (preg_match('@^externals/@', $path)) {
         // Third-party stuff lives in /externals/; don't run lint engines
         // against it.

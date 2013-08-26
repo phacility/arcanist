@@ -24,35 +24,27 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
       ArcanistSpellingDefaultData::getPartialWordRules();
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'SPELL';
   }
 
-  public function removeLintRule($word) {
-    foreach ($this->partialWordRules as $severity=>&$wordlist) {
-      unset($wordlist[$word]);
-    }
-
-    foreach ($this->wholeWordRules as $severity=>&$wordlist) {
-      unset($wordlist[$word]);
-    }
+  public function getLinterConfigurationName() {
+    return 'spelling';
   }
 
   public function addPartialWordRule(
-      $incorrect_word,
-      $correct_word,
-      $severity=self::LINT_SPELLING_IMPORTANT) {
+    $incorrect_word,
+    $correct_word,
+    $severity = self::LINT_SPELLING_IMPORTANT) {
+
     $this->partialWordRules[$severity][$incorrect_word] = $correct_word;
   }
 
   public function addWholeWordRule(
-      $incorrect_word,
-      $correct_word,
-      $severity=self::LINT_SPELLING_IMPORTANT) {
+    $incorrect_word,
+    $correct_word,
+    $severity = self::LINT_SPELLING_IMPORTANT) {
+
     $this->wholeWordRules[$severity][$incorrect_word] = $correct_word;
   }
 
@@ -65,16 +57,12 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_SPELLING_PICKY => 'Possible spelling mistake',
-      self::LINT_SPELLING_IMPORTANT => 'Possible spelling mistake',
+      self::LINT_SPELLING_PICKY => pht('Possible Spelling Mistake'),
+      self::LINT_SPELLING_IMPORTANT => pht('Possible Spelling Mistake'),
     );
   }
 
   public function lintPath($path) {
-    if ($this->isBinaryFile($path)) {
-      return;
-    }
-
     foreach ($this->partialWordRules as $severity => $wordlist) {
       if ($severity >= $this->severity) {
         if (!$this->isCodeEnabled($severity)) {
@@ -125,7 +113,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     $text = $this->getData($path);
     $matches = array();
     $num_matches = preg_match_all(
-      '#\b' . preg_quote($word, '#') . '\b#i',
+      '#\b'.preg_quote($word, '#').'\b#i',
       $text,
       $matches,
       PREG_OFFSET_CAPTURE);

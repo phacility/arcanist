@@ -26,6 +26,11 @@ class PhutilLintEngine extends ArcanistLintEngine {
         // against it.
         unset($paths[$key]);
       }
+      if (preg_match('(\\.lint-test$)', $path)) {
+        // Don't try to lint these, since they're tests for linters and
+        // often have intentional lint errors.
+        unset($paths[$key]);
+      }
     }
 
     $linters[] = id(new ArcanistFilenameLinter())->setPaths($paths);
