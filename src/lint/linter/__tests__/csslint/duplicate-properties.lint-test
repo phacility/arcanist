@@ -1,0 +1,10 @@
+.rule {
+  font-weight: bold;
+  font-weight: bold;
+  font-weight: bold;
+  font-weight: bold;
+}
+~~~~~~~~~~
+warning:3:3
+warning:4:3
+warning:5:3

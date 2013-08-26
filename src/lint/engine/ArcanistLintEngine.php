@@ -167,9 +167,13 @@ abstract class ArcanistLintEngine {
 
   public function run() {
     $linters = $this->buildLinters();
-
     if (!$linters) {
       throw new ArcanistNoEffectException("No linters to run.");
+    }
+
+    $linters = msort($linters, 'getLinterPriority');
+    foreach ($linters as $linter) {
+      $linter->setEngine($this);
     }
 
     $have_paths = false;
@@ -187,7 +191,6 @@ abstract class ArcanistLintEngine {
     $versions = array($this->getCacheVersion());
 
     foreach ($linters as $linter) {
-      $linter->setEngine($this);
       $version = get_class($linter).':'.$linter->getCacheVersion();
 
       $symbols = id(new PhutilSymbolLoader())
@@ -506,5 +509,6 @@ abstract class ArcanistLintEngine {
     // W293 is same as TXT6 (Trailing Whitespace).
     return '--ignore=E101,E501,W291,W292,W293';
   }
+
 
 }

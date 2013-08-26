@@ -1,72 +1,64 @@
 <?php
 
 /**
- * Uses "Ruby" to detect various errors in Ruby code.
+ * Uses `ruby` to detect various errors in Ruby code.
  *
  * @group linter
  */
-final class ArcanistRubyLinter extends ArcanistLinter {
-
-  public function willLintPaths(array $paths) {
-    return;
-  }
+final class ArcanistRubyLinter extends ArcanistExternalLinter {
 
   public function getLinterName() {
-    return 'Ruby';
+    return 'RUBY';
   }
 
-  public function getLintSeverityMap() {
-    return array();
+  public function getLinterConfigurationName() {
+    return 'ruby';
   }
 
-  public function getLintNameMap() {
-    return array();
-  }
-
-  private function getRubyPath() {
-    $ruby_bin = "ruby";
-
-    // Use the Ruby prefix specified in the config file
+  public function getDefaultBinary() {
+    // TODO: Deprecation warning.
     $working_copy = $this->getEngine()->getWorkingCopy();
     $prefix = $working_copy->getConfig('lint.ruby.prefix');
     if ($prefix !== null) {
-      $ruby_bin = $prefix . $ruby_bin;
+      $ruby_bin = $prefix.'ruby';
     }
 
-    if (!Filesystem::pathExists($ruby_bin)) {
-
-      list($err) = exec_manual('which %s', $ruby_bin);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "Ruby does not appear to be installed on this system. Install it or ".
-          "add 'lint.ruby.prefix' in your .arcconfig to point to ".
-          "the directory where it resides.");
-      }
-    }
-
-    return $ruby_bin;
+    return 'ruby';
   }
 
-  private function getMessageCodeSeverity($code) {
+  public function getInstallInstructions() {
+    return pht('Install `ruby` from <http://www.ruby-lang.org/>.');
+  }
+
+  public function supportsReadDataFromStdin() {
+    return true;
+  }
+
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
+
+  protected function getMandatoryFlags() {
+    // -w: turn on warnings
+    // -c: check syntax
+    return '-w -c';
+  }
+
+  protected function getDefaultMessageSeverity($code) {
     return ArcanistLintSeverity::SEVERITY_ERROR;
   }
 
-  public function lintPath($path) {
-    $rubyp = $this->getRubyPath();
-    $f = new ExecFuture("%s -wc", $rubyp);
-    $f->write($this->getData($path));
-    list($err, $stdout, $stderr) = $f->resolve();
-    if ($err === 0 ) {
-      return;
-    }
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+    $lines = phutil_split_lines($stderr, $retain_endings = false);
 
-    $lines = explode("\n", $stderr);
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
+
       if (!preg_match("/(.*?):(\d+): (.*?)$/", $line, $matches)) {
         continue;
       }
+
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
@@ -76,11 +68,19 @@ final class ArcanistRubyLinter extends ArcanistLinter {
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
-      $message->setName($this->getLinterName() . " " . $code);
+      $message->setCode($this->getLinterName());
+      $message->setName(pht('Syntax Error'));
       $message->setDescription($matches[3]);
-      $message->setSeverity($this->getMessageCodeSeverity($code));
-      $this->addLintMessage($message);
+      $message->setSeverity($this->getLintMessageSeverity($code));
+
+      $messages[] = $message;
     }
+
+    if ($err && !$messages) {
+      return false;
+    }
+
+    return $messages;
   }
 
 }

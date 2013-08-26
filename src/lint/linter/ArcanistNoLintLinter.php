@@ -7,32 +7,24 @@
  * @group linter
  */
 final class ArcanistNoLintLinter extends ArcanistLinter {
-  public function willLintPaths(array $paths) {
-    return;
-  }
 
   public function getLinterName() {
     return 'NOLINT';
   }
 
-  public function getLintSeverityMap() {
-    return array();
+  public function getLinterPriority() {
+    return 0.25;
   }
 
-  public function getLintNameMap() {
-    return array(
-    );
+  public function getLinterConfigurationName() {
+    return 'nolint';
   }
 
   public function lintPath($path) {
-    if ($this->isBinaryFile($path)) {
-      return;
-    }
-
     $data = $this->getData($path);
-
     if (preg_match('/@'.'nolint/', $data)) {
       $this->stopAllLinters();
     }
   }
+
 }

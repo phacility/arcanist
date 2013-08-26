@@ -8,12 +8,9 @@ final class ArcanistFlake8LinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
   public function testFlake8Lint() {
-    $linter = new ArcanistFlake8Linter();
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
-      dirname(__FILE__).'/python/',
-      $linter,
-      $working_copy);
+      dirname(__FILE__).'/flake8/',
+      new ArcanistFlake8Linter());
   }
 
 }

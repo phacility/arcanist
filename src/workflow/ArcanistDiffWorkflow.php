@@ -1397,6 +1397,16 @@ EOTEXT
 
   public function handleServerMessage(PhutilConsoleMessage $message) {
     $data = $message->getData();
+
+    if ($this->getArgument('excuse')) {
+      try {
+        phutil_console_require_tty();
+      } catch (PhutilConsoleStdinNotInteractiveException $ex) {
+        $this->excuses[$data['type']] = $this->getArgument('excuse');
+        return null;
+      }
+    }
+
     $response = '';
     if (isset($data['prompt'])) {
       $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));

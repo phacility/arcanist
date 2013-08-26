@@ -24,6 +24,10 @@ abstract class ArcanistLinter {
   private $customSeverityMap = array();
   private $config = array();
 
+  public function getLinterPriority() {
+    return 1.0;
+  }
+
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
     return $this;
@@ -77,8 +81,29 @@ abstract class ArcanistLinter {
     return $this;
   }
 
+  /**
+   * Filter out paths which this linter doesn't act on (for example, because
+   * they are binaries and the linter doesn't apply to binaries).
+   */
+  private function filterPaths($paths) {
+    $engine = $this->getEngine();
+
+    $keep = array();
+    foreach ($paths as $path) {
+      if (!$this->shouldLintDeletedFiles() && !$engine->pathExists($path)) {
+        continue;
+      }
+      if (!$this->shouldLintBinaryFiles() && $this->isBinaryFile($path)) {
+        continue;
+      }
+      $keep[] = $path;
+    }
+
+    return $keep;
+  }
+
   public function getPaths() {
-    return array_values($this->paths);
+    return $this->filterPaths(array_values($this->paths));
   }
 
   public function addData($path, $data) {
@@ -121,6 +146,10 @@ abstract class ArcanistLinter {
       return $map[$code];
     }
 
+    return $this->getDefaultMessageSeverity($code);
+  }
+
+  protected function getDefaultMessageSeverity($code) {
     return ArcanistLintSeverity::SEVERITY_ERROR;
   }
 
@@ -214,7 +243,10 @@ abstract class ArcanistLinter {
     return true;
   }
 
-  abstract public function willLintPaths(array $paths);
+  public function willLintPaths(array $paths) {
+    return;
+  }
+
   abstract public function lintPath($path);
   abstract public function getLinterName();
 
@@ -242,6 +274,64 @@ abstract class ArcanistLinter {
   public function isBinaryFile($path) {
     // Note that we need the lint engine set before this can be used.
     return ArcanistDiffUtils::isHeuristicBinaryFile($this->getData($path));
+  }
+
+  /**
+   * If this linter is selectable via `.arclint` configuration files, return
+   * a short, human-readable name to identify it. For example, `"jshint"` or
+   * `"pep8"`.
+   *
+   * If you do not implement this method, the linter will not be selectable
+   * through `.arclint` files.
+   */
+  public function getLinterConfigurationName() {
+    return null;
+  }
+
+  public function getLinterConfigurationOptions() {
+    return array(
+      'severity' => 'optional map<string, string>',
+    );
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'severity':
+        $sev_map = array(
+          'error' => ArcanistLintSeverity::SEVERITY_ERROR,
+          'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
+          'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+          'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
+          'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
+        );
+
+        $custom = array();
+        foreach ($value as $code => $severity) {
+          if (empty($sev_map[$severity])) {
+            $valid = implode(', ', array_keys($sev_map));
+            throw new Exception(
+              pht(
+                'Unknown lint severity "%s". Valid severities are: %s.',
+                $severity,
+                $valid));
+          }
+          $code = $this->getLintCodeFromLinterConfigurationKey($code);
+          $custom[$code] = $severity;
+        }
+
+        $this->setCustomSeverityMap($custom);
+        return;
+    }
+
+    throw new Exception("Incomplete implementation: {$key}!");
+  }
+
+  protected function shouldLintBinaryFiles() {
+    return false;
+  }
+
+  protected function shouldLintDeletedFiles() {
+    return false;
   }
 
 }

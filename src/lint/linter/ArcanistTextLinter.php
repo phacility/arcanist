@@ -17,17 +17,21 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
   private $maxLineLength = 80;
 
+  public function getLinterPriority() {
+    return 0.5;
+  }
+
   public function setMaxLineLength($new_length) {
     $this->maxLineLength = $new_length;
     return $this;
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'TXT';
+  }
+
+  public function getLinterConfigurationName() {
+    return 'text';
   }
 
   public function getLintSeverityMap() {
@@ -39,21 +43,17 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_DOS_NEWLINE          => 'DOS Newlines',
-      self::LINT_TAB_LITERAL          => 'Tab Literal',
-      self::LINT_LINE_WRAP            => 'Line Too Long',
-      self::LINT_EOF_NEWLINE          => 'File Does Not End in Newline',
-      self::LINT_BAD_CHARSET          => 'Bad Charset',
-      self::LINT_TRAILING_WHITESPACE  => 'Trailing Whitespace',
-      self::LINT_NO_COMMIT            => 'Explicit @no'.'commit',
+      self::LINT_DOS_NEWLINE          => pht('DOS Newlines'),
+      self::LINT_TAB_LITERAL          => pht('Tab Literal'),
+      self::LINT_LINE_WRAP            => pht('Line Too Long'),
+      self::LINT_EOF_NEWLINE          => pht('File Does Not End in Newline'),
+      self::LINT_BAD_CHARSET          => pht('Bad Charset'),
+      self::LINT_TRAILING_WHITESPACE  => pht('Trailing Whitespace'),
+      self::LINT_NO_COMMIT            => pht('Explicit %s', '@no'.'commit'),
     );
   }
 
   public function lintPath($path) {
-    if ($this->isBinaryFile($path)) {
-      return;
-    }
-
     if (!strlen($this->getData($path))) {
       // If the file is empty, don't bother; particularly, don't require
       // the user to add a newline.
