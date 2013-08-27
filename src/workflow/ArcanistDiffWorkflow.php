@@ -994,7 +994,7 @@ EOTEXT
             "{$byte_warning} If the file is not a text file, you can ".
             "mark it 'binary'. Mark this file as 'binary' and continue?";
           if (phutil_console_confirm($confirm)) {
-            $change->convertToBinaryChange();
+            $change->convertToBinaryChange($repository_api);
           } else {
             throw new ArcanistUsageException(
               "Aborted generation of gigantic diff.");
@@ -1080,7 +1080,7 @@ EOTEXT
         throw new ArcanistUsageException("Aborted workflow to fix UTF-8.");
       } else {
         foreach ($utf8_problems as $change) {
-          $change->convertToBinaryChange();
+          $change->convertToBinaryChange($repository_api);
         }
       }
     }
@@ -2477,8 +2477,9 @@ EOTEXT
       $change->setMetadata("{$type}:file:size", $size);
       if ($spec['data'] === null) {
         // This covers the case where a file was added or removed; we don't
-        // need to upload it. (This is distinct from an empty file, which we
-        // do upload.)
+        // need to upload the other half of it (e.g., the old file data for
+        // a file which was just added). This is distinct from an empty
+        // file, which we do upload.
         unset($need_upload[$key]);
         continue;
       }

@@ -234,7 +234,18 @@ final class ArcanistDiffChange {
     return $line_map;
   }
 
-  public function convertToBinaryChange() {
+  public function convertToBinaryChange(ArcanistRepositoryAPI $api) {
+
+    // Fill in the binary data from the working copy.
+
+    $this->setOriginalFileData(
+      $api->getOriginalFileData(
+        $this->getOldPath()));
+
+    $this->setCurrentFileData(
+      $api->getCurrentFileData(
+        $this->getCurrentPath()));
+
     $this->hunks = array();
     $this->setFileType(ArcanistDiffChangeType::FILE_BINARY);
     return $this;
