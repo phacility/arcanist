@@ -692,6 +692,10 @@ EOTEXT
         throw new ArcanistUsageException("Unable to apply patch!");
       }
 
+      // in case there were any submodule changes involved
+      $repository_api->execpassthru(
+        'submodule update --init');
+
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
           $author_cmd = csprintf('--author=%s', $bundle->getFullAuthor());
