@@ -42,9 +42,10 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     PhutilTypeSpec::checkMap(
       $config,
       array(
-        'project' => 'optional string',
         'hook' => 'optional bool',
         'config' => 'optional wild',
+        'path' => 'optional string',
+        'arcconfig' => 'optional map<string, string>',
       ));
 
     $exception = null;
@@ -60,9 +61,15 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       $dir = dirname($full_path);
       $path = basename($full_path);
+      $config_file = null;
+      $arcconfig = idx($config, 'arcconfig');
+      if ($arcconfig) {
+        $config_file = json_encode($arcconfig);
+      }
+
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
-        null,
+        $config_file,
         'Unit Test');
 
       $engine = new UnitTestableArcanistLintEngine();
@@ -71,12 +78,13 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       $engine->setCommitHookMode(idx($config, 'hook', false));
 
-      $linter->addPath($path);
-      $linter->addData($path, $data);
+      $path_name = idx($config, 'path', $path);
+      $linter->addPath($path_name);
+      $linter->addData($path_name, $data);
       $linter->setConfig(idx($config, 'config', array()));
 
       $engine->addLinter($linter);
-      $engine->addFileData($path, $data);
+      $engine->addFileData($path_name, $data);
 
       $results = $engine->run();
 
