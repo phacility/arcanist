@@ -13,10 +13,6 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    if ($this->isBinaryFile($path)) {
-      return;
-    }
-
     $lines = phutil_split_lines($this->getData($path), false);
 
     foreach ($lines as $lineno => $line) {

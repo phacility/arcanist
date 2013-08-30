@@ -22,6 +22,7 @@ abstract class ArcanistLinter {
   protected $stopAllLinters = false;
 
   private $customSeverityMap = array();
+  private $customSeverityRules = array();
   private $config = array();
 
   public function getLinterPriority() {
@@ -30,6 +31,11 @@ abstract class ArcanistLinter {
 
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
+    return $this;
+  }
+
+  public function setCustomSeverityRules(array $rules) {
+    $this->customSeverityRules = $rules;
     return $this;
   }
 
@@ -93,9 +99,15 @@ abstract class ArcanistLinter {
       if (!$this->shouldLintDeletedFiles() && !$engine->pathExists($path)) {
         continue;
       }
-      if (!$this->shouldLintBinaryFiles() && $this->isBinaryFile($path)) {
+
+      if (!$this->shouldLintDirectories() && $engine->isDirectory($path)) {
         continue;
       }
+
+      if (!$this->shouldLintBinaryFiles() && $engine->isBinaryFile($path)) {
+        continue;
+      }
+
       $keep[] = $path;
     }
 
@@ -144,6 +156,12 @@ abstract class ArcanistLinter {
     $map = $this->getLintSeverityMap();
     if (isset($map[$code])) {
       return $map[$code];
+    }
+
+    foreach ($this->customSeverityRules as $rule => $severity) {
+      if (preg_match($rule, $code)) {
+        return $severity;
+      }
     }
 
     return $this->getDefaultMessageSeverity($code);
@@ -271,11 +289,6 @@ abstract class ArcanistLinter {
     return self::GRANULARITY_FILE;
   }
 
-  public function isBinaryFile($path) {
-    // Note that we need the lint engine set before this can be used.
-    return ArcanistDiffUtils::isHeuristicBinaryFile($this->getData($path));
-  }
-
   /**
    * If this linter is selectable via `.arclint` configuration files, return
    * a short, human-readable name to identify it. For example, `"jshint"` or
@@ -291,20 +304,21 @@ abstract class ArcanistLinter {
   public function getLinterConfigurationOptions() {
     return array(
       'severity' => 'optional map<string, string>',
+      'severity.rules' => 'optional map<string, string>',
     );
   }
 
   public function setLinterConfigurationValue($key, $value) {
+    $sev_map = array(
+      'error' => ArcanistLintSeverity::SEVERITY_ERROR,
+      'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
+      'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
+      'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
+    );
+
     switch ($key) {
       case 'severity':
-        $sev_map = array(
-          'error' => ArcanistLintSeverity::SEVERITY_ERROR,
-          'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
-          'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-          'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
-          'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
-        );
-
         $custom = array();
         foreach ($value as $code => $severity) {
           if (empty($sev_map[$severity])) {
@@ -321,6 +335,25 @@ abstract class ArcanistLinter {
 
         $this->setCustomSeverityMap($custom);
         return;
+      case 'severity.rules':
+        foreach ($value as $rule => $severity) {
+          if (@preg_match($rule, '') === false) {
+            throw new Exception(
+              pht(
+                'Severity rule "%s" is not a valid regular expression.',
+                $rule));
+          }
+          if (empty($sev_map[$severity])) {
+            $valid = implode(', ', array_keys($sev_map));
+            throw new Exception(
+              pht(
+                'Unknown lint severity "%s". Valid severities are: %s.',
+                $severity,
+                $valid));
+          }
+        }
+        $this->setCustomSeverityRules($value);
+        return;
     }
 
     throw new Exception("Incomplete implementation: {$key}!");
@@ -332,6 +365,24 @@ abstract class ArcanistLinter {
 
   protected function shouldLintDeletedFiles() {
     return false;
+  }
+
+  protected function shouldLintDirectories() {
+    return false;
+  }
+
+  /**
+   * Map a configuration lint code to an `arc` lint code. Primarily, this is
+   * intended for validation, but can also be used to normalize case or
+   * otherwise be more permissive in accepted inputs.
+   *
+   * If the code is not recognized, you should throw an exception.
+   *
+   * @param string  Code specified in configuration.
+   * @return string  Normalized code to use in severity map.
+   */
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    return $code;
   }
 
 }

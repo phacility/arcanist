@@ -37,4 +37,8 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     }
   }
 
+  public function shouldLintDirectories() {
+    return true;
+  }
+
 }

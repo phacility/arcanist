@@ -150,6 +150,32 @@ abstract class ArcanistLintEngine {
     }
   }
 
+  public function isDirectory($path) {
+    if ($this->getCommitHookMode()) {
+      // TODO: This won't get the right result in every case (we need more
+      // metadata) but should almost always be correct.
+      try {
+        $this->loadData($path);
+        return false;
+      } catch (Exception $ex) {
+        return true;
+      }
+    } else {
+      $disk_path = $this->getFilePathOnDisk($path);
+      return is_dir($disk_path);
+    }
+  }
+
+  public function isBinaryFile($path) {
+    try {
+      $data = $this->loadData($path);
+    } catch (Exception $ex) {
+      return false;
+    }
+
+    return ArcanistDiffUtils::isHeuristicBinaryFile($data);
+  }
+
   public function getFilePathOnDisk($path) {
     return Filesystem::resolvePath(
       $path,
