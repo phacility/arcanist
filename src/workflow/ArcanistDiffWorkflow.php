@@ -433,6 +433,10 @@ EOTEXT
         array_unshift($argv, '--ansi');
       }
 
+      if ($this->getRepositoryAPI()->supportsCommitRanges()) {
+        $this->getRepositoryAPI()->getBaseCommit();
+      }
+
       $script = phutil_get_library_root('arcanist').'/../scripts/arcanist.php';
       if ($argv) {
         $lint_unit = new ExecFuture(
