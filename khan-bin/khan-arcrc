@@ -1,0 +1,23 @@
+{
+  "config"  : {
+    "default"                      : "http:\/\/phabricator.khanacademy.org",
+    "lint.engine"                  : "ArcanistSingleLintEngine",
+    "lint.engine.single.linter"    : "ArcanistScriptAndRegexLinter",
+    "linter.scriptandregex.script" : "~\/khan\/devtools\/khan-linter\/runlint.py --always-exit-0 --blacklist=yes",
+    "linter.scriptandregex.regex"  : "\/^((?P<file>[^:]*):(?P<line>\\d+):((?P<char>\\d+):)? (?P<name>((?P<error>E)|(?P<warning>W))\\S+) (?P<message>.*))|(?P<ignore>SKIPPING.*)$\/m",
+    "history.immutable": false
+  },
+  "aliases" : {
+    "mail" : [
+      "diff",
+      "--verbatim"
+    ]
+  },
+  "khan": {
+    "do_not_auto_update": [
+      "config/linter.scriptandregex.script", 
+      "aliases/mail", 
+      "khan/do_not_auto_update"
+    ]
+  }
+}

@@ -1,0 +1,424 @@
+#!/usr/bin/env python
+
+"""A wrapper script around arcanist's arc (part of the phabricator suite).
+
+This wrapper allows a few options that arc does not, and also provides
+a bit extra functionality.  Most of it is around 'arc diff' -- it
+allows specifying reviewers on the commandline, and checking that
+reviewer names are legal before putting up the form.  (A bit more
+expensive, which is why phabricator doesn't do that by default
+probably, but well worth it.)
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+
+try:
+    _DEFAULT_ARC_ROOT = os.path.dirname(os.path.dirname(__file__))
+except NameError:     # __file__ not defined
+    _DEFAULT_ARC_ROOT = '..'
+
+
+def _update_arcrc(arc_root, default_arcrc_file='khan-bin/khan-arcrc',
+                  user_arcrc_file='~/.arcrc', create_bak=True):
+    """Update the user's .arcrc to include the contents of the standard one.
+
+    This directory has khan-arcrc, which has the Khan-specific
+    configuration options.  It can get updated from time to time.
+    When this happens, we want to incorporate the updates into the
+    user's .arcrc.  This routine does this.
+
+    If the user's .arcrc has a section like
+      'khan': {'do_not_auto_update': ['foo/bar', 'baz']}
+    then this update process will skip the fields
+    arcrc['foo']['bar'] and ['baz'] when updating the user's .arcrc.
+
+    Arguments:
+      arc_root: the root of the arcanist repository.
+      default_arcrc_file: where the khan-system .arcrc file lives,
+         relative to arc-root.
+      user_arcrc_file: where the user's .arcrc file lives, relative to
+         arc-root (so should usually be an absolute path).  Can include ~.
+      create_bak: whether to copy the .arcrc to .arcrc.bak before updating
+         its contents.
+    """
+    default_arcrc_file = os.path.join(arc_root, default_arcrc_file)
+    default_arcrc = json.load(open(default_arcrc_file))
+
+    user_arcrc_file = os.path.expanduser(user_arcrc_file)
+    user_arcrc_file = os.path.join(arc_root, user_arcrc_file)
+    try:
+        user_arcrc = json.load(open(user_arcrc_file))
+    except (IOError, OSError):
+        user_arcrc = {}
+
+    do_not_update = user_arcrc.get('khan', {}).get('do_not_auto_update', [])
+
+    # Now update user_arcrc with the contents of default_arcrc.
+    def _add_or_replace(from_root, to_root, key_path, do_not_update):
+        """Recursively merges maps in from_root with to_root."""
+        num_updates = 0
+        for k in from_root:
+            new_key_path = key_path + ('/' if key_path else '') + k
+            if new_key_path in do_not_update:
+                pass
+            elif (isinstance(from_root.get(k), dict) and
+                  isinstance(to_root.get(k), dict)):
+                num_updates += _add_or_replace(from_root[k], to_root[k],
+                                               new_key_path, do_not_update)
+            elif to_root.get(k) != from_root.get(k):
+                print >>sys.stderr, (
+                    'Updating %s:%s to match the default value in %s.\n'
+                    '  WAS: %s\n'
+                    '  NOW: %s\n'
+                    'If this was wrong, recover your old .arcrc from %s.bak\n'
+                    'and add "%s" to %s:khan/do_not_auto_update.'
+                    % (user_arcrc_file, new_key_path, default_arcrc_file,
+                       to_root.get(k, '<empty>'), from_root.get(k, '<empty>'),
+                       user_arcrc_file, new_key_path, user_arcrc_file))
+                to_root[k] = from_root[k]
+                num_updates += 1
+        return num_updates
+
+    num_updates = _add_or_replace(default_arcrc, user_arcrc, '', do_not_update)
+
+    if num_updates:
+        bak_filename = user_arcrc_file + '.bak'
+        if create_bak and os.path.exists(user_arcrc_file):
+            os.rename(user_arcrc_file, bak_filename)
+        f = open(user_arcrc_file, 'w')
+        try:
+            json.dump(user_arcrc, f, indent=2, sort_keys=True)
+            f.close()
+        except:
+            if os.path.exists(bak_filename):
+                if os.path.exists(user_arcrc_file):  # in an inconsistent state
+                    os.unlink(user_arcrc_file)
+                os.rename(bak_filename, user_arcrc_file)
+            raise
+
+
+def _sync_arc(arc_root):
+    """Make sure we're using the most up-to-date version of arc.
+
+    Updates arcanist and libphutil repositories.  Since this takes a
+    few seconds, we only do it once a day.
+
+    We also make sure the user's .arcrc file is up to date.
+
+    Arguments:
+      arc_root: the root of the arcanist repository.  It is expected
+          that the libphutil repository be a sibling of arcanist.
+    """
+    try:
+        last_pull_time = os.stat('/tmp/arc.pull').st_mtime
+    except (IOError, OSError):
+        last_pull_time = 0
+    if last_pull_time + 24 * 60 * 60 >= time.time():
+        return
+
+    # TODO(csilvers): better to call 'arc upgrade' here instead.
+    libphutil_root = os.path.join(os.path.dirname(arc_root), 'libphutil')
+    subprocess.check_call(['git', 'pull', '-q'], cwd=arc_root)
+    subprocess.check_call(['git', 'pull', '-q'], cwd=libphutil_root)
+
+    # Update the user's .arcrc with the default values (which may have
+    # changed due to the pull).
+    _update_arcrc(arc_root)
+
+    open('/tmp/arc.pull', 'w').close()    # update the last-pull time.
+
+
+def _conduit_call(arc_root, conduit_name, json_input={}):
+    """Make an 'arc call-conduit' call with the given input."""
+    arc = os.path.join(arc_root, 'bin', 'arc')
+    p = subprocess.Popen([arc, 'call-conduit', conduit_name],
+                         stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    conduit_stdout = p.communicate(input=json.dumps(json_input))[0]
+    if p.returncode != 0:
+        raise RuntimeError('Error getting %s info from phabricator'
+                           % conduit_name)
+
+    retval = json.loads(conduit_stdout)
+    if retval.get('Error'):
+        raise RuntimeError('Error getting %s info from phabricator: %s'
+                           % (conduit_name, retval['errorMessage']))
+    return retval['response']
+
+
+class NotGitError(Exception):
+    """Called git when not in a git repository."""
+
+
+def _git_call(git_args):
+    """Make a 'git' call and return the result.
+
+    Raises NotGitError if run outside a git repo, or CalledProcessError
+    if the git command fails for some other reason."""
+    try:
+        return subprocess.check_output(['git'] + git_args)
+    except subprocess.CalledProcessError, why:
+        if 'Not a git repository' in str(why):
+            raise NotGitError()
+        raise
+
+
+def _get_user_info(arc_root):
+    """Retrieve a list of (username, realname) pairs of all phab. users."""
+    user_info = _conduit_call(arc_root, 'user.query')
+    return [(ui['userName'], ui['realName']) for ui in user_info
+            if ('disabled' not in ui['roles'] and
+                'unverified' not in ui['roles'])]
+
+
+def _pick_a_number(prompt, max_number):
+    """Prompt the user to pick a number from 1 to max_number, and return it."""
+    try:
+        pick = int(raw_input(prompt))
+    except ValueError:
+        raise ValueError('You must specify a number')
+    if pick not in range(1, max_number + 1):
+        raise IndexError('You must specify a number between 1 and %s'
+                         % max_number)
+    return pick
+
+
+def normalize_usernames(arc_root, names):
+    """Given a list of names or name substrings, return a list of usernames.
+
+    The input names can be a phabricator username, or a real name, or
+    a substring of either.  If the input name is unique -- that is,
+    this string occurs in only one username/real-name in the phabricator
+    user-db -- we normalize to that one user's phabricator username.
+    If it's not unique, we ask the user to pick.  If there are no matches,
+    we raise an exception.
+
+    If the input name ends with @, it's taken to be a phabricator
+    username only, and no expansion is done.  It must match exactly in
+    that case.
+
+    Arguments:
+      arc_root: the root of the arcanist repository on the local filesystem.
+      names: a list (or anything iterable) of strings.
+
+    Returns:
+      A list of phabricator usernames, in the same order as names.
+      For a given name, the phabricator username is determined as
+      described above.
+
+    Raises:
+      NameError: if an input name matches no name in the phabricator db.
+    """
+    # This code is adapted from github.com:Khan/kiln-review's review.py
+    if not names:
+        return []
+
+    retval = []
+    # Small optimization: if all args end with '@', no need for user-info.
+    if not all(n.strip().endswith('@') for n in names):
+        user_info = _get_user_info(arc_root)
+        # For ease of searching, we'll create a map from lowercase
+        # username to username/realname, and also from lowercase realname
+        # to username/realname.
+        all_people = {}
+        for (username, realname) in user_info:
+            all_people[username.lower()] = (username, realname)
+            all_people[realname.lower()] = (username, realname)
+
+    # For each asked-for reviewer, find the set of people records that
+    # reviewer could be referring to.  Hopefully it's exactly one!
+    for name in names:
+        name = name.strip().lower()
+        if name.endswith('@'):           # indicates an exact match desired
+            retval.append(name[:-1])
+            continue
+
+        candidate_reviewers = set()  # all people whose name match 'name'
+        for (person, username_and_realname) in all_people.iteritems():
+            if name in person:    # name is a subset of 'person'
+                candidate_reviewers.add(username_and_realname)
+        candidate_reviewers = sorted(candidate_reviewers)
+
+        if not candidate_reviewers:   # no person matched the reviewer
+            raise NameError('No reviewer found matching "%s"' % name)
+        elif len(candidate_reviewers) > 1:
+            print '\nHmm...There are a few folks matching "%s":' % name
+            for (i, username_and_realname) in enumerate(candidate_reviewers):
+                print '  %s. %s (%s)' % (i + 1, username_and_realname[0],
+                                         username_and_realname[1])
+            pick = _pick_a_number('Which "%s" did you mean? ' % name,
+                                  len(candidate_reviewers))
+            retval.append(candidate_reviewers[pick - 1][0])
+        else:
+            retval.append(candidate_reviewers[0][0])
+
+    return retval
+
+
+def _extract_flag(arc_args, extract, comma_separate=False):
+    """A mini getopt-style parser that leaves all other args alone.
+
+    Like getopt.getopt, but ignores flag values it doesn't recognize.
+    TODO(csilvers): use argparse.parse_known_args() instead:
+       http://docs.python.org/2/library/argparse.html#partial-parsing
+
+    Arguments:
+        arc_args: the arg-list for arc: sys.argv[1:]
+        extract: the flag to extract, e.g. '--rr'
+        comma_separate: if True, split arg values on commas.  This
+           causes us to return ['v1', 'v2', 'v3'] for each of these:
+              --extract=v1,v2,v3
+              --extract=v1 --extract=v2 --extract=v3
+              --extract=v1,v2 --extract=v3
+
+    Returns:
+       A pair: (new_arc_args, extract_values).
+       new_arc_args is the same as arc_args, but with extract and its
+       argument removed.  If extract occurs more than once, all
+       occurrences are removed.  extract_values are the arguments
+       found for extract, as a list.  (The list will have 0 values if
+       extract never occurs, 1 if it occurs once, 2 if it occurs
+       twice, etc.)  Duplicates are removed from extract_values;
+       otherwise, order is preserved.
+    """
+    new_arc_args = []
+    extract_args = []
+    i = 0
+    while i < len(arc_args):
+        if arc_args[i] == extract:
+            extract_arg = arc_args[i + 1]
+            i += 2
+        elif arc_args[i].startswith(extract + '='):
+            extract_arg = arc_args[i][len(extract + '='):]
+            i += 1
+        else:
+            extract_arg = None
+            new_arc_args.append(arc_args[i])
+            i += 1
+
+        if extract_arg is not None:
+            if comma_separate:
+                new_args = [a.strip() for a in extract_arg.split(',')
+                            if a.strip()]
+            else:
+                new_args = [extract_arg]
+            # We only add in the arg if it's not already in extract_args.
+            # This removes dups while preserving relative ordering of
+            # the arguments, in case that's meaningful to the author.
+            for arg in new_args:
+                if arg not in extract_args: # could be made more efficient...
+                    extract_args.append(arg)
+
+    return (new_arc_args, extract_args)
+
+
+def normalize_rr_flags(arc_root, arc_args):
+    """Replace --rr=<n1> --rr=<n2> with --reviewers <normalized n2>,...
+
+    arc takes a flag --reviewers phabricator_username1,username2,...
+    For historical reasons, and because it's easier to type, we allow
+    --rr to specify reviewers.  We also allow --rr to be specified
+    multiple times.  Finally, we allow the name in --rr to be a subset
+    of a username -- or even of a real name -- and to prompt to clarify
+    if the name is ambiguous.
+
+    We accept '--rr=<n1>', '--rr=<n1> --rr=<n2>', '--rr=<n1>,<n2>', or
+    even '--rr=<n1> --rr=<n2>,<n3>'.  In each case, the equals sign
+    can be omitted -- that is, a space is ok instead of an equals sign.
+
+    This flag takes care of all of this.  While --rr only makes sense
+    for 'arc diff', we do this cleanup for all commands: it can't hurt
+    (since --rr isn't a legal flag for any arcanist command) and that
+    way we don't have to try to figure out if a command is an alias
+    for diff.
+
+    Arguments:
+      arc_root: the root of the arcanist repository on the local filesystem.
+      arc_args: the arguments pass to arc (argv[1+]).
+      rr: what flag to search for: could be --cc, etc.
+
+    Returns:
+      A modified version of arc_args, with --rr flags replaces if any
+      are present.  If none are present, arc_args is returned verbatim.
+    """
+    (retval, rr_args) = _extract_flag(arc_args, '--rr', comma_separate=True)
+
+    if rr_args:
+        # We need to convert our permissive reviewer args with phab usernames.
+        reviewer_args = normalize_usernames(arc_root, rr_args)
+        # It should always be ok to put --reviewers as the first arg to diff,
+        # right after the 'diff' arg itself (which is arc_args[0])
+        retval.insert(1, '--reviewers')
+        retval.insert(2, ','.join(reviewer_args))
+
+    return retval
+
+
+def normalize_cc_flags(arc_root, arc_args):
+    """Like normalize_rr_flags, but for --cc."""
+    (retval, cc_args) = _extract_flag(arc_args, '--cc', comma_separate=True)
+    if cc_args:
+        # TODO(csilvers): support mailing lists too, when conduit adds that.
+        reviewer_args = normalize_usernames(arc_root, cc_args)
+        retval.insert(1, '--cc')
+        retval.insert(2, ','.join(reviewer_args))
+    return retval
+    
+
+def add_onto_for_arc_land(arc_args):
+    """Figure out the 'parent' of this branch, and land onto that."""
+    assert arc_args[0] == 'land'
+    # If --onto is already in arc_args, don't add it
+    for arg in arc_args:
+        if arg.startswith('--onto'):
+            return arc_args
+
+    # This gives an error for if this branch isn't a tracking branch.
+    # In that case, we'll require an explicit '--onto'.  cf.
+    # http://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
+    try:
+        parent = _git_call(['rev-parse', '--abbrev-ref',
+                            '--symbolic-full-name', '@{u}'])
+    except NotGitError:
+        # If we're an .hg repo or something, don't worry about --onto.
+        return arc_args
+    except subprocess.CalledProcessError:
+        raise RuntimeError('You must explicitly specify --onto when landing'
+                           ' a non-tracking branch (but better is to set'
+                           ' branch:autosetupmerge in your .gitconfig!).')
+    if '/' in parent:
+        # If the parent is remote, then can't run 'arc land' at all; they
+        # should run 'arc amend; git push' instead.
+        raise RuntimeError("You can't call 'arc land' from a remote tracking"
+                           " branch (you should call it from a local feature"
+                           " branch).  Run 'arc amend' + 'git push' instead.")
+
+    return arc_args + ['--onto', parent.strip()]
+    
+
+def main(arc_args, arc_root=None):
+    if arc_root is None:
+        arc_root = _DEFAULT_ARC_ROOT
+
+    _sync_arc(arc_root)
+
+    # Handle any --rr flags that may be in arc_args (--rr is a khan extension).
+    # Likewise with --cc; while --cc is a standard arc flag, we're more
+    # permissive in what we accept (real names, not just usernames).
+    arc_args = normalize_rr_flags(arc_root, arc_args)
+    arc_args = normalize_cc_flags(arc_root, arc_args)    
+
+    if arc_args[0] == 'land':
+        arc_args = add_onto_for_arc_land(arc_args)
+
+    # Now run the 'real' (arcanist) arc.
+    arcanist_arc = os.path.join(arc_root, 'bin', 'arc')
+    os.execv(arcanist_arc, [arcanist_arc] + arc_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
