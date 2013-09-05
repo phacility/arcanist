@@ -858,23 +858,23 @@ EOTEXT
   private function push() {
     $repository_api = $this->getRepositoryAPI();
 
-    if ($this->isGit) {
-      $repository_api->execxLocal(
-        'commit -F %s',
-        $this->messageFile);
-    } else if ($this->isHg) {
-      // hg rebase produces a commit earlier as part of rebase
-      if (!$this->useSquash) {
-        $repository_api->execxLocal(
-          'commit --logfile %s',
-          $this->messageFile);
-      }
-    }
-
-    // We dispatch this event so we can run checks on the merged revision, right
-    // before it gets pushed out. It's easier to do this in arc land than to
-    // try to hook into git/hg.
+    // these commands can fail legitimately (e.g. commit hooks)
     try {
+      if ($this->isGit) {
+        $repository_api->execxLocal(
+          'commit -F %s',
+          $this->messageFile);
+      } else if ($this->isHg) {
+        // hg rebase produces a commit earlier as part of rebase
+        if (!$this->useSquash) {
+          $repository_api->execxLocal(
+            'commit --logfile %s',
+            $this->messageFile);
+        }
+      }
+      // We dispatch this event so we can run checks on the merged revision,
+      // right before it gets pushed out. It's easier to do this in arc land
+      // than to try to hook into git/hg.
       $this->dispatchEvent(
         ArcanistEventType::TYPE_LAND_WILLPUSHREVISION,
         array());
@@ -1064,6 +1064,10 @@ EOTEXT
     $repository_api->execxLocal(
       'checkout %s',
       $this->oldBranch);
+    if ($this->isGit) {
+      $repository_api->execxLocal(
+        'submodule update --init --recursive');
+    }
     echo phutil_console_format(
       "Switched back to {$this->branchType} **%s**.\n",
       $this->oldBranch);
