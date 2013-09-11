@@ -697,7 +697,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     foreach ($lines as $line) {
       $matches = array();
       $ok = preg_match(
-        '/^(\d{6}) (blob|tree) ([a-z0-9]{40})[\t](.*)$/',
+        '/^(\d{6}) (blob|tree|commit) ([a-z0-9]{40})[\t](.*)$/',
         $line,
         $matches);
       if (!$ok) {
