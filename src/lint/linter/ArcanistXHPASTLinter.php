@@ -2287,6 +2287,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $keywords[] = head($typehint->getTokens());
     }
 
+    $new_invocations = $root->selectDescendantsOfType('n_NEW');
+    foreach ($new_invocations as $invocation) {
+      $keywords[] = head($invocation->getTokens());
+    }
+
     // NOTE: Although PHP generally allows arbitrary casing for all language
     // keywords, it's exceedingly rare for anyone to type, e.g., "CLASS" or
     // "cLaSs" in the wild. This list just attempts to cover unconventional
@@ -2299,6 +2304,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'false' => 'false',
       'null'  => 'null',
       'array' => 'array',
+      'new'   => 'new',
     );
 
     foreach ($keywords as $keyword) {
