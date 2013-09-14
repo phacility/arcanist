@@ -812,7 +812,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
             "may have forgotten to 'hg add' them to your commit.\n");
         }
 
-        if ($this->askForAdd()) {
+        if ($this->askForAdd($untracked)) {
           $api->addToCommit($untracked);
           $must_commit += array_flip($untracked);
         } else if ($this->commitMode == self::COMMIT_DISABLE) {
@@ -852,7 +852,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $working_copy_desc.
         "  Unstaged changes in working copy:\n".
         "    ".implode("\n    ", $unstaged)."\n";
-      if ($this->askForAdd()) {
+      if ($this->askForAdd($unstaged)) {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
       } else {
@@ -882,7 +882,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $working_copy_desc.
         "  Uncommitted changes in working copy:\n".
         "    ".implode("\n    ", $uncommitted)."\n";
-      if ($this->askForAdd()) {
+      if ($this->askForAdd($uncommitted)) {
         $must_commit += array_flip($uncommitted);
       } else {
         throw new ArcanistUncommittedChangesException(
@@ -958,7 +958,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return false;
   }
 
-  private function askForAdd() {
+  private function askForAdd(array $files) {
     if ($this->commitMode == self::COMMIT_DISABLE) {
       return false;
     }
@@ -969,9 +969,13 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       return true;
     }
     if ($this->shouldAmend) {
-      $prompt = "Do you want to amend these files to the commit?";
+      $prompt = pht(
+        'Do you want to amend these files to the commit?',
+        count($files));
     } else {
-      $prompt = "Do you want to add these files to the commit?";
+      $prompt = pht(
+        'Do you want to add these files to the commit?',
+        count($files));
     }
     return phutil_console_confirm($prompt);
   }

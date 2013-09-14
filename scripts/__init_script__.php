@@ -85,6 +85,16 @@ PhutilTranslator::getInstance()
       'Do you want to mark these files as binary and continue?',
     ),
 
+    'Do you want to amend these files to the commit?' => array(
+      'Do you want to amend this file to the commit?',
+      'Do you want to amend these files to the commit?',
+    ),
+
+    'Do you want to add these files to the commit?' => array(
+      'Do you want to add this file to the commit?',
+      'Do you want to add these files to the commit?',
+    ),
+
     'line(s)' => array('line', 'lines'),
 
     '%d test(s)' => array('%d test', '%d tests'),
