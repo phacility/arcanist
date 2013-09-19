@@ -148,7 +148,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
           // Don't look above the project root.
           continue;
         }
-        if (Filesystem::resolvePath($full_path) == $path) {
+        if (0 == strcasecmp(Filesystem::resolvePath($full_path), $path)) {
           // Don't return the original file.
           continue;
         }
