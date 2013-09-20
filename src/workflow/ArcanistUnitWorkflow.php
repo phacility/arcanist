@@ -237,7 +237,8 @@ EOTEXT
         $full_path = $working_copy->getProjectRoot().'/'.$file;
         if ($this->getArgument('detailed-coverage') &&
             Filesystem::pathExists($full_path) &&
-            is_file($full_path)) {
+            is_file($full_path) &&
+            array_key_exists($file, $file_reports)) {
           $console->writeOut(
             '%s',
             $this->renderDetailedCoverageReport(
