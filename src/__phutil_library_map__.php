@@ -163,6 +163,7 @@ phutil_register_library_map(array(
     'ArcanistXHPASTLintTestSwitchHook' => 'lint/linter/__tests__/ArcanistXHPASTLintTestSwitchHook.php',
     'ArcanistXHPASTLinter' => 'lint/linter/ArcanistXHPASTLinter.php',
     'ArcanistXHPASTLinterTestCase' => 'lint/linter/__tests__/ArcanistXHPASTLinterTestCase.php',
+    'CSharpToolsTestEngine' => 'unit/engine/CSharpToolsTestEngine.php',
     'ComprehensiveLintEngine' => 'lint/engine/ComprehensiveLintEngine.php',
     'ExampleLintEngine' => 'lint/engine/ExampleLintEngine.php',
     'GoTestResultParser' => 'unit/engine/GoTestResultParser.php',
@@ -176,6 +177,7 @@ phutil_register_library_map(array(
     'PhutilUnitTestEngineTestCase' => 'unit/engine/__tests__/PhutilUnitTestEngineTestCase.php',
     'PytestTestEngine' => 'unit/engine/PytestTestEngine.php',
     'UnitTestableArcanistLintEngine' => 'lint/engine/UnitTestableArcanistLintEngine.php',
+    'XUnitTestEngine' => 'unit/engine/XUnitTestEngine.php',
   ),
   'function' =>
   array(
@@ -301,6 +303,7 @@ phutil_register_library_map(array(
     'ArcanistXHPASTLintTestSwitchHook' => 'ArcanistXHPASTLintSwitchHook',
     'ArcanistXHPASTLinter' => 'ArcanistBaseXHPASTLinter',
     'ArcanistXHPASTLinterTestCase' => 'ArcanistArcanistLinterTestCase',
+    'CSharpToolsTestEngine' => 'XUnitTestEngine',
     'ComprehensiveLintEngine' => 'ArcanistLintEngine',
     'ExampleLintEngine' => 'ArcanistLintEngine',
     'GoTestResultParser' => 'ArcanistBaseTestResultParser',
@@ -314,5 +317,6 @@ phutil_register_library_map(array(
     'PhutilUnitTestEngineTestCase' => 'ArcanistTestCase',
     'PytestTestEngine' => 'ArcanistBaseUnitTestEngine',
     'UnitTestableArcanistLintEngine' => 'ArcanistLintEngine',
+    'XUnitTestEngine' => 'ArcanistBaseUnitTestEngine',
   ),
 ));
