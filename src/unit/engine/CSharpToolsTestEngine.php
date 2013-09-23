@@ -23,14 +23,16 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
    * of configuration values and to pull in the cstools config for
    * code coverage.
    */
-  protected function loadEnvironment() {
+  protected function loadEnvironment(
+    $config_item = 'unit.csharp.xunit.binary') {
+
     $working = $this->getWorkingCopy();
     $this->xunitHintPath = $working->getConfig('unit.csharp.xunit.binary');
     $this->cscoverHintPath = $working->getConfig('unit.csharp.cscover.binary');
     $this->matchRegex = $working->getConfig('unit.csharp.coverage.match');
     $this->excludedFiles = $working->getConfig('unit.csharp.coverage.excluded');
 
-    parent::loadEnvironment('unit.csharp.xunit.binary');
+    parent::loadEnvironment($config_item);
 
     if ($this->getEnableCoverage() === false) {
       return;
