@@ -208,6 +208,12 @@ try {
     HTTPSFuture::setGlobalCABundleFromPath($ca_bundle);
   }
 
+  $blind_key = 'https.blindly-trust-domains';
+  $blind_trust = $working_copy->getConfigFromAnySource($blind_key);
+  if ($blind_trust) {
+    HTTPSFuture::setBlindlyTrustDomains($blind_trust);
+  }
+
   if ($need_conduit) {
     if (!$conduit_uri) {
 

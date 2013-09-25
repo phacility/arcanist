@@ -103,6 +103,12 @@ final class ArcanistSettings {
           "behind https signed by your organization's internal CA.",
         'example' => 'support/yourca.pem'
       ),
+      'https.blindly-trust-domains' => array(
+        'type' => 'list',
+        'help' => 'List of domains to blindly trust SSL certificates for. '.
+                  'Disables peer verification.',
+        'example' => '["secure.mycompany.com"]',
+      ),
       'browser' => array(
         'type' => 'string',
         'help' =>
