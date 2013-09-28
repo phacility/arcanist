@@ -676,9 +676,11 @@ EOTEXT
       $patchfile = new TempFile();
       Filesystem::writeFile($patchfile, $bundle->toGitPatch());
 
-      $err = $repository_api->execPassthru(
-        'apply --index --reject -- %s',
+      $passthru = new PhutilExecPassthru(
+        'git apply --index --reject -- %s',
         $patchfile);
+      $passthru->setCWD($repository_api->getPath());
+      $err = $passthru->execute();
 
       if ($err) {
         echo phutil_console_format(
