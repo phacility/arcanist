@@ -127,6 +127,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       $relative_path = explode(".", $class->getAttribute("filename"));
       array_pop($relative_path);
       $relative_path = $source_path .'/'. implode("/", $relative_path);
+      $relative_path = Filesystem::readablePath($relative_path);
 
       // first we check if the path is a directory (a Python package), if it is
       // set relative and absolute paths to have __init__.py at the end.
