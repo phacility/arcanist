@@ -195,6 +195,14 @@ final class ArcanistDiffParser {
 
     $this->didStartParse($diff);
 
+    // Strip off header comments. While `patch` allows comments anywhere in the
+    // file, `git apply` is more strict. We get these comments in `hg export`
+    // diffs, and Eclipse can also produce them.
+    $line = $this->getLineTrimmed();
+    while (preg_match('/^#/', $line)) {
+      $line = $this->nextLine();
+    }
+
     do {
       $patterns = array(
         // This is a normal SVN text change, probably from "svn diff".
@@ -1092,12 +1100,23 @@ final class ArcanistDiffParser {
   }
 
   protected function isFirstNonEmptyLine() {
-    $count = count($this->text);
-    for ($i = 0; $i < $count; $i++) {
-      if (strlen(trim($this->text[$i])) != 0) {
-        return ($i == $this->line);
+    $len = count($this->text);
+    for ($ii = 0; $ii < $len; $ii++) {
+      $line = $this->text[$ii];
+
+      if (!strlen(trim($line))) {
+        // This line is empty, skip it.
+        continue;
       }
+
+      if (preg_match('/^#/', $line)) {
+        // This line is a comment, skip it.
+        continue;
+      }
+
+      return ($ii == $this->line);
     }
+
     // Entire file is empty.
     return false;
   }
