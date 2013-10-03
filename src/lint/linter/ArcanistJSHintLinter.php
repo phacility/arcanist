@@ -44,6 +44,10 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     return 'JSHint';
   }
 
+  public function getLinterConfigurationName() {
+    return 'jshint';
+  }
+
   public function getLintSeverityMap() {
     return array(
       self::JSHINT_ERROR => ArcanistLintSeverity::SEVERITY_ERROR
