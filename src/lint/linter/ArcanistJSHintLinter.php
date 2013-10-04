@@ -54,6 +54,12 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     );
   }
 
+  // placeholder if/until we get a map code -> name map
+  // jshint only offers code -> description right now (parsed as 'reason')
+  public function getLintMessageName($code) {
+    return "JSHint".$code;
+  }
+
   public function getLintNameMap() {
     return array(
       self::JSHINT_ERROR => "JSHint Error"
@@ -163,7 +169,7 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
       $this->raiseLintAtLine(
         $err->line,
         $err->col,
-        self::JSHINT_ERROR,
+        $err->code,
         $err->reason);
     }
   }
