@@ -128,7 +128,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
       foreach ($files as $path => $mask) {
         foreach ($externals as $external) {
-          if (!strncmp($path, $external, strlen($external))) {
+          if (!strncmp($path . '/', $external . '/', strlen($external) + 1)) {
             $files[$path] |= self::FLAG_EXTERNALS;
           }
         }
