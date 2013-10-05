@@ -41,7 +41,7 @@ final class XUnitTestResultParserTestCase extends ArcanistTestCase {
 
   public function testInvalidXmlInputFailure() {
     $stubbed_results = Filesystem::readFile(
-      dirname(__FILE__).'/testresults/xunit.invallid-xml');
+      dirname(__FILE__).'/testresults/xunit.invalid-xml');
     try {
       $parsed_results = id(new ArcanistXUnitTestResultParser())
         ->parseTestResults($stubbed_results);
