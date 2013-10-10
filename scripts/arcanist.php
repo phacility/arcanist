@@ -150,6 +150,11 @@ try {
   $workflow->setWorkingDirectory($working_directory);
   $workflow->parseArguments($args);
 
+  // Write the command into the environment so that scripts (for example, local
+  // Git commit hooks) can detect that they're being run via `arc` and change
+  // their behaviors.
+  putenv('ARCANIST='.$command);
+
   if ($force_conduit_version) {
     $workflow->forceConduitVersion($force_conduit_version);
   }
