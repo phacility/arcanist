@@ -115,7 +115,7 @@ EOTEXT
 
     $engine_class = $this->getArgument(
       'engine',
-      $working_copy->getConfigFromAnySource('unit.engine'));
+      $this->getConfigurationManager()->getConfigFromAnySource('unit.engine'));
 
     if (!$engine_class) {
       throw new ArcanistNoEngineException(

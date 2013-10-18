@@ -28,7 +28,7 @@ abstract class ArcanistRepositoryAPI {
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
   private $baseCommitExplanation = '???';
-  private $workingCopyIdentity;
+  private $configurationManager;
   private $baseCommitArgumentRules;
 
   private $uncommittedStatusCache;
@@ -49,11 +49,22 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyIdentity() {
-    return $this->workingCopyIdentity;
+    return $this->configurationManager->getWorkingCopyIdentity();
   }
 
-  public static function newAPIFromWorkingCopyIdentity(
-    ArcanistWorkingCopyIdentity $working_copy) {
+  public function getConfigurationManager() {
+    return $this->configurationManager;
+  }
+
+  public static function newAPIFromConfigurationManager(
+    ArcanistConfigurationManager $configuration_manager) {
+
+    $working_copy = $configuration_manager->getWorkingCopyIdentity();
+
+    if (!$working_copy) {
+      throw new Exception(
+        "Trying to create a RepositoryApi without a working copy");
+    }
 
     $root = $working_copy->getProjectRoot();
 
@@ -65,7 +76,7 @@ abstract class ArcanistRepositoryAPI {
 
     if (Filesystem::pathExists($root.'/.hg')) {
       $api = new ArcanistMercurialAPI($root);
-      $api->workingCopyIdentity = $working_copy;
+      $api->configurationManager = $configuration_manager;
       return $api;
     }
 
@@ -78,7 +89,7 @@ abstract class ArcanistRepositoryAPI {
       }
 
       $api = new ArcanistGitAPI($root);
-      $api->workingCopyIdentity = $working_copy;
+      $api->configurationManager = $configuration_manager;
       return $api;
     }
 
@@ -86,7 +97,7 @@ abstract class ArcanistRepositoryAPI {
     foreach (Filesystem::walkToRoot($root) as $dir) {
       if (Filesystem::pathExists($dir . '/.svn')) {
         $api = new ArcanistSubversionAPI($root);
-        $api->workingCopyIdentity = $working_copy;
+        $api->configurationManager = $configuration_manager;
         return $api;
       }
     }
@@ -643,19 +654,19 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function resolveBaseCommit() {
-    $working_copy = $this->getWorkingCopyIdentity();
-    $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
-    $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
+    $base_commit_rules = array(
+      'runtime' => $this->getBaseCommitArgumentRules(),
+      'local'   => '',
+      'project' => '',
+      'user'    => '',
+      'system'  => '',
+    );
+    $all_sources = $this->configurationManager->getConfigFromAllSources('base');
+
+    $base_commit_rules = $all_sources + $base_commit_rules;
 
     $parser = new ArcanistBaseCommitParser($this);
-    $commit = $parser->resolveBaseCommit(
-      array(
-        'args'    => $this->getBaseCommitArgumentRules(),
-        'local'   => $working_copy->getLocalConfig('base', ''),
-        'project' => $working_copy->getConfig('base', ''),
-        'global'  => idx($global_config, 'base', ''),
-        'system'  => idx($system_config, 'base', ''),
-      ));
+    $commit = $parser->resolveBaseCommit($base_commit_rules);
 
     return $commit;
   }

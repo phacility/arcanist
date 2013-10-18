@@ -55,6 +55,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $userPHID;
   private $userName;
   private $repositoryAPI;
+  private $configurationManager;
   private $workingCopy;
   private $arguments;
   private $passedArguments;
@@ -182,8 +183,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       $this->conduit->setTimeout($this->conduitTimeout);
     }
 
-    $user = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.user');
-    $pass = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.pass');
+    $user = $this->getConfigFromAnySource('http.basicauth.user');
+    $pass = $this->getConfigFromAnySource('http.basicauth.pass');
     if ($user !== null && $pass !== null) {
       $this->conduit->setBasicAuthCredentials($user, $pass);
     }
@@ -191,21 +192,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this;
   }
 
-  final public function getConfigFromWhateverSourceAvailiable($key) {
-    if ($this->requiresWorkingCopy()) {
-      $working_copy = $this->getWorkingCopy();
-      return $working_copy->getConfigFromAnySource($key);
-    } else {
-      $global_config = self::readGlobalArcConfig();
-      $pval = idx($global_config, $key);
-
-      if ($pval === null) {
-        $system_config = self::readSystemArcConfig();
-        $pval = idx($system_config, $key);
-      }
-
-      return $pval;
-    }
+  final public function getConfigFromAnySource($key) {
+    return $this->configurationManager->getConfigFromAnySource($key);
   }
 
 
@@ -513,6 +501,17 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this->arcanistConfiguration;
   }
 
+  public function setConfigurationManager(
+    ArcanistConfigurationManager $arcanist_configuration_manager) {
+
+    $this->configurationManager = $arcanist_configuration_manager;
+    return $this;
+  }
+
+  public function getConfigurationManager() {
+    return $this->configurationManager;
+  }
+
   public function requiresWorkingCopy() {
     return false;
   }
@@ -565,6 +564,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $workflow = $arc_config->buildWorkflow($command);
     $workflow->setParentWorkflow($this);
     $workflow->setCommand($command);
+    $workflow->setConfigurationManager($this->getConfigurationManager());
 
     if ($this->repositoryAPI) {
       $workflow->setRepositoryAPI($this->repositoryAPI);
@@ -732,13 +732,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
   public function getWorkingCopy() {
-    if (!$this->workingCopy) {
+    $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
+    if (!$working_copy) {
       $workflow = get_class($this);
       throw new Exception(
         "This workflow ('{$workflow}') requires a working copy, override ".
         "requiresWorkingCopy() to return true.");
     }
-    return $this->workingCopy;
+    return $working_copy;
   }
 
   public function setWorkingCopy(
@@ -856,7 +857,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
       } else {
-        $permit_autostash = $this->getWorkingCopy()->getConfigFromAnySource(
+        $permit_autostash = $this->getConfigFromAnySource(
           'arc.autostash',
           false);
         if ($permit_autostash && $api->canStashChanges()) {
@@ -1167,114 +1168,6 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $argv;
   }
 
-  public static function getSystemArcConfigLocation() {
-    if (phutil_is_windows()) {
-      return Filesystem::resolvePath(
-        'Phabricator/Arcanist/config',
-        getenv('ProgramData'));
-    } else {
-      return '/etc/arcconfig';
-    }
-  }
-
-  public static function readSystemArcConfig() {
-    $system_config = array();
-    $system_config_path = self::getSystemArcConfigLocation();
-    if (Filesystem::pathExists($system_config_path)) {
-      $file = Filesystem::readFile($system_config_path);
-      if ($file) {
-        $system_config = json_decode($file, true);
-      }
-    }
-    return $system_config;
-  }
-  public static function getUserConfigurationFileLocation() {
-    if (phutil_is_windows()) {
-      return getenv('APPDATA').'/.arcrc';
-    } else {
-      return getenv('HOME').'/.arcrc';
-    }
-  }
-
-  public static function readUserConfigurationFile() {
-    $user_config = array();
-    $user_config_path = self::getUserConfigurationFileLocation();
-    if (Filesystem::pathExists($user_config_path)) {
-
-      if (!phutil_is_windows()) {
-        $mode = fileperms($user_config_path);
-        if (!$mode) {
-          throw new Exception("Unable to get perms of '{$user_config_path}'!");
-        }
-        if ($mode & 0177) {
-          // Mode should allow only owner access.
-          $prompt = "File permissions on your ~/.arcrc are too open. ".
-                    "Fix them by chmod'ing to 600?";
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
-            throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
-          }
-          execx('chmod 600 %s', $user_config_path);
-
-          // Drop the stat cache so we don't read the old permissions if
-          // we end up here again. If we don't do this, we may prompt the user
-          // to fix permissions multiple times.
-          clearstatcache();
-        }
-      }
-
-      $user_config_data = Filesystem::readFile($user_config_path);
-      $user_config = json_decode($user_config_data, true);
-      if (!is_array($user_config)) {
-        throw new ArcanistUsageException(
-          "Your '~/.arcrc' file is not a valid JSON file.");
-      }
-    }
-    return $user_config;
-  }
-
-
-  public static function writeUserConfigurationFile($config) {
-    $json_encoder = new PhutilJSON();
-    $json = $json_encoder->encodeFormatted($config);
-
-    $path = self::getUserConfigurationFileLocation();
-    Filesystem::writeFile($path, $json);
-
-    if (!phutil_is_windows()) {
-      execx('chmod 600 %s', $path);
-    }
-  }
-
-  public static function readGlobalArcConfig() {
-    return idx(self::readUserConfigurationFile(), 'config', array());
-  }
-
-  public static function writeGlobalArcConfig(array $options) {
-    $config = self::readUserConfigurationFile();
-    $config['config'] = $options;
-    self::writeUserConfigurationFile($config);
-  }
-
-  public function readLocalArcConfig() {
-    $local = array();
-    $file = $this->readScratchFile('config');
-    if ($file) {
-      $local = json_decode($file, true);
-    }
-
-    return $local;
-  }
-
-  public function writeLocalArcConfig(array $config) {
-    $json_encoder = new PhutilJSON();
-    $json = $json_encoder->encodeFormatted($config);
-
-    $this->writeScratchFile('config', $json);
-
-    return $this;
-  }
-
-
   /**
    * Write a message to stderr so that '--json' flags or stdout which is meant
    * to be piped somewhere aren't disrupted.
@@ -1288,9 +1181,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   protected function isHistoryImmutable() {
     $repository_api = $this->getRepositoryAPI();
-    $working_copy = $this->getWorkingCopy();
 
-    $config = $working_copy->getConfigFromAnySource('history.immutable');
+    $config = $this->getConfigFromAnySource('history.immutable');
     if ($config !== null) {
       return $config;
     }
@@ -1530,7 +1422,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   protected function newInteractiveEditor($text) {
     $editor = new PhutilInteractiveEditor($text);
 
-    $preferred = $this->getWorkingCopy()->getConfigFromAnySource('editor');
+    $preferred = $this->getConfigFromAnySource('editor');
     if ($preferred) {
       $editor->setPreferredEditor($preferred);
     }

@@ -43,6 +43,7 @@ phutil_register_library_map(array(
     'ArcanistConduitLinter' => 'lint/linter/ArcanistConduitLinter.php',
     'ArcanistConfiguration' => 'configuration/ArcanistConfiguration.php',
     'ArcanistConfigurationDrivenLintEngine' => 'lint/engine/ArcanistConfigurationDrivenLintEngine.php',
+    'ArcanistConfigurationManager' => 'configuration/ArcanistConfigurationManager.php',
     'ArcanistCoverWorkflow' => 'workflow/ArcanistCoverWorkflow.php',
     'ArcanistCppcheckLinter' => 'lint/linter/ArcanistCppcheckLinter.php',
     'ArcanistCpplintLinter' => 'lint/linter/ArcanistCpplintLinter.php',

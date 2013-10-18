@@ -1630,7 +1630,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $global_string = $global->getConcreteString();
         $globals_map[$global_string] = true;
         $names[] = array(
-          'global',
+          'user',
           $global_string,
           $global,
 

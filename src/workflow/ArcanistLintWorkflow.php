@@ -182,10 +182,11 @@ EOTEXT
   public function run() {
     $console = PhutilConsole::getConsole();
     $working_copy = $this->getWorkingCopy();
+    $configuration_manager = $this->getConfigurationManager();
 
     $engine = $this->getArgument('engine');
     if (!$engine) {
-      $engine = $working_copy->getConfigFromAnySource('lint.engine');
+      $engine = $configuration_manager->getConfigFromAnySource('lint.engine');
     }
 
     if (!$engine) {
@@ -210,7 +211,7 @@ EOTEXT
         "flag lints every file.");
     }
     if ($use_cache === null) {
-      $use_cache = (bool)$working_copy->getConfigFromAnySource(
+      $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
         'arc.lint.cache',
         false);
     }
@@ -260,7 +261,7 @@ EOTEXT
 
     $engine = newv($engine, array());
     $this->engine = $engine;
-    $engine->setWorkingCopy($working_copy);
+    $engine->setWorkingCopy($working_copy); // todo setConfig?
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 

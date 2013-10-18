@@ -12,11 +12,11 @@ final class ArcanistWorkingCopyIdentity {
 
   protected $localConfig;
   protected $projectConfig;
-  protected $runtimeConfig;
   protected $projectRoot;
+  protected $localMetaDir;
 
   public static function newDummyWorkingCopy() {
-    return new ArcanistWorkingCopyIdentity('/', array());
+      return new ArcanistWorkingCopyIdentity('/', array());
   }
 
   public static function newFromPath($path) {
@@ -93,7 +93,7 @@ final class ArcanistWorkingCopyIdentity {
     $this->projectRoot    = $root;
     $this->projectConfig  = $config;
     $this->localConfig    = array();
-    $this->runtimeConfig = array();
+    $this->localMetaDir   = null;
 
     $vc_dirs = array(
       '.git',
@@ -107,15 +107,11 @@ final class ArcanistWorkingCopyIdentity {
         $this->projectRoot);
       if (Filesystem::pathExists($meta_path)) {
         $found_meta_dir = true;
+        $this->localMetaDir = $meta_path;
         $local_path = Filesystem::resolvePath(
           'arc/config',
           $meta_path);
-        if (Filesystem::pathExists($local_path)) {
-          $file = Filesystem::readFile($local_path);
-          if ($file) {
-            $this->localConfig = json_decode($file, true);
-          }
-        }
+        $this->localConfig = $this->readLocalArcConfig();
         break;
       }
     }
@@ -123,14 +119,15 @@ final class ArcanistWorkingCopyIdentity {
     if (!$found_meta_dir) {
       // Try for a single higher-level .svn directory as used by svn 1.7+
       foreach (Filesystem::walkToRoot($this->projectRoot) as $parent_path) {
+        $meta_path = Filesystem::resolvePath(
+          '.svn',
+          $parent_path);
         $local_path = Filesystem::resolvePath(
           '.svn/arc/config',
           $parent_path);
         if (Filesystem::pathExists($local_path)) {
-          $file = Filesystem::readFile($local_path);
-          if ($file) {
-            $this->localConfig = json_decode($file, true);
-          }
+          $this->localMetaDir = $meta_path;
+          $this->localConfig = $this->readLocalArcConfig();
         }
       }
     }
@@ -149,14 +146,10 @@ final class ArcanistWorkingCopyIdentity {
     return $this->projectRoot.'/'.$to_file;
   }
 
-  public function getConduitURI() {
-    return $this->getConfig('conduit_uri');
-  }
-
 
 /* -(  Config  )------------------------------------------------------------- */
 
-  public function getProjectConfig() {
+  public function readProjectConfig() {
     return $this->projectConfig;
   }
 
@@ -195,7 +188,6 @@ final class ArcanistWorkingCopyIdentity {
     return $pval;
   }
 
-
   /**
    * Read a configuration directive from local configuration.  This
    * reads ONLY the per-working copy configuration,
@@ -210,69 +202,46 @@ final class ArcanistWorkingCopyIdentity {
     return idx($this->localConfig, $key, $default);
   }
 
-  /**
-   * Read a configuration directive from any available configuration source.
-   * In contrast to @{method:getConfig}, this will look for the directive in
-   * local and user configuration in addition to project configuration.
-   * The precedence is local > project > user
-   *
-   * @param key   Key to read.
-   * @param wild  Default value if key is not found.
-   * @return wild Value, or default value if not found.
-   *
-   * @task config
-   */
-  public function getConfigFromAnySource($key, $default = null) {
-    $settings = new ArcanistSettings();
-
-    // try runtime config first
-    $pval = idx($this->runtimeConfig, $key);
-
-    // try local config
-    if ($pval === null) {
-      $pval = $this->getLocalConfig($key);
+  public function readLocalArcConfig() {
+    if (strlen($this->localMetaDir)) {
+      $local_path = Filesystem::resolvePath(
+        'arc/config',
+        $this->localMetaDir);
+      if (Filesystem::pathExists($local_path)) {
+        $file = Filesystem::readFile($local_path);
+        if ($file) {
+          return json_decode($file, true);
+        }
+      }
     }
-
-    // then per-project config
-    if ($pval === null) {
-      $pval = $this->getConfig($key);
-    }
-
-    // now try global (i.e. user-level) config
-    if ($pval === null) {
-      $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
-      $pval = idx($global_config, $key);
-    }
-
-    // Finally, try system-level config.
-    if ($pval === null) {
-      $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
-      $pval = idx($system_config, $key);
-    }
-
-    if ($pval === null) {
-      $pval = $default;
-    } else {
-      $pval = $settings->willReadValue($key, $pval);
-    }
-
-    return $pval;
-
+    return array();
   }
 
-  /**
-   * Sets a runtime config value that takes precedence over any static
-   * config values.
-   *
-   * @param key   Key to set.
-   * @param value The value of the key.
-   *
-   * @task config
-   */
-  public function setRuntimeConfig($key, $value) {
-    $this->runtimeConfig[$key] = $value;
+  public function writeLocalArcConfig(array $config) {
+    $dir = $this->localMetaDir;
+    if (!strlen($dir)) {
+      return false;
+    }
 
-    return $this;
+    if (!Filesystem::pathExists($dir)) {
+      try {
+        Filesystem::createDirectory($dir);
+      } catch (Exception $ex) {
+        return false;
+      }
+    }
+
+    $json_encoder = new PhutilJSON();
+    $json = $json_encoder->encodeFormatted($config);
+
+    $config_file = Filesystem::resolvePath('arc/config', $dir);
+     try {
+      Filesystem::writeFile($config_file, $json);
+    } catch (FilesystemException $ex) {
+      return false;
+    }
+
+    return true;
   }
 
 }

@@ -242,8 +242,7 @@ EOTEXT
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
 
-    $working_copy = $this->getWorkingCopy();
-    $update_strategy = $working_copy->getConfigFromAnySource(
+    $update_strategy = $this->getConfigFromAnySource(
       'arc.land.update.default',
       'merge');
     $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
@@ -261,7 +260,7 @@ EOTEXT
 
     $onto_default = $this->isGit ? 'master' : 'default';
     $onto_default = nonempty(
-      $working_copy->getConfigFromAnySource('arc.land.onto.default'),
+      $this->getConfigFromAnySource('arc.land.onto.default'),
       $onto_default);
     $this->onto = $this->getArgument('onto', $onto_default);
     $this->ontoType = $this->getBranchType($this->onto);

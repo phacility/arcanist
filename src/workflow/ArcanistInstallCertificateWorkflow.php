@@ -53,10 +53,11 @@ EOTEXT
 
     $uri = $this->determineConduitURI();
     $this->setConduitURI($uri);
+    $configuration_manager = $this->getConfigurationManager();
 
     echo "Installing certificate for '{$uri}'...\n";
 
-    $config = self::readUserConfigurationFile();
+    $config = $configuration_manager->readUserConfigurationFile();
 
     echo "Trying to connect to server...\n";
     $conduit = $this->establishConduit()->getConduit();
@@ -106,7 +107,7 @@ EOTEXT
     );
 
     echo "Writing ~/.arcrc...\n";
-    self::writeUserConfigurationFile($config);
+    $configuration_manager->writeUserConfigurationFile($config);
 
     echo phutil_console_format(
       "<bg:green>** SUCCESS! **</bg> Certificate installed.\n");

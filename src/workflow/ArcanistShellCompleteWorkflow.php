@@ -60,8 +60,11 @@ EOTEXT
     // but commands can raise more detailed errors.
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
     if ($working_copy->getProjectRoot()) {
-      $repository_api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-        $working_copy);
+      $configuration_manager = $this->getConfigurationManager();
+      $configuration_manager->setWorkingCopyIdentity($working_copy);
+      $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+        $configuration_manager);
+
       $vcs = $repository_api->getSourceControlSystemName();
     }
 
@@ -88,8 +91,8 @@ EOTEXT
       }
 
       // Also permit autocompletion of "arc alias" commands.
-      foreach (
-        ArcanistAliasWorkflow::getAliases($working_copy) as $key => $value) {
+      $aliases =  ArcanistAliasWorkflow::getAliases($configuration_manager);
+      foreach ($aliases as $key => $value) {
         $complete[] = $key;
       }
 
@@ -102,7 +105,7 @@ EOTEXT
           $argv[1],
           $arc_config,
           array_slice($argv, 2),
-          $working_copy);
+          $configuration_manager);
         if ($new_command) {
           $workflow = $arc_config->buildWorkflow($new_command);
         }

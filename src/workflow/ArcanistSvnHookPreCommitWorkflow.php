@@ -173,6 +173,7 @@ EOTEXT
 
     $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
       $project_root,
+      $this->getConfigurationManager(),
       $config,
       $config_file." (svnlook: {$transaction} {$repository})");
 

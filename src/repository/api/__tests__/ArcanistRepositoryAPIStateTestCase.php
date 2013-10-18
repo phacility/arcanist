@@ -32,9 +32,11 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
 
     $fixture_path = $fixture->getPath();
     $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+    $configuration_manager = new ArcanistConfigurationManager();
+    $configuration_manager->setWorkingCopyIdentity($working_copy);
+    $api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+      $configuration_manager);
 
-    $api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-      $working_copy);
     $api->setBaseCommitArgumentRules('arc:this');
 
     if ($api instanceof ArcanistSubversionAPI) {

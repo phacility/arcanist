@@ -123,7 +123,7 @@ EOTEXT
   }
 
   private function getBrowserCommand() {
-    $config = $this->getWorkingCopy()->getConfigFromAnySource('browser');
+    $config = $this->getConfigFromAnySource('browser');
     if ($config) {
       return $config;
     }

@@ -42,11 +42,16 @@ EOTEXT
 
     $settings = new ArcanistSettings();
 
+    $configuration_manager = $this->getConfigurationManager();
     $configs = array(
-      'system'  => self::readSystemArcConfig(),
-      'global'  => self::readGlobalArcConfig(),
-      'project' => $this->getWorkingCopy()->getProjectConfig(),
-      'local'   => $this->readLocalArcConfig(),
+      ArcanistConfigurationManager::CONFIG_SOURCE_SYSTEM  =>
+        $configuration_manager->readSystemArcConfig(),
+      ArcanistConfigurationManager::CONFIG_SOURCE_USER  =>
+        $configuration_manager->readUserArcConfig(),
+      ArcanistConfigurationManager::CONFIG_SOURCE_PROJECT =>
+        $this->getWorkingCopy()->readProjectConfig(),
+      ArcanistConfigurationManager::CONFIG_SOURCE_LOCAL   =>
+        $configuration_manager->readLocalArcConfig(),
     );
 
     if ($argv) {
@@ -65,7 +70,7 @@ EOTEXT
       }
       foreach ($configs as $name => $config) {
         switch ($name) {
-          case 'project':
+          case ArcanistConfigurationManager::CONFIG_SOURCE_PROJECT:
             // Respect older names in project config.
             $val = $this->getWorkingCopy()->getConfig($key);
             break;

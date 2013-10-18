@@ -59,27 +59,29 @@ EOTEXT
     );
   }
 
-  public static function getAliases($working_copy) {
-    $working_copy_config_aliases = $working_copy->getConfig('aliases');
+  public static function getAliases(
+    ArcanistConfigurationManager $configuration_manager) {
+
+    $working_copy_config_aliases =
+      $configuration_manager->getProjectConfig('aliases');
     if (!$working_copy_config_aliases) {
       $working_copy_config_aliases = array();
     }
-    $user_config_aliases =
-      idx(self::readUserConfigurationFile(), 'aliases', array());
+    $user_config_aliases = idx(
+      $configuration_manager->readUserConfigurationFile(),
+      'aliases',
+      array());
     return $user_config_aliases + $working_copy_config_aliases;
   }
 
   private function writeAliases(array $aliases) {
-    $config = self::readUserConfigurationFile();
+    $config = $this->getConfigurationManager()->readUserConfigurationFile();
     $config['aliases'] = $aliases;
-    self::writeUserConfigurationFile($config);
+    $this->getConfigurationManager()->writeUserConfigurationFile($config);
   }
 
   public function run() {
-    // We might not be in a working directory, so we don't want to require a
-    // working copy identity here.
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
-    $aliases = self::getAliases($working_copy);
+    $aliases = self::getAliases($this->getConfigurationManager());
 
     $argv = $this->getArgument('argv');
     if (count($argv) == 0) {
@@ -140,9 +142,9 @@ EOTEXT
     $command,
     ArcanistConfiguration $config,
     array $argv,
-    ArcanistWorkingCopyIdentity $working_copy) {
+    ArcanistConfigurationManager $configuration_manager) {
 
-    $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
+    $aliases = ArcanistAliasWorkflow::getAliases($configuration_manager);
     if (!isset($aliases[$command])) {
       return array(null, $argv);
     }

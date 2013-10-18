@@ -23,12 +23,12 @@ EOTEXT
           Supports: cli
           Sets an arc configuration option.
 
-          Options are either global (apply to all arc commands you invoke
+          Options are either user (apply to all arc commands you invoke
           from the current user) or local (apply only to the current working
-          copy).  By default, global configuration is written.  Use __--local__
+          copy).  By default, user configuration is written.  Use __--local__
           to write local configuration.
 
-          Global values are written to '~/.arcrc' on Linux and Mac OS X, and an
+          User values are written to '~/.arcrc' on Linux and Mac OS X, and an
           undisclosed location on Windows.  Local values are written to an arc
           directory under either .git, .hg, or .svn as appropriate.
 
@@ -44,7 +44,7 @@ EOTEXT
         'help' => 'Show available configuration values.',
       ),
       'local' => array(
-        'help' => 'Set a local config value instead of a global one',
+        'help' => 'Set a local config value instead of a user one',
       ),
       '*' => 'argv',
     );
@@ -64,15 +64,16 @@ EOTEXT
       throw new ArcanistUsageException(
         "Specify a key and a value, or --show.");
     }
+    $configuration_manager = $this->getConfigurationManager();
 
     $is_local = $this->getArgument('local');
 
     if ($is_local) {
-      $config = $this->readLocalArcConfig();
+      $config = $configuration_manager->readLocalArcConfig();
       $which = 'local';
     } else {
-      $config = self::readGlobalArcConfig();
-      $which = 'global';
+      $config = $configuration_manager->readUserArcConfig();
+      $which = 'user';
     }
 
     $key = $argv[0];
@@ -88,9 +89,9 @@ EOTEXT
     if (!strlen($val)) {
       unset($config[$key]);
       if ($is_local) {
-        $this->writeLocalArcConfig($config);
+        $configuration_manager->writeLocalArcConfig($config);
       } else {
-        self::writeGlobalArcConfig($config);
+        $configuration_manager->writeUserArcConfig($config);
       }
 
       $old = $settings->formatConfigValueForDisplay($key, $old);
@@ -105,9 +106,9 @@ EOTEXT
 
       $config[$key] = $val;
       if ($is_local) {
-        $this->writeLocalArcConfig($config);
+        $configuration_manager->writeLocalArcConfig($config);
       } else {
-        self::writeGlobalArcConfig($config);
+        $configuration_manager->writeUserArcConfig($config);
       }
 
       $val = $settings->formatConfigValueForDisplay($key, $val);
@@ -124,7 +125,7 @@ EOTEXT
   }
 
   private function show() {
-    $config = self::readGlobalArcConfig();
+    $config = $this->getConfigurationManager()->readUserArcConfig();
 
     $settings = new ArcanistSettings();
 
@@ -143,7 +144,7 @@ EOTEXT
         echo phutil_console_format("           Example: %s\n", $example);
       }
       if (strlen($value)) {
-        echo phutil_console_format("    Global Setting: %s\n", $value);
+        echo phutil_console_format("     User Setting: %s\n", $value);
       }
       echo "\n";
       echo phutil_console_wrap($help, 4);
