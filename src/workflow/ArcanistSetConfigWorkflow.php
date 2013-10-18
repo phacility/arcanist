@@ -144,7 +144,7 @@ EOTEXT
         echo phutil_console_format("           Example: %s\n", $example);
       }
       if (strlen($value)) {
-        echo phutil_console_format("     User Setting: %s\n", $value);
+        echo phutil_console_format("      User Setting: %s\n", $value);
       }
       echo "\n";
       echo phutil_console_wrap($help, 4);
