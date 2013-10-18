@@ -48,7 +48,7 @@ EOTEXT
       $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
 
       $configuration_manager = clone $this->getConfigurationManager();
-      $configuration_manager->setWorkingCopyIndentity($working_copy);
+      $configuration_manager->setWorkingCopyIdentity($working_copy);
       $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
         $configuration_manager);
 
