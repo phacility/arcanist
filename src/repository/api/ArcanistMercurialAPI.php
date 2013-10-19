@@ -139,7 +139,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     if ($this->getBaseCommitArgumentRules() ||
-        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+        $this->getConfigurationManager()->getConfigFromAnySource('base')) {
       $base = $this->resolveBaseCommit();
       if (!$base) {
         throw new ArcanistUsageException(
