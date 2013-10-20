@@ -11,7 +11,6 @@ final class ArcanistXUnitTestResultParser {
    * Parse test results from provided input and return an array
    * of ArcanistUnitTestResult
    *
-   * @param string $path Path to test (Ignored)
    * @param string $test_results String containing test results
    *
    * @return array ArcanistUnitTestResult

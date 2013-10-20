@@ -1642,7 +1642,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       // their declaration if they're invalid and they may not conform to
       // variable rules. This is slightly overbroad (includes the entire
       // rhs of a "Class::..." token) to cover cases like "Class:$x[0]". These
-      // varaibles are simply made exempt from naming conventions.
+      // variables are simply made exempt from naming conventions.
       $exclude_tokens = array();
       $statics = $def->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
       foreach ($statics as $static) {

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Facilitiates implementation of test cases for @{class:ArcanistLinter}s.
+ * Facilitates implementation of test cases for @{class:ArcanistLinter}s.
  *
  * @group testcase
  */

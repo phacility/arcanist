@@ -7,7 +7,7 @@ abstract class ArcanistBaseTestResultParser {
 
   protected $enableCoverage;
   protected $projectRoot;
-  protected $coverateFile;
+  protected $coverageFile;
 
   public function setEnableCoverage($enable_coverage) {
     $this->enableCoverage = $enable_coverage;
