@@ -1067,7 +1067,7 @@ EOTEXT
         "You can learn more about how Phabricator handles character encodings ".
         "(and how to configure encoding settings and detect and correct ".
         "encoding problems) by reading 'User Guide: UTF-8 and Character ".
-        "Encoding' in the Phabricator documentation.\n\n";
+        "Encoding' in the Phabricator documentation.\n\n".
         "    ".pht('AFFECTED FILE(S)', count($utf8_problems))."\n";
       $confirm = pht(
         'Do you want to mark these files as binary and continue?',

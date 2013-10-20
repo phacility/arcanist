@@ -93,7 +93,7 @@ final class ArcanistUnitTestResult {
   /**
    * Merge several coverage reports into a comprehensive coverage report.
    *
-   * @param list List of coverage report strings.
+   * @param array $coverage List of coverage report strings.
    * @return string Cumulative coverage report.
    */
   public static function mergeCoverage(array $coverage) {

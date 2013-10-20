@@ -99,7 +99,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
    * Parse test results from phpunit json report
    *
    * @param string $path Path to test
-   * @param string $json_path Path to phpunit json report
+   * @param string $json_tmp Path to phpunit json report
    * @param string $clover_tmp Path to phpunit clover report
    *
    * @return array
