@@ -48,7 +48,7 @@ EOTEXT
   }
 
   public function requiresAuthentication() {
-    return !$this->getArgument('names');
+    return !$this->getArgument('branch');
   }
 
 
@@ -60,7 +60,7 @@ EOTEXT
       'by-status' => array(
         'help' => 'Sort branches by status instead of time.',
       ),
-      '*' => 'names',
+      '*' => 'branch',
     );
   }
 
@@ -72,7 +72,7 @@ EOTEXT
         'arc feature is only supported under Git and Mercurial.');
     }
 
-    $names = $this->getArgument('names');
+    $names = $this->getArgument('branch');
     if ($names) {
       if (count($names) > 2) {
         throw new ArcanistUsageException("Specify only one branch.");
@@ -109,7 +109,7 @@ EOTEXT
     if (isset($names[1])) {
       $start = $names[1];
     } else {
-      $start = $this->getWorkingCopy()->getConfigFromAnySource(
+      $start = $this->getConfigFromAnySource(
         'arc.feature.start.default');
     }
 
