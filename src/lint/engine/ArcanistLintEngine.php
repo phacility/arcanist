@@ -63,9 +63,20 @@ abstract class ArcanistLintEngine {
 
   private $enableAsyncLint = false;
   private $postponedLinters = array();
+  private $configurationManager;
 
   public function __construct() {
 
+  }
+
+  public function setConfigurationManager(
+    ArcanistConfigurationManager $configuration_manager) {
+    $this->configurationManager = $configuration_manager;
+    return $this;
+  }
+
+  public function getConfigurationManager() {
+    return $this->configurationManager;
   }
 
   public function setWorkingCopy(ArcanistWorkingCopyIdentity $working_copy) {

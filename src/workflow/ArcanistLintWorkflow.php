@@ -261,7 +261,8 @@ EOTEXT
 
     $engine = newv($engine, array());
     $this->engine = $engine;
-    $engine->setWorkingCopy($working_copy); // todo setConfig?
+    $engine->setWorkingCopy($working_copy);
+    $engine->setConfigurationManager($configuration_manager);
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
