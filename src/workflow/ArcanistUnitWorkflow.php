@@ -143,6 +143,7 @@ EOTEXT
 
     $this->engine = newv($engine_class, array());
     $this->engine->setWorkingCopy($working_copy);
+    $this->engine->setConfigurationManager($this->getConfigurationManager());
     if ($everything) {
       $this->engine->setRunAllTests(true);
     } else {

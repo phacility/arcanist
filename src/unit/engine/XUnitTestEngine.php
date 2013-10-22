@@ -56,8 +56,9 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     // Determine xUnit test runner path.
     if ($this->xunitHintPath === null) {
-      $this->xunitHintPath = $this->getWorkingCopy()->getConfig(
-        'unit.xunit.binary');
+      $this->xunitHintPath =
+        $this->getConfigurationManager()->getConfigFromAnySource(
+          'unit.xunit.binary');
     }
     if ($this->xunitHintPath === null) {
     }

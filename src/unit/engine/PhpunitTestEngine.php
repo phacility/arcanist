@@ -257,8 +257,10 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
    */
   private function prepareConfigFile() {
     $project_root = $this->projectRoot . DIRECTORY_SEPARATOR;
+    $config = $this->getConfigurationManager()->getConfigFromAnySource(
+      'phpunit_config');
 
-    if ($config = $this->getWorkingCopy()->getConfig('phpunit_config')) {
+    if ($config) {
       if (Filesystem::pathExists($project_root . $config)) {
         $this->configFile = $project_root . $config;
       } else {
@@ -266,7 +268,9 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
           'found in ' . $project_root . $config);
       }
     }
-    if ($bin = $this->getWorkingCopy()->getConfig('unit.phpunit.binary')) {
+    $bin = $this->getConfigurationManager()->getConfigFromAnySource(
+      'unit.phpunit.binary');
+    if ($bin) {
       if (Filesystem::binaryExists($bin)) {
         $this->phpunitBinary = $bin;
       }

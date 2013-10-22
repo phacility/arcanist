@@ -26,11 +26,15 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
   protected function loadEnvironment(
     $config_item = 'unit.csharp.xunit.binary') {
 
-    $working = $this->getWorkingCopy();
-    $this->xunitHintPath = $working->getConfig('unit.csharp.xunit.binary');
-    $this->cscoverHintPath = $working->getConfig('unit.csharp.cscover.binary');
-    $this->matchRegex = $working->getConfig('unit.csharp.coverage.match');
-    $this->excludedFiles = $working->getConfig('unit.csharp.coverage.excluded');
+    $config = $this->getConfigurationManager();
+    $this->xunitHintPath =
+      $config->getConfigFromAnySource('unit.csharp.xunit.binary');
+    $this->cscoverHintPath =
+      $config->getConfigFromAnySource('unit.csharp.cscover.binary');
+    $this->matchRegex =
+      $config->getConfigFromAnySource('unit.csharp.coverage.match');
+    $this->excludedFiles =
+      $config->getConfigFromAnySource('unit.csharp.coverage.excluded');
 
     parent::loadEnvironment($config_item);
 
