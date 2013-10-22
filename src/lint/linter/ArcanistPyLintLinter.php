@@ -55,11 +55,14 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
   private function getMessageCodeSeverity($code) {
 
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
 
-    $error_regexp   = $working_copy->getConfig('lint.pylint.codes.error');
-    $warning_regexp = $working_copy->getConfig('lint.pylint.codes.warning');
-    $advice_regexp  = $working_copy->getConfig('lint.pylint.codes.advice');
+    $error_regexp   =
+      $config->getConfigFromAnySource('lint.pylint.codes.error');
+    $warning_regexp =
+      $config->getConfigFromAnySource('lint.pylint.codes.warning');
+    $advice_regexp  =
+      $config->getConfigFromAnySource('lint.pylint.codes.advice');
 
     if (!$error_regexp && !$warning_regexp && !$advice_regexp) {
       throw new ArcanistUsageException(
@@ -98,8 +101,8 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     $pylint_bin = "pylint";
 
     // Use the PyLint prefix specified in the config file
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.pylint.prefix');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.pylint.prefix');
     if ($prefix !== null) {
       $pylint_bin = $prefix."/bin/".$pylint_bin;
     }
@@ -122,11 +125,11 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
   private function getPyLintPythonPath() {
     // Get non-default install locations for pylint and its dependencies
     // libraries.
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
     $prefixes = array(
-      $working_copy->getConfig('lint.pylint.prefix'),
-      $working_copy->getConfig('lint.pylint.logilab_astng.prefix'),
-      $working_copy->getConfig('lint.pylint.logilab_common.prefix'),
+      $config->getConfigFromAnySource('lint.pylint.prefix'),
+      $config->getConfigFromAnySource('lint.pylint.logilab_astng.prefix'),
+      $config->getConfigFromAnySource('lint.pylint.logilab_common.prefix'),
     );
 
     // Add the libraries to the python search path
@@ -140,7 +143,8 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
       }
     }
 
-    $config_paths = $working_copy->getConfig('lint.pylint.pythonpath');
+    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config_paths = $config->getConfigFromAnySource('lint.pylint.pythonpath');
     if ($config_paths !== null) {
       foreach ($config_paths as $config_path) {
         if ($config_path !== null) {
@@ -161,11 +165,12 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     $options = array('-rn',  '-iy');
 
     $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
 
     // Specify an --rcfile, either absolute or relative to the project root.
     // Stupidly, the command line args above are overridden by rcfile, so be
     // careful.
-    $rcfile = $working_copy->getConfig('lint.pylint.rcfile');
+    $rcfile = $config->getConfigFromAnySource('lint.pylint.rcfile');
     if ($rcfile !== null) {
       $rcfile = Filesystem::resolvePath(
                    $rcfile,
@@ -174,7 +179,7 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     }
 
     // Add any options defined in the config file for PyLint
-    $config_options = $working_copy->getConfig('lint.pylint.options');
+    $config_options = $config->getConfigFromAnySource('lint.pylint.options');
     if ($config_options !== null) {
       $options = array_merge($options, $config_options);
     }

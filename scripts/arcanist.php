@@ -130,7 +130,7 @@ try {
 
     // Load libraries in ".arcconfig". Libraries here must load.
     arcanist_load_libraries(
-      $working_copy->getConfig('load'),
+      $working_copy->getProjectConfig('load'),
       $must_load = true,
       $lib_source = 'the "load" setting in ".arcconfig"',
       $working_copy);
@@ -138,7 +138,7 @@ try {
 
   $user_config = $configuration_manager->readUserConfigurationFile();
 
-  $config_class = $working_copy->getConfig('arcanist_configuration');
+  $config_class = $working_copy->getProjectConfig('arcanist_configuration');
   if ($config_class) {
     $config = new $config_class();
   } else {

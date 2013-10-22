@@ -72,7 +72,7 @@ EOTEXT
         switch ($name) {
           case ArcanistConfigurationManager::CONFIG_SOURCE_PROJECT:
             // Respect older names in project config.
-            $val = $this->getWorkingCopy()->getConfig($key);
+            $val = $this->getWorkingCopy()->getProjectConfig($key);
             break;
           default:
             $val = idx($config, $key);

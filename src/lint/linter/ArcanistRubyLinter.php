@@ -17,8 +17,8 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
 
   public function getDefaultBinary() {
     // TODO: Deprecation warning.
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.ruby.prefix');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.ruby.prefix');
     if ($prefix !== null) {
       $ruby_bin = $prefix.'ruby';
     }

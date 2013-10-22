@@ -23,8 +23,8 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
   public function getDefaultFlags() {
     // TODO: Warn that all of this is deprecated.
 
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $options = $working_copy->getConfig('lint.pep8.options');
+    $config = $this->getEngine()->getConfigurationManager();
+    $options = $config->getConfigFromAnySource('lint.pep8.options');
 
     if ($options === null) {
       $options = $this->getConfig('options');
@@ -46,9 +46,9 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       return 'pep8';
     }
 
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $old_prefix = $working_copy->getConfig('lint.pep8.prefix');
-    $old_bin = $working_copy->getConfig('lint.pep8.bin');
+    $config = $this->getEngine()->getConfigurationManager();
+    $old_prefix = $config->getConfigFromAnySource('lint.pep8.prefix');
+    $old_bin = $config->getConfigFromAnySource('lint.pep8.bin');
 
     if ($old_prefix || $old_bin) {
       // TODO: Deprecation warning.

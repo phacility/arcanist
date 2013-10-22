@@ -19,17 +19,17 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
   public function getDefaultFlags() {
     // TODO: Deprecated.
 
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
 
-    $options = $working_copy->getConfig('lint.flake8.options', '');
+    $options = $config->getConfigFromAnySource('lint.flake8.options', '');
 
     return $options;
   }
 
   public function getDefaultBinary() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.flake8.prefix');
-    $bin = $working_copy->getConfig('lint.flake8.bin', 'flake8');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.flake8.prefix');
+    $bin = $config->getConfigFromAnySource('lint.flake8.bin', 'flake8');
 
     if ($prefix || ($bin != 'flake8')) {
       return $prefix.'/'.$bin;

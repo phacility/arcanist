@@ -18,16 +18,16 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
   }
 
   public function getLintOptions() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $options = $working_copy->getConfig('lint.cpplint.options', '');
+    $config = $this->getEngine()->getConfigurationManager();
+    $options = $config->getConfigFromAnySource('lint.cpplint.options', '');
 
     return $options;
   }
 
   public function getLintPath() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.cpplint.prefix');
-    $bin = $working_copy->getConfig('lint.cpplint.bin', 'cpplint.py');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.cpplint.prefix');
+    $bin = $config->getConfigFromAnySource('lint.cpplint.bin', 'cpplint.py');
 
     if ($prefix !== null) {
       if (!Filesystem::pathExists($prefix.'/'.$bin)) {

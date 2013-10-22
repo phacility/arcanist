@@ -25,7 +25,7 @@ final class ArcanistConfigurationManager {
 
   public function getProjectConfig($key) {
     if ($this->workingCopy) {
-      return $this->workingCopy->getConfig($key);
+      return $this->workingCopy->getProjectConfig($key);
     }
     return null;
   }

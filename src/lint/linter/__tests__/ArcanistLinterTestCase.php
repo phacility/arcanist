@@ -71,9 +71,13 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         $dir,
         $config_file,
         'Unit Test');
+      $configuration_manager = new ArcanistConfigurationManager();
+      $configuration_manager->setWorkingCopyIdentity($working_copy);
+
 
       $engine = new UnitTestableArcanistLintEngine();
       $engine->setWorkingCopy($working_copy);
+      $engine->setConfigurationManager($configuration_manager);
       $engine->setPaths(array($path));
 
       $engine->setCommitHookMode(idx($config, 'hook', false));

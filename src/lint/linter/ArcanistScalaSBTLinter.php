@@ -27,8 +27,8 @@ final class ArcanistScalaSBTLinter extends ArcanistLinter {
     $sbt_bin = "sbt";
 
     // Use the SBT prefix specified in the config file
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.scala_sbt.prefix');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.scala_sbt.prefix');
     if ($prefix !== null) {
       $sbt_bin = $prefix . $sbt_bin;
     }

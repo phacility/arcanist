@@ -182,7 +182,7 @@ EOTEXT
       $transaction,
       $repository);
 
-    $lint_engine = $working_copy->getConfig('lint.engine');
+    $lint_engine = $working_copy->getProjectConfig('lint.engine');
     if (!$lint_engine) {
       return 0;
     }

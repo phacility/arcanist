@@ -28,9 +28,9 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultFlags() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
 
-    $options = $working_copy->getConfig('lint.csslint.options');
+    $options = $config->getConfigFromAnySource('lint.csslint.options');
     // TODO: Deprecation warning.
 
     return $options;
@@ -38,8 +38,8 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
   public function getDefaultBinary() {
     // TODO: Deprecation warning.
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $bin = $working_copy->getConfig('lint.csslint.bin');
+    $config = $this->getEngine()->getConfigurationManager();
+    $bin = $config->getConfigFromAnySource('lint.csslint.bin');
     if ($bin) {
       return $bin;
     }

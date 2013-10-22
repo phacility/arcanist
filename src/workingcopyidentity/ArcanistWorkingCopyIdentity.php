@@ -135,7 +135,7 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   public function getProjectID() {
-    return $this->getConfig('project_id');
+    return $this->getProjectConfig('project_id');
   }
 
   public function getProjectRoot() {
@@ -154,6 +154,14 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   /**
+   * Deprecated; use @{method:getProjectConfig}.
+   */
+  public function getConfig($key, $default = null) {
+    return $this->getProjectConfig($key, $default);
+  }
+
+
+  /**
    * Read a configuration directive from project configuration. This reads ONLY
    * permanent project configuration (i.e., ".arcconfig"), not other
    * configuration sources. See @{method:getConfigFromAnySource} to read from
@@ -165,7 +173,7 @@ final class ArcanistWorkingCopyIdentity {
    *
    * @task config
    */
-  public function getConfig($key, $default = null) {
+  public function getProjectConfig($key, $default = null) {
     $settings = new ArcanistSettings();
 
     $pval = idx($this->projectConfig, $key);
@@ -175,7 +183,7 @@ final class ArcanistWorkingCopyIdentity {
     if ($pval === null) {
       $legacy = $settings->getLegacyName($key);
       if ($legacy) {
-        $pval = $this->getConfig($legacy);
+        $pval = $this->getProjectConfig($legacy);
       }
     }
 
@@ -193,7 +201,7 @@ final class ArcanistWorkingCopyIdentity {
    * reads ONLY the per-working copy configuration,
    * i.e. .(git|hg|svn)/arc/config, and not other configuration
    * sources.  See @{method:getConfigFromAnySource} to read from any
-   * config source or @{method:getConfig} to read permanent
+   * config source or @{method:getProjectConfig} to read permanent
    * project-level config.
    *
    * @task config

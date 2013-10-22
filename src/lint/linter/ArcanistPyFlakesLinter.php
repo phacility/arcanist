@@ -29,9 +29,9 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $pyflakes_path = $working_copy->getConfig('lint.pyflakes.path');
-    $pyflakes_prefix = $working_copy->getConfig('lint.pyflakes.prefix');
+    $config = $this->getEngine()->getConfigurationManager();
+    $pyflakes_path = $config->getConfigFromAnySource('lint.pyflakes.path');
+    $pyflakes_prefix = $config->getConfigFromAnySource('lint.pyflakes.prefix');
 
     // Default to just finding pyflakes in the users path
     $pyflakes_bin = 'pyflakes';

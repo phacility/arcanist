@@ -67,10 +67,11 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function getJSHintOptions() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config_manager = $this->getEngine()->getConfigurationManager();
     $options = '--reporter '.dirname(realpath(__FILE__)).'/reporter.js';
-    $config = $working_copy->getConfig('lint.jshint.config');
+    $config = $config_manager->getConfigFromAnySource('lint.jshint.config');
 
+    $working_copy = $this->getEngine()->getWorkingCopy();
     if ($config !== null) {
       $config = Filesystem::resolvePath(
         $config,
@@ -89,9 +90,9 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   private function getJSHintPath() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.jshint.prefix');
-    $bin = $working_copy->getConfig('lint.jshint.bin');
+    $config_manager = $this->getEngine()->getConfigurationManager();
+    $prefix = $config_manager->getConfigFromAnySource('lint.jshint.prefix');
+    $bin = $config_manager->getConfigFromAnySource('lint.jshint.bin');
 
     if ($bin === null) {
       $bin = "jshint";
