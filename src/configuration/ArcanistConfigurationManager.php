@@ -9,6 +9,7 @@ final class ArcanistConfigurationManager {
 
   private $runtimeConfig = array();
   private $workingCopy = null;
+  private $customArcrcFilename = null;
 
   public function setWorkingCopyIdentity(
     ArcanistWorkingCopyIdentity $working_copy) {
@@ -147,7 +148,6 @@ final class ArcanistConfigurationManager {
     return false;
   }
 
-
   /**
    * This is probably not the method you're looking for; try
    * @{method:readUserArcConfig}.
@@ -204,7 +204,20 @@ final class ArcanistConfigurationManager {
     }
   }
 
+  public function setUserConfigurationFileLocation($custom_arcrc) {
+    if (!Filesystem::pathExists($custom_arcrc)) {
+      throw new Exception(
+        "Custom arcrc file was specified, but it was not found!");
+    }
+
+    $this->customArcrcFilename = $custom_arcrc;
+  }
+
   public function getUserConfigurationFileLocation() {
+    if (strlen($this->customArcrcFilename)) {
+      return $this->customArcrcFilename;
+    }
+
     if (phutil_is_windows()) {
       return getenv('APPDATA').'/.arcrc';
     } else {

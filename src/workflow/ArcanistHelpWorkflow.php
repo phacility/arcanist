@@ -199,6 +199,11 @@ EOTEXT
       __--conduit-timeout__ __timeout__
           Override the default Conduit timeout. Specified in seconds.
 
+      __--skip-arcconfig__
+          Skip the working copy configuration file
+
+      __--arcrc-file__ __filename__
+          Use provided file instead of ~/.arcrc.
 EOTEXT
     );
   }

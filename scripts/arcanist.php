@@ -22,6 +22,10 @@ $args->parsePartial(
       'name'    => 'skip-arcconfig',
     ),
     array(
+      'name'    => 'arcrc-file',
+      'param'   => 'filename',
+    ),
+    array(
       'name'    => 'conduit-uri',
       'param'   => 'uri',
       'help'    => 'Connect to Phabricator install specified by __uri__.',
@@ -44,6 +48,7 @@ $force_conduit = $args->getArg('conduit-uri');
 $force_conduit_version = $args->getArg('conduit-version');
 $conduit_timeout = $args->getArg('conduit-timeout');
 $skip_arcconfig = $args->getArg('skip-arcconfig');
+$custom_arcrc = $args->getArg('arcrc-file');
 $load = $args->getArg('load-phutil-library');
 $help = $args->getArg('help');
 
@@ -136,6 +141,9 @@ try {
       $working_copy);
   }
 
+  if ($custom_arcrc) {
+    $configuration_manager->setUserConfigurationFileLocation($custom_arcrc);
+  }
   $user_config = $configuration_manager->readUserConfigurationFile();
 
   $config_class = $working_copy->getProjectConfig('arcanist_configuration');
