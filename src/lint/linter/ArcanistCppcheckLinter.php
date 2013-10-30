@@ -96,6 +96,9 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
         continue;
       }
       $file = $location->getAttribute('file');
+      if ($file != Filesystem::resolvePath($path)) {
+        continue;
+      }
       $line = $location->getAttribute('line');
 
       $id = $error->getAttribute('id');
