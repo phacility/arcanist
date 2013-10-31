@@ -47,12 +47,19 @@ EOTEXT
         'repeat' => true,
         'help'  => 'Other users to CC on the new task.',
       ),
+      'proj' => array(
+        'param' => 'proj',
+        'short' => 'P',
+        'repeat' => true,
+        'help'  => 'Assign task to this project.',
+      ),
     );
   }
 
   public function run() {
     $summary = implode(' ', $this->getArgument('summary'));
     $ccs = $this->getArgument('cc');
+    $projs = $this->getArgument('proj');
     $conduit = $this->getConduit();
 
     if (trim($summary) == '') {
@@ -76,6 +83,26 @@ EOTEXT
         $phids[] = $info['phid'];
       }
       $args['ccPHIDs'] = $phids;
+    }
+    if (!$projs) {
+      $proj = $this->getConfigFromAnySource('todo.default_project');
+      if ($proj) {
+        $projs[] = $proj;
+      }
+    }
+    if ($projs) {
+      $phids = array();
+      $projects = $conduit->callMethodSynchronous(
+        'project.query',
+        array(
+          'status' => 'status-active',
+        ));
+      foreach ($projects as $phid => $info) {
+        if (in_array($info['name'], $projs)) {
+          $phids[] = $info['phid'];
+        }
+      }
+      $args['projectPHIDs'] = $phids;
     }
 
     $result = $conduit->callMethodSynchronous(
