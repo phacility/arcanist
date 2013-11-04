@@ -188,7 +188,13 @@ final class ArcanistMercurialParser {
    * @task parse
    */
   public static function parseMercurialBranches($stdout) {
-    $lines = explode("\n", trim($stdout));
+    $stdout = rtrim($stdout, "\n");
+    if (!strlen($stdout)) {
+      // No branches; commonly, this occurs in a newly initialized repository.
+      return array();
+    }
+
+    $lines = explode("\n", $stdout);
 
     $branches = array();
     foreach ($lines as $line) {

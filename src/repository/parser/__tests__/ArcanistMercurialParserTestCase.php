@@ -36,6 +36,10 @@ final class ArcanistMercurialParserTestCase extends ArcanistTestCase {
           array('0b9d8290c4e0', '78963faacfc7', '5db03c5500c6', 'ffffffffffff'),
           array_values(ipull($output, 'rev')));
         break;
+      case 'branches-empty.txt':
+        $output = ArcanistMercurialParser::parseMercurialBranches($data);
+        $this->assertEqual(array(), $output);
+        break;
       case 'log-basic.txt':
         $output = ArcanistMercurialParser::parseMercurialLog($data);
         $this->assertEqual(

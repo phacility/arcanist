@@ -984,22 +984,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranches() {
+    list($stdout) = $this->execxLocal('--debug branches');
+    $lines = ArcanistMercurialParser::parseMercurialBranches($stdout);
+
     $branches = array();
-
-    list($raw_output) = $this->execxLocal('branches');
-    $raw_output = trim($raw_output);
-
-    foreach (explode("\n", $raw_output) as $line) {
-      // example line: default                 0:a5ead76cdf85 (inactive)
-      list($name, $rev_line) = $this->splitBranchOrBookmarkLine($line);
-
-      // strip off the '(inactive)' bit if it exists
-      $rev_parts = explode(' ', $rev_line);
-      $revision = $rev_parts[0];
-
+    foreach ($lines as $name => $spec) {
       $branches[] = array(
         'name' => $name,
-        'revision' => $revision);
+        'revision' => $spec['rev'],
+      );
     }
 
     return $branches;
