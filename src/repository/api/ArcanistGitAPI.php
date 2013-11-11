@@ -22,7 +22,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   protected function buildLocalFuture(array $argv) {
 
-    $argv[0] = 'LANG=C git '.$argv[0];
+    if (phutil_is_windows()) {
+        $argv[0] = 'set LANG=C & git '.$argv[0];
+    } else {
+        $argv[0] = 'LANG=C git '.$argv[0];
+    }
 
     $future = newv('ExecFuture', $argv);
     $future->setCWD($this->getPath());
