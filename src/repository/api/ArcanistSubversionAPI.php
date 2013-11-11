@@ -40,7 +40,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   protected function buildLocalFuture(array $argv) {
 
-    $argv[0] = 'svn '.$argv[0];
+    $argv[0] = 'LANG=C svn '.$argv[0];
 
     $future = newv('ExecFuture', $argv);
     $future->setCWD($this->getPath());
