@@ -184,7 +184,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
   public function didRunLinters() {
     if ($this->futures) {
-      foreach (Futures($this->futures) as $future) {
+      foreach (Futures($this->futures)->limit(8) as $future) {
         $this->resolveFuture($future);
       }
     }
