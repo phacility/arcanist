@@ -17,6 +17,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
   protected $testEngine;
   protected $projectRoot;
   protected $xunitHintPath;
+  protected $discoveryRules;
 
   /**
    * This test engine supports running all tests.
@@ -54,16 +55,24 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
       throw new Exception("Unable to find Mono and you are not on Windows!");
     }
 
+    // Read the discovery rules.
+    $this->discoveryRules =
+      $this->getConfigurationManager()->getConfigFromAnySource(
+        'unit.csharp.discovery');
+    if ($this->discoveryRules === null) {
+      throw new Exception(
+        "You must configure discovery rules to map C# files ".
+        "back to test projects (`unit.csharp.discovery` in .arcconfig).");
+    }
+
     // Determine xUnit test runner path.
     if ($this->xunitHintPath === null) {
       $this->xunitHintPath =
         $this->getConfigurationManager()->getConfigFromAnySource(
-          'unit.xunit.binary');
+          'unit.csharp.xunit.binary');
     }
-    if ($this->xunitHintPath === null) {
-    }
-    $xunit = $this->projectRoot."/".$this->xunitHintPath;
-    if (file_exists($xunit)) {
+    $xunit = $this->projectRoot.DIRECTORY_SEPARATOR.$this->xunitHintPath;
+    if (file_exists($xunit) && $this->xunitHintPath !== null) {
       $this->testEngine = Filesystem::resolvePath($xunit);
     } else if (Filesystem::binaryExists("xunit.console.clr4.exe")) {
       $this->testEngine = "xunit.console.clr4.exe";
@@ -72,39 +81,6 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
         "Unable to locate xUnit console runner.  Configure ".
         "it with the `$config_item' option in .arcconfig");
     }
-  }
-
-  /**
-   * Returns all available tests and related projects.  Recurses into
-   * Protobuild submodules if they are present.
-   *
-   * @return array   Mappings of test project to project being tested.
-   */
-  public function getAllAvailableTestsAndRelatedProjects($path = null) {
-    if ($path == null) {
-      $path = $this->projectRoot;
-    }
-    $entries = Filesystem::listDirectory($path);
-    $mappings = array();
-    foreach ($entries as $entry) {
-      if (substr($entry, -6) === ".Tests") {
-        if (is_dir($path."/".$entry)) {
-          $mappings[$path."/".$entry] = $path."/".
-            substr($entry, 0, strlen($entry) - 6);
-        }
-      } elseif (is_dir($path."/".$entry."/Build")) {
-        if (file_exists($path."/".$entry."/Build/Module.xml")) {
-          // The entry is a Protobuild submodule, which we should
-          // also recurse into.
-          $submappings =
-            $this->getAllAvailableTestsAndRelatedProjects($path."/".$entry);
-          foreach ($submappings as $key => $value) {
-            $mappings[$key] = $value;
-          }
-        }
-      }
-    }
-    return $mappings;
   }
 
   /**
@@ -117,56 +93,69 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $this->loadEnvironment();
 
-    $affected_tests = array();
     if ($this->getRunAllTests()) {
-      echo "Loading tests..."."\n";
-      $entries = $this->getAllAvailableTestsAndRelatedProjects();
-      foreach ($entries as $key => $value) {
-        echo "Test: ".substr($key, strlen($this->projectRoot) + 1)."\n";
-        $affected_tests[] = substr($key, strlen($this->projectRoot) + 1);
-      }
+      $paths = id(new FileFinder($this->projectRoot))->find();
     } else {
       $paths = $this->getPaths();
+    }
 
+    return $this->runAllTests($this->mapPathsToResults($paths));
+  }
+
+  /**
+   * Applies the discovery rules to the set of paths specified.
+   *
+   * @param  array   Array of paths.
+   * @return array   Array of paths to test projects and assemblies.
+   */
+  public function mapPathsToResults(array $paths) {
+    $results = array();
+    foreach ($this->discoveryRules as $regex => $targets) {
+      $regex = str_replace('/', '\\/', $regex);
       foreach ($paths as $path) {
-        if (substr($path, -4) == ".dll" ||
-            substr($path, -4) == ".mdb") {
-          continue;
-        }
-        if (substr_count($path, "/") > 0) {
-          $components = explode("/", $path);
-          $affected_assembly = $components[0];
+        if (preg_match('/'.$regex.'/', $path) === 1) {
+          foreach ($targets as $target) {
+            // Index 0 is the test project (.csproj file)
+            // Index 1 is the output assembly (.dll file)
+            $project = preg_replace('/'.$regex.'/', $target[0], $path);
+            $project = $this->projectRoot.DIRECTORY_SEPARATOR.$project;
+            $assembly = preg_replace('/'.$regex.'/', $target[1], $path);
+            $assembly = $this->projectRoot.DIRECTORY_SEPARATOR.$assembly;
+            if (file_exists($project)) {
+              $project = Filesystem::resolvePath($project);
+              $assembly = Filesystem::resolvePath($assembly);
 
-          // If the change is made inside an assembly that has a `.Tests`
-          // extension, then the developer has changed the actual tests.
-          if (substr($affected_assembly, -6) === ".Tests") {
-            $affected_assembly_path = Filesystem::resolvePath(
-              $affected_assembly);
-            $test_assembly = $affected_assembly;
-          } else {
-            $affected_assembly_path = Filesystem::resolvePath(
-              $affected_assembly.".Tests");
-            $test_assembly = $affected_assembly.".Tests";
-          }
-          if (is_dir($affected_assembly_path) &&
-              !in_array($test_assembly, $affected_tests)) {
-            $affected_tests[] = $test_assembly;
+              // Check to ensure uniqueness.
+              $exists = false;
+              foreach ($results as $existing) {
+                if ($existing['assembly'] === $assembly) {
+                  $exists = true;
+                  break;
+                }
+              }
+
+              if (!$exists) {
+                print "Discovered test at ".$assembly."\n";
+                $results[] = array(
+                  'project' => $project,
+                  'assembly' => $assembly);
+              }
+            }
           }
         }
       }
     }
-
-    return $this->runAllTests($affected_tests);
+    return $results;
   }
 
   /**
    * Builds and runs the specified test assemblies.
    *
-   * @param  array   Array of test assemblies.
+   * @param  array   Array of paths to test project files.
    * @return array   Array of test results.
    */
-  public function runAllTests(array $test_assemblies) {
-    if (empty($test_assemblies)) {
+  public function runAllTests(array $test_projects) {
+    if (empty($test_projects)) {
       return array();
     }
 
@@ -175,11 +164,11 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     if ($this->resultsContainFailures($results)) {
       return array_mergev($results);
     }
-    $results[] = $this->buildProjects($test_assemblies);
+    $results[] = $this->buildProjects($test_projects);
     if ($this->resultsContainFailures($results)) {
       return array_mergev($results);
     }
-    $results[] = $this->testAssemblies($test_assemblies);
+    $results[] = $this->testAssemblies($test_projects);
 
     return array_mergev($results);
   }
@@ -217,6 +206,13 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     // No "Build" directory; so skip generation of projects.
     if (!is_dir(Filesystem::resolvePath($this->projectRoot."/Build"))) {
+      return array();
+    }
+
+    // No "Protobuild.exe" file; so skip generation of projects.
+    if (!is_file(Filesystem::resolvePath(
+      $this->projectRoot."/Protobuild.exe"))) {
+
       return array();
     }
 
@@ -280,8 +276,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
         $this->buildEngine,
         "/p:SkipTestsOnBuild=True");
       $build_future->setCWD(Filesystem::resolvePath(
-        $this->projectRoot."/".$test_assembly));
-      $build_futures[$test_assembly] = $build_future;
+        dirname($test_assembly['project'])));
+      $build_futures[$test_assembly['project']] = $build_future;
     }
     $iterator = Futures($build_futures)->limit(1);
     foreach ($iterator as $test_assembly => $future) {
@@ -319,17 +315,22 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
       // FIXME: Can't use TempFile here as xUnit doesn't like
       // UNIX-style full paths.  It sees the leading / as the
       // start of an option flag, even when quoted.
-      $xunit_temp = $test_assembly.".results.xml";
+      $xunit_temp = Filesystem::readRandomCharacters(10).".results.xml";
       if (file_exists($xunit_temp)) {
         unlink($xunit_temp);
       }
       $future = new ExecFuture(
-        "%C %s /xml %s /silent",
+        "%C %s /xml %s",
         trim($this->runtimeEngine." ".$this->testEngine),
-        $test_assembly."/bin/Debug/".$test_assembly.".dll",
+        $test_assembly,
         $xunit_temp);
-      $future->setCWD(Filesystem::resolvePath($this->projectRoot));
-      return array($future, $xunit_temp, null);
+      $folder = Filesystem::resolvePath($this->projectRoot);
+      $future->setCWD($folder);
+      $combined = $folder."/".$xunit_temp;
+      if (phutil_is_windows()) {
+        $combined = $folder."\\".$xunit_temp;
+      }
+      return array($future, $combined, null);
   }
 
   /**
@@ -348,16 +349,16 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $outputs = array();
     $coverages = array();
     foreach ($test_assemblies as $test_assembly) {
-      list($future, $xunit_temp, $coverage) =
-        $this->buildTestFuture($test_assembly);
-      $futures[$test_assembly] = $future;
-      $outputs[$test_assembly] = $xunit_temp;
-      $coverages[$test_assembly] = $coverage;
+      list($future_r, $xunit_temp, $coverage) =
+        $this->buildTestFuture($test_assembly['assembly']);
+      $futures[$test_assembly['assembly']] = $future_r;
+      $outputs[$test_assembly['assembly']] = $xunit_temp;
+      $coverages[$test_assembly['assembly']] = $coverage;
     }
 
     // Run all of the tests.
-    foreach (Futures($futures) as $test_assembly => $future) {
-      $future->resolve();
+    foreach (Futures($futures)->limit(8) as $test_assembly => $future) {
+      list($err, $stdout, $stderr) = $future->resolve();
 
       if (file_exists($outputs[$test_assembly])) {
         $result = $this->parseTestResult(
@@ -366,11 +367,15 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
         $results[] = $result;
         unlink($outputs[$test_assembly]);
       } else {
-        $result = new ArcanistUnitTestResult();
-        $result->setName("(execute) ".$test_assembly);
-        $result->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
-        $result->setUserData($outputs[$test_assembly]." not found on disk.");
-        $results[] = array($result);
+        // FIXME: There's a bug in Mono which causes a segmentation fault
+        // when xUnit.NET runs; this causes the XML file to not appear
+        // (depending on when the segmentation fault occurs).  See
+        // https://bugzilla.xamarin.com/show_bug.cgi?id=16379
+        // for more information.
+
+        // Since it's not possible for the user to correct this error, we
+        // ignore the fact the tests didn't run here.
+        //
       }
     }
 

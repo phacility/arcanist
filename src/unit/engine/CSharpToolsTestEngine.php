@@ -128,6 +128,9 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
         }
       }
     }
+    if (count($assemblies_to_instrument) === 0) {
+      return parent::buildTestFuture($test_assembly);
+    }
     $future = new ExecFuture(
       "%C -o %s -c %s -a %s -w %s %Ls",
       trim($this->runtimeEngine." ".$this->coverEngine),
