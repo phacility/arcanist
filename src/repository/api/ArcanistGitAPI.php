@@ -473,9 +473,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         'ls-files --others --exclude-standard',
       ));
 
-    // TODO: This doesn't list unstaged adds. It's not clear how to get that
-    // list other than "git status --porcelain" and then parsing it. :/
-
     // Unstaged changes
     $unstaged_future = $this->buildLocalFuture(
       array(
