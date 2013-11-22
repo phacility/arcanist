@@ -477,6 +477,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // list other than "git status --porcelain" and then parsing it. :/
 
     // Unstaged changes
+    // TODO: This doesn't exclude ignored submodules.
+    // Upstream bug: http://thread.gmane.org/gmane.comp.version-control.git/238173
     $unstaged_future = $this->buildLocalFuture(
       array(
         'ls-files -m',
