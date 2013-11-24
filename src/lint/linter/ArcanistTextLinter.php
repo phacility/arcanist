@@ -15,15 +15,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_TRAILING_WHITESPACE    = 6;
   const LINT_NO_COMMIT              = 7;
 
-  private $maxLineLength = 80;
-
   public function getLinterPriority() {
     return 0.5;
-  }
-
-  public function setMaxLineLength($new_length) {
-    $this->maxLineLength = $new_length;
-    return $this;
   }
 
   public function getLinterName() {
@@ -110,7 +103,10 @@ final class ArcanistTextLinter extends ArcanistLinter {
   protected function lintLineLength($path) {
     $lines = explode("\n", $this->getData($path));
 
-    $width = $this->maxLineLength;
+    $config = $this->getEngine()->getConfigurationManager();
+    $maxLineLength = $config->getConfigFromAnySource('lint.text.maxlinelength');
+    $width = nonempty($maxLineLength, 80);
+
     foreach ($lines as $line_idx => $line) {
       if (strlen($line) > $width) {
         $this->raiseLintAtLine(
