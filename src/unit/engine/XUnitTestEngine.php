@@ -135,7 +135,6 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
               }
 
               if (!$exists) {
-                print "Discovered test at ".$assembly."\n";
                 $results[] = array(
                   'project' => $project,
                   'assembly' => $assembly);
