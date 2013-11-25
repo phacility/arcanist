@@ -60,6 +60,13 @@ EOTEXT
       'by-status' => array(
         'help' => 'Sort branches by status instead of time.',
       ),
+      'output' => array(
+        'param' => 'format',
+        'support' => array(
+          'json'
+        ),
+        'help' => "With 'json', show features in machine-readable JSON format.",
+      ),
       '*' => 'branch',
     );
   }
@@ -324,8 +331,10 @@ EOTEXT
         'current'   => $branch['current'],
         'status'    => $status,
         'desc'      => $desc,
+        'revision'  => $revision ? $revision['id'] : null,
         'color'     => $color,
         'esort'     => $epoch,
+        'epoch'     => $epoch,
         'ssort'     => $ssort,
       );
     }
@@ -338,16 +347,22 @@ EOTEXT
     } else {
       $out = isort($out, 'esort');
     }
-
-    $console = PhutilConsole::getConsole();
-    foreach ($out as $line) {
-      $color = $line['color'];
-      $console->writeOut(
-        "%s **%s** <fg:{$color}>%s</fg> %s\n",
-        $line['current'] ? '* ' : '  ',
-        str_pad($line['name'], $len_name),
-        str_pad($line['status'], $len_status),
-        $line['desc']);
+    if ($this->getArgument('output') == 'json') {
+      foreach ($out as &$feature) {
+        unset($feature['color'], $feature['ssort'], $feature['esort']);
+      }
+      echo json_encode(ipull($out, null, 'name')) . "\n";
+    } else {
+      $console = PhutilConsole::getConsole();
+      foreach ($out as $line) {
+        $color = $line['color'];
+        $console->writeOut(
+          "%s **%s** <fg:{$color}>%s</fg> %s\n",
+          $line['current'] ? '* ' : '  ',
+          str_pad($line['name'], $len_name),
+          str_pad($line['status'], $len_status),
+          $line['desc']);
+      }
     }
   }
 
