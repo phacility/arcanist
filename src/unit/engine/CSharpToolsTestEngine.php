@@ -23,12 +23,9 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
    * of configuration values and to pull in the cstools config for
    * code coverage.
    */
-  protected function loadEnvironment(
-    $config_item = 'unit.csharp.xunit.binary') {
+  protected function loadEnvironment() {
 
     $config = $this->getConfigurationManager();
-    $this->xunitHintPath =
-      $config->getConfigFromAnySource('unit.csharp.xunit.binary');
     $this->cscoverHintPath =
       $config->getConfigFromAnySource('unit.csharp.cscover.binary');
     $this->matchRegex =
@@ -36,7 +33,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $this->excludedFiles =
       $config->getConfigFromAnySource('unit.csharp.coverage.excluded');
 
-    parent::loadEnvironment($config_item);
+    parent::loadEnvironment();
 
     if ($this->getEnableCoverage() === false) {
       return;
@@ -48,7 +45,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
         "Unable to locate cscover.  Configure it with ".
         "the `unit.csharp.coverage.binary' option in .arcconfig");
     }
-    $cscover = $this->projectRoot."/".$this->cscoverHintPath;
+    $cscover = $this->projectRoot.DIRECTORY_SEPARATOR.$this->cscoverHintPath;
     if (file_exists($cscover)) {
       $this->coverEngine = Filesystem::resolvePath($cscover);
     } else {
@@ -98,7 +95,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     // FIXME: Can't use TempFile here as xUnit doesn't like
     // UNIX-style full paths.  It sees the leading / as the
     // start of an option flag, even when quoted.
-    $xunit_temp = $test_assembly.".results.xml";
+    $xunit_temp = Filesystem::readRandomCharacters(10).".results.xml";
     if (file_exists($xunit_temp)) {
       unlink($xunit_temp);
     }
@@ -109,22 +106,22 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     if ($xunit_cmd === "") {
       $xunit_cmd = $this->testEngine;
       $xunit_args = csprintf(
-        "%s /xml %s /silent",
-        $test_assembly.".dll",
+        "%s /xml %s",
+        $test_assembly,
         $xunit_temp);
     } else {
       $xunit_args = csprintf(
-        "%s %s /xml %s /silent",
+        "%s %s /xml %s",
         $this->testEngine,
-        $test_assembly.".dll",
+        $test_assembly,
         $xunit_temp);
     }
-    $assembly_dir = $test_assembly."/bin/Debug/";
+    $assembly_dir = dirname($test_assembly);
     $assemblies_to_instrument = array();
     foreach (Filesystem::listDirectory($assembly_dir) as $file) {
       if (substr($file, -4) == ".dll" || substr($file, -4) == ".exe") {
         if ($this->assemblyShouldBeInstrumented($file)) {
-          $assemblies_to_instrument[] = $assembly_dir.$file;
+          $assemblies_to_instrument[] = $assembly_dir.DIRECTORY_SEPARATOR.$file;
         }
       }
     }
@@ -142,7 +139,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $future->setCWD(Filesystem::resolvePath($this->projectRoot));
     return array(
       $future,
-      $this->projectRoot."/".$assembly_dir.$xunit_temp,
+      $assembly_dir.DIRECTORY_SEPARATOR.$xunit_temp,
       $cover_temp);
   }
 
@@ -245,7 +242,8 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     }
 
     foreach ($files as $file) {
-      $absolute_file = $this->projectRoot."/".$file;
+      $absolute_file = Filesystem::resolvePath(
+        $this->projectRoot.DIRECTORY_SEPARATOR.$file);
 
       // get total line count in file
       $line_count = count(file($absolute_file));

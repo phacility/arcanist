@@ -34,7 +34,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    *
    * @return void
    */
-  protected function loadEnvironment($config_item = 'unit.xunit.binary') {
+  protected function loadEnvironment() {
     $this->projectRoot = $this->getWorkingCopy()->getProjectRoot();
 
     // Determine build engine.
@@ -79,7 +79,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     } else {
       throw new Exception(
         "Unable to locate xUnit console runner.  Configure ".
-        "it with the `$config_item' option in .arcconfig");
+        "it with the `unit.csharp.xunit.binary' option in .arcconfig");
     }
   }
 
