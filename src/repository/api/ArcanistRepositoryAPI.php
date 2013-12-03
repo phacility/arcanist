@@ -63,48 +63,31 @@ abstract class ArcanistRepositoryAPI {
 
     if (!$working_copy) {
       throw new Exception(
-        "Trying to create a RepositoryApi without a working copy");
+        pht(
+          "Trying to create a RepositoryAPI without a working copy!"));
     }
 
     $root = $working_copy->getProjectRoot();
-
-    if (!$root) {
-      throw new ArcanistUsageException(
-        "There is no readable '.arcconfig' file in the working directory or ".
-        "any parent directory. Create an '.arcconfig' file to configure arc.");
-    }
-
-    if (Filesystem::pathExists($root.'/.hg')) {
-      $api = new ArcanistMercurialAPI($root);
-      $api->configurationManager = $configuration_manager;
-      return $api;
-    }
-
-    $git_root = self::discoverGitBaseDirectory($root);
-    if ($git_root) {
-      if (!Filesystem::pathsAreEquivalent($root, $git_root)) {
-        throw new ArcanistUsageException(
-          "'.arcconfig' file is located at '{$root}', but working copy root ".
-          "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
-      }
-
-      $api = new ArcanistGitAPI($root);
-      $api->configurationManager = $configuration_manager;
-      return $api;
-    }
-
-    // check if we're in an svn working copy
-    foreach (Filesystem::walkToRoot($root) as $dir) {
-      if (Filesystem::pathExists($dir . '/.svn')) {
+    switch ($working_copy->getVCSType()) {
+      case 'svn':
         $api = new ArcanistSubversionAPI($root);
-        $api->configurationManager = $configuration_manager;
-        return $api;
-      }
+        break;
+      case 'hg':
+        $api = new ArcanistMercurialAPI($root);
+        break;
+      case 'git':
+        $api = new ArcanistGitAPI($root);
+        break;
+      default:
+        throw new Exception(
+          pht(
+            "The current working directory is not part of a working copy for ".
+            "a supported version control system (Git, Subversion or ".
+            "Mercurial)."));
     }
 
-    throw new ArcanistUsageException(
-      "The current working directory is not part of a working copy for a ".
-      "supported version control system (svn, git or mercurial).");
+    $api->configurationManager = $configuration_manager;
+    return $api;
   }
 
   public function __construct($path) {
@@ -287,25 +270,6 @@ abstract class ArcanistRepositoryAPI {
     return;
   }
 
-
-
-  private static function discoverGitBaseDirectory($root) {
-    try {
-
-      // NOTE: This awkward construction is to make sure things work on Windows.
-      $future = new ExecFuture('git rev-parse --show-cdup');
-      $future->setCWD($root);
-      list($stdout) = $future->resolvex();
-
-      return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
-    } catch (CommandException $ex) {
-      // This might be because the $root isn't a Git working copy, or the user
-      // might not have Git installed at all so the `git` command fails. Assume
-      // that users trying to work with git working copies will have a working
-      // `git` binary.
-      return null;
-    }
-  }
 
   /**
    * Fetches the original file data for each path provided.
