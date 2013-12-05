@@ -38,6 +38,11 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         continue;
       }
 
+      // We skip non-existing files. Probably they has been deleted.
+      if(!file_exists($path)){
+        continue;
+      }
+
       if (substr($path, -8) == 'Test.php') {
         // Looks like a valid test file name.
         $this->affectedTests[$path] = $path;
