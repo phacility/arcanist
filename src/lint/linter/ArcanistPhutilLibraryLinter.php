@@ -152,15 +152,33 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               continue;
             }
 
+            $libphutil_root = dirname(phutil_get_library_root('phutil'));
+
             $this->raiseLintInLibrary(
               $library,
               $file,
               $offset,
               self::LINT_UNKNOWN_SYMBOL,
-              "Use of unknown {$type} '{$symbol}'. This symbol is not defined ".
-              "in any loaded phutil library. It might be misspelled, or it ".
-              "may have been added recently. Make sure libphutil and other ".
-              "libraries are up to date.");
+              "Use of unknown {$type} '{$symbol}'. Common causes are:\n\n".
+              "  - Your libphutil/ is out of date.\n".
+              "    This is the most common cause.\n".
+              "    Update this copy of libphutil: {$libphutil_root}\n".
+              "\n".
+              "  - Some other library is out of date.\n".
+              "    Update the library this symbol appears in.\n".
+              "\n".
+              "  - This symbol is misspelled.\n".
+              "    Spell the symbol name correctly.\n".
+              "    Symbol name spelling is case-sensitive.\n".
+              "\n".
+              "  - This symbol was added recently.\n".
+              "    Run `arc liberate` on the library it was added to.\n".
+              "\n".
+              "  - This symbol is external. Use `@phutil-external-symbol`.\n".
+              "    Use `grep` to find usage examples of this directive.\n".
+              "\n".
+              "*** ALTHOUGH USUALLY EASY TO FIX, THIS IS A SERIOUS ERROR.\n".
+              "*** THIS ERROR IS YOUR FAULT. YOU MUST RESOLVE IT.");
           }
         }
       }
