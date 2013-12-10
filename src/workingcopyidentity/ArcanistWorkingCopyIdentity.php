@@ -330,7 +330,7 @@ final class ArcanistWorkingCopyIdentity {
     $json = $json_encoder->encodeFormatted($config);
 
     $config_file = Filesystem::resolvePath('config', $dir);
-     try {
+    try {
       Filesystem::writeFile($config_file, $json);
     } catch (FilesystemException $ex) {
       return false;
