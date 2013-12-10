@@ -145,7 +145,7 @@ final class ArcanistConfigurationManager {
       return $this->workingCopy->writeLocalArcConfig($config);
     }
 
-    return false;
+    throw new Exception(pht("No working copy to write config to!"));
   }
 
   /**

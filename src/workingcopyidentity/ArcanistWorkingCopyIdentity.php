@@ -312,30 +312,21 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   public function writeLocalArcConfig(array $config) {
-    $dir = $this->localMetaDir;
-    if (!strlen($dir)) {
-      return false;
-    }
-
-    if (!Filesystem::pathExists($dir)) {
-      try {
-        Filesystem::createDirectory($dir);
-      } catch (Exception $ex) {
-        return false;
-      }
-    }
-
     $json_encoder = new PhutilJSON();
     $json = $json_encoder->encodeFormatted($config);
 
-    $config_file = Filesystem::resolvePath('arc/config', $dir);
-     try {
-      Filesystem::writeFile($config_file, $json);
-    } catch (FilesystemException $ex) {
-      return false;
+    $dir = $this->localMetaDir;
+    if (!strlen($dir)) {
+      throw new Exception(pht('No working copy to write config into!'));
     }
 
-    return true;
+    $local_dir = $dir.DIRECTORY_SEPARATOR.'arc';
+    if (!Filesystem::pathExists($local_dir)) {
+      Filesystem::createDirectory($local_dir, 0755);
+    }
+
+    $config_file = $local_dir.DIRECTORY_SEPARATOR.'config';
+    Filesystem::writeFile($config_file, $json);
   }
 
 }
