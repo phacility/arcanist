@@ -317,9 +317,10 @@ final class ArcanistWorkingCopyIdentity {
       return false;
     }
 
+    $dir = Filesystem::resolvePath('arc', $dir);
     if (!Filesystem::pathExists($dir)) {
       try {
-        Filesystem::createDirectory($dir);
+        Filesystem::createDirectory($dir, 0777, true);
       } catch (Exception $ex) {
         return false;
       }
@@ -328,8 +329,8 @@ final class ArcanistWorkingCopyIdentity {
     $json_encoder = new PhutilJSON();
     $json = $json_encoder->encodeFormatted($config);
 
-    $config_file = Filesystem::resolvePath('arc/config', $dir);
-     try {
+    $config_file = Filesystem::resolvePath('config', $dir);
+    try {
       Filesystem::writeFile($config_file, $json);
     } catch (FilesystemException $ex) {
       return false;
