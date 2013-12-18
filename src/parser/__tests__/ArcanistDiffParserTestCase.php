@@ -570,6 +570,11 @@ EOTEXT
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
         break;
+      case 'svnlook-basics.svndiff':
+      case 'svnlook-add.svndiff':
+      case 'svnlook-delete.svndiff':
+        $this->assertEqual(1, count($changes));
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

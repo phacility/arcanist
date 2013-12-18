@@ -207,6 +207,8 @@ final class ArcanistDiffParser {
       $patterns = array(
         // This is a normal SVN text change, probably from "svn diff".
         '(?P<type>Index): (?P<cur>.+)',
+        // This is an SVN text change, probably from "svnlook diff".
+        '(?P<type>Modified|Added|Deleted): (?P<cur>.+)',
         // This is an SVN property change, probably from "svn diff".
         '(?P<type>Property changes on): (?P<cur>.+)',
         // This is a git commit message, probably from "git show".
@@ -285,6 +287,9 @@ final class ArcanistDiffParser {
 
       switch ($match['type']) {
         case 'Index':
+        case 'Modified':
+        case 'Added':
+        case 'Deleted':
           $this->parseIndexHunk($change);
           break;
         case 'Property changes on':
