@@ -51,6 +51,10 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
     return pht('Install CSSLint using `npm install -g csslint`.');
   }
 
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $report_dom = new DOMDocument();
     $ok = @$report_dom->loadXML($stdout);
@@ -82,7 +86,7 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
         $message->setDescription($child->getAttribute('reason'));
         $message->setSeverity($severity);
 
-        if ($child->hasAttribute('line')) {
+        if ($child->hasAttribute('line') && $child->getAttribute('line') > 0) {
           $line = $lines[$child->getAttribute('line') - 1];
           $text = substr($line, $child->getAttribute('char') - 1);
           $message->setOriginalText($text);
