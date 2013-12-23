@@ -86,7 +86,7 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
         $message->setDescription($child->getAttribute('reason'));
         $message->setSeverity($severity);
 
-        if ($child->hasAttribute('line')) {
+        if ($child->hasAttribute('line') && $child->getAttribute('line') > 0) {
           $line = $lines[$child->getAttribute('line') - 1];
           $text = substr($line, $child->getAttribute('char') - 1);
           $message->setOriginalText($text);
