@@ -81,7 +81,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $run_tests = array();
     foreach ($symbols as $symbol) {
-      if (!preg_match('@/__tests__/@', $symbol['where'])) {
+      if (!preg_match('@(?:^|/)__tests__/@', $symbol['where'])) {
         continue;
       }
 
