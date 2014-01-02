@@ -125,7 +125,7 @@ EOTEXT
   }
 
   private function show() {
-    $config = $this->getConfigurationManager()->readUserArcConfig();
+    $config_manager = $this->getConfigurationManager();
 
     $settings = new ArcanistSettings();
 
@@ -136,7 +136,11 @@ EOTEXT
       $example = $settings->getExample($key);
       $help = $settings->getHelp($key);
 
-      $value = idx($config, $key);
+      $config = $config_manager->getConfigFromAllSources($key);
+
+      $source = head_key($config);
+
+      $value = head($config);
       $value = $settings->formatConfigValueForDisplay($key, $value);
 
       echo phutil_console_format("**__%s__** (%s)\n\n", $key, $type);
@@ -144,7 +148,13 @@ EOTEXT
         echo phutil_console_format("           Example: %s\n", $example);
       }
       if (strlen($value)) {
-        echo phutil_console_format("      User Setting: %s\n", $value);
+        if (strlen($source)) {
+          $source = pht('(from %s config)', $source);
+        }
+        echo phutil_console_format(
+          "   Current Setting: %s %s\n",
+          $value,
+          $source);
       }
       echo "\n";
       echo phutil_console_wrap($help, 4);
