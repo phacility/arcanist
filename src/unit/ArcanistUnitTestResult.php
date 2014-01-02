@@ -14,7 +14,6 @@ final class ArcanistUnitTestResult {
   const RESULT_UNSOUND      = 'unsound';
   const RESULT_POSTPONED    = 'postponed';
 
-  private $namespace;
   private $name;
   private $link;
   private $result;
