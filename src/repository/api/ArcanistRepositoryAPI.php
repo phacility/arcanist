@@ -187,6 +187,14 @@ abstract class ArcanistRepositoryAPI {
   /**
    * @task status
    */
+  final public function getMissingChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_MISSING);
+  }
+
+
+  /**
+   * @task status
+   */
   private function getUncommittedPathsWithMask($mask) {
     $match = array();
     foreach ($this->getUncommittedStatus() as $path => $flags) {

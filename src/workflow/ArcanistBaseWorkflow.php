@@ -847,6 +847,18 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         "    ".implode("\n    ", $conflicts)."\n");
     }
 
+    $missing = $api->getMissingChanges();
+    if ($missing) {
+      throw new ArcanistUsageException(
+        pht(
+          "You have missing files in this working copy. Revert or formally ".
+          "remove them (with `svn rm`) before proceeding.\n\n".
+          "%s".
+          "  Missing files in working copy:\n%s\n",
+          $working_copy_desc,
+          "    ".implode("\n    ", $missing)));
+    }
+
     $unstaged = $api->getUnstagedChanges();
     if ($unstaged) {
       echo "You have unstaged changes in this working copy.\n\n".
