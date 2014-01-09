@@ -8,7 +8,12 @@
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
   public function executeTestsInDirectory($root, ArcanistLinter $linter) {
-    foreach (Filesystem::listDirectory($root, $hidden = false) as $file) {
+    $files = id(new FileFinder($root))
+      ->withType('f')
+      ->withSuffix('lint-test')
+      ->find();
+
+    foreach ($files as $file) {
       $this->lintFile($root.$file, $linter);
     }
   }
