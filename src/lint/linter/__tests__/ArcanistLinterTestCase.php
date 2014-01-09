@@ -119,6 +119,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
             $caught_exception = true;
           }
         }
+      } else if ($exception instanceof ArcanistUsageException) {
+        $this->assertSkipped($exception->getMessage());
       }
       $exception_message = $exception->getMessage()."\n\n".
                            $exception->getTraceAsString();
