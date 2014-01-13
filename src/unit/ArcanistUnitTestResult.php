@@ -14,6 +14,7 @@ final class ArcanistUnitTestResult {
   const RESULT_UNSOUND      = 'unsound';
   const RESULT_POSTPONED    = 'postponed';
 
+  private $namespace;
   private $name;
   private $link;
   private $result;
@@ -21,6 +22,15 @@ final class ArcanistUnitTestResult {
   private $userData;
   private $extraData;
   private $coverage;
+
+  public function setNamespace($namespace) {
+    $this->namespace = $namespace;
+    return $this;
+  }
+
+  public function getNamespace() {
+    return $this->namespace;
+  }
 
   public function setName($name) {
     $this->name = $name;

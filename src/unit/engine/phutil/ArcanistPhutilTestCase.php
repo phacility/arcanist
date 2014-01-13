@@ -396,6 +396,7 @@ abstract class ArcanistPhutilTestCase {
 
     $result = new ArcanistUnitTestResult();
     $result->setCoverage($coverage);
+    $result->setNamespace(get_class($this));
     $result->setName($this->runningTest);
     $result->setLink($this->getLink($this->runningTest));
     $result->setResult($test_result);
