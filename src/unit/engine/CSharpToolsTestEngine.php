@@ -284,5 +284,3 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     return $reports;
   }
 }
-
-

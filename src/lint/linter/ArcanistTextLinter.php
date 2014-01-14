@@ -14,6 +14,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_BAD_CHARSET            = 5;
   const LINT_TRAILING_WHITESPACE    = 6;
   const LINT_NO_COMMIT              = 7;
+  const LINT_BOF_WHITESPACE         = 8;
+  const LINT_EOF_WHITESPACE         = 9;
 
   private $maxLineLength = 80;
 
@@ -38,6 +40,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
     return array(
       self::LINT_LINE_WRAP => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_TRAILING_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_BOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_EOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
     );
   }
 
@@ -50,6 +54,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
       self::LINT_BAD_CHARSET          => pht('Bad Charset'),
       self::LINT_TRAILING_WHITESPACE  => pht('Trailing Whitespace'),
       self::LINT_NO_COMMIT            => pht('Explicit %s', '@no'.'commit'),
+      self::LINT_BOF_WHITESPACE       => pht('Leading Whitespace at BOF'),
+      self::LINT_EOF_WHITESPACE       => pht('Trailing Whitespace at EOF'),
     );
   }
 
@@ -76,6 +82,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->lintLineLength($path);
     $this->lintEOFNewline($path);
     $this->lintTrailingWhitespace($path);
+
+    $this->lintBOFWhitespace($path);
+    $this->lintEOFWhitespace($path);
 
     if ($this->getEngine()->getCommitHookMode()) {
       $this->lintNoCommit($path);
@@ -194,6 +203,54 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
+  protected function lintBOFWhitespace($path) {
+    $data = $this->getData($path);
+
+    $matches = null;
+    $preg = preg_match(
+      '/^\s*\n/',
+      $data,
+      $matches,
+      PREG_OFFSET_CAPTURE);
+
+    if (!$preg) {
+      return;
+    }
+
+    list($string, $offset) = $matches[0];
+    $this->raiseLintAtOffset(
+      $offset,
+      self::LINT_BOF_WHITESPACE,
+      'This file contains leading whitespace at the beginning of the file. ' .
+      'This is unnecessary and should be avoided when possible.',
+      $string,
+      '');
+  }
+
+  protected function lintEOFWhitespace($path) {
+    $data = $this->getData($path);
+
+    $matches = null;
+    $preg = preg_match(
+      '/(?<=\n)\s+$/',
+      $data,
+      $matches,
+      PREG_OFFSET_CAPTURE);
+
+    if (!$preg) {
+      return;
+    }
+
+    list($string, $offset) = $matches[0];
+    $this->raiseLintAtOffset(
+      $offset,
+      self::LINT_EOF_WHITESPACE,
+      'This file contains trailing whitespace at the end of the file. This ' .
+      'is unnecessary and should be avoided when possible.',
+      $string,
+      '');
+  }
+
   private function lintNoCommit($path) {
     $data = $this->getData($path);
 
@@ -209,6 +266,5 @@ final class ArcanistTextLinter extends ArcanistLinter {
         $deadly);
     }
   }
-
 
 }

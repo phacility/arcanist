@@ -57,5 +57,3 @@ abstract class ArcanistLicenseLinter extends ArcanistLinter {
     }
   }
 }
-
-

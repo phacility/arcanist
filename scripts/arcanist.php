@@ -624,4 +624,3 @@ function reenter_if_this_is_arcanist_or_libphutil(
 
   exit($err);
 }
-
