@@ -908,7 +908,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
-        $api->doCommit(self::AUTO_COMMIT_TITLE);
+        $commit_message = phutil_console_prompt("Enter commit message:");
+        if ($commit_message == '') {
+          $commit_message = self::AUTO_COMMIT_TITLE;
+        }
+        $api->doCommit($commit_message);
       }
     }
   }
