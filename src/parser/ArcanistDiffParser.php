@@ -220,7 +220,7 @@ final class ArcanistDiffParser {
         '(?P<type>rcsdiff -u) (?P<oldnew>.*)',
         // This is a unified diff, probably from "diff -u" or synthetic diffing.
         '(?P<type>---) (?P<old>.+)\s+\d{4}-\d{2}-\d{2}.*',
-        '(?P<binary>Binary) files '.
+        '(?P<binary>Binary files|Files) '.
           '(?P<old>.+)\s+\d{4}-\d{2}-\d{2} and '.
           '(?P<new>.+)\s+\d{4}-\d{2}-\d{2} differ.*',
         // This is a normal Mercurial text change, probably from "hg diff". It
