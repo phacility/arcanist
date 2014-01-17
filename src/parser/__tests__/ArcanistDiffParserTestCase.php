@@ -217,6 +217,7 @@ EOTEXT
           $change->getNewProperties());
         break;
       case 'svn-binary-diff.svndiff':
+      case 'svn-binary-diff-freebsd.svndiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
         $this->assertEqual(
