@@ -228,13 +228,18 @@ EOTEXT
   private function findOwnerPHID($owner) {
     $conduit = $this->getConduit();
 
-    $owner_phid = $conduit->callMethodSynchronous(
-      'user.find',
+    $users = $conduit->callMethodSynchronous(
+      'user.query',
       array(
-        'aliases' => array($owner),
+        'usernames' => array($owner),
       ));
 
-    return idx($owner_phid, $owner);
+    if (!$users) {
+      return null;
+    }
+
+    $user = head($users);
+    return idx($user, 'phid');
   }
 
   private function loadManiphestTasks($status, $owner_phid, $order, $limit) {
