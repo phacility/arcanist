@@ -205,7 +205,7 @@ phutil_register_library_map(array(
     'ArcanistBundleTestCase' => 'ArcanistTestCase',
     'ArcanistCSSLintLinter' => 'ArcanistExternalLinter',
     'ArcanistCSSLintLinterTestCase' => 'ArcanistArcanistLinterTestCase',
-    'ArcanistCSharpLinter' => 'ArcanistFutureLinter',
+    'ArcanistCSharpLinter' => 'ArcanistLinter',
     'ArcanistCallConduitWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistCapabilityNotSupportedException' => 'Exception',
     'ArcanistChooseInvalidRevisionException' => 'Exception',

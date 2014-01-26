@@ -204,8 +204,8 @@ try {
   if ($force_conduit) {
     $conduit_uri = $force_conduit;
   } else {
-    $project_conduit_uri =
-      $configuration_manager->getProjectConfig('conduit_uri');
+    $project_conduit_uri = $configuration_manager->getProjectConfig(
+      'phabricator.uri');
     if ($project_conduit_uri) {
       $conduit_uri = $project_conduit_uri;
     } else {

@@ -187,6 +187,7 @@ final class ArcanistWorkingCopyIdentity {
 
   private static function parseRawConfigFile($raw_config, $from_where) {
     $proj = json_decode($raw_config, true);
+
     if (!is_array($proj)) {
       throw new Exception(
         "Unable to parse '.arcconfig' file '{$from_where}'. The file contents ".
@@ -194,16 +195,7 @@ final class ArcanistWorkingCopyIdentity {
         "FILE CONTENTS\n".
         substr($raw_config, 0, 2048));
     }
-    $required_keys = array(
-      'project_id',
-    );
-    foreach ($required_keys as $key) {
-      if (!array_key_exists($key, $proj)) {
-        throw new Exception(
-          "Required key '{$key}' is missing from '.arcconfig' file ".
-          "'{$from_where}'.");
-      }
-    }
+
     return $proj;
   }
 
@@ -213,6 +205,12 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   public function getProjectID() {
+    $project_id = $this->getProjectConfig('project.name');
+    if ($project_id) {
+      return $project_id;
+    }
+
+    // This is an older name for the setting.
     return $this->getProjectConfig('project_id');
   }
 

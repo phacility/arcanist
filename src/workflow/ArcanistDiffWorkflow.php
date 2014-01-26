@@ -508,9 +508,9 @@ EOTEXT
     }
 
     $diff_spec = array(
-      'changes'                   => mpull($changes, 'toDictionary'),
-      'lintStatus'                => $this->getLintStatus($lint_result),
-      'unitStatus'                => $this->getUnitStatus($unit_result),
+      'changes' => mpull($changes, 'toDictionary'),
+      'lintStatus' => $this->getLintStatus($lint_result),
+      'unitStatus' => $this->getUnitStatus($unit_result),
     ) + $this->buildDiffSpecification();
 
     $conduit = $this->getConduit();
@@ -2243,6 +2243,7 @@ EOTEXT
       $vcs            = $repository_api->getSourceControlSystemName();
       $source_path    = $repository_api->getPath();
       $branch         = $repository_api->getBranchName();
+      $repo_uuid      = $repository_api->getRepositoryUUID();
 
       if ($repository_api instanceof ArcanistGitAPI) {
         $info = $this->getGitParentLogInfo();
@@ -2258,8 +2259,6 @@ EOTEXT
         if ($info['uuid']) {
           $repo_uuid = $info['uuid'];
         }
-      } else if ($repository_api instanceof ArcanistSubversionAPI) {
-        $repo_uuid = $repository_api->getRepositorySVNUUID();
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
 
         $bookmark = $repository_api->getActiveBookmark();
@@ -2280,7 +2279,7 @@ EOTEXT
       $project_id = $this->getWorkingCopy()->getProjectID();
     }
 
-    return array(
+    $data = array(
       'sourceMachine'             => php_uname('n'),
       'sourcePath'                => $source_path,
       'branch'                    => $branch,
@@ -2288,12 +2287,16 @@ EOTEXT
       'sourceControlSystem'       => $vcs,
       'sourceControlPath'         => $base_path,
       'sourceControlBaseRevision' => $base_revision,
-      'parentRevisionID'          => $parent,
-      'repositoryUUID'            => $repo_uuid,
       'creationMethod'            => 'arc',
       'arcanistProject'           => $project_id,
-      'authorPHID'                => $this->getUserPHID(),
     );
+
+    $repository_phid = $this->getRepositoryPHID();
+    if ($repository_phid) {
+      $data['repositoryPHID'] = $repository_phid;
+    }
+
+    return $data;
   }
 
 

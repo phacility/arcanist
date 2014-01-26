@@ -330,6 +330,8 @@ abstract class ArcanistRepositoryAPI {
   abstract public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query);
+  abstract public function getRemoteURI();
+
 
   public function getUnderlyingWorkingCopyRevision() {
     return $this->getWorkingCopyRevision();
@@ -641,6 +643,10 @@ abstract class ArcanistRepositoryAPI {
     $commit = $parser->resolveBaseCommit($base_commit_rules);
 
     return $commit;
+  }
+
+  public function getRepositoryUUID() {
+    return null;
   }
 
 }

@@ -369,6 +369,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
       return $matches[1];
     }
+
+    return null;
+  }
+
+  public function getRemoteURI() {
+    list($stdout) = $this->execxLocal('remote show -n origin');
+
+    $matches = null;
+    if (preg_match('/^\s*Fetch URL: (.*)$/m', $stdout, $matches)) {
+      return trim($matches[1]);
+    }
+
     return null;
   }
 

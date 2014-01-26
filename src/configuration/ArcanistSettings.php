@@ -32,6 +32,32 @@ final class ArcanistSettings {
           'unit test engines.',
         'example' => '["/var/arc/customlib/src"]',
       ),
+      'repository.callsign' => array(
+        'type' => 'string',
+        'example' => '"X"',
+        'help' => pht(
+          'Associate the working copy with a specific Phabricator repository. '.
+          'Normally, arc can figure this association out on its own, but if '.
+          'your setup is unusual you can use this option to tell it what the '.
+          'desired value is.'),
+      ),
+      'phabricator.uri' => array(
+        'type' => 'string',
+        'legacy' => 'conduit_uri',
+        'example' => '"https://phabricator.mycompany.com/"',
+        'help' => pht(
+          'Associates this working copy with a specific installation of '.
+          'Phabricator.'),
+      ),
+      'project.name' => array(
+        'type' => 'string',
+        'legacy' => 'project_id',
+        'example' => '"arcanist"',
+        'help' => pht(
+          'Associates this working copy with a named Arcanist Project. '.
+          'This is primarily useful if you use SVN and have several different '.
+          'projects in the same repository.'),
+      ),
       'lint.engine' => array(
         'type' => 'string',
         'legacy' => 'lint_engine',

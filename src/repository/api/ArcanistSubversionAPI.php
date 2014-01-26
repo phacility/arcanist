@@ -243,6 +243,10 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     return 'svn';
   }
 
+  public function getRemoteURI() {
+    return idx($this->getSVNInfo('/'), 'Repository Root');
+  }
+
   public function buildInfoFuture($path) {
     if ($path == '/') {
       // When the root of a working copy is referenced by a symlink and you
@@ -587,7 +591,7 @@ EODIFF;
     return null;
   }
 
-  public function getRepositorySVNUUID() {
+  public function getRepositoryUUID() {
     $info = $this->getSVNInfo('/');
     return $info['Repository UUID'];
   }

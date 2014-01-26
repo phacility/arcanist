@@ -1038,4 +1038,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return array(trim($name), trim($rev));
   }
+
+  public function getRemoteURI() {
+    list($stdout) = $this->execxLocal('paths default');
+
+    $stdout = trim($stdout);
+    if (strlen($stdout)) {
+      return $stdout;
+    }
+
+    return null;
+  }
+
 }

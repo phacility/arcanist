@@ -87,6 +87,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
           'UNSTAGED'    => $f_mod | $f_uns | $f_unc,
           'UNTRACKED'   => $f_unt,
         );
+
         $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
 
         $expect_range = array(

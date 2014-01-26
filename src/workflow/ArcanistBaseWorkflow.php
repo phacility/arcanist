@@ -31,7 +31,8 @@
  *
  * @task  conduit   Conduit
  * @task  scratch   Scratch Files
- * @group workflow
+ * @task  phabrep   Phabricator Repositories
+ *
  * @stable
  */
 abstract class ArcanistBaseWorkflow extends Phobject {
@@ -64,6 +65,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $stashed;
 
   private $projectInfo;
+  private $repositoryInfo;
+  private $repositoryReasons;
 
   private $arcanistConfiguration;
   private $parentWorkflow;
@@ -1517,5 +1520,188 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
     return $this->repositoryVersion;
   }
+
+
+/* -(  Phabricator Repositories  )------------------------------------------- */
+
+
+  /**
+   * Get the PHID of the Phabricator repository this working copy corresponds
+   * to. Returns `null` no repository can be identified.
+   *
+   * @return phid|null  Repository PHID, or null if no repository can be
+   *                    identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryPHID() {
+    return idx($this->getRepositoryInformation(), 'phid');
+  }
+
+
+  /**
+   * Get the callsign of the Phabricator repository this working copy
+   * corresponds to. Returns `null` no repository can be identified.
+   *
+   * @return string|null  Repository callsign, or null if no repository can be
+   *                      identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryCallsign() {
+    return idx($this->getRepositoryInformation(), 'callsign');
+  }
+
+
+  /**
+   * Get human-readable reasoning explaining how `arc` evaluated which
+   * Phabricator repository corresponds to this working copy. Used by
+   * `arc which` to explain the process to users.
+   *
+   * @return list<string> Human-readable explanation of the repository
+   *                      association process.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryReasons() {
+    $this->getRepositoryInformation();
+    return $this->repositoryReasons;
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function getRepositoryInformation() {
+    if ($this->repositoryInfo === null) {
+      list($info, $reasons) = $this->loadRepositoryInformation();
+      $this->repositoryInfo = $info;
+      $this->repositoryReasons = $reasons;
+    }
+
+    return $this->repositoryInfo;
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function loadRepositoryInformation() {
+    list($query, $reasons) = $this->getRepositoryQuery();
+    if (!$query) {
+      return array(null, $reasons);
+    }
+
+    try {
+      $results = $this->getConduit()->callMethodSynchronous(
+        'repository.query',
+        $query);
+    } catch (ConduitClientException $ex) {
+      if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
+        $reasons[] = pht(
+          'This version of Arcanist is more recent than the version of '.
+          'Phabricator you are connecting to: the Phabricator install is '.
+          'out of date and does not have support for identifying '.
+          'repositories by callsign or URI. Update Phabricator to enable '.
+          'these features.');
+        return array(null, $reasons);
+      }
+      throw $ex;
+    }
+
+    $result = null;
+    if (!$results) {
+      $reasons[] = pht(
+        'No repositories matched the query. Check that your configuration '.
+        'is correct, or use "repository.callsign" to select a repository '.
+        'explicitly.');
+    } else if (count($results) > 1) {
+      $reasons[] = pht(
+        'Multiple repostories (%s) matched the query. You can use the '.
+        '"repository.callsign" configuration to select the one you want.',
+        implode(', ', ipull($results, 'callsign')));
+    } else {
+      $result = head($results);
+      $reasons[] = pht('Found a unique matching repository.');
+    }
+
+    return array($result, $reasons);
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function getRepositoryQuery() {
+    $reasons = array();
+
+    $callsign = $this->getConfigFromAnySource('repository.callsign');
+    if ($callsign) {
+      $query = array(
+        'callsigns' => array($callsign),
+      );
+      $reasons[] = pht(
+        'Configuration value "repository.callsign" is set to "%s".',
+        $callsign);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'Configuration value "repository.callsign" is empty.');
+    }
+
+    $project_info = $this->getProjectInfo();
+    if ($this->getProjectInfo()) {
+      if (!empty($project_info['repository']['callsign'])) {
+        $callsign = $project_info['repository']['callsign'];
+        $query = array(
+          'callsigns' => array($callsign),
+        );
+        $reasons[] = pht(
+          'Configuration value "project.id" is set to "%s"; this project '.
+          'is associated with the "%s" repository.',
+          $this->getWorkingCopy()->getProjectID(),
+          $callsign);
+        return array($query, $reasons);
+      } else {
+        $reasons[] = pht(
+          'Configuration value "project.id" is set to "%s", but this '.
+          'project is not associated with a repository.');
+      }
+    } else {
+      $reasons[] = pht(
+        'Configuration value "project.id" is empty.');
+    }
+
+    $uuid = $this->getRepositoryAPI()->getRepositoryUUID();
+    if ($uuid !== null) {
+      $query = array(
+        'uuids' => array($uuid),
+      );
+      $reasons[] = pht(
+        'The UUID for this working copy is "%s".',
+        $uuid);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'This repository has no VCS UUID (this is normal for git/hg).');
+    }
+
+    $remote_uri = $this->getRepositoryAPI()->getRemoteURI();
+    if ($remote_uri !== null) {
+      $query = array(
+        'remoteURIs' => array($remote_uri),
+      );
+      $reasons[] = pht(
+        'The remote URI for this working copy is "%s".',
+        $remote_uri);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'Unable to determine the remote URI for this repository.');
+    }
+
+    return array(null, $reasons);
+  }
+
 
 }
