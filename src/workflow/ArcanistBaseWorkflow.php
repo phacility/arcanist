@@ -1575,7 +1575,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private function getRepositoryInformation() {
     if ($this->repositoryInfo === null) {
       list($info, $reasons) = $this->loadRepositoryInformation();
-      $this->repositoryInfo = $info;
+      $this->repositoryInfo = nonempty($info, array());
       $this->repositoryReasons = $reasons;
     }
 
