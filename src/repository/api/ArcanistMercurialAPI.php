@@ -323,14 +323,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getBaseCommit(),
       $path);
 
+    $lines = phutil_split_lines($stdout, $retain_line_endings = true);
+
     $blame = array();
-    foreach (explode("\n", trim($stdout)) as $line) {
+    foreach ($lines as $line) {
       if (!strlen($line)) {
         continue;
       }
 
       $matches = null;
-      $ok = preg_match('/^\s*([^:]+?) [a-f0-9]{12}: (.*)$/', $line, $matches);
+      $ok = preg_match('/^\s*([^:]+?) ([a-f0-9]{12}):/', $line, $matches);
 
       if (!$ok) {
         throw new Exception("Unable to parse Mercurial blame line: {$line}");
