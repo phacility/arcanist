@@ -1650,6 +1650,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
 
     $project_info = $this->getProjectInfo();
+    $project_name = $this->getWorkingCopy()->getProjectID();
     if ($this->getProjectInfo()) {
       if (!empty($project_info['repository']['callsign'])) {
         $callsign = $project_info['repository']['callsign'];
@@ -1657,19 +1658,25 @@ abstract class ArcanistBaseWorkflow extends Phobject {
           'callsigns' => array($callsign),
         );
         $reasons[] = pht(
-          'Configuration value "project.id" is set to "%s"; this project '.
+          'Configuration value "project.name" is set to "%s"; this project '.
           'is associated with the "%s" repository.',
-          $this->getWorkingCopy()->getProjectID(),
+          $project_name,
           $callsign);
         return array($query, $reasons);
       } else {
         $reasons[] = pht(
-          'Configuration value "project.id" is set to "%s", but this '.
-          'project is not associated with a repository.');
+          'Configuration value "project.name" is set to "%s", but this '.
+          'project is not associated with a repository.',
+          $project_name);
       }
+    } else if (strlen($project_name)) {
+      $reasons[] = pht(
+        'Configuration value "project.name" is set to "%s", but that '.
+        'project does not exist.',
+        $project_name);
     } else {
       $reasons[] = pht(
-        'Configuration value "project.id" is empty.');
+        'Configuration value "project.name" is empty.');
     }
 
     $uuid = $this->getRepositoryAPI()->getRepositoryUUID();
