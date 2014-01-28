@@ -594,14 +594,13 @@ EOTEXT
   private function rebase() {
     $repository_api = $this->getRepositoryAPI();
 
-    echo phutil_console_format(
-        "Rebasing **%s** onto **%s**\n",
-        $this->branch,
-        $this->onto);
-
     chdir($repository_api->getPath());
     if ($this->isGit) {
       if ($this->shouldUpdateWithRebase) {
+        echo phutil_console_format(
+          "Rebasing **%s** onto **%s**\n",
+          $this->branch,
+          $this->onto);
         $err = phutil_passthru('git rebase %s', $this->onto);
         if ($err) {
           throw new ArcanistUsageException(
@@ -612,6 +611,10 @@ EOTEXT
             "run 'arc land' again.");
         }
       } else {
+        echo phutil_console_format(
+          "Merging **%s** into **%s**\n",
+          $this->branch,
+          $this->onto);
         $err = phutil_passthru(
           'git merge --no-stat %s -m %s',
           $this->onto,
