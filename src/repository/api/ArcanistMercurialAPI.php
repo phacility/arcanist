@@ -750,9 +750,23 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal(
-      'commit --amend -l %s',
-      $tmp_file);
+
+    try {
+      $this->execxLocal(
+        'commit --amend -l %s',
+        $tmp_file);
+    } catch (CommandException $ex) {
+      if (preg_match('/nothing changed/', $ex->getStdOut())) {
+        // NOTE: Mercurial considers it an error to make a no-op amend. Although
+        // we generally defer to the underlying VCS to dictate behavior, this
+        // one seems a little goofy, and we use amend as part of various
+        // workflows under the assumption that no-op amends are fine. If this
+        // amend failed because it's a no-op, just continue.
+      } else {
+        throw $ex;
+      }
+    }
+
     $this->reloadWorkingCopy();
   }
 
