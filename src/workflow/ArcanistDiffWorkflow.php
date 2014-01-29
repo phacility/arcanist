@@ -2269,8 +2269,6 @@ EOTEXT
 
         // TODO: provide parent info
 
-      } else {
-        throw new Exception("Unsupported repository API!");
       }
     }
 
