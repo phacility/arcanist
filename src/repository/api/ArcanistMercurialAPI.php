@@ -628,15 +628,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getCommitMessageLog() {
     $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
-      "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
+      "log --template %s --rev %s --branch %s --",
+      "{node}\1{desc}\2",
       hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
 
     $map = array();
 
-    $logs = explode("\1", trim($stdout));
+    $logs = explode("\2", trim($stdout));
     foreach (array_filter($logs) as $log) {
-      list($node, $desc) = explode("\2", $log);
+      list($node, $desc) = explode("\1", $log);
       $map[$node] = $desc;
     }
 
@@ -898,7 +899,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             if (preg_match('/^nodiff\((.+)\)$/', $name, $matches)) {
               list($results) = $this->execxLocal(
                 'log --template %s --rev %s',
-                '{node}\1{desc}\2',
+                "{node}\1{desc}\2",
                 sprintf('ancestor(.,%s)::.^', $matches[1]));
               $results = array_reverse(explode("\2", trim($results)));
 
