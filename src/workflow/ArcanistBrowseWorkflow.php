@@ -1,25 +1,7 @@
 <?php
 
-/*
- * Copyright 2012 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
- * Browse file in Diffusion.
- *
- * @group workflow
+ * Browse files in the Diffusion web interface.
  */
 final class ArcanistBrowseWorkflow extends ArcanistBaseWorkflow {
 
@@ -29,15 +11,15 @@ final class ArcanistBrowseWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **browse** [__options__] __path__
+      **browse** [__options__] __path__ ...
 EOTEXT
       );
   }
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Supports: git
-          Browse file in Diffusion (Web interface).
+          Supports: git, hg, svn
+          Browse files in the Diffusion web interface.
 
           Set the 'browser' value using 'arc set-config' to select a browser. If
           no browser is set, the command will try to guess which browser to use.
@@ -49,8 +31,8 @@ EOTEXT
     return array(
       'branch' => array(
         'param' => 'branch_name',
-        'help' =>
-          "Select branch name to view (on server). Defaults to 'master'."
+        'help' => pht(
+          'Default branch name to view on server. Defaults to "master".'),
       ),
       '*' => 'paths',
     );
@@ -77,6 +59,13 @@ EOTEXT
     $project_root = $this->getWorkingCopy()->getProjectRoot();
 
     $in_paths = $this->getArgument('paths');
+    if (!$in_paths) {
+      throw new ArcanistUsageException(
+        pht(
+          'Specify one or more paths to browse. Use the command '.
+          '"arc browse ." if you want to browse this directory.'));
+    }
+
     $paths = array();
     foreach ($in_paths as $key => $path) {
       $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
@@ -89,15 +78,11 @@ EOTEXT
       }
     }
 
-    if (!$paths) {
-      throw new ArcanistUsageException("Specify a path to browse.");
-    }
-
     $base_uri = $this->getBaseURI();
     $browser = $this->getBrowserCommand();
 
     foreach ($paths as $path) {
-      $ret_code = phutil_passthru("%s %s", $browser, $base_uri . $path);
+      $ret_code = phutil_passthru('%s %s', $browser, $base_uri.$path);
       if ($ret_code) {
         throw new ArcanistUsageException(
           "It seems we failed to open the browser; perhaps you should try to ".
@@ -111,6 +96,14 @@ EOTEXT
 
   private function getBaseURI() {
     $repo_uri = $this->getRepositoryURI();
+    if ($repo_uri === null) {
+      throw new ArcanistUsageException(
+        pht(
+          'arc is unable to determine which repository in Diffusion '.
+          'this working copy belongs to. Use "arc which" to understand how '.
+          'arc looks for a repository.'));
+    }
+
     $branch = $this->getArgument('branch', 'master');
 
     return $repo_uri.'browse/'.$branch.'/';
@@ -123,21 +116,25 @@ EOTEXT
     }
 
     if (phutil_is_windows()) {
-      return "start";
+      return 'start';
     }
 
-    $candidates = array("sensible-browser", "xdg-open", "open");
-    // on many Linuxes, "open" exists and is not the right program.
+    $candidates = array('sensible-browser', 'xdg-open', 'open');
+
+    // NOTE: The "open" command works well on OS X, but on many Linuxes "open"
+    // exists and is not a browser. For now, we're just looking for other
+    // commands first, but we might want to be smarter about selecting "open"
+    // only on OS X.
 
     foreach ($candidates as $cmd) {
-      list($ret_code) = exec_manual("which %s", $cmd);
-      if ($ret_code == 0) {
+      if (Filesystem::binaryExists($cmd)) {
         return $cmd;
       }
     }
 
     throw new ArcanistUsageException(
-      "Could not find a browser to run; Try setting the 'browser' option " .
-      "using arc set-config.");
+      pht(
+        "Unable to find a browser command to run. Set 'browser' in your ".
+        "arc config to specify one."));
   }
 }
