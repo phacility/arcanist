@@ -50,7 +50,7 @@ EOTEXT
       'branch' => array(
         'param' => 'branch_name',
         'help' =>
-          "Select branch name to view (On server). Defaults to 'master'."
+          "Select branch name to view (on server). Defaults to 'master'."
       ),
       '*' => 'paths',
     );
@@ -82,9 +82,11 @@ EOTEXT
       $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
       $full_path = Filesystem::resolvePath($path);
 
-      $paths[$key] = Filesystem::readablePath(
-        $full_path,
-        $project_root);
+      if ($full_path == $project_root) {
+        $paths[$key] = '';
+      } else {
+        $paths[$key] = Filesystem::readablePath($full_path, $project_root);
+      }
     }
 
     if (!$paths) {
