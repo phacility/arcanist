@@ -1527,7 +1527,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   /**
    * Get the PHID of the Phabricator repository this working copy corresponds
-   * to. Returns `null` no repository can be identified.
+   * to. Returns `null` if no repository can be identified.
    *
    * @return phid|null  Repository PHID, or null if no repository can be
    *                    identified.
@@ -1541,7 +1541,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   /**
    * Get the callsign of the Phabricator repository this working copy
-   * corresponds to. Returns `null` no repository can be identified.
+   * corresponds to. Returns `null` if no repository can be identified.
    *
    * @return string|null  Repository callsign, or null if no repository can be
    *                      identified.
@@ -1550,6 +1550,20 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    */
   protected function getRepositoryCallsign() {
     return idx($this->getRepositoryInformation(), 'callsign');
+  }
+
+
+  /**
+   * Get the URI of the Phabricator repository this working copy
+   * corresponds to. Returns `null` if no repository can be identified.
+   *
+   * @return string|null  Repository URI, or null if no repository can be
+   *                      identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryURI() {
+    return idx($this->getRepositoryInformation(), 'uri');
   }
 
 

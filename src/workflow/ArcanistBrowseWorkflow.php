@@ -108,18 +108,10 @@ EOTEXT
   }
 
   private function getBaseURI() {
-    $conduit = $this->getConduit();
-    $project_id = $this->getWorkingCopy()->getProjectID();
-    $project_info = $this->getConduit()->callMethodSynchronous(
-      'arcanist.projectinfo',
-      array(
-        'name' => $project_id,
-      ));
-
-    $repo_info = $project_info['repository'];
+    $repo_uri = $this->getRepositoryURI();
     $branch = $this->getArgument('branch', 'master');
 
-    return $repo_info['uri'].'browse/'.$branch.'/';
+    return $repo_uri.'browse/'.$branch.'/';
   }
 
   private function getBrowserCommand() {
