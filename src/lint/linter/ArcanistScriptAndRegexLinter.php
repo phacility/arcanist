@@ -278,7 +278,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
   public function getLinterConfigurationName() {
     return 'script-and-regex';
   }
-  
+
 /* -(  Parsing Output  )----------------------------------------------------- */
 
 

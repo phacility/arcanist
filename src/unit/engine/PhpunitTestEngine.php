@@ -58,7 +58,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
     $futures = array();
     $tmpfiles = array();
     foreach ($this->affectedTests as $class_path => $test_path) {
-      if(!Filesystem::pathExists($test_path)) {
+      if (!Filesystem::pathExists($test_path)) {
         continue;
       }
       $json_tmp = new TempFile();
