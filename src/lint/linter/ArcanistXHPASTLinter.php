@@ -236,7 +236,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   }
 
-  public function lintStrstrUsedForCheck($root) {
+  public function lintStrstrUsedForCheck(XHPASTNode $root) {
     $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
     foreach ($expressions as $expression) {
       $operator = $expression->getChildOfType(1, 'n_OPERATOR');
@@ -278,7 +278,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  public function lintStrposUsedForStart($root) {
+  public function lintStrposUsedForStart(XHPASTNode $root) {
     $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
     foreach ($expressions as $expression) {
       $operator = $expression->getChildOfType(1, 'n_OPERATOR');
@@ -321,7 +321,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  public function lintPHP53Features($root) {
+  public function lintPHP53Features(XHPASTNode $root) {
 
     $functions = $root->selectTokensOfType('T_FUNCTION');
     foreach ($functions as $function) {
@@ -410,7 +410,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $this->lintPHP53Functions($root);
   }
 
-  private function lintPHP53Functions($root) {
+  private function lintPHP53Functions(XHPASTNode $root) {
     $target = phutil_get_library_root('arcanist').
       '/../resources/php_compat_info.json';
     $compat_info = json_decode(file_get_contents($target), true);
@@ -465,7 +465,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   }
 
-  public function lintPHP54Features($root) {
+  public function lintPHP54Features(XHPASTNode $root) {
     $indexes = $root->selectDescendantsOfType('n_INDEX_ACCESS');
     foreach ($indexes as $index) {
       $left = $index->getChildByIndex(0);
@@ -483,7 +483,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintImplicitFallthrough($root) {
+  private function lintImplicitFallthrough(XHPASTNode $root) {
     $hook_obj = null;
     $working_copy = $this->getEngine()->getWorkingCopy();
     if ($working_copy) {
@@ -641,7 +641,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintBraceFormatting($root) {
+  private function lintBraceFormatting(XHPASTNode $root) {
 
     foreach ($root->selectDescendantsOfType('n_STATEMENT_LIST') as $list) {
       $tokens = $list->getTokens();
@@ -681,7 +681,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   }
 
-  private function lintTautologicalExpressions($root) {
+  private function lintTautologicalExpressions(XHPASTNode $root) {
     $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
 
     static $operators = array(
@@ -763,7 +763,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
 
-  protected function lintCommentSpaces($root) {
+  protected function lintCommentSpaces(XHPASTNode $root) {
     foreach ($root->selectTokensOfType('T_COMMENT') as $comment) {
       $value = $comment->getValue();
       if ($value[0] != '#') {
@@ -781,7 +781,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
 
-  protected function lintHashComments($root) {
+  protected function lintHashComments(XHPASTNode $root) {
     foreach ($root->selectTokensOfType('T_COMMENT') as $comment) {
       $value = $comment->getValue();
       if ($value[0] != '#') {
@@ -809,7 +809,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    *  }
    *
    */
-  private function lintReusedIterators($root) {
+  private function lintReusedIterators(XHPASTNode $root) {
     $used_vars = array();
 
     $for_loops = $root->selectDescendantsOfType('n_FOR');
@@ -895,7 +895,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    *  $a = 1; // <-- Raises an error for using $a
    *
    */
-  protected function lintReusedIteratorReferences($root) {
+  protected function lintReusedIteratorReferences(XHPASTNode $root) {
 
     $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
     $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
@@ -1053,7 +1053,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintVariableVariables($root) {
+  protected function lintVariableVariables(XHPASTNode $root) {
     $vvars = $root->selectDescendantsOfType('n_VARIABLE_VARIABLE');
     foreach ($vvars as $vvar) {
       $this->raiseLintAtNode(
@@ -1064,7 +1064,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintUndeclaredVariables($root) {
+  protected function lintUndeclaredVariables(XHPASTNode $root) {
     // These things declare variables in a function:
     //    Explicit parameters
     //    Assignment
@@ -1421,14 +1421,14 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function getConcreteVariableString($var) {
+  private function getConcreteVariableString(XHPASTNode $var) {
     $concrete = $var->getConcreteString();
     // Strip off curly braces as in $obj->{$property}.
     $concrete = trim($concrete, '{}');
     return $concrete;
   }
 
-  protected function lintPHPTagUse($root) {
+  protected function lintPHPTagUse(XHPASTNode $root) {
     $tokens = $root->getTokens();
     foreach ($tokens as $token) {
       if ($token->getTypeName() == 'T_OPEN_TAG') {
@@ -1466,7 +1466,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintNamingConventions($root) {
+  protected function lintNamingConventions(XHPASTNode $root) {
 
     // We're going to build up a list of <type, name, token, error> tuples
     // and then try to instantiate a hook class which has the opportunity to
@@ -1719,7 +1719,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintSurpriseConstructors($root) {
+  protected function lintSurpriseConstructors(XHPASTNode $root) {
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
     foreach ($classes as $class) {
       $class_name = $class->getChildByIndex(1)->getConcreteString();
@@ -1739,7 +1739,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintParenthesesShouldHugExpressions($root) {
+  protected function lintParenthesesShouldHugExpressions(XHPASTNode $root) {
     $calls = $root->selectDescendantsOfType('n_CALL_PARAMETER_LIST');
     $controls = $root->selectDescendantsOfType('n_CONTROL_CONDITION');
     $fors = $root->selectDescendantsOfType('n_FOR_EXPRESSION');
@@ -1796,7 +1796,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintSpaceAfterControlStatementKeywords($root) {
+  protected function lintSpaceAfterControlStatementKeywords(XHPASTNode $root) {
     foreach ($root->getTokens() as $id => $token) {
       switch ($token->getTypeName()) {
         case 'T_IF':
@@ -1843,7 +1843,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintSpaceAroundBinaryOperators($root) {
+  protected function lintSpaceAroundBinaryOperators(XHPASTNode $root) {
 
     // NOTE: '.' is parsed as n_CONCATENATION_LIST, not n_BINARY_EXPRESSION,
     // so we don't select it here.
@@ -1896,7 +1896,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     // declarations (which is not n_BINARY_EXPRESSION).
   }
 
-  protected function lintDynamicDefines($root) {
+  protected function lintDynamicDefines(XHPASTNode $root) {
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($calls as $call) {
       $name = $call->getChildByIndex(0)->getConcreteString();
@@ -1913,7 +1913,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintUseOfThisInStaticMethods($root) {
+  protected function lintUseOfThisInStaticMethods(XHPASTNode $root) {
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
     foreach ($classes as $class) {
       $methods = $class->selectDescendantsOfType('n_METHOD_DECLARATION');
@@ -1964,7 +1964,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    * you don't pass a second argument, you're probably going to get something
    * wrong.
    */
-  protected function lintPregQuote($root) {
+  protected function lintPregQuote(XHPASTNode $root) {
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($function_calls as $call) {
       $name = $call->getChildByIndex(0)->getConcreteString();
@@ -1997,7 +1997,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    *
    * The former exits with a failure code, the latter with a success code!
    */
-  protected function lintExitExpressions($root) {
+  protected function lintExitExpressions(XHPASTNode $root) {
     $unaries = $root->selectDescendantsOfType('n_UNARY_PREFIX_EXPRESSION');
     foreach ($unaries as $unary) {
       $operator = $unary->getChildByIndex(0)->getConcreteString();
@@ -2012,7 +2012,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintArrayIndexWhitespace($root) {
+  private function lintArrayIndexWhitespace(XHPASTNode $root) {
     $indexes = $root->selectDescendantsOfType('n_INDEX_ACCESS');
     foreach ($indexes as $index) {
       $tokens = $index->getChildByIndex(0)->getTokens();
@@ -2030,7 +2030,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  protected function lintTODOComments($root) {
+  protected function lintTODOComments(XHPASTNode $root) {
     $comments = $root->selectTokensOfType('T_COMMENT') +
                 $root->selectTokensOfType('T_DOC_COMMENT');
 
@@ -2059,7 +2059,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    * the name of the file matches the name of the class,
    * unless the classname is funky like an XHP element.
    */
-  private function lintPrimaryDeclarationFilenameMatch($root) {
+  private function lintPrimaryDeclarationFilenameMatch(XHPASTNode $root) {
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
     $interfaces = $root->selectDescendantsOfType('n_INTERFACE_DECLARATION');
 
@@ -2095,7 +2095,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       "it declares. Rename the file to '{$rename}'.");
   }
 
-  private function lintPlusOperatorOnStrings($root) {
+  private function lintPlusOperatorOnStrings(XHPASTNode $root) {
     $binops = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
     foreach ($binops as $binop) {
       $op = $binop->getChildByIndex(1);
@@ -2121,7 +2121,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    * array(1 => 'anything', 1 => 'foo').  Since the first entry is ignored,
    * this is almost certainly an error.
    */
-  private function lintDuplicateKeysInArray($root) {
+  private function lintDuplicateKeysInArray(XHPASTNode $root) {
     $array_literals = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
     foreach ($array_literals as $array_literal) {
       $nodes_by_key = array();
@@ -2176,7 +2176,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintRaggedClasstreeEdges($root) {
+  private function lintRaggedClasstreeEdges(XHPASTNode $root) {
     $parser = new PhutilDocblockParser();
 
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
@@ -2212,7 +2212,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintClosingCallParen($root) {
+  private function lintClosingCallParen(XHPASTNode $root) {
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     $calls = $calls->add($root->selectDescendantsOfType('n_METHOD_CALL'));
 
@@ -2246,7 +2246,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintClosingDeclarationParen($root) {
+  private function lintClosingDeclarationParen(XHPASTNode $root) {
     $decs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
     $decs = $decs->add($root->selectDescendantsOfType('n_METHOD_DECLARATION'));
 
@@ -2269,7 +2269,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintKeywordCasing($root) {
+  private function lintKeywordCasing(XHPASTNode $root) {
     $keywords = array();
 
     $symbols = $root->selectDescendantsOfType('n_SYMBOL_NAME');
