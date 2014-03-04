@@ -6,11 +6,6 @@
  * ##npm install csslint -g## (don't forget the -g flag or NPM will install
  * the package locally).
  *
- * Based on ArcanistPhpcsLinter.php
- *
- *   lint.csslint.options
- *   lint.csslint.bin
- *
  * @group linter
  */
 final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
