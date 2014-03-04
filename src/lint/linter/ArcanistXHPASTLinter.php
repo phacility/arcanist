@@ -2036,9 +2036,15 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     foreach ($comments as $token) {
       $value = $token->getValue();
+      if ($token->getTypeName() === 'T_DOC_COMMENT') {
+        $regex = '/(TODO|@todo)/';
+      } else {
+        $regex = '/TODO/';
+      }
+
       $matches = null;
       $preg = preg_match_all(
-        '/TODO/',
+        $regex,
         $value,
         $matches,
         PREG_OFFSET_CAPTURE);
