@@ -187,20 +187,8 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     return implode(" ", $options);
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'PyLint';
-  }
-
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array();
   }
 
   public function lintPath($path) {

@@ -64,14 +64,6 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     return parent::setCustomSeverityMap($map);
   }
 
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array();
-  }
-
   /**
    * Determines what executables and lint paths to use.  Between platforms
    * this also changes whether the lint engine is run under .NET or Mono.  It

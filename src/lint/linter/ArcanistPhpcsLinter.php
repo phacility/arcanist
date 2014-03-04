@@ -49,12 +49,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   public function getDefaultBinary() {
     // TODO: Deprecation warnings.
     $config = $this->getEngine()->getConfigurationManager();
-    $bin = $config->getConfigFromAnySource('lint.phpcs.bin');
-    if ($bin) {
-      return $bin;
-    }
-
-    return 'phpcs';
+    return $config->getConfigFromAnySource('lint.phpcs.bin', 'phpcs');
   }
 
   public function shouldExpectCommandErrors() {

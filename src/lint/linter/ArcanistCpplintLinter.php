@@ -9,19 +9,13 @@
  */
 final class ArcanistCpplintLinter extends ArcanistLinter {
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'cpplint.py';
   }
 
   public function getLintOptions() {
     $config = $this->getEngine()->getConfigurationManager();
-    $options = $config->getConfigFromAnySource('lint.cpplint.options', '');
-
-    return $options;
+    return $config->getConfigFromAnySource('lint.cpplint.options', '');
   }
 
   public function getLintPath() {
@@ -38,9 +32,7 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
           "globally, you can just remove these keys from your .arcconfig.");
       }
 
-      $bin = csprintf("%s/%s", $prefix, $bin);
-
-      return $bin;
+      return csprintf("%s/%s", $prefix, $bin);
     }
 
     // Look for globally installed cpplint.py

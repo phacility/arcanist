@@ -22,15 +22,10 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
   public function getDefaultFlags() {
     // TODO: Warn that all of this is deprecated.
-
     $config = $this->getEngine()->getConfigurationManager();
-    $options = $config->getConfigFromAnySource('lint.pep8.options');
-
-    if ($options === null) {
-      $options = $this->getConfig('options');
-    }
-
-    return $options;
+    return $config->getConfigFromAnySource(
+      'lint.pep8.options',
+      $this->getConfig('options'));
   }
 
   public function shouldUseInterpreter() {

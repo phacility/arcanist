@@ -10,10 +10,6 @@
  */
 final class ArcanistCppcheckLinter extends ArcanistLinter {
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'cppcheck';
   }
@@ -21,11 +17,9 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
   public function getLintOptions() {
     $config = $this->getEngine()->getConfigurationManager();
     // You will for sure want some options.  The below default tends to be ok
-    $options = $config->getConfigFromAnySource(
+    return $config->getConfigFromAnySource(
       'lint.cppcheck.options',
       '-j2 --inconclusive --enable=performance,style,portability,information');
-
-    return $options;
   }
 
   public function getLintPath() {
@@ -42,9 +36,7 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
           "globally, you can just remove these keys from your .arcconfig.");
       }
 
-      $bin = csprintf("%s/%s", $prefix, $bin);
-
-      return $bin;
+      return csprintf("%s/%s", $prefix, $bin);
     }
 
     // Look for globally installed cppcheck

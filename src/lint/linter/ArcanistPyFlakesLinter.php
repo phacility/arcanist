@@ -7,21 +7,8 @@
  */
 final class ArcanistPyFlakesLinter extends ArcanistLinter {
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'PyFlakes';
-  }
-
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array(
-    );
   }
 
   public function getPyFlakesOptions() {

@@ -28,10 +28,6 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     return 'PHL';
   }
 
-  public function getLintSeverityMap() {
-    return array();
-  }
-
   public function willLintPaths(array $paths) {
     if (!xhpast_is_available()) {
       throw new Exception(xhpast_get_build_instructions());
