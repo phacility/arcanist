@@ -1,8 +1,0 @@
-@title This Is Technical Documentation For Contributors, Not User Documentation
-@group notuser
-
-This section of the documentation has technical information for developers
-and contributors.
-
-For user documentation, see the
-[[http://www.phabricator.com/docs/phabricator/ | Phabricator Documentation]].
