@@ -13,9 +13,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       ->withSuffix('lint-test')
       ->find();
 
+    $test_count = 0;
     foreach ($files as $file) {
       $this->lintFile($root.$file, $linter);
+      $test_count++;
     }
+
+    $this->assertEqual(
+      true,
+      ($test_count > 0),
+      pht('Expected to find some .lint-test tests in directory %s!', $root));
   }
 
   private function lintFile($file, $linter) {
