@@ -122,35 +122,15 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     $classes = $coverage_dom->getElementsByTagName("class");
 
     foreach ($classes as $class) {
-      // filename is actually python module path with ".py" at the end,
-      // e.g.: tornado.web.py
-      $relative_path = explode(".", $class->getAttribute("filename"));
-      array_pop($relative_path);
-      $relative_path = $source_path .'/'. implode("/", $relative_path);
-      $relative_path = Filesystem::readablePath($relative_path);
+      $path = $class->getAttribute("filename");
+      $root = $this->getWorkingCopy()->getProjectRoot();
 
-      // first we check if the path is a directory (a Python package), if it is
-      // set relative and absolute paths to have __init__.py at the end.
-      $absolute_path = Filesystem::resolvePath($relative_path);
-      if (is_dir($absolute_path)) {
-        $relative_path .= "/__init__.py";
-        $absolute_path .= "/__init__.py";
-      }
-
-      // then we check if the path with ".py" at the end is file (a Python
-      // submodule), if it is - set relative and absolute paths to have
-      // ".py" at the end.
-      if (is_file($absolute_path.".py")) {
-        $relative_path .= ".py";
-        $absolute_path .= ".py";
-      }
-
-      if (!file_exists($absolute_path)) {
+      if (!Filesystem::isDescendant($path, $root)) {
         continue;
       }
 
       // get total line count in file
-      $line_count = count(file($absolute_path));
+      $line_count = count(phutil_split_lines(Filesystem::readFile($path)));
 
       $coverage = "";
       $start_line = 1;
@@ -178,7 +158,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
         }
       }
 
-      $reports[$relative_path] = $coverage;
+      $reports[$path] = $coverage;
     }
 
     return $reports;
