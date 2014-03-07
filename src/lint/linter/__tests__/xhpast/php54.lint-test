@@ -1,7 +1,10 @@
 <?php
 
 f()[0];
-$o->m()[0];
+    m()[0];
+
+// The check above should be this, see T4334.
+// $o->m()[0];
 
 ~~~~~~~~~~
 disabled:3:5

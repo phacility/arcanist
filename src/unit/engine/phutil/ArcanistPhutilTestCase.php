@@ -464,6 +464,14 @@ abstract class ArcanistPhutilTestCase {
                 $exceptions);
             }
           }
+
+          if (!$this->assertions) {
+            $this->failTest(
+              pht(
+                'This test case made no assertions. Test cases must make at '.
+                'least one assertion.'));
+          }
+
         } catch (ArcanistPhutilTestTerminatedException $ex) {
           // Continue with the next test.
         } catch (ArcanistPhutilTestSkippedException $ex) {

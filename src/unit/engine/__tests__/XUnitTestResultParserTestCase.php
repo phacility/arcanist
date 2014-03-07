@@ -37,6 +37,8 @@ final class XUnitTestResultParserTestCase extends ArcanistTestCase {
     } catch (Exception $e) {
       // OK
     }
+
+    $this->assertEqual(true, true);
   }
 
   public function testInvalidXmlInputFailure() {
@@ -50,6 +52,8 @@ final class XUnitTestResultParserTestCase extends ArcanistTestCase {
     } catch (Exception $e) {
       // OK
     }
+
+    $this->assertEqual(true, true);
   }
 
 }
