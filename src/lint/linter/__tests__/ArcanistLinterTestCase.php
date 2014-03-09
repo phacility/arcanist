@@ -19,8 +19,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $test_count++;
     }
 
-    $this->assertEqual(
-      true,
+    $this->assertTrue(
       ($test_count > 0),
       pht('Expected to find some .lint-test tests in directory %s!', $root));
   }
