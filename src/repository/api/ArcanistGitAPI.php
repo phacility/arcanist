@@ -764,7 +764,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = array();
     foreach ($lines as $line) {
 
-      if (preg_match('/^[* ]+\(no branch\)/', $line)) {
+      if (preg_match('@^[* ]+\(no branch|detached from \w+/\w+\)@', $line)) {
         // This is indicating that the working copy is in a detached state;
         // just ignore it.
         continue;
