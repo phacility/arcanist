@@ -72,12 +72,13 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $parentWorkflow;
   private $workingDirectory;
   private $repositoryVersion;
+  private $workingRevision;
 
   private $changeCache = array();
 
 
   public function __construct() {
-
+    $this->workingRevision = 'HEAD';
   }
 
 
@@ -544,6 +545,15 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return array();
   }
 
+  public function setWorkingRevision($revision)
+  {
+    $this->workingRevision = $revision;
+    if ($this->repositoryAPI) {
+      $this->repositoryAPI->setWorkingRevision($revision);
+    }
+    return $this;
+  }
+
   public function setWorkingDirectory($working_directory) {
     $this->workingDirectory = $working_directory;
     return $this;
@@ -753,6 +763,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   public function setRepositoryAPI($api) {
     $this->repositoryAPI = $api;
+    $api->setWorkingRevision($this->workingRevision);
     return $this;
   }
 
