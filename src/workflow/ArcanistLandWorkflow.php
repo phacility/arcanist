@@ -26,6 +26,10 @@ final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
   private $revision;
   private $messageFile;
 
+  public function getRevisionDict() {
+    return $this->revision;
+  }
+
   public function getWorkflowName() {
     return 'land';
   }
