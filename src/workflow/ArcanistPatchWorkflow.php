@@ -320,12 +320,12 @@ EOTEXT
         echo "Updating to the revision's base commit\n";
         $repository_api->execPassthru(
           'update %s',
-          $base_revision);
+          hgsprintf('%s', $base_revision));
       }
 
       $repository_api->execxLocal(
         'bookmark %s',
-        $branch_name);
+        hgsprintf('%s', $branch_name));
 
       echo phutil_console_format(
         "Created and checked out bookmark %s.\n",
