@@ -112,8 +112,7 @@ EOTEXT
 
       $actually_close = true;
       if ($is_finalize) {
-        $project_info = $this->getProjectInfo();
-        if (idx($project_info, 'tracked') ||
+        if ($this->getRepositoryPHID() ||
             $revision['status'] != $status_accepted) {
           $actually_close = false;
         }
