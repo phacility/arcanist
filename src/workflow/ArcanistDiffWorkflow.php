@@ -1574,6 +1574,7 @@ EOTEXT
           ));
       }
     }
+
     $old_message = $template;
 
     $included = array();

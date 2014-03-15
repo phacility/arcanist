@@ -575,6 +575,20 @@ EOTEXT
       case 'svnlook-delete.svndiff':
         $this->assertEqual(1, count($changes));
         break;
+      case 'git-format-patch.gitdiff':
+        $this->assertEqual(2, count($changes));
+
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MESSAGE,
+          $change->getType());
+        $this->assertEqual("WIP", $change->getMetadata('message'));
+
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
