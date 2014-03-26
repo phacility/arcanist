@@ -58,9 +58,9 @@ EOTEXT
     // We have to build our own because if we requiresWorkingCopy() we'll throw
     // if we aren't in a .arcconfig directory. We probably still can't do much,
     // but commands can raise more detailed errors.
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
     $configuration_manager = $this->getConfigurationManager();
-    if ($working_copy->getProjectRoot()) {
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
+    if ($working_copy->getVCSType()) {
       $configuration_manager->setWorkingCopyIdentity($working_copy);
       $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
         $configuration_manager);

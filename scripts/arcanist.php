@@ -193,7 +193,7 @@ try {
                         $need_repository_api;
 
   if ($need_working_copy || $want_working_copy) {
-    if ($need_working_copy && !$working_copy->getProjectRoot()) {
+    if ($need_working_copy && !$working_copy->getVCSType()) {
       throw new ArcanistUsageException(
         "This command must be run in a Git, Mercurial or Subversion working ".
         "copy.");
@@ -286,7 +286,8 @@ try {
     $workflow->authenticateConduit();
   }
 
-  if ($need_repository_api || ($want_repository_api && $working_copy)) {
+  if ($need_repository_api ||
+      ($want_repository_api && $working_copy->getVCSType())) {
     $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
       $configuration_manager);
     $workflow->setRepositoryAPI($repository_api);
