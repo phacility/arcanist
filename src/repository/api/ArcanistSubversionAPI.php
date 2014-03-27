@@ -16,6 +16,8 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
   private $svnBaseRevisionNumber;
   private $statusPaths = array();
+  
+  private $changelist;
 
   public function getSourceControlSystemName() {
     return 'svn';
@@ -68,6 +70,34 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $this->statusPaths = $paths;
     return $this;
   }
+  
+  public function limitStatusToChangelist($changelist) {
+      $this->changelist = $changelist;
+      return $this;
+  }
+  
+  public function getChangelists() {
+      list($status) = $this->execxLocal('--xml status');
+      
+      $xml = new SimpleXMLElement($status);
+      
+      $result = array();
+      
+      foreach($xml as $node) {
+          
+          if($node->getName() == "target") {
+              $result[] = "Default";
+          }
+          elseif($node->getName() == "changelist") {
+              $result[] = (string)$node['name'];
+          }
+          else {
+              throw new Exception("Unknown entry type: " . $node->getName());
+          }
+      }
+      
+      return $result;
+  }
 
   public function getSVNStatus($with_externals = false) {
     if ($this->svnStatus === null) {
@@ -75,15 +105,27 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
         list($status) = $this->execxLocal(
           '--xml status %Ls',
           $this->statusPaths);
-      } else {
-        list($status) = $this->execxLocal('--xml status');
+      } elseif($this->changelist) {
+          list($status) = $this->execxLocal('--xml status --cl %s', $this->changelist);
       }
+      else {
+          list($status) = $this->execxLocal('--xml status');
+      }
+      
       $xml = new SimpleXMLElement($status);
 
       $externals = array();
       $files = array();
+      
+      if($this->changelist) {
+          $root = $xml->changelist;
+      }
+      else {
+          $root = $xml->target;
+      }
 
-      foreach ($xml->target as $target) {
+      foreach ($root as $target) {
+          
         $this->svnBaseRevisions = array();
         foreach ($target->entry as $entry) {
           $path = (string)$entry['path'];

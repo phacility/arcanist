@@ -394,6 +394,10 @@ EOTEXT
           'unit' => true,
         ),
       ),
+      'cl' => array(
+          'help' => 'Select changelist',
+           'supports' => array('svn'),
+      ),
       '*' => 'paths',
     );
 
@@ -500,7 +504,7 @@ EOTEXT
         'Provide explanation for skipping unit tests or press Enter to abort:',
         'unit-excuses');
     }
-
+    
     $changes = $this->generateChanges();
     if (!$changes) {
       throw new ArcanistUsageException(
@@ -660,6 +664,11 @@ EOTEXT
         }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           $repository_api->limitStatusToPaths($this->getArgument('paths'));
+          
+          if($this->getArgument('cl')) {
+                $this->selectChangelist();
+            }
+          
         }
         $this->requireCleanWorkingCopy();
       } catch (ArcanistUncommittedChangesException $ex) {
@@ -854,6 +863,34 @@ EOTEXT
     }
 
     return $paths;
+  }
+  
+  
+  protected function selectChangelist() {
+      $repository_api = $this->getRepositoryAPI();
+      
+      if ($repository_api instanceof ArcanistSubversionAPI) {
+          $cls = $repository_api->getChangelists();
+          
+          $msg = "Select changelist from below:\n";
+          
+          $clNum = 0;
+          foreach($cls as $clName) {
+              $msg .= "   [$clNum] $clName\n";
+              $clNum ++;
+          }
+          
+          $msg .= "Pick changelist by number [0]:";
+          
+          $selection = phutil_console_prompt($msg);
+          
+          $selectedCl = $cls[(int) $selection];
+          
+          $repository_api->limitStatusToChangelist($selectedCl);
+      }
+      else {
+          throw new Exception("Incompatible repo version to select changelist.");
+      }
   }
 
 
