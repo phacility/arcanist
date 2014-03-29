@@ -398,6 +398,11 @@ EOTEXT
           'help' => 'Select changelist',
            'supports' => array('svn'),
       ),
+      'test-plan' => array(
+          'help' => 'Set "Test plan" value',
+          'param' => 'test-plan',
+          'supports' => array('svn'),
+      ),
       '*' => 'paths',
     );
 
@@ -884,9 +889,10 @@ EOTEXT
           
           $selection = phutil_console_prompt($msg);
           
-          $selectedCl = $cls[(int) $selection];
-          
-          $repository_api->limitStatusToChangelist($selectedCl);
+          if((int) $selection) {
+            $selectedCl = $cls[(int) $selection];
+            $repository_api->limitStatusToChangelist($selectedCl);
+          }
       }
       else {
           throw new Exception("Incompatible repo version to select changelist.");
@@ -1584,7 +1590,7 @@ EOTEXT
         }
       }
     }
-
+    
     $template_is_default = false;
     $notes = array();
     $included = array();
@@ -1611,7 +1617,7 @@ EOTEXT
           ));
       }
     }
-
+    
     $old_message = $template;
 
     $included = array();
@@ -1666,7 +1672,7 @@ EOTEXT
           ->editInteractively();
       }
       $first = false;
-
+      
       if ($template_is_default && ($new_template == $template)) {
         throw new ArcanistUsageException("Template not edited.");
       }
@@ -1897,13 +1903,36 @@ EOTEXT
     }
 
     $repository_api = $this->getRepositoryAPI();
-    $local = $repository_api->getLocalCommitInformation();
-    if ($local) {
-      $result = $this->parseCommitMessagesIntoFields($local);
-      if ($this->getArgument('create')) {
-        unset($result[0]['revisionID']);
-      }
+    
+    # SVN repository does not support getLocalCommitInformation, so we fake
+    # some data in compatible way
+    if($repository_api instanceof ArcanistSubversionAPI) {
+        
+        $message = $repository_api->getCurrentChangelist();
+        
+        $tp = $this->getArgument("test-plan");
+        if($tp) {
+            $message = "$message\nTest plan: $tp";
+        }
+        
+        $local = array(
+            '#fake-hash' => array(
+                'commit'=> '#fake-hash',
+                'summary' => 'Ignore it :)',
+                'message' => $message,
+            )
+        );
     }
+    else {
+        $local = $repository_api->getLocalCommitInformation();
+    }
+    
+    if ($local) {
+        $result = $this->parseCommitMessagesIntoFields($local);
+        if ($this->getArgument('create')) {
+          unset($result[0]['revisionID']);
+        }
+      }
 
     $result[0] = $this->dispatchWillBuildEvent($result[0]);
 
@@ -1935,7 +1964,7 @@ EOTEXT
 
     // If the user provided "--reviewers" or "--ccs", add a faux message to
     // the list with the implied fields.
-
+        
     $faux_message = array();
     if ($this->getArgument('reviewers')) {
       $faux_message[] = 'Reviewers: '.$this->getArgument('reviewers');
@@ -1953,7 +1982,7 @@ EOTEXT
         ),
       ) + $local;
     }
-
+    
     // Build a human-readable list of the commits, so we can show the user which
     // commits are included in the diff.
     $included = array();

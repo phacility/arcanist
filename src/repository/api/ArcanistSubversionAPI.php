@@ -76,6 +76,10 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       return $this;
   }
   
+  public function getCurrentChangelist() {
+      return $this->changelist;
+  }
+  
   public function getChangelists() {
       list($status) = $this->execxLocal('--xml status');
       
