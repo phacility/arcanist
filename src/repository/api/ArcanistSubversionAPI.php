@@ -88,19 +88,19 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       $result = array();
       
       foreach($xml as $node) {
-          
-          if($node->getName() == "target") {
-              $result[] = "Default";
-          }
-          elseif($node->getName() == "changelist") {
+          if($node->getName() == "changelist") {
               $result[] = (string)$node['name'];
           }
           else {
-              throw new Exception("Unknown entry type: " . $node->getName());
+              if($node->getName() != "target") {
+                  throw new Exception("Unknown entry type: " . $node->getName());
+              }
           }
       }
+
+      sort($result, SORT_STRING);
       
-      return $result;
+      return array_merge(array('Default'), $result);
   }
 
   public function getSVNStatus($with_externals = false) {
