@@ -1910,6 +1910,13 @@ EOTEXT
         
         $message = $repository_api->getCurrentChangelist();
         
+        if($message) {
+            $issues = $this->extractJiraIssues($message);
+            if($issues) {
+                $message = "$message\nJira issues: $issues";
+            }
+        }
+        
         $tp = $this->getArgument("test-plan");
         if($tp) {
             $message = "$message\nTest plan: $tp";
@@ -1937,6 +1944,12 @@ EOTEXT
     $result[0] = $this->dispatchWillBuildEvent($result[0]);
 
     return $result;
+  }
+  
+  private function extractJiraIssues($title) {
+      preg_match_all("/\b[[:upper:]]{1,3}-\d{3,4}\b/", $title, $parts);
+      
+      return implode(', ', $parts[0]);
   }
 
   /**
