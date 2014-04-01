@@ -265,7 +265,7 @@ EOTEXT
 
       list($err) = $repository_api->execManualLocal(
         'log -r %s',
-        $proposed_name);
+        hgsprintf('%s', $proposed_name));
 
       // no error means hg log found a bookmark
       if (!$err) {
@@ -320,12 +320,12 @@ EOTEXT
         echo "Updating to the revision's base commit\n";
         $repository_api->execPassthru(
           'update %s',
-          hgsprintf('%s', $base_revision));
+          $base_revision);
       }
 
       $repository_api->execxLocal(
         'bookmark %s',
-        hgsprintf('%s', $branch_name));
+        $branch_name);
 
       echo phutil_console_format(
         "Created and checked out bookmark %s.\n",
