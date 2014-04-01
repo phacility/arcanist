@@ -647,6 +647,10 @@ EOTEXT
     if ($repository_api->supportsCommitRanges()) {
       $this->parseBaseCommitArgument($this->getArgument('paths'));
     }
+    
+    if($repository_api instanceof ArcanistSubversionAPI) {
+        $repository_api->detectNestedWorkingCopies();
+    }
   }
 
   private function runDiffSetupBasics() {
