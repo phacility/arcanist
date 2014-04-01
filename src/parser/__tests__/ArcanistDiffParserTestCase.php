@@ -573,6 +573,7 @@ EOTEXT
       case 'svnlook-basics.svndiff':
       case 'svnlook-add.svndiff':
       case 'svnlook-delete.svndiff':
+      case 'svnlook-copied.svndiff':
         $this->assertEqual(1, count($changes));
         break;
       case 'git-format-patch.gitdiff':

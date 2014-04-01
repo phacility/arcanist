@@ -232,7 +232,7 @@ final class ArcanistDiffParser {
         // This is a normal SVN text change, probably from "svn diff".
         '(?P<type>Index): (?P<cur>.+)',
         // This is an SVN text change, probably from "svnlook diff".
-        '(?P<type>Modified|Added|Deleted): (?P<cur>.+)',
+        '(?P<type>Modified|Added|Deleted|Copied): (?P<cur>.+)',
         // This is an SVN property change, probably from "svn diff".
         '(?P<type>Property changes on): (?P<cur>.+)',
         // This is a git commit message, probably from "git show".
@@ -314,6 +314,7 @@ final class ArcanistDiffParser {
         case 'Modified':
         case 'Added':
         case 'Deleted':
+        case 'Copied':
           $this->parseIndexHunk($change);
           break;
         case 'Property changes on':
