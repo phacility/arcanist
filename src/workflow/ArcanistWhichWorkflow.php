@@ -43,9 +43,6 @@ EOTEXT
 
   public function getArguments() {
     return array(
-      'any-author' => array(
-        'help' => "Show revisions by any author, not just you.",
-      ),
       'any-status' => array(
         'help' => "Show committed and abandoned revisions.",
       ),
@@ -138,13 +135,9 @@ EOTEXT
       echo $commits."\n\n\n";
     }
 
-    $any_author = $this->getArgument('any-author');
     $any_status = $this->getArgument('any-status');
 
     $query = array(
-      'authors' => $any_author
-        ? null
-        : array($this->getUserPHID()),
       'status' => $any_status
         ? 'status-any'
         : 'status-open',
@@ -169,8 +162,34 @@ EOTEXT
           "working copy, a new revision will be **created** if you run ".
           "'arc diff{$arg}'.\n\n"));
     } else {
+      $other_author_phids = array();
       foreach ($revisions as $revision) {
-        echo '    D'.$revision['id'].' '.$revision['title']."\n";
+        if ($revision['authorPHID'] != $this->getUserPHID()) {
+          $other_author_phids[] = $revision['authorPHID'];
+        }
+      }
+
+      $other_authors = array();
+      if ($other_author_phids) {
+        $other_authors = $this->getConduit()->callMethodSynchronous(
+          'user.query',
+          array(
+            'phids' => $other_author_phids,
+          ));
+        $other_authors = ipull($other_authors, 'userName', 'phid');
+      }
+
+      foreach ($revisions as $revision) {
+        $title = $revision['title'];
+        $monogram = 'D'.$revision['id'];
+
+        if ($revision['authorPHID'] != $this->getUserPHID()) {
+          $author = $other_authors[$revision['authorPHID']];
+          echo pht("    %s (%s) %s\n", $monogram, $author, $title);
+        } else {
+          echo pht("    %s %s\n", $monogram, $title);
+        }
+
         echo '        Reason: '.$revision['why']."\n";
         echo "\n";
       }
