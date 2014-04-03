@@ -147,10 +147,12 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
           '--xml status %Ls',
           $this->statusPaths);
       } elseif($this->changelist) {
-          list($status) = $this->execxLocal('--xml status --cl %s', $this->changelist);
+          list($status) = $this->execxLocal('--xml status --cl %s %Ls', $this->changelist, $this->workingCopies);
+//          list($status) = $this->execxLocal('--xml status --cl %s', $this->changelist);
       }
       else {
-          list($status) = $this->execxLocal('--xml status');
+          list($status) = $this->execxLocal('--xml status %Ls', $this->workingCopies);
+//          list($status) = $this->execxLocal('--xml status');
       }
       
       $xml = new SimpleXMLElement($status);
@@ -352,7 +354,9 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       // a file has a literal "@" in it, everything after that will be
       // interpreted as a revision. By appending "@" with no argument, SVN
       // parses it properly.
-      return $this->buildLocalFuture(array('info %s@', $this->getPath($path)));
+      
+        //return $this->buildLocalFuture(array('info %s@', $this->getPath($path)));
+        return $this->buildLocalFuture(array('info %s@', $path));
     }
   }
 
