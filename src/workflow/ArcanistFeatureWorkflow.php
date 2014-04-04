@@ -48,7 +48,7 @@ EOTEXT
   }
 
   public function requiresAuthentication() {
-    return !$this->getArgument('names');
+    return !$this->getArgument('branch');
   }
 
 
@@ -60,7 +60,14 @@ EOTEXT
       'by-status' => array(
         'help' => 'Sort branches by status instead of time.',
       ),
-      '*' => 'names',
+      'output' => array(
+        'param' => 'format',
+        'support' => array(
+          'json'
+        ),
+        'help' => "With 'json', show features in machine-readable JSON format.",
+      ),
+      '*' => 'branch',
     );
   }
 
@@ -72,7 +79,7 @@ EOTEXT
         'arc feature is only supported under Git and Mercurial.');
     }
 
-    $names = $this->getArgument('names');
+    $names = $this->getArgument('branch');
     if ($names) {
       if (count($names) > 2) {
         throw new ArcanistUsageException("Specify only one branch.");
@@ -109,7 +116,7 @@ EOTEXT
     if (isset($names[1])) {
       $start = $names[1];
     } else {
-      $start = $this->getWorkingCopy()->getConfigFromAnySource(
+      $start = $this->getConfigFromAnySource(
         'arc.feature.start.default');
     }
 
@@ -136,7 +143,7 @@ EOTEXT
               $command,
               $name);
           }
-        } catch (ConduitException $ex) {
+        } catch (ConduitClientException $ex) {
         }
       }
     }
@@ -179,9 +186,9 @@ EOTEXT
     foreach ($branches as $branch) {
       if ($repository_api instanceof ArcanistMercurialAPI) {
         $futures[$branch['name']] = $repository_api->execFutureLocal(
-          "log -l 1 --template '%C' -r %s",
+          "log -l 1 --template %s -r %s",
           "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
-          hgsprintf($branch['name']));
+          hgsprintf('%s', $branch['name']));
 
       } else {
         // NOTE: "-s" is an option deep in git's diff argument parser that
@@ -324,8 +331,10 @@ EOTEXT
         'current'   => $branch['current'],
         'status'    => $status,
         'desc'      => $desc,
+        'revision'  => $revision ? $revision['id'] : null,
         'color'     => $color,
         'esort'     => $epoch,
+        'epoch'     => $epoch,
         'ssort'     => $ssort,
       );
     }
@@ -338,16 +347,22 @@ EOTEXT
     } else {
       $out = isort($out, 'esort');
     }
-
-    $console = PhutilConsole::getConsole();
-    foreach ($out as $line) {
-      $color = $line['color'];
-      $console->writeOut(
-        "%s **%s** <fg:{$color}>%s</fg> %s\n",
-        $line['current'] ? '* ' : '  ',
-        str_pad($line['name'], $len_name),
-        str_pad($line['status'], $len_status),
-        $line['desc']);
+    if ($this->getArgument('output') == 'json') {
+      foreach ($out as &$feature) {
+        unset($feature['color'], $feature['ssort'], $feature['esort']);
+      }
+      echo json_encode(ipull($out, null, 'name')) . "\n";
+    } else {
+      $console = PhutilConsole::getConsole();
+      foreach ($out as $line) {
+        $color = $line['color'];
+        $console->writeOut(
+          "%s **%s** <fg:{$color}>%s</fg> %s\n",
+          $line['current'] ? '* ' : '  ',
+          str_pad($line['name'], $len_name),
+          str_pad($line['status'], $len_status),
+          $line['desc']);
+      }
     }
   }
 

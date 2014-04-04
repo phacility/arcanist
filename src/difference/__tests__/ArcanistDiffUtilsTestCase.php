@@ -92,9 +92,151 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
     foreach ($tests as $test) {
       $this->assertEqual(
         $test[2],
-        ArcanistDiffUtils::buildLevenshteinDifferenceString(
-          $test[0],
-          $test[1]));
+        ArcanistDiffUtils::generateEditString(
+          str_split($test[0]),
+          str_split($test[1])),
+        "'{$test[0]}' vs '{$test[1]}'");
     }
+
+    $utf8_tests = array(
+      array(
+        "GrumpyCat",
+        "Grumpy\xE2\x98\x83at",
+        'ssssssxss',
+      ),
+    );
+
+    foreach ($tests as $test) {
+      $this->assertEqual(
+        $test[2],
+        ArcanistDiffUtils::generateEditString(
+          phutil_utf8v_combined($test[0]),
+          phutil_utf8v_combined($test[1])),
+        "'{$test[0]}' vs '{$test[1]}' (utf8)");
+    }
+  }
+
+  public function testGenerateUTF8IntralineDiff() {
+    // Both Strings Empty.
+    $left = "";
+    $right = "";
+    $result = array(
+                array(array(0, 0)),
+                array(array(0, 0))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // Left String Empty.
+    $left = "";
+    $right = "Grumpy\xE2\x98\x83at";
+    $result = array(
+                array(array(0, 0)),
+                array(array(0, 11))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // Right String Empty.
+    $left = "Grumpy\xE2\x98\x83at";
+    $right = "";
+    $result = array(
+                array(array(0, 11)),
+                array(array(0, 0))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // Both Strings Same
+    $left = "Grumpy\xE2\x98\x83at";
+    $right = "Grumpy\xE2\x98\x83at";
+    $result = array(
+                array(array(0, 11)),
+                array(array(0, 11))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // Both Strings are different.
+    $left = "Grumpy\xE2\x98\x83at";
+    $right = "Smiling Dog";
+    $result = array(
+                array(array(1, 11)),
+                array(array(1, 11))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // String with one difference in the middle.
+    $left = "GrumpyCat";
+    $right = "Grumpy\xE2\x98\x83at";
+    $result = array(
+                array(array(0, 6), array(1, 1), array(0, 2)),
+                array(array(0, 6), array(1, 3), array(0, 2))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // Differences in middle, not connected to each other.
+    $left = "GrumpyCat";
+    $right = "Grumpy\xE2\x98\x83a\xE2\x98\x83t";
+    $result = array(
+                array(array(0, 6), array(1, 2), array(0, 1)),
+                array(array(0, 6), array(1, 7), array(0, 1))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // String with difference at the beginning.
+    $left = "GrumpyC\xE2\x98\x83t";
+    $right = "DrumpyC\xE2\x98\x83t";
+    $result = array(
+                array(array(1, 1), array(0, 10)),
+                array(array(1, 1), array(0, 10))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // String with difference at the end.
+    $left = "GrumpyC\xE2\x98\x83t";
+    $right = "GrumpyC\xE2\x98\x83P";
+    $result = array(
+                array(array(0, 10), array(1, 1)),
+                array(array(0, 10), array(1, 1))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // String with differences at the beginning and end.
+    $left = "GrumpyC\xE2\x98\x83t";
+    $right = "DrumpyC\xE2\x98\x83P";
+    $result = array(
+                array(array(1, 1), array(0, 9), array(1, 1)),
+                array(array(1, 1), array(0, 9), array(1, 1))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
+
+    // This is a unicode combining character, "COMBINING DOUBLE TILDE".
+    $cc = "\xCD\xA0";
+    $left = "Senor";
+    $right = "Sen{$cc}or";
+    $result = array(
+                array(array(0, 2), array(1, 1), array(0, 2)),
+                array(array(0, 2), array(1, 3), array(0, 2))
+              );
+    $this->assertEqual(
+      $result,
+      ArcanistDiffUtils::generateIntralineDiff($left, $right));
   }
 }

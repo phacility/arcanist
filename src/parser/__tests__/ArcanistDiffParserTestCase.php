@@ -37,7 +37,7 @@ final class ArcanistDiffParserTestCase extends ArcanistTestCase {
 
         $this->assertEqual(count($changes), $expect_two ? 2 : 1);
         $change = reset($changes);
-        $this->assertEqual(true, $change !== null);
+        $this->assertTrue($change !== null);
 
         $hunks = $change->getHunks();
         $this->assertEqual(1, count($hunks));
@@ -217,6 +217,7 @@ EOTEXT
           $change->getNewProperties());
         break;
       case 'svn-binary-diff.svndiff':
+      case 'svn-binary-diff-freebsd.svndiff':
         $this->assertEqual(1, count($changes));
         $change = reset($changes);
         $this->assertEqual(
@@ -326,8 +327,7 @@ EOTEXT
         $this->assertEqual(
           $change->getCurrentPath(),
           $target->getOldPath());
-        $this->assertEqual(
-          true,
+        $this->assertTrue(
           in_array($target->getCurrentPath(), $change->getAwayPaths()));
         break;
       case 'git-merge-header.gitdiff':
@@ -563,6 +563,33 @@ EOTEXT
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
         break;
+      case 'comment.svndiff':
+        $this->assertEqual(1, count($changes));
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
+      case 'svnlook-basics.svndiff':
+      case 'svnlook-add.svndiff':
+      case 'svnlook-delete.svndiff':
+      case 'svnlook-copied.svndiff':
+        $this->assertEqual(1, count($changes));
+        break;
+      case 'git-format-patch.gitdiff':
+        $this->assertEqual(2, count($changes));
+
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_MESSAGE,
+          $change->getType());
+        $this->assertEqual("WIP", $change->getMetadata('message'));
+
+        $change = array_shift($changes);
+        $this->assertEqual(
+          ArcanistDiffChangeType::TYPE_CHANGE,
+          $change->getType());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
@@ -640,8 +667,7 @@ EOTEXT
       } catch (Exception $ex) {
         $caught = $ex;
       }
-      $this->assertEqual(
-        true,
+      $this->assertTrue(
         ($caught instanceof Exception),
         "Ambiguous: {$input}");
     }

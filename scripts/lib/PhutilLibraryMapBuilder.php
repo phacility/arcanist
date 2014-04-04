@@ -21,7 +21,7 @@ final class PhutilLibraryMapBuilder {
   const LIBRARY_MAP_VERSION       = 2;
 
   const SYMBOL_CACHE_VERSION_KEY  = '__symbol_cache_version__';
-  const SYMBOL_CACHE_VERSION      = 8;
+  const SYMBOL_CACHE_VERSION      = 11;
 
 
 /* -(  Mapping libphutil Libraries  )---------------------------------------- */

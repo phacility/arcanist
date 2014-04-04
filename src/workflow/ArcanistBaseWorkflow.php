@@ -31,7 +31,8 @@
  *
  * @task  conduit   Conduit
  * @task  scratch   Scratch Files
- * @group workflow
+ * @task  phabrep   Phabricator Repositories
+ *
  * @stable
  */
 abstract class ArcanistBaseWorkflow extends Phobject {
@@ -55,6 +56,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $userPHID;
   private $userName;
   private $repositoryAPI;
+  private $configurationManager;
   private $workingCopy;
   private $arguments;
   private $passedArguments;
@@ -63,6 +65,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $stashed;
 
   private $projectInfo;
+  private $repositoryInfo;
+  private $repositoryReasons;
 
   private $arcanistConfiguration;
   private $parentWorkflow;
@@ -182,8 +186,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       $this->conduit->setTimeout($this->conduitTimeout);
     }
 
-    $user = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.user');
-    $pass = $this->getConfigFromWhateverSourceAvailiable('http.basicauth.pass');
+    $user = $this->getConfigFromAnySource('http.basicauth.user');
+    $pass = $this->getConfigFromAnySource('http.basicauth.pass');
     if ($user !== null && $pass !== null) {
       $this->conduit->setBasicAuthCredentials($user, $pass);
     }
@@ -191,21 +195,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this;
   }
 
-  final public function getConfigFromWhateverSourceAvailiable($key) {
-    if ($this->requiresWorkingCopy()) {
-      $working_copy = $this->getWorkingCopy();
-      return $working_copy->getConfigFromAnySource($key);
-    } else {
-      $global_config = self::readGlobalArcConfig();
-      $pval = idx($global_config, $key);
-
-      if ($pval === null) {
-        $system_config = self::readSystemArcConfig();
-        $pval = idx($system_config, $key);
-      }
-
-      return $pval;
-    }
+  final public function getConfigFromAnySource($key) {
+    return $this->configurationManager->getConfigFromAnySource($key);
   }
 
 
@@ -513,6 +504,17 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this->arcanistConfiguration;
   }
 
+  public function setConfigurationManager(
+    ArcanistConfigurationManager $arcanist_configuration_manager) {
+
+    $this->configurationManager = $arcanist_configuration_manager;
+    return $this;
+  }
+
+  public function getConfigurationManager() {
+    return $this->configurationManager;
+  }
+
   public function requiresWorkingCopy() {
     return false;
   }
@@ -565,6 +567,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $workflow = $arc_config->buildWorkflow($command);
     $workflow->setParentWorkflow($this);
     $workflow->setCommand($command);
+    $workflow->setConfigurationManager($this->getConfigurationManager());
 
     if ($this->repositoryAPI) {
       $workflow->setRepositoryAPI($this->repositoryAPI);
@@ -732,13 +735,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
   public function getWorkingCopy() {
-    if (!$this->workingCopy) {
+    $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
+    if (!$working_copy) {
       $workflow = get_class($this);
       throw new Exception(
         "This workflow ('{$workflow}') requires a working copy, override ".
         "requiresWorkingCopy() to return true.");
     }
-    return $this->workingCopy;
+    return $working_copy;
   }
 
   public function setWorkingCopy(
@@ -812,7 +816,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
             "may have forgotten to 'hg add' them to your commit.\n");
         }
 
-        if ($this->askForAdd()) {
+        if ($this->askForAdd($untracked)) {
           $api->addToCommit($untracked);
           $must_commit += array_flip($untracked);
         } else if ($this->commitMode == self::COMMIT_DISABLE) {
@@ -846,17 +850,29 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         "    ".implode("\n    ", $conflicts)."\n");
     }
 
+    $missing = $api->getMissingChanges();
+    if ($missing) {
+      throw new ArcanistUsageException(
+        pht(
+          "You have missing files in this working copy. Revert or formally ".
+          "remove them (with `svn rm`) before proceeding.\n\n".
+          "%s".
+          "  Missing files in working copy:\n%s\n",
+          $working_copy_desc,
+          "    ".implode("\n    ", $missing)));
+    }
+
     $unstaged = $api->getUnstagedChanges();
     if ($unstaged) {
       echo "You have unstaged changes in this working copy.\n\n".
         $working_copy_desc.
         "  Unstaged changes in working copy:\n".
         "    ".implode("\n    ", $unstaged)."\n";
-      if ($this->askForAdd()) {
+      if ($this->askForAdd($unstaged)) {
         $api->addToCommit($unstaged);
         $must_commit += array_flip($unstaged);
       } else {
-        $permit_autostash = $this->getWorkingCopy()->getConfigFromAnySource(
+        $permit_autostash = $this->getConfigFromAnySource(
           'arc.autostash',
           false);
         if ($permit_autostash && $api->canStashChanges()) {
@@ -882,7 +898,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $working_copy_desc.
         "  Uncommitted changes in working copy:\n".
         "    ".implode("\n    ", $uncommitted)."\n";
-      if ($this->askForAdd()) {
+      if ($this->askForAdd($uncommitted)) {
         $must_commit += array_flip($uncommitted);
       } else {
         throw new ArcanistUncommittedChangesException(
@@ -895,7 +911,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
-        $api->doCommit(self::AUTO_COMMIT_TITLE);
+        $commit_message = phutil_console_prompt("Enter commit message:");
+        if ($commit_message == '') {
+          $commit_message = self::AUTO_COMMIT_TITLE;
+        }
+        $api->doCommit($commit_message);
       }
     }
   }
@@ -958,7 +978,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return false;
   }
 
-  private function askForAdd() {
+  private function askForAdd(array $files) {
     if ($this->commitMode == self::COMMIT_DISABLE) {
       return false;
     }
@@ -969,9 +989,13 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       return true;
     }
     if ($this->shouldAmend) {
-      $prompt = "Do you want to amend these files to the commit?";
+      $prompt = pht(
+        'Do you want to amend these files to the commit?',
+        count($files));
     } else {
-      $prompt = "Do you want to add these files to the commit?";
+      $prompt = pht(
+        'Do you want to add these files to the commit?',
+        count($files));
     }
     return phutil_console_confirm($prompt);
   }
@@ -1163,114 +1187,6 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $argv;
   }
 
-  public static function getSystemArcConfigLocation() {
-    if (phutil_is_windows()) {
-      return Filesystem::resolvePath(
-        'Phabricator/Arcanist/config',
-        getenv('ProgramData'));
-    } else {
-      return '/etc/arcconfig';
-    }
-  }
-
-  public static function readSystemArcConfig() {
-    $system_config = array();
-    $system_config_path = self::getSystemArcConfigLocation();
-    if (Filesystem::pathExists($system_config_path)) {
-      $file = Filesystem::readFile($system_config_path);
-      if ($file) {
-        $system_config = json_decode($file, true);
-      }
-    }
-    return $system_config;
-  }
-  public static function getUserConfigurationFileLocation() {
-    if (phutil_is_windows()) {
-      return getenv('APPDATA').'/.arcrc';
-    } else {
-      return getenv('HOME').'/.arcrc';
-    }
-  }
-
-  public static function readUserConfigurationFile() {
-    $user_config = array();
-    $user_config_path = self::getUserConfigurationFileLocation();
-    if (Filesystem::pathExists($user_config_path)) {
-
-      if (!phutil_is_windows()) {
-        $mode = fileperms($user_config_path);
-        if (!$mode) {
-          throw new Exception("Unable to get perms of '{$user_config_path}'!");
-        }
-        if ($mode & 0177) {
-          // Mode should allow only owner access.
-          $prompt = "File permissions on your ~/.arcrc are too open. ".
-                    "Fix them by chmod'ing to 600?";
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
-            throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
-          }
-          execx('chmod 600 %s', $user_config_path);
-
-          // Drop the stat cache so we don't read the old permissions if
-          // we end up here again. If we don't do this, we may prompt the user
-          // to fix permissions multiple times.
-          clearstatcache();
-        }
-      }
-
-      $user_config_data = Filesystem::readFile($user_config_path);
-      $user_config = json_decode($user_config_data, true);
-      if (!is_array($user_config)) {
-        throw new ArcanistUsageException(
-          "Your '~/.arcrc' file is not a valid JSON file.");
-      }
-    }
-    return $user_config;
-  }
-
-
-  public static function writeUserConfigurationFile($config) {
-    $json_encoder = new PhutilJSON();
-    $json = $json_encoder->encodeFormatted($config);
-
-    $path = self::getUserConfigurationFileLocation();
-    Filesystem::writeFile($path, $json);
-
-    if (!phutil_is_windows()) {
-      execx('chmod 600 %s', $path);
-    }
-  }
-
-  public static function readGlobalArcConfig() {
-    return idx(self::readUserConfigurationFile(), 'config', array());
-  }
-
-  public static function writeGlobalArcConfig(array $options) {
-    $config = self::readUserConfigurationFile();
-    $config['config'] = $options;
-    self::writeUserConfigurationFile($config);
-  }
-
-  public function readLocalArcConfig() {
-    $local = array();
-    $file = $this->readScratchFile('config');
-    if ($file) {
-      $local = json_decode($file, true);
-    }
-
-    return $local;
-  }
-
-  public function writeLocalArcConfig(array $config) {
-    $json_encoder = new PhutilJSON();
-    $json = $json_encoder->encodeFormatted($config);
-
-    $this->writeScratchFile('config', $json);
-
-    return $this;
-  }
-
-
   /**
    * Write a message to stderr so that '--json' flags or stdout which is meant
    * to be piped somewhere aren't disrupted.
@@ -1284,9 +1200,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
   protected function isHistoryImmutable() {
     $repository_api = $this->getRepositoryAPI();
-    $working_copy = $this->getWorkingCopy();
 
-    $config = $working_copy->getConfigFromAnySource('history.immutable');
+    $config = $this->getConfigFromAnySource('history.immutable');
     if ($config !== null) {
       return $config;
     }
@@ -1526,7 +1441,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   protected function newInteractiveEditor($text) {
     $editor = new PhutilInteractiveEditor($text);
 
-    $preferred = $this->getWorkingCopy()->getConfigFromAnySource('editor');
+    $preferred = $this->getConfigFromAnySource('editor');
     if ($preferred) {
       $editor->setPreferredEditor($preferred);
     }
@@ -1605,5 +1520,209 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
     return $this->repositoryVersion;
   }
+
+
+/* -(  Phabricator Repositories  )------------------------------------------- */
+
+
+  /**
+   * Get the PHID of the Phabricator repository this working copy corresponds
+   * to. Returns `null` if no repository can be identified.
+   *
+   * @return phid|null  Repository PHID, or null if no repository can be
+   *                    identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryPHID() {
+    return idx($this->getRepositoryInformation(), 'phid');
+  }
+
+
+  /**
+   * Get the callsign of the Phabricator repository this working copy
+   * corresponds to. Returns `null` if no repository can be identified.
+   *
+   * @return string|null  Repository callsign, or null if no repository can be
+   *                      identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryCallsign() {
+    return idx($this->getRepositoryInformation(), 'callsign');
+  }
+
+
+  /**
+   * Get the URI of the Phabricator repository this working copy
+   * corresponds to. Returns `null` if no repository can be identified.
+   *
+   * @return string|null  Repository URI, or null if no repository can be
+   *                      identified.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryURI() {
+    return idx($this->getRepositoryInformation(), 'uri');
+  }
+
+
+  /**
+   * Get human-readable reasoning explaining how `arc` evaluated which
+   * Phabricator repository corresponds to this working copy. Used by
+   * `arc which` to explain the process to users.
+   *
+   * @return list<string> Human-readable explanation of the repository
+   *                      association process.
+   *
+   * @task phabrep
+   */
+  protected function getRepositoryReasons() {
+    $this->getRepositoryInformation();
+    return $this->repositoryReasons;
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function getRepositoryInformation() {
+    if ($this->repositoryInfo === null) {
+      list($info, $reasons) = $this->loadRepositoryInformation();
+      $this->repositoryInfo = nonempty($info, array());
+      $this->repositoryReasons = $reasons;
+    }
+
+    return $this->repositoryInfo;
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function loadRepositoryInformation() {
+    list($query, $reasons) = $this->getRepositoryQuery();
+    if (!$query) {
+      return array(null, $reasons);
+    }
+
+    try {
+      $results = $this->getConduit()->callMethodSynchronous(
+        'repository.query',
+        $query);
+    } catch (ConduitClientException $ex) {
+      if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
+        $reasons[] = pht(
+          'This version of Arcanist is more recent than the version of '.
+          'Phabricator you are connecting to: the Phabricator install is '.
+          'out of date and does not have support for identifying '.
+          'repositories by callsign or URI. Update Phabricator to enable '.
+          'these features.');
+        return array(null, $reasons);
+      }
+      throw $ex;
+    }
+
+    $result = null;
+    if (!$results) {
+      $reasons[] = pht(
+        'No repositories matched the query. Check that your configuration '.
+        'is correct, or use "repository.callsign" to select a repository '.
+        'explicitly.');
+    } else if (count($results) > 1) {
+      $reasons[] = pht(
+        'Multiple repostories (%s) matched the query. You can use the '.
+        '"repository.callsign" configuration to select the one you want.',
+        implode(', ', ipull($results, 'callsign')));
+    } else {
+      $result = head($results);
+      $reasons[] = pht('Found a unique matching repository.');
+    }
+
+    return array($result, $reasons);
+  }
+
+
+  /**
+   * @task phabrep
+   */
+  private function getRepositoryQuery() {
+    $reasons = array();
+
+    $callsign = $this->getConfigFromAnySource('repository.callsign');
+    if ($callsign) {
+      $query = array(
+        'callsigns' => array($callsign),
+      );
+      $reasons[] = pht(
+        'Configuration value "repository.callsign" is set to "%s".',
+        $callsign);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'Configuration value "repository.callsign" is empty.');
+    }
+
+    $project_info = $this->getProjectInfo();
+    $project_name = $this->getWorkingCopy()->getProjectID();
+    if ($this->getProjectInfo()) {
+      if (!empty($project_info['repository']['callsign'])) {
+        $callsign = $project_info['repository']['callsign'];
+        $query = array(
+          'callsigns' => array($callsign),
+        );
+        $reasons[] = pht(
+          'Configuration value "project.name" is set to "%s"; this project '.
+          'is associated with the "%s" repository.',
+          $project_name,
+          $callsign);
+        return array($query, $reasons);
+      } else {
+        $reasons[] = pht(
+          'Configuration value "project.name" is set to "%s", but this '.
+          'project is not associated with a repository.',
+          $project_name);
+      }
+    } else if (strlen($project_name)) {
+      $reasons[] = pht(
+        'Configuration value "project.name" is set to "%s", but that '.
+        'project does not exist.',
+        $project_name);
+    } else {
+      $reasons[] = pht(
+        'Configuration value "project.name" is empty.');
+    }
+
+    $uuid = $this->getRepositoryAPI()->getRepositoryUUID();
+    if ($uuid !== null) {
+      $query = array(
+        'uuids' => array($uuid),
+      );
+      $reasons[] = pht(
+        'The UUID for this working copy is "%s".',
+        $uuid);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'This repository has no VCS UUID (this is normal for git/hg).');
+    }
+
+    $remote_uri = $this->getRepositoryAPI()->getRemoteURI();
+    if ($remote_uri !== null) {
+      $query = array(
+        'remoteURIs' => array($remote_uri),
+      );
+      $reasons[] = pht(
+        'The remote URI for this working copy is "%s".',
+        $remote_uri);
+      return array($query, $reasons);
+    } else {
+      $reasons[] = pht(
+        'Unable to determine the remote URI for this repository.');
+    }
+
+    return array(null, $reasons);
+  }
+
 
 }

@@ -93,6 +93,15 @@ EOTEXT
           "Normally under git/hg, if the patch is successful, the changes ".
           "are committed to the working copy. This flag prevents the commit.",
       ),
+      'skip-dependencies' => array(
+        'supports' => array(
+          'git', 'hg'
+        ),
+        'help' =>
+          'Normally, if a patch has dependencies that are not present in the '.
+          'working copy, arc tries to apply them as well. This flag prevents '.
+          'such work.',
+      ),
       'nobranch' => array(
         'supports' => array(
           'git', 'hg'
@@ -186,12 +195,7 @@ EOTEXT
   }
 
   private function shouldCommit() {
-    $no_commit = $this->getArgument('nocommit', false);
-    if ($no_commit) {
-      return false;
-    }
-
-    return true;
+    return !$this->getArgument('nocommit', false);
   }
 
   private function canBranch() {
@@ -217,7 +221,7 @@ EOTEXT
       $base_name .= "-D{$revision_id}";
     }
 
-    $suffixes = array(null, '-1', '-2', '-3');
+    $suffixes = array(null, '_1', '_2', '_3');
     foreach ($suffixes as $suffix) {
       $proposed_name = $base_name.$suffix;
 
@@ -261,7 +265,7 @@ EOTEXT
 
       list($err) = $repository_api->execManualLocal(
         'log -r %s',
-        $proposed_name);
+        hgsprintf('%s', $proposed_name));
 
       // no error means hg log found a bookmark
       if (!$err) {
@@ -283,29 +287,6 @@ EOTEXT
     }
 
     return $bookmark_name;
-  }
-
-  private function hasBaseRevision(ArcanistBundle $bundle) {
-    $base_revision = $bundle->getBaseRevision();
-    $repository_api = $this->getRepositoryAPI();
-
-    // verify the base revision is valid
-    if ($repository_api instanceof ArcanistGitAPI) {
-      // in a working copy that uses the git-svn bridge, the base revision might
-      // be a svn uri instead of a git ref
-
-      // NOTE: Use 'cat-file', not 'rev-parse --verify', because 'rev-parse'
-      // always "verifies" any properly-formatted commit even if it does not
-      // exist.
-      list($err) = $repository_api->execManualLocal(
-        'cat-file -t %s',
-        $base_revision);
-      return !$err;
-    } else if ($repository_api instanceof ArcanistMercurialAPI) {
-      return $repository_api->hasLocalCommit($base_revision);
-    }
-
-    return false;
   }
 
   private function createBranch(ArcanistBundle $bundle, $has_base_revision) {
@@ -352,6 +333,10 @@ EOTEXT
     }
 
     return $branch_name;
+  }
+
+  private function shouldApplyDependencies() {
+    return !$this->getArgument('skip-dependencies', false);
   }
 
   private function shouldUpdateWorkingCopy() {
@@ -423,24 +408,24 @@ EOTEXT
       $bundle->setEncoding($try_encoding);
     }
 
-    $force = $this->getArgument('force', false);
-    if ($force) {
-      // force means don't do any sanity checks about the patch
-    } else {
-      $this->sanityCheck($bundle);
-    }
+    $sanity_check = !$this->getArgument('force', false);
 
-    // we should update the working copy before we do ANYTHING else
+    // we should update the working copy before we do ANYTHING else to
+    // the working copy
     if ($this->shouldUpdateWorkingCopy()) {
       $this->updateWorkingCopy();
     }
 
-    $repository_api = $this->getRepositoryAPI();
+    if ($sanity_check) {
+      $this->requireCleanWorkingCopy();
+    }
 
-    $has_base_revision = $this->hasBaseRevision($bundle);
-    if ($this->shouldCommit() &&
-        $this->canBranch() &&
-        ($this->shouldBranch() || $has_base_revision)) {
+    $repository_api = $this->getRepositoryAPI();
+    $has_base_revision = $repository_api->hasLocalCommit(
+      $bundle->getBaseRevision());
+    if ($this->canBranch() &&
+         ($this->shouldBranch() ||
+         ($this->shouldCommit() && $has_base_revision))) {
 
       if ($repository_api instanceof ArcanistGitAPI) {
         $original_branch = $repository_api->getBranchName();
@@ -459,6 +444,13 @@ EOTEXT
       }
 
       $new_branch = $this->createBranch($bundle, $has_base_revision);
+    }
+    if (!$has_base_revision && $this->shouldApplyDependencies()) {
+      $this->applyDependencies($bundle);
+    }
+
+    if ($sanity_check) {
+      $this->sanityCheck($bundle);
     }
 
     if ($repository_api instanceof ArcanistSubversionAPI) {
@@ -672,27 +664,31 @@ EOTEXT
 
       return $patch_err;
     } else if ($repository_api instanceof ArcanistGitAPI) {
-      $future = $repository_api->execFutureLocal(
-        'apply --index --reject');
-      $future->write($bundle->toGitPatch());
 
-      try {
-        $future->resolvex();
-      } catch (CommandException $ex) {
+      $patchfile = new TempFile();
+      Filesystem::writeFile($patchfile, $bundle->toGitPatch());
+
+      $passthru = new PhutilExecPassthru(
+        'git apply --index --reject -- %s',
+        $patchfile);
+      $passthru->setCWD($repository_api->getPath());
+      $err = $passthru->execute();
+
+      if ($err) {
         echo phutil_console_format(
           "\n<bg:red>** Patch Failed! **</bg>\n");
-        $stderr = $ex->getStdErr();
-        if (preg_match('/already exists in working directory/', $stderr)) {
-          echo phutil_console_wrap(
-            phutil_console_format(
-              "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
-              "because it attempts to change the case of a filename (for ".
-              "instance, from 'example.c' to 'Example.c'). Git cannot apply ".
-              "patches like this on case-insensitive filesystems. You must ".
-              "apply this patch manually.\n"));
-        }
-        throw $ex;
+
+        // NOTE: Git patches may fail if they change the case of a filename
+        // (for instance, from 'example.c' to 'Example.c'). As of now, Git
+        // can not apply these patches on case-insensitive filesystems and
+        // there is no way to build a patch which works.
+
+        throw new ArcanistUsageException("Unable to apply patch!");
       }
+
+      // in case there were any submodule changes involved
+      $repository_api->execpassthru(
+        'submodule update --init --recursive');
 
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
@@ -712,13 +708,16 @@ EOTEXT
         $verb = 'applied';
       }
 
-      if ($this->shouldCommit() && $this->canBranch() &&
-          !$this->shouldBranch() && $has_base_revision) {
+      if ($this->canBranch() &&
+          !$this->shouldBranch() &&
+          $this->shouldCommit() && $has_base_revision) {
         $repository_api->execxLocal('checkout %s', $original_branch);
         $ex = null;
         try {
           $repository_api->execxLocal('cherry-pick %s', $new_branch);
-        } catch (Exception $ex) {}
+        } catch (Exception $ex) {
+          // do nothing
+        }
         $repository_api->execxLocal('branch -D %s', $new_branch);
         if ($ex) {
           echo phutil_console_format(
@@ -854,14 +853,71 @@ EOTEXT
     return array('ARGUMENT');
   }
 
+  private function applyDependencies(ArcanistBundle $bundle) {
+    // check for (and automagically apply on the user's be-hest) any revisions
+    // this patch depends on
+    $graph = $this->buildDependencyGraph($bundle);
+    if ($graph) {
+      $start_phid = $graph->getStartPHID();
+      $cycle_phids = $graph->detectCycles($start_phid);
+      if ($cycle_phids) {
+        $phids = array_keys($graph->getNodes());
+        $issue = 'The dependencies for this patch have a cycle. Applying them '.
+                 'is not guaranteed to work. Continue anyway?';
+        $okay = phutil_console_confirm($issue, true);
+      } else {
+        $phids = $graph->getTopographicallySortedNodes();
+        $phids = array_reverse($phids);
+        $okay = true;
+      }
+
+      if (!$okay) {
+        return;
+      }
+
+      $dep_on_revs = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
+        array(
+          'phids' => $phids,
+          'arcanistProjects' => array($bundle->getProjectID())
+        ));
+      $revs = array();
+      foreach ($dep_on_revs as $dep_on_rev) {
+        $revs[$dep_on_rev['phid']] = 'D'.$dep_on_rev['id'];
+      }
+      // order them in case we got a topological sort earlier
+      $revs = array_select_keys($revs, $phids);
+      if (!empty($revs)) {
+        $base_args = array(
+          '--force',
+          '--skip-dependencies',
+          '--nobranch');
+        if (!$this->shouldCommit()) {
+          $base_args[] = '--nocommit';
+        }
+
+        foreach ($revs as $phid => $diff_id) {
+          // we'll apply this, the actual patch, later
+          // this should be the last in the list
+          if ($phid == $start_phid) {
+            continue;
+          }
+          $args = $base_args;
+          $args[] = $diff_id;
+          $apply_workflow = $this->buildChildWorkflow(
+            'patch',
+            $args);
+          $apply_workflow->run();
+        }
+      }
+    }
+  }
+
   /**
    * Do the best we can to prevent PEBKAC and id10t issues.
    */
   private function sanityCheck(ArcanistBundle $bundle) {
     $repository_api = $this->getRepositoryAPI();
-
-    // Require clean working copy
-    $this->requireCleanWorkingCopy();
 
     // Check to see if the bundle's project id matches the working copy
     // project id
@@ -949,8 +1005,6 @@ EOTEXT
         }
       }
     }
-
-    // TODO -- more sanity checks here
   }
 
   /**
@@ -1002,5 +1056,36 @@ EOTEXT
       }
     }
     return $found_revision;
+  }
+
+  private function buildDependencyGraph(ArcanistBundle $bundle) {
+    $graph = null;
+    if ($this->getRepositoryAPI() instanceof ArcanistSubversionAPI) {
+      return $graph;
+    }
+    $revision_id = $bundle->getRevisionID();
+    if ($revision_id) {
+      $revisions = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
+        array(
+          'ids' => array($revision_id),
+        ));
+      if ($revisions) {
+        $revision = head($revisions);
+        $rev_auxiliary = idx($revision, 'auxiliary', array());
+        $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
+        if ($phids) {
+          $revision_phid = $revision['phid'];
+          $graph = id(new ArcanistDifferentialDependencyGraph())
+            ->setConduit($this->getConduit())
+            ->setRepositoryAPI($this->getRepositoryAPI())
+            ->setStartPHID($revision_phid)
+            ->addNodes(array($revision_phid => $phids))
+            ->loadGraph();
+        }
+      }
+    }
+
+    return $graph;
   }
 }

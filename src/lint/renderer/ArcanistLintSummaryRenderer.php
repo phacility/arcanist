@@ -11,18 +11,16 @@ final class ArcanistLintSummaryRenderer extends ArcanistLintRenderer {
     $path = $result->getPath();
 
     $text = array();
-    $text[] = $path.":";
     foreach ($messages as $message) {
       $name = $message->getName();
       $severity = ArcanistLintSeverity::getStringForSeverity(
         $message->getSeverity());
       $line = $message->getLine();
 
-      $text[] = "    {$severity} on line {$line}: {$name}";
+      $text[] = "{$path}:{$line}:{$severity}: {$name}\n";
     }
-    $text[] = null;
 
-    return implode("\n", $text);
+    return implode("", $text);
   }
 
   public function renderOkayResult() {

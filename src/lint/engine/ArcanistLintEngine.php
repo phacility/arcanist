@@ -5,12 +5,12 @@
  * checks your .arcconfig to see if you have specified a lint engine in the
  * key "lint.engine". The engine must extend this class. For example:
  *
- *  lang=js
- *  {
- *    // ...
- *    "lint.engine" : "ExampleLintEngine",
- *    // ...
- *  }
+ *   lang=js
+ *   {
+ *     // ...
+ *     "lint.engine" : "ExampleLintEngine",
+ *     // ...
+ *   }
  *
  * The lint engine is given a list of paths (generally, the paths that you
  * modified in your change) and determines which linters to run on them. The
@@ -63,9 +63,20 @@ abstract class ArcanistLintEngine {
 
   private $enableAsyncLint = false;
   private $postponedLinters = array();
+  private $configurationManager;
 
   public function __construct() {
 
+  }
+
+  public function setConfigurationManager(
+    ArcanistConfigurationManager $configuration_manager) {
+    $this->configurationManager = $configuration_manager;
+    return $this;
+  }
+
+  public function getConfigurationManager() {
+    return $this->configurationManager;
   }
 
   public function setWorkingCopy(ArcanistWorkingCopyIdentity $working_copy) {
@@ -150,6 +161,32 @@ abstract class ArcanistLintEngine {
     }
   }
 
+  public function isDirectory($path) {
+    if ($this->getCommitHookMode()) {
+      // TODO: This won't get the right result in every case (we need more
+      // metadata) but should almost always be correct.
+      try {
+        $this->loadData($path);
+        return false;
+      } catch (Exception $ex) {
+        return true;
+      }
+    } else {
+      $disk_path = $this->getFilePathOnDisk($path);
+      return is_dir($disk_path);
+    }
+  }
+
+  public function isBinaryFile($path) {
+    try {
+      $data = $this->loadData($path);
+    } catch (Exception $ex) {
+      return false;
+    }
+
+    return ArcanistDiffUtils::isHeuristicBinaryFile($data);
+  }
+
   public function getFilePathOnDisk($path) {
     return Filesystem::resolvePath(
       $path,
@@ -167,9 +204,13 @@ abstract class ArcanistLintEngine {
 
   public function run() {
     $linters = $this->buildLinters();
-
     if (!$linters) {
       throw new ArcanistNoEffectException("No linters to run.");
+    }
+
+    $linters = msort($linters, 'getLinterPriority');
+    foreach ($linters as $linter) {
+      $linter->setEngine($this);
     }
 
     $have_paths = false;
@@ -187,7 +228,6 @@ abstract class ArcanistLintEngine {
     $versions = array($this->getCacheVersion());
 
     foreach ($linters as $linter) {
-      $linter->setEngine($this);
       $version = get_class($linter).':'.$linter->getCacheVersion();
 
       $symbols = id(new PhutilSymbolLoader())
@@ -411,7 +451,9 @@ abstract class ArcanistLintEngine {
     // path is a directory or a binary file so we should not exclude
     // warnings.
 
-    if (!$this->changedLines || $message->isError()) {
+    if (!$this->changedLines ||
+        $message->isError() ||
+        $message->shouldBypassChangedLineFiltering()) {
       return true;
     }
 
@@ -504,5 +546,6 @@ abstract class ArcanistLintEngine {
     // W293 is same as TXT6 (Trailing Whitespace).
     return '--ignore=E101,E501,W291,W292,W293';
   }
+
 
 }

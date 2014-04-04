@@ -14,46 +14,52 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_BAD_CHARSET            = 5;
   const LINT_TRAILING_WHITESPACE    = 6;
   const LINT_NO_COMMIT              = 7;
+  const LINT_BOF_WHITESPACE         = 8;
+  const LINT_EOF_WHITESPACE         = 9;
 
   private $maxLineLength = 80;
+
+  public function getLinterPriority() {
+    return 0.5;
+  }
 
   public function setMaxLineLength($new_length) {
     $this->maxLineLength = $new_length;
     return $this;
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'TXT';
+  }
+
+  public function getLinterConfigurationName() {
+    return 'text';
   }
 
   public function getLintSeverityMap() {
     return array(
       self::LINT_LINE_WRAP => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_TRAILING_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_BOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_EOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
     );
   }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_DOS_NEWLINE          => 'DOS Newlines',
-      self::LINT_TAB_LITERAL          => 'Tab Literal',
-      self::LINT_LINE_WRAP            => 'Line Too Long',
-      self::LINT_EOF_NEWLINE          => 'File Does Not End in Newline',
-      self::LINT_BAD_CHARSET          => 'Bad Charset',
-      self::LINT_TRAILING_WHITESPACE  => 'Trailing Whitespace',
-      self::LINT_NO_COMMIT            => 'Explicit @no'.'commit',
+      self::LINT_DOS_NEWLINE          => pht('DOS Newlines'),
+      self::LINT_TAB_LITERAL          => pht('Tab Literal'),
+      self::LINT_LINE_WRAP            => pht('Line Too Long'),
+      self::LINT_EOF_NEWLINE          => pht('File Does Not End in Newline'),
+      self::LINT_BAD_CHARSET          => pht('Bad Charset'),
+      self::LINT_TRAILING_WHITESPACE  => pht('Trailing Whitespace'),
+      self::LINT_NO_COMMIT            => pht('Explicit %s', '@no'.'commit'),
+      self::LINT_BOF_WHITESPACE       => pht('Leading Whitespace at BOF'),
+      self::LINT_EOF_WHITESPACE       => pht('Trailing Whitespace at EOF'),
     );
   }
 
   public function lintPath($path) {
-    if ($this->isBinaryFile($path)) {
-      return;
-    }
-
     if (!strlen($this->getData($path))) {
       // If the file is empty, don't bother; particularly, don't require
       // the user to add a newline.
@@ -76,6 +82,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->lintLineLength($path);
     $this->lintEOFNewline($path);
     $this->lintTrailingWhitespace($path);
+
+    $this->lintBOFWhitespace($path);
+    $this->lintEOFWhitespace($path);
 
     if ($this->getEngine()->getCommitHookMode()) {
       $this->lintNoCommit($path);
@@ -194,6 +203,54 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
+  protected function lintBOFWhitespace($path) {
+    $data = $this->getData($path);
+
+    $matches = null;
+    $preg = preg_match(
+      '/^\s*\n/',
+      $data,
+      $matches,
+      PREG_OFFSET_CAPTURE);
+
+    if (!$preg) {
+      return;
+    }
+
+    list($string, $offset) = $matches[0];
+    $this->raiseLintAtOffset(
+      $offset,
+      self::LINT_BOF_WHITESPACE,
+      'This file contains leading whitespace at the beginning of the file. ' .
+      'This is unnecessary and should be avoided when possible.',
+      $string,
+      '');
+  }
+
+  protected function lintEOFWhitespace($path) {
+    $data = $this->getData($path);
+
+    $matches = null;
+    $preg = preg_match(
+      '/(?<=\n)\s+$/',
+      $data,
+      $matches,
+      PREG_OFFSET_CAPTURE);
+
+    if (!$preg) {
+      return;
+    }
+
+    list($string, $offset) = $matches[0];
+    $this->raiseLintAtOffset(
+      $offset,
+      self::LINT_EOF_WHITESPACE,
+      'This file contains trailing whitespace at the end of the file. This ' .
+      'is unnecessary and should be avoided when possible.',
+      $string,
+      '');
+  }
+
   private function lintNoCommit($path) {
     $data = $this->getData($path);
 
@@ -209,6 +266,5 @@ final class ArcanistTextLinter extends ArcanistLinter {
         $deadly);
     }
   }
-
 
 }

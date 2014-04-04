@@ -141,12 +141,13 @@ foreach ($functions as $function) {
 
 // Find functions used by this file. Uses:
 //
-//   - Explicit Call
-//   - String literal passed to call_user_func() or call_user_func_array()
+//  - Explicit Call
+//  - String literal passed to call_user_func() or call_user_func_array()
+//  - String literal in array literal in call_user_func()/call_user_func_array()
 //
 // TODO: Possibly support these:
 //
-//   - String literal in ReflectionFunction().
+//  - String literal in ReflectionFunction().
 
 // This is "f();".
 $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
@@ -170,10 +171,22 @@ foreach ($calls as $call) {
       continue;
     }
     $symbol = array_shift($params);
+    $type = 'function';
     $symbol_value = $symbol->getStringLiteralValue();
-    if ($symbol_value) {
+    $pos = strpos($symbol_value, '::');
+    if ($pos) {
+      $type = 'class';
+      $symbol_value = substr($symbol_value, 0, $pos);
+    } else if ($symbol->getTypeName() == 'n_ARRAY_LITERAL') {
+      try {
+        $type = 'class';
+        $symbol_value = idx($symbol->evalStatic(), 0);
+      } catch (Exception $ex) {
+      }
+    }
+    if ($symbol_value && strpos($symbol_value, '$') === false) {
       $need[] = array(
-        'type'    => 'function',
+        'type'    => $type,
         'name'    => $symbol_value,
         'symbol'  => $symbol,
       );
@@ -211,14 +224,14 @@ foreach ($classes as $class) {
 //  - Static method call
 //  - Static property access
 //  - Use of class constant
+//  - typehints
+//  - catch
+//  - instanceof
+//  - newv()
 //
 // TODO: Possibly support these:
 //
-//  - typehints
-//  - instanceof
-//  - catch
 //  - String literal in ReflectionClass().
-//  - String literal in array literal in call_user_func()/call_user_func_array()
 
 
 // This is "class X ... { ... }".
@@ -237,22 +250,12 @@ foreach ($classes as $class) {
   }
 }
 
-$magic_names = array(
-  'static' => true,
-  'parent' => true,
-  'self'   => true,
-);
-
 // This is "new X()".
 $uses_of_new = $root->selectDescendantsOfType('n_NEW');
 foreach ($uses_of_new as $new_operator) {
   $name = $new_operator->getChildByIndex(0);
   if ($name->getTypeName() == 'n_VARIABLE' ||
       $name->getTypeName() == 'n_VARIABLE_VARIABLE') {
-    continue;
-  }
-  $name_concrete = strtolower($name->getConcreteString());
-  if (isset($magic_names[$name_concrete])) {
     continue;
   }
   $need[] = array(
@@ -268,14 +271,71 @@ foreach ($static_uses as $static_use) {
   if ($name->getTypeName() != 'n_CLASS_NAME') {
     continue;
   }
-  $name_concrete = strtolower($name->getConcreteString());
-  if (isset($magic_names[$name_concrete])) {
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $name,
+  );
+}
+
+// This is "function (X $x)".
+$parameters = $root->selectDescendantsOfType('n_DECLARATION_PARAMETER');
+foreach ($parameters as $parameter) {
+  $hint = $parameter->getChildByIndex(0);
+  if ($hint->getTypeName() != 'n_CLASS_NAME') {
     continue;
   }
   $need[] = array(
-    'type'    => 'class',
-    'symbol'  => $name,
+    'type'    => 'class/interface',
+    'symbol'  => $hint,
   );
+}
+
+// This is "catch (Exception $ex)".
+$catches = $root->selectDescendantsOfType('n_CATCH');
+foreach ($catches as $catch) {
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $catch->getChildOfType(0, 'n_CLASS_NAME'),
+  );
+}
+
+// This is "$x instanceof X".
+$instanceofs = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+foreach ($instanceofs as $instanceof) {
+  $operator = $instanceof->getChildOfType(1, 'n_OPERATOR');
+  if ($operator->getConcreteString() != 'instanceof') {
+    continue;
+  }
+  $class = $instanceof->getChildByIndex(2);
+  if ($class->getTypeName() != 'n_CLASS_NAME') {
+    continue;
+  }
+  $need[] = array(
+    'type'    => 'class/interface',
+    'symbol'  => $class,
+  );
+}
+
+// This is "newv('X')".
+$calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+foreach ($calls as $call) {
+  $call_name = $call->getChildByIndex(0)->getConcreteString();
+  if ($call_name != 'newv') {
+    continue;
+  }
+  $params = $call->getChildByIndex(1)->getChildren();
+  if (!count($params)) {
+    continue;
+  }
+  $symbol = reset($params);
+  $symbol_value = $symbol->getStringLiteralValue();
+  if ($symbol_value && strpos($symbol_value, '$') === false) {
+    $need[] = array(
+      'type'    => 'class',
+      'name'    => $symbol_value,
+      'symbol'  => $symbol,
+    );
+  }
 }
 
 
@@ -355,23 +415,25 @@ foreach ($need as $key => $spec) {
   }
 
   $type = $spec['type'];
-  if (!$show_all) {
-    if (!empty($externals[$type][$name])) {
-      // Ignore symbols declared as externals.
-      continue;
+  foreach (explode('/', $type) as $libtype) {
+    if (!$show_all) {
+      if (!empty($externals[$libtype][$name])) {
+        // Ignore symbols declared as externals.
+        continue 2;
+      }
+      if (!empty($builtins[$libtype][$name])) {
+        // Ignore symbols declared as builtins.
+        continue 2;
+      }
     }
-    if (!empty($builtins[$type][$name])) {
-      // Ignore symbols declared as builtins.
-      continue;
+    if (!empty($declared_symbols[$libtype][$name])) {
+      // We declare this symbol, so don't treat it as a requirement.
+      continue 2;
     }
   }
   if (!empty($required_symbols[$type][$name])) {
     // Report only the first use of a symbol, since reporting all of them
     // isn't terribly informative.
-    continue;
-  }
-  if (!empty($declared_symbols[$type][$name])) {
-    // We declare this symbol, so don't treat it as a requirement.
     continue;
   }
   $required_symbols[$type][$name] = $spec['symbol']->getOffset();
@@ -419,6 +481,10 @@ function phutil_symbols_get_builtins() {
 
   return array(
     'class'     => array_fill_keys($builtin['classes'], true) + array(
+      'static' => true,
+      'parent' => true,
+      'self'   => true,
+
       'PhutilBootloader' => true,
     ),
     'function'  => array_filter(

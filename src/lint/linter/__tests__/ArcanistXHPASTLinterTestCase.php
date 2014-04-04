@@ -17,11 +17,9 @@ final class ArcanistXHPASTLinterTestCase
           => ArcanistLintSeverity::SEVERITY_WARNING,
       ));
 
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(__FILE__);
     return $this->executeTestsInDirectory(
       dirname(__FILE__).'/xhpast/',
-      $linter,
-      $working_copy);
+      $linter);
   }
 
 }

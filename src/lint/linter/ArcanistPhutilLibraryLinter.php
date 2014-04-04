@@ -28,10 +28,6 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     return 'PHL';
   }
 
-  public function getLintSeverityMap() {
-    return array();
-  }
-
   public function willLintPaths(array $paths) {
     if (!xhpast_is_available()) {
       throw new Exception(xhpast_get_build_instructions());
@@ -134,29 +130,51 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
       }
     }
 
+    $types = array('class', 'function', 'interface', 'class/interface');
     foreach ($symbols as $library => $map) {
       // Check for unknown symbols: uses of classes, functions or interfaces
       // which are not defined anywhere. We reference the list of all symbols
       // we built up earlier.
       foreach ($map as $file => $spec) {
         $need = idx($spec, 'need', array());
-        foreach (array('class', 'function', 'interface') as $type) {
-          $libtype = ($type == 'interface') ? 'class' : $type;
+        foreach ($types as $type) {
+          $libtype = $type;
+          if ($type == 'interface' || $type == 'class/interface') {
+            $libtype = 'class';
+          }
           foreach (idx($need, $type, array()) as $symbol => $offset) {
             if (!empty($all_symbols[$libtype][$symbol])) {
               // Symbol is defined somewhere.
               continue;
             }
 
+            $libphutil_root = dirname(phutil_get_library_root('phutil'));
+
             $this->raiseLintInLibrary(
               $library,
               $file,
               $offset,
               self::LINT_UNKNOWN_SYMBOL,
-              "Use of unknown {$type} '{$symbol}'. This symbol is not defined ".
-              "in any loaded phutil library. It might be misspelled, or it ".
-              "may have been added recently. Make sure libphutil and other ".
-              "libraries are up to date.");
+              "Use of unknown {$type} '{$symbol}'. Common causes are:\n\n".
+              "  - Your libphutil/ is out of date.\n".
+              "    This is the most common cause.\n".
+              "    Update this copy of libphutil: {$libphutil_root}\n".
+              "\n".
+              "  - Some other library is out of date.\n".
+              "    Update the library this symbol appears in.\n".
+              "\n".
+              "  - This symbol is misspelled.\n".
+              "    Spell the symbol name correctly.\n".
+              "    Symbol name spelling is case-sensitive.\n".
+              "\n".
+              "  - This symbol was added recently.\n".
+              "    Run `arc liberate` on the library it was added to.\n".
+              "\n".
+              "  - This symbol is external. Use `@phutil-external-symbol`.\n".
+              "    Use `grep` to find usage examples of this directive.\n".
+              "\n".
+              "*** ALTHOUGH USUALLY EASY TO FIX, THIS IS A SERIOUS ERROR.\n".
+              "*** THIS ERROR IS YOUR FAULT. YOU MUST RESOLVE IT.");
           }
         }
       }

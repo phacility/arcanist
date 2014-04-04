@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuite name="" errors="0" failures="1" skips="0" tests="3" time="0.019">
+  <testcase classname="forpytest.tests" name="test_answer" time="0.0110499858856">
+    <failure message="test failure">def test_answer():
+&gt;       assert func(3) == 5
+E       assert 4 == 5
+E        +  where 4 = func(3)
+
+tests.py:5: AssertionError</failure>
+  </testcase>
+  <testcase classname="forpytest.tests" name="test_something" time="6.29425048828e-05"/>
+  <testcase classname="forpytest.tests" name="test_nothing" time="5.91278076172e-05"/>
+</testsuite>

@@ -181,13 +181,14 @@ EOTEXT
       $transaction,
       $repository);
 
-    $lint_engine = $working_copy->getConfig('lint.engine');
+    $lint_engine = $working_copy->getProjectConfig('lint.engine');
     if (!$lint_engine) {
       return 0;
     }
 
     $engine = newv($lint_engine, array());
     $engine->setWorkingCopy($working_copy);
+    $engine->setConfigurationManager($this->getConfigurationManager());
     $engine->setMinimumSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
     $engine->setPaths($paths);
     $engine->setCommitHookMode(true);

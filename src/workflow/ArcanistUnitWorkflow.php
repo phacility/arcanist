@@ -72,6 +72,18 @@ EOTEXT
       'json' => array(
         'help' => 'Report results in JSON format.',
       ),
+      'output' => array(
+        'param' => 'format',
+        'help' =>
+          "With 'full', show full pretty report (Default). ".
+          "With 'json', report results in JSON format. ".
+          "With 'ugly', use uglier (but more efficient) JSON formatting. ".
+          "With 'none', don't print results. ",
+        'conflicts' => array(
+          'json' => 'Only one output format allowed',
+          'ugly' => 'Only one output format allowed',
+        )
+      ),
       'everything' => array(
         'help' => 'Run every test.',
         'conflicts' => array(
@@ -103,7 +115,7 @@ EOTEXT
 
     $engine_class = $this->getArgument(
       'engine',
-      $working_copy->getConfigFromAnySource('unit.engine'));
+      $this->getConfigurationManager()->getConfigFromAnySource('unit.engine'));
 
     if (!$engine_class) {
       throw new ArcanistNoEngineException(
@@ -131,6 +143,7 @@ EOTEXT
 
     $this->engine = newv($engine_class, array());
     $this->engine->setWorkingCopy($working_copy);
+    $this->engine->setConfigurationManager($this->getConfigurationManager());
     if ($everything) {
       $this->engine->setRunAllTests(true);
     } else {
@@ -162,9 +175,9 @@ EOTEXT
 
     $console = PhutilConsole::getConsole();
 
-    $json_output = $this->getArgument('json');
+    $output_format = $this->getOutputFormat();
 
-    if ($json_output) {
+    if ($output_format !== 'full') {
       $console->disableOut();
     }
 
@@ -225,7 +238,8 @@ EOTEXT
         $full_path = $working_copy->getProjectRoot().'/'.$file;
         if ($this->getArgument('detailed-coverage') &&
             Filesystem::pathExists($full_path) &&
-            is_file($full_path)) {
+            is_file($full_path) &&
+            array_key_exists($file, $file_reports)) {
           $console->writeOut(
             '%s',
             $this->renderDetailedCoverageReport(
@@ -252,17 +266,24 @@ EOTEXT
       }
     }
 
-    if ($json_output) {
+    if ($output_format !== 'full') {
       $console->enableOut();
-
-      $data = array_values(mpull($results, 'toDictionary'));
-
-      if ($this->getArgument('ugly')) {
+    }
+    $data = array_values(mpull($results, 'toDictionary'));
+    switch ($output_format) {
+      case 'ugly':
         $console->writeOut('%s', json_encode($data));
-      } else {
+        break;
+      case 'json':
         $json = new PhutilJSON();
         $console->writeOut('%s', $json->encodeFormatted($data));
-      }
+        break;
+      case 'full':
+        // already printed
+        break;
+      case 'none':
+        // do nothing
+        break;
     }
 
     return $overall_result;
@@ -315,5 +336,22 @@ EOTEXT
     }
 
     return $out;
+  }
+
+  private function getOutputFormat() {
+    if ($this->getArgument('ugly')) {
+      return 'ugly';
+    }
+    if ($this->getArgument('json')) {
+      return 'json';
+    }
+    $format = $this->getArgument('output');
+    $known_formats = array(
+      'none' => 'none',
+      'json' => 'json',
+      'ugly' => 'ugly',
+      'full' => 'full',
+    );
+    return idx($known_formats, $format, 'full');
   }
 }

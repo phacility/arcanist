@@ -7,7 +7,8 @@ abstract class ArcanistBaseTestResultParser {
 
   protected $enableCoverage;
   protected $projectRoot;
-  protected $coverateFile;
+  protected $coverageFile;
+  protected $stderr;
 
   public function setEnableCoverage($enable_coverage) {
     $this->enableCoverage = $enable_coverage;
@@ -30,6 +31,11 @@ abstract class ArcanistBaseTestResultParser {
   public function setAffectedTests($affected_tests) {
     $this->affectedTests = $affected_tests;
 
+    return $this;
+  }
+
+  public function setStderr($stderr) {
+    $this->stderr = $stderr;
     return $this;
   }
 

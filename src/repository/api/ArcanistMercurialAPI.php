@@ -40,12 +40,12 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function execPassthru($pattern /* , ... */) {
     $args = func_get_args();
     if (phutil_is_windows()) {
-      $args[0] = 'set HGPLAIN=1 & hg '.$args[0];
+      $args[0] = 'hg '.$args[0];
     } else {
       $args[0] = 'HGPLAIN=1 hg '.$args[0];
     }
 
-    return call_user_func_array("phutil_passthru", $args);
+    return call_user_func_array('phutil_passthru', $args);
   }
 
   public function getSourceControlSystemName() {
@@ -139,7 +139,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     if ($this->getBaseCommitArgumentRules() ||
-        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+        $this->getConfigurationManager()->getConfigFromAnySource('base')) {
       $base = $this->resolveBaseCommit();
       if (!$base) {
         throw new ArcanistUsageException(
@@ -323,14 +323,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $this->getBaseCommit(),
       $path);
 
+    $lines = phutil_split_lines($stdout, $retain_line_endings = true);
+
     $blame = array();
-    foreach (explode("\n", trim($stdout)) as $line) {
+    foreach ($lines as $line) {
       if (!strlen($line)) {
         continue;
       }
 
       $matches = null;
-      $ok = preg_match('/^\s*([^:]+?) [a-f0-9]{12}: (.*)$/', $line, $matches);
+      $ok = preg_match('/^\s*([^:]+?) ([a-f0-9]{12}):/', $line, $matches);
 
       if (!$ok) {
         throw new Exception("Unable to parse Mercurial blame line: {$line}");
@@ -626,15 +628,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getCommitMessageLog() {
     $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
-      "log --template '{node}\\2{desc}\\1' --rev %s --branch %s --",
+      "log --template %s --rev %s --branch %s --",
+      "{node}\1{desc}\2",
       hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
 
     $map = array();
 
-    $logs = explode("\1", trim($stdout));
+    $logs = explode("\2", trim($stdout));
     foreach (array_filter($logs) as $log) {
-      list($node, $desc) = explode("\2", $log);
+      list($node, $desc) = explode("\1", $log);
       $map[$node] = $desc;
     }
 
@@ -748,9 +751,23 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal(
-      'commit --amend -l %s',
-      $tmp_file);
+
+    try {
+      $this->execxLocal(
+        'commit --amend -l %s',
+        $tmp_file);
+    } catch (CommandException $ex) {
+      if (preg_match('/nothing changed/', $ex->getStdOut())) {
+        // NOTE: Mercurial considers it an error to make a no-op amend. Although
+        // we generally defer to the underlying VCS to dictate behavior, this
+        // one seems a little goofy, and we use amend as part of various
+        // workflows under the assumption that no-op amends are fine. If this
+        // amend failed because it's a no-op, just continue.
+      } else {
+        throw $ex;
+      }
+    }
+
     $this->reloadWorkingCopy();
   }
 
@@ -882,7 +899,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             if (preg_match('/^nodiff\((.+)\)$/', $name, $matches)) {
               list($results) = $this->execxLocal(
                 'log --template %s --rev %s',
-                '{node}\1{desc}\2',
+                "{node}\1{desc}\2",
                 sprintf('ancestor(.,%s)::.^', $matches[1]));
               $results = array_reverse(explode("\2", trim($results)));
 
@@ -917,7 +934,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function isHgSubversionRepo() {
-    return file_exists($this->getPath('.hg/svn'));
+    return file_exists($this->getPath('.hg/svn/rev_map'));
   }
 
   public function getSubversionInfo() {
@@ -984,22 +1001,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBranches() {
+    list($stdout) = $this->execxLocal('--debug branches');
+    $lines = ArcanistMercurialParser::parseMercurialBranches($stdout);
+
     $branches = array();
-
-    list($raw_output) = $this->execxLocal('branches');
-    $raw_output = trim($raw_output);
-
-    foreach (explode("\n", $raw_output) as $line) {
-      // example line: default                 0:a5ead76cdf85 (inactive)
-      list($name, $rev_line) = $this->splitBranchOrBookmarkLine($line);
-
-      // strip off the '(inactive)' bit if it exists
-      $rev_parts = explode(' ', $rev_line);
-      $revision = $rev_parts[0];
-
+    foreach ($lines as $name => $spec) {
       $branches[] = array(
         'name' => $name,
-        'revision' => $revision);
+        'revision' => $spec['rev'],
+      );
     }
 
     return $branches;
@@ -1045,4 +1055,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return array(trim($name), trim($rev));
   }
+
+  public function getRemoteURI() {
+    list($stdout) = $this->execxLocal('paths default');
+
+    $stdout = trim($stdout);
+    if (strlen($stdout)) {
+      return $stdout;
+    }
+
+    return null;
+  }
+
 }

@@ -40,6 +40,16 @@ abstract class ArcanistBaseUnitTestEngine {
 
   }
 
+  public function setConfigurationManager(
+    ArcanistConfigurationManager $configuration_manager) {
+    $this->configurationManager = $configuration_manager;
+    return $this;
+  }
+
+  public function getConfigurationManager() {
+    return $this->configurationManager;
+  }
+
   final public function setWorkingCopy(
     ArcanistWorkingCopyIdentity $working_copy) {
 

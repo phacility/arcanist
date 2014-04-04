@@ -28,7 +28,7 @@ abstract class ArcanistRepositoryAPI {
   protected $path;
   protected $diffLinesOfContext = 0x7FFF;
   private $baseCommitExplanation = '???';
-  private $workingCopyIdentity;
+  private $configurationManager;
   private $baseCommitArgumentRules;
 
   private $uncommittedStatusCache;
@@ -49,51 +49,45 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyIdentity() {
-    return $this->workingCopyIdentity;
+    return $this->configurationManager->getWorkingCopyIdentity();
   }
 
-  public static function newAPIFromWorkingCopyIdentity(
-    ArcanistWorkingCopyIdentity $working_copy) {
+  public function getConfigurationManager() {
+    return $this->configurationManager;
+  }
+
+  public static function newAPIFromConfigurationManager(
+    ArcanistConfigurationManager $configuration_manager) {
+
+    $working_copy = $configuration_manager->getWorkingCopyIdentity();
+
+    if (!$working_copy) {
+      throw new Exception(
+        pht(
+          "Trying to create a RepositoryAPI without a working copy!"));
+    }
 
     $root = $working_copy->getProjectRoot();
-
-    if (!$root) {
-      throw new ArcanistUsageException(
-        "There is no readable '.arcconfig' file in the working directory or ".
-        "any parent directory. Create an '.arcconfig' file to configure arc.");
-    }
-
-    if (Filesystem::pathExists($root.'/.hg')) {
-      $api = new ArcanistMercurialAPI($root);
-      $api->workingCopyIdentity = $working_copy;
-      return $api;
-    }
-
-    $git_root = self::discoverGitBaseDirectory($root);
-    if ($git_root) {
-      if (!Filesystem::pathsAreEquivalent($root, $git_root)) {
-        throw new ArcanistUsageException(
-          "'.arcconfig' file is located at '{$root}', but working copy root ".
-          "is '{$git_root}'. Move '.arcconfig' file to the working copy root.");
-      }
-
-      $api = new ArcanistGitAPI($root);
-      $api->workingCopyIdentity = $working_copy;
-      return $api;
-    }
-
-    // check if we're in an svn working copy
-    foreach (Filesystem::walkToRoot($root) as $dir) {
-      if (Filesystem::pathExists($dir . '/.svn')) {
+    switch ($working_copy->getVCSType()) {
+      case 'svn':
         $api = new ArcanistSubversionAPI($root);
-        $api->workingCopyIdentity = $working_copy;
-        return $api;
-      }
+        break;
+      case 'hg':
+        $api = new ArcanistMercurialAPI($root);
+        break;
+      case 'git':
+        $api = new ArcanistGitAPI($root);
+        break;
+      default:
+        throw new Exception(
+          pht(
+            "The current working directory is not part of a working copy for ".
+            "a supported version control system (Git, Subversion or ".
+            "Mercurial)."));
     }
 
-    throw new ArcanistUsageException(
-      "The current working directory is not part of a working copy for a ".
-      "supported version control system (svn, git or mercurial).");
+    $api->configurationManager = $configuration_manager;
+    return $api;
   }
 
   public function __construct($path) {
@@ -193,6 +187,14 @@ abstract class ArcanistRepositoryAPI {
   /**
    * @task status
    */
+  final public function getMissingChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_MISSING);
+  }
+
+
+  /**
+   * @task status
+   */
   private function getUncommittedPathsWithMask($mask) {
     $match = array();
     foreach ($this->getUncommittedStatus() as $path => $flags) {
@@ -277,25 +279,6 @@ abstract class ArcanistRepositoryAPI {
   }
 
 
-
-  private static function discoverGitBaseDirectory($root) {
-    try {
-
-      // NOTE: This awkward construction is to make sure things work on Windows.
-      $future = new ExecFuture('git rev-parse --show-cdup');
-      $future->setCWD($root);
-      list($stdout) = $future->resolvex();
-
-      return Filesystem::resolvePath(rtrim($stdout, "\n"), $root);
-    } catch (CommandException $ex) {
-      // This might be because the $root isn't a Git working copy, or the user
-      // might not have Git installed at all so the `git` command fails. Assume
-      // that users trying to work with git working copies will have a working
-      // `git` binary.
-      return null;
-    }
-  }
-
   /**
    * Fetches the original file data for each path provided.
    *
@@ -347,6 +330,8 @@ abstract class ArcanistRepositoryAPI {
   abstract public function loadWorkingCopyDifferentialRevisions(
     ConduitClient $conduit,
     array $query);
+  abstract public function getRemoteURI();
+
 
   public function getUnderlyingWorkingCopyRevision() {
     return $this->getWorkingCopyRevision();
@@ -643,21 +628,25 @@ abstract class ArcanistRepositoryAPI {
   }
 
   public function resolveBaseCommit() {
-    $working_copy = $this->getWorkingCopyIdentity();
-    $global_config = ArcanistBaseWorkflow::readGlobalArcConfig();
-    $system_config = ArcanistBaseWorkflow::readSystemArcConfig();
+    $base_commit_rules = array(
+      'runtime' => $this->getBaseCommitArgumentRules(),
+      'local'   => '',
+      'project' => '',
+      'user'    => '',
+      'system'  => '',
+    );
+    $all_sources = $this->configurationManager->getConfigFromAllSources('base');
+
+    $base_commit_rules = $all_sources + $base_commit_rules;
 
     $parser = new ArcanistBaseCommitParser($this);
-    $commit = $parser->resolveBaseCommit(
-      array(
-        'args'    => $this->getBaseCommitArgumentRules(),
-        'local'   => $working_copy->getLocalConfig('base', ''),
-        'project' => $working_copy->getConfig('base', ''),
-        'global'  => idx($global_config, 'base', ''),
-        'system'  => idx($system_config, 'base', ''),
-      ));
+    $commit = $parser->resolveBaseCommit($base_commit_rules);
 
     return $commit;
+  }
+
+  public function getRepositoryUUID() {
+    return null;
   }
 
 }

@@ -16,7 +16,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       'Literal',
       'xyz',
       array(
-        'args' => 'literal:xyz',
+        'runtime' => 'literal:xyz',
       ));
   }
 
@@ -32,8 +32,8 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       array(
         'local'   => 'literal:n',
         'project' => 'literal:n',
-        'args'    => 'literal:y',
-        'global'  => 'literal:n',
+        'runtime'    => 'literal:y',
+        'user'  => 'literal:n',
       ));
 
     $this->assertCommit(
@@ -42,7 +42,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       array(
         'project' => 'literal:n',
         'local'   => 'literal:y',
-        'global'  => 'literal:n',
+        'user'  => 'literal:n',
       ));
 
     $this->assertCommit(
@@ -50,15 +50,40 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       'y',
       array(
         'project' => 'literal:y',
-        'global'  => 'literal:n',
+        'user'  => 'literal:n',
       ));
 
     $this->assertCommit(
       'Order: Global',
       'y',
       array(
-        'global'  => 'literal:y',
+        'user'  => 'literal:y',
       ));
+  }
+
+  public function testLegacyRule() {
+    // 'global' should translate to 'user'
+    $this->assertCommit(
+      '"global" name',
+      'y',
+      array(
+        'runtime'  => 'arc:global, arc:halt',
+        'local' => 'arc:halt',
+        'project' => 'arc:halt',
+        'user'  => 'literal:y',
+      ));
+
+    // 'args' should translate to 'runtime'
+    $this->assertCommit(
+      '"args" name',
+      'y',
+      array(
+        'runtime'  => 'arc:project, literal:y',
+        'local' => 'arc:halt',
+        'project' => 'arc:args',
+        'user'  => 'arc:halt',
+      ));
+
   }
 
   public function testHalt() {
@@ -69,7 +94,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       'Halt',
       null,
       array(
-        'args' => 'arc:halt',
+        'runtime' => 'arc:halt',
         'local' => 'literal:xyz',
       ));
   }
@@ -82,17 +107,17 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       'Yield',
       'xyz',
       array(
-        'args'  => 'arc:yield, literal:abc',
+        'runtime'  => 'arc:yield, literal:abc',
         'local' => 'literal:xyz',
       ));
 
-    // This one should return to 'args' after exhausting 'local'.
+    // This one should return to 'runtime' after exhausting 'local'.
 
     $this->assertCommit(
       'Yield + Return',
       'abc',
       array(
-        'args' => 'arc:yield, literal:abc',
+        'runtime' => 'arc:yield, literal:abc',
         'local' => 'arc:skip',
       ));
   }
@@ -105,25 +130,25 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       'Jump',
       'abc',
       array(
-        'args'    => 'arc:project, arc:halt',
+        'runtime'    => 'arc:project, arc:halt',
         'local'   => 'literal:abc',
-        'project' => 'arc:global, arc:halt',
-        'global'  => 'arc:local, arc:halt',
+        'project' => 'arc:user, arc:halt',
+        'user'  => 'arc:local, arc:halt',
       ));
   }
 
   public function testJumpReturn() {
 
-    // After jumping to project, we should return to 'args'.
+    // After jumping to project, we should return to 'runtime'.
 
     $this->assertCommit(
       'Jump Return',
       'xyz',
       array(
-        'args'    => 'arc:project, literal:xyz',
+        'runtime'    => 'arc:project, literal:xyz',
         'local'   => 'arc:halt',
         'project' => '',
-        'global'  => 'arc:halt',
+        'user'  => 'arc:halt',
       ));
   }
 
@@ -140,8 +165,11 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
     // isolation for repository-oriented test cases.
 
     $root = dirname(phutil_get_library_root('arcanist'));
-    $copy = ArcanistWorkingCopyIdentity::newFromPath($root);
-    $repo = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity($copy);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
+    $configuration_manager = new ArcanistConfigurationManager();
+    $configuration_manager->setWorkingCopyIdentity($working_copy);
+    $repo = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+      $configuration_manager);
 
     return new ArcanistBaseCommitParser($repo);
   }

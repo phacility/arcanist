@@ -1,0 +1,9 @@
+### Eclipse Workspace Patch 1.0
+#P Services
+Index: example
+===================================================================
+--- example	(revision 80)
++++ example	(working copy)
+@@ -1 +1 @@
+-a
++apple

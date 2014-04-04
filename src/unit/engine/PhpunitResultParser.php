@@ -23,6 +23,14 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
    */
   public function parseTestResults($path, $test_results) {
 
+    if (!$test_results) {
+      $result = id(new ArcanistUnitTestResult())
+        ->setName($path)
+        ->setUserData($this->stderr)
+        ->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
+      return array($result);
+    }
+
     $report = $this->getJsonReport($test_results);
 
     // coverage is for all testcases in the executed $path
@@ -33,8 +41,14 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
     $results = array();
     foreach ($report as $event) {
-      if ('test' != $event->event) {
-        continue;
+      switch ($event->event) {
+      case 'test':
+        break;
+      case 'testStart':
+        $lastTestFinished = false;
+        // fall through
+        default:
+          continue 2; // switch + loop
       }
 
       $status = ArcanistUnitTestResult::RESULT_PASS;
@@ -62,7 +76,7 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
         }
       }
 
-      $name = preg_replace('/ \(.*\)/', '', $event->test);
+      $name = preg_replace('/ \(.*\)/s', '', $event->test);
 
       $result = new ArcanistUnitTestResult();
       $result->setName($name);
@@ -72,8 +86,15 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
       $result->setUserData($user_data);
 
       $results[] = $result;
+      $lastTestFinished = true;
     }
 
+    if (!$lastTestFinished) {
+      $results[] = id(new ArcanistUnitTestResult())
+        ->setName($event->test) // use last event
+        ->setUserData($this->stderr)
+        ->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
+    }
     return $results;
   }
 
@@ -85,12 +106,7 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
   private function readCoverage() {
     $test_results = Filesystem::readFile($this->coverageFile);
     if (empty($test_results)) {
-      throw new Exception('Clover coverage XML report file is empty, '
-        . 'it probably means that phpunit failed to run tests. '
-        . 'Try running arc unit with --trace option and then run '
-        . 'generated phpunit command yourself, you might get the '
-        . 'answer.'
-      );
+      return array();
     }
 
     $coverage_dom = new DOMDocument();

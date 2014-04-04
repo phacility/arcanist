@@ -13,6 +13,9 @@ Array();
 function f(array $x, ArRaY $y) {
 
 }
+
+new C();
+NeW C();
 ~~~~~~~~~~
 warning:6:1
 warning:7:1
@@ -20,6 +23,7 @@ warning:8:1
 warning:9:1
 warning:11:1
 warning:13:22
+warning:18:1
 ~~~~~~~~~~
 <?php
 
@@ -36,3 +40,6 @@ array();
 function f(array $x, array $y) {
 
 }
+
+new C();
+new C();

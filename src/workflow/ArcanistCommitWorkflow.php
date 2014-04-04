@@ -149,7 +149,7 @@ EOTEXT
       $files,
       $tmp_file);
 
-    // make sure to specify LANG on non-windows systems to surpress any fancy
+    // make sure to specify LANG on non-windows systems to suppress any fancy
     // warnings; see @{method:getSVNLangEnvVar}.
     if (!phutil_is_windows()) {
       $command = csprintf('LANG=%C %C', $this->getSVNLangEnvVar(), $command);
@@ -320,8 +320,8 @@ EOTEXT
         "Commit this revision anyway?";
     }
 
-    $revision_source = idx($revision, 'sourcePath');
-    $current_source = $repository_api->getPath();
+    $revision_source = idx($revision, 'branch');
+    $current_source = $repository_api->getBranchName();
     if ($revision_source != $current_source) {
       $confirm[] =
         "Revision 'D{$revision_id}: {$revision_title}' was generated from ".

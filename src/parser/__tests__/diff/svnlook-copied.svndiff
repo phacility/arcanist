@@ -1,0 +1,7 @@
+Copied: movedfile (from rev 30, newfile)
+===================================================================
+--- movedfile	                        (rev 0)
++++ movedfile	2014-03-31 02:21:25 UTC (txn 30-1o)
+@@ -0,0 +1,2 @@
++blamo
++blamo

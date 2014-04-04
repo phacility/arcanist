@@ -81,7 +81,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $run_tests = array();
     foreach ($symbols as $symbol) {
-      if (!preg_match('@/__tests__/@', $symbol['where'])) {
+      if (!preg_match('@(?:^|/)__tests__/@', $symbol['where'])) {
         continue;
       }
 
@@ -133,25 +133,26 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       }
 
       if ($path == $library_root) {
-        continue;
-      }
-
-      if (!Filesystem::isDescendant($path, $library_root)) {
+        $look_here[$library_name.':.'] = array(
+          'library' => $library_name,
+          'path'    => '',
+        );
+      } else if (!Filesystem::isDescendant($path, $library_root)) {
         // We have encountered some kind of symlink maze -- for instance, $path
         // is some symlink living outside the library that links into some file
         // inside the library. Just ignore these cases, since the affected file
         // does not actually lie within the library.
         continue;
+      } else {
+        $library_path = Filesystem::readablePath($path, $library_root);
+        do {
+          $look_here[$library_name.':'.$library_path] = array(
+            'library' => $library_name,
+            'path'    => $library_path,
+          );
+          $library_path = dirname($library_path);
+        } while ($library_path != '.');
       }
-
-      $library_path = Filesystem::readablePath($path, $library_root);
-      do {
-        $look_here[$library_name.':'.$library_path] = array(
-          'library' => $library_name,
-          'path'    => $library_path,
-        );
-        $library_path = dirname($library_path);
-      } while ($library_path != '.');
     }
 
     // Look for any class that extends ArcanistPhutilTestCase inside a
@@ -171,7 +172,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       $symbols = id(new PhutilSymbolLoader())
         ->setType('class')
         ->setLibrary($library)
-        ->setPathPrefix($path.'/__tests__/')
+        ->setPathPrefix(($path ? $path.'/' : '').'__tests__/')
         ->setAncestorClass('ArcanistPhutilTestCase')
         ->setConcreteOnly(true)
         ->selectAndLoadSymbols();

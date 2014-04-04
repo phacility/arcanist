@@ -63,7 +63,21 @@ EOTEXT
     return array(
       'lintall' => array(
         'help' =>
-          "Show all lint warnings, not just those on changed lines."
+        "Show all lint warnings, not just those on changed lines.  When " .
+        "paths are specified, this is the default behavior.",
+        'conflicts' => array(
+          'only-changed' => true,
+        ),
+      ),
+      'only-changed' => array(
+        'help' =>
+        "Show lint warnings just on changed lines.  When no paths are " .
+        "specified, this is the default.  This differs from only-new " .
+        "in cases where line modifications introduce lint on other " .
+        "unmodified lines.",
+        'conflicts' => array(
+          'lintall' => true,
+        ),
       ),
       'rev' => array(
         'param' => 'revision',
@@ -118,6 +132,13 @@ EOTEXT
           'When linting git repositories, amend HEAD with autofix '.
           'patches suggested by lint without prompting.',
       ),
+      'everything' => array(
+        'help' => 'Lint all files in the project.',
+        'conflicts' => array(
+          'cache' => '--everything lints all files',
+          'rev' => '--everything lints all files'
+        ),
+      ),
       'severity' => array(
         'param' => 'string',
         'help' =>
@@ -161,22 +182,36 @@ EOTEXT
   public function run() {
     $console = PhutilConsole::getConsole();
     $working_copy = $this->getWorkingCopy();
+    $configuration_manager = $this->getConfigurationManager();
 
     $engine = $this->getArgument('engine');
     if (!$engine) {
-      $engine = $working_copy->getConfigFromAnySource('lint.engine');
-      if (!$engine) {
-        throw new ArcanistNoEngineException(
-          "No lint engine configured for this project. Edit .arcconfig to ".
-          "specify a lint engine.");
+      $engine = $configuration_manager->getConfigFromAnySource('lint.engine');
+    }
+
+    if (!$engine) {
+      if (Filesystem::pathExists($working_copy->getProjectPath('.arclint'))) {
+        $engine = 'ArcanistConfigurationDrivenLintEngine';
       }
+    }
+
+    if (!$engine) {
+      throw new ArcanistNoEngineException(
+        "No lint engine configured for this project. Edit '.arcconfig' to ".
+        "specify a lint engine, or create an '.arclint' file.");
     }
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
     $use_cache = $this->getArgument('cache', null);
+    $everything = $this->getArgument('everything');
+    if ($everything && $paths) {
+      throw new ArcanistUsageException(
+        "You can not specify paths with --everything. The --everything ".
+        "flag lints every file.");
+    }
     if ($use_cache === null) {
-      $use_cache = (bool)$working_copy->getConfigFromAnySource(
+      $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
         'arc.lint.cache',
         false);
     }
@@ -185,15 +220,37 @@ EOTEXT
       throw new ArcanistUsageException("Specify either --rev or paths.");
     }
 
-    $this->shouldLintAll = $this->getArgument('lintall');
-    if ($paths) {
-      // NOTE: When the user specifies paths, we imply --lintall and show all
-      // warnings for the paths in question. This is easier to deal with for
-      // us and less confusing for users.
+
+    // NOTE: When the user specifies paths, we imply --lintall and show all
+    // warnings for the paths in question. This is easier to deal with for
+    // us and less confusing for users.
+    $this->shouldLintAll = $paths ? true : false;
+    if ($this->getArgument('lintall')) {
       $this->shouldLintAll = true;
+    } else if ($this->getArgument('only-changed')) {
+      $this->shouldLintAll = false;
     }
 
-    $paths = $this->selectPathsForWorkflow($paths, $rev);
+    if ($everything) {
+      // Recurse through project from root
+      switch ($this->getRepositoryApi()->getSourceControlSystemName()) {
+        case 'git':
+          $filter = '*/.git';
+          break;
+        case 'svn':
+          $filter = '*/.svn';
+          break;
+        case 'hg':
+          $filter = '*/.hg';
+          break;
+      }
+      $paths = id(new FileFinder($working_copy->getProjectRoot()))
+        ->excludePath($filter)
+        ->find();
+      $this->shouldLintAll = true;
+    } else {
+      $paths = $this->selectPathsForWorkflow($paths, $rev);
+    }
 
     if (!class_exists($engine) ||
         !is_subclass_of($engine, 'ArcanistLintEngine')) {
@@ -205,6 +262,7 @@ EOTEXT
     $engine = newv($engine, array());
     $this->engine = $engine;
     $engine->setWorkingCopy($working_copy);
+    $engine->setConfigurationManager($configuration_manager);
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 

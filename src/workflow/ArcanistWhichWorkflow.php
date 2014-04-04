@@ -22,7 +22,8 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: svn, git, hg
-          Shows which commits 'arc diff' will select, and which revision is in
+          Shows which repository the current working copy corresponds to,
+          which commits 'arc diff' will select, and which revision is in
           the working copy (or which revisions, if more than one matches).
 EOTEXT
       );
@@ -42,9 +43,6 @@ EOTEXT
 
   public function getArguments() {
     return array(
-      'any-author' => array(
-        'help' => "Show revisions by any author, not just you.",
-      ),
       'any-status' => array(
         'help' => "Show committed and abandoned revisions.",
       ),
@@ -68,6 +66,11 @@ EOTEXT
   }
 
   public function run() {
+
+    $console = PhutilConsole::getConsole();
+
+    $this->printRepositorySection();
+    $console->writeOut("\n");
 
     $repository_api = $this->getRepositoryAPI();
 
@@ -132,13 +135,9 @@ EOTEXT
       echo $commits."\n\n\n";
     }
 
-    $any_author = $this->getArgument('any-author');
     $any_status = $this->getArgument('any-status');
 
     $query = array(
-      'authors' => $any_author
-        ? null
-        : array($this->getUserPHID()),
       'status' => $any_status
         ? 'status-any'
         : 'status-open',
@@ -163,8 +162,34 @@ EOTEXT
           "working copy, a new revision will be **created** if you run ".
           "'arc diff{$arg}'.\n\n"));
     } else {
+      $other_author_phids = array();
       foreach ($revisions as $revision) {
-        echo '    D'.$revision['id'].' '.$revision['title']."\n";
+        if ($revision['authorPHID'] != $this->getUserPHID()) {
+          $other_author_phids[] = $revision['authorPHID'];
+        }
+      }
+
+      $other_authors = array();
+      if ($other_author_phids) {
+        $other_authors = $this->getConduit()->callMethodSynchronous(
+          'user.query',
+          array(
+            'phids' => $other_author_phids,
+          ));
+        $other_authors = ipull($other_authors, 'userName', 'phid');
+      }
+
+      foreach ($revisions as $revision) {
+        $title = $revision['title'];
+        $monogram = 'D'.$revision['id'];
+
+        if ($revision['authorPHID'] != $this->getUserPHID()) {
+          $author = $other_authors[$revision['authorPHID']];
+          echo pht("    %s (%s) %s\n", $monogram, $author, $title);
+        } else {
+          echo pht("    %s %s\n", $monogram, $title);
+        }
+
         echo '        Reason: '.$revision['why']."\n";
         echo "\n";
       }
@@ -184,4 +209,34 @@ EOTEXT
 
     return 0;
   }
+
+  private function printRepositorySection() {
+    $console = PhutilConsole::getConsole();
+    $console->writeOut("**%s**\n", pht('REPOSITORY'));
+
+    $callsign = $this->getRepositoryCallsign();
+
+    $console->writeOut(
+      "%s\n\n",
+      pht(
+        'To identify the repository associated with this working copy, '.
+        'arc followed this process:'));
+
+    foreach ($this->getRepositoryReasons() as $reason) {
+      $reason = phutil_console_wrap($reason, 4);
+      $console->writeOut("%s\n\n", $reason);
+    }
+
+    if ($callsign) {
+      $console->writeOut(
+        "%s\n",
+        pht('This working copy is associated with the %s repository.',
+        phutil_console_format('**%s**', $callsign)));
+    } else {
+      $console->writeOut(
+        "%s\n",
+        pht('This working copy is not associated with any repository.'));
+    }
+  }
+
 }

@@ -23,6 +23,15 @@ final class ArcanistUnitTestResult {
   private $extraData;
   private $coverage;
 
+  public function setNamespace($namespace) {
+    $this->namespace = $namespace;
+    return $this;
+  }
+
+  public function getNamespace() {
+    return $this->namespace;
+  }
+
   public function setName($name) {
     $this->name = $name;
     return $this;

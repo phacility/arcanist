@@ -15,7 +15,8 @@ final class ArcanistSingleLintEngine extends ArcanistLintEngine {
 
   public function buildLinters() {
     $key = 'lint.engine.single.linter';
-    $linter_name = $this->getWorkingCopy()->getConfigFromAnySource($key);
+    $linter_name = $this->getConfigurationManager()
+      ->getConfigFromAnySource($key);
 
     if (!$linter_name) {
       throw new ArcanistUsageException(

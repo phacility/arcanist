@@ -38,10 +38,10 @@ final class ArcanistBaseCommitParser {
 
   public function resolveBaseCommit(array $specs) {
     $specs += array(
-      'args'    => '',
+      'runtime' => '',
       'local'   => '',
       'project' => '',
-      'global'  => '',
+      'user'    => '',
       'system'  => '',
     );
 
@@ -50,10 +50,10 @@ final class ArcanistBaseCommitParser {
     }
 
     $this->try = array(
-      'args',
+      'runtime',
       'local',
       'project',
-      'global',
+      'user',
       'system',
     );
 
@@ -116,6 +116,8 @@ final class ArcanistBaseCommitParser {
    * Handle resolving "arc:*" rules.
    */
   private function resolveArcRule($rule, $name, $source) {
+    $name = $this->updateLegacyRuleName($name);
+
     switch ($name) {
       case 'verbose':
         $this->verbose = true;
@@ -126,9 +128,9 @@ final class ArcanistBaseCommitParser {
         $this->api->setBaseCommitExplanation($reason);
         return phutil_console_prompt('Against which commit?');
       case 'local':
-      case 'global':
+      case 'user':
       case 'project':
-      case 'args':
+      case 'runtime':
       case 'system':
         // Push the other source on top of the list.
         array_unshift($this->try, $name);
@@ -173,6 +175,19 @@ final class ArcanistBaseCommitParser {
           "Base commit rule '{$rule}' (from source '{$source}') ".
           "is not a recognized rule.");
     }
+  }
+
+  private function updateLegacyRuleName($name) {
+    $updated = array(
+      'global' => 'user',
+      'args'   => 'runtime',
+    );
+    $new_name = idx($updated, $name);
+    if ($new_name) {
+      $this->log("translating legacy name '$name' to '$new_name'");
+      return $new_name;
+    }
+    return $name;
   }
 
 }

@@ -433,6 +433,10 @@ EOTEXT
         array_unshift($argv, '--ansi');
       }
 
+      if ($this->getRepositoryAPI()->supportsCommitRanges()) {
+        $this->getRepositoryAPI()->getBaseCommit();
+      }
+
       $script = phutil_get_library_root('arcanist').'/../scripts/arcanist.php';
       if ($argv) {
         $lint_unit = new ExecFuture(
@@ -504,9 +508,9 @@ EOTEXT
     }
 
     $diff_spec = array(
-      'changes'                   => mpull($changes, 'toDictionary'),
-      'lintStatus'                => $this->getLintStatus($lint_result),
-      'unitStatus'                => $this->getUnitStatus($unit_result),
+      'changes' => mpull($changes, 'toDictionary'),
+      'lintStatus' => $this->getLintStatus($lint_result),
+      'unitStatus' => $this->getUnitStatus($unit_result),
     ) + $this->buildDiffSpecification();
 
     $conduit = $this->getConduit();
@@ -741,6 +745,8 @@ EOTEXT
       if ($this->commitMessageFromRevision == $remote_corpus) {
         $new_message = $message;
       } else {
+        $remote_corpus = ArcanistCommentRemover::removeComments(
+          $remote_corpus);
         $new_message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
           $remote_corpus);
         $new_message->pullDataFromConduit($conduit);
@@ -994,7 +1000,7 @@ EOTEXT
             "{$byte_warning} If the file is not a text file, you can ".
             "mark it 'binary'. Mark this file as 'binary' and continue?";
           if (phutil_console_confirm($confirm)) {
-            $change->convertToBinaryChange();
+            $change->convertToBinaryChange($repository_api);
           } else {
             throw new ArcanistUsageException(
               "Aborted generation of gigantic diff.");
@@ -1063,7 +1069,7 @@ EOTEXT
         "You can learn more about how Phabricator handles character encodings ".
         "(and how to configure encoding settings and detect and correct ".
         "encoding problems) by reading 'User Guide: UTF-8 and Character ".
-        "Encoding' in the Phabricator documentation.\n\n";
+        "Encoding' in the Phabricator documentation.\n\n".
         "    ".pht('AFFECTED FILE(S)', count($utf8_problems))."\n";
       $confirm = pht(
         'Do you want to mark these files as binary and continue?',
@@ -1080,7 +1086,7 @@ EOTEXT
         throw new ArcanistUsageException("Aborted workflow to fix UTF-8.");
       } else {
         foreach ($utf8_problems as $change) {
-          $change->convertToBinaryChange();
+          $change->convertToBinaryChange($repository_api);
         }
       }
     }
@@ -1397,6 +1403,16 @@ EOTEXT
 
   public function handleServerMessage(PhutilConsoleMessage $message) {
     $data = $message->getData();
+
+    if ($this->getArgument('excuse')) {
+      try {
+        phutil_console_require_tty();
+      } catch (PhutilConsoleStdinNotInteractiveException $ex) {
+        $this->excuses[$data['type']] = $this->getArgument('excuse');
+        return null;
+      }
+    }
+
     $response = '';
     if (isset($data['prompt'])) {
       $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
@@ -1560,6 +1576,7 @@ EOTEXT
           ));
       }
     }
+
     $old_message = $template;
 
     $included = array();
@@ -2104,6 +2121,12 @@ EOTEXT
 
     $messages = $repository_api->getCommitMessageLog();
 
+    if (count($messages) == 1) {
+      // If there's only one message, assume this is an amend-based workflow and
+      // that using it to prefill doesn't make sense.
+      return null;
+    }
+
     $local = $this->loadActiveLocalCommitInfo();
     $hashes = ipull($local, null, 'commit');
 
@@ -2223,6 +2246,7 @@ EOTEXT
       $vcs            = $repository_api->getSourceControlSystemName();
       $source_path    = $repository_api->getPath();
       $branch         = $repository_api->getBranchName();
+      $repo_uuid      = $repository_api->getRepositoryUUID();
 
       if ($repository_api instanceof ArcanistGitAPI) {
         $info = $this->getGitParentLogInfo();
@@ -2238,8 +2262,6 @@ EOTEXT
         if ($info['uuid']) {
           $repo_uuid = $info['uuid'];
         }
-      } else if ($repository_api instanceof ArcanistSubversionAPI) {
-        $repo_uuid = $repository_api->getRepositorySVNUUID();
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
 
         $bookmark = $repository_api->getActiveBookmark();
@@ -2250,8 +2272,6 @@ EOTEXT
 
         // TODO: provide parent info
 
-      } else {
-        throw new Exception("Unsupported repository API!");
       }
     }
 
@@ -2260,7 +2280,7 @@ EOTEXT
       $project_id = $this->getWorkingCopy()->getProjectID();
     }
 
-    return array(
+    $data = array(
       'sourceMachine'             => php_uname('n'),
       'sourcePath'                => $source_path,
       'branch'                    => $branch,
@@ -2268,12 +2288,16 @@ EOTEXT
       'sourceControlSystem'       => $vcs,
       'sourceControlPath'         => $base_path,
       'sourceControlBaseRevision' => $base_revision,
-      'parentRevisionID'          => $parent,
-      'repositoryUUID'            => $repo_uuid,
       'creationMethod'            => 'arc',
       'arcanistProject'           => $project_id,
-      'authorPHID'                => $this->getUserPHID(),
     );
+
+    $repository_phid = $this->getRepositoryPHID();
+    if ($repository_phid) {
+      $data['repositoryPHID'] = $repository_phid;
+    }
+
+    return $data;
   }
 
 
@@ -2461,8 +2485,9 @@ EOTEXT
       $change->setMetadata("{$type}:file:size", $size);
       if ($spec['data'] === null) {
         // This covers the case where a file was added or removed; we don't
-        // need to upload it. (This is distinct from an empty file, which we
-        // do upload.)
+        // need to upload the other half of it (e.g., the old file data for
+        // a file which was just added). This is distinct from an empty
+        // file, which we do upload.
         unset($need_upload[$key]);
         continue;
       }
@@ -2539,7 +2564,8 @@ EOTEXT
         $change->setMetadata("{$type}:binary-phid", $phid);
         echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
       } catch (Exception $e) {
-        echo "Failed to upload {$type} binary '{$name}'.\n";
+        echo "Failed to upload {$type} binary '{$name}'.\n\n";
+        echo $e->getMessage()."\n";
         if (!phutil_console_confirm('Continue?', $default_no = false)) {
           throw new ArcanistUsageException(
             'Aborted due to file upload failure. You can use --skip-binaries '.

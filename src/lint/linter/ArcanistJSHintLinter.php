@@ -44,10 +44,20 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     return 'JSHint';
   }
 
+  public function getLinterConfigurationName() {
+    return 'jshint';
+  }
+
   public function getLintSeverityMap() {
     return array(
       self::JSHINT_ERROR => ArcanistLintSeverity::SEVERITY_ERROR
     );
+  }
+
+  // placeholder if/until we get a map code -> name map
+  // jshint only offers code -> description right now (parsed as 'reason')
+  public function getLintMessageName($code) {
+    return "JSHint".$code;
   }
 
   public function getLintNameMap() {
@@ -57,10 +67,11 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   public function getJSHintOptions() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config_manager = $this->getEngine()->getConfigurationManager();
     $options = '--reporter '.dirname(realpath(__FILE__)).'/reporter.js';
-    $config = $working_copy->getConfig('lint.jshint.config');
+    $config = $config_manager->getConfigFromAnySource('lint.jshint.config');
 
+    $working_copy = $this->getEngine()->getWorkingCopy();
     if ($config !== null) {
       $config = Filesystem::resolvePath(
         $config,
@@ -79,9 +90,9 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
   }
 
   private function getJSHintPath() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.jshint.prefix');
-    $bin = $working_copy->getConfig('lint.jshint.bin');
+    $config_manager = $this->getEngine()->getConfigurationManager();
+    $prefix = $config_manager->getConfigFromAnySource('lint.jshint.prefix');
+    $bin = $config_manager->getConfigFromAnySource('lint.jshint.bin');
 
     if ($bin === null) {
       $bin = "jshint";
@@ -101,12 +112,7 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
       return $bin;
     }
 
-    // Look for globally installed JSHint
-    list($err) = (phutil_is_windows()
-      ? exec_manual('where %s', $bin)
-      : exec_manual('which %s', $bin));
-
-    if ($err) {
+    if (!Filesystem::binaryExists($bin)) {
       throw new ArcanistUsageException(
         "JSHint does not appear to be installed on this system. Install it ".
         "(e.g., with 'npm install jshint -g') or configure ".
@@ -164,7 +170,7 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
       $this->raiseLintAtLine(
         $err->line,
         $err->col,
-        self::JSHINT_ERROR,
+        $err->code,
         $err->reason);
     }
   }

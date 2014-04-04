@@ -33,28 +33,25 @@ class ArcanistConfiguration {
   }
 
   public function buildAllWorkflows() {
-    $symbols = id(new PhutilSymbolLoader())
-      ->setType('class')
-      ->setAncestorClass('ArcanistBaseWorkflow')
-      ->selectAndLoadSymbols();
+    $workflows_by_name = array();
 
-    $workflows = array();
-    foreach ($symbols as $symbol) {
-      $class = $symbol['name'];
-      $workflow = newv($class, array());
+    $workflows_by_class_name = id(new PhutilSymbolLoader())
+      ->setAncestorClass('ArcanistBaseWorkflow')
+      ->loadObjects();
+    foreach ($workflows_by_class_name as $class => $workflow) {
       $name = $workflow->getWorkflowName();
 
-      if (isset($workflows[$name])) {
-        $other = get_class($workflows[$name]);
+      if (isset($workflows_by_name[$name])) {
+        $other = get_class($workflows_by_name[$name]);
         throw new Exception(
           "Workflows {$class} and {$other} both implement workflows named ".
           "{$name}.");
       }
 
-      $workflows[$workflow->getWorkflowName()] = $workflow;
+      $workflows_by_name[$name] = $workflow;
     }
 
-    return $workflows;
+    return $workflows_by_name;
   }
 
   final public function isValidWorkflow($workflow) {
@@ -81,7 +78,7 @@ class ArcanistConfiguration {
   final public function selectWorkflow(
     &$command,
     array &$args,
-    ArcanistWorkingCopyIdentity $working_copy,
+    ArcanistConfigurationManager $configuration_manager,
     PhutilConsole $console) {
 
     // First, try to build a workflow with the exact name provided. We always
@@ -95,12 +92,12 @@ class ArcanistConfiguration {
     // and substitute it. We do this only after trying to resolve the workflow
     // normally to prevent you from doing silly things like aliasing 'alias'
     // to something else.
-    $aliases = ArcanistAliasWorkflow::getAliases($working_copy);
+    $aliases = ArcanistAliasWorkflow::getAliases($configuration_manager);
     list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
       $command,
       $this,
       $args,
-      $working_copy);
+      $configuration_manager);
 
     $full_alias = idx($aliases, $command, array());
     $full_alias = implode(' ', $full_alias);

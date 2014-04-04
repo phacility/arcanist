@@ -10,28 +10,22 @@
  */
 final class ArcanistCppcheckLinter extends ArcanistLinter {
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function getLinterName() {
     return 'cppcheck';
   }
 
   public function getLintOptions() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
+    $config = $this->getEngine()->getConfigurationManager();
     // You will for sure want some options.  The below default tends to be ok
-    $options = $working_copy->getConfig(
+    return $config->getConfigFromAnySource(
       'lint.cppcheck.options',
       '-j2 --inconclusive --enable=performance,style,portability,information');
-
-    return $options;
   }
 
   public function getLintPath() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.cppcheck.prefix');
-    $bin = $working_copy->getConfig('lint.cppcheck.bin', 'cppcheck');
+    $config = $this->getEngine()->getConfigurationManager();
+    $prefix = $config->getConfigFromAnySource('lint.cppcheck.prefix');
+    $bin = $config->getConfigFromAnySource('lint.cppcheck.bin', 'cppcheck');
 
     if ($prefix !== null) {
       if (!Filesystem::pathExists($prefix.'/'.$bin)) {
@@ -42,9 +36,7 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
           "globally, you can just remove these keys from your .arcconfig.");
       }
 
-      $bin = csprintf("%s/%s", $prefix, $bin);
-
-      return $bin;
+      return csprintf("%s/%s", $prefix, $bin);
     }
 
     // Look for globally installed cppcheck
@@ -96,6 +88,9 @@ final class ArcanistCppcheckLinter extends ArcanistLinter {
         continue;
       }
       $file = $location->getAttribute('file');
+      if ($file != Filesystem::resolvePath($path)) {
+        continue;
+      }
       $line = $location->getAttribute('line');
 
       $id = $error->getAttribute('id');

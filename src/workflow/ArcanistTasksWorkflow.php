@@ -52,6 +52,9 @@ EOTEXT
         'help' =>
           "Only show tasks assigned to the given username, ".
             "also accepts @all to show all, default is you.",
+        'conflict' => array(
+          "unassigned" => "--owner suppresses unassigned",
+        ),
       ),
       'order' => array(
         'param' => 'task_order',
@@ -63,6 +66,9 @@ EOTEXT
         'param' => 'n',
         'paramtype' => 'int',
         'help' => "Limit the amount of tasks outputted, default is all.",
+      ),
+      'unassigned' => array(
+        'help' => "Only show tasks that are not assigned (upforgrabs).",
       )
     );
   }
@@ -70,13 +76,23 @@ EOTEXT
   public function run() {
     $output = array();
 
-    $status = $this->getArgument('status');
-    $owner = $this->getArgument('owner');
-    $order = $this->getArgument('order');
-    $limit = $this->getArgument('limit');
+    $status     = $this->getArgument('status');
+    $owner      = $this->getArgument('owner');
+    $order      = $this->getArgument('order');
+    $limit      = $this->getArgument('limit');
+    $unassigned = $this->getArgument('unassigned');
+
+    if ($owner) {
+      $owner_phid = $this->findOwnerPhid($owner);
+    } elseif ($unassigned) {
+      $owner_phid = null;
+    } else {
+      $owner_phid = $this->getUserPHID();
+    }
+
     $this->tasks = $this->loadManiphestTasks(
       ($status == 'all' ? 'any' : $status),
-      ($owner ? $this->findOwnerPhid($owner) : $this->getUserPHID()),
+      $owner_phid,
       $order,
       $limit);
 
@@ -209,32 +225,42 @@ EOTEXT
     echo $table;
   }
 
-  private function findOwnerPhid($owner) {
+  private function findOwnerPHID($owner) {
     $conduit = $this->getConduit();
-    $owner_phid = $conduit->callMethodSynchronous(
-      'user.find',
+
+    $users = $conduit->callMethodSynchronous(
+      'user.query',
       array(
-        'aliases' => array($owner),
+        'usernames' => array($owner),
       ));
-    return (isset($owner_phid[$owner])?$owner_phid[$owner]:false);
+
+    if (!$users) {
+      return null;
+    }
+
+    $user = head($users);
+    return idx($user, 'phid');
   }
 
   private function loadManiphestTasks($status, $owner_phid, $order, $limit) {
     $conduit = $this->getConduit();
 
     $find_params = array();
-    if ($owner_phid !== false) {
+    if ($owner_phid !== null) {
       $find_params['ownerPHIDs'] = array($owner_phid);
     }
+
     if ($limit !== false) {
       $find_params['limit'] = $limit;
     }
-    $find_params['order'] = ($order?"order-".$order:"order-priority");
-    $find_params['status'] = ($status?"status-".$status:"status-open");
+
+    $find_params['order'] = ($order ? "order-".$order : "order-priority");
+    $find_params['status'] = ($status ? "status-".$status : "status-open");
 
     $tasks = $conduit->callMethodSynchronous(
-      'maniphest.find',
+      'maniphest.query',
       $find_params);
+
     return $tasks;
   }
 

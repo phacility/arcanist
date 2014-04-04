@@ -5,103 +5,67 @@
  *
  * @group linter
  */
-final class ArcanistPEP8Linter extends ArcanistFutureLinter {
+final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
   public function getLinterName() {
     return 'PEP8';
   }
 
-  public function getLintSeverityMap() {
-    return array();
-  }
-
-  public function getLintNameMap() {
-    return array();
+  public function getLinterConfigurationName() {
+    return 'pep8';
   }
 
   public function getCacheVersion() {
-    list($stdout) = execx('%C --version', $this->getPEP8Path());
-    return $stdout.$this->getPEP8Options();
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+    return $stdout.$this->getCommandFlags();
   }
 
-  public function getPEP8Options() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $options = $working_copy->getConfig('lint.pep8.options');
-
-    if ($options === null) {
-      $options = $this->getConfig('options');
-    }
-
-    return $options;
+  public function getDefaultFlags() {
+    // TODO: Warn that all of this is deprecated.
+    $config = $this->getEngine()->getConfigurationManager();
+    return $config->getConfigFromAnySource(
+      'lint.pep8.options',
+      $this->getConfig('options'));
   }
 
-  public function getPEP8Path() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $prefix = $working_copy->getConfig('lint.pep8.prefix');
-    $bin = $working_copy->getConfig('lint.pep8.bin');
-
-    if ($bin === null && $prefix === null) {
-      $bin = csprintf('/usr/bin/env python2.6 %s',
-               phutil_get_library_root('arcanist').
-               '/../externals/pep8/pep8.py');
-    } else {
-      if ($bin === null) {
-        $bin = 'pep8';
-      }
-
-      if ($prefix !== null) {
-        if (!Filesystem::pathExists($prefix.'/'.$bin)) {
-          throw new ArcanistUsageException(
-            "Unable to find PEP8 binary in a specified directory. Make sure ".
-            "that 'lint.pep8.prefix' and 'lint.pep8.bin' keys are set ".
-            "correctly. If you'd rather use a copy of PEP8 installed ".
-            "globally, you can just remove these keys from your .arcconfig.");
-        }
-
-        $bin = csprintf("%s/%s", $prefix, $bin);
-
-        return $bin;
-      }
-
-      // Look for globally installed PEP8
-      list($err) = exec_manual('which %s', $bin);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "PEP8 does not appear to be installed on this system. Install it ".
-          "(e.g., with 'easy_install pep8') or configure ".
-          "'lint.pep8.prefix' in your .arcconfig to point to the directory ".
-          "where it resides.");
-      }
-    }
-
-    return $bin;
+  public function shouldUseInterpreter() {
+    return ($this->getDefaultBinary() !== 'pep8');
   }
 
-  protected function buildFutures(array $paths) {
-    $severity = ArcanistLintSeverity::SEVERITY_WARNING;
-    if (!$this->getEngine()->isSeverityEnabled($severity)) {
-      return;
-    }
-
-    $pep8_bin = $this->getPEP8Path();
-    $options = $this->getPEP8Options();
-
-    $futures = array();
-
-    foreach ($paths as $path) {
-      $futures[$path] = new ExecFuture(
-        "%C %C %s",
-        $pep8_bin,
-        $options,
-        $this->getEngine()->getFilePathOnDisk($path));
-    }
-
-    return $futures;
+  public function getDefaultInterpreter() {
+    return 'python2.6';
   }
 
-  protected function resolveFuture($path, Future $future) {
-    list($rc, $stdout) = $future->resolve();
-    $lines = explode("\n", $stdout);
+  public function getDefaultBinary() {
+    if (Filesystem::binaryExists('pep8')) {
+      return 'pep8';
+    }
+
+    $config = $this->getEngine()->getConfigurationManager();
+    $old_prefix = $config->getConfigFromAnySource('lint.pep8.prefix');
+    $old_bin = $config->getConfigFromAnySource('lint.pep8.bin');
+
+    if ($old_prefix || $old_bin) {
+      // TODO: Deprecation warning.
+      $old_bin = nonempty($old_bin, 'pep8');
+      return $old_prefix.'/'.$old_bin;
+    }
+
+    $arc_root = dirname(phutil_get_library_root('arcanist'));
+    return $arc_root.'/externals/pep8/pep8.py';
+  }
+
+  public function getInstallInstructions() {
+    return pht('Install PEP8 using `easy_install pep8`.');
+  }
+
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
+
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+    $lines = phutil_split_lines($stdout, $retain_endings = false);
+
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
@@ -111,9 +75,6 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
-      if (!$this->isMessageEnabled($matches[4])) {
-        continue;
-      }
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[2]);
@@ -121,9 +82,43 @@ final class ArcanistPEP8Linter extends ArcanistFutureLinter {
       $message->setCode($matches[4]);
       $message->setName('PEP8 '.$matches[4]);
       $message->setDescription($matches[5]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-      $this->addLintMessage($message);
+      $message->setSeverity($this->getLintMessageSeverity($matches[4]));
+
+      $messages[] = $message;
     }
+
+    if ($err && !$messages) {
+      return false;
+    }
+
+    return $messages;
+  }
+
+  protected function getDefaultMessageSeverity($code) {
+    if (preg_match('/^W/', $code)) {
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else {
+
+      // TODO: Once severities/.arclint are more usable, restore this to
+      // "ERROR".
+      // return ArcanistLintSeverity::SEVERITY_ERROR;
+
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    }
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('/^(E|W)\d+$/', $code)) {
+      throw new Exception(
+        pht(
+          'Unrecognized lint message code "%s". Expected a valid PEP8 '.
+          'lint code like "%s" or "%s".',
+          $code,
+          "E101",
+          "W291"));
+    }
+
+    return $code;
   }
 
 }

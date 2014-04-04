@@ -29,6 +29,27 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
+  public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+
+    static $git = null;
+    if ($git === null) {
+      if (phutil_is_windows()) {
+        // NOTE: On Windows, phutil_passthru() uses 'bypass_shell' because
+        // everything goes to hell if we don't. We must provide an absolute
+        // path to Git for this to work properly.
+        $git = Filesystem::resolveBinary('git');
+        $git = csprintf('%s', $git);
+      } else {
+        $git = 'git';
+      }
+    }
+
+    $args[0] = $git.' '.$args[0];
+
+    return call_user_func_array('phutil_passthru', $args);
+  }
+
 
   public function getSourceControlSystemName() {
     return 'git';
@@ -176,7 +197,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     if ($this->getBaseCommitArgumentRules() ||
-        $this->getWorkingCopyIdentity()->getConfigFromAnySource('base')) {
+        $this->getConfigurationManager()->getConfigFromAnySource('base')) {
       $base = $this->resolveBaseCommit();
       if (!$base) {
         throw new ArcanistUsageException(
@@ -191,7 +212,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $default_relative = null;
     $working_copy = $this->getWorkingCopyIdentity();
     if ($working_copy) {
-      $default_relative = $working_copy->getConfig(
+      $default_relative = $working_copy->getProjectConfig(
         'git.default-relative-commit');
       $this->setBaseCommitExplanation(
         "it is the merge-base of '{$default_relative}' and HEAD, as ".
@@ -348,6 +369,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
       return $matches[1];
     }
+
+    return null;
+  }
+
+  public function getRemoteURI() {
+    list($stdout) = $this->execxLocal('remote show -n origin');
+
+    $matches = null;
+    if (preg_match('/^\s*Fetch URL: (.*)$/m', $stdout, $matches)) {
+      return trim($matches[1]);
+    }
+
     return null;
   }
 
@@ -452,13 +485,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         'ls-files --others --exclude-standard',
       ));
 
-    // TODO: This doesn't list unstaged adds. It's not clear how to get that
-    // list other than "git status --porcelain" and then parsing it. :/
-
     // Unstaged changes
     $unstaged_future = $this->buildLocalFuture(
       array(
-        'ls-files -m',
+        'diff-files --name-only',
       ));
 
     $futures = array(
@@ -676,7 +706,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     foreach ($lines as $line) {
       $matches = array();
       $ok = preg_match(
-        '/^(\d{6}) (blob|tree) ([a-z0-9]{40})[\t](.*)$/',
+        '/^(\d{6}) (blob|tree|commit) ([a-z0-9]{40})[\t](.*)$/',
         $line,
         $matches);
       if (!$ok) {
@@ -734,7 +764,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = array();
     foreach ($lines as $line) {
 
-      if (preg_match('/^[* ]+\(no branch\)/', $line)) {
+      if (preg_match('@^[* ]+\(no branch|detached from \w+/\w+\)@', $line)) {
         // This is indicating that the working copy is in a detached state;
         // just ignore it.
         continue;

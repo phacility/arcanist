@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * This tests for a PHPCS lint run against a file without any errors. PHPCS
+ * literally requires all of this with this exact spacing and formatting.
+ *
+ * PHP version 5
+ *
+ * @category Function
+ * @package  None
+ * @author   Abraham Lincoln <alincoln@logcab.in>
+ * @license  Imaginary License http://www.example.com/LICENSE
+ * @version  GIT: HEAD
+ * @link     http://www.derp.com/
+ */
+
+/**
+ * A function.
+ *
+ * @return void
+ */
+function f()
+{
+
+}
+~~~~~~~~~~

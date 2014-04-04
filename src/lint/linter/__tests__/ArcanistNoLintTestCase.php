@@ -8,6 +8,6 @@
  *
  * @group testcase
  */
-class ArcanistNoLintTestCaseMisnamed extends ArcanistLinterTestCase {
+final class ArcanistNoLintTestCaseMisnamed extends ArcanistLinterTestCase {
 
 }

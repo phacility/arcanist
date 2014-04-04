@@ -1,6 +1,6 @@
 {
-  "project_id" : "arcanist",
-  "conduit_uri" : "https://secure.phabricator.com/",
+  "project.name" : "arcanist",
+  "phabricator.uri" : "https://secure.phabricator.com/",
   "lint.engine" : "PhutilLintEngine",
   "unit.engine" : "PhutilUnitTestEngine",
   "load" : [

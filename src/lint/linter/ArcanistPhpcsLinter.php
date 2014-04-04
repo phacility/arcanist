@@ -13,7 +13,7 @@
  *
  * @group linter
  */
-final class ArcanistPhpcsLinter extends ArcanistLinter {
+final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
   private $reports;
 
@@ -21,102 +21,100 @@ final class ArcanistPhpcsLinter extends ArcanistLinter {
     return 'PHPCS';
   }
 
-  public function getLintSeverityMap() {
-    return array();
+  public function getLinterConfigurationName() {
+    return 'phpcs';
   }
 
-  public function getLintNameMap() {
-    return array();
+  public function getMandatoryFlags() {
+    return '--report=xml';
   }
 
-  public function getPhpcsOptions() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
+  public function getInstallInstructions() {
+    return pht('Install PHPCS with `pear install PHP_CodeSniffer`.');
+  }
 
-    $options = $working_copy->getConfig('lint.phpcs.options');
+  public function getDefaultFlags() {
+    // TODO: Deprecation warnings.
 
-    $standard = $working_copy->getConfig('lint.phpcs.standard');
+    $config = $this->getEngine()->getConfigurationManager();
+
+    $options = $config->getConfigFromAnySource('lint.phpcs.options');
+
+    $standard = $config->getConfigFromAnySource('lint.phpcs.standard');
     $options .= !empty($standard) ? ' --standard=' . $standard : '';
 
     return $options;
   }
 
-  private function getPhpcsPath() {
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    $bin = $working_copy->getConfig('lint.phpcs.bin');
-
-    if ($bin === null) {
-      $bin = 'phpcs';
-    }
-
-    return $bin;
+  public function getDefaultBinary() {
+    // TODO: Deprecation warnings.
+    $config = $this->getEngine()->getConfigurationManager();
+    return $config->getConfigFromAnySource('lint.phpcs.bin', 'phpcs');
   }
 
-  public function willLintPaths(array $paths) {
-    $phpcs_bin = $this->getPhpcsPath();
-    $phpcs_options = $this->getPhpcsOptions();
-    $futures = array();
-
-    foreach ($paths as $path) {
-      $filepath = $this->getEngine()->getFilePathOnDisk($path);
-      $this->reports[$path] = new TempFile();
-      $futures[$path] = new ExecFuture('%C %C --report=xml --report-file=%s %s',
-        $phpcs_bin,
-        $phpcs_options,
-        $this->reports[$path],
-        $filepath);
-    }
-
-    foreach (Futures($futures)->limit(8) as $path => $future) {
-      $this->results[$path] = $future->resolve();
-    }
-
-    libxml_use_internal_errors(true);
+  public function shouldExpectCommandErrors() {
+    return true;
   }
 
-  public function lintPath($path) {
-    list($rc, $stdout) = $this->results[$path];
-
-    $report = Filesystem::readFile($this->reports[$path]);
-
-    if ($report) {
-      $report_dom = new DOMDocument();
-      libxml_clear_errors();
-      $report_dom->loadXML($report);
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+    // NOTE: Some version of PHPCS after 1.4.6 stopped printing a valid, empty
+    // XML document to stdout in the case of no errors. If PHPCS exits with
+    // error 0, just ignore output.
+    if (!$err) {
+      return array();
     }
-    if (!$report || libxml_get_errors()) {
-      throw new ArcanistUsageException('PHPCS Linter failed to load ' .
-        'reporting file. Something happened when running phpcs. ' .
-        "Output:\n$stdout" .
-        "\nTry running lint with --trace flag to get more details.");
+
+    $report_dom = new DOMDocument();
+    $ok = @$report_dom->loadXML($stdout);
+    if (!$ok) {
+      return false;
     }
 
     $files = $report_dom->getElementsByTagName('file');
+    $messages = array();
     foreach ($files as $file) {
       foreach ($file->childNodes as $child) {
         if (!($child instanceof DOMElement)) {
           continue;
         }
 
-        $data = $this->getData($path);
-        $lines = explode("\n", $data);
-        $line = $lines[$child->getAttribute('line') - 1];
-        $text = substr($line, $child->getAttribute('column') - 1);
-        $name = $this->getLinterName() . ' - ' . $child->getAttribute('source');
-        $severity = $child->tagName == 'error' ?
-            ArcanistLintSeverity::SEVERITY_ERROR
-            : ArcanistLintSeverity::SEVERITY_WARNING;
+        if ($child->tagName == 'error') {
+          $prefix = 'E';
+        } else {
+          $prefix = 'W';
+        }
+
+        $code = 'PHPCS.'.$prefix.'.'.$child->getAttribute('source');
 
         $message = new ArcanistLintMessage();
         $message->setPath($path);
         $message->setLine($child->getAttribute('line'));
         $message->setChar($child->getAttribute('column'));
-        $message->setCode($child->getAttribute('severity'));
-        $message->setName($name);
+        $message->setCode($code);
         $message->setDescription($child->nodeValue);
-        $message->setSeverity($severity);
-        $message->setOriginalText($text);
-        $this->addLintMessage($message);
+        $message->setSeverity($this->getLintMessageSeverity($code));
+
+        $messages[] = $message;
       }
     }
+
+    return $messages;
   }
+
+  protected function getDefaultMessageSeverity($code) {
+    if (preg_match('/^PHPCS\\.W\\./', $code)) {
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else {
+      return ArcanistLintSeverity::SEVERITY_ERROR;
+    }
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('/^PHPCS\\.(E|W)\\./', $code)) {
+      throw new Exception(
+        "Invalid severity code '{$code}', should begin with 'PHPCS.'.");
+    }
+    return $code;
+  }
+
 }

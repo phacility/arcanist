@@ -45,6 +45,11 @@ EOTEXT
           "Force the library map to be updated, even in the presence of ".
           "lint errors.",
       ),
+      'library-name' => array(
+        'param' => 'name',
+        'help' =>
+          "Use a flag for library name rather than awaiting user input.",
+      ),
       'remap' => array(
         'hide' => true,
         'help' =>
@@ -201,9 +206,15 @@ EOTEXT
     }
 
     echo "Creating new libphutil library in '{$path}'.\n";
-    echo "Choose a name for the new library.\n";
+
     do {
-      $name = phutil_console_prompt('What do you want to name this library?');
+      $name = $this->getArgument("library-name");
+      if ($name === null) {
+        echo "Choose a name for the new library.\n";
+        $name = phutil_console_prompt('What do you want to name this library?');
+      } else {
+        echo "Using library name {$name}.\n";
+      }
       if (preg_match('/^[a-z-]+$/', $name)) {
         break;
       } else {

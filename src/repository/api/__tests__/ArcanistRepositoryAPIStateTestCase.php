@@ -2,22 +2,55 @@
 
 final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
 
-  public function testStateParsing() {
-    $dir = dirname(__FILE__).'/state/';
-
-    $tests = Filesystem::listDirectory($dir, $include_hidden = false);
-    foreach ($tests as $test) {
-      $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
-
-      $fixture_path = $fixture->getPath();
-      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
-
-      $api = ArcanistRepositoryAPI::newAPIFromWorkingCopyIdentity(
-        $working_copy);
-      $api->setBaseCommitArgumentRules('arc:this');
-
-      $this->assertCorrectState($test, $api);
+  public function testGitStateParsing() {
+    if (Filesystem::binaryExists('git')) {
+      $this->parseState('git_basic.git.tgz');
+    } else {
+      $this->assertSkipped('Git is not installed');
     }
+  }
+
+  public function testHgStateParsing() {
+    if (Filesystem::binaryExists('hg')) {
+      $this->parseState('hg_basic.hg.tgz');
+    } else {
+      $this->assertSkipped('Mercurial is not installed');
+    }
+  }
+
+  public function testSvnStateParsing() {
+    if (Filesystem::binaryExists('svn')) {
+      $this->parseState('svn_basic.svn.tgz');
+    } else {
+      $this->assertSkipped('Subversion is not installed');
+    }
+  }
+
+  private function parseState($test) {
+    $dir = dirname(__FILE__) . '/state/';
+    $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
+
+    $fixture_path = $fixture->getPath();
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+    $configuration_manager = new ArcanistConfigurationManager();
+    $configuration_manager->setWorkingCopyIdentity($working_copy);
+    $api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+      $configuration_manager);
+
+    $api->setBaseCommitArgumentRules('arc:this');
+
+    if ($api instanceof ArcanistSubversionAPI) {
+      // Upgrade the repository so that the test will still pass if the local
+      // `svn` is newer than the `svn` which created the repository.
+
+      // NOTE: Some versions of Subversion (1.7.x?) exit with an error code on
+      // a no-op upgrade, although newer versions do not. We just ignore the
+      // error here; if it's because of an actual problem we'll hit an error
+      // shortly anyway.
+      $api->execManualLocal('upgrade');
+    }
+
+    $this->assertCorrectState($test, $api);
   }
 
   private function assertCorrectState($test, ArcanistRepositoryAPI $api) {
@@ -54,6 +87,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
           'UNSTAGED'    => $f_mod | $f_uns | $f_unc,
           'UNTRACKED'   => $f_unt,
         );
+
         $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
 
         $expect_range = array(

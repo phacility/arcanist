@@ -79,19 +79,17 @@ EOTEXT
     $revision_id = reset($revision_list);
     $revision_id = $this->normalizeRevisionID($revision_id);
 
-    $revision = null;
-    try {
-      $revision = $conduit->callMethodSynchronous(
-        'differential.getrevision',
-        array(
-          'revision_id' => $revision_id,
-        ));
-    } catch (Exception $ex) {
-      if (!$is_finalize) {
-        throw new ArcanistUsageException(
-          "Revision D{$revision_id} does not exist."
-        );
-      }
+    $revisions = $conduit->callMethodSynchronous(
+      'differential.query',
+      array(
+        'ids' => array($revision_id),
+      ));
+    $revision = head($revisions);
+
+    if (!$revision && !$is_finalize) {
+      throw new ArcanistUsageException(
+        "Revision D{$revision_id} does not exist."
+      );
     }
 
     $status_accepted = ArcanistDifferentialRevisionStatus::ACCEPTED;
@@ -114,8 +112,7 @@ EOTEXT
 
       $actually_close = true;
       if ($is_finalize) {
-        $project_info = $this->getProjectInfo();
-        if (idx($project_info, 'tracked') ||
+        if ($this->getRepositoryPHID() ||
             $revision['status'] != $status_accepted) {
           $actually_close = false;
         }

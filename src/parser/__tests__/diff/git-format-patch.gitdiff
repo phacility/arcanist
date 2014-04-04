@@ -1,0 +1,21 @@
+From 9c68ca45aafefc1f9b9f49a7b380d6159d3e93c1 Mon Sep 17 00:00:00 2001
+From: epriestley <git@epriestley.com>
+Date: Sat, 15 Mar 2014 08:54:34 -0700
+Subject: [PATCH] WIP
+
+---
+ number_j.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/number_j.txt b/number_j.txt
+index bd44aa2..d64876d 100644
+--- a/number_j.txt
++++ b/number_j.txt
+@@ -138,3 +138,4 @@ j
+ j
+ j
+ j
++j
+--
+1.8.4.2
+

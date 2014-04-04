@@ -77,6 +77,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       $xunit_tmp = $tmpfiles[$test_path]['xunit'];
       $cover_tmp = $tmpfiles[$test_path]['cover'];
 
+      $this->parser = new ArcanistXUnitTestResultParser();
       $results[] = $this->parseTestResults($source_path,
                                            $xunit_tmp,
                                            $cover_tmp);
@@ -99,74 +100,15 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   public function parseTestResults($source_path, $xunit_tmp, $cover_tmp) {
-    // xunit xsd: https://gist.github.com/959290
-    $xunit_dom = new DOMDocument();
-    $xunit_dom->loadXML(Filesystem::readFile($xunit_tmp));
+    $results = $this->parser->parseTestResults(
+      Filesystem::readFile($xunit_tmp));
 
     // coverage is for all testcases in the executed $path
-    $coverage = array();
     if ($this->getEnableCoverage() !== false) {
       $coverage = $this->readCoverage($cover_tmp, $source_path);
-    }
-
-    $results = array();
-    $testcases = $xunit_dom->getElementsByTagName("testcase");
-    foreach ($testcases as $testcase) {
-      $classname = $testcase->getAttribute("classname");
-      $name = $testcase->getAttribute("name");
-      $time = $testcase->getAttribute("time");
-
-      $status = ArcanistUnitTestResult::RESULT_PASS;
-      $user_data = "";
-
-      // A skipped test is a test which was ignored using framework
-      // mechanizms (e.g. @skip decorator)
-      $skipped = $testcase->getElementsByTagName("skipped");
-      if ($skipped->length > 0) {
-        $status = ArcanistUnitTestResult::RESULT_SKIP;
-        $messages = array();
-        for ($ii = 0; $ii < $skipped->length; $ii++) {
-          $messages[] = trim($skipped->item($ii)->nodeValue, " \n");
-        }
-
-        $user_data .= implode("\n", $messages);
+      foreach ($results as $result) {
+        $result->setCoverage($coverage);
       }
-
-      // Failure is a test which the code has explicitly failed by using
-      // the mechanizms for that purpose. e.g., via an assertEquals
-      $failures = $testcase->getElementsByTagName("failure");
-      if ($failures->length > 0) {
-        $status = ArcanistUnitTestResult::RESULT_FAIL;
-        $messages = array();
-        for ($ii = 0; $ii < $failures->length; $ii++) {
-          $messages[] = trim($failures->item($ii)->nodeValue, " \n");
-        }
-
-        $user_data .= implode("\n", $messages)."\n";
-      }
-
-      // An errored test is one that had an unanticipated problem. e.g., an
-      // unchecked throwable, or a problem with an implementation of the
-      // test.
-      $errors = $testcase->getElementsByTagName("error");
-      if ($errors->length > 0) {
-        $status = ArcanistUnitTestResult::RESULT_BROKEN;
-        $messages = array();
-        for ($ii = 0; $ii < $errors->length; $ii++) {
-          $messages[] = trim($errors->item($ii)->nodeValue, " \n");
-        }
-
-        $user_data .= implode("\n", $messages)."\n";
-      }
-
-      $result = new ArcanistUnitTestResult();
-      $result->setName($classname.".".$name);
-      $result->setResult($status);
-      $result->setDuration($time);
-      $result->setCoverage($coverage);
-      $result->setUserData($user_data);
-
-      $results[] = $result;
     }
 
     return $results;
@@ -180,34 +122,15 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     $classes = $coverage_dom->getElementsByTagName("class");
 
     foreach ($classes as $class) {
-      // filename is actually python module path with ".py" at the end,
-      // e.g.: tornado.web.py
-      $relative_path = explode(".", $class->getAttribute("filename"));
-      array_pop($relative_path);
-      $relative_path = $source_path .'/'. implode("/", $relative_path);
+      $path = $class->getAttribute("filename");
+      $root = $this->getWorkingCopy()->getProjectRoot();
 
-      // first we check if the path is a directory (a Python package), if it is
-      // set relative and absolute paths to have __init__.py at the end.
-      $absolute_path = Filesystem::resolvePath($relative_path);
-      if (is_dir($absolute_path)) {
-        $relative_path .= "/__init__.py";
-        $absolute_path .= "/__init__.py";
-      }
-
-      // then we check if the path with ".py" at the end is file (a Python
-      // submodule), if it is - set relative and absolute paths to have
-      // ".py" at the end.
-      if (is_file($absolute_path.".py")) {
-        $relative_path .= ".py";
-        $absolute_path .= ".py";
-      }
-
-      if (!file_exists($absolute_path)) {
+      if (!Filesystem::isDescendant($path, $root)) {
         continue;
       }
 
       // get total line count in file
-      $line_count = count(file($absolute_path));
+      $line_count = count(phutil_split_lines(Filesystem::readFile($path)));
 
       $coverage = "";
       $start_line = 1;
@@ -235,7 +158,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
         }
       }
 
-      $reports[$relative_path] = $coverage;
+      $reports[$path] = $coverage;
     }
 
     return $reports;
