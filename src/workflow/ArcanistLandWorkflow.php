@@ -405,9 +405,7 @@ EOTEXT
     } else {
       $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
         $this->getConduit(),
-        array(
-          'authors' => array($this->getUserPHID()),
-        ));
+        array());
     }
 
     if (!count($revisions)) {
@@ -434,6 +432,22 @@ EOTEXT
     $rev_id = $this->revision['id'];
     $rev_title = $this->revision['title'];
     $rev_auxiliary = idx($this->revision, 'auxiliary', array());
+
+    if ($this->revision['authorPHID'] != $this->getUserPHID()) {
+      $other_author = $this->getConduit()->callMethodSynchronous(
+        'user.query',
+        array(
+          'phids' => array($this->revision['authorPHID']),
+        ));
+      $other_author = ipull($other_author, 'userName', 'phid');
+      $other_author = $other_author[$this->revision['authorPHID']];
+      $ok = phutil_console_confirm(
+        "This {$this->branchType} has revision 'D{$rev_id}: {$rev_title}' ".
+        "but you are not the author. Land this revision by {$other_author}?");
+      if (!$ok) {
+        throw new ArcanistUserAbortException();
+      }
+    }
 
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(
