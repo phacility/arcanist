@@ -94,7 +94,6 @@ EOTEXT
     $in_working_copy = $repository_api->loadWorkingCopyDifferentialRevisions(
       $this->getConduit(),
       array(
-        'authors'   => array($this->getUserPHID()),
         'status'    => 'status-any',
       ));
     $in_working_copy = ipull($in_working_copy, null, 'id');
@@ -113,6 +112,24 @@ EOTEXT
         throw new ArcanistUsageException($message);
       } else {
         $revision_id = key($in_working_copy);
+        $revision = $in_working_copy[$revision_id];
+        if ($revision['authorPHID'] != $this->getUserPHID()) {
+          $other_author = $this->getConduit()->callMethodSynchronous(
+            'user.query',
+            array(
+              'phids' => array($revision['authorPHID']),
+            ));
+          $other_author = ipull($other_author, 'userName', 'phid');
+          $other_author = $other_author[$revision['authorPHID']];
+          $rev_title = $revision['title'];
+          $ok = phutil_console_confirm(
+            "You are amending the revision 'D{$revision_id}: {$rev_title}' ".
+            "but you are not the author. Amend this revision by ".
+            "{$other_author}?");
+          if (!$ok) {
+            throw new ArcanistUserAbortException();
+          }
+        }
       }
     }
 
