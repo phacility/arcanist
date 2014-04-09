@@ -155,20 +155,27 @@ EOTEXT
       );
 
       // Render the "Status" column.
-      if ($task['status']) {
-        $status_text = 'Closed';
-        $status_color = 'red';
+      if (isset($task['isClosed'])) {
+        if ($task['isClosed']) {
+          $status_text = $task['statusName'];
+          $status_color = 'red';
+        } else {
+          $status_text = $task['statusName'];
+          $status_color = 'green';
+        }
+        $formatted_status = phutil_console_format(
+          "<bg:{$status_color}> </bg> %s",
+          $status_text);
+        $output['status'] = array(
+          'text'  => $formatted_status,
+          'len'   => phutil_utf8_console_strlen('status') + 2,
+        );
       } else {
-        $status_text = 'Open';
-        $status_color = 'green';
+        $output['status'] = array(
+          'text'  => "",
+          'len'   => 0,
+        );
       }
-      $formatted_status = phutil_console_format(
-        "<bg:{$status_color}> </bg> %s",
-        $status_text);
-      $output['status'] = array(
-        'text'  => $formatted_status,
-        'len'   => phutil_utf8_console_strlen('status') + 2,
-      );
 
       $task_rows[] = $output;
     }
