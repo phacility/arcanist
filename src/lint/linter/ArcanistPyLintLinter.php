@@ -161,8 +161,16 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
   private function getPyLintOptions() {
     // '-rn': don't print lint report/summary at end
-    // '-iy': show message codes for lint warnings/errors
-    $options = array('-rn',  '-iy');
+    $options = array('-rn');
+
+    // Version 0.x.x include the pylint message ids in the output
+    if (version_compare($this->getLinterVersion(), "1", 'lt')) {
+      array_push($options, '-iy', "--output-format=text");
+    }
+    // Version 1.x.x set the output specifically to the 0.x.x format
+    else {
+      array_push($options, "--msg-template='{msg_id}:{line:3d}: {obj}: {msg}'");
+    }
 
     $working_copy = $this->getEngine()->getWorkingCopy();
     $config = $this->getEngine()->getConfigurationManager();
@@ -189,6 +197,29 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
   public function getLinterName() {
     return 'PyLint';
+  }
+
+  private function getLinterVersion() {
+
+    $pylint_bin = $this->getPyLintPath();
+    $options = '--version';
+
+    list($stdout) = execx(
+      '%s %s',
+      $pylint_bin,
+      $options);
+
+    $lines = explode("\n", $stdout);
+    $matches = null;
+
+    // If the version command didn't return anything or the regex didn't match
+    // Assume a future version that at least is compatible with 1.x.x
+    if (count($lines) == 0 ||
+        !preg_match('/pylint\s((?:\d+\.?)+)/', $lines[0], $matches)) {
+      return "999";
+    }
+
+    return $matches[1];
   }
 
   public function lintPath($path) {
