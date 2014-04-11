@@ -44,7 +44,6 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   const AUTO_COMMIT_TITLE = 'Automatic commit by arc';
 
   private $commitMode = self::COMMIT_DISABLE;
-  private $shouldAmend;
 
   private $conduit;
   private $conduitURI;
@@ -660,15 +659,17 @@ abstract class ArcanistBaseWorkflow extends Phobject {
                 '--'.head($corrected))."\n");
             $arg_key = head($corrected);
           } else {
-            throw new ArcanistUsageException(
-              "Unknown argument '{$arg_key}'. Try 'arc help'.");
+            throw new ArcanistUsageException(pht(
+              "Unknown argument '%s'. Try 'arc help'.",
+              $arg_key));
           }
         }
       } else if (!strncmp($arg, '-', 1)) {
         $arg_key = substr($arg, 1);
         if (empty($short_to_long_map[$arg_key])) {
-          throw new ArcanistUsageException(
-            "Unknown argument '{$arg_key}'. Try 'arc help'.");
+          throw new ArcanistUsageException(pht(
+            "Unknown argument '%s'. Try 'arc help'.",
+            $arg_key));
         }
         $arg_key = $short_to_long_map[$arg_key];
       } else {
@@ -681,8 +682,9 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $dict[$arg_key] = true;
       } else {
         if ($ii == count($args) - 1) {
-          throw new ArcanistUsageException(
-            "Option '{$arg}' requires a parameter.");
+          throw new ArcanistUsageException(pht(
+            "Option '%s' requires a parameter.",
+            $arg));
         }
         if (!empty($options['repeat'])) {
           $dict[$arg_key][] = $args[$ii + 1];
@@ -698,8 +700,9 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $dict[$more_key] = $more;
       } else {
         $example = reset($more);
-        throw new ArcanistUsageException(
-          "Unrecognized argument '{$example}'. Try 'arc help'.");
+        throw new ArcanistUsageException(pht(
+          "Unrecognized argument '%s'. Try 'arc help'.",
+          $example));
       }
     }
 
@@ -779,7 +782,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     if ($this->stashed) {
       $api = $this->getRepositoryAPI();
       $api->unstashChanges();
-      echo "Restored stashed changes to the working directory.\n";
+      echo pht('Restored stashed changes to the working directory.') . "\n";
     }
   }
 
@@ -820,15 +823,18 @@ abstract class ArcanistBaseWorkflow extends Phobject {
           $api->addToCommit($untracked);
           $must_commit += array_flip($untracked);
         } else if ($this->commitMode == self::COMMIT_DISABLE) {
-          $prompt = "Do you want to continue without adding these files?";
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
-            throw new ArcanistUserAbortException();
+          $prompt = $this->getAskForAddPrompt($untracked);
+          if (phutil_console_confirm($prompt)) {
+            throw new ArcanistUsageException(pht(
+              "Add these files and then run 'arc %s' again.",
+              $this->getWorkflowName()));
           }
         }
 
       }
     }
 
+    // NOTE: this is a subversion-only concept.
     $incomplete = $api->getIncompleteChanges();
     if ($incomplete) {
       throw new ArcanistUsageException(
@@ -907,7 +913,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
 
     if ($must_commit) {
-      if ($this->shouldAmend) {
+      if ($this->shouldAmend()) {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
@@ -921,6 +927,10 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
   private function shouldAmend() {
+    return $this->calculateShouldAmend();
+  }
+
+  private function calculateShouldAmend() {
     $api = $this->getRepositoryAPI();
 
     if ($this->isHistoryImmutable() || !$api->supportsAmend()) {
@@ -982,13 +992,15 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     if ($this->commitMode == self::COMMIT_DISABLE) {
       return false;
     }
-    if ($this->shouldAmend === null) {
-      $this->shouldAmend = $this->shouldAmend();
-    }
     if ($this->commitMode == self::COMMIT_ENABLE) {
       return true;
     }
-    if ($this->shouldAmend) {
+    $prompt = $this->getAskForAddPrompt($files);
+    return phutil_console_confirm($prompt);
+  }
+
+  private function getAskForAddPrompt(array $files) {
+    if ($this->shouldAmend()) {
       $prompt = pht(
         'Do you want to amend these files to the commit?',
         count($files));
@@ -997,7 +1009,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         'Do you want to add these files to the commit?',
         count($files));
     }
-    return phutil_console_confirm($prompt);
+    return $prompt;
   }
 
   protected function loadDiffBundleFromConduit(
