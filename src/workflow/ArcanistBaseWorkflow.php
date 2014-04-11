@@ -62,6 +62,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $command;
 
   private $stashed;
+  private $shouldAmend;
 
   private $projectInfo;
   private $repositoryInfo;
@@ -913,7 +914,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
 
     if ($must_commit) {
-      if ($this->shouldAmend()) {
+      if ($this->getShouldAmend()) {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
@@ -926,8 +927,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
   }
 
-  private function shouldAmend() {
-    return $this->calculateShouldAmend();
+  private function getShouldAmend() {
+    if ($this->shouldAmend === null) {
+      $this->shouldAmend = $this->calculateShouldAmend();
+    }
+    return $this->shouldAmend;
   }
 
   private function calculateShouldAmend() {
@@ -1000,7 +1004,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
   private function getAskForAddPrompt(array $files) {
-    if ($this->shouldAmend()) {
+    if ($this->getShouldAmend()) {
       $prompt = pht(
         'Do you want to amend these files to the commit?',
         count($files));
