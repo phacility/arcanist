@@ -998,6 +998,24 @@ EOTEXT
           $cmd));
       }
 
+      // If we know which repository we're in, try to tell Phabricator that we
+      // pushed commits to it so it can update. This hint can help pull updates
+      // more quickly, especially in rarely-used repositories.
+      if ($this->getRepositoryCallsign()) {
+        try {
+          $this->getConduit()->callMethodSynchronous(
+            'diffusion.looksoon',
+            array(
+              'callsign' => $this->getRepositoryCallsign(),
+            ));
+        } catch (ConduitClientException $ex) {
+          // If we hit an exception, just ignore it. Likely, we are running
+          // against a Phabricator which is too old to support this method.
+          // Since this hint is purely advisory, it doesn't matter if it has
+          // no effect.
+        }
+      }
+
       $mark_workflow = $this->buildChildWorkflow(
         'close-revision',
         array(
