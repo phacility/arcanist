@@ -161,8 +161,7 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
   private function getPyLintOptions() {
     // '-rn': don't print lint report/summary at end
-    // '-iy': show message codes for lint warnings/errors
-    $options = array('-rn',  '-iy');
+    $options = array('-rn');
 
     $working_copy = $this->getEngine()->getWorkingCopy();
     $config = $this->getEngine()->getConfigurationManager();
