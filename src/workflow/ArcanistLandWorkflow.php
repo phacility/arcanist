@@ -533,6 +533,11 @@ EOTEXT
 
     echo pht("Landing revision '%s'...",
              "D{$rev_id}: {$rev_title}"), "\n";
+
+    $diff_phid = idx($this->revision, 'activeDiffPHID');
+    if ($diff_phid) {
+      $this->checkForBuildables($diff_phid);
+    }
   }
 
   private function pullFromRemote() {
@@ -1160,6 +1165,97 @@ EOTEXT
     echo phutil_console_format(
       "Switched back to {$this->branchType} **%s**.\n",
       $this->oldBranch);
+  }
+
+
+  /**
+   * Check if a diff has a running or failed buildable, and prompt the user
+   * before landing if it does.
+   */
+  private function checkForBuildables($diff_phid) {
+    // NOTE: Since Harbormaster is still beta and this stuff all got added
+    // recently, just bail if we can't find a buildable. This is just an
+    // advisory check intended to prevent human error.
+
+    try {
+      $buildables = $this->getConduit()->callMethodSynchronous(
+        'harbormaster.querybuildables',
+        array(
+          'buildablePHIDs' => array($diff_phid),
+          'manualBuildables' => false,
+        ));
+    } catch (ConduitClientException $ex) {
+      return;
+    }
+
+    if (!$buildables['data']) {
+      // If there's no corresponding buildable, we're done.
+      return;
+    }
+
+    $console = PhutilConsole::getConsole();
+
+    $buildable = head($buildables['data']);
+
+    if ($buildable['buildableStatus'] == 'passed') {
+      $console->writeOut(
+        "**<bg:green> %s </bg>** %s\n",
+        pht('BUILDS PASSED'),
+        pht(
+          'Harbormaster builds for the active diff completed successfully.'));
+      return;
+    }
+
+    switch ($buildable['buildableStatus']) {
+      case 'building':
+        $message = pht(
+          'Harbormaster is still building the active diff for this revision:');
+        $prompt = pht('Land revision anyway, despite ongoing build?');
+        break;
+      case 'failed':
+        $message = pht(
+          'Harbormaster failed to build the active diff for this revision. '.
+          'Build failures:');
+        $prompt = pht('Land revision anyway, despite build failures?');
+        break;
+      default:
+        // If we don't recognize the status, just bail.
+        return;
+    }
+
+    $builds = $this->getConduit()->callMethodSynchronous(
+      'harbormaster.querybuilds',
+      array(
+        'buildablePHIDs' => array($buildable['phid']),
+      ));
+
+    $console->writeOut($message."\n\n");
+    foreach ($builds['data'] as $build) {
+      switch ($build['buildStatus']) {
+        case 'failed':
+          $color = 'red';
+          break;
+        default:
+          $color = 'yellow';
+          break;
+      }
+
+      $console->writeOut(
+        "    **<bg:".$color."> %s </bg>** %s: %s\n",
+        phutil_utf8_strtoupper($build['buildStatusName']),
+        pht('Build %d', $build['id']),
+        $build['name']);
+    }
+
+    $console->writeOut(
+      "\n%s\n\n    **%s**: __%s__",
+      pht('You can review build details here:'),
+      pht('Harbormaster URI'),
+      $buildable['uri']);
+
+    if (!$console->confirm($prompt)) {
+      throw new ArcanistUserAbortException();
+    }
   }
 
 }
