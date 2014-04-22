@@ -164,7 +164,7 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     $options = array('-rn');
 
     // Version 0.x.x include the pylint message ids in the output (for parsing purposes)
-    if ($this->getLinterVersion() == '0') {
+    if (version_compare($this->getLinterVersion(), "1", 'lt')) {
       array_push($options, '-iy', "--output-format=text");
     }
     // Version 1.x.x set the output specifically to the 0.x.x format
@@ -199,12 +199,12 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     return 'PyLint';
   }
 
-  public function getLinterVersion() {
+  private function getLinterVersion() {
 
     $pylint_bin = $this->getPyLintPath();
     $options = '--version';
 
-    list($stdout, $_) = execx(
+    list($stdout) = execx(
       '%s %s',
       $pylint_bin,
       $options);
@@ -214,8 +214,8 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
     
     // If the version command didn't return anything or the regex didn't match
     // Assume a future version that at least is compatible with 1.x.x
-    if (count($lines) == 0 || !preg_match('/pylint\s(\d+)\./', $lines[0], $matches)) {
-      return "1";
+    if (count($lines) == 0 || !preg_match('/pylint\s((?:\d+\.?)+)/', $lines[0], $matches)) {
+      return "999";
     }
 
     return $matches[1];
