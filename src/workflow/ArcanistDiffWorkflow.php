@@ -553,6 +553,7 @@ EOTEXT
     } else {
       $revision['diffid'] = $this->getDiffID();
 
+      $createdRevision = false;
       if ($commit_message->getRevisionID()) {
         $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
@@ -590,12 +591,18 @@ EOTEXT
         }
 
         echo "Created a new Differential revision:\n";
+
+        $createdRevision = true;
       }
 
       $uri = $result['uri'];
       echo phutil_console_format(
         "        **Revision URI:** __%s__\n\n",
         $uri);
+
+      if ($createdRevision) {
+        $this->dispatchCreatedRevisionEvent($revision, $uri);
+      }
 
       if ($this->getArgument('plan-changes')) {
         $conduit->callMethodSynchronous(
@@ -2396,6 +2403,17 @@ EOTEXT
   private function resolveDiffPropertyUpdates() {
     Futures($this->diffPropertyFutures)->resolveAll();
     $this->diffPropertyFutures = array();
+  }
+
+  private function dispatchCreatedRevisionEvent(array $fields, $uri) {
+    $event = $this->dispatchEvent(
+      ArcanistEventType::TYPE_REVISION_CREATED,
+      array(
+        'specification' => $fields,
+        'uri' => $uri,
+      ));
+
+    return $event->getValue('specification');
   }
 
   private function dispatchWillCreateRevisionEvent(array $fields) {
