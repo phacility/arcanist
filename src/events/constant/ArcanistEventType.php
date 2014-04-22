@@ -10,6 +10,7 @@ final class ArcanistEventType extends PhutilEventType {
   const TYPE_DIFF_WASCREATED        = 'diff.wasCreated';
 
   const TYPE_REVISION_WILLCREATEREVISION = 'revision.willCreateRevision';
+  const TYPE_REVISION_CREATED            = 'revision.created';
 
   const TYPE_LAND_WILLPUSHREVISION  = 'land.willPushRevision';
 }
