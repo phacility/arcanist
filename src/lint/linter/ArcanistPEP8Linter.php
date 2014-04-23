@@ -17,7 +17,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
   public function getCacheVersion() {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
-    return $stdout.$this->getCommandFlags();
+    return $stdout.implode(' ', $this->getCommandFlags());
   }
 
   public function getDefaultFlags() {
@@ -25,7 +25,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     $config = $this->getEngine()->getConfigurationManager();
     return $config->getConfigFromAnySource(
       'lint.pep8.options',
-      $this->getConfig('options'));
+      $this->getConfig('options', array()));
   }
 
   public function shouldUseInterpreter() {
