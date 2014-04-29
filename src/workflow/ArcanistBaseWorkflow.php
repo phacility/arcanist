@@ -1124,10 +1124,10 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
 
     if (empty($this->changeCache[$path])) {
-      if ($is_git) {
-        // This can legitimately occur under git if you make a change, "git
-        // commit" it, and then revert the change in the working copy and run
-        // "arc lint".
+      if ($is_git || $is_hg) {
+        // This can legitimately occur under git/hg if you make a change,
+        // "git/hg commit" it, and then revert the change in the working copy
+        // and run "arc lint".
         $change = new ArcanistDiffChange();
         $change->setCurrentPath($path);
         return $change;
