@@ -1,3 +1,4 @@
+CURLFile
 DOMException
 DOMStringList
 DOMNameList
