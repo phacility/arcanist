@@ -303,7 +303,7 @@ abstract class ArcanistLinter {
 
   public function getLinterConfigurationOptions() {
     return array(
-      'severity' => 'optional map<string, string>',
+      'severity' => 'optional map<string|int, string>',
       'severity.rules' => 'optional map<string, string>',
     );
   }
