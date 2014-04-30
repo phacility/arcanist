@@ -122,29 +122,33 @@ EOTEXT
         'len'  => phutil_utf8_console_strlen($formatted_title),
       );
 
+
       // Render the "Priority" column.
-      switch ($task['priority']) {
-        case 'Needs Triage':
-          $color = 'magenta';
-        break;
-        case 'Unbreak Now!':
-          $color = 'red';
-        break;
-        case 'High':
-          $color = 'yellow';
-        break;
-        case 'Normal':
-          $color = 'green';
-        break;
-        case 'Low':
-          $color = 'blue';
-        break;
-        case 'Wishlist':
-          $color = 'cyan';
-        break;
-        default:
-          $color = 'white';
-        break;
+      $web_to_terminal_colors = array(
+        'violet'      => 'magenta',
+        'indigo'      => 'magenta',
+        'orange'      => 'red',
+        'sky'         => 'cyan',
+        'red'         => 'red',
+        'yellow'      => 'yellow',
+        'green'       => 'green',
+        'blue'        => 'blue',
+        'cyan'        => 'cyan',
+        'magenta'     => 'magenta',
+        'lightred'    => 'red',
+        'lightorange' => 'red',
+        'lightyellow' => 'yellow',
+        'lightgreen'  => 'green',
+        'lightblue'   => 'blue',
+        'lightsky'    => 'blue',
+        'lightindigo' => 'magenta',
+        'lightviolet' => 'magenta'
+      );
+
+      if (isset($task['priorityColor'])) {
+        $color = idx($web_to_terminal_colors, $task['priorityColor'], 'white');
+      } else {
+        $color = 'white';
       }
       $formatted_priority = phutil_console_format(
         "<bg:{$color}> </bg> %s",
@@ -155,20 +159,27 @@ EOTEXT
       );
 
       // Render the "Status" column.
-      if ($task['status']) {
-        $status_text = 'Closed';
-        $status_color = 'red';
+      if (isset($task['isClosed'])) {
+        if ($task['isClosed']) {
+          $status_text = $task['statusName'];
+          $status_color = 'red';
+        } else {
+          $status_text = $task['statusName'];
+          $status_color = 'green';
+        }
+        $formatted_status = phutil_console_format(
+          "<bg:{$status_color}> </bg> %s",
+          $status_text);
+        $output['status'] = array(
+          'text'  => $formatted_status,
+          'len'   => phutil_utf8_console_strlen('status') + 2,
+        );
       } else {
-        $status_text = 'Open';
-        $status_color = 'green';
+        $output['status'] = array(
+          'text'  => "",
+          'len'   => 0,
+        );
       }
-      $formatted_status = phutil_console_format(
-        "<bg:{$status_color}> </bg> %s",
-        $status_text);
-      $output['status'] = array(
-        'text'  => $formatted_status,
-        'len'   => phutil_utf8_console_strlen('status') + 2,
-      );
 
       $task_rows[] = $output;
     }

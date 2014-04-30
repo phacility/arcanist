@@ -26,7 +26,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getMandatoryFlags() {
-    return '--report=xml';
+    return array('--report=xml');
   }
 
   public function getInstallInstructions() {
@@ -38,10 +38,16 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
     $config = $this->getEngine()->getConfigurationManager();
 
-    $options = $config->getConfigFromAnySource('lint.phpcs.options');
+    $options = $config->getConfigFromAnySource('lint.phpcs.options', array());
 
     $standard = $config->getConfigFromAnySource('lint.phpcs.standard');
-    $options .= !empty($standard) ? ' --standard=' . $standard : '';
+    if (!empty($standard)) {
+      if (is_array($options)) {
+        $options[] = '--standard='.$standard;
+      } else {
+        $options .= ' --standard='.$standard;
+      }
+    }
 
     return $options;
   }

@@ -117,11 +117,11 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * Flags which are not mandatory should be provided in
    * @{method:getDefaultFlags} instead.
    *
-   * @return string|null  Mandatory flags, like `"--format=xml"`.
+   * @return list<string>  Mandatory flags, like `"--format=xml"`.
    * @task bin
    */
   protected function getMandatoryFlags() {
-    return null;
+    return array();
   }
 
 
@@ -133,11 +133,11 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    *
    * Default flags can be overridden with @{method:setFlags}.
    *
-   * @return string|null  Overridable default flags.
+   * @return list<string>  Overridable default flags.
    * @task bin
    */
   protected function getDefaultFlags() {
-    return null;
+    return array();
   }
 
 
@@ -145,12 +145,12 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * Override default flags with custom flags. If not overridden, flags provided
    * by @{method:getDefaultFlags} are used.
    *
-   * @param string New flags.
+   * @param list<string> New flags.
    * @return this
    * @task bin
    */
   final public function setFlags($flags) {
-    $this->flags = $flags;
+    $this->flags = (array) $flags;
     return $this;
   }
 
@@ -348,21 +348,32 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * Get the composed flags for the executable, including both mandatory and
    * configured flags.
    *
-   * @return string Composed flags.
+   * @return list<string> Composed flags.
    * @task exec
    */
   protected function getCommandFlags() {
-    return csprintf(
-      '%C %C',
-      $this->getMandatoryFlags(),
-      coalesce($this->flags, $this->getDefaultFlags()));
+    $mandatory_flags = $this->getMandatoryFlags();
+    if (!is_array($mandatory_flags)) {
+      phutil_deprecated(
+        'String support for flags.', 'You should use list<string> instead.');
+      $mandatory_flags = (array) $mandatory_flags;
+    }
+
+    $flags = nonempty($this->flags, $this->getDefaultFlags());
+    if (!is_array($flags)) {
+      phutil_deprecated(
+        'String support for flags.', 'You should use list<string> instead.');
+      $flags = (array) $flags;
+    }
+
+    return array_merge($mandatory_flags, $flags);
   }
 
 
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 
-    $bin = csprintf('%C %C', $executable, $this->getCommandFlags());
+    $bin = csprintf('%C %Ls', $executable, $this->getCommandFlags());
 
     $futures = array();
     foreach ($paths as $path) {
@@ -410,7 +421,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   public function getLinterConfigurationOptions() {
     $options = array(
       'bin' => 'optional string | list<string>',
-      'flags' => 'optional string',
+      'flags' => 'optional list<string>',
     );
 
     if ($this->shouldUseInterpreter()) {
@@ -465,9 +476,13 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         throw new Exception(
           pht('None of the configured binaries can be located.'));
       case 'flags':
-        if (strlen($value)) {
-          $this->setFlags($value);
+        if (!is_array($value)) {
+          phutil_deprecated(
+            'String support for flags.',
+            'You should use list<string> instead.');
+          $value = (array) $value;
         }
+        $this->setFlags($value);
         return;
     }
 

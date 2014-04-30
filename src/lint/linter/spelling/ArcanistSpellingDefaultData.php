@@ -520,7 +520,7 @@ class ArcanistSpellingDefaultData {
        "requrie" => "require",
        "existant" => "existent",
        "explict" => "explicit",
-       "agument" => "augument",
+       "agument" => "argument",
        "destionation" => "destination",
      ), array(
        'teh' => 'the'

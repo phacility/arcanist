@@ -41,7 +41,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   protected function getMandatoryFlags() {
     // -w: turn on warnings
     // -c: check syntax
-    return '-w -c';
+    return array('-w', '-c');
   }
 
   protected function getDefaultMessageSeverity($code) {
