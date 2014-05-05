@@ -15,11 +15,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'pep8';
   }
 
-  public function getCacheVersion() {
-    list($stdout) = execx('%C --version', $this->getExecutableCommand());
-    return $stdout.implode(' ', $this->getCommandFlags());
-  }
-
   public function getDefaultFlags() {
     // TODO: Warn that all of this is deprecated.
     $config = $this->getEngine()->getConfigurationManager();
@@ -53,6 +48,17 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
     $arc_root = dirname(phutil_get_library_root('arcanist'));
     return $arc_root.'/externals/pep8/pep8.py';
+  }
+
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
   }
 
   public function getInstallInstructions() {

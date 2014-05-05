@@ -58,6 +58,18 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return $config->getConfigFromAnySource('lint.phpcs.bin', 'phpcs');
   }
 
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    $regex = '/^PHP_CodeSniffer version (?P<version>\d+\.\d+\.\d+)\b/';
+    if (preg_match($regex, $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
+  }
+
   public function shouldExpectCommandErrors() {
     return true;
   }

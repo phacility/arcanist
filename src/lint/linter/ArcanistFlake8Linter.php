@@ -34,6 +34,17 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return 'flake8';
   }
 
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)\b/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
+  }
+
   public function getInstallInstructions() {
     return pht('Install flake8 using `easy_install flake8`.');
   }

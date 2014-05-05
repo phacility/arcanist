@@ -34,6 +34,17 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
     return $config->getConfigFromAnySource('lint.csslint.bin', 'csslint');
   }
 
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    if (preg_match('/^v(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
+  }
+
   public function getInstallInstructions() {
     return pht('Install CSSLint using `npm install -g csslint`.');
   }

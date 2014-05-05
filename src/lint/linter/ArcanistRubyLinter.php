@@ -26,6 +26,18 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     return 'ruby';
   }
 
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)p\d+/';
+    if (preg_match($regex, $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
+  }
+
   public function getInstallInstructions() {
     return pht('Install `ruby` from <http://www.ruby-lang.org/>.');
   }

@@ -369,6 +369,21 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     return array_merge($mandatory_flags, $flags);
   }
 
+  public function getCacheVersion() {
+    $version = $this->getVersion();
+
+    if ($version) {
+      return $version.'-'.json_encode($this->getCommandFlags());
+    } else {
+      // Either we failed to parse the version number or the `getVersion`
+      // function hasn't been implemented.
+      return json_encode($this->getCommandFlags());
+    }
+  }
+
+  public function getVersion() {
+    return null;
+  }
 
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
