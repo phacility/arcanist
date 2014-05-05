@@ -1,0 +1,6 @@
+var foo;
+if (foo = 'bar') {
+  return true;
+}
+~~~~~~~~~~
+warning:2:16

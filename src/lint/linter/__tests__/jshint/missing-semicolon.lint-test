@@ -1,0 +1,3 @@
+console.log('foobar')
+~~~~~~~~~~
+warning:1:22

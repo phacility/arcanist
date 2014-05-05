@@ -5,11 +5,12 @@ module.exports = {
         results.forEach(function (result) {
             var error = result.error;
             report.push({
-                'file'  : result.file,
-                'line'  : error.line,
-                'col'   : error.character,
-                'reason': error.reason,
-                'code'  : error.code,
+                'file'    : result.file,
+                'line'    : error.line,
+                'col'     : error.character,
+                'reason'  : error.reason,
+                'code'    : error.code,
+                'evidence': error.evidence,
             });
         });
 
