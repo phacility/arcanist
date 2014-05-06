@@ -1,0 +1,7 @@
+user { 'dave':
+  ensure  => present,
+  home    => '/home/dave',
+  comment => "This is a double quoted string",
+}
+~~~~~~~~~~
+warning:4:14

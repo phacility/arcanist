@@ -1,0 +1,6 @@
+service { 'anacron':
+  ensure => 'stopped',
+  enable => 'true',
+}
+~~~~~~~~~~
+warning:3:13

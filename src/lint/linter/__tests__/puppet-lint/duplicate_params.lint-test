@@ -1,0 +1,6 @@
+service { 'anacron':
+  ensure => 'absent',
+  ensure => 'stopped',
+}
+~~~~~~~~~~
+error:3:3

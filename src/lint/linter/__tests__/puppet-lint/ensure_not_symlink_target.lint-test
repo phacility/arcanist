@@ -1,0 +1,5 @@
+file { '/var/log/syslog':
+  ensure => '/var/log/messages',
+}
+~~~~~~~~~~
+warning:2:13
