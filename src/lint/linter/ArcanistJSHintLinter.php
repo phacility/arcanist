@@ -84,7 +84,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $errors = json_decode($stdout);
+    $errors = json_decode($stdout, true);
 
     if (!is_array($errors)) {
       // Something went wrong and we can't decode the output. Exit abnormally.
@@ -98,13 +98,13 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
     foreach ($errors as $err) {
       $message = new ArcanistLintMessage();
       $message->setPath($path);
-      $message->setLine($err->line);
-      $message->setChar($err->col);
-      $message->setCode($err->code);
-      $message->setName('JSHint'.$err->code);
-      $message->setDescription($err->reason);
-      $message->setSeverity($this->getLintMessageSeverity($err->code));
-      $message->setOriginalText($err->evidence);
+      $message->setLine(idx($err, 'line'));
+      $message->setChar(idx($err, 'col'));
+      $message->setCode(idx($err, 'code'));
+      $message->setName('JSHint'.idx($err, 'code'));
+      $message->setDescription(idx($err, 'reason'));
+      $message->setSeverity($this->getLintMessageSeverity(idx($err, 'code')));
+      $message->setOriginalText(idx($err, 'evidence'));
 
       $messages[] = $message;
     }
