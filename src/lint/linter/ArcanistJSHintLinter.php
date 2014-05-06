@@ -63,13 +63,13 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
     return '-';
   }
 
-  public function getMandatoryFlags() {
+  protected function getMandatoryFlags() {
     return array(
       '--reporter='.dirname(realpath(__FILE__)).'/reporter.js',
     );
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     $config_manager = $this->getEngine()->getConfigurationManager();
     $options = $config_manager->getConfigFromAnySource(
       'lint.jshint.options',
