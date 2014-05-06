@@ -1,0 +1,7 @@
+.mixin-definition(@a: {
+  b: 1;
+}) {
+  @a();
+}
+~~~~~~~~~~
+error:1:18

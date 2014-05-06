@@ -1,0 +1,8 @@
+.a {
+  error: ((1px * 2px) + (3em * 3px));
+}
+~~~~~~~~~~
+error:2:3
+~~~~~~~~~~
+~~~~~~~~~~
+{"config":{"lessc.strict-units":true}}

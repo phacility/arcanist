@@ -1,0 +1,5 @@
+.test {
+  color: color("NOT A COLOR");
+}
+~~~~~~~~~~
+error:2:10

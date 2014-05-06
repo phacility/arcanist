@@ -1,0 +1,5 @@
+.scope {
+    var: `this.foo.toJS()`;
+}
+~~~~~~~~~~
+error:2:27
