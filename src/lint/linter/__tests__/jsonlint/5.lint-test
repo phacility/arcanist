@@ -1,0 +1,3 @@
+["double extra comma",,]
+~~~~~~~~~~
+error:1:22
