@@ -478,7 +478,7 @@ EOTEXT
 
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(pht(
-        "Revision '%s' has not been accepted. Contine anyway?",
+        "Revision '%s' has not been accepted. Continue anyway?",
         "D{$rev_id}: {$rev_title}"));
       if (!$ok) {
         throw new ArcanistUserAbortException();
