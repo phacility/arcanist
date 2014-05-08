@@ -59,7 +59,7 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install lessc using `npm install -g lessc`.');
+    return pht('Install lessc using `npm install -g less`.');
   }
 
   public function shouldExpectCommandErrors() {
