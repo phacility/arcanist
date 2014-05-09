@@ -23,9 +23,27 @@ final class ArcanistTextLinter extends ArcanistLinter {
     return 0.5;
   }
 
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'text.max-line-length' => 'optional int',
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
   public function setMaxLineLength($new_length) {
     $this->maxLineLength = $new_length;
     return $this;
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'text.max-line-length':
+        $this->setMaxLineLength($value);
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
   }
 
   public function getLinterName() {
