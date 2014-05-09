@@ -154,7 +154,7 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
       }
 
       if (!$keep) {
-        $console->writeLogLog(
+        $console->writeLog(
           "  Path does not match any include rules, discarding.\n");
         continue;
       }
