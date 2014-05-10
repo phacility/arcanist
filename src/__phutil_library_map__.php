@@ -225,7 +225,7 @@ phutil_register_library_map(array(
     'ArcanistConfigurationDrivenLintEngine' => 'ArcanistLintEngine',
     'ArcanistCoverWorkflow' => 'ArcanistBaseWorkflow',
     'ArcanistCppcheckLinter' => 'ArcanistLinter',
-    'ArcanistCpplintLinter' => 'ArcanistLinter',
+    'ArcanistCpplintLinter' => 'ArcanistExternalLinter',
     'ArcanistCpplintLinterTestCase' => 'ArcanistArcanistLinterTestCase',
     'ArcanistDiffParserTestCase' => 'ArcanistTestCase',
     'ArcanistDiffUtilsTestCase' => 'ArcanistTestCase',
