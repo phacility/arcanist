@@ -107,7 +107,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
 
-  private function lintUnsafeDynamicString($root) {
+  private function lintUnsafeDynamicString(XHPASTNode $root) {
     $safe = $this->dynamicStringFunctions + array(
       'pht' => 0,
 
@@ -175,7 +175,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
 
-  private function lintArrayCombine($root) {
+  private function lintArrayCombine(XHPASTNode $root) {
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($function_calls as $call) {
       $name = $call->getChildByIndex(0)->getConcreteString();
@@ -200,7 +200,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintDeprecatedFunctions($root) {
+  private function lintDeprecatedFunctions(XHPASTNode $root) {
     $map = $this->deprecatedFunctions;
 
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
