@@ -8,6 +8,14 @@
 final class ArcanistMergeConflictLinter extends ArcanistLinter {
   const LINT_MERGECONFLICT = 1;
 
+  public function getLinterName() {
+    return 'MERGECONFLICT';
+  }
+
+  public function getLinterConfigurationName() {
+    return 'merge-conflict';
+  }
+
   public function willLintPaths(array $paths) {
     return;
   }
@@ -23,24 +31,20 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
           $lineno + 1,
           0,
           self::LINT_MERGECONFLICT,
-          "This syntax indicates there is an unresolved merge conflict.");
+          'This syntax indicates there is an unresolved merge conflict.');
       }
     }
   }
 
-  public function getLinterName() {
-    return "MERGECONFLICT";
-  }
-
   public function getLintSeverityMap() {
     return array(
-      self::LINT_MERGECONFLICT => ArcanistLintSeverity::SEVERITY_ERROR
+      self::LINT_MERGECONFLICT => ArcanistLintSeverity::SEVERITY_ERROR,
     );
   }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_MERGECONFLICT => "Unresolved merge conflict"
+      self::LINT_MERGECONFLICT => 'Unresolved merge conflict',
     );
   }
 }
