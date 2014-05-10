@@ -74,6 +74,10 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return true;
   }
 
+  public function supportsReadDataFromStdin() {
+    return true;
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     // NOTE: Some version of PHPCS after 1.4.6 stopped printing a valid, empty
     // XML document to stdout in the case of no errors. If PHPCS exits with
