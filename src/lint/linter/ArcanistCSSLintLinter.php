@@ -1,12 +1,7 @@
 <?php
 
 /**
- * Uses "CSS lint" to detect checkstyle errors in css code.
- * To use this linter, you must install CSS lint.
- * ##npm install csslint -g## (don't forget the -g flag or NPM will install
- * the package locally).
- *
- * @group linter
+ * Uses "CSS Lint" to detect checkstyle errors in css code.
  */
 final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
