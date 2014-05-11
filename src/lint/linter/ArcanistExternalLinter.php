@@ -381,6 +381,19 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     }
   }
 
+
+  /**
+   * Prepare the path to be added to the command string.
+   *
+   * This method is expected to return an already escaped string.
+   *
+   * @param string Path to the file being linted
+   * @return string The command-ready file argument
+   */
+  protected function getPathArgumentForLinterFuture($path) {
+    return csprintf('%s', $path);
+  }
+
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 
@@ -397,7 +410,8 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       } else {
         // TODO: In commit hook mode, we need to do more handling here.
         $disk_path = $this->getEngine()->getFilePathOnDisk($path);
-        $future = new ExecFuture('%C %s', $bin, $disk_path);
+        $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
+        $future = new ExecFuture('%C %C', $bin, $path_argument);
       }
 
       $futures[$path] = $future;
