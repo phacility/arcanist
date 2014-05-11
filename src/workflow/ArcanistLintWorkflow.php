@@ -184,22 +184,7 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     $configuration_manager = $this->getConfigurationManager();
 
-    $engine = $this->getArgument('engine');
-    if (!$engine) {
-      $engine = $configuration_manager->getConfigFromAnySource('lint.engine');
-    }
-
-    if (!$engine) {
-      if (Filesystem::pathExists($working_copy->getProjectPath('.arclint'))) {
-        $engine = 'ArcanistConfigurationDrivenLintEngine';
-      }
-    }
-
-    if (!$engine) {
-      throw new ArcanistNoEngineException(
-        "No lint engine configured for this project. Edit '.arcconfig' to ".
-        "specify a lint engine, or create an '.arclint' file.");
-    }
+    $engine = $this->newLintEngine($this->getArgument('engine'));
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
@@ -252,17 +237,8 @@ EOTEXT
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }
 
-    if (!class_exists($engine) ||
-        !is_subclass_of($engine, 'ArcanistLintEngine')) {
-      throw new ArcanistUsageException(
-        "Configured lint engine '{$engine}' is not a subclass of ".
-        "'ArcanistLintEngine'.");
-    }
-
-    $engine = newv($engine, array());
     $this->engine = $engine;
-    $engine->setWorkingCopy($working_copy);
-    $engine->setConfigurationManager($configuration_manager);
+
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 

@@ -17,6 +17,20 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
   private $reports;
 
+  public function getInfoName() {
+    return 'PHP_CodeSniffer';
+  }
+
+  public function getInfoURI() {
+    return 'http://pear.php.net/package/PHP_CodeSniffer/';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'PHP_CodeSniffer tokenizes PHP, JavaScript and CSS files and '.
+      'detects violations of a defined set of coding standards.');
+  }
+
   public function getLinterName() {
     return 'PHPCS';
   }

@@ -1,12 +1,10 @@
 <?php
 
 /**
- * Enforces basic spelling.  Spelling inside code is actually pretty hard to
- * get right without false positives.  I take a conservative approach and
+ * Enforces basic spelling. Spelling inside code is actually pretty hard to
+ * get right without false positives. I take a conservative approach and
  * just use a blacklisted set of words that are commonly spelled
  * incorrectly.
- *
- * @group linter
  */
 final class ArcanistSpellingLinter extends ArcanistLinter {
 
@@ -16,6 +14,14 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   private $partialWordRules;
   private $wholeWordRules;
   private $severity;
+
+  public function getInfoName() {
+    return pht('Spellchecker');
+  }
+
+  public function getInfoDescription() {
+    return pht('Detects common misspellings of English words.');
+  }
 
   public function __construct($severity = self::LINT_SPELLING_PICKY) {
     $this->severity = $severity;

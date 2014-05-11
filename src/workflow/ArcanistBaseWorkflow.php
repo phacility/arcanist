@@ -1741,4 +1741,54 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
 
+  /**
+   * Build a new lint engine for the current working copy.
+   *
+   * Optionally, you can pass an explicit engine class name to build an engine
+   * of a particular class. Normally this is used to implement an `--engine`
+   * flag from the CLI.
+   *
+   * @param string Optional explicit engine class name.
+   * @return ArcanistLintEngine Constructed engine.
+   */
+  protected function newLintEngine($engine_class = null) {
+    $working_copy = $this->getWorkingCopy();
+    $config = $this->getConfigurationManager();
+
+    if (!$engine_class) {
+      $engine_class = $config->getConfigFromAnySource('lint.engine');
+    }
+
+    if (!$engine_class) {
+      if (Filesystem::pathExists($working_copy->getProjectPath('.arclint'))) {
+        $engine_class = 'ArcanistConfigurationDrivenLintEngine';
+      }
+    }
+
+    if (!$engine_class) {
+      throw new ArcanistNoEngineException(
+        pht(
+          "No lint engine is configured for this project. ".
+          "Create an '.arclint' file, or configure an advanced engine ".
+          "with 'lint.engine' in '.arcconfig'."));
+    }
+
+    $base_class = 'ArcanistLintEngine';
+    if (!class_exists($engine_class) ||
+        !is_subclass_of($engine_class, $base_class)) {
+      throw new ArcanistUsageException(
+        pht(
+          'Configured lint engine "%s" is not a subclass of "%s", but must '.
+          'be.',
+          $engine_class,
+          $base_class));
+    }
+
+    $engine = newv($engine_class, array())
+      ->setWorkingCopy($working_copy)
+      ->setConfigurationManager($config);
+
+    return $engine;
+  }
+
 }

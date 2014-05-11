@@ -3,7 +3,8 @@
 /**
  * Implements lint rules, like syntax checks for a specific language.
  *
- * @group linter
+ * @task info Human Readable Information
+ *
  * @stable
  */
 abstract class ArcanistLinter {
@@ -24,6 +25,54 @@ abstract class ArcanistLinter {
   private $customSeverityMap = array();
   private $customSeverityRules = array();
   private $config = array();
+
+
+/*  -(  Human Readable Information  )---------------------------------------- */
+
+
+  /**
+   * Return an optional informative URI where humans can learn more about this
+   * linter.
+   *
+   * For most linters, this should return a link to the project home page. This
+   * is shown on `arc linters`.
+   *
+   * @return string|null Optionally, return an informative URI.
+   * @task info
+   */
+  public function getInfoURI() {
+    return null;
+  }
+
+
+  /**
+   * Return a brief human-readable description of the linter.
+   *
+   * These should be a line or two, and are shown on `arc linters`.
+   *
+   * @return string|null Optionally, return a brief human-readable description.
+   * @task info
+   */
+  public function getInfoDescription() {
+    return null;
+  }
+
+
+  /**
+   * Return a human-readable linter name.
+   *
+   * These are used by `arc linters`, and can let you give a linter a more
+   * presentable name.
+   *
+   * @return string Human-readable linter name.
+   * @task info
+   */
+  public function getInfoName() {
+    return nonempty(
+      $this->getLinterName(),
+      $this->getLinterConfigurationName(),
+      get_class($this));
+  }
 
   public function getLinterPriority() {
     return 1.0;
@@ -267,6 +316,10 @@ abstract class ArcanistLinter {
 
   abstract public function lintPath($path);
   abstract public function getLinterName();
+
+  public function getVersion() {
+    return null;
+  }
 
   public function didRunLinters() {
     // This is a hook.

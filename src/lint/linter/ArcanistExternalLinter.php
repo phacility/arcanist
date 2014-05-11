@@ -381,10 +381,6 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     }
   }
 
-  public function getVersion() {
-    return null;
-  }
-
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 

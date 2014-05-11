@@ -5,6 +5,15 @@
  * errors and potential problems in XML files.
  */
 final class ArcanistXMLLinter extends ArcanistLinter {
+
+  public function getInfoName() {
+    return pht('SimpleXML Linter');
+  }
+
+  public function getInfoDescription() {
+    return pht('Uses SimpleXML to detect formatting errors in XML files.');
+  }
+
   public function getLinterName() {
     return 'XML';
   }

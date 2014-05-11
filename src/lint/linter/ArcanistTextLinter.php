@@ -2,8 +2,6 @@
 
 /**
  * Enforces basic text file rules.
- *
- * @group linter
  */
 final class ArcanistTextLinter extends ArcanistLinter {
 
@@ -18,6 +16,16 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EOF_WHITESPACE         = 9;
 
   private $maxLineLength = 80;
+
+  public function getInfoName() {
+    return pht('Basic Text Linter');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Enforces basic text rules like line length, character encoding, '.
+      'and trailing whitespace.');
+  }
 
   public function getLinterPriority() {
     return 0.5;

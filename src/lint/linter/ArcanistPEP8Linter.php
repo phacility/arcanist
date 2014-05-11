@@ -2,10 +2,22 @@
 
 /**
  * Uses "pep8.py" to enforce PEP8 rules for Python.
- *
- * @group linter
  */
 final class ArcanistPEP8Linter extends ArcanistExternalLinter {
+
+  public function getInfoName() {
+    return 'pep8';
+  }
+
+  public function getInfoURI() {
+    return 'https://pypi.python.org/pypi/pep8';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'pep8 is a tool to check your Python code against some of the '.
+      'style conventions in PEP 8.');
+  }
 
   public function getLinterName() {
     return 'PEP8';
