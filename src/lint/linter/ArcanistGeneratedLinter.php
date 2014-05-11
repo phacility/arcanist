@@ -2,10 +2,19 @@
 
 /**
  * Stops other linters from running on generated code.
- *
- * @group linter
  */
 final class ArcanistGeneratedLinter extends ArcanistLinter {
+
+  public function getInfoName() {
+    return pht('Generated Code');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Disables lint for files that are marked as "%s", indicating that they '.
+      'contain generated code.',
+      '@'.'generated');
+  }
 
   public function getLinterName() {
     return 'GEN';

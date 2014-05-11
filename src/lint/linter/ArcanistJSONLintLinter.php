@@ -4,6 +4,19 @@
  * A linter for JSON files.
  */
 final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
+
+  public function getInfoName() {
+    return 'JSON Lint';
+  }
+
+  public function getInfoURI() {
+    return 'https://github.com/zaach/jsonlint';
+  }
+
+  public function getInfoDescription() {
+    return pht('Use `jsonlint` to detect syntax errors in JSON files.');
+  }
+
   public function getLinterName() {
     return 'JSON';
   }

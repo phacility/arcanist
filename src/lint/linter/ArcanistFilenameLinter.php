@@ -2,12 +2,20 @@
 
 /**
  * Stifles creativity in choosing imaginative file names.
- *
- * @group linter
  */
 final class ArcanistFilenameLinter extends ArcanistLinter {
 
   const LINT_BAD_FILENAME = 1;
+
+  public function getInfoName() {
+    return pht('Filename');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Stifles developer creativity by requiring files have uninspired names '.
+      'containing only letters, numbers, period, hyphen and underscore.');
+  }
 
   public function getLinterName() {
     return 'NAME';

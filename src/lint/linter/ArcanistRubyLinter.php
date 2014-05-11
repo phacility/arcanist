@@ -2,10 +2,20 @@
 
 /**
  * Uses `ruby` to detect various errors in Ruby code.
- *
- * @group linter
  */
 final class ArcanistRubyLinter extends ArcanistExternalLinter {
+
+  public function getInfoURI() {
+    return 'https://www.ruby-lang.org/';
+  }
+
+  public function getInfoName() {
+    return pht('Ruby');
+  }
+
+  public function getInfoDescription() {
+    return pht('Use `ruby` to check for syntax errors in Ruby source files.');
+  }
 
   public function getLinterName() {
     return 'RUBY';

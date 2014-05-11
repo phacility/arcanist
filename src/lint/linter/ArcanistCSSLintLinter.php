@@ -5,6 +5,19 @@
  */
 final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
+  public function getInfoName() {
+    return 'CSSLint';
+  }
+
+  public function getInfoURI() {
+    return 'http://csslint.net';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Use `csslint` to detect issues with CSS source files.');
+  }
+
   public function getLinterName() {
     return 'CSSLint';
   }

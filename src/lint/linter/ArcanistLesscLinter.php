@@ -16,6 +16,20 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
   const LINT_PARSE_ERROR     = 6;
   const LINT_SYNTAX_ERROR    = 7;
 
+  public function getInfoName() {
+    return pht('Less');
+  }
+
+  public function getInfoURI() {
+    return 'https://lesscss.org/';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Use the `--lint` mode provided by `lessc` to detect errors in Less '.
+      'source files.');
+  }
+
   public function getLinterName() {
     return 'LESSC';
   }

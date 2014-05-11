@@ -160,6 +160,17 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
   private $output = array();
 
 
+  public function getInfoName() {
+    return pht('Script and Regex');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Run an external script, then parse its output with a regular '.
+      'expression. This is a generic binding that can be used to '.
+      'run custom lint scripts.');
+  }
+
 /* -(  Linting  )------------------------------------------------------------ */
 
 

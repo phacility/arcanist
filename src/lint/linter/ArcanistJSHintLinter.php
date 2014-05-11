@@ -2,10 +2,21 @@
 
 /**
  * Uses JSHint to detect errors and potential problems in JavaScript code.
- *
- * @group linter
  */
 final class ArcanistJSHintLinter extends ArcanistExternalLinter {
+
+  public function getInfoName() {
+    return 'JSHint';
+  }
+
+  public function getInfoURI() {
+    return 'http://www.jshint.com';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Use `jshint` to detect issues with Javascript source files.');
+  }
 
   public function getLinterName() {
     return 'JSHint';

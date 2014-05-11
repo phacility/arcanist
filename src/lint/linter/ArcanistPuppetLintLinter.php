@@ -5,6 +5,20 @@
  */
 final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
+  public function getInfoURI() {
+    return 'http://puppet-lint.com/';
+  }
+
+  public function getInfoName() {
+    return pht('puppet-lint');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Use `puppet-lint` to check that your Puppet manifests conform to '.
+      'the style guide.');
+  }
+
   public function getLinterName() {
     return 'PUPPETLINT';
   }

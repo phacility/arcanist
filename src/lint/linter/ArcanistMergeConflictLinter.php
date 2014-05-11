@@ -2,11 +2,20 @@
 
 /**
  * Checks files for unresolved merge conflicts.
- *
- * @group linter
  */
 final class ArcanistMergeConflictLinter extends ArcanistLinter {
+
   const LINT_MERGECONFLICT = 1;
+
+  public function getInfoName() {
+    return pht('Merge Conflicts');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Raises errors on unresolved merge conflicts in source files, to catch '.
+      'mistakes where a conflicted file is accidentally marked as resolved.');
+  }
 
   public function getLinterName() {
     return 'MERGECONFLICT';
@@ -31,7 +40,7 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
           $lineno + 1,
           0,
           self::LINT_MERGECONFLICT,
-          'This syntax indicates there is an unresolved merge conflict.');
+          pht('This syntax indicates there is an unresolved merge conflict.'));
       }
     }
   }
@@ -44,7 +53,7 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_MERGECONFLICT => 'Unresolved merge conflict',
+      self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),
     );
   }
 }
