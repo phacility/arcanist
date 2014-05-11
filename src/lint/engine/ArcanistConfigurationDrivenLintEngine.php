@@ -25,8 +25,12 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     PhutilTypeSpec::checkMap(
       $config,
       array(
+        'exclude' => 'optional string | list<string>',
         'linters' => 'map<string, map<string, wild>>',
       ));
+
+    $global_exclude = (array)idx($config, 'exclude', array());
+    $this->validateRegexps($global_exclude);
 
     $built_linters = array();
     $all_paths = $this->getPaths();
@@ -81,7 +85,11 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
 
       $console = PhutilConsole::getConsole();
       $console->writeLog("Examining paths for linter \"%s\".\n", $name);
-      $paths = $this->matchPaths($all_paths, $include, $exclude);
+      $paths = $this->matchPaths(
+        $all_paths,
+        $include,
+        $exclude,
+        $global_exclude);
       $console->writeLog(
         "Found %d matching paths for linter \"%s\".\n",
         count($paths),
@@ -126,7 +134,12 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     return $map;
   }
 
-  private function matchPaths(array $paths, array $include, array $exclude) {
+  private function matchPaths(
+    array $paths,
+    array $include,
+    array $exclude,
+    array $global_exclude) {
+
     $console = PhutilConsole::getConsole();
 
     $match = array();
@@ -173,6 +186,22 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         }
       }
 
+      if ($global_exclude) {
+        $console->writeLog("  Testing global \"exclude\" rules.\n");
+        foreach ($global_exclude as $rule) {
+          if (preg_match($rule, $path)) {
+            $console->writeLog(
+              "  Path matches global \"exclude\" rule: %s\n",
+              $rule);
+            continue 2;
+          } else {
+            $console->writeLog(
+              "  Path does not match global \"exclude\" rule: %s\n",
+              $rule);
+          }
+        }
+      }
+
       $console->writeLog("  Path matches.\n");
       $match[] = $path;
     }
@@ -180,17 +209,28 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     return $match;
   }
 
-  private function validateRegexps(array $regexps, $linter, $config) {
+  private function validateRegexps(
+    array $regexps,
+    $linter = null,
+    $config = null) {
+
     foreach ($regexps as $regexp) {
       $ok = @preg_match($regexp, '');
       if ($ok === false) {
-        throw new Exception(
-          pht(
-            'Regular expression "%s" (in "%s" configuration for linter "%s") '.
-            'is not a valid regular expression.',
-            $regexp,
-            $config,
-            $linter));
+        if ($linter) {
+          throw new Exception(
+            pht(
+              'Regular expression "%s" (in "%s" configuration for linter '.
+              '"%s") is not a valid regular expression.',
+              $regexp,
+              $config,
+              $linter));
+        } else {
+          throw new Exception(
+            pht(
+              'Regular expression "%s" is not a valid regular expression.',
+              $regexp));
+        }
       }
     }
   }
