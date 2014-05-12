@@ -91,6 +91,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return 'XHP';
   }
 
+  public function getLinterConfigurationName() {
+    return 'xhpast';
+  }
+
   public function getLintSeverityMap() {
     $disabled = ArcanistLintSeverity::SEVERITY_DISABLED;
     $advice   = ArcanistLintSeverity::SEVERITY_ADVICE;

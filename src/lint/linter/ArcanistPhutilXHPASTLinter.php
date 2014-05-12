@@ -46,6 +46,10 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return 'PHLXHP';
   }
 
+  public function getLinterConfigurationName() {
+    return 'phutil-xhpast';
+  }
+
   public function getCacheVersion() {
     $version = '2';
     $path = xhpast_get_binary_path();
