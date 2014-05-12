@@ -26,7 +26,11 @@ EOTEXT
   }
 
   public function getArguments() {
-    return array();
+    return array(
+      'verbose' => array(
+        'help' => pht('Show detailed information, including options.'),
+      ),
+    );
   }
 
   public function run() {
@@ -77,6 +81,7 @@ EOTEXT
         'uri' => $linter->getInfoURI(),
         'description' => $linter->getInfoDescription(),
         'exception' => $exception,
+        'options' => $linter->getLinterConfigurationOptions(),
       );
     }
 
@@ -137,9 +142,43 @@ EOTEXT
         $print_tail = true;
       }
 
+      $options = $linter['options'];
+      if ($options && $this->getArgument('verbose')) {
+        $console->writeOut(
+          "\n%s**%s**\n\n",
+          $pad,
+          pht('Configuration Options'));
+
+        $last_option = last_key($options);
+        foreach ($options as $option => $option_spec) {
+          $console->writeOut(
+            "%s__%s__ (%s)\n",
+            $pad,
+            $option,
+            $option_spec['type']);
+
+          $console->writeOut(
+            "%s\n",
+            phutil_console_wrap(
+              $option_spec['help'],
+              strlen($pad) + 2));
+
+          if ($option != $last_option) {
+            $console->writeOut("\n");
+          }
+        }
+        $print_tail = true;
+      }
+
       if ($print_tail) {
         $console->writeOut("\n");
       }
+    }
+
+    if (!$this->getArgument('verbose')) {
+      $console->writeOut(
+        "%s\n",
+        pht('(Run `arc linters --verbose` for more details.)'));
     }
   }
 

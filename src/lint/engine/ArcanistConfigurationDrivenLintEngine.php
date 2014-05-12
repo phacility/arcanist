@@ -47,6 +47,16 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         $linter = clone $linters[$type];
         $linter->setEngine($this);
         $more = $linter->getLinterConfigurationOptions();
+
+        foreach ($more as $key => $option_spec) {
+          PhutilTypeSpec::checkMap(
+            $option_spec,
+            array(
+              'type' => 'string',
+              'help' => 'string',
+            ));
+          $more[$key] = $option_spec['type'];
+        }
       } else {
         // We'll raise an error below about the invalid "type" key.
         $linter = null;

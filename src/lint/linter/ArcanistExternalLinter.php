@@ -442,15 +442,33 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     }
   }
 
-
   public function getLinterConfigurationOptions() {
     $options = array(
-      'bin' => 'optional string | list<string>',
-      'flags' => 'optional list<string>',
+      'bin' => array(
+        'type' => 'optional string | list<string>',
+        'help' => pht(
+          'Specify a string (or list of strings) identifying the binary '.
+          'which should be invoked to execute this linter. This overrides '.
+          'the default binary. If you provide a list of possible binaries, '.
+          'the first one which exists will be used.')
+      ),
+      'flags' => array(
+        'type' => 'optional list<string>',
+        'help' => pht(
+          'Provide a list of additional flags to pass to the linter on the '.
+          'command line.'),
+      ),
     );
 
     if ($this->shouldUseInterpreter()) {
-      $options['interpreter'] = 'optional string | list<string>';
+      $options['interpreter'] = array(
+        'type' => 'optional string | list<string>',
+        'help' => pht(
+          'Specify a string (or list of strings) identifying the interpreter '.
+          'which should be used to invoke the linter binary. If you provide '.
+          'a list of possible interpreters, the first one that exists '.
+          'will be used.'),
+      );
     }
 
     return $options + parent::getLinterConfigurationOptions();

@@ -2,8 +2,6 @@
 
 /**
  * C# linter for Arcanist.
- *
- * @group linter
  */
 final class ArcanistCSharpLinter extends ArcanistLinter {
 
@@ -27,8 +25,19 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
   public function getLinterConfigurationOptions() {
     $options = parent::getLinterConfigurationOptions();
 
-    $options["discovery"] = 'map<string, list<string>>';
-    $options["binary"] = 'string';
+    $options['discovery'] = array(
+      'type' => 'map<string, list<string>>',
+      'help' => pht('Provide a discovery map.'),
+    );
+
+
+    // TODO: This should probably be replaced with "bin" when this moves
+    // to extend ExternalLinter.
+
+    $options['binary'] = array(
+      'type' => 'string',
+      'help' => pht('Override default binary.'),
+    );
 
     return $options;
   }

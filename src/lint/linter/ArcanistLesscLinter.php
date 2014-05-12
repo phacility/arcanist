@@ -40,8 +40,17 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
 
   public function getLinterConfigurationOptions() {
     return parent::getLinterConfigurationOptions() + array(
-      'lessc.strict-math' => 'optional bool',
-      'lessc.strict-units' => 'optional bool',
+      'lessc.strict-math' => array(
+        'type' => 'optional bool',
+        'help' => pht(
+          'Enable strict math, which only processes mathematical expressions '.
+          'inside extraneous parentheses.'),
+      ),
+      'lessc.strict-units' => array(
+        'type' => 'optional bool',
+        'help' => pht(
+          'Enable strict handling of units in expressions.'),
+      ),
     );
   }
 

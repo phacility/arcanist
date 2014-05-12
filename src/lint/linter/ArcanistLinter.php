@@ -74,6 +74,7 @@ abstract class ArcanistLinter {
       get_class($this));
   }
 
+
   public function getLinterPriority() {
     return 1.0;
   }
@@ -360,8 +361,18 @@ abstract class ArcanistLinter {
     }
 
     return array(
-      'severity' => 'optional map<string|int, string>',
-      'severity.rules' => 'optional map<string, string>',
+      'severity' => array(
+        'type' => 'optional map<string|int, string>',
+        'help' => pht(
+          'Provide a map from lint codes to adjusted severity levels: error, '.
+          'warning, advice, autofix or disabled.')
+      ),
+      'severity.rules' => array(
+        'type' => 'optional map<string, string>',
+        'help' => pht(
+          'Provide a map of regular expressions to severity levels. All '.
+          'matching codes have their severity adjusted.'),
+      ),
     );
   }
 

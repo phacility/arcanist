@@ -33,7 +33,12 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
   public function getLinterConfigurationOptions() {
     $options = array(
-      'text.max-line-length' => 'optional int',
+      'text.max-line-length' => array(
+        'type' => 'optional int',
+        'help' => pht(
+          'Adjust the maximum line length before a warning is raised. By '.
+          'default, a warning is raised on lines exceeding 80 characters.'),
+      ),
     );
 
     return $options + parent::getLinterConfigurationOptions();
