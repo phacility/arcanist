@@ -7,11 +7,11 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
   abstract protected function buildFutures(array $paths);
   abstract protected function resolveFuture($path, Future $future);
 
-  protected function getFuturesLimit() {
+  final protected function getFuturesLimit() {
     return 8;
   }
 
-  public function willLintPaths(array $paths) {
+  final public function willLintPaths(array $paths) {
     $limit = $this->getFuturesLimit();
     $this->futures = Futures(array())->limit($limit);
     foreach ($this->buildFutures($paths) as $path => $future) {
@@ -19,10 +19,9 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
     }
   }
 
-  public function lintPath($path) {
-  }
+  final public function lintPath($path) {}
 
-  public function didRunLinters() {
+  final public function didRunLinters() {
     if ($this->futures) {
       foreach ($this->futures as $path => $future) {
         $this->willLintPath($path);

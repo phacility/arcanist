@@ -88,11 +88,11 @@ abstract class ArcanistLinter {
     return $this;
   }
 
-  public function getActivePath() {
+  final public function getActivePath() {
     return $this->activePath;
   }
 
-  public function getOtherLocation($offset, $path = null) {
+  final public function getOtherLocation($offset, $path = null) {
     if ($path === null) {
       $path = $this->getActivePath();
     }
@@ -108,21 +108,21 @@ abstract class ArcanistLinter {
     );
   }
 
-  public function stopAllLinters() {
+  final public function stopAllLinters() {
     $this->stopAllLinters = true;
     return $this;
   }
 
-  public function didStopAllLinters() {
+  final public function didStopAllLinters() {
     return $this->stopAllLinters;
   }
 
-  public function addPath($path) {
+  final public function addPath($path) {
     $this->paths[$path] = $path;
     return $this;
   }
 
-  public function setPaths(array $paths) {
+  final public function setPaths(array $paths) {
     $this->paths = $paths;
     return $this;
   }
@@ -131,7 +131,7 @@ abstract class ArcanistLinter {
    * Filter out paths which this linter doesn't act on (for example, because
    * they are binaries and the linter doesn't apply to binaries).
    */
-  private function filterPaths($paths) {
+  final private function filterPaths($paths) {
     $engine = $this->getEngine();
 
     $keep = array();
@@ -154,16 +154,16 @@ abstract class ArcanistLinter {
     return $keep;
   }
 
-  public function getPaths() {
+  final public function getPaths() {
     return $this->filterPaths(array_values($this->paths));
   }
 
-  public function addData($path, $data) {
+  final public function addData($path, $data) {
     $this->data[$path] = $data;
     return $this;
   }
 
-  protected function getData($path) {
+  final protected function getData($path) {
     if (!array_key_exists($path, $this->data)) {
       $this->data[$path] = $this->getEngine()->loadData($path);
     }
@@ -175,7 +175,7 @@ abstract class ArcanistLinter {
     return $this;
   }
 
-  protected function getEngine() {
+  final protected function getEngine() {
     return $this->engine;
   }
 
@@ -183,11 +183,11 @@ abstract class ArcanistLinter {
     return 0;
   }
 
-  public function getLintMessageFullCode($short_code) {
+  final public function getLintMessageFullCode($short_code) {
     return $this->getLinterName().$short_code;
   }
 
-  public function getLintMessageSeverity($code) {
+  final public function getLintMessageSeverity($code) {
     $map = $this->customSeverityMap;
     if (isset($map[$code])) {
       return $map[$code];
@@ -211,12 +211,12 @@ abstract class ArcanistLinter {
     return ArcanistLintSeverity::SEVERITY_ERROR;
   }
 
-  public function isMessageEnabled($code) {
+  final public function isMessageEnabled($code) {
     return ($this->getLintMessageSeverity($code) !==
             ArcanistLintSeverity::SEVERITY_DISABLED);
   }
 
-  public function getLintMessageName($code) {
+  final public function getLintMessageName($code) {
     $map = $this->getLintNameMap();
     if (isset($map[$code])) {
       return $map[$code];
@@ -224,7 +224,7 @@ abstract class ArcanistLinter {
     return "Unknown lint message!";
   }
 
-  protected function addLintMessage(ArcanistLintMessage $message) {
+  final protected function addLintMessage(ArcanistLintMessage $message) {
     if (!$this->getEngine()->getCommitHookMode()) {
       $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
       $path = Filesystem::resolvePath($message->getPath(), $root);
@@ -234,11 +234,11 @@ abstract class ArcanistLinter {
     return $message;
   }
 
-  public function getLintMessages() {
+  final public function getLintMessages() {
     return $this->messages;
   }
 
-  protected function raiseLintAtLine(
+  final protected function raiseLintAtLine(
     $line,
     $char,
     $code,
@@ -260,14 +260,14 @@ abstract class ArcanistLinter {
     return $this->addLintMessage($message);
   }
 
-  protected function raiseLintAtPath(
+  final protected function raiseLintAtPath(
     $code,
     $desc) {
 
     return $this->raiseLintAtLine(null, null, $code, $desc, null, null);
   }
 
-  protected function raiseLintAtOffset(
+  final protected function raiseLintAtOffset(
     $offset,
     $code,
     $desc,
@@ -316,7 +316,7 @@ abstract class ArcanistLinter {
     // This is a hook.
   }
 
-  protected function isCodeEnabled($code) {
+  final protected function isCodeEnabled($code) {
     $severity = $this->getLintMessageSeverity($code);
     return $this->getEngine()->isSeverityEnabled($severity);
   }

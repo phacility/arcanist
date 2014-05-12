@@ -324,7 +324,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @return string Command to execute the raw linter.
    * @task exec
    */
-  protected function getExecutableCommand() {
+  final protected function getExecutableCommand() {
     $this->checkBinaryConfiguration();
 
     $interpreter = null;
@@ -351,7 +351,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @return list<string> Composed flags.
    * @task exec
    */
-  protected function getCommandFlags() {
+  final protected function getCommandFlags() {
     $mandatory_flags = $this->getMandatoryFlags();
     if (!is_array($mandatory_flags)) {
       phutil_deprecated(
@@ -394,7 +394,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     return csprintf('%s', $path);
   }
 
-  protected function buildFutures(array $paths) {
+  final protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 
     $bin = csprintf('%C %Ls', $executable, $this->getCommandFlags());
@@ -420,7 +420,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     return $futures;
   }
 
-  protected function resolveFuture($path, Future $future) {
+  final protected function resolveFuture($path, Future $future) {
     list($err, $stdout, $stderr) = $future->resolve();
     if ($err && !$this->shouldExpectCommandErrors()) {
       $future->resolvex();

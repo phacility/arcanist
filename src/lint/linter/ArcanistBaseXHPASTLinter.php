@@ -9,7 +9,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   private $trees = array();
   private $exceptions = array();
 
-  protected final function raiseLintAtToken(
+  final protected function raiseLintAtToken(
     XHPASTToken $token,
     $code,
     $desc,
@@ -22,7 +22,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
       $replace);
   }
 
-  protected final function raiseLintAtNode(
+  final protected function raiseLintAtNode(
     XHPASTNode $node,
     $code,
     $desc,

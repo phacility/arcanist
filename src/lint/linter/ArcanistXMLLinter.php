@@ -30,10 +30,6 @@ final class ArcanistXMLLinter extends ArcanistLinter {
     return LIBXML_VERSION;
   }
 
-  public function getLintMessageName($code) {
-    return 'LibXML Error';
-  }
-
   public function lintPath($path) {
     libxml_use_internal_errors(true);
     libxml_clear_errors();
@@ -49,7 +45,7 @@ final class ArcanistXMLLinter extends ArcanistLinter {
       $message->setLine($error->line);
       $message->setChar($error->column ? $error->column : null);
       $message->setCode($this->getLintMessageFullCode($error->code));
-      $message->setName($this->getLintMessageName($error->code));
+      $message->setName('LibXML Error');
       $message->setDescription(trim($error->message));
 
       switch ($error->level) {
