@@ -2,12 +2,8 @@
 
 /**
  * Lint engine which enforces libphutil rules.
- *
- * TODO: Deal with PhabricatorLintEngine extending this and then finalize it.
- *
- * @group linter
  */
-class PhutilLintEngine extends ArcanistLintEngine {
+final class PhutilLintEngine extends ArcanistLintEngine {
 
   public function buildLinters() {
     $linters = array();
