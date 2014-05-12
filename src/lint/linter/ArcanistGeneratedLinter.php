@@ -28,6 +28,10 @@ final class ArcanistGeneratedLinter extends ArcanistLinter {
     return 'generated';
   }
 
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
+
   public function lintPath($path) {
     $data = $this->getData($path);
     if (preg_match('/@'.'generated/', $data)) {

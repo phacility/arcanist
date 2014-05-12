@@ -28,6 +28,10 @@ final class ArcanistNoLintLinter extends ArcanistLinter {
     return 'nolint';
   }
 
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
+
   public function lintPath($path) {
     $data = $this->getData($path);
     if (preg_match('/@'.'nolint/', $data)) {

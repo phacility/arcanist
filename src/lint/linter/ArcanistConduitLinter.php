@@ -95,4 +95,8 @@ final class ArcanistConduitLinter extends ArcanistLinter {
       'ArcanistConduitLinter does not support a name map.'
     );
   }
+
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
 }

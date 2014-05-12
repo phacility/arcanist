@@ -355,6 +355,10 @@ abstract class ArcanistLinter {
   }
 
   public function getLinterConfigurationOptions() {
+    if (!$this->canCustomizeLintSeverities()) {
+      return array();
+    }
+
     return array(
       'severity' => 'optional map<string|int, string>',
       'severity.rules' => 'optional map<string, string>',
@@ -372,6 +376,10 @@ abstract class ArcanistLinter {
 
     switch ($key) {
       case 'severity':
+        if (!$this->canCustomizeLintSeverities()) {
+          break;
+        }
+
         $custom = array();
         foreach ($value as $code => $severity) {
           if (empty($sev_map[$severity])) {
@@ -388,7 +396,12 @@ abstract class ArcanistLinter {
 
         $this->setCustomSeverityMap($custom);
         return;
+
       case 'severity.rules':
+        if (!$this->canCustomizeLintSeverities()) {
+          break;
+        }
+
         foreach ($value as $rule => $severity) {
           if (@preg_match($rule, '') === false) {
             throw new Exception(
@@ -410,6 +423,10 @@ abstract class ArcanistLinter {
     }
 
     throw new Exception("Incomplete implementation: {$key}!");
+  }
+
+  protected function canCustomizeLintSeverities() {
+    return true;
   }
 
   protected function shouldLintBinaryFiles() {
