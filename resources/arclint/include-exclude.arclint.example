@@ -1,0 +1,13 @@
+{
+  "exclude": [
+    "(^externals/)",
+    "(\\.example$)"
+  ],
+  "linters": {
+    "pep8": {
+      "type": "pep8",
+      "include": "(\\.py$)",
+      "exclude": "(^legacy/)"
+    }
+  }
+}
