@@ -1,23 +1,14 @@
 <?php
 
-/**
- * @group linter
- */
 final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   const LINT_ARRAY_COMBINE           = 2;
   const LINT_DEPRECATED_FUNCTION     = 3;
   const LINT_UNSAFE_DYNAMIC_STRING   = 4;
 
-  private $xhpastLinter;
   private $deprecatedFunctions = array();
   private $dynamicStringFunctions = array();
   private $dynamicStringClasses = array();
-
-  public function setXHPASTLinter(ArcanistXHPASTLinter $linter) {
-    $this->xhpastLinter = $linter;
-    return $this;
-  }
 
   public function setDeprecatedFunctions($map) {
     $this->deprecatedFunctions = $map;
@@ -32,15 +23,6 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   public function setDynamicStringClasses($map) {
     $this->dynamicStringClasses = $map;
     return $this;
-  }
-
-  public function setEngine(ArcanistLintEngine $engine) {
-    if (!$this->xhpastLinter) {
-      throw new Exception(
-        'Call setXHPASTLinter() before using ArcanistPhutilXHPASTLinter.');
-    }
-    $this->xhpastLinter->setEngine($engine);
-    return parent::setEngine($engine);
   }
 
   public function getLintNameMap() {
@@ -73,17 +55,8 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return $version;
   }
 
-  protected function buildFutures(array $paths) {
-    return $this->xhpastLinter->buildFutures($paths);
-  }
-
-  public function willLintPath($path) {
-    $this->xhpastLinter->willLintPath($path);
-    return parent::willLintPath($path);
-  }
-
   protected function resolveFuture($path, Future $future) {
-    $tree = $this->xhpastLinter->getXHPASTTreeForPath($path);
+    $tree = $this->getXHPASTLinter()->getXHPASTTreeForPath($path);
     if (!$tree) {
       return;
     }

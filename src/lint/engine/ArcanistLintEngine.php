@@ -65,6 +65,8 @@ abstract class ArcanistLintEngine {
   private $postponedLinters = array();
   private $configurationManager;
 
+  private $linterResources = array();
+
   public function __construct() {
 
   }
@@ -545,6 +547,40 @@ abstract class ArcanistLintEngine {
     // W292 is same as TXT4 (File Does Not End in Newline).
     // W293 is same as TXT6 (Trailing Whitespace).
     return '--ignore=E101,E501,W291,W292,W293';
+  }
+
+
+  /**
+   * Get a named linter resource shared by another linter.
+   *
+   * This mechanism allows linters to share arbitrary resources, like the
+   * results of computation. If several linters need to perform the same
+   * expensive computation step, they can use a named resource to synchronize
+   * construction of the result so it doesn't need to be built multiple
+   * times.
+   *
+   * @param string  Resource identifier.
+   * @param wild    Optionally, default value to return if resource does not
+   *                exist.
+   * @return wild   Resource, or default value if not present.
+   */
+  public function getLinterResource($key, $default = null) {
+    return idx($this->linterResources, $key, $default);
+  }
+
+
+  /**
+   * Set a linter resource that other linters can accesss.
+   *
+   * See @{method:getLinterResource} for a description of this mechanism.
+   *
+   * @param string Resource identifier.
+   * @param wild   Resource.
+   * @return this
+   */
+  public function setLinterResource($key, $value) {
+    $this->linterResources[$key] = $value;
+    return $this;
   }
 
 
