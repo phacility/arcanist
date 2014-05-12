@@ -150,7 +150,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   final public function setFlags($flags) {
-    $this->flags = (array) $flags;
+    $this->flags = (array)$flags;
     return $this;
   }
 

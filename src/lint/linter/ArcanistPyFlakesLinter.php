@@ -28,9 +28,8 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $config = $this->getEngine()->getConfigurationManager();
-    $prefix = $config->getConfigFromAnySource('lint.pyflakes.prefix');
-    $bin = $config->getConfigFromAnySource('lint.pyflakes.bin', 'pyflakes');
+    $prefix = $this->getDeprecatedConfiguration('lint.pyflakes.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.pyflakes.bin', 'pyflakes');
 
     if ($prefix) {
       return $prefix.'/'.$bin;

@@ -14,10 +14,8 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    // TODO: Warn that all of this is deprecated.
-    $config = $this->getEngine()->getConfigurationManager();
-    $prefix = $config->getConfigFromAnySource('lint.cpplint.prefix');
-    $bin = $config->getConfigFromAnySource('lint.cpplint.bin', 'cpplint.py');
+    $prefix = $this->getDeprecatedConfiguration('lint.cpplint.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.cpplint.bin', 'cpplint.py');
 
     if ($prefix) {
       return $prefix.'/'.$bin;
@@ -44,8 +42,7 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   protected function getDefaultFlags() {
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource('lint.cpplint.options', array());
+    return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

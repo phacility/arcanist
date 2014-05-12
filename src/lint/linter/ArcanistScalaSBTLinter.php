@@ -2,8 +2,6 @@
 
 /**
  * Uses `sbt compile` to detect various warnings/errors in Scala code.
- *
- * @group linter
  */
 final class ArcanistScalaSBTLinter extends ArcanistLinter {
 
@@ -26,22 +24,9 @@ final class ArcanistScalaSBTLinter extends ArcanistLinter {
   private function getSBTPath() {
     $sbt_bin = "sbt";
 
-    // Use the SBT prefix specified in the config file
-    $config = $this->getEngine()->getConfigurationManager();
-    $prefix = $config->getConfigFromAnySource('lint.scala_sbt.prefix');
+    $prefix = $this->getDeprecatedConfiguration('lint.scala_sbt.prefix');
     if ($prefix !== null) {
       $sbt_bin = $prefix . $sbt_bin;
-    }
-
-    if (!Filesystem::pathExists($sbt_bin)) {
-
-      list($err) = exec_manual('which %s', $sbt_bin);
-      if ($err) {
-        throw new ArcanistUsageException(
-          "SBT does not appear to be installed on this system. Install it or ".
-          "add 'lint.scala_sbt.prefix' in your .arcconfig to point to ".
-          "the directory where it resides.");
-      }
     }
 
     return $sbt_bin;

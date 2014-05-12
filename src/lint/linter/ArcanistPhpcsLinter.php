@@ -48,13 +48,8 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultFlags() {
-    // TODO: Deprecation warnings.
-
-    $config = $this->getEngine()->getConfigurationManager();
-
-    $options = $config->getConfigFromAnySource('lint.phpcs.options', array());
-
-    $standard = $config->getConfigFromAnySource('lint.phpcs.standard');
+    $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
+    $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
     if (!empty($standard)) {
       if (is_array($options)) {
         $options[] = '--standard='.$standard;
@@ -67,9 +62,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    // TODO: Deprecation warnings.
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource('lint.phpcs.bin', 'phpcs');
+    return $this->getDeprecatedConfiguration('lint.phpcs.bin', 'phpcs');
   }
 
   public function getVersion() {
