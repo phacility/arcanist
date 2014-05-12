@@ -7,14 +7,26 @@
  *   # If you define a symbol, it must not duplicate another definition.
  *   # If you define a class or interface in a file, it MUST be the only symbol
  *     defined in that file.
- *
- * @group linter
  */
 final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
   const LINT_UNKNOWN_SYMBOL               = 1;
   const LINT_DUPLICATE_SYMBOL             = 2;
   const LINT_ONE_CLASS_PER_FILE           = 3;
+
+  public function getInfoName() {
+    return 'Phutil Library Linter';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Make sure all the symbols use in a libphutil library are defined and '.
+      'known. This linter is specific to PHP source in libphutil libraries.');
+  }
+
+  public function getLinterConfigurationName() {
+    return 'phutil-library';
+  }
 
   public function getLintNameMap() {
     return array(

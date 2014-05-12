@@ -10,6 +10,16 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private $dynamicStringFunctions = array();
   private $dynamicStringClasses = array();
 
+  public function getInfoName() {
+    return 'XHPAST/libphutil Lint';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Use XHPAST to run libphutil-specific rules on a PHP library. This '.
+      'linter is intended for use in Phabricator libraries and extensions.');
+  }
+
   public function setDeprecatedFunctions($map) {
     $this->deprecatedFunctions = $map;
     return $this;
