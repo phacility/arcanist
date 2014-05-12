@@ -16,6 +16,9 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
   const LINT_PARSE_ERROR     = 6;
   const LINT_SYNTAX_ERROR    = 7;
 
+  private $strictMath = false;
+  private $strictUnits = false;
+
   public function getInfoName() {
     return pht('Less');
   }
@@ -52,6 +55,19 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
           'Enable strict handling of units in expressions.'),
       ),
     );
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'lessc.strict-math':
+        $this->strictMath = $value;
+        return;
+      case 'lessc.strict-units':
+        $this->strictUnits = $value;
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
   }
 
   public function getLintNameMap() {
@@ -104,10 +120,8 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
     return array(
       '--lint',
       '--no-color',
-      '--strict-math='.
-        ($this->getConfig('lessc.strict-math') ? 'on' : 'off'),
-      '--strict-units='.
-        ($this->getConfig('lessc.strict-units') ? 'on' : 'off'));
+      '--strict-math='.($this->strictMath ? 'on' : 'off'),
+      '--strict-units='.($this->strictUnits ? 'on' : 'off'));
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

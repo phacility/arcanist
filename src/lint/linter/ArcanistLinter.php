@@ -24,7 +24,6 @@ abstract class ArcanistLinter {
 
   private $customSeverityMap = array();
   private $customSeverityRules = array();
-  private $config = array();
 
 
 /*  -(  Human Readable Information  )---------------------------------------- */
@@ -87,15 +86,6 @@ abstract class ArcanistLinter {
   public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
-  }
-
-  public function setConfig(array $config) {
-    $this->config = $config;
-    return $this;
-  }
-
-  protected function getConfig($key, $default = null) {
-    return idx($this->config, $key, $default);
   }
 
   public function getActivePath() {
