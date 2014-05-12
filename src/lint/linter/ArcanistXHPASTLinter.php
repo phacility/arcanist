@@ -147,12 +147,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   public function getLinterConfigurationOptions() {
     return parent::getLinterConfigurationOptions() + array(
       'xhpast.naminghook' => array(
-        'type' => 'optional ArcanistXHPASTLintNamingHook',
-        'help' => pht(''),
+        'type' => 'optional string',
+        'help' => pht(
+          'Name of a concrete subclass of ArcanistXHPASTLintNamingHook which '.
+          'enforces more granular naming convention rules for symbols.'),
       ),
       'xhpast.switchhook' => array(
-        'type' => 'optional ArcanistXHPASTLintSwitchHook',
-        'help' => pht(''),
+        'type' => 'optional string',
+        'help' => pht(
+          'Name of a concrete subclass of ArcanistXHPASTLintSwitchHook which '.
+          'tunes the analysis of switch() statements for this linter.'),
       ),
     );
   }
