@@ -49,7 +49,7 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install Cpplint using `apt-get install cpplint` or similar.');
+    return pht('Install Cppcheck using `apt-get install cppcheck` or similar.');
   }
 
   protected function getMandatoryFlags() {
