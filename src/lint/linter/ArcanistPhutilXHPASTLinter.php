@@ -59,6 +59,46 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return $version;
   }
 
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'phutil-xhpast.deprecated.functions' => array(
+        'type' => 'optional map<string, string>',
+        'help' => pht(
+          'Functions which should should be considered deprecated.'),
+      ),
+      'phutil-xhpast.dynamic-string.functions' => array(
+        'type' => 'optional map<string, string>',
+        'help' => pht(
+          'Functions which should should not be used because they represent '.
+          'the unsafe usage of dynamic strings.'),
+      ),
+      'phutil-xhpast.dynamic-string.classes' => array(
+        'type' => 'optional map<string, string>',
+        'help' => pht(
+          'Classes which should should not be used because they represent the '.
+          'unsafe usage of dynamic strings.'),
+      ),
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'phutil-xhpast.deprecated.functions':
+        $this->setDeprecatedFunctions($value);
+        return;
+      case 'phutil-xhpast.dynamic-string.functions':
+        $this->setDynamicStringFunctions($value);
+        return;
+      case 'phutil-xhpast.dynamic-string.classes':
+        $this->setDynamicStringClasses($value);
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
+  }
+
   protected function resolveFuture($path, Future $future) {
     $tree = $this->getXHPASTLinter()->getXHPASTTreeForPath($path);
     if (!$tree) {
