@@ -5,7 +5,7 @@
  * https://git.gnome.org/browse/libxml2/tree/test.
  */
 final class ArcanistXMLLinterTestCase extends ArcanistArcanistLinterTestCase {
-  public function testLintPath() {
+  public function testXMLLint() {
     $this->executeTestsInDirectory(
       dirname(__FILE__).'/xml/',
       new ArcanistXMLLinter());
