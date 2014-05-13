@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Tests for @{class:ArcanistXHPASTLinter}.
- *
- * @group testcase
- */
 final class ArcanistXHPASTLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
@@ -17,7 +12,7 @@ final class ArcanistXHPASTLinterTestCase
           => ArcanistLintSeverity::SEVERITY_WARNING,
       ));
 
-    return $this->executeTestsInDirectory(
+    $this->executeTestsInDirectory(
       dirname(__FILE__).'/xhpast/',
       $linter);
   }

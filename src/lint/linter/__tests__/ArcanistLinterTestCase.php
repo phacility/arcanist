@@ -2,8 +2,6 @@
 
 /**
  * Facilitates implementation of test cases for @{class:ArcanistLinter}s.
- *
- * @group testcase
  */
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
@@ -154,7 +152,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $char = $message->getChar();
       $code = $message->getCode();
       $name = $message->getName();
-      $message_key = $sev.":".$line.":".$char;
+      $message_key = $sev.':'.$line.':'.$char;
       $message_map[$message_key] = $message;
       $seen[] = $message_key;
       $raised[] = "  {$sev} at line {$line}, char {$char}: {$code} {$name}";
@@ -173,7 +171,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $seen   = array_fill_keys($seen, true);
 
     if (!$raised) {
-      $raised = array("No messages.");
+      $raised = array('No messages.');
     }
     $raised = "Actually raised:\n".implode("\n", $raised);
 
@@ -186,7 +184,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     }
 
     foreach (array_diff_key($seen, $expect) as $surprising => $ignored) {
-
       $message = $message_map[$surprising];
       $message_info = $message->getDescription();
 
@@ -205,6 +202,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $this->assertEqual(
       $expected,
       $actual,
-      "File as patched by lint did not match the expected patched file.");
+      'File as patched by lint did not match the expected patched file.');
   }
 }

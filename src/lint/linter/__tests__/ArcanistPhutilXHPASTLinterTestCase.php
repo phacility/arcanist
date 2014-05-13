@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group testcase
- */
 final class ArcanistPhutilXHPASTLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
@@ -12,7 +9,7 @@ final class ArcanistPhutilXHPASTLinterTestCase
       'deprecated_function' => 'This function is most likely deprecated.',
     ));
 
-    return $this->executeTestsInDirectory(
+    $this->executeTestsInDirectory(
       dirname(__FILE__).'/phlxhp/',
       $linter);
   }
