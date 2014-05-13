@@ -204,14 +204,14 @@ try {
   if ($force_conduit) {
     $conduit_uri = $force_conduit;
   } else {
-    $project_conduit_uri = $configuration_manager->getProjectConfig(
+    $conduit_uri = $configuration_manager->getConfigFromAnySource(
       'phabricator.uri');
-    if ($project_conduit_uri) {
-      $conduit_uri = $project_conduit_uri;
-    } else {
-      $conduit_uri = idx($global_config, 'default');
+    if ($conduit_uri === null) {
+      $conduit_uri = $configuration_manager->getConfigFromAnySource(
+        'default');
     }
   }
+
   if ($conduit_uri) {
     // Set the URI path to '/api/'. TODO: Originally, I contemplated letting
     // you deploy Phabricator somewhere other than the domain root, but ended
