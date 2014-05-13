@@ -17,6 +17,27 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
   private $reports;
 
+  private $phpcsBin;
+  private $phpcsOptions;
+  private $phpcsStandard;
+  private $phpcsStdin = true;
+
+  public function setPhpcsBin($value) {
+    $this->phpcsBin = $value;
+  }
+
+  public function setPhpcsOptions($value) {
+    $this->phpcsOptions = $value;
+  }
+
+  public function setPhpcsStandard($value) {
+    $this->phpcsStandard = $value;
+  }
+
+  public function setPhpcsStdin($value) {
+    $this->phpcsStdin = $value;
+  }
+
   public function getInfoName() {
     return 'PHP_CodeSniffer';
   }
@@ -48,8 +69,9 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultFlags() {
-    $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
-    $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
+    $options = $this->getDefaultOptions();
+    $standard = $this->phpcsStandard;
+
     if (!empty($standard)) {
       if (is_array($options)) {
         $options[] = '--standard='.$standard;
@@ -62,7 +84,11 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    return $this->getDeprecatedConfiguration('lint.phpcs.bin', 'phpcs');
+    return !empty($this->phpcsBin) ? $this->phpcsBin : 'phpcs';
+  }
+
+  public function getDefaultOptions() {
+    return !empty($this->phpcsOptions) ? $this->phpcsOptions : array();
   }
 
   public function getVersion() {
@@ -82,7 +108,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function supportsReadDataFromStdin() {
-    return true;
+    return $this->phpcsStdin;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -146,4 +172,53 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return $code;
   }
 
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'phpcs.bin' => array(
+        'type' => 'optional string',
+        'help' => pht(
+          'Path to PHP CodeSniffer binary.'
+        ),
+      ),
+      'phpcs.options' => array(
+        'type' => 'optional string',
+        'help' => pht(
+          'Extra options to use in PHP CodeSniffer.'
+        ),
+      ),
+      'phpcs.standard' => array(
+        'type' => 'string',
+        'help' => pht(
+          'Coding standard to use in PHP CodeSniffer.'
+        ),
+      ),
+      'phpcs.stdin' => array(
+        'type' => 'optional bool',
+        'help' => pht(
+          'Use PHP CodeSniffer STDIN.'
+        ),
+      )
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'phpcs.bin':
+        $this->setPhpcsBin($value);
+        return;
+      case 'phpcs.options':
+        $this->setPhpcsOptions($value);
+        return;
+      case 'phpcs.standard':
+        $this->setPhpcsStandard($value);
+        return;
+      case 'phpcs.stdin':
+        $this->setPhpcsStdin($value);
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
+  }
 }
