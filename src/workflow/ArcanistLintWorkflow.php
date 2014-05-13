@@ -96,7 +96,8 @@ EOTEXT
           "With 'summary', show lint warnings in a more compact format. ".
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'none', show no lint warnings. ".
-          "With 'compiler', show lint warnings in suitable for your editor."
+          "With 'compiler', show lint warnings in suitable for your editor. ".
+          "With 'xml', show lint warnings in the Checkstyle XML format."
       ),
       'only-new' => array(
         'param' => 'bool',
@@ -456,6 +457,9 @@ EOTEXT
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
+      case 'xml':
+        $renderer = new ArcanistLintCheckstyleXMLRenderer();
+        break;
       default:
         $renderer = new ArcanistLintConsoleRenderer();
         $renderer->setShowAutofixPatches($prompt_autofix_patches);
@@ -513,6 +517,8 @@ EOTEXT
         $file_hashes[$old_file] = md5_file($old_file);
       }
     }
+
+    $console->writeOut('%s', $renderer->renderPostamble());
 
     if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
