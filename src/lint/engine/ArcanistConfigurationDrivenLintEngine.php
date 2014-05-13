@@ -22,15 +22,21 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
 
     $linters = $this->loadAvailableLinters();
 
-    PhutilTypeSpec::checkMap(
-      $config,
-      array(
-        'exclude' => 'optional string | list<string>',
-        'linters' => 'map<string, map<string, wild>>',
-      ));
+    try {
+      PhutilTypeSpec::checkMap(
+        $config,
+        array(
+          'exclude' => 'optional regex | list<regex>',
+          'linters' => 'map<string, map<string, wild>>',
+        ));
+    } catch (PhutilTypeCheckException $ex) {
+      $message = pht(
+        'Error in parsing ".arclint" file: %s',
+        $ex->getMessage());
+      throw new PhutilProxyException($message, $ex);
+    }
 
     $global_exclude = (array)idx($config, 'exclude', array());
-    $this->validateRegexps($global_exclude);
 
     $built_linters = array();
     $all_paths = $this->getPaths();
@@ -63,13 +69,21 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         $more = array();
       }
 
-      PhutilTypeSpec::checkMap(
-        $spec,
-        array(
-          'type' => 'string',
-          'include' => 'optional string | list<string>',
-          'exclude' => 'optional string | list<string>',
-        ) + $more);
+      try {
+        PhutilTypeSpec::checkMap(
+          $spec,
+          array(
+            'type' => 'string',
+            'include' => 'optional regex | list<regex>',
+            'exclude' => 'optional regex | list<regex>',
+          ) + $more);
+      } catch (PhutilTypeCheckException $ex) {
+        $message = pht(
+          'Error in parsing ".arclint" file, for linter "%s": %s',
+          $name,
+          $ex->getMessage());
+        throw new PhutilProxyException($message, $ex);
+      }
 
       foreach ($more as $key => $value) {
         if (array_key_exists($key, $spec)) {
@@ -89,9 +103,6 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
 
       $include = (array)idx($spec, 'include', array());
       $exclude = (array)idx($spec, 'exclude', array());
-
-      $this->validateRegexps($include, $name, 'include');
-      $this->validateRegexps($exclude, $name, 'exclude');
 
       $console = PhutilConsole::getConsole();
       $console->writeLog("Examining paths for linter \"%s\".\n", $name);
@@ -217,32 +228,6 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     }
 
     return $match;
-  }
-
-  private function validateRegexps(
-    array $regexps,
-    $linter = null,
-    $config = null) {
-
-    foreach ($regexps as $regexp) {
-      $ok = @preg_match($regexp, '');
-      if ($ok === false) {
-        if ($linter) {
-          throw new Exception(
-            pht(
-              'Regular expression "%s" (in "%s" configuration for linter '.
-              '"%s") is not a valid regular expression.',
-              $regexp,
-              $config,
-              $linter));
-        } else {
-          throw new Exception(
-            pht(
-              'Regular expression "%s" is not a valid regular expression.',
-              $regexp));
-        }
-      }
-    }
   }
 
 }
