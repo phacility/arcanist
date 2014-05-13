@@ -63,7 +63,7 @@ EOTEXT
     $method = reset($method);
 
     $console = PhutilConsole::getConsole();
-    $console->writeOut("%s\n", pht('Waiting for JSON parameters on stdin...'));
+    $console->writeErr("%s\n", pht('Waiting for JSON parameters on stdin...'));
     $params = @file_get_contents('php://stdin');
     $params = json_decode($params, true);
     if (!is_array($params)) {
