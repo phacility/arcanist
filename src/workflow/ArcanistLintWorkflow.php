@@ -459,6 +459,8 @@ EOTEXT
         break;
       case 'xml':
         $renderer = new ArcanistLintCheckstyleXMLRenderer();
+        $prompt_patches = false;
+        $apply_patches = $this->getArgument('apply-patches');
         break;
       default:
         $renderer = new ArcanistLintConsoleRenderer();
