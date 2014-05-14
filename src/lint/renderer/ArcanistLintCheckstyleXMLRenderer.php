@@ -14,10 +14,13 @@ final class ArcanistLintCheckstyleXMLRenderer extends ArcanistLintRenderer {
     $this->writer->openMemory();
     $this->writer->setIndent(true);
     $this->writer->setIndentString('  ');
+  }
 
+  public function renderPreamble() {
     $this->writer->startDocument('1.0', 'UTF-8');
     $this->writer->startElement('checkstyle');
     $this->writer->writeAttribute('version', '4.3');
+    return $this->writer->flush();
   }
 
   public function renderLintResult(ArcanistLintResult $result) {
