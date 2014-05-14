@@ -331,7 +331,7 @@ abstract class ArcanistRepositoryAPI {
     ConduitClient $conduit,
     array $query);
   abstract public function getRemoteURI();
-
+  abstract public function setWorkingRevision($revision);
 
   public function getUnderlyingWorkingCopyRevision() {
     return $this->getWorkingCopyRevision();

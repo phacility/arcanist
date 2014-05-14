@@ -9,12 +9,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   private $repositoryHasNoCommits = false;
   const SEARCH_LENGTH_FOR_PARENT_REVISIONS = 16;
+  private $revision;
 
   /**
    * For the repository's initial commit, 'git diff HEAD^' and similar do
    * not work. Using this instead does work; it is the hash of the empty tree.
    */
   const GIT_MAGIC_ROOT_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+  public function __construct($path)
+  {
+    parent::__construct($path);
+    $this->revision = 'HEAD';
+  }
 
   public static function newHookAPI($root) {
     return new ArcanistGitAPI($root);
@@ -50,6 +57,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return call_user_func_array('phutil_passthru', $args);
   }
 
+  public function setWorkingRevision($revision)
+  {
+    $this->revision = $revision;
+  }
 
   public function getSourceControlSystemName() {
     return 'git';
@@ -106,7 +117,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // this as being the commits X and Y. If we log "B..Y", we only show
       // Y. With "Y --not B", we show X and Y.
 
-      $against = csprintf('%s --not %s', 'HEAD', $this->getBaseCommit());
+      $against = csprintf('%s --not %s', $this->revision, $this->getBaseCommit());
     }
 
     // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
@@ -161,8 +172,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       }
 
       list($err, $merge_base) = $this->execManualLocal(
-        'merge-base %s HEAD',
-        $symbolic_commit);
+        'merge-base %s %s',
+        $symbolic_commit,
+        $this->revision);
       if ($err) {
         throw new ArcanistUsageException(
           "Unable to find any git commit named '{$symbolic_commit}' in ".
@@ -170,7 +182,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       }
 
       $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$symbolic_commit}' and HEAD, as you ".
+        "it is the merge-base of '{$symbolic_commit}' and {$this->revision}, as you ".
         "explicitly specified.");
       return trim($merge_base);
     }
@@ -178,9 +190,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // Detect zero-commit or one-commit repositories. There is only one
     // relative-commit value that makes any sense in these repositories: the
     // empty tree.
-    list($err) = $this->execManualLocal('rev-parse --verify HEAD^');
+    list($err) = $this->execManualLocal("rev-parse --verify {$this->revision}^");
     if ($err) {
-      list($err) = $this->execManualLocal('rev-parse --verify HEAD');
+      list($err) = $this->execManualLocal("rev-parse --verify {$this->revision}");
       if ($err) {
         $this->repositoryHasNoCommits = true;
       }
@@ -215,7 +227,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $default_relative = $working_copy->getProjectConfig(
         'git.default-relative-commit');
       $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$default_relative}' and HEAD, as ".
+        "it is the merge-base of '{$default_relative}' and {$this->revision}, as ".
         "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
         "setting overrides other settings.");
     }
@@ -228,7 +240,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $default_relative = trim($upstream);
         $this->setBaseCommitExplanation(
           "it is the merge-base of '{$default_relative}' (the Git upstream ".
-          "of the current branch) HEAD.");
+          "of the current branch) {$this->revision}.");
       }
     }
 
@@ -237,7 +249,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $default_relative = trim($default_relative);
       if ($default_relative) {
         $this->setBaseCommitExplanation(
-          "it is the merge-base of '{$default_relative}' and HEAD, as ".
+          "it is the merge-base of '{$default_relative}' and {$this->revision}, as ".
           "specified in '.git/arc/default-relative-commit'.");
       }
     }
@@ -290,13 +302,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // valid commit name.
       $this->writeScratchFile('default-relative-commit', $default_relative);
       $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$default_relative}' and HEAD, as you ".
+        "it is the merge-base of '{$default_relative}' and {$this->revision}, as you ".
         "just specified.");
     }
 
     list($merge_base) = $this->execxLocal(
-      'merge-base %s HEAD',
-      $default_relative);
+      'merge-base %s %s',
+      $default_relative,
+      $this->revision);
 
     return trim($merge_base);
   }
@@ -397,12 +410,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     } else if ($relative == self::GIT_MAGIC_ROOT_COMMIT) {
       // First commit.
       list($stdout) = $this->execxLocal(
-        'log --format=medium HEAD');
+        'log --format=medium %s',
+        $this->revision);
     } else {
       // 2..N commits.
       list($stdout) = $this->execxLocal(
-        'log --first-parent --format=medium %s..HEAD',
-        $this->getBaseCommit());
+        'log --first-parent --format=medium %s..%s',
+        $this->getBaseCommit(),
+        $this->revision);
     }
     return $stdout;
   }
@@ -469,7 +484,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if ($this->repositoryHasNoCommits) {
       $diff_base = self::GIT_MAGIC_ROOT_COMMIT;
     } else {
-      $diff_base = 'HEAD';
+      $diff_base = $this->revision;
     }
 
     // Find uncommitted changes.
@@ -576,7 +591,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function amendCommit($message = null) {
     if ($message === null) {
-      $this->execxLocal('commit --amend --allow-empty -C HEAD');
+      $this->execxLocal('commit --amend --allow-empty -C %s',
+        $this->revision);
     } else {
       $tmp_file = new TempFile();
       Filesystem::writeFile($tmp_file, $message);
@@ -691,7 +707,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCurrentFileData($path) {
-    return $this->getFileDataAtRevision($path, 'HEAD');
+    return $this->getFileDataAtRevision($path, $this->revision);
   }
 
   private function parseGitTree($stdout) {
@@ -781,12 +797,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getWorkingCopyRevision() {
-    list($stdout) = $this->execxLocal('rev-parse HEAD');
+    list($stdout) = $this->execxLocal('rev-parse %s', $this->revision);
     return rtrim($stdout, "\n");
   }
 
   public function getUnderlyingWorkingCopyRevision() {
-    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
+    list($err, $stdout) = $this->execManualLocal('svn find-rev %s', $this->revision);
     if (!$err && $stdout) {
       return rtrim($stdout, "\n");
     }
@@ -968,28 +984,28 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $matches = null;
         if (preg_match('/^merge-base\((.+)\)$/', $name, $matches)) {
           list($err, $merge_base) = $this->execManualLocal(
-            'merge-base %s HEAD',
-            $matches[1]);
+            'merge-base %s %s',
+              $matches[1], $this->revision);
           if (!$err) {
             $this->setBaseCommitExplanation(
-              "it is the merge-base of '{$matches[1]}' and HEAD, as ".
+              "it is the merge-base of '{$matches[1]}' and {$this->revision}, as ".
               "specified by '{$rule}' in your {$source} 'base' ".
               "configuration.");
             return trim($merge_base);
           }
         } else if (preg_match('/^branch-unique\((.+)\)$/', $name, $matches)) {
           list($err, $merge_base) = $this->execManualLocal(
-            'merge-base %s HEAD',
-            $matches[1]);
+            'merge-base %s %s',
+              $matches[1], $this->revision);
           if ($err) {
             return null;
           }
           $merge_base = trim($merge_base);
 
           list($commits) = $this->execxLocal(
-            'log --format=%C %s..HEAD --',
+            'log --format=%C %s..%s --',
             '%H',
-            $merge_base);
+              $merge_base, $this->revision);
           $commits = array_filter(explode("\n", $commits));
 
           if (!$commits) {
@@ -1018,7 +1034,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               $branches = implode(', ', $branches);
               $this->setBaseCommitExplanation(
                 "it is the first commit between '{$merge_base}' (the ".
-                "merge-base of '{$matches[1]}' and HEAD) which is also ".
+                "merge-base of '{$matches[1]}' and {$this->revision}) which is also ".
                 "contained by another branch ({$branches}).");
               return $commit;
             }
@@ -1043,15 +1059,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               "configuration.");
             return self::GIT_MAGIC_ROOT_COMMIT;
           case 'amended':
-            $text = $this->getCommitMessage('HEAD');
+            $text = $this->getCommitMessage($this->revision);
             $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
               $text);
             if ($message->getRevisionID()) {
               $this->setBaseCommitExplanation(
-                "HEAD has been amended with 'Differential Revision:', ".
+                "{$this->revision} has been amended with 'Differential Revision:', ".
                 "as specified by '{$rule}' in your {$source} 'base' ".
                 "configuration.");
-              return 'HEAD^';
+              return "{$this->revision}^";
             }
             break;
           case 'upstream':
@@ -1060,12 +1076,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             if (!$err) {
               $upstream = rtrim($upstream);
               list($upstream_merge_base) = $this->execxLocal(
-                'merge-base %s HEAD',
-                $upstream);
+                'merge-base %s %s',
+                  $upstream, $this->revision);
               $upstream_merge_base = rtrim($upstream_merge_base);
               $this->setBaseCommitExplanation(
                 "it is the merge-base of the upstream of the current branch ".
-                "and HEAD, and matched the rule '{$rule}' in your {$source} ".
+                "and {$this->revision}, and matched the rule '{$rule}' in your {$source} ".
                 "'base' configuration.");
               return $upstream_merge_base;
             }
@@ -1074,7 +1090,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             $this->setBaseCommitExplanation(
               "you specified '{$rule}' in your {$source} 'base' ".
               "configuration.");
-            return 'HEAD^';
+            return "{$this->revision}^";
         }
       default:
         return null;
