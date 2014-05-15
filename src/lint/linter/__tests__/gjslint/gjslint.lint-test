@@ -1,0 +1,20 @@
+var x = 'some really really really really really really really long string';
+var y = 'some really really really really really really really really really long string',
+    z = 14;
+var obj = {name : 'vm'};
+var x
+var result = true
+             || false;
+/**
+ * @param x
+ * @return {string}
+ */
+function foo(x) {
+  return 'bar';
+}
+~~~~~~~~~~
+error:2:
+error:4:
+error:5:
+error:7:
+error:9:
