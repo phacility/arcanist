@@ -207,8 +207,11 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         $message->setChar($issue->Column);
         $message->setOriginalText($issue->OriginalText);
         $message->setReplacementText($issue->ReplacementText);
-        $message->setDescription(
-          vsprintf($issue->Index->Message, $issue->Parameters));
+        $desc = @vsprintf($issue->Index->Message, $issue->Parameters);
+        if ($desc === false) {
+          $desc = $issue->Index->Message;
+        }
+        $message->setDescription($desc);
         $severity = ArcanistLintSeverity::SEVERITY_ADVICE;
         switch ($issue->Index->Severity) {
           case 0:
