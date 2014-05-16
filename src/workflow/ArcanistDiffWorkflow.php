@@ -2292,9 +2292,11 @@ EOTEXT
       'arcanistProject'           => $project_id,
     );
 
-    $repository_phid = $this->getRepositoryPHID();
-    if ($repository_phid) {
-      $data['repositoryPHID'] = $repository_phid;
+    if (!$this->isRawDiffSource()) {
+      $repository_phid = $this->getRepositoryPHID();
+      if ($repository_phid) {
+        $data['repositoryPHID'] = $repository_phid;
+      }
     }
 
     return $data;
