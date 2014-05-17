@@ -5,6 +5,9 @@
  */
 final class ArcanistJSHintLinter extends ArcanistExternalLinter {
 
+  private $jshintignore;
+  private $jshintrc;
+
   public function getInfoName() {
     return 'JSHint';
   }
@@ -74,9 +77,48 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array(
-      '--reporter='.dirname(realpath(__FILE__)).'/reporter.js',
+    $options = array();
+
+    $options[] = '--reporter='.dirname(realpath(__FILE__)).'/reporter.js';
+
+    if ($this->jshintrc) {
+      $options[] = '--config='.$this->jshintrc;
+    }
+
+    if ($this->jshintignore) {
+      $options[] = '--exclude-path='.$this->jshintignore;
+    }
+
+    return $options;
+  }
+
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'jshint.jshintignore' => array(
+        'type' => 'optional string',
+        'help' => pht('Pass in a custom jshintignore file path.'),
+      ),
+      'jshint.jshintrc' => array(
+        'type' => 'optional string',
+        'help' => pht('Custom configuration file.'),
+      ),
     );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'jshint.jshintignore':
+        $this->jshintignore = $value;
+        return;
+
+      case 'jshint.jshintrc':
+        $this->jshintrc = $value;
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
   }
 
   protected function getDefaultFlags() {
