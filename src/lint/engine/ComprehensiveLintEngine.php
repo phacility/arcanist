@@ -48,4 +48,13 @@ final class ComprehensiveLintEngine extends ArcanistLintEngine {
     return $linters;
   }
 
+  protected function getPEP8WithTextOptions() {
+    // E101 is subset of TXT2 (Tab Literal).
+    // E501 is same as TXT3 (Line Too Long).
+    // W291 is same as TXT6 (Trailing Whitespace).
+    // W292 is same as TXT4 (File Does Not End in Newline).
+    // W293 is same as TXT6 (Trailing Whitespace).
+    return array('--ignore=E101,E501,W291,W292,W293');
+  }
+
 }
