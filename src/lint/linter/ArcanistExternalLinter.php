@@ -414,6 +414,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         $future = new ExecFuture('%C %C', $bin, $path_argument);
       }
 
+      $future->setCWD($this->getEngine()->getWorkingCopy()->getProjectRoot());
       $futures[$path] = $future;
     }
 
