@@ -15,7 +15,7 @@ switch ($x) {
     return;
   case 4:
     $x++;
-    throw new Exception("!");
+    throw new Exception('!');
   case 5:
     break 2;
   case 6:
