@@ -760,6 +760,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this;
   }
 
+  public function hasRepositoryAPI() {
+    try {
+      return (bool)$this->getRepositoryAPI();
+    } catch (Exception $ex) {
+      return false;
+    }
+  }
+
   public function getRepositoryAPI() {
     if (!$this->repositoryAPI) {
       $workflow = get_class($this);

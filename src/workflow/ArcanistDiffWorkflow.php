@@ -1169,11 +1169,11 @@ EOTEXT
   }
 
   private function shouldAmend() {
-    if ($this->haveUncommittedChanges) {
+    if ($this->isRawDiffSource()) {
       return false;
     }
 
-    if ($this->isHistoryImmutable()) {
+    if ($this->haveUncommittedChanges) {
       return false;
     }
 
@@ -1181,7 +1181,9 @@ EOTEXT
       return false;
     }
 
-    if ($this->isRawDiffSource()) {
+    // Run this last: with --raw or --raw-command, we won't have a repository
+    // API.
+    if ($this->isHistoryImmutable()) {
       return false;
     }
 
@@ -1638,13 +1640,19 @@ EOTEXT
 
       $template = ArcanistCommentRemover::removeComments($new_template);
 
-      $repository_api = $this->getRepositoryAPI();
-      // special check for whether to amend here. optimizes a common git
-      // workflow. we can't do this for mercurial because the mq extension
-      // is popular and incompatible with hg commit --amend ; see T2011.
-      $should_amend = (count($included_commits) == 1 &&
-                       $repository_api instanceof ArcanistGitAPI &&
-                       $this->shouldAmend());
+      // With --raw-command, we may not have a repository API.
+      if ($this->hasRepositoryAPI()) {
+        $repository_api = $this->getRepositoryAPI();
+        // special check for whether to amend here. optimizes a common git
+        // workflow. we can't do this for mercurial because the mq extension
+        // is popular and incompatible with hg commit --amend ; see T2011.
+        $should_amend = (count($included_commits) == 1 &&
+                         $repository_api instanceof ArcanistGitAPI &&
+                         $this->shouldAmend());
+      } else {
+        $should_amend = false;
+      }
+
       if ($should_amend) {
         $wrote = (rtrim($old_message) != rtrim($template));
         if ($wrote) {
