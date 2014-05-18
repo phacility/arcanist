@@ -8,6 +8,9 @@
 pht(
   "This string requires \x12\x34 double quotes, but ".
   "this string does not. Here, they are used for consistency.");
+pht(
+  "This string also requires \123\345 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");
 ~~~~~~~~~~
 advice:3:1
 ~~~~~~~~~~
@@ -20,4 +23,7 @@ advice:3:1
 'foo"bar"';
 pht(
   "This string requires \x12\x34 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");
+pht(
+  "This string also requires \123\345 double quotes, but ".
   "this string does not. Here, they are used for consistency.");

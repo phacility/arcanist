@@ -2389,15 +2389,22 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         // Double quoted strings are allowed when the string contains the
         // following characters.
         static $allowed_chars = array(
-          '\0',
           '\n',
           '\r',
-          '\f',
           '\t',
           '\v',
-          '\x',
-          '\b',
+          '\e',
+          '\f',
           '\'',
+          '\0',
+          '\1',
+          '\2',
+          '\3',
+          '\4',
+          '\5',
+          '\6',
+          '\7',
+          '\x',
         );
 
         $contains_special_chars = false;
