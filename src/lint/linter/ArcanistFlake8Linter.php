@@ -47,7 +47,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)\b/', $stdout, $matches)) {
+    if (preg_match('/^(?P<version>\d+\.\d+(?:\.\d+)?)\b/', $stdout, $matches)) {
       return $matches['version'];
     } else {
       return false;
