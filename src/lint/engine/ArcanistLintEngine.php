@@ -71,26 +71,27 @@ abstract class ArcanistLintEngine {
 
   }
 
-  public function setConfigurationManager(
+  final public function setConfigurationManager(
     ArcanistConfigurationManager $configuration_manager) {
     $this->configurationManager = $configuration_manager;
     return $this;
   }
 
-  public function getConfigurationManager() {
+  final public function getConfigurationManager() {
     return $this->configurationManager;
   }
 
-  public function setWorkingCopy(ArcanistWorkingCopyIdentity $working_copy) {
+  final public function setWorkingCopy(
+    ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
     return $this;
   }
 
-  public function getWorkingCopy() {
+  final public function getWorkingCopy() {
     return $this->workingCopy;
   }
 
-  public function setPaths($paths) {
+  final public function setPaths($paths) {
     $this->paths = $paths;
     return $this;
   }
@@ -99,7 +100,7 @@ abstract class ArcanistLintEngine {
     return $this->paths;
   }
 
-  public function setPathChangedLines($path, $changed) {
+  final public function setPathChangedLines($path, $changed) {
     if ($changed === null) {
       $this->changedLines[$path] = null;
     } else {
@@ -108,39 +109,39 @@ abstract class ArcanistLintEngine {
     return $this;
   }
 
-  public function getPathChangedLines($path) {
+  final public function getPathChangedLines($path) {
     return idx($this->changedLines, $path);
   }
 
-  public function setFileData($data) {
+  final public function setFileData($data) {
     $this->fileData = $data + $this->fileData;
     return $this;
   }
 
-  public function setCommitHookMode($mode) {
+  final public function setCommitHookMode($mode) {
     $this->commitHookMode = $mode;
     return $this;
   }
 
-  public function setHookAPI(ArcanistHookAPI $hook_api) {
+  final public function setHookAPI(ArcanistHookAPI $hook_api) {
     $this->hookAPI  = $hook_api;
     return $this;
   }
 
-  public function getHookAPI() {
+  final public function getHookAPI() {
     return $this->hookAPI;
   }
 
-  public function setEnableAsyncLint($enable_async_lint) {
+  final public function setEnableAsyncLint($enable_async_lint) {
     $this->enableAsyncLint = $enable_async_lint;
     return $this;
   }
 
-  public function getEnableAsyncLint() {
+  final public function getEnableAsyncLint() {
     return $this->enableAsyncLint;
   }
 
-  public function loadData($path) {
+  final public function loadData($path) {
     if (!isset($this->fileData[$path])) {
       if ($this->getCommitHookMode()) {
         $this->fileData[$path] = $this->getHookAPI()
@@ -163,7 +164,7 @@ abstract class ArcanistLintEngine {
     }
   }
 
-  public function isDirectory($path) {
+  final public function isDirectory($path) {
     if ($this->getCommitHookMode()) {
       // TODO: This won't get the right result in every case (we need more
       // metadata) but should almost always be correct.
@@ -179,7 +180,7 @@ abstract class ArcanistLintEngine {
     }
   }
 
-  public function isBinaryFile($path) {
+  final public function isBinaryFile($path) {
     try {
       $data = $this->loadData($path);
     } catch (Exception $ex) {
@@ -189,22 +190,22 @@ abstract class ArcanistLintEngine {
     return ArcanistDiffUtils::isHeuristicBinaryFile($data);
   }
 
-  public function getFilePathOnDisk($path) {
+  final public function getFilePathOnDisk($path) {
     return Filesystem::resolvePath(
       $path,
       $this->getWorkingCopy()->getProjectRoot());
   }
 
-  public function setMinimumSeverity($severity) {
+  final public function setMinimumSeverity($severity) {
     $this->minimumSeverity = $severity;
     return $this;
   }
 
-  public function getCommitHookMode() {
+  final public function getCommitHookMode() {
     return $this->commitHookMode;
   }
 
-  public function run() {
+  final public function run() {
     $linters = $this->buildLinters();
     if (!$linters) {
       throw new ArcanistNoEffectException("No linters to run.");
@@ -375,12 +376,13 @@ abstract class ArcanistLintEngine {
     return $this->results;
   }
 
-  public function isSeverityEnabled($severity) {
+  final public function isSeverityEnabled($severity) {
     $minimum = $this->minimumSeverity;
     return ArcanistLintSeverity::isAtLeastAsSevere($severity, $minimum);
   }
 
-  private function shouldUseCache($cache_granularity, $repository_version) {
+  final private function shouldUseCache($cache_granularity,
+                                        $repository_version) {
     if ($this->commitHookMode) {
       return false;
     }
@@ -399,22 +401,22 @@ abstract class ArcanistLintEngine {
    * @param dict<string path, dict<string version, list<dict message>>>
    * @return this
    */
-  public function setCachedResults(array $results) {
+  final public function setCachedResults(array $results) {
     $this->cachedResults = $results;
     return $this;
   }
 
-  public function getResults() {
+  final public function getResults() {
     return $this->results;
   }
 
-  public function getStoppedPaths() {
+  final public function getStoppedPaths() {
     return $this->stopped;
   }
 
   abstract protected function buildLinters();
 
-  protected function didRunLinters(array $linters) {
+  final protected function didRunLinters(array $linters) {
     assert_instances_of($linters, 'ArcanistLinter');
 
     $exceptions = array();
@@ -441,12 +443,12 @@ abstract class ArcanistLintEngine {
     return $exceptions;
   }
 
-  public function setRepositoryVersion($version) {
+  final public function setRepositoryVersion($version) {
     $this->repositoryVersion = $version;
     return $this;
   }
 
-  private function isRelevantMessage(ArcanistLintMessage $message) {
+  final private function isRelevantMessage(ArcanistLintMessage $message) {
     // When a user runs "arc lint", we default to raising only warnings on
     // lines they have changed (errors are still raised anywhere in the
     // file). The list of $changed lines may be null, to indicate that the
@@ -490,7 +492,7 @@ abstract class ArcanistLintEngine {
     return false;
   }
 
-  protected function getResultForPath($path) {
+  final protected function getResultForPath($path) {
     if (empty($this->results[$path])) {
       $result = new ArcanistLintResult();
       $result->setPath($path);
@@ -500,7 +502,7 @@ abstract class ArcanistLintEngine {
     return $this->results[$path];
   }
 
-  public function getLineAndCharFromOffset($path, $offset) {
+  final public function getLineAndCharFromOffset($path, $offset) {
     if (!isset($this->charToLine[$path])) {
       $char_to_line = array();
       $line_to_first_char = array();
@@ -527,11 +529,11 @@ abstract class ArcanistLintEngine {
     return array($line, $char);
   }
 
-  public function getPostponedLinters() {
+  final public function getPostponedLinters() {
     return $this->postponedLinters;
   }
 
-  public function setPostponedLinters(array $linters) {
+  final public function setPostponedLinters(array $linters) {
     $this->postponedLinters = $linters;
     return $this;
   }
