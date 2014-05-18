@@ -59,7 +59,7 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
 
   protected function getMandatoryFlags() {
     $options = array(
-      '--checkstyle',
+      '--reporter=checkstyle',
       '--nocolor',
       '--quiet',
     );
