@@ -242,7 +242,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return this
    * @task conduit
    */
-  public function forceConduitVersion($version) {
+  final public function forceConduitVersion($version) {
     $this->forcedConduitVersion = $version;
     return $this;
   }
@@ -254,7 +254,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return int Version the client should claim to be.
    * @task conduit
    */
-  public function getConduitVersion() {
+  final public function getConduitVersion() {
     return nonempty($this->forcedConduitVersion, 6);
   }
 
@@ -268,7 +268,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return this
    * @task conduit
    */
-  public function setConduitTimeout($timeout) {
+  final public function setConduitTimeout($timeout) {
     $this->conduitTimeout = $timeout;
     if ($this->conduit) {
       $this->conduit->setConduitTimeout($timeout);
@@ -493,25 +493,25 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   }
 
 
-  public function setArcanistConfiguration(
+  final public function setArcanistConfiguration(
     ArcanistConfiguration $arcanist_configuration) {
 
     $this->arcanistConfiguration = $arcanist_configuration;
     return $this;
   }
 
-  public function getArcanistConfiguration() {
+  final public function getArcanistConfiguration() {
     return $this->arcanistConfiguration;
   }
 
-  public function setConfigurationManager(
+  final public function setConfigurationManager(
     ArcanistConfigurationManager $arcanist_configuration_manager) {
 
     $this->configurationManager = $arcanist_configuration_manager;
     return $this;
   }
 
-  public function getConfigurationManager() {
+  final public function getConfigurationManager() {
     return $this->configurationManager;
   }
 
@@ -531,12 +531,12 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return false;
   }
 
-  public function setCommand($command) {
+  final public function setCommand($command) {
     $this->command = $command;
     return $this;
   }
 
-  public function getCommand() {
+  final public function getCommand() {
     return $this->command;
   }
 
@@ -544,25 +544,25 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return array();
   }
 
-  public function setWorkingDirectory($working_directory) {
+  final public function setWorkingDirectory($working_directory) {
     $this->workingDirectory = $working_directory;
     return $this;
   }
 
-  public function getWorkingDirectory() {
+  final public function getWorkingDirectory() {
     return $this->workingDirectory;
   }
 
-  private function setParentWorkflow($parent_workflow) {
+  final private function setParentWorkflow($parent_workflow) {
     $this->parentWorkflow = $parent_workflow;
     return $this;
   }
 
-  protected function getParentWorkflow() {
+  final protected function getParentWorkflow() {
     return $this->parentWorkflow;
   }
 
-  public function buildChildWorkflow($command, array $argv) {
+  final public function buildChildWorkflow($command, array $argv) {
     $arc_config = $this->getArcanistConfiguration();
     $workflow = $arc_config->buildWorkflow($command);
     $workflow->setParentWorkflow($this);
@@ -593,11 +593,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $workflow;
   }
 
-  public function getArgument($key, $default = null) {
+  final public function getArgument($key, $default = null) {
     return idx($this->arguments, $key, $default);
   }
 
-  public function getPassedArguments() {
+  final public function getPassedArguments() {
     return $this->passedArguments;
   }
 
@@ -609,7 +609,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $spec;
   }
 
-  public function parseArguments(array $args) {
+  final public function parseArguments(array $args) {
     $this->passedArguments = $args;
 
     $spec = $this->getCompleteArgumentSpecification();
@@ -738,7 +738,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     // Override this to customize workflow argument behavior.
   }
 
-  public function getWorkingCopy() {
+  final public function getWorkingCopy() {
     $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
     if (!$working_copy) {
       $workflow = get_class($this);
@@ -749,18 +749,18 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $working_copy;
   }
 
-  public function setWorkingCopy(
+  final public function setWorkingCopy(
     ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
     return $this;
   }
 
-  public function setRepositoryAPI($api) {
+  final public function setRepositoryAPI($api) {
     $this->repositoryAPI = $api;
     return $this;
   }
 
-  public function hasRepositoryAPI() {
+  final public function hasRepositoryAPI() {
     try {
       return (bool)$this->getRepositoryAPI();
     } catch (Exception $ex) {
@@ -768,7 +768,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
   }
 
-  public function getRepositoryAPI() {
+  final public function getRepositoryAPI() {
     if (!$this->repositoryAPI) {
       $workflow = get_class($this);
       throw new Exception(
@@ -778,16 +778,16 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this->repositoryAPI;
   }
 
-  protected function shouldRequireCleanUntrackedFiles() {
+  final protected function shouldRequireCleanUntrackedFiles() {
     return empty($this->arguments['allow-untracked']);
   }
 
-  public function setCommitMode($mode) {
+  final public function setCommitMode($mode) {
     $this->commitMode = $mode;
     return $this;
   }
 
-  public function finalizeWorkingCopy() {
+  final public function finalizeWorkingCopy() {
     if ($this->stashed) {
       $api = $this->getRepositoryAPI();
       $api->unstashChanges();
@@ -795,7 +795,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
   }
 
-  public function requireCleanWorkingCopy() {
+  final public function requireCleanWorkingCopy() {
     $api = $this->getRepositoryAPI();
 
     $must_commit = array();
@@ -1024,7 +1024,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $prompt;
   }
 
-  protected function loadDiffBundleFromConduit(
+  final protected function loadDiffBundleFromConduit(
     ConduitClient $conduit,
     $diff_id) {
 
@@ -1035,7 +1035,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     ));
   }
 
-  protected function loadRevisionBundleFromConduit(
+  final protected function loadRevisionBundleFromConduit(
     ConduitClient $conduit,
     $revision_id) {
 
@@ -1046,7 +1046,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     ));
   }
 
-  private function loadBundleFromConduit(
+  final private function loadBundleFromConduit(
     ConduitClient $conduit,
     $params) {
 
@@ -1079,7 +1079,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return list|null  List of changed line numbers, or null to indicate that
    *                    the path is not a line-oriented text file.
    */
-  protected function getChangedLines($path, $mode) {
+  final protected function getChangedLines($path, $mode) {
     $repository_api = $this->getRepositoryAPI();
     $full_path = $repository_api->getPath($path);
     if (is_dir($full_path)) {
@@ -1100,7 +1100,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return array_keys($lines);
   }
 
-  protected function getChange($path) {
+  final protected function getChange($path) {
     $repository_api = $this->getRepositoryAPI();
 
     // TODO: Very gross
@@ -1170,7 +1170,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
   }
 
-  protected function normalizeRevisionID($revision_id) {
+  final protected function normalizeRevisionID($revision_id) {
     return preg_replace('/^D/i', '', $revision_id);
   }
 
@@ -1186,7 +1186,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return array('any');
   }
 
-  protected function getPassthruArgumentsAsMap($command) {
+  final protected function getPassthruArgumentsAsMap($command) {
     $map = array();
     foreach ($this->getCompleteArgumentSpecification() as $key => $spec) {
       if (!empty($spec['passthru'][$command])) {
@@ -1198,7 +1198,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $map;
   }
 
-  protected function getPassthruArgumentsAsArgv($command) {
+  final protected function getPassthruArgumentsAsArgv($command) {
     $spec = $this->getCompleteArgumentSpecification();
     $map = $this->getPassthruArgumentsAsMap($command);
     $argv = array();
@@ -1218,11 +1218,11 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @param string  Message to write to stderr.
    * @return void
    */
-  protected function writeStatusMessage($msg) {
+  final protected function writeStatusMessage($msg) {
     fwrite(STDERR, $msg);
   }
 
-  protected function isHistoryImmutable() {
+  final protected function isHistoryImmutable() {
     $repository_api = $this->getRepositoryAPI();
 
     $config = $this->getConfigFromAnySource('history.immutable');
@@ -1249,7 +1249,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    *                        Defaults to ArcanistRepositoryAPI::FLAG_UNTRACKED.
    * @return  list          List of paths the workflow should act on.
    */
-  protected function selectPathsForWorkflow(
+  final protected function selectPathsForWorkflow(
     array $paths,
     $rev,
     $omit_mask = null) {
@@ -1289,7 +1289,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return array_values($paths);
   }
 
-  protected function renderRevisionList(array $revisions) {
+  final protected function renderRevisionList(array $revisions) {
     $list = array();
     foreach ($revisions as $revision) {
       $list[] = '     - D'.$revision['id'].': '.$revision['title']."\n";
@@ -1308,7 +1308,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return mixed String for file contents, or false for failure.
    * @task scratch
    */
-  protected function readScratchFile($path) {
+  final protected function readScratchFile($path) {
     if (!$this->repositoryAPI) {
       return false;
     }
@@ -1323,7 +1323,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return array Empty array for failure.
    * @task scratch
    */
-  protected function readScratchJSONFile($path) {
+  final protected function readScratchJSONFile($path) {
     $file = $this->readScratchFile($path);
     if (!$file) {
       return array();
@@ -1341,7 +1341,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return bool   True on success, false on failure.
    * @task scratch
    */
-  protected function writeScratchFile($path, $data) {
+  final protected function writeScratchFile($path, $data) {
     if (!$this->repositoryAPI) {
       return false;
     }
@@ -1358,7 +1358,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return bool   True on success, false on failure.
    * @task scratch
    */
-  protected function writeScratchJSONFile($path, array $data) {
+  final protected function writeScratchJSONFile($path, array $data) {
     return $this->writeScratchFile($path, json_encode($data));
   }
 
@@ -1370,7 +1370,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return  bool    True if the file was removed successfully.
    * @task scratch
    */
-  protected function removeScratchFile($path) {
+  final protected function removeScratchFile($path) {
     if (!$this->repositoryAPI) {
       return false;
     }
@@ -1385,7 +1385,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return mixed  String, or false on failure.
    * @task scratch
    */
-  protected function getReadableScratchFilePath($path) {
+  final protected function getReadableScratchFilePath($path) {
     if (!$this->repositoryAPI) {
       return false;
     }
@@ -1400,19 +1400,19 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    * @return mixed  File path, or false on failure.
    * @task scratch
    */
-  protected function getScratchFilePath($path) {
+  final protected function getScratchFilePath($path) {
     if (!$this->repositoryAPI) {
       return false;
     }
     return $this->getRepositoryAPI()->getScratchFilePath($path);
   }
 
-  protected function getRepositoryEncoding() {
+  final protected function getRepositoryEncoding() {
     $default = 'UTF-8';
     return nonempty(idx($this->getProjectInfo(), 'encoding'), $default);
   }
 
-  protected function getProjectInfo() {
+  final protected function getProjectInfo() {
     if ($this->projectInfo === null) {
       $project_id = $this->getWorkingCopy()->getProjectID();
       if (!$project_id) {
@@ -1442,7 +1442,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this->projectInfo;
   }
 
-  protected function loadProjectRepository() {
+  final protected function loadProjectRepository() {
     $project = $this->getProjectInfo();
     if (isset($project['repository'])) {
       return $project['repository'];
@@ -1462,7 +1462,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return idx($repositories, $repository_phid, array());
   }
 
-  protected function newInteractiveEditor($text) {
+  final protected function newInteractiveEditor($text) {
     $editor = new PhutilInteractiveEditor($text);
 
     $preferred = $this->getConfigFromAnySource('editor');
@@ -1473,7 +1473,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $editor;
   }
 
-  protected function newDiffParser() {
+  final protected function newDiffParser() {
     $parser = new ArcanistDiffParser();
     if ($this->repositoryAPI) {
       $parser->setRepositoryAPI($this->getRepositoryAPI());
@@ -1482,7 +1482,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $parser;
   }
 
-  protected function resolveCall(ConduitFuture $method, $timeout = null) {
+  final protected function resolveCall(ConduitFuture $method, $timeout = null) {
     try {
       return $method->resolve($timeout);
     } catch (ConduitClientException $ex) {
@@ -1497,7 +1497,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     }
   }
 
-  protected function dispatchEvent($type, array $data) {
+  final protected function dispatchEvent($type, array $data) {
     $data += array(
       'workflow' => $this,
     );
@@ -1508,7 +1508,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $event;
   }
 
-  public function parseBaseCommitArgument(array $argv) {
+  final public function parseBaseCommitArgument(array $argv) {
     if (!count($argv)) {
       return;
     }
@@ -1530,7 +1530,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     return $this;
   }
 
-  protected function getRepositoryVersion() {
+  final protected function getRepositoryVersion() {
     if (!$this->repositoryVersion) {
       $api = $this->getRepositoryAPI();
       $commit = $api->getSourceControlBaseRevision();
@@ -1558,7 +1558,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    *
    * @task phabrep
    */
-  protected function getRepositoryPHID() {
+  final protected function getRepositoryPHID() {
     return idx($this->getRepositoryInformation(), 'phid');
   }
 
@@ -1572,7 +1572,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    *
    * @task phabrep
    */
-  protected function getRepositoryCallsign() {
+  final protected function getRepositoryCallsign() {
     return idx($this->getRepositoryInformation(), 'callsign');
   }
 
@@ -1586,7 +1586,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    *
    * @task phabrep
    */
-  protected function getRepositoryURI() {
+  final protected function getRepositoryURI() {
     return idx($this->getRepositoryInformation(), 'uri');
   }
 
@@ -1601,7 +1601,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
    *
    * @task phabrep
    */
-  protected function getRepositoryReasons() {
+  final protected function getRepositoryReasons() {
     $this->getRepositoryInformation();
     return $this->repositoryReasons;
   }
