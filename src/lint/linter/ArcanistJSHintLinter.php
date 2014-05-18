@@ -49,11 +49,14 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getVersion() {
-    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+    // NOTE: `jshint --version` emits version information on stderr, not stdout.
+    list($stdout, $stderr) = execx(
+      '%C --version',
+      $this->getExecutableCommand());
 
     $matches = array();
     $regex = '/^jshint v(?P<version>\d+\.\d+\.\d+)$/';
-    if (preg_match($regex, $stdout, $matches)) {
+    if (preg_match($regex, $stderr, $matches)) {
       return $matches['version'];
     } else {
       return false;
