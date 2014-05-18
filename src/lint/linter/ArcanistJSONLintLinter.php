@@ -37,7 +37,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
 
     $matches = array();
     if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
-      $version = $matches['version'];
+      return $matches['version'];
     } else {
       return false;
     }
