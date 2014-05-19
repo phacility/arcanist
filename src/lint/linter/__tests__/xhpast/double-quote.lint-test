@@ -1,6 +1,6 @@
 <?php
 'foobar';
-"foobar";
+"foo\"bar";
 "foobar\n";
 "'foobar'";
 "foo{$bar}";
@@ -16,7 +16,7 @@ advice:3:1
 ~~~~~~~~~~
 <?php
 'foobar';
-'foobar';
+'foo"bar';
 "foobar\n";
 "'foobar'";
 "foo{$bar}";

@@ -2428,7 +2428,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $valid = true;
         } else if (!$contains_special_chars && !$single_quoted) {
           $invalid_nodes[] = $string;
-          $fixes[$string->getID()] = "'".$contents."'";
+          $fixes[$string->getID()] = "'".str_replace('\"', '"', $contents)."'";
         }
       }
 
