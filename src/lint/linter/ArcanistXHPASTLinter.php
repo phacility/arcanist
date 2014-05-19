@@ -44,6 +44,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_REUSED_ITERATOR_REFERENCE = 39;
   const LINT_KEYWORD_CASING            = 40;
   const LINT_DOUBLE_QUOTE              = 41;
+  const LINT_ELSEIF_USAGE              = 42;
 
   private $naminghook;
   private $switchhook;
@@ -101,6 +102,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_REUSED_ITERATOR_REFERENCE => 'Reuse of Iterator References',
       self::LINT_KEYWORD_CASING            => 'Keyword Conventions',
       self::LINT_DOUBLE_QUOTE              => 'Unnecessary Double Quotes',
+      self::LINT_ELSEIF_USAGE              => 'ElseIf Usage',
     );
   }
 
@@ -135,6 +137,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_REUSED_ITERATOR_REFERENCE => $warning,
       self::LINT_KEYWORD_CASING            => $warning,
       self::LINT_DOUBLE_QUOTE              => $advice,
+      self::LINT_ELSEIF_USAGE              => $advice,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -249,6 +252,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintClosingDeclarationParen' => self::LINT_CLOSING_DECL_PAREN,
       'lintKeywordCasing' => self::LINT_KEYWORD_CASING,
       'lintStrings' => self::LINT_DOUBLE_QUOTE,
+      'lintElseIfStatements' => self::LINT_ELSEIF_USAGE,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2435,6 +2439,18 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
             $fixes[$invalid_node->getID()]);
         }
       }
+    }
+  }
+
+  protected function lintElseIfStatements(XHPASTNode $root) {
+    $tokens = $root->selectTokensOfType('T_ELSEIF');
+
+    foreach ($tokens as $token) {
+      $this->raiseLintAtToken(
+        $token,
+        self::LINT_ELSEIF_USAGE,
+        pht('Usage of `else if` is preferred over `elseif`.'),
+        'else if');
     }
   }
 
