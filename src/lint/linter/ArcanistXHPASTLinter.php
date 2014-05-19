@@ -45,6 +45,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_KEYWORD_CASING            = 40;
   const LINT_DOUBLE_QUOTE              = 41;
   const LINT_ELSEIF_USAGE              = 42;
+  const LINT_SEMICOLON_SPACING         = 43;
 
   private $naminghook;
   private $switchhook;
@@ -103,6 +104,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_KEYWORD_CASING            => 'Keyword Conventions',
       self::LINT_DOUBLE_QUOTE              => 'Unnecessary Double Quotes',
       self::LINT_ELSEIF_USAGE              => 'ElseIf Usage',
+      self::LINT_SEMICOLON_SPACING         => 'Semicolon Spacing',
     );
   }
 
@@ -138,6 +140,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_KEYWORD_CASING            => $warning,
       self::LINT_DOUBLE_QUOTE              => $advice,
       self::LINT_ELSEIF_USAGE              => $advice,
+      self::LINT_SEMICOLON_SPACING         => $advice,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -253,6 +256,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintKeywordCasing' => self::LINT_KEYWORD_CASING,
       'lintStrings' => self::LINT_DOUBLE_QUOTE,
       'lintElseIfStatements' => self::LINT_ELSEIF_USAGE,
+      'lintSemicolons' => self::LINT_SEMICOLON_SPACING,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2451,6 +2455,22 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_ELSEIF_USAGE,
         pht('Usage of `else if` is preferred over `elseif`.'),
         'else if');
+    }
+  }
+
+  protected function lintSemicolons(XHPASTNode $root) {
+    $tokens = $root->selectTokensOfType(';');
+
+    foreach ($tokens as $token) {
+      $prev = $token->getPrevToken();
+
+      if ($prev->isAnyWhitespace()) {
+        $this->raiseLintAtToken(
+          $prev,
+          self::LINT_SEMICOLON_SPACING,
+          pht('Space found before semicolon.'),
+          '');
+      }
     }
   }
 
