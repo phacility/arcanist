@@ -31,6 +31,7 @@ final class ArcanistSettings {
           'startup. This can be used to make classes available, like lint or '.
           'unit test engines.',
         'example' => '["/var/arc/customlib/src"]',
+        'default' => array(),
       ),
       'repository.callsign' => array(
         'type' => 'string',
@@ -104,6 +105,7 @@ final class ArcanistSettings {
           "report incorrect results, particularly while developing linters. ".
           "This is probably worth enabling only if your linters are very slow.",
         'example' => 'false',
+        'default' => false,
       ),
       'history.immutable' => array(
         'type' => 'bool',
@@ -113,6 +115,7 @@ final class ArcanistSettings {
           'amending or rebasing). Defaults to true in Mercurial and false in '.
           'Git. This setting has no effect in Subversion.',
         'example' => 'false',
+        'default' => false,
       ),
       'editor' => array(
         'type' => 'string',
@@ -134,6 +137,7 @@ final class ArcanistSettings {
         'help' => 'List of domains to blindly trust SSL certificates for. '.
                   'Disables peer verification.',
         'example' => '["secure.mycompany.com"]',
+        'default' => array(),
       ),
       'browser' => array(
         'type' => 'string',
@@ -145,6 +149,7 @@ final class ArcanistSettings {
         'type' => 'list',
         'help' => 'List of event listener classes to install at startup.',
         'example' => '["ExampleEventListener"]',
+        'default' => array(),
       ),
       'http.basicauth.user' => array(
         'type' => 'string',
@@ -167,6 +172,7 @@ final class ArcanistSettings {
           'to restore their working directory from the local stash if '.
           'an Arcanist operation causes an unrecoverable error.',
         'example' => 'false',
+        'default' => false,
       ),
     );
   }
@@ -193,6 +199,16 @@ final class ArcanistSettings {
 
   public function getLegacyName($key) {
     return idx($this->getOption($key), 'legacy');
+  }
+
+  public function getDefaultSettings() {
+    $defaults = array();
+    foreach ($this->getOptions() as $key => $option) {
+      if (array_key_exists('default', $option)) {
+        $defaults[$key] = $option['default'];
+      }
+    }
+    return $defaults;
   }
 
   public function willWriteValue($key, $value) {

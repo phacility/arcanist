@@ -2,8 +2,6 @@
 
 /**
  * Write configuration settings.
- *
- * @group workflow
  */
 final class ArcanistSetConfigWorkflow extends ArcanistBaseWorkflow {
 
@@ -31,18 +29,12 @@ EOTEXT
           User values are written to '~/.arcrc' on Linux and Mac OS X, and an
           undisclosed location on Windows.  Local values are written to an arc
           directory under either .git, .hg, or .svn as appropriate.
-
-          With __--show__, a description of supported configuration values
-          is shown.
 EOTEXT
       );
   }
 
   public function getArguments() {
     return array(
-      'show' => array(
-        'help' => 'Show available configuration values.',
-      ),
       'local' => array(
         'help' => 'Set a local config value instead of a user one',
       ),
@@ -55,14 +47,10 @@ EOTEXT
   }
 
   public function run() {
-    if ($this->getArgument('show')) {
-      return $this->show();
-    }
-
     $argv = $this->getArgument('argv');
     if (count($argv) != 2) {
       throw new ArcanistUsageException(
-        "Specify a key and a value, or --show.");
+        pht('Specify a key and a value.'));
     }
     $configuration_manager = $this->getConfigurationManager();
 
@@ -119,46 +107,6 @@ EOTEXT
       } else {
         echo "Set key '{$key}' = {$val} in {$which} config (was {$old}).\n";
       }
-    }
-
-    return 0;
-  }
-
-  private function show() {
-    $config_manager = $this->getConfigurationManager();
-
-    $settings = new ArcanistSettings();
-
-    $keys = $settings->getAllKeys();
-    sort($keys);
-    foreach ($keys as $key) {
-      $type = $settings->getType($key);
-      $example = $settings->getExample($key);
-      $help = $settings->getHelp($key);
-
-      $config = $config_manager->getConfigFromAllSources($key);
-
-      $source = head_key($config);
-
-      $value = head($config);
-      $value = $settings->formatConfigValueForDisplay($key, $value);
-
-      echo phutil_console_format("**__%s__** (%s)\n\n", $key, $type);
-      if ($example !== null) {
-        echo phutil_console_format("           Example: %s\n", $example);
-      }
-      if (strlen($value)) {
-        if (strlen($source)) {
-          $source = pht('(from %s config)', $source);
-        }
-        echo phutil_console_format(
-          "   Current Setting: %s %s\n",
-          $value,
-          $source);
-      }
-      echo "\n";
-      echo phutil_console_wrap($help, 4);
-      echo "\n\n\n";
     }
 
     return 0;

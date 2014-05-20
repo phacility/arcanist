@@ -23,6 +23,7 @@ final class ArcanistConfigurationManager {
   const CONFIG_SOURCE_PROJECT = 'project';
   const CONFIG_SOURCE_USER    = 'user';
   const CONFIG_SOURCE_SYSTEM  = 'system';
+  const CONFIG_SOURCE_DEFAULT = 'default';
 
   public function getProjectConfig($key) {
     if ($this->workingCopy) {
@@ -112,6 +113,11 @@ final class ArcanistConfigurationManager {
         $settings->willReadValue($key, $pval);
     }
 
+    $default_config = $this->readDefaultConfig();
+    if (array_key_exists($key, $default_config)) {
+      $results[self::CONFIG_SOURCE_DEFAULT] = $default_config[$key];
+    }
+
     return $results;
   }
 
@@ -153,37 +159,59 @@ final class ArcanistConfigurationManager {
    * @{method:readUserArcConfig}.
    */
   public function readUserConfigurationFile() {
-    $user_config = array();
-    $user_config_path = self::getUserConfigurationFileLocation();
-    if (Filesystem::pathExists($user_config_path)) {
+    static $user_config;
+    if ($user_config === null) {
+      $user_config = array();
+      $user_config_path = self::getUserConfigurationFileLocation();
 
-      if (!phutil_is_windows()) {
-        $mode = fileperms($user_config_path);
-        if (!$mode) {
-          throw new Exception("Unable to get perms of '{$user_config_path}'!");
-        }
-        if ($mode & 0177) {
-          // Mode should allow only owner access.
-          $prompt = "File permissions on your ~/.arcrc are too open. ".
-                    "Fix them by chmod'ing to 600?";
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
-            throw new ArcanistUsageException("Set ~/.arcrc to file mode 600.");
+      $console = PhutilConsole::getConsole();
+
+      if (Filesystem::pathExists($user_config_path)) {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Reading user configuration file "%s"...',
+            $user_config_path));
+
+        if (!phutil_is_windows()) {
+          $mode = fileperms($user_config_path);
+          if (!$mode) {
+            throw new Exception(
+              pht(
+                'Unable to read file permissions for "%s"!',
+                $user_config_path));
           }
-          execx('chmod 600 %s', $user_config_path);
+          if ($mode & 0177) {
+            // Mode should allow only owner access.
+            $prompt = "File permissions on your ~/.arcrc are too open. ".
+                      "Fix them by chmod'ing to 600?";
+            if (!phutil_console_confirm($prompt, $default_no = false)) {
+              throw new ArcanistUsageException(
+                'Set ~/.arcrc to file mode 600.');
+            }
+            execx('chmod 600 %s', $user_config_path);
 
-          // Drop the stat cache so we don't read the old permissions if
-          // we end up here again. If we don't do this, we may prompt the user
-          // to fix permissions multiple times.
-          clearstatcache();
+            // Drop the stat cache so we don't read the old permissions if
+            // we end up here again. If we don't do this, we may prompt the user
+            // to fix permissions multiple times.
+            clearstatcache();
+          }
         }
+
+        $user_config_data = Filesystem::readFile($user_config_path);
+        $user_config = json_decode($user_config_data, true);
+        if (!is_array($user_config)) {
+          throw new ArcanistUsageException(
+            "Your '~/.arcrc' file is not a valid JSON file.");
+        }
+      } else {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Did not find user configuration at "%s".',
+            $user_config_path));
       }
 
-      $user_config_data = Filesystem::readFile($user_config_path);
-      $user_config = json_decode($user_config_data, true);
-      if (!is_array($user_config)) {
-        throw new ArcanistUsageException(
-          "Your '~/.arcrc' file is not a valid JSON file.");
-      }
     }
     return $user_config;
   }
@@ -247,15 +275,38 @@ final class ArcanistConfigurationManager {
   }
 
   public function readSystemArcConfig() {
-    $system_config = array();
-    $system_config_path = self::getSystemArcConfigLocation();
-    if (Filesystem::pathExists($system_config_path)) {
-      $file = Filesystem::readFile($system_config_path);
-      if ($file) {
-        $system_config = json_decode($file, true);
+    static $system_config;
+    if ($system_config === null) {
+      $system_config = array();
+      $system_config_path = self::getSystemArcConfigLocation();
+
+      $console = PhutilConsole::getConsole();
+
+      if (Filesystem::pathExists($system_config_path)) {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Reading system configuration file "%s"...',
+            $system_config_path));
+        $file = Filesystem::readFile($system_config_path);
+        if ($file) {
+          $system_config = json_decode($file, true);
+        }
+      } else {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Did not find system configuration at "%s".',
+            $system_config_path));
       }
     }
+
     return $system_config;
+  }
+
+  public function readDefaultConfig() {
+    $settings = new ArcanistSettings();
+    return $settings->getDefaultSettings();
   }
 
 }

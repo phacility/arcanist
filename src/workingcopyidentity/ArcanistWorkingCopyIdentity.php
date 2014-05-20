@@ -113,8 +113,10 @@ final class ArcanistWorkingCopyIdentity {
 
     $console = PhutilConsole::getConsole();
 
+    $looked_in = array();
     foreach ($config_paths as $config_path) {
       $config_file = $config_path.'/.arcconfig';
+      $looked_in[] = $config_file;
       if (Filesystem::pathExists($config_file)) {
         // We always need to examine the filesystem to look for `.arcconfig`
         // so we can set the project root correctly. We might or might not
@@ -133,7 +135,20 @@ final class ArcanistWorkingCopyIdentity {
     }
 
     if ($config === null) {
-      // We didn't find a ".arcconfig" anywhere, so just use an empty array.
+      if ($looked_in) {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Working Copy: Unable to find .arcconfig in any of these '.
+            'locations: %s.',
+            implode(', ', $looked_in)));
+      } else {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Working Copy: No candidate locations for .arcconfig from '.
+            'this working directory.'));
+      }
       $config = array();
     }
 
@@ -299,12 +314,28 @@ final class ArcanistWorkingCopyIdentity {
       $local_path = Filesystem::resolvePath(
         'arc/config',
         $this->localMetaDir);
+
+      $console = PhutilConsole::getConsole();
+
       if (Filesystem::pathExists($local_path)) {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Reading local configuration file "%s"...',
+            $local_path));
+
         $file = Filesystem::readFile($local_path);
         if ($file) {
           return json_decode($file, true);
         }
+      } else {
+        $console->writeLog(
+          "%s\n",
+          pht(
+            'Config: Did not find local configuration at "%s".',
+            $local_path));
       }
+
     }
     return array();
   }
