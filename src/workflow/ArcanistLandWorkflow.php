@@ -428,9 +428,9 @@ EOTEXT
 
     if (!count($revisions)) {
       throw new ArcanistUsageException(pht(
-        "arc can not identify which revision exists on %s '%s'. Update the '.
-        'revision with recent changes to synchronize the %s name and hashes, '.
-        'or use 'arc amend' to amend the commit message at HEAD, or use ".
+        "arc can not identify which revision exists on %s '%s'. Update the ".
+        "revision with recent changes to synchronize the %s name and hashes, ".
+        "or use 'arc amend' to amend the commit message at HEAD, or use ".
         "'--revision <id>' to select a revision explicitly.",
         $this->branchType,
         $this->branch,
