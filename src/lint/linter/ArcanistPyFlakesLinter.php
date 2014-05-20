@@ -99,4 +99,8 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
     return $messages;
   }
 
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
+
 }
