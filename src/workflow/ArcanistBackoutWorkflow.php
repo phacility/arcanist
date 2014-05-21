@@ -124,8 +124,7 @@ EOTEXT
     $console = PhutilConsole::getConsole();
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
-    $repository = $this->loadProjectRepository();
-    $callsign = $repository["callsign"];
+
     $is_git_svn = $repository_api instanceof ArcanistGitAPI &&
                   $repository_api->isGitSubversionRepo();
     $is_hg_svn = $repository_api instanceof ArcanistMercurialAPI &&
