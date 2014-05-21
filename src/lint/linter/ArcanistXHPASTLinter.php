@@ -1202,11 +1202,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         }
       }
 
-      $catches = $body
-        ->selectDescendantsOfType('n_CATCH')
-        ->selectDescendantsOfType('n_VARIABLE');
-      foreach ($catches as $var) {
-        $vars[] = $var;
+      // Include "catch (Exception $ex)", but not variables in the body of the
+      // catch block.
+      $catches = $body->selectDescendantsOfType('n_CATCH');
+      foreach ($catches as $catch) {
+        $vars[] = $catch->getChildOfType(1, 'n_VARIABLE');
       }
 
       $binary = $body->selectDescendantsOfType('n_BINARY_EXPRESSION');
