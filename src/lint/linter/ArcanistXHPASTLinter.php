@@ -448,6 +448,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $target = phutil_get_library_root('arcanist').
       '/../resources/php_compat_info.json';
     $compat_info = json_decode(file_get_contents($target), true);
+    $required = '5.2.3';
 
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($calls as $call) {
@@ -455,7 +456,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['functions'], $name);
       $windows = idx($compat_info['functions_windows'], $name);
-      if ($version) {
+      if ($version && version_compare($version, $required, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_53_FEATURES,
@@ -465,7 +466,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $params = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
         foreach (array_values($params->getChildren()) as $i => $param) {
           $version = idx($compat_info['params'][$name], $i);
-          if ($version) {
+          if ($version && version_compare($version, $required, '>')) {
             $this->raiseLintAtNode(
               $param,
               self::LINT_PHP_53_FEATURES,
@@ -488,7 +489,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['interfaces'], $name);
       $version = idx($compat_info['classes'], $name, $version);
-      if ($version) {
+      if ($version && version_compare($version, $required, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_53_FEATURES,

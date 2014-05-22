@@ -13,7 +13,6 @@ if (!$ok) {
   exit(1);
 }
 
-$required = '5.2.3';
 $reference = id(new PHP_CompatInfo_Reference_ALL())->getAll();
 
 $output = array();
@@ -26,15 +25,11 @@ foreach (array('functions', 'classes', 'interfaces') as $type) {
     $name = strtolower($name);
     $versions = reset($versions);
     list($min, $max) = $versions;
-    if (version_compare($min, $required) > 0) {
-      $output[$type][$name] = $min;
-    }
+    $output[$type][$name] = $min;
     if ($type == 'functions' && isset($versions[4])) {
       $params = explode(', ', $versions[4]);
       foreach ($params as $i => $version) {
-        if (version_compare($version, $required) > 0) {
-          $output['params'][$name][$i] = $version;
-        }
+        $output['params'][$name][$i] = $version;
       }
     }
   }
