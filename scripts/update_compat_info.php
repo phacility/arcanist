@@ -25,7 +25,11 @@ foreach (array('functions', 'classes', 'interfaces') as $type) {
     $name = strtolower($name);
     $versions = reset($versions);
     list($min, $max) = $versions;
-    $output[$type][$name] = $min;
+    $output[$type][$name] = array(
+      'min' => nonempty($min, null),
+      'max' => nonempty($max, null),
+    );
+
     if ($type == 'functions' && isset($versions[4])) {
       $params = explode(', ', $versions[4]);
       foreach ($params as $i => $version) {

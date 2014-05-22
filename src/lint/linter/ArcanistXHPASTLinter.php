@@ -456,7 +456,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['functions'], $name);
       $windows = idx($compat_info['functions_windows'], $name);
-      if ($version && version_compare($version, $required, '>')) {
+      if ($version && version_compare($version['min'], $required, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_53_FEATURES,
@@ -489,7 +489,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = strtolower($node->getConcreteString());
       $version = idx($compat_info['interfaces'], $name);
       $version = idx($compat_info['classes'], $name, $version);
-      if ($version && version_compare($version, $required, '>')) {
+      if ($version && version_compare($version['min'], $required, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_53_FEATURES,
