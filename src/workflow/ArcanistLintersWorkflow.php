@@ -43,7 +43,7 @@ EOTEXT
     try {
       $built = $this->newLintEngine()->buildLinters();
     } catch (ArcanistNoEngineException $ex) {
-      $built = $engine->buildLinters();
+      $built = array();
     }
 
     // Note that an engine can emit multiple linters of the same class to run
