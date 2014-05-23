@@ -30,8 +30,9 @@ EOTEXT
   public function getArguments() {
     return array(
       'current' => array(
-        'help' => 'Current term in the argument list being completed.',
         'param' => 'cursor_position',
+        'paramtype' => 'int',
+        'help' => 'Current term in the argument list being completed.',
       ),
       '*' => 'argv',
     );
@@ -42,12 +43,16 @@ EOTEXT
   }
 
   public function run() {
-
     $pos  = $this->getArgument('current');
     $argv = $this->getArgument('argv', array());
     $argc = count($argv);
     if ($pos === null) {
       $pos = $argc - 1;
+    }
+
+    if ($pos > $argc) {
+      throw new ArcanistUsageException(
+        'Specified position is greater than the number of arguments provided.');
     }
 
     // Determine which revision control system the working copy uses, so we
@@ -70,7 +75,7 @@ EOTEXT
 
     $arc_config = $this->getArcanistConfiguration();
 
-    if ($pos == 1) {
+    if ($pos <= 1) {
       $workflows = $arc_config->buildAllWorkflows();
 
       $complete = array();
@@ -81,8 +86,7 @@ EOTEXT
 
         $supported = $workflow->getSupportedRevisionControlSystems();
 
-        $ok = (in_array('any', $supported)) ||
-              (in_array($vcs, $supported));
+        $ok = (in_array('any', $supported) || in_array($vcs, $supported));
         if (!$ok) {
           continue;
         }
@@ -146,7 +150,6 @@ EOTEXT
         }
         return 0;
       } else {
-
         $output = array();
         foreach ($arguments as $argument => $spec) {
           if ($argument == '*') {
@@ -181,7 +184,7 @@ EOTEXT
             $branches = ipull($branches, 'name');
             $output = $branches;
           } else {
-            $output = array("FILE");
+            $output = array('FILE');
           }
         }
 
