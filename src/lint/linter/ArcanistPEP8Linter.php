@@ -125,8 +125,8 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
           'Unrecognized lint message code "%s". Expected a valid PEP8 '.
           'lint code like "%s" or "%s".',
           $code,
-          "E101",
-          "W291"));
+          'E101',
+          'W291'));
     }
 
     return $code;

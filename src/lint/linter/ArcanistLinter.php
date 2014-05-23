@@ -221,7 +221,7 @@ abstract class ArcanistLinter {
     if (isset($map[$code])) {
       return $map[$code];
     }
-    return "Unknown lint message!";
+    return 'Unknown lint message!';
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {

@@ -43,7 +43,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
   public function __destruct() {
     if (self::$allTestsCounter !== 0) {
       throw new Exception(
-        "didRunTests() was not called correctly after tests completed!");
+        'didRunTests() was not called correctly after tests completed!');
     }
   }
 
@@ -107,7 +107,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
 
   protected function throwIfFalsey($input) {
     if (!$input) {
-      throw new Exception("This is a negative test case!");
+      throw new Exception('This is a negative test case!');
     }
   }
 

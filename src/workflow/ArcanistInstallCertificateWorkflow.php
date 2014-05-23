@@ -65,7 +65,7 @@ EOTEXT
       $conduit->callMethodSynchronous('conduit.ping', array());
     } catch (Exception $ex) {
       throw new ArcanistUsageException(
-        "Failed to connect to server: ".$ex->getMessage());
+        'Failed to connect to server: '.$ex->getMessage());
     }
     echo "Connection OK!\n";
 
@@ -79,7 +79,7 @@ EOTEXT
     echo "\n";
     echo "    {$token_uri}\n";
     echo "\n";
-    echo "Then paste the token on that page below.";
+    echo 'Then paste the token on that page below.';
 
 
     do {
@@ -118,15 +118,15 @@ EOTEXT
   private function determineConduitURI() {
     $uri = $this->getArgument('uri');
     if (count($uri) > 1) {
-      throw new ArcanistUsageException("Specify at most one URI.");
+      throw new ArcanistUsageException('Specify at most one URI.');
     } else if (count($uri) == 1) {
       $uri = reset($uri);
     } else {
       $conduit_uri = $this->getConduitURI();
       if (!$conduit_uri) {
         throw new ArcanistUsageException(
-          "Specify an explicit URI or run this command from within a project ".
-          "which is configured with a .arcconfig.");
+          'Specify an explicit URI or run this command from within a project '.
+          'which is configured with a .arcconfig.');
       }
       $uri = $conduit_uri;
     }

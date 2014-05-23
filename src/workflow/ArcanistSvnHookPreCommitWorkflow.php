@@ -210,7 +210,7 @@ EOTEXT
     }
 
     if ($failures) {
-      $at = "@";
+      $at = '@';
       $msg = phutil_console_format(
         "\n**LINT ERRORS**\n\n".
         "This changeset has lint errors. You must fix all lint errors before ".

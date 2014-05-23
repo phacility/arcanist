@@ -44,31 +44,31 @@ EOTEXT
     return array(
       'status' => array(
         'param' => 'task_status',
-        'help' => "Show tasks that or open or closed, default is open.",
+        'help' => 'Show tasks that or open or closed, default is open.',
       ),
       'owner' => array(
         'param' => 'username',
         'paramtype' => 'username',
         'help' =>
-          "Only show tasks assigned to the given username, ".
-            "also accepts @all to show all, default is you.",
+          'Only show tasks assigned to the given username, '.
+            'also accepts @all to show all, default is you.',
         'conflict' => array(
-          "unassigned" => "--owner suppresses unassigned",
+          'unassigned' => '--owner suppresses unassigned',
         ),
       ),
       'order' => array(
         'param' => 'task_order',
         'help' =>
-          "Arrange tasks based on priority, created, or modified, ".
-            "default is priority.",
+          'Arrange tasks based on priority, created, or modified, '.
+            'default is priority.',
       ),
       'limit' => array(
         'param' => 'n',
         'paramtype' => 'int',
-        'help' => "Limit the amount of tasks outputted, default is all.",
+        'help' => 'Limit the amount of tasks outputted, default is all.',
       ),
       'unassigned' => array(
-        'help' => "Only show tasks that are not assigned (upforgrabs).",
+        'help' => 'Only show tasks that are not assigned (upforgrabs).',
       )
     );
   }
@@ -84,7 +84,7 @@ EOTEXT
 
     if ($owner) {
       $owner_phid = $this->findOwnerPhid($owner);
-    } elseif ($unassigned) {
+    } else if ($unassigned) {
       $owner_phid = null;
     } else {
       $owner_phid = $this->getUserPHID();
@@ -106,7 +106,7 @@ EOTEXT
       $output = array();
 
       // Render the "T123" column.
-      $task_id = "T".$task['id'];
+      $task_id = 'T'.$task['id'];
       $formatted_task_id = phutil_console_format(
         '**%s**',
         $task_id);
@@ -176,7 +176,7 @@ EOTEXT
         );
       } else {
         $output['status'] = array(
-          'text'  => "",
+          'text'  => '',
           'len'   => 0,
         );
       }
@@ -265,8 +265,8 @@ EOTEXT
       $find_params['limit'] = $limit;
     }
 
-    $find_params['order'] = ($order ? "order-".$order : "order-priority");
-    $find_params['status'] = ($status ? "status-".$status : "status-open");
+    $find_params['order'] = ($order ? 'order-'.$order : 'order-priority');
+    $find_params['status'] = ($status ? 'status-'.$status : 'status-open');
 
     $tasks = $conduit->callMethodSynchronous(
       'maniphest.query',

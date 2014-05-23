@@ -75,7 +75,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     foreach ($lines as $line) {
       $matches = null;
 
-      if (!preg_match("/(.*?):(\d+): (.*?)$/", $line, $matches)) {
+      if (!preg_match('/(.*?):(\d+): (.*?)$/', $line, $matches)) {
         continue;
       }
 

@@ -52,10 +52,10 @@ EOTEXT
       'diff' => array(
         'param' => 'diff_id',
         'help' =>
-          "Apply changes from a Differential diff. Normally you want to use ".
-          "--revision to get the most recent changes, but you can ".
-          "specifically apply an out-of-date diff or a diff which was never ".
-          "attached to a revision by using this flag.",
+          'Apply changes from a Differential diff. Normally you want to use '.
+          '--revision to get the most recent changes, but you can '.
+          'specifically apply an out-of-date diff or a diff which was never '.
+          'attached to a revision by using this flag.',
       ),
       'arcbundle' => array(
         'param' => 'bundlefile',
@@ -67,19 +67,19 @@ EOTEXT
         'param' => 'patchfile',
         'paramtype' => 'file',
         'help' =>
-          "Apply changes from a git patchfile or unified patchfile.",
+          'Apply changes from a git patchfile or unified patchfile.',
       ),
       'encoding' => array(
         'param' => 'encoding',
         'help' =>
-          "Attempt to convert non UTF-8 patch into specified encoding.",
+          'Attempt to convert non UTF-8 patch into specified encoding.',
       ),
       'update' => array(
         'supports' => array(
           'git', 'svn', 'hg'
         ),
         'help' =>
-          "Update the local working copy before applying the patch.",
+          'Update the local working copy before applying the patch.',
         'conflicts' => array(
           'nobranch' => true,
           'bookmark' => true,
@@ -90,8 +90,8 @@ EOTEXT
           'git', 'hg'
         ),
         'help' =>
-          "Normally under git/hg, if the patch is successful, the changes ".
-          "are committed to the working copy. This flag prevents the commit.",
+          'Normally under git/hg, if the patch is successful, the changes '.
+          'are committed to the working copy. This flag prevents the commit.',
       ),
       'skip-dependencies' => array(
         'supports' => array(
@@ -107,17 +107,17 @@ EOTEXT
           'git', 'hg'
         ),
         'help' =>
-          "Normally, a new branch (git) or bookmark (hg) is created and then ".
-          "the patch is applied and committed in the new branch/bookmark. ".
-          "This flag cherry-picks the resultant commit onto the original ".
-          "branch and deletes the temporary branch.",
+          'Normally, a new branch (git) or bookmark (hg) is created and then '.
+          'the patch is applied and committed in the new branch/bookmark. '.
+          'This flag cherry-picks the resultant commit onto the original '.
+          'branch and deletes the temporary branch.',
         'conflicts' => array(
           'update' => true,
         ),
       ),
       'force' => array(
         'help' =>
-          "Do not run any sanity checks.",
+          'Do not run any sanity checks.',
       ),
       '*' => 'name',
     );
@@ -147,7 +147,7 @@ EOTEXT
     if ($this->getArgument('name')) {
       $namev = $this->getArgument('name');
       if (count($namev) > 1) {
-        throw new ArcanistUsageException("Specify at most one revision name.");
+        throw new ArcanistUsageException('Specify at most one revision name.');
       }
       $source = self::SOURCE_REVISION;
       $requested++;
@@ -216,7 +216,7 @@ EOTEXT
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
-    $base_name      = "arcpatch";
+    $base_name      = 'arcpatch';
     if ($revision_id) {
       $base_name .= "-D{$revision_id}";
     }
@@ -242,8 +242,8 @@ EOTEXT
 
     if (!$branch_name) {
       throw new Exception(
-        "Arc was unable to automagically make a name for this patch.  ".
-        "Please clean up your working copy and try again."
+        'Arc was unable to automagically make a name for this patch.  '.
+        'Please clean up your working copy and try again.'
       );
     }
 
@@ -254,7 +254,7 @@ EOTEXT
     $bookmark_name    = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
-    $base_name      = "arcpatch";
+    $base_name      = 'arcpatch';
     if ($revision_id) {
       $base_name .= "-D{$revision_id}";
     }
@@ -281,8 +281,8 @@ EOTEXT
 
     if (!$bookmark_name) {
       throw new Exception(
-        "Arc was unable to automagically make a name for this patch. ".
-        "Please clean up your working copy and try again."
+        'Arc was unable to automagically make a name for this patch. '.
+        'Please clean up your working copy and try again.'
       );
     }
 
@@ -362,7 +362,7 @@ EOTEXT
             $patch = @file_get_contents('php://stdin');
             if (!strlen($patch)) {
               throw new ArcanistUsageException(
-                "Failed to read patch from stdin!");
+                'Failed to read patch from stdin!');
             }
           } else {
             $patch = Filesystem::readFile($param);
@@ -685,7 +685,7 @@ EOTEXT
         // can not apply these patches on case-insensitive filesystems and
         // there is no way to build a patch which works.
 
-        throw new ArcanistUsageException("Unable to apply patch!");
+        throw new ArcanistUsageException('Unable to apply patch!');
       }
 
       // in case there were any submodule changes involved

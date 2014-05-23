@@ -52,15 +52,15 @@ EOTEXT
   protected function didParseArguments() {
     $argv = $this->getArgument('argv');
     if (!$argv) {
-      throw new ArcanistUsageException("Specify a file to download.");
+      throw new ArcanistUsageException('Specify a file to download.');
     }
     if (count($argv) > 1) {
-      throw new ArcanistUsageException("Specify exactly one file to download.");
+      throw new ArcanistUsageException('Specify exactly one file to download.');
     }
 
     $file = reset($argv);
     if (!preg_match('/^F?\d+$/', $file)) {
-      throw new ArcanistUsageException("Specify file by ID, e.g. F123.");
+      throw new ArcanistUsageException('Specify file by ID, e.g. F123.');
     }
 
     $this->id = (int)ltrim($file, 'F');

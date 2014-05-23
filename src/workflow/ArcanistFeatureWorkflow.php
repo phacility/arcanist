@@ -82,7 +82,7 @@ EOTEXT
     $names = $this->getArgument('branch');
     if ($names) {
       if (count($names) > 2) {
-        throw new ArcanistUsageException("Specify only one branch.");
+        throw new ArcanistUsageException('Specify only one branch.');
       }
       return $this->checkoutBranch($names);
     }
@@ -186,7 +186,7 @@ EOTEXT
     foreach ($branches as $branch) {
       if ($repository_api instanceof ArcanistMercurialAPI) {
         $futures[$branch['name']] = $repository_api->execFutureLocal(
-          "log -l 1 --template %s -r %s",
+          'log -l 1 --template %s -r %s',
           "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
           hgsprintf('%s', $branch['name']));
 

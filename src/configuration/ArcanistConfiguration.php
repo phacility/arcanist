@@ -168,7 +168,7 @@ class ArcanistConfiguration {
   private function raiseUnknownCommand($command, array $maybe = array()) {
     $message = pht("Unknown command '%s'. Try 'arc help'.", $command);
     if ($maybe) {
-      $message .= "\n\n".pht("Did you mean:")."\n";
+      $message .= "\n\n".pht('Did you mean:')."\n";
       sort($maybe);
       foreach ($maybe as $other) {
         $message .= "    ".$other."\n";

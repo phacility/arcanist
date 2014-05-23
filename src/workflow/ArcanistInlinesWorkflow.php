@@ -28,12 +28,12 @@ EOTEXT
       'revision' => array(
         'param' => 'revision_id',
         'help' =>
-          "Display inline comments for a specific revision. If you do not ".
-          "specify a revision, arc will look in the commit message at HEAD.",
+          'Display inline comments for a specific revision. If you do not '.
+          'specify a revision, arc will look in the commit message at HEAD.',
       ),
       'root' => array(
         'param' => 'directory',
-        'help' => "Specify a string printed in front of each path.",
+        'help' => 'Specify a string printed in front of each path.',
       ),
     );
   }
@@ -60,7 +60,7 @@ EOTEXT
     }
 
     if (!$revision_id) {
-      throw new ArcanistUsageException("No revisions found.");
+      throw new ArcanistUsageException('No revisions found.');
     }
 
     $comments = array_mergev(

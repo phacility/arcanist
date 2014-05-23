@@ -42,19 +42,19 @@ EOTEXT
     return array(
       'rev' => array(
         'param' => 'revision',
-        'help' => "Run unit tests covering changes since a specific revision.",
+        'help' => 'Run unit tests covering changes since a specific revision.',
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "Arc unit does not currently support --rev in SVN.",
+          'svn' => 'Arc unit does not currently support --rev in SVN.',
         ),
       ),
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          "Override configured unit engine for this project."
+          'Override configured unit engine for this project.'
       ),
       'coverage' => array(
         'help' => 'Always enable coverage information.',
@@ -66,8 +66,8 @@ EOTEXT
         'help' => 'Always disable coverage information.',
       ),
       'detailed-coverage' => array(
-        'help' => "Show a detailed coverage report on the CLI. Implies ".
-                  "--coverage.",
+        'help' => 'Show a detailed coverage report on the CLI. Implies '.
+                  '--coverage.',
       ),
       'json' => array(
         'help' => 'Report results in JSON format.',
@@ -119,8 +119,8 @@ EOTEXT
 
     if (!$engine_class) {
       throw new ArcanistNoEngineException(
-        "No unit test engine is configured for this project. Edit .arcconfig ".
-        "to specify a unit test engine.");
+        'No unit test engine is configured for this project. Edit .arcconfig '.
+        'to specify a unit test engine.');
     }
 
     $paths = $this->getArgument('paths');
@@ -128,8 +128,8 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        "You can not specify paths with --everything. The --everything ".
-        "flag runs every test.");
+        'You can not specify paths with --everything. The --everything '.
+        'flag runs every test.');
     }
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);

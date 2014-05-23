@@ -631,7 +631,7 @@ EODIFF;
   public function getFinalizedRevisionMessage() {
     // In other VCSes we give push instructions here, but it never makes sense
     // in SVN.
-    return "Done.";
+    return 'Done.';
   }
 
   public function loadWorkingCopyDifferentialRevisions(
@@ -660,7 +660,7 @@ EODIFF;
 
     foreach ($results as $key => $result) {
       $results[$key]['why'] =
-        "Matching arcanist project name and working copy directory path.";
+        'Matching arcanist project name and working copy directory path.';
     }
 
     return $results;

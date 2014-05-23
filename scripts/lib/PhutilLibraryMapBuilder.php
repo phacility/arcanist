@@ -152,7 +152,7 @@ final class PhutilLibraryMapBuilder {
             $result['error']);
           exit(1);
         }
-        $this->log(".");
+        $this->log('.');
       }
       $this->log("\nDone.\n");
     }

@@ -32,18 +32,18 @@ final class ArcanistXUnitTestResultParser {
     }
 
     $results = array();
-    $testcases = $xunit_dom->getElementsByTagName("testcase");
+    $testcases = $xunit_dom->getElementsByTagName('testcase');
     foreach ($testcases as $testcase) {
-      $classname = $testcase->getAttribute("classname");
-      $name = $testcase->getAttribute("name");
-      $time = $testcase->getAttribute("time");
+      $classname = $testcase->getAttribute('classname');
+      $name = $testcase->getAttribute('name');
+      $time = $testcase->getAttribute('time');
 
       $status = ArcanistUnitTestResult::RESULT_PASS;
-      $user_data = "";
+      $user_data = '';
 
       // A skipped test is a test which was ignored using framework
       // mechanizms (e.g. @skip decorator)
-      $skipped = $testcase->getElementsByTagName("skipped");
+      $skipped = $testcase->getElementsByTagName('skipped');
       if ($skipped->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_SKIP;
         $messages = array();
@@ -56,7 +56,7 @@ final class ArcanistXUnitTestResultParser {
 
       // Failure is a test which the code has explicitly failed by using
       // the mechanizms for that purpose. e.g., via an assertEquals
-      $failures = $testcase->getElementsByTagName("failure");
+      $failures = $testcase->getElementsByTagName('failure');
       if ($failures->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_FAIL;
         $messages = array();
@@ -70,7 +70,7 @@ final class ArcanistXUnitTestResultParser {
       // An errored test is one that had an unanticipated problem. e.g., an
       // unchecked throwable, or a problem with an implementation of the
       // test.
-      $errors = $testcase->getElementsByTagName("error");
+      $errors = $testcase->getElementsByTagName('error');
       if ($errors->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_BROKEN;
         $messages = array();
@@ -82,7 +82,7 @@ final class ArcanistXUnitTestResultParser {
       }
 
       $result = new ArcanistUnitTestResult();
-      $result->setName($classname.".".$name);
+      $result->setName($classname.'.'.$name);
       $result->setResult($status);
       $result->setDuration($time);
       $result->setUserData($user_data);

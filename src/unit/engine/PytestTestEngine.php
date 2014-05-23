@@ -64,29 +64,29 @@ final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
 
     $paths = $this->getPaths();
     $reports = array();
-    $classes = $coverage_dom->getElementsByTagName("class");
+    $classes = $coverage_dom->getElementsByTagName('class');
 
     foreach ($classes as $class) {
       // filename is actually python module path with ".py" at the end,
       // e.g.: tornado.web.py
-      $relative_path = explode(".", $class->getAttribute("filename"));
+      $relative_path = explode('.', $class->getAttribute('filename'));
       array_pop($relative_path);
-      $relative_path = implode("/", $relative_path);
+      $relative_path = implode('/', $relative_path);
 
       // first we check if the path is a directory (a Python package), if it is
       // set relative and absolute paths to have __init__.py at the end.
       $absolute_path = Filesystem::resolvePath($relative_path);
       if (is_dir($absolute_path)) {
-        $relative_path .= "/__init__.py";
-        $absolute_path .= "/__init__.py";
+        $relative_path .= '/__init__.py';
+        $absolute_path .= '/__init__.py';
       }
 
       // then we check if the path with ".py" at the end is file (a Python
       // submodule), if it is - set relative and absolute paths to have
       // ".py" at the end.
-      if (is_file($absolute_path.".py")) {
-        $relative_path .= ".py";
-        $absolute_path .= ".py";
+      if (is_file($absolute_path.'.py')) {
+        $relative_path .= '.py';
+        $absolute_path .= '.py';
       }
 
       if (!file_exists($absolute_path)) {
@@ -100,22 +100,22 @@ final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
       // get total line count in file
       $line_count = count(file($absolute_path));
 
-      $coverage = "";
+      $coverage = '';
       $start_line = 1;
-      $lines = $class->getElementsByTagName("line");
+      $lines = $class->getElementsByTagName('line');
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute("number"));
+        $next_line = intval($line->getAttribute('number'));
         for ($start_line; $start_line < $next_line; $start_line++) {
-            $coverage .= "N";
+            $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute("hits")) == 0) {
-            $coverage .= "U";
+        if (intval($line->getAttribute('hits')) == 0) {
+            $coverage .= 'U';
         }
-        else if (intval($line->getAttribute("hits")) > 0) {
-            $coverage .= "C";
+        else if (intval($line->getAttribute('hits')) > 0) {
+            $coverage .= 'C';
         }
 
         $start_line++;
@@ -123,7 +123,7 @@ final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
 
       if ($start_line < $line_count) {
         foreach (range($start_line, $line_count) as $line_num) {
-          $coverage .= "N";
+          $coverage .= 'N';
         }
       }
 

@@ -48,7 +48,7 @@ final class ArcanistLintPatcher {
     }
     Filesystem::writeFile($lint, $data);
 
-    list($err) = exec_manual("mv -f %s %s", $lint, $path);
+    list($err) = exec_manual('mv -f %s %s', $lint, $path);
     if ($err) {
       throw new Exception(
         "Unable to overwrite path `{$path}', patched version was left ".

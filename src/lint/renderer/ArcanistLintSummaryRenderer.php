@@ -20,7 +20,7 @@ final class ArcanistLintSummaryRenderer extends ArcanistLintRenderer {
       $text[] = "{$path}:{$line}:{$severity}: {$name}\n";
     }
 
-    return implode("", $text);
+    return implode('', $text);
   }
 
   public function renderOkayResult() {

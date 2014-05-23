@@ -52,7 +52,7 @@ $args->parse(
 
 $paths = $args->getArg('path');
 if (count($paths) !== 1) {
-  throw new Exception("Specify exactly one path!");
+  throw new Exception('Specify exactly one path!');
 }
 $path = Filesystem::resolvePath(head($paths));
 

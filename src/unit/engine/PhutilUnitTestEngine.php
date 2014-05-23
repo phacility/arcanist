@@ -19,7 +19,7 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
     }
 
     if (!$run_tests) {
-      throw new ArcanistNoEffectException("No tests to run.");
+      throw new ArcanistNoEffectException('No tests to run.');
     }
 
     $enable_coverage = $this->getEnableCoverage();
@@ -27,8 +27,8 @@ final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
       if (!function_exists('xdebug_start_code_coverage')) {
         if ($enable_coverage === true) {
           throw new ArcanistUsageException(
-            "You specified --coverage but xdebug is not available, so ".
-            "coverage can not be enabled for PhutilUnitTestEngine.");
+            'You specified --coverage but xdebug is not available, so '.
+            'coverage can not be enabled for PhutilUnitTestEngine.');
         }
       } else {
         $enable_coverage = true;

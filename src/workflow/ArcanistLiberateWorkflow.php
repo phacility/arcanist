@@ -37,34 +37,34 @@ EOTEXT
     return array(
       'all' => array(
         'help' =>
-          "Drop the module cache before liberating. This will completely ".
-          "reanalyze the entire library. Thorough, but slow!",
+          'Drop the module cache before liberating. This will completely '.
+          'reanalyze the entire library. Thorough, but slow!',
       ),
       'force-update' => array(
         'help' =>
-          "Force the library map to be updated, even in the presence of ".
-          "lint errors.",
+          'Force the library map to be updated, even in the presence of '.
+          'lint errors.',
       ),
       'library-name' => array(
         'param' => 'name',
         'help' =>
-          "Use a flag for library name rather than awaiting user input.",
+          'Use a flag for library name rather than awaiting user input.',
       ),
       'remap' => array(
         'hide' => true,
         'help' =>
-          "Internal. Run the remap step of liberation. You do not need to ".
-          "run this unless you are debugging the workflow.",
+          'Internal. Run the remap step of liberation. You do not need to '.
+          'run this unless you are debugging the workflow.',
       ),
       'verify' => array(
         'hide' => true,
         'help' =>
-          "Internal. Run the verify step of liberation. You do not need to ".
-          "run this unless you are debugging the workflow.",
+          'Internal. Run the verify step of liberation. You do not need to '.
+          'run this unless you are debugging the workflow.',
       ),
       'upgrade' => array(
         'hide'  => true,
-        'help'  => "Experimental. Upgrade library to v2.",
+        'help'  => 'Experimental. Upgrade library to v2.',
       ),
       '*' => 'argv',
     );
@@ -98,8 +98,8 @@ EOTEXT
     if ($init) {
       if (count($init) > 1) {
         throw new ArcanistUsageException(
-          "Specified directory contains more than one libphutil library. Use ".
-          "a more specific path.");
+          'Specified directory contains more than one libphutil library. Use '.
+          'a more specific path.');
       }
       $path = Filesystem::resolvePath(dirname(reset($init)), $path);
     } else {
@@ -186,14 +186,14 @@ EOTEXT
     if (Filesystem::pathExists($path)) {
       if (!is_dir($path)) {
         throw new ArcanistUsageException(
-          "Provide a directory to create or update a libphutil library in.");
+          'Provide a directory to create or update a libphutil library in.');
       }
       return;
     }
 
     echo "The directory '{$path}' does not exist.";
     if (!phutil_console_confirm('Do you want to create it?')) {
-      throw new ArcanistUsageException("Cancelled.");
+      throw new ArcanistUsageException('Cancelled.');
     }
 
     execx('mkdir -p %s', $path);
@@ -208,7 +208,7 @@ EOTEXT
     echo "Creating new libphutil library in '{$path}'.\n";
 
     do {
-      $name = $this->getArgument("library-name");
+      $name = $this->getArgument('library-name');
       if ($name === null) {
         echo "Choose a name for the new library.\n";
         $name = phutil_console_prompt('What do you want to name this library?');

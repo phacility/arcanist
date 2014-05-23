@@ -50,8 +50,8 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
       $this->coverEngine = Filesystem::resolvePath($cscover);
     } else {
       throw new Exception(
-        "Unable to locate cscover coverage runner ".
-        "(have you built yet?)");
+        'Unable to locate cscover coverage runner '.
+        '(have you built yet?)');
     }
 
   }
@@ -95,7 +95,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     // FIXME: Can't use TempFile here as xUnit doesn't like
     // UNIX-style full paths.  It sees the leading / as the
     // start of an option flag, even when quoted.
-    $xunit_temp = Filesystem::readRandomCharacters(10).".results.xml";
+    $xunit_temp = Filesystem::readRandomCharacters(10).'.results.xml';
     if (file_exists($xunit_temp)) {
       unlink($xunit_temp);
     }
@@ -103,15 +103,15 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $cover_temp->setPreserveFile(true);
     $xunit_cmd = $this->runtimeEngine;
     $xunit_args = null;
-    if ($xunit_cmd === "") {
+    if ($xunit_cmd === '') {
       $xunit_cmd = $this->testEngine;
       $xunit_args = csprintf(
-        "%s /xml %s",
+        '%s /xml %s',
         $test_assembly,
         $xunit_temp);
     } else {
       $xunit_args = csprintf(
-        "%s %s /xml %s",
+        '%s %s /xml %s',
         $this->testEngine,
         $test_assembly,
         $xunit_temp);
@@ -119,7 +119,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $assembly_dir = dirname($test_assembly);
     $assemblies_to_instrument = array();
     foreach (Filesystem::listDirectory($assembly_dir) as $file) {
-      if (substr($file, -4) == ".dll" || substr($file, -4) == ".exe") {
+      if (substr($file, -4) == '.dll' || substr($file, -4) == '.exe') {
         if ($this->assemblyShouldBeInstrumented($file)) {
           $assemblies_to_instrument[] = $assembly_dir.DIRECTORY_SEPARATOR.$file;
         }
@@ -129,8 +129,8 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
       return parent::buildTestFuture($test_assembly);
     }
     $future = new ExecFuture(
-      "%C -o %s -c %s -a %s -w %s %Ls",
-      trim($this->runtimeEngine." ".$this->coverEngine),
+      '%C -o %s -c %s -a %s -w %s %Ls',
+      trim($this->runtimeEngine.' '.$this->coverEngine),
       $cover_temp,
       $xunit_cmd,
       $xunit_args,
@@ -200,9 +200,9 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $results = array();
     foreach ($tags as $tag) {
       $results[] = array(
-        "file" => $tag->getAttribute("file"),
-        "start" => $tag->getAttribute("start"),
-        "end" => $tag->getAttribute("end"));
+        'file' => $tag->getAttribute('file'),
+        'start' => $tag->getAttribute('start'),
+        'end' => $tag->getAttribute('end'));
     }
     return $results;
   }
@@ -229,12 +229,12 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $executed = array();
 
     $instrumented = $this->processTags(
-      $coverage_dom->getElementsByTagName("instrumented"));
+      $coverage_dom->getElementsByTagName('instrumented'));
     $executed = $this->processTags(
-      $coverage_dom->getElementsByTagName("executed"));
+      $coverage_dom->getElementsByTagName('executed'));
 
     foreach ($instrumented as $instrument) {
-      $absolute_file = $instrument["file"];
+      $absolute_file = $instrument['file'];
       $relative_file = substr($absolute_file, strlen($this->projectRoot) + 1);
       if (!in_array($relative_file, $files)) {
         $files[] = $relative_file;
@@ -254,24 +254,24 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
       }
 
       foreach ($instrumented as $instrument) {
-        if ($instrument["file"] !== $absolute_file) {
+        if ($instrument['file'] !== $absolute_file) {
           continue;
         }
         for (
-          $i = $instrument["start"];
-          $i <= $instrument["end"];
+          $i = $instrument['start'];
+          $i <= $instrument['end'];
           $i++) {
           $coverage[$i - 1] = 'U';
         }
       }
 
       foreach ($executed as $execute) {
-        if ($execute["file"] !== $absolute_file) {
+        if ($execute['file'] !== $absolute_file) {
           continue;
         }
         for (
-          $i = $execute["start"];
-          $i <= $execute["end"];
+          $i = $execute['start'];
+          $i <= $execute['end'];
           $i++) {
           $coverage[$i - 1] = 'C';
         }

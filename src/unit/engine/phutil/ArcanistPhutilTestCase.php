@@ -97,13 +97,13 @@ abstract class ArcanistPhutilTestCase {
 
     if ($message !== null) {
       $output = pht(
-        "Assertion failed, expected values to be equal (at %s:%d): %s",
+        'Assertion failed, expected values to be equal (at %s:%d): %s',
         $file,
         $line,
         $message);
     } else {
       $output = pht(
-        "Assertion failed, expected values to be equal (at %s:%d).",
+        'Assertion failed, expected values to be equal (at %s:%d).',
         $file,
         $line);
     }
@@ -216,7 +216,7 @@ abstract class ArcanistPhutilTestCase {
 
     if (count($inputs) !== count($expect)) {
       $this->assertFailure(
-        "Input and expectations must have the same number of values.");
+        'Input and expectations must have the same number of values.');
     }
 
     $labels = array_keys($inputs);
@@ -500,7 +500,7 @@ abstract class ArcanistPhutilTestCase {
               throw head($exceptions);
             } else {
               throw new PhutilAggregateException(
-                "Multiple exceptions were raised during test execution.",
+                'Multiple exceptions were raised during test execution.',
                 $exceptions);
             }
           }

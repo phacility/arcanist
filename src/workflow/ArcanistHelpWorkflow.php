@@ -86,37 +86,37 @@ EOTEXT
         if (isset($spec['param'])) {
           if (isset($spec['short'])) {
             $optref[] = phutil_console_format(
-              "          __--%s__ __%s__, __-%s__ __%s__",
+              '          __--%s__ __%s__, __-%s__ __%s__',
               $argument,
               $spec['param'],
               $spec['short'],
               $spec['param']);
           } else {
             $optref[] = phutil_console_format(
-              "          __--%s__ __%s__",
+              '          __--%s__ __%s__',
               $argument,
               $spec['param']);
           }
         } else {
           if (isset($spec['short'])) {
             $optref[] = phutil_console_format(
-              "          __--%s__, __-%s__",
+              '          __--%s__, __-%s__',
               $argument,
               $spec['short']);
           } else {
             $optref[] = phutil_console_format(
-              "          __--%s__",
+              '          __--%s__',
               $argument);
           }
         }
 
         if (isset($config_arguments[$argument])) {
-          $optref[] = "              (This is a custom option for this ".
-                      "project.)";
+          $optref[] = '              (This is a custom option for this '.
+                      'project.)';
         }
 
         if (isset($spec['supports'])) {
-          $optref[] = "              Supports: ".
+          $optref[] = '              Supports: '.
                       implode(', ', $spec['supports']);
         }
 

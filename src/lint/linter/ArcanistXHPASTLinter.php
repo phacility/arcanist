@@ -302,12 +302,12 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $this->raiseLintAtNode(
           $strstr,
           self::LINT_SLOWNESS,
-          "Use strpos() for checking if the string contains something.");
+          'Use strpos() for checking if the string contains something.');
       } else if ($name == 'stristr') {
         $this->raiseLintAtNode(
           $strstr,
           self::LINT_SLOWNESS,
-          "Use stripos() for checking if the string contains something.");
+          'Use stripos() for checking if the string contains something.');
       }
     }
   }
@@ -344,13 +344,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $this->raiseLintAtNode(
           $strpos,
           self::LINT_SLOWNESS,
-          "Use strncmp() for checking if the string starts with something.");
+          'Use strncmp() for checking if the string starts with something.');
       } else if ($name == 'stripos') {
         $this->raiseLintAtNode(
           $strpos,
           self::LINT_SLOWNESS,
-          "Use strncasecmp() for checking if the string starts with ".
-            "something.");
+          'Use strncasecmp() for checking if the string starts with '.
+            'something.');
       }
     }
   }
@@ -480,7 +480,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_PHP_53_FEATURES,
           "This codebase targets PHP 5.3.0 on Windows, but `{$name}()` is not ".
           "available there".
-          ($windows ? " until PHP {$windows}" : "").".");
+          ($windows ? " until PHP {$windows}" : '').".");
       }
     }
 
@@ -510,9 +510,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $this->raiseLintAtNode(
             $index->getChildByIndex(1),
             self::LINT_PHP_54_FEATURES,
-            "The f()[...] syntax was not introduced until PHP 5.4, but this ".
-            "codebase targets an earlier version of PHP. You can rewrite ".
-            "this expression using idx().");
+            'The f()[...] syntax was not introduced until PHP 5.4, but this '.
+            'codebase targets an earlier version of PHP. You can rewrite '.
+            'this expression using idx().');
           break;
       }
     }
@@ -2044,7 +2044,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $this->raiseLintAtNode(
             $unary,
             self::LINT_EXIT_EXPRESSION,
-            "Use exit as a statement, not an expression.");
+            'Use exit as a statement, not an expression.');
         }
       }
     }
@@ -2208,8 +2208,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $message = $this->raiseLintAtNode(
           $node,
           self::LINT_DUPLICATE_KEYS_IN_ARRAY,
-          "Duplicate key in array initializer. PHP will ignore all ".
-            "but the last entry.");
+          'Duplicate key in array initializer. PHP will ignore all '.
+            'but the last entry.');
 
         $locations = array();
         foreach ($nodes_by_key[$key] as $node) {

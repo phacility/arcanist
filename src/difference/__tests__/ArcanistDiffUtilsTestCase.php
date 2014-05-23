@@ -100,7 +100,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
 
     $utf8_tests = array(
       array(
-        "GrumpyCat",
+        'GrumpyCat',
         "Grumpy\xE2\x98\x83at",
         'ssssssxss',
       ),
@@ -118,8 +118,8 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
 
   public function testGenerateUTF8IntralineDiff() {
     // Both Strings Empty.
-    $left = "";
-    $right = "";
+    $left = '';
+    $right = '';
     $result = array(
                 array(array(0, 0)),
                 array(array(0, 0))
@@ -129,7 +129,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
       ArcanistDiffUtils::generateIntralineDiff($left, $right));
 
     // Left String Empty.
-    $left = "";
+    $left = '';
     $right = "Grumpy\xE2\x98\x83at";
     $result = array(
                 array(array(0, 0)),
@@ -141,7 +141,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
 
     // Right String Empty.
     $left = "Grumpy\xE2\x98\x83at";
-    $right = "";
+    $right = '';
     $result = array(
                 array(array(0, 11)),
                 array(array(0, 0))
@@ -163,7 +163,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
 
     // Both Strings are different.
     $left = "Grumpy\xE2\x98\x83at";
-    $right = "Smiling Dog";
+    $right = 'Smiling Dog';
     $result = array(
                 array(array(1, 11)),
                 array(array(1, 11))
@@ -173,7 +173,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
       ArcanistDiffUtils::generateIntralineDiff($left, $right));
 
     // String with one difference in the middle.
-    $left = "GrumpyCat";
+    $left = 'GrumpyCat';
     $right = "Grumpy\xE2\x98\x83at";
     $result = array(
                 array(array(0, 6), array(1, 1), array(0, 2)),
@@ -184,7 +184,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
       ArcanistDiffUtils::generateIntralineDiff($left, $right));
 
     // Differences in middle, not connected to each other.
-    $left = "GrumpyCat";
+    $left = 'GrumpyCat';
     $right = "Grumpy\xE2\x98\x83a\xE2\x98\x83t";
     $result = array(
                 array(array(0, 6), array(1, 2), array(0, 1)),
@@ -229,7 +229,7 @@ final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
 
     // This is a unicode combining character, "COMBINING DOUBLE TILDE".
     $cc = "\xCD\xA0";
-    $left = "Senor";
+    $left = 'Senor';
     $right = "Sen{$cc}or";
     $result = array(
                 array(array(0, 2), array(1, 1), array(0, 2)),

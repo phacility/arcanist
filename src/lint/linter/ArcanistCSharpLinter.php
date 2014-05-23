@@ -60,7 +60,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
   public function setCustomSeverityMap(array $map) {
     foreach ($map as $code => $severity) {
-      if (substr($code, 0, 2) === "SA" && $severity == "disabled") {
+      if (substr($code, 0, 2) === 'SA' && $severity == 'disabled') {
         throw new Exception(
           "In order to keep StyleCop integration with IDEs and other tools ".
           "consistent with Arcanist results, you aren't permitted to ".
@@ -88,42 +88,42 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
     // Determine runtime engine (.NET or Mono).
     if (phutil_is_windows()) {
-      $this->runtimeEngine = "";
-    } else if (Filesystem::binaryExists("mono")) {
-      $this->runtimeEngine = "mono ";
+      $this->runtimeEngine = '';
+    } else if (Filesystem::binaryExists('mono')) {
+      $this->runtimeEngine = 'mono ';
     } else {
-      throw new Exception("Unable to find Mono and you are not on Windows!");
+      throw new Exception('Unable to find Mono and you are not on Windows!');
     }
 
     // Determine cslint path.
     $cslint = $this->cslintHintPath;
     if ($cslint !== null && file_exists($cslint)) {
       $this->cslintEngine = Filesystem::resolvePath($cslint);
-    } else if (Filesystem::binaryExists("cslint.exe")) {
-      $this->cslintEngine = "cslint.exe";
+    } else if (Filesystem::binaryExists('cslint.exe')) {
+      $this->cslintEngine = 'cslint.exe';
     } else {
-      throw new Exception("Unable to locate cslint.");
+      throw new Exception('Unable to locate cslint.');
     }
 
     // Determine cslint version.
     $ver_future = new ExecFuture(
-      "%C -v",
+      '%C -v',
       $this->runtimeEngine.$this->cslintEngine);
     list($err, $stdout, $stderr) = $ver_future->resolve();
     if ($err !== 0) {
       throw new Exception(
-        "You are running an old version of cslint.  Please ".
-        "upgrade to version ".self::SUPPORTED_VERSION.".");
+        'You are running an old version of cslint.  Please '.
+        'upgrade to version '.self::SUPPORTED_VERSION.'.');
     }
     $ver = (int)$stdout;
     if ($ver < self::SUPPORTED_VERSION) {
       throw new Exception(
-        "You are running an old version of cslint.  Please ".
-        "upgrade to version ".self::SUPPORTED_VERSION.".");
-    } elseif ($ver > self::SUPPORTED_VERSION) {
+        'You are running an old version of cslint.  Please '.
+        'upgrade to version '.self::SUPPORTED_VERSION.'.');
+    } else if ($ver > self::SUPPORTED_VERSION) {
       throw new Exception(
-        "Arcanist does not support this version of cslint (it is ".
-        "newer).  You can try upgrading Arcanist with `arc upgrade`.");
+        'Arcanist does not support this version of cslint (it is '.
+        'newer).  You can try upgrading Arcanist with `arc upgrade`.');
     }
 
     $this->loaded = true;
@@ -158,7 +158,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         // settings JSON through base64-encoded to mitigate
         // this issue.
         $futures[] = new ExecFuture(
-          "%C --settings-base64=%s -r=. %Ls",
+          '%C --settings-base64=%s -r=. %Ls',
           $this->runtimeEngine.$this->cslintEngine,
           base64_encode(json_encode($this->discoveryMap)),
           $current_paths);
@@ -173,7 +173,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     // a future for those too.
     if (count($current_paths) > 0) {
       $futures[] = new ExecFuture(
-        "%C --settings-base64=%s -r=. %Ls",
+        '%C --settings-base64=%s -r=. %Ls',
         $this->runtimeEngine.$this->cslintEngine,
         base64_encode(json_encode($this->discoveryMap)),
         $current_paths);

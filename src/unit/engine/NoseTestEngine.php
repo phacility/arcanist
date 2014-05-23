@@ -18,7 +18,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       $absolute_path = Filesystem::resolvePath($path);
 
       if (is_dir($absolute_path)) {
-        $absolute_test_path = Filesystem::resolvePath("tests/".$path);
+        $absolute_test_path = Filesystem::resolvePath('tests/'.$path);
         if (is_readable($absolute_test_path)) {
           $affected_tests[] = $absolute_test_path;
         }
@@ -29,7 +29,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
         $directory = dirname($path);
 
         // assumes directory layout: tests/<package>/test_<module>.py
-        $relative_test_path = "tests/".$directory."/test_".$filename;
+        $relative_test_path = 'tests/'.$directory.'/test_'.$filename;
         $absolute_test_path = Filesystem::resolvePath($relative_test_path);
 
         if (is_readable($absolute_test_path)) {
@@ -87,16 +87,16 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   public function buildTestFuture($path, $xunit_tmp, $cover_tmp) {
-    $cmd_line = csprintf("nosetests --with-xunit --xunit-file=%s",
+    $cmd_line = csprintf('nosetests --with-xunit --xunit-file=%s',
                          $xunit_tmp);
 
     if ($this->getEnableCoverage() !== false) {
-      $cmd_line .= csprintf(" --with-coverage --cover-xml " .
-                            "--cover-xml-file=%s",
+      $cmd_line .= csprintf(' --with-coverage --cover-xml ' .
+                            '--cover-xml-file=%s',
                             $cover_tmp);
     }
 
-    return new ExecFuture("%C %s", $cmd_line, $path);
+    return new ExecFuture('%C %s', $cmd_line, $path);
   }
 
   public function parseTestResults($source_path, $xunit_tmp, $cover_tmp) {
@@ -119,10 +119,10 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
     $coverage_dom->loadXML(Filesystem::readFile($cover_file));
 
     $reports = array();
-    $classes = $coverage_dom->getElementsByTagName("class");
+    $classes = $coverage_dom->getElementsByTagName('class');
 
     foreach ($classes as $class) {
-      $path = $class->getAttribute("filename");
+      $path = $class->getAttribute('filename');
       $root = $this->getWorkingCopy()->getProjectRoot();
 
       if (!Filesystem::isDescendant($path, $root)) {
@@ -132,21 +132,21 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       // get total line count in file
       $line_count = count(phutil_split_lines(Filesystem::readFile($path)));
 
-      $coverage = "";
+      $coverage = '';
       $start_line = 1;
-      $lines = $class->getElementsByTagName("line");
+      $lines = $class->getElementsByTagName('line');
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute("number"));
+        $next_line = intval($line->getAttribute('number'));
         for ($start_line; $start_line < $next_line; $start_line++) {
-          $coverage .= "N";
+          $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute("hits")) == 0) {
-          $coverage .= "U";
-        } else if (intval($line->getAttribute("hits")) > 0) {
-          $coverage .= "C";
+        if (intval($line->getAttribute('hits')) == 0) {
+          $coverage .= 'U';
+        } else if (intval($line->getAttribute('hits')) > 0) {
+          $coverage .= 'C';
         }
 
         $start_line++;
@@ -154,7 +154,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
 
       if ($start_line < $line_count) {
         foreach (range($start_line, $line_count) as $line_num) {
-          $coverage .= "N";
+          $coverage .= 'N';
         }
       }
 

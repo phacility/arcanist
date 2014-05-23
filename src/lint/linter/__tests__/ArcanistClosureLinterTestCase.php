@@ -5,7 +5,7 @@ final class ArcanistClosureLinterTestCase
 
   public function testClosureLinter() {
     $linter = new ArcanistClosureLinter();
-    $linter->setFlags(array("--additional_extensions=lint-test"));
+    $linter->setFlags(array('--additional_extensions=lint-test'));
 
     $this->executeTestsInDirectory(
       dirname(__FILE__).'/gjslint/',

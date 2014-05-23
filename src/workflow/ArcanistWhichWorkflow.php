@@ -44,7 +44,7 @@ EOTEXT
   public function getArguments() {
     return array(
       'any-status' => array(
-        'help' => "Show committed and abandoned revisions.",
+        'help' => 'Show committed and abandoned revisions.',
       ),
       'base' => array(
         'param' => 'rules',
@@ -115,7 +115,7 @@ EOTEXT
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
         $command = "hg diff --rev {$relative}";
       } else {
-        throw new Exception("Unknown VCS!");
+        throw new Exception('Unknown VCS!');
       }
 
       echo phutil_console_wrap(

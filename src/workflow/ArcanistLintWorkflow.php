@@ -63,31 +63,31 @@ EOTEXT
     return array(
       'lintall' => array(
         'help' =>
-        "Show all lint warnings, not just those on changed lines.  When " .
-        "paths are specified, this is the default behavior.",
+        'Show all lint warnings, not just those on changed lines.  When ' .
+        'paths are specified, this is the default behavior.',
         'conflicts' => array(
           'only-changed' => true,
         ),
       ),
       'only-changed' => array(
         'help' =>
-        "Show lint warnings just on changed lines.  When no paths are " .
-        "specified, this is the default.  This differs from only-new " .
-        "in cases where line modifications introduce lint on other " .
-        "unmodified lines.",
+        'Show lint warnings just on changed lines.  When no paths are ' .
+        'specified, this is the default.  This differs from only-new ' .
+        'in cases where line modifications introduce lint on other ' .
+        'unmodified lines.',
         'conflicts' => array(
           'lintall' => true,
         ),
       ),
       'rev' => array(
         'param' => 'revision',
-        'help' => "Lint changes since a specific revision.",
+        'help' => 'Lint changes since a specific revision.',
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "Lint does not currently support --rev in SVN.",
+          'svn' => 'Lint does not currently support --rev in SVN.',
         ),
       ),
       'output' => array(
@@ -107,7 +107,7 @@ EOTEXT
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          "Override configured lint engine for this project."
+          'Override configured lint engine for this project.'
       ),
       'apply-patches' => array(
         'help' =>
@@ -193,8 +193,8 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        "You can not specify paths with --everything. The --everything ".
-        "flag lints every file.");
+        'You can not specify paths with --everything. The --everything '.
+        'flag lints every file.');
     }
     if ($use_cache === null) {
       $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
@@ -203,7 +203,7 @@ EOTEXT
     }
 
     if ($rev && $paths) {
-      throw new ArcanistUsageException("Specify either --rev or paths.");
+      throw new ArcanistUsageException('Specify either --rev or paths.');
     }
 
 
@@ -503,12 +503,12 @@ EOTEXT
           // TODO: Improve the behavior here, make it more like
           // difference_render().
           list(, $stdout, $stderr) =
-            exec_manual("diff -u %s %s", $old_file, $new_file);
+            exec_manual('diff -u %s %s', $old_file, $new_file);
           $console->writeOut('%s', $stdout);
           $console->writeErr('%s', $stderr);
 
           $prompt = phutil_console_format(
-            "Apply this patch to __%s__?",
+            'Apply this patch to __%s__?',
             $result->getPath());
           if (!$console->confirm($prompt, $default_no = false)) {
             continue;
@@ -531,7 +531,7 @@ EOTEXT
           "with lint patches.\n");
         $amend = true;
       } else {
-        $amend = $console->confirm("Amend HEAD with lint patches?");
+        $amend = $console->confirm('Amend HEAD with lint patches?');
       }
 
       if ($amend) {
@@ -543,8 +543,8 @@ EOTEXT
         $repository_api->amendCommit();
       } else {
         throw new ArcanistUsageException(
-          "Sort out the lint changes that were applied to the working ".
-          "copy and relint.");
+          'Sort out the lint changes that were applied to the working '.
+          'copy and relint.');
       }
     }
 

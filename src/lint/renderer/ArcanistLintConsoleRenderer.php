@@ -43,7 +43,7 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
         foreach ($message->getOtherLocations() as $location) {
           $locations[] =
             idx($location, 'path', $path).
-            (!empty($location['line']) ? ":{$location['line']}" : "");
+            (!empty($location['line']) ? ":{$location['line']}" : '');
         }
         $description .= "\nOther locations: ".implode(', ', $locations);
       }
@@ -226,7 +226,7 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
   protected function renderLine($line, $data, $chevron = false, $diff = null) {
     $chevron = $chevron ? '>>>' : '';
     return sprintf(
-      "    %3s %1s %6s %s",
+      '    %3s %1s %6s %s',
       $chevron,
       $diff,
       $line,

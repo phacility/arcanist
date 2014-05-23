@@ -30,6 +30,6 @@ final class ArcanistLintLikeCompilerRenderer extends ArcanistLintRenderer {
   }
 
   public function renderOkayResult() {
-    return "";
+    return '';
   }
 }

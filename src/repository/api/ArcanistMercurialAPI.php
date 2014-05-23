@@ -133,8 +133,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         }
       }
 
-      $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
-        "the working directory and the commit you specified explicitly.");
+      $this->setBaseCommitExplanation('it is the greatest common ancestor of '.
+        'the working directory and the commit you specified explicitly.');
       return $commit;
     }
 
@@ -174,8 +174,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     if (!$logs) {
       $this->setBaseCommitExplanation(
-        "you have no outgoing commits, so arc assumes you intend to submit ".
-        "uncommitted changes in the working copy.");
+        'you have no outgoing commits, so arc assumes you intend to submit '.
+        'uncommitted changes in the working copy.');
       return $this->getWorkingCopyRevision();
     }
 
@@ -217,11 +217,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     if ($against == 'null') {
       $this->setBaseCommitExplanation(
-        "this is a new repository (all changes are outgoing).");
+        'this is a new repository (all changes are outgoing).');
     } else {
       $this->setBaseCommitExplanation(
-        "it is the first commit reachable from the working copy state ".
-        "which is not outgoing.");
+        'it is the first commit reachable from the working copy state '.
+        'which is not outgoing.');
     }
 
     return $against;
@@ -231,7 +231,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($this->localCommitInfo === null) {
       $base_commit = $this->getBaseCommit();
       list($info) = $this->execxLocal(
-        "log --template %s --rev %s --branch %s --",
+        'log --template %s --rev %s --branch %s --',
         "{node}\1{rev}\1{author}\1".
           "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
         hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
@@ -522,13 +522,13 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($err) {
       return false;
     } else {
-      return (strpos($stdout, "amend") !== false);
+      return (strpos($stdout, 'amend') !== false);
     }
   }
 
   public function supportsRebase() {
     if ($this->supportsRebase === null) {
-      list ($err) = $this->execManualLocal("help rebase");
+      list ($err) = $this->execManualLocal('help rebase');
       $this->supportsRebase = $err === 0;
     }
 
@@ -537,7 +537,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function supportsPhases() {
     if ($this->supportsPhases === null) {
-      list ($err) = $this->execManualLocal("help phase");
+      list ($err) = $this->execManualLocal('help phase');
       $this->supportsPhases = $err === 0;
     }
 
@@ -616,7 +616,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     if ($err) {
-      throw new ArcanistUsageException("Merge failed!");
+      throw new ArcanistUsageException('Merge failed!');
     }
   }
 
@@ -628,7 +628,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getCommitMessageLog() {
     $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
-      "log --template %s --rev %s --branch %s --",
+      'log --template %s --rev %s --branch %s --',
       "{node}\1{desc}\2",
       hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
@@ -698,8 +698,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       foreach ($results as $key => $hash) {
         $results[$key]['why'] =
-          "A mercurial commit hash in the commit range is already attached ".
-          "to the Differential revision.";
+          'A mercurial commit hash in the commit range is already attached '.
+          'to the Differential revision.';
       }
 
       return $results;
@@ -796,7 +796,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBackoutMessage($commit_hash) {
-    return "Backed out changeset ".$commit_hash.".";
+    return 'Backed out changeset '.$commit_hash.'.';
   }
 
   public function resolveBaseCommitRule($rule, $source) {

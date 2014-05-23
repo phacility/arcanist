@@ -49,7 +49,7 @@ $args->parse(
 
 $root = $args->getArg('root');
 if (count($root) !== 1) {
-  throw new Exception("Provide exactly one library root!");
+  throw new Exception('Provide exactly one library root!');
 }
 $root = Filesystem::resolvePath(head($root));
 

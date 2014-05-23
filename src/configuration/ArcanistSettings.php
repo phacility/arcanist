@@ -142,7 +142,7 @@ final class ArcanistSettings {
       'browser' => array(
         'type' => 'string',
         'help' =>
-          "Command to use to invoke a web browser.",
+          'Command to use to invoke a web browser.',
         'example' => '"gnome-www-browser"',
       ),
       'events.listeners' => array(
@@ -154,13 +154,13 @@ final class ArcanistSettings {
       'http.basicauth.user' => array(
         'type' => 'string',
         'help' =>
-          "Username to use for basic auth over http transports",
+          'Username to use for basic auth over http transports',
         'example' => '"bob"',
       ),
       'http.basicauth.pass' => array(
         'type' => 'string',
         'help' =>
-          "Password to use for basic auth over http transports",
+          'Password to use for basic auth over http transports',
         'example' => '"bobhasasecret"',
       ),
       'arc.autostash' => array(

@@ -40,7 +40,7 @@ EOTEXT
 
   protected function didParseArguments() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException("Specify one or more files to upload.");
+      throw new ArcanistUsageException('Specify one or more files to upload.');
     }
 
     $this->paths = $this->getArgument('paths');

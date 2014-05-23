@@ -121,10 +121,10 @@ final class ArcanistBaseCommitParser {
     switch ($name) {
       case 'verbose':
         $this->verbose = true;
-        $this->log("Enabled verbose mode.");
+        $this->log('Enabled verbose mode.');
         break;
       case 'prompt':
-        $reason = "it is what you typed when prompted.";
+        $reason = 'it is what you typed when prompted.';
         $this->api->setBaseCommitExplanation($reason);
         return phutil_console_prompt('Against which commit?');
       case 'local':
@@ -144,7 +144,7 @@ final class ArcanistBaseCommitParser {
       case 'halt':
         // Dump the whole stack.
         $this->try = array();
-        $this->log("Halting all rule processing.");
+        $this->log('Halting all rule processing.');
         return false;
       case 'skip':
         return null;

@@ -47,8 +47,8 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     if (!$working_copy->getProjectID()) {
       throw new ArcanistUsageException(
-        "You have installed a git pre-receive hook in a remote without an ".
-        ".arcconfig.");
+        'You have installed a git pre-receive hook in a remote without an '.
+        '.arcconfig.');
     }
 
     // Git repositories have special rules in pre-receive hooks. We need to

@@ -22,7 +22,7 @@ $args->parse(
 
 $repo = $args->getArg('repository');
 if (count($repo) !== 1) {
-  throw new Exception("Specify exactly one working copy!");
+  throw new Exception('Specify exactly one working copy!');
 }
 $repo = head($repo);
 

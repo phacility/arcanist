@@ -379,7 +379,7 @@ final class ArcanistBundle {
 
       if (!$decompose_okay) {
         throw new Exception(
-          "Failed to decompose multicopy changeset in order to generate diff.");
+          'Failed to decompose multicopy changeset in order to generate diff.');
       }
     }
 
@@ -763,7 +763,7 @@ final class ArcanistBundle {
 
     $content = array();
     $content[] = "index {$old_sha1}..{$new_sha1}".$eol;
-    $content[] = "GIT binary patch".$eol;
+    $content[] = 'GIT binary patch'.$eol;
 
     $content[] = "literal {$new_length}".$eol;
     $content[] = $this->emitBinaryDiffBody($new_data).$eol;
@@ -779,9 +779,9 @@ final class ArcanistBundle {
 
     if (!function_exists('gzcompress')) {
       throw new Exception(
-        "This patch has binary data. The PHP zlib extension is required to ".
-        "apply patches with binary data to git. Install the PHP zlib ".
-        "extension to continue.");
+        'This patch has binary data. The PHP zlib extension is required to '.
+        'apply patches with binary data to git. Install the PHP zlib '.
+        'extension to continue.');
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.

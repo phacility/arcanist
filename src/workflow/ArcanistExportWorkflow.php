@@ -66,19 +66,19 @@ EOTEXT
       'encoding' => array(
         'param' => 'encoding',
         'help' =>
-          "Attempt to convert non UTF-8 patch into specified encoding.",
+          'Attempt to convert non UTF-8 patch into specified encoding.',
       ),
       'revision' => array(
         'param' => 'revision_id',
         'help' =>
-          "Instead of exporting changes from the working copy, export them ".
-          "from a Differential revision."
+          'Instead of exporting changes from the working copy, export them '.
+          'from a Differential revision.'
       ),
       'diff' => array(
         'param' => 'diff_id',
         'help' =>
-          "Instead of exporting changes from the working copy, export them ".
-          "from a Differential diff."
+          'Instead of exporting changes from the working copy, export them '.
+          'from a Differential diff.'
       ),
       '*' => 'paths',
     );

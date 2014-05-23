@@ -39,7 +39,7 @@ EOTEXT
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "cover does not currently support --rev in svn.",
+          'svn' => 'cover does not currently support --rev in svn.',
         ),
       ),
       '*' => 'paths',

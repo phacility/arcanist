@@ -139,7 +139,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   final public function setConduitURI($conduit_uri) {
     if ($this->conduit) {
       throw new Exception(
-        "You can not change the Conduit URI after a conduit is already open.");
+        'You can not change the Conduit URI after a conduit is already open.');
     }
     $this->conduitURI = $conduit_uri;
     return $this;
@@ -176,8 +176,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
 
     if (!$this->conduitURI) {
       throw new Exception(
-        "You must specify a Conduit URI with setConduitURI() before you can ".
-        "establish a conduit.");
+        'You must specify a Conduit URI with setConduitURI() before you can '.
+        'establish a conduit.');
     }
 
     $this->conduit = new ConduitClient($this->conduitURI);
@@ -222,7 +222,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   final public function setConduitCredentials(array $credentials) {
     if ($this->isConduitAuthenticated()) {
       throw new Exception(
-        "You may not set new credentials after authenticating conduit.");
+        'You may not set new credentials after authenticating conduit.');
     }
 
     $this->conduitCredentials = $credentials;
@@ -315,8 +315,8 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     try {
       if (!$credentials) {
         throw new Exception(
-          "Set conduit credentials with setConduitCredentials() before ".
-          "authenticating conduit!");
+          'Set conduit credentials with setConduitCredentials() before '.
+          'authenticating conduit!');
       }
 
       if (empty($credentials['user'])) {
@@ -349,10 +349,10 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $message =
           "\n".
           phutil_console_format(
-            "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR").
+            'YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR').
           "\n\n".
           phutil_console_format(
-            "    To do this, run: **arc install-certificate**").
+            '    To do this, run: **arc install-certificate**').
           "\n\n".
           "The server '{$conduit_uri}' rejected your request:".
           "\n".
@@ -368,7 +368,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         echo "In most cases, arc can be upgraded automatically.\n";
 
         $ok = phutil_console_confirm(
-          "Upgrade arc now?",
+          'Upgrade arc now?',
           $default_no = false);
         if (!$ok) {
           throw $ex;
@@ -897,7 +897,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
           $this->stashed = true;
         } else {
           throw new ArcanistUsageException(
-            "Stage and commit (or revert) them before proceeding.");
+            'Stage and commit (or revert) them before proceeding.');
         }
       }
     }
@@ -917,7 +917,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $must_commit += array_flip($uncommitted);
       } else {
         throw new ArcanistUncommittedChangesException(
-          "Commit (or revert) them before proceeding.");
+          'Commit (or revert) them before proceeding.');
       }
     }
 
@@ -926,7 +926,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
-        $commit_message = phutil_console_prompt("Enter commit message:");
+        $commit_message = phutil_console_prompt('Enter commit message:');
         if ($commit_message == '') {
           $commit_message = self::AUTO_COMMIT_TITLE;
         }
@@ -1116,7 +1116,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         $parser = $this->newDiffParser();
         $changes = $parser->parseDiff($diff);
         if (count($changes) != 1) {
-          throw new Exception("Expected exactly one change.");
+          throw new Exception('Expected exactly one change.');
         }
         $this->changeCache[$path] = reset($changes);
       }
@@ -1128,7 +1128,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
         }
       }
     } else {
-      throw new Exception("Missing VCS support.");
+      throw new Exception('Missing VCS support.');
     }
 
     if (empty($this->changeCache[$path])) {
@@ -1516,13 +1516,13 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $api = $this->getRepositoryAPI();
     if (!$api->supportsCommitRanges()) {
       throw new ArcanistUsageException(
-        "This version control system does not support commit ranges.");
+        'This version control system does not support commit ranges.');
     }
 
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
-        "Specify exactly one base commit. The end of the commit range is ".
-        "always the working copy state.");
+        'Specify exactly one base commit. The end of the commit range is '.
+        'always the working copy state.');
     }
 
     $api->setBaseCommit(head($argv));

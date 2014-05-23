@@ -349,7 +349,7 @@ final class ArcanistDiffParser {
           $this->parseIndexHunk($change);
           break;
         default:
-          $this->didFailParse("Unknown diff type.");
+          $this->didFailParse('Unknown diff type.');
           break;
       }
     } while ($this->getLine() !== null);
@@ -526,7 +526,7 @@ final class ArcanistDiffParser {
 
   protected function setIsGit($git) {
     if ($this->isGit !== null && $this->isGit != $git) {
-      throw new Exception("Git status has changed!");
+      throw new Exception('Git status has changed!');
     }
     $this->isGit = $git;
     return $this;
@@ -817,7 +817,7 @@ final class ArcanistDiffParser {
         $this->nextNonemptyLine();
         return;
       } else if (!preg_match('/^[a-zA-Z]/', $line)) {
-        $this->didFailParse("Expected base85 line length character (a-zA-Z).");
+        $this->didFailParse('Expected base85 line length character (a-zA-Z).');
       }
     } while (true);
   }
@@ -878,7 +878,7 @@ final class ArcanistDiffParser {
           $line = $this->nextNonemptyLine();
           $ok = preg_match('/^Property changes on:/', $line);
           if (!$ok) {
-            $this->didFailParse("Confused by empty line");
+            $this->didFailParse('Confused by empty line');
           }
           $line = $this->nextLine();
           return $this->parsePropertyHunk($change);
@@ -966,7 +966,7 @@ final class ArcanistDiffParser {
       }
 
       if ($old_len || $new_len) {
-        $this->didFailParse("Found the wrong number of hunk lines.");
+        $this->didFailParse('Found the wrong number of hunk lines.');
       }
 
       $corpus = implode('', $real);
@@ -1074,7 +1074,7 @@ final class ArcanistDiffParser {
 
   protected function getLine() {
     if ($this->text === null) {
-      throw new Exception("Not parsing!");
+      throw new Exception('Not parsing!');
     }
     if (isset($this->text[$this->line])) {
       return $this->text[$this->line];
@@ -1168,7 +1168,7 @@ final class ArcanistDiffParser {
     $context = '';
     for ($ii = $min; $ii <= $max; $ii++) {
       $context .= sprintf(
-        "%8.8s %6.6s   %s",
+        '%8.8s %6.6s   %s',
         ($ii == $this->line) ? '>>>  ' : '',
         $ii + 1,
         $this->text[$ii]);
@@ -1182,7 +1182,7 @@ final class ArcanistDiffParser {
       $temp->setPreserveFile(true);
 
       Filesystem::writeFile($temp, $this->rawDiff);
-      $out[] = "Raw input file was written to: ".(string)$temp;
+      $out[] = 'Raw input file was written to: '.(string)$temp;
     }
 
     $out[] = $context;
@@ -1392,7 +1392,7 @@ final class ArcanistDiffParser {
     //   8. ("--")
     //   9. Patch footer.
 
-    list($head, $tail) = preg_split("/^---$/m", $diff, 2);
+    list($head, $tail) = preg_split('/^---$/m', $diff, 2);
     list($mail_headers, $mail_body) = explode("\n\n", $head, 2);
     list($body, $foot) = preg_split('/^-- ?$/m', $tail, 2);
     list($stat, $diff) = explode("\n\n", $body, 2);

@@ -181,7 +181,7 @@ final class ArcanistHgProxyServer {
         ));
 
       if (!$hg->update()) {
-        throw new Exception("Server exited unexpectedly!");
+        throw new Exception('Server exited unexpectedly!');
       }
 
       // Accept any new clients.
@@ -353,7 +353,7 @@ final class ArcanistHgProxyServer {
 
     $ok = stream_set_blocking($socket, 0);
     if ($ok === false) {
-      throw new Exception("Unable to set socket nonblocking!");
+      throw new Exception('Unable to set socket nonblocking!');
     }
 
     return $socket;
@@ -461,7 +461,7 @@ final class ArcanistHgProxyServer {
 
     $pid = pcntl_fork();
     if ($pid === -1) {
-      throw new Exception("Unable to fork!");
+      throw new Exception('Unable to fork!');
     } else if ($pid) {
       // We're the parent; exit. First, drop our reference to the socket so
       // our __destruct() doesn't tear it down; the child will tear it down

@@ -156,7 +156,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if ($symbolic_commit !== null) {
       if ($symbolic_commit == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
         $this->setBaseCommitExplanation(
-          "you explicitly specified the empty tree.");
+          'you explicitly specified the empty tree.');
         return $symbolic_commit;
       }
 
@@ -187,10 +187,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       if ($this->repositoryHasNoCommits) {
         $this->setBaseCommitExplanation(
-          "the repository has no commits.");
+          'the repository has no commits.');
       } else {
         $this->setBaseCommitExplanation(
-          "the repository has only one commit.");
+          'the repository has only one commit.');
       }
 
       return self::GIT_MAGIC_ROOT_COMMIT;
@@ -265,7 +265,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         "(Technically: the merge-base of the selected revision and HEAD is ".
         "used to determine the start of the commit range.)");
 
-      $prompt = "What default do you want to use? [origin/master]";
+      $prompt = 'What default do you want to use? [origin/master]';
       $default = phutil_console_prompt($prompt);
 
       if (!strlen(trim($default))) {
@@ -453,13 +453,13 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   // Convert svn revision number to git hash
   public function getHashFromFromSVNRevisionNumber($revision_id) {
-    return $this->executeSVNFindRev("r".$revision_id, "Git");
+    return $this->executeSVNFindRev('r'.$revision_id, 'Git');
   }
 
 
   // Convert a git hash to svn revision number
   public function getSVNRevisionNumberFromHash($hash) {
-    return $this->executeSVNFindRev($hash, "SVN");
+    return $this->executeSVNFindRev($hash, 'SVN');
   }
 
 
@@ -710,7 +710,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $line,
         $matches);
       if (!$ok) {
-        throw new Exception("Failed to parse git ls-tree output!");
+        throw new Exception('Failed to parse git ls-tree output!');
       }
       $result[$matches[4]] = array(
         'mode' => $matches[1],
@@ -836,7 +836,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function performLocalBranchMerge($branch, $message) {
     if (!$branch) {
       throw new ArcanistUsageException(
-        "Under git, you must specify the branch you want to merge.");
+        'Under git, you must specify the branch you want to merge.');
     }
     $err = phutil_passthru(
       '(cd %s && git merge --no-ff -m %s %s)',
@@ -845,7 +845,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $branch);
 
     if ($err) {
-      throw new ArcanistUsageException("Merge failed!");
+      throw new ArcanistUsageException('Merge failed!');
     }
   }
 
@@ -917,8 +917,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     foreach ($results as $key => $result) {
       $results[$key]['why'] =
-        "A git commit or tree hash in the commit range is already attached ".
-        "to the Differential revision.";
+        'A git commit or tree hash in the commit range is already attached '.
+        'to the Differential revision.';
     }
 
     return $results;
@@ -953,7 +953,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBackoutMessage($commit_hash) {
-    return "This reverts commit ".$commit_hash.".";
+    return 'This reverts commit '.$commit_hash.'.';
   }
 
   public function isGitSubversionRepo() {

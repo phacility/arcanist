@@ -64,7 +64,7 @@ abstract class ArcanistRepositoryAPI {
     if (!$working_copy) {
       throw new Exception(
         pht(
-          "Trying to create a RepositoryAPI without a working copy!"));
+          'Trying to create a RepositoryAPI without a working copy!'));
     }
 
     $root = $working_copy->getProjectRoot();
@@ -81,9 +81,9 @@ abstract class ArcanistRepositoryAPI {
       default:
         throw new Exception(
           pht(
-            "The current working directory is not part of a working copy for ".
-            "a supported version control system (Git, Subversion or ".
-            "Mercurial)."));
+            'The current working directory is not part of a working copy for '.
+            'a supported version control system (Git, Subversion or '.
+            'Mercurial).'));
     }
 
     $api->configurationManager = $configuration_manager;

@@ -128,10 +128,10 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
           'Unrecognized lint message code "%s". Expected a valid flake8 '.
           'lint code like "%s", or "%s", or "%s", or "%s".',
           $code,
-          "E225",
-          "W291",
-          "F811",
-          "C901"));
+          'E225',
+          'W291',
+          'F811',
+          'C901'));
     }
 
     return $code;

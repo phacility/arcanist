@@ -58,7 +58,7 @@ EOTEXT
     $method = $this->getArgument('method', array());
     if (count($method) !== 1) {
       throw new ArcanistUsageException(
-        "Provide exactly one Conduit method name.");
+        'Provide exactly one Conduit method name.');
     }
     $method = reset($method);
 
@@ -68,7 +68,7 @@ EOTEXT
     $params = json_decode($params, true);
     if (!is_array($params)) {
       throw new ArcanistUsageException(
-        "Provide method parameters on stdin as a JSON blob.");
+        'Provide method parameters on stdin as a JSON blob.');
     }
 
     $error = null;

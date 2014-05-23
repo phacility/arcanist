@@ -151,7 +151,7 @@ final class ArcanistConfigurationManager {
       return $this->workingCopy->writeLocalArcConfig($config);
     }
 
-    throw new Exception(pht("No working copy to write config to!"));
+    throw new Exception(pht('No working copy to write config to!'));
   }
 
   /**
@@ -235,7 +235,7 @@ final class ArcanistConfigurationManager {
   public function setUserConfigurationFileLocation($custom_arcrc) {
     if (!Filesystem::pathExists($custom_arcrc)) {
       throw new Exception(
-        "Custom arcrc file was specified, but it was not found!");
+        'Custom arcrc file was specified, but it was not found!');
     }
 
     $this->customArcrcFilename = $custom_arcrc;

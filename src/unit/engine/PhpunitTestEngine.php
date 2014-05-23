@@ -71,7 +71,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
 
       $config = $this->configFile ? csprintf('-c %s', $this->configFile) : null;
 
-      $stderr = "-d display_errors=stderr";
+      $stderr = '-d display_errors=stderr';
 
       $futures[$test_path] = new ExecFuture('%C %C %C --log-json %s %C %s',
         $this->phpunitBinary, $config, $stderr, $json_tmp, $clover, $test_path);

@@ -170,7 +170,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
       $this->raiseLintAtOffset(
         strlen($data),
         self::LINT_EOF_NEWLINE,
-        "Files must end in a newline.",
+        'Files must end in a newline.',
         '',
         "\n");
     }

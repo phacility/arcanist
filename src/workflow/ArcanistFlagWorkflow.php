@@ -115,7 +115,7 @@ EOTEXT
       throw new ArcanistUsageException("You can't both edit and clear a flag.");
     }
     if (($editing || $clear) && count($objects) != 1) {
-      throw new ArcanistUsageException("Specify exactly one object.");
+      throw new ArcanistUsageException('Specify exactly one object.');
     }
 
     if (!empty($objects)) {
@@ -155,7 +155,7 @@ EOTEXT
       } else {
         self::flagWasEdited($flag, 'deleted');
       }
-    } elseif ($editing) {
+    } else if ($editing) {
       // Let's set some flags. Just like Minesweeper, but less distracting.
       $flag_params = array(
         'objectPHID' => head($phids),

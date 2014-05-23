@@ -70,11 +70,11 @@ EOTEXT
     $revision_list = $this->getArgument('revision', array());
     if (!$revision_list) {
       throw new ArcanistUsageException(
-        "close-revision requires a revision number.");
+        'close-revision requires a revision number.');
     }
     if (count($revision_list) != 1) {
       throw new ArcanistUsageException(
-        "close-revision requires exactly one revision.");
+        'close-revision requires exactly one revision.');
     }
     $revision_id = reset($revision_list);
     $revision_id = $this->normalizeRevisionID($revision_id);
