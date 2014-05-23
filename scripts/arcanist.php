@@ -80,6 +80,9 @@ try {
   }
 
   $configuration_manager = new ArcanistConfigurationManager();
+  if ($custom_arcrc) {
+    $configuration_manager->setUserConfigurationFileLocation($custom_arcrc);
+  }
 
   $global_config = $configuration_manager->readUserArcConfig();
   $system_config = $configuration_manager->readSystemArcConfig();
@@ -141,9 +144,6 @@ try {
       $working_copy);
   }
 
-  if ($custom_arcrc) {
-    $configuration_manager->setUserConfigurationFileLocation($custom_arcrc);
-  }
   $user_config = $configuration_manager->readUserConfigurationFile();
 
   $config_class = $working_copy->getProjectConfig('arcanist_configuration');

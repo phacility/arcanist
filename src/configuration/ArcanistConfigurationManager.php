@@ -10,6 +10,7 @@ final class ArcanistConfigurationManager {
   private $runtimeConfig = array();
   private $workingCopy = null;
   private $customArcrcFilename = null;
+  private $userConfigCache = null;
 
   public function setWorkingCopyIdentity(
     ArcanistWorkingCopyIdentity $working_copy) {
@@ -159,13 +160,11 @@ final class ArcanistConfigurationManager {
    * @{method:readUserArcConfig}.
    */
   public function readUserConfigurationFile() {
-    static $user_config;
-    if ($user_config === null) {
+    if ($this->userConfigCache === null) {
       $user_config = array();
-      $user_config_path = self::getUserConfigurationFileLocation();
+      $user_config_path = $this->getUserConfigurationFileLocation();
 
       $console = PhutilConsole::getConsole();
-
       if (Filesystem::pathExists($user_config_path)) {
         $console->writeLog(
           "%s\n",
@@ -212,8 +211,10 @@ final class ArcanistConfigurationManager {
             $user_config_path));
       }
 
+      $this->userConfigCache = $user_config;
     }
-    return $user_config;
+
+    return $this->userConfigCache;
   }
 
   /**
@@ -224,7 +225,7 @@ final class ArcanistConfigurationManager {
     $json_encoder = new PhutilJSON();
     $json = $json_encoder->encodeFormatted($config);
 
-    $path = self::getUserConfigurationFileLocation();
+    $path = $this->getUserConfigurationFileLocation();
     Filesystem::writeFile($path, $json);
 
     if (!phutil_is_windows()) {
@@ -239,6 +240,7 @@ final class ArcanistConfigurationManager {
     }
 
     $this->customArcrcFilename = $custom_arcrc;
+    $this->userConfigCache = null;
   }
 
   public function getUserConfigurationFileLocation() {
@@ -254,15 +256,14 @@ final class ArcanistConfigurationManager {
   }
 
   public function readUserArcConfig() {
-    return idx(self::readUserConfigurationFile(), 'config', array());
+    return idx($this->readUserConfigurationFile(), 'config', array());
   }
 
   public function writeUserArcConfig(array $options) {
-    $config = self::readUserConfigurationFile();
+    $config = $this->readUserConfigurationFile();
     $config['config'] = $options;
-    self::writeUserConfigurationFile($config);
+    $this->writeUserConfigurationFile($config);
   }
-
 
   public function getSystemArcConfigLocation() {
     if (phutil_is_windows()) {
@@ -278,7 +279,7 @@ final class ArcanistConfigurationManager {
     static $system_config;
     if ($system_config === null) {
       $system_config = array();
-      $system_config_path = self::getSystemArcConfigLocation();
+      $system_config_path = $this->getSystemArcConfigLocation();
 
       $console = PhutilConsole::getConsole();
 
