@@ -191,7 +191,7 @@ EOTEXT
 
     if ($this->useSquash) {
       $this->rebase();
-      $this->squash();      
+      $this->squash();
     } else {
       $this->merge();
     }
@@ -1015,7 +1015,7 @@ EOTEXT
           $this->getConduit()->callMethodSynchronous(
             'diffusion.looksoon',
             array(
-              'callsign' => $this->getRepositoryCallsign(),
+              'callsigns' => array($this->getRepositoryCallsign()),
             ));
         } catch (ConduitClientException $ex) {
           // If we hit an exception, just ignore it. Likely, we are running
