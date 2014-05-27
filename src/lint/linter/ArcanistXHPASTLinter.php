@@ -46,6 +46,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_DOUBLE_QUOTE              = 41;
   const LINT_ELSEIF_USAGE              = 42;
   const LINT_SEMICOLON_SPACING         = 43;
+  const LINT_CONCATENATION_OPERATOR    = 44;
 
   private $naminghook;
   private $switchhook;
@@ -105,6 +106,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_DOUBLE_QUOTE              => 'Unnecessary Double Quotes',
       self::LINT_ELSEIF_USAGE              => 'ElseIf Usage',
       self::LINT_SEMICOLON_SPACING         => 'Semicolon Spacing',
+      self::LINT_CONCATENATION_OPERATOR    => 'Concatenation Spacing',
     );
   }
 
@@ -141,6 +143,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_DOUBLE_QUOTE              => $advice,
       self::LINT_ELSEIF_USAGE              => $advice,
       self::LINT_SEMICOLON_SPACING         => $advice,
+      self::LINT_CONCATENATION_OPERATOR    => $warning,
 
       // This is disabled by default because it implies a very strict policy
       // which isn't necessary in the general case.
@@ -184,7 +187,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getCacheVersion() {
-    $version = '4';
+    $version = '5';
     $path = xhpast_get_binary_path();
     if (Filesystem::pathExists($path)) {
       $version .= '-'.md5_file($path);
@@ -257,6 +260,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintStrings' => self::LINT_DOUBLE_QUOTE,
       'lintElseIfStatements' => self::LINT_ELSEIF_USAGE,
       'lintSemicolons' => self::LINT_SEMICOLON_SPACING,
+      'lintSpaceAroundConcatenationOperators' =>
+        self::LINT_CONCATENATION_OPERATOR,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -1882,10 +1887,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   protected function lintSpaceAroundBinaryOperators(XHPASTNode $root) {
-
-    // NOTE: '.' is parsed as n_CONCATENATION_LIST, not n_BINARY_EXPRESSION,
-    // so we don't select it here.
-
     $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
     foreach ($expressions as $expression) {
       $operator = $expression->getChildByIndex(1);
@@ -1918,7 +1919,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         case ')':
         case 'T_WHITESPACE':
           break;
-          break;
         default:
           $this->raiseLintAtToken(
             $token,
@@ -1929,9 +1929,63 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
 
-    // TODO: Spacing around ".".
+    $tokens = $root->selectTokensOfType('T_DOUBLE_ARROW');
+    foreach ($tokens as $token) {
+      $prev = $token->getPrevToken();
+      $next = $token->getNextToken();
+
+      $prev_type = $prev->getTypeName();
+      $next_type = $next->getTypeName();
+
+      $prev_space = ($prev_type == 'T_WHITESPACE');
+      $next_space = ($next_type == 'T_WHITESPACE');
+
+      $replace = null;
+      if (!$prev_space && !$next_space) {
+        $replace = ' => ';
+      } else if ($prev_space && !$next_space) {
+        $replace = '=> ';
+      } else if (!$prev_space && $next_space) {
+        $replace = ' =>';
+      }
+
+      if ($replace !== null) {
+        $this->raiseLintAtToken(
+          $token,
+          self::LINT_BINARY_EXPRESSION_SPACING,
+          'Convention: double arrow should be surrounded by whitespace.',
+          $replace);
+      }
+    }
+
     // TODO: Spacing around default parameter assignment in function/method
     // declarations (which is not n_BINARY_EXPRESSION).
+  }
+
+  protected function lintSpaceAroundConcatenationOperators(XHPASTNode $root) {
+    $tokens = $root->selectTokensOfType('.');
+    foreach ($tokens as $token) {
+      $prev = $token->getPrevToken();
+      $next = $token->getNextToken();
+
+      foreach (array('prev' => $prev, 'next' => $next) as $wtoken) {
+        if ($wtoken->getTypeName() != 'T_WHITESPACE') {
+          continue;
+        }
+
+        $value = $wtoken->getValue();
+        if (strpos($value, "\n") !== false) {
+          // If the whitespace has a newline, it's conventional.
+          continue;
+        }
+
+        $this->raiseLintAtToken(
+          $wtoken,
+          self::LINT_BINARY_EXPRESSION_SPACING,
+          'Convention: no spaces around "." (string concatenation) operator.',
+          '');
+      }
+    }
   }
 
   protected function lintDynamicDefines(XHPASTNode $root) {

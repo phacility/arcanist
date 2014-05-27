@@ -1,0 +1,56 @@
+<?php
+$a.$b;
+$a . $b;
+$a. $b;
+$a .$b;
+$a.
+$b;
+
+array($x => $y);
+array($x=>$y);
+array($x =>$y);
+array($x=> $y);
+
+array(
+  $x => $y,
+);
+array(
+  $x =>
+    $y,
+);
+array(
+  $x=>$y,
+);
+~~~~~~~~~~
+warning:3:3
+warning:3:5
+warning:4:4
+warning:5:3
+warning:10:9
+warning:11:10
+warning:12:9
+warning:22:5
+~~~~~~~~~~
+<?php
+$a.$b;
+$a.$b;
+$a.$b;
+$a.$b;
+$a.
+$b;
+
+array($x => $y);
+array($x => $y);
+array($x => $y);
+array($x => $y);
+
+array(
+  $x => $y,
+);
+array(
+  $x =>
+    $y,
+);
+array(
+  $x => $y,
+);
