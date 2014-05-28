@@ -186,13 +186,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return parent::setLinterConfigurationValue($key, $value);
   }
 
-  public function getCacheVersion() {
-    $version = '5';
-    $path = xhpast_get_binary_path();
-    if (Filesystem::pathExists($path)) {
-      $version .= '-'.md5_file($path);
-    }
-    return $version;
+  public function getVersion() {
+    // The version number should be incremented whenever a new rule is added.
+    return '5';
   }
 
   protected function resolveFuture($path, Future $future) {

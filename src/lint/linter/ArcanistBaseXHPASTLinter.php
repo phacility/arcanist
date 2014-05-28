@@ -9,6 +9,19 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   private $trees = array();
   private $exceptions = array();
 
+  final public function getCacheVersion() {
+    $parts = array();
+
+    $parts[] = $this->getVersion();
+
+    $path = xhpast_get_binary_path();
+    if (Filesystem::pathExists($path)) {
+      $parts[] = md5_file($path);
+    }
+
+    return implode('-', $parts);
+  }
+
   final protected function raiseLintAtToken(
     XHPASTToken $token,
     $code,

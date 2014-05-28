@@ -60,13 +60,9 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return 'phutil-xhpast';
   }
 
-  public function getCacheVersion() {
-    $version = '2';
-    $path = xhpast_get_binary_path();
-    if (Filesystem::pathExists($path)) {
-      $version .= '-'.md5_file($path);
-    }
-    return $version;
+  public function getVersion() {
+    // The version number should be incremented whenever a new rule is added.
+    return '2';
   }
 
   public function getLinterConfigurationOptions() {
