@@ -25,9 +25,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
 
   public function __construct($severity = self::LINT_SPELLING_PICKY) {
     $this->severity = $severity;
-    $this->wholeWordRules = ArcanistSpellingDefaultData::getFullWordRules();
-    $this->partialWordRules =
-      ArcanistSpellingDefaultData::getPartialWordRules();
+    $this->setSpellingData(new ArcanistSpellingDefaultData());
   }
 
   public function getLinterName() {
@@ -52,6 +50,11 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     $severity = self::LINT_SPELLING_IMPORTANT) {
 
     $this->wholeWordRules[$severity][$incorrect_word] = $correct_word;
+  }
+
+  public function setSpellingData(ArcanistSpellingDefaultData $spelling_data) {
+    $this->wholeWordRules = $spelling_data->getFullWordRules();
+    $this->partialWordRules = $spelling_data->getPartialWordRules();
   }
 
   public function getLintSeverityMap() {
