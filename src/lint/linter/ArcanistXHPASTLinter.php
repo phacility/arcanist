@@ -1975,6 +1975,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           continue;
         }
 
+        $next = $wtoken->getNextToken();
+        if ($next && $next->getTypeName() == 'T_COMMENT') {
+          continue;
+        }
+
         $this->raiseLintAtToken(
           $wtoken,
           self::LINT_BINARY_EXPRESSION_SPACING,
