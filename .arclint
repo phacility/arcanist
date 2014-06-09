@@ -31,7 +31,10 @@
       "type": "text"
     },
     "spelling": {
-      "type": "spelling"
+      "type": "spelling",
+      "exclude": [
+        "(^src/lint/linter/spelling/ArcanistSpellingDefaultData\\.php$)"
+      ]
     },
     "xhpast": {
       "type": "xhpast",

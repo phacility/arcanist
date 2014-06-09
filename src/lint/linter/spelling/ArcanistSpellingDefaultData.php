@@ -3,8 +3,6 @@
 /**
  * Contains default spelling correction rules for ArcanistSpellingLinter.
  * Inside its own file to keep logic of ArcanistSpellingLinter clean.
- *
- * @nolint
  */
 class ArcanistSpellingDefaultData {
   // From http://cpansearch.perl.org/src/APOCAL/Pod-Spell-CommonMistakes-1.000/lib/Pod/Spell/CommonMistakes/WordList.pm
