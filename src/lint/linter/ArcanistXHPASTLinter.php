@@ -462,7 +462,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $node,
           self::LINT_PHP_53_FEATURES,
           "This codebase targets PHP 5.2.3, but `{$name}()` was not ".
-          "introduced until PHP {$version}.");
+          "introduced until PHP {$version['min']}.");
       } else if (array_key_exists($name, $compat_info['params'])) {
         $params = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
         foreach (array_values($params->getChildren()) as $i => $param) {
@@ -495,7 +495,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $node,
           self::LINT_PHP_53_FEATURES,
           "This codebase targets PHP 5.2.3, but `{$name}` was not ".
-          "introduced until PHP {$version}.");
+          "introduced until PHP {$version['min']}.");
       }
     }
 
