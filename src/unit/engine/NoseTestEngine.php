@@ -91,7 +91,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
                          $xunit_tmp);
 
     if ($this->getEnableCoverage() !== false) {
-      $cmd_line .= csprintf(' --with-coverage --cover-xml ' .
+      $cmd_line .= csprintf(' --with-coverage --cover-xml '.
                             '--cover-xml-file=%s',
                             $cover_tmp);
     }

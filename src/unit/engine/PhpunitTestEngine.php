@@ -261,16 +261,16 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
    * based on phpunit_config option in .arcconfig
    */
   private function prepareConfigFile() {
-    $project_root = $this->projectRoot . DIRECTORY_SEPARATOR;
+    $project_root = $this->projectRoot.DIRECTORY_SEPARATOR;
     $config = $this->getConfigurationManager()->getConfigFromAnySource(
       'phpunit_config');
 
     if ($config) {
-      if (Filesystem::pathExists($project_root . $config)) {
-        $this->configFile = $project_root . $config;
+      if (Filesystem::pathExists($project_root.$config)) {
+        $this->configFile = $project_root.$config;
       } else {
-        throw new Exception('PHPUnit configuration file was not ' .
-          'found in ' . $project_root . $config);
+        throw new Exception('PHPUnit configuration file was not '.
+          'found in '.$project_root.$config);
       }
     }
     $bin = $this->getConfigurationManager()->getConfigFromAnySource(

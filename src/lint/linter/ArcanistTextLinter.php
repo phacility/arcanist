@@ -252,7 +252,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->raiseLintAtOffset(
       $offset,
       self::LINT_BOF_WHITESPACE,
-      'This file contains leading whitespace at the beginning of the file. ' .
+      'This file contains leading whitespace at the beginning of the file. '.
       'This is unnecessary and should be avoided when possible.',
       $string,
       '');
@@ -276,7 +276,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->raiseLintAtOffset(
       $offset,
       self::LINT_EOF_WHITESPACE,
-      'This file contains trailing whitespace at the end of the file. This ' .
+      'This file contains trailing whitespace at the end of the file. This '.
       'is unnecessary and should be avoided when possible.',
       $string,
       '');

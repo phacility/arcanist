@@ -63,7 +63,7 @@ EOTEXT
     return array(
       'lintall' => array(
         'help' =>
-        'Show all lint warnings, not just those on changed lines.  When ' .
+        'Show all lint warnings, not just those on changed lines.  When '.
         'paths are specified, this is the default behavior.',
         'conflicts' => array(
           'only-changed' => true,
@@ -71,9 +71,9 @@ EOTEXT
       ),
       'only-changed' => array(
         'help' =>
-        'Show lint warnings just on changed lines.  When no paths are ' .
-        'specified, this is the default.  This differs from only-new ' .
-        'in cases where line modifications introduce lint on other ' .
+        'Show lint warnings just on changed lines.  When no paths are '.
+        'specified, this is the default.  This differs from only-new '.
+        'in cases where line modifications introduce lint on other '.
         'unmodified lines.',
         'conflicts' => array(
           'lintall' => true,

@@ -279,7 +279,7 @@ final class ArcanistDiffParser {
           "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
           "'Property changes on: /path/to/file.ext' (svn properties), ".
           "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
-          "'diff --git' (git diff), '--- filename' (unified diff), or " .
+          "'diff --git' (git diff), '--- filename' (unified diff), or ".
           "'diff -r' (hg diff or patch).");
       }
 

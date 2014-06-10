@@ -1081,8 +1081,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $this->raiseLintAtNode(
             $var,
             self::LINT_REUSED_ITERATOR_REFERENCE,
-            'This variable was used already as a by-reference iterator ' .
-            'variable. Such variables survive outside the foreach loop, ' .
+            'This variable was used already as a by-reference iterator '.
+            'variable. Such variables survive outside the foreach loop, '.
             'do not reuse.');
         }
       }

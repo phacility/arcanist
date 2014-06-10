@@ -351,7 +351,7 @@ EOTEXT
       foreach ($out as &$feature) {
         unset($feature['color'], $feature['ssort'], $feature['esort']);
       }
-      echo json_encode(ipull($out, null, 'name')) . "\n";
+      echo json_encode(ipull($out, null, 'name'))."\n";
     } else {
       $console = PhutilConsole::getConsole();
       foreach ($out as $line) {

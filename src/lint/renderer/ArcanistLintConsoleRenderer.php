@@ -62,7 +62,7 @@ final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
 
     if ($text) {
       $prefix = phutil_console_format("**>>>** Lint for __%s__:\n\n\n", $path);
-      return $prefix . implode("\n", $text);
+      return $prefix.implode("\n", $text);
     } else {
       return null;
     }

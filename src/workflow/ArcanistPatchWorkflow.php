@@ -984,12 +984,12 @@ EOTEXT
           $source_revision = $this->loadRevisionFromHash($hash);
 
           if ($bundle_revision) {
-            $bundle_base_rev_str = $bundle_base_rev .
-                                   ' \ D' . $bundle_revision['id'];
+            $bundle_base_rev_str = $bundle_base_rev.
+                                   ' \ D'.$bundle_revision['id'];
           }
           if ($source_revision) {
-            $source_base_rev_str = $source_base_rev .
-                                   ' \ D' . $source_revision['id'];
+            $source_base_rev_str = $source_base_rev.
+                                   ' \ D'.$source_revision['id'];
           }
         }
         $bundle_base_rev_str = nonempty($bundle_base_rev_str,

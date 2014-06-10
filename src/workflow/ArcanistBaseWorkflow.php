@@ -791,7 +791,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     if ($this->stashed) {
       $api = $this->getRepositoryAPI();
       $api->unstashChanges();
-      echo pht('Restored stashed changes to the working directory.') . "\n";
+      echo pht('Restored stashed changes to the working directory.')."\n";
     }
   }
 

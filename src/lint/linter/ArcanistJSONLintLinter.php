@@ -68,8 +68,8 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
     foreach ($lines as $line) {
       $matches = null;
       $match = preg_match(
-        '/^(?:(?<path>.+): )?' .
-        'line (?<line>\d+), col (?<column>\d+), ' .
+        '/^(?:(?<path>.+): )?'.
+        'line (?<line>\d+), col (?<column>\d+), '.
         '(?<description>.*)$/',
         $line,
         $matches);

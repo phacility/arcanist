@@ -131,8 +131,8 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
     foreach ($lines as $line) {
       $matches = null;
       $match = preg_match(
-        '/^(?P<name>\w+): (?P<description>.+) ' .
-        'in (?P<path>.+|-) ' .
+        '/^(?P<name>\w+): (?P<description>.+) '.
+        'in (?P<path>.+|-) '.
         'on line (?P<line>\d+), column (?P<column>\d+):$/',
         $line,
         $matches);

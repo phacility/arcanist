@@ -309,7 +309,7 @@ EOTEXT
         $this->branch,
         $this->onto);
       if (!$this->isHistoryImmutable()) {
-        $message .= ' ' . pht("You may be able to 'arc amend' instead.");
+        $message .= ' '.pht("You may be able to 'arc amend' instead.");
       }
       throw new ArcanistUsageException($message);
     }
@@ -571,7 +571,7 @@ EOTEXT
     } else if ($this->isHg) {
       echo phutil_console_format(pht(
         'Updating **%s**...',
-        $this->onto) . "\n");
+        $this->onto)."\n");
 
       try {
         list($out, $err) = $repository_api->execxLocal('pull');
@@ -962,7 +962,7 @@ EOTEXT
     if ($this->getArgument('hold')) {
       echo phutil_console_format(pht(
         'Holding change in **%s**: it has NOT been pushed yet.',
-        $this->onto). "\n");
+        $this->onto)."\n");
     } else {
       echo pht('Pushing change...'), "\n\n";
 
