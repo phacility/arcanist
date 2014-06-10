@@ -266,7 +266,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           // We didn't get a cheap hit on previous commit, so do the full-cost
           // "hg parents" call. We can run these in parallel, at least.
           $futures[$node] = $this->execFutureLocal(
-            "parents --template='{node}\\n' --rev %s",
+            'parents --template %s --rev %s',
+            '{node}\n',
             $node);
         }
 
