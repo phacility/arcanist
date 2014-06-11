@@ -2,8 +2,6 @@
 
 /**
  * Show which revision or revisions are in the working copy.
- *
- * @group workflow
  */
 final class ArcanistWhichWorkflow extends ArcanistBaseWorkflow {
 
@@ -13,8 +11,8 @@ final class ArcanistWhichWorkflow extends ArcanistBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **which** (svn)
-      **which** [commit] (hg, git)
+      **which** [options] (svn)
+      **which** [options] [__commit__] (hg, git)
 EOTEXT
       );
   }
@@ -63,7 +61,12 @@ EOTEXT
       ),
       'head' => array(
         'param' => 'commit',
-        'help' => 'specify the head commit.'
+        'help' => pht('Specify the end of the commit range to select.'),
+        'nosupport' => array(
+          'svn' => pht('Subversion does not support commit ranges.'),
+          'hg' => pht('Mercurial does not support --head yet.'),
+        ),
+        'supports' => array('git'),
       ),
       '*' => 'commit',
     );
@@ -89,13 +92,9 @@ EOTEXT
 
     $supports_ranges = $repository_api->supportsCommitRanges();
 
-    if ($this->getArgument('head')) {
-      if ($supports_ranges === false) {
-        throw new Exception('--head is not supported in this VCS');
-      }
-
-      $head_commit = $this->getArgument('head');
-      $arg .= " --head {$head_commit}";
+    $head_commit = $this->getArgument('head');
+    if ($head_commit !== null) {
+      $arg .= csprintf(' --head %R', $head_commit);
       $repository_api->setHeadCommit($head_commit);
     }
 
@@ -128,22 +127,36 @@ EOTEXT
 
       if ($repository_api instanceof ArcanistGitAPI) {
         $head = $this->getArgument('head', 'HEAD');
-        $command = "git diff {$relative}..{$head}";
+        $command = csprintf('git diff %R', "{$relative}..{$head}");
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
-        $command = "hg diff --rev {$relative}";
+        $command = csprintf(
+          'hg diff --rev %R',
+          hgsprintf('%s', $relative));
       } else {
         throw new Exception('Unknown VCS!');
       }
 
       echo phutil_console_wrap(
         phutil_console_format(
-          "**RELATIVE COMMIT**\n".
+          "**COMMIT RANGE**\n".
           "If you run 'arc diff{$arg}', changes between the commit:\n\n"));
 
       echo  "    {$relative}  {$relative_summary}\n\n";
+
+      if ($head_commit === null) {
+        $will_be_sent = pht(
+          '...and the current working copy state will be sent to '.
+          'Differential, because %s',
+          $explanation);
+      } else {
+        $will_be_sent = pht(
+          '...and "%s" will be sent to Differential, because %s',
+          $head_commit,
+          $explanation);
+      }
+
       echo phutil_console_wrap(
-        "...and the current working copy state will be sent to ".
-        "Differential, because {$explanation}\n\n".
+        "{$will_be_sent}\n\n".
         "You can see the exact changes that will be sent by running ".
         "this command:\n\n".
         "    $ {$command}\n\n".

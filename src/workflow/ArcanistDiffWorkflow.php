@@ -397,15 +397,19 @@ EOTEXT
       '*' => 'paths',
       'head' => array(
         'param' => 'commit',
-        'help' => "specify the head commit.\n".
-          "This disables many Arcanist/Phabricator features which depend on ".
-          "having access to the working copy.",
+        'help' => pht(
+          'Specify the end of the commit range. This disables many '.
+          'Arcanist/Phabricator features which depend on having access to '.
+          'the working copy.'),
         'supports' => array('git'),
+        'nosupport' => array(
+          'svn' => pht('Subversion does not support commit ranges.'),
+          'hg' => pht('Mercurial does not support --head yet.'),
+        ),
         'conflicts' => array(
           'lintall'   => '--head suppresses lint.',
           'advice'    => '--head suppresses lint.',
         ),
-
       )
     );
 
@@ -447,16 +451,11 @@ EOTEXT
 
       $repo = $this->getRepositoryAPI();
       $head_commit = $this->getArgument('head');
-      $range_supported = $repo->supportsCommitRanges();
-      if ($head_commit) {
-        if (!$range_supported) {
-          throw new ArcanistUsageException('Ranged are not supported');
-        }
-
+      if ($head_commit !== null) {
         $repo->setHeadCommit($head_commit);
       }
 
-      if ($range_supported) {
+      if ($repo->supportsCommitRanges()) {
         $repo->getBaseCommit();
       }
 
