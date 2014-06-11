@@ -178,7 +178,9 @@ EOTEXT
 
         if ($repository_api instanceof ArcanistGitAPI) {
           $this->parseBaseCommitArgument($this->getArgument('paths'));
-          $diff = $repository_api->getFullGitDiff();
+          $diff = $repository_api->getFullGitDiff(
+            $repository_api->getBaseCommit(),
+            $repository_api->getHeadCommit());
           $changes = $parser->parseDiff($diff);
           $authors = $this->getConduit()->callMethodSynchronous(
             'user.query',

@@ -575,6 +575,10 @@ abstract class ArcanistRepositoryAPI {
     return $this;
   }
 
+  public function setHeadCommit($symbolic_commit) {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   final public function getBaseCommit() {
     if (!$this->supportsCommitRanges()) {
       throw new ArcanistCapabilityNotSupportedException($this);
@@ -586,6 +590,10 @@ abstract class ArcanistRepositoryAPI {
     }
 
     return $this->resolvedBaseCommit;
+  }
+
+  public function getHeadCommit() {
+    throw new ArcanistCapabilityNotSupportedException($this);
   }
 
   final public function reloadCommitRange() {

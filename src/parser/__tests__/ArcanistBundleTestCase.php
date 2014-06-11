@@ -84,7 +84,9 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
         $configuration_manager);
 
       $repository_api->setBaseCommitArgumentRules('arc:this');
-      $diff = $repository_api->getFullGitDiff();
+      $diff = $repository_api->getFullGitDiff(
+        $repository_api->getBaseCommit(),
+        $repository_api->getHeadCommit());
 
       $parser = new ArcanistDiffParser();
       $parser->setRepositoryAPI($repository_api);

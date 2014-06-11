@@ -61,6 +61,10 @@ EOTEXT
         ),
         'supports' => array('git', 'hg'),
       ),
+      'head' => array(
+        'param' => 'commit',
+        'help' => 'specify the head commit.'
+      ),
       '*' => 'commit',
     );
   }
@@ -83,7 +87,19 @@ EOTEXT
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
 
-    if ($repository_api->supportsCommitRanges()) {
+    $supports_ranges = $repository_api->supportsCommitRanges();
+
+    if ($this->getArgument('head')) {
+      if ($supports_ranges === false) {
+        throw new Exception('--head is not supported in this VCS');
+      }
+
+      $head_commit = $this->getArgument('head');
+      $arg .= " --head {$head_commit}";
+      $repository_api->setHeadCommit($head_commit);
+    }
+
+    if ($supports_ranges) {
       $relative = $repository_api->getBaseCommit();
 
       if ($this->getArgument('show-base')) {
@@ -111,7 +127,8 @@ EOTEXT
       $relative = substr($relative, 0, 16);
 
       if ($repository_api instanceof ArcanistGitAPI) {
-        $command = "git diff {$relative}..HEAD";
+        $head = $this->getArgument('head', 'HEAD');
+        $command = "git diff {$relative}..{$head}";
       } else if ($repository_api instanceof ArcanistMercurialAPI) {
         $command = "hg diff --rev {$relative}";
       } else {
