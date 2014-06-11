@@ -190,6 +190,10 @@ abstract class ArcanistLintEngine {
     return ArcanistDiffUtils::isHeuristicBinaryFile($data);
   }
 
+  final public function isSymbolicLink($path) {
+    return is_link($this->getFilePathOnDisk($path));
+  }
+
   final public function getFilePathOnDisk($path) {
     return Filesystem::resolvePath(
       $path,

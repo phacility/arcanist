@@ -49,4 +49,8 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     return true;
   }
 
+  public function shouldLintSymbolicLinks() {
+    return true;
+  }
+
 }

@@ -148,6 +148,10 @@ abstract class ArcanistLinter {
         continue;
       }
 
+      if (!$this->shouldLintSymbolicLinks() && $engine->isSymbolicLink($path)) {
+        continue;
+      }
+
       $keep[] = $path;
     }
 
@@ -439,6 +443,10 @@ abstract class ArcanistLinter {
   }
 
   protected function shouldLintDirectories() {
+    return false;
+  }
+
+  protected function shouldLintSymbolicLinks() {
     return false;
   }
 
