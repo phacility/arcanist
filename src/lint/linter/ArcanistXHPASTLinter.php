@@ -487,9 +487,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $classes = $root->selectDescendantsOfType('n_CLASS_NAME');
     foreach ($classes as $node) {
-      $name = strtolower($node->getConcreteString());
-      $version = idx($compat_info['interfaces'], $name);
-      $version = idx($compat_info['classes'], $name, $version);
+      $name = $node->getConcreteString();
+      $version = idx($compat_info['interfaces'], strtolower($name));
+      $version = idx($compat_info['classes'], strtolower($name), $version);
       if ($version && version_compare($version['min'], $required, '>')) {
         $this->raiseLintAtNode(
           $node,
