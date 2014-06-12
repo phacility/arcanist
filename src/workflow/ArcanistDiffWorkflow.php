@@ -1207,6 +1207,10 @@ EOTEXT
       return false;
     }
 
+    if ($this->getArgument('head') !== null) {
+      return false;
+    }
+
     // Run this last: with --raw or --raw-command, we won't have a repository
     // API.
     if ($this->isHistoryImmutable()) {

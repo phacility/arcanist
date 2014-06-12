@@ -1202,4 +1202,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $this->execxLocal('stash pop');
   }
 
+  protected function didReloadCommitRange() {
+    // After an amend, the symbolic head may resolve to a different commit.
+    $this->resolvedHeadCommit = null;
+  }
+
 }
