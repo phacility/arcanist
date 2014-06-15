@@ -86,11 +86,12 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
     return 'lessc';
   }
 
-  public function getCacheVersion() {
+  public function getVersion() {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    if (preg_match('/^lessc (?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+    $regex = '/^lessc (?P<version>\d+\.\d+\.\d+)\b/';
+    if (preg_match($regex, $stdout, $matches)) {
       $version = $matches['version'];
     } else {
       return false;
