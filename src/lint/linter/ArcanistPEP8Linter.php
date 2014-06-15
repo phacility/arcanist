@@ -109,12 +109,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     if (preg_match('/^W/', $code)) {
       return ArcanistLintSeverity::SEVERITY_WARNING;
     } else {
-
-      // TODO: Once severities/.arclint are more usable, restore this to
-      // "ERROR".
-      // return ArcanistLintSeverity::SEVERITY_ERROR;
-
-      return ArcanistLintSeverity::SEVERITY_WARNING;
+      return ArcanistLintSeverity::SEVERITY_ERROR;
     }
   }
 
