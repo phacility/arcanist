@@ -6,38 +6,77 @@ require_once dirname(__FILE__).'/__init_script__.php';
 $target = 'resources/php_compat_info.json';
 echo "Purpose: Updates {$target} used by ArcanistXHPASTLinter.\n";
 
-$ok = include 'PHP/CompatInfo/Autoload.php';
-if (!$ok) {
-  echo "You need PHP_CompatInfo available in 'include_path'.\n";
-  echo "http://php5.laurent-laville.org/compatinfo/\n";
-  exit(1);
-}
-
-$reference = id(new PHP_CompatInfo_Reference_ALL())->getAll();
+require_once 'vendor/autoload.php';
 
 $output = array();
 $output['@'.'generated'] = true;
 $output['params'] = array();
+$output['functions'] = array();
+$output['classes'] = array();
+$output['interfaces'] = array();
 
-foreach (array('functions', 'classes', 'interfaces') as $type) {
-  $output[$type] = array();
-  foreach ($reference[$type] as $name => $versions) {
-    $name = strtolower($name);
-    $versions = reset($versions);
-    list($min, $max) = $versions;
-    $output[$type][$name] = array(
-      'min' => nonempty($min, null),
-      'max' => nonempty($max, null),
+$references = array(
+  new \Bartlett\CompatInfo\Reference\Extension\ApcExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\CoreExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\CurlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\DateExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\FileinfoExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\GdExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\GettextExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\HttpExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\ImagickExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\IntlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\JsonExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\LibxmlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\MysqlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\MysqliExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\PcntlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\PcreExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\PdoExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\PharExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\PosixExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\ReflectionExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\SimplexmlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\StandardExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\SplExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\XmlExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\XmlreaderExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\XmlwriterExtension(),
+  new \Bartlett\CompatInfo\Reference\Extension\YamlExtension(),
+);
+
+foreach ($references as $reference) {
+  foreach ($reference->getFunctions() as $function => $compat) {
+    $output['functions'][$function] = array(
+      'min' => nonempty($compat['php.min'], null),
+      'max' => nonempty($compat['php.max'], null),
     );
 
-    if ($type == 'functions' && isset($versions[4])) {
-      $params = explode(', ', $versions[4]);
-      foreach ($params as $i => $version) {
-        $output['params'][$name][$i] = $version;
-      }
+    if (idx($compat, 'parameters')) {
+      $output['params'][$function] = array_map(
+        'trim', explode(',', $compat['parameters']));
     }
   }
+
+  foreach ($reference->getInterfaces() as $interface => $compat) {
+    $output['interfaces'][$interface] = array(
+      'min' => nonempty($compat['php.min'], null),
+      'max' => nonempty($compat['php.max'], null),
+    );
+  }
+
+  foreach ($reference->getClasses() as $class => $compat) {
+    $output['classes'][$class] = array(
+      'min' => nonempty($compat['php.min'], null),
+      'max' => nonempty($compat['php.max'], null),
+    );
+  }
 }
+
+ksort($output['params']);
+ksort($output['functions']);
+ksort($output['classes']);
+ksort($output['interfaces']);
 
 // Grepped from PHP Manual.
 $output['functions_windows'] = array(

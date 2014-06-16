@@ -454,7 +454,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($calls as $call) {
       $node = $call->getChildByIndex(0);
-      $name = strtolower($node->getConcreteString());
+      $name = $node->getConcreteString();
       $version = idx($compat_info['functions'], $name);
       $windows = idx($compat_info['functions_windows'], $name);
       if ($version && version_compare($version['min'], $required, '>')) {
@@ -488,8 +488,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $classes = $root->selectDescendantsOfType('n_CLASS_NAME');
     foreach ($classes as $node) {
       $name = $node->getConcreteString();
-      $version = idx($compat_info['interfaces'], strtolower($name));
-      $version = idx($compat_info['classes'], strtolower($name), $version);
+      $version = idx($compat_info['interfaces'], $name);
+      $version = idx($compat_info['classes'], $name, $version);
       if ($version && version_compare($version['min'], $required, '>')) {
         $this->raiseLintAtNode(
           $node,
