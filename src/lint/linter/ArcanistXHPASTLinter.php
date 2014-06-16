@@ -188,7 +188,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '5';
+    return '6';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -499,6 +499,21 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
 
+    // TODO: Technically, this will include function names. This is unlikely to
+    // cause any issues (unless, of course, there existed a function that had
+    // the same name as some constant).
+    $constants = $root->selectDescendantsOfType('n_SYMBOL_NAME');
+    foreach ($constants as $node) {
+      $name = $node->getConcreteString();
+      $version = idx($compat_info['constants'], $name);
+      if ($version && version_compare($version['min'], $required, '>')) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_53_FEATURES,
+          "This codebase targets PHP 5.2.3, but `{$name}` was not ".
+          "introduced until PHP {$version['min']}.");
+      }
+    }
   }
 
   public function lintPHP54Features(XHPASTNode $root) {

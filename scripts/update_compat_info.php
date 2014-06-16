@@ -14,6 +14,8 @@ $output['params'] = array();
 $output['functions'] = array();
 $output['classes'] = array();
 $output['interfaces'] = array();
+$output['constants'] = array();
+$output['classMethods'] = array();
 
 $references = array(
   new \Bartlett\CompatInfo\Reference\Extension\ApcExtension(),
@@ -71,12 +73,34 @@ foreach ($references as $reference) {
       'max' => nonempty($compat['php.max'], null),
     );
   }
+
+  foreach ($reference->getConstants() as $constant => $compat) {
+    $output['constants'][$constant] = array(
+      'min' => nonempty($compat['php.min'], null),
+      'max' => nonempty($compat['php.max'], null),
+    );
+  }
+
+  foreach ($reference->getClassMethods() as $class => $methods) {
+    if (!array_key_exists($class, $output['classMethods'])) {
+      $output['classMethods'][$class] = array();
+    }
+
+    foreach ($methods as $method => $compat) {
+      $output['classMethods'][$class][$method] = array(
+        'min' => nonempty($compat['php.min'], null),
+        'max' => nonempty($compat['php.max'], null),
+      );
+    }
+  }
 }
 
 ksort($output['params']);
 ksort($output['functions']);
 ksort($output['classes']);
 ksort($output['interfaces']);
+ksort($output['constants']);
+ksort($output['classMethods']);
 
 // Grepped from PHP Manual.
 $output['functions_windows'] = array(
