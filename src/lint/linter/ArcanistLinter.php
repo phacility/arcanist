@@ -174,7 +174,7 @@ abstract class ArcanistLinter {
     return $this->data[$path];
   }
 
-  public function setEngine(ArcanistLintEngine $engine) {
+  final public function setEngine(ArcanistLintEngine $engine) {
     $this->engine = $engine;
     return $this;
   }
@@ -476,7 +476,7 @@ abstract class ArcanistLinter {
    * @param   wild    Default value to return if key is not present in config.
    * @return  wild    Configured value, or default if no configuration exists.
    */
-  protected function getDeprecatedConfiguration($key, $default = null) {
+  final protected function getDeprecatedConfiguration($key, $default = null) {
 
     // If we're being called in a context without an engine (probably from
     // `arc linters`), just return the default value.

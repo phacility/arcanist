@@ -48,7 +48,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
       $replace);
   }
 
-  protected function buildFutures(array $paths) {
+  final protected function buildFutures(array $paths) {
     return $this->getXHPASTLinter()->buildSharedFutures($paths);
   }
 
@@ -69,7 +69,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * @return ArcanistBaseXHPASTLinter Responsible linter.
    * @task sharing
    */
-  protected function getXHPASTLinter() {
+  final protected function getXHPASTLinter() {
     $resource_key = 'xhpast.linter';
 
     // If we're the first linter to run, share ourselves. Otherwise, grab the
@@ -102,7 +102,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * @return list<ExecFuture> Futures.
    * @task sharing
    */
-  protected function buildSharedFutures(array $paths) {
+  final protected function buildSharedFutures(array $paths) {
     foreach ($paths as $path) {
       if (!isset($this->futures[$path])) {
         $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
@@ -119,7 +119,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * @return  XHPASTTree|null  Tree, or null if unparseable.
    * @task sharing
    */
-  protected function getXHPASTTreeForPath($path) {
+  final protected function getXHPASTTreeForPath($path) {
 
     // If we aren't the linter responsible for actually building the parse
     // trees, go get the tree from that linter.
@@ -152,7 +152,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * @return  Exeption|null   Parse exception, if available.
    * @task sharing
    */
-  protected function getXHPASTExceptionForPath($path) {
+  final protected function getXHPASTExceptionForPath($path) {
     if ($this->getXHPASTLinter() !== $this) {
       return $this->getXHPASTLinter()->getXHPASTExceptionForPath($path);
     }
