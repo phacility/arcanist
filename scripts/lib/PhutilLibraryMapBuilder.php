@@ -141,6 +141,9 @@ final class PhutilLibraryMapBuilder {
       $this->log("Analyzing {$count} files with {$limit} subprocesses...\n");
 
       $progress = new PhutilConsoleProgressBar();
+      if ($this->quiet) {
+        $progress->setQuiet(true);
+      }
       $progress->setTotal(count($futures));
 
       foreach (Futures($futures)->limit($limit) as $file => $future) {
