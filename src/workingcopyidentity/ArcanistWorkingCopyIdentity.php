@@ -253,14 +253,6 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   /**
-   * Deprecated; use @{method:getProjectConfig}.
-   */
-  public function getConfig($key, $default = null) {
-    return $this->getProjectConfig($key, $default);
-  }
-
-
-  /**
    * Read a configuration directive from project configuration. This reads ONLY
    * permanent project configuration (i.e., ".arcconfig"), not other
    * configuration sources. See @{method:getConfigFromAnySource} to read from
