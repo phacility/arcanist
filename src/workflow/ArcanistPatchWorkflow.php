@@ -701,7 +701,7 @@ EOTEXT
 
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -a %C -F -',
+          'commit -a %C -F - --no-verify',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
