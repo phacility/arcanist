@@ -594,6 +594,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
     $arc_config = $this->getArcanistConfiguration();
     $command = $this->getCommand();
     $spec += $arc_config->getCustomArgumentsForCommand($command);
+
     return $spec;
   }
 

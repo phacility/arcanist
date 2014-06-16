@@ -8,9 +8,9 @@ require_once dirname(__FILE__).'/__init_script__.php';
 ini_set('memory_limit', -1);
 
 $original_argv = $argv;
-$args = new PhutilArgumentParser($argv);
-$args->parseStandardArguments();
-$args->parsePartial(
+$base_args = new PhutilArgumentParser($argv);
+$base_args->parseStandardArguments();
+$base_args->parsePartial(
   array(
     array(
       'name'    => 'load-phutil-library',
@@ -40,20 +40,26 @@ $args->parsePartial(
       'param'   => 'timeout',
       'help'    => 'Set Conduit timeout (in seconds).',
     ),
-  ));
+    array(
+      'name'   => 'config',
+      'param'  => 'key=value',
+      'repeat' => true,
+      'help'   =>
+        'Specify a runtime configuration value. This will take precedence '.
+        'over static values, and only affect the current arcanist invocation.'
+    ),
+));
 
-$config_trace_mode = $args->getArg('trace');
+$config_trace_mode = $base_args->getArg('trace');
 
-$force_conduit = $args->getArg('conduit-uri');
-$force_conduit_version = $args->getArg('conduit-version');
-$conduit_timeout = $args->getArg('conduit-timeout');
-$skip_arcconfig = $args->getArg('skip-arcconfig');
-$custom_arcrc = $args->getArg('arcrc-file');
-$load = $args->getArg('load-phutil-library');
-$help = $args->getArg('help');
-
-$argv = $args->getUnconsumedArgumentVector();
-$args = array_values($argv);
+$force_conduit = $base_args->getArg('conduit-uri');
+$force_conduit_version = $base_args->getArg('conduit-version');
+$conduit_timeout = $base_args->getArg('conduit-timeout');
+$skip_arcconfig = $base_args->getArg('skip-arcconfig');
+$custom_arcrc = $base_args->getArg('arcrc-file');
+$load = $base_args->getArg('load-phutil-library');
+$help = $base_args->getArg('help');
+$args = array_values($base_args->getUnconsumedArgumentVector());
 
 $working_directory = getcwd();
 $console = PhutilConsole::getConsole();
@@ -86,6 +92,8 @@ try {
 
   $global_config = $configuration_manager->readUserArcConfig();
   $system_config = $configuration_manager->readSystemArcConfig();
+  $runtime_config = $configuration_manager->applyRuntimeArcConfig($base_args);
+
   if ($skip_arcconfig) {
     $working_copy = ArcanistWorkingCopyIdentity::newDummyWorkingCopy();
   } else {
@@ -142,6 +150,14 @@ try {
       $must_load = true,
       $lib_source = 'the "load" setting in ".arcconfig"',
       $working_copy);
+
+    // Load libraries in ".arcconfig". Libraries here must load.
+    arcanist_load_libraries(
+      idx($runtime_config, 'load', array()),
+      $must_load = true,
+      $lib_source = 'the --config "load=[...]" argument',
+      $working_copy);
+
   }
 
   $user_config = $configuration_manager->readUserConfigurationFile();

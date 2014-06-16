@@ -305,7 +305,26 @@ final class ArcanistConfigurationManager {
     return $system_config;
   }
 
-  public function readDefaultConfig() {
+  public function applyRuntimeArcConfig($args) {
+    $arcanist_settings = new ArcanistSettings();
+    $options = $args->getArg('config');
+
+    foreach ($options as $opt) {
+      $opt_config = preg_split('/=/', $opt, 2);
+      if (count($opt_config) !== 2) {
+        throw new ArcanistUsageException("Argument was '{$opt}', but must be ".
+        "'name=value'. For example, history.immutable=true");
+      }
+
+      list($key, $value) = $opt_config;
+      $value = $arcanist_settings->willWriteValue($key, $value);
+      $this->setRuntimeConfig($key, $value);
+    }
+
+    return $this->runtimeConfig;
+  }
+
+    public function readDefaultConfig() {
     $settings = new ArcanistSettings();
     return $settings->getDefaultSettings();
   }

@@ -199,6 +199,10 @@ EOTEXT
       __--conduit-timeout__ __timeout__
           Override the default Conduit timeout. Specified in seconds.
 
+      __--config__ __key=value__
+          Specify a runtime configuration value. This will take precedence
+          over static values, and only affect the current arcanist invocation.
+
       __--skip-arcconfig__
           Skip the working copy configuration file
 
