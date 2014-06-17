@@ -77,6 +77,32 @@ $root = $tree->getRootNode();
 
 $root->buildSelectCache();
 
+// -(  Unsupported Constructs  )------------------------------------------------
+
+$namespaces = $root->selectDescendantsOfType('n_NAMESPACE');
+foreach ($namespaces as $namespace) {
+  phutil_fail_on_unsupported_feature(
+    $namespace, $path, pht('namespaces'));
+}
+
+$uses = $root->selectDescendantsOfType('n_USE');
+foreach ($namespaces as $namespace) {
+  phutil_fail_on_unsupported_feature(
+    $namespace, $path, pht('namespace `use` statements'));
+}
+
+$possible_traits = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+foreach ($possible_traits as $possible_trait) {
+  $attributes = $possible_trait->getChildByIndex(0);
+  // can't use getChildByIndex here because not all classes have attributes
+  foreach ($attributes->getChildren() as $attribute) {
+    if (strtolower($attribute->getConcreteString()) == 'trait') {
+      phutil_fail_on_unsupported_feature(
+        $possible_trait, $path, pht('traits'));
+    }
+  }
+}
+
 
 // -(  Marked Externals  )------------------------------------------------------
 
@@ -459,6 +485,24 @@ if ($args->getArg('ugly')) {
 
 // -(  Library  )---------------------------------------------------------------
 
+function phutil_fail_on_unsupported_feature(XHPASTNode $node, $file, $what) {
+  $line = $node->getLineNumber();
+  $message = phutil_console_wrap(pht(
+      "`arc liberate` has limited support for features introduced after PHP ".
+      "5.2.3. This library uses an unsupported feature (%s) on line %d of %s",
+    $what,
+    $line,
+    Filesystem::readablePath($file)));
+
+  $result = array(
+    'error' => $message,
+    'line'  => $line,
+    'file'  => $file,
+  );
+  $json = new PhutilJSON();
+  echo $json->encodeFormatted($result);
+  exit(0);
+}
 
 function phutil_symbols_get_builtins() {
   $builtin = array();
