@@ -32,7 +32,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_CONTROL_STATEMENT_SPACING = 26;
   const LINT_BINARY_EXPRESSION_SPACING = 27;
   const LINT_ARRAY_INDEX_SPACING       = 28;
-  const LINT_RAGGED_CLASSTREE_EDGE     = 29;
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
   const LINT_PHP_53_FEATURES           = 31;
   const LINT_REUSED_AS_ITERATOR        = 32;
@@ -92,7 +91,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CONTROL_STATEMENT_SPACING => 'Space After Control Statement',
       self::LINT_BINARY_EXPRESSION_SPACING => 'Space Around Binary Operator',
       self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
-      self::LINT_RAGGED_CLASSTREE_EDGE     => 'Class Not abstract Or final',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
       self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
       self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
@@ -145,10 +143,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_SEMICOLON_SPACING         => $advice,
       self::LINT_CONCATENATION_OPERATOR    => $warning,
 
-      // This is disabled by default because it implies a very strict policy
-      // which isn't necessary in the general case.
-      self::LINT_RAGGED_CLASSTREE_EDGE     => $disabled,
-
       // This is disabled by default because projects don't necessarily target
       // a specific minimum version.
       self::LINT_PHP_53_FEATURES           => $disabled,
@@ -188,7 +182,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '6';
+    return '7';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -249,7 +243,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_CLASS_FILENAME_MISMATCH,
       'lintPlusOperatorOnStrings' => self::LINT_PLUS_OPERATOR_ON_STRINGS,
       'lintDuplicateKeysInArray' => self::LINT_DUPLICATE_KEYS_IN_ARRAY,
-      'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
       'lintClosingCallParen' => self::LINT_CLOSING_CALL_PAREN,
       'lintClosingDeclarationParen' => self::LINT_CLOSING_DECL_PAREN,
       'lintKeywordCasing' => self::LINT_KEYWORD_CASING,
@@ -2286,42 +2279,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $locations[] = $this->getOtherLocation($node->getOffset());
         }
         $message->setOtherLocations($locations);
-      }
-    }
-  }
-
-  private function lintRaggedClasstreeEdges(XHPASTNode $root) {
-    $parser = new PhutilDocblockParser();
-
-    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
-    foreach ($classes as $class) {
-
-      $is_final = false;
-      $is_abstract = false;
-      $is_concrete_extensible = false;
-
-      $attributes = $class->getChildOfType(0, 'n_CLASS_ATTRIBUTES');
-      foreach ($attributes->getChildren() as $child) {
-        if ($child->getConcreteString() == 'final') {
-          $is_final = true;
-        }
-        if ($child->getConcreteString() == 'abstract') {
-          $is_abstract = true;
-        }
-      }
-
-      $docblock = $class->getDocblockToken();
-      if ($docblock) {
-        list($text, $specials) = $parser->parse($docblock->getValue());
-        $is_concrete_extensible = idx($specials, 'concrete-extensible');
-      }
-
-      if (!$is_final && !$is_abstract && !$is_concrete_extensible) {
-        $this->raiseLintAtNode(
-          $class->getChildOfType(1, 'n_CLASS_NAME'),
-          self::LINT_RAGGED_CLASSTREE_EDGE,
-          "This class is neither 'final' nor 'abstract', and does not have ".
-          "a docblock marking it '@concrete-extensible'.");
       }
     }
   }

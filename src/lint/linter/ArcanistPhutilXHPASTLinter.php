@@ -2,13 +2,14 @@
 
 final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
-  const LINT_ARRAY_COMBINE           = 2;
-  const LINT_DEPRECATED_FUNCTION     = 3;
-  const LINT_UNSAFE_DYNAMIC_STRING   = 4;
+  const LINT_ARRAY_COMBINE          = 2;
+  const LINT_DEPRECATED_FUNCTION    = 3;
+  const LINT_UNSAFE_DYNAMIC_STRING  = 4;
+  const LINT_RAGGED_CLASSTREE_EDGE  = 5;
 
-  private $deprecatedFunctions = array();
+  private $deprecatedFunctions    = array();
   private $dynamicStringFunctions = array();
-  private $dynamicStringClasses = array();
+  private $dynamicStringClasses   = array();
 
   public function getInfoName() {
     return 'XHPAST/libphutil Lint';
@@ -37,18 +38,20 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_ARRAY_COMBINE           => 'array_combine() Unreliable',
-      self::LINT_DEPRECATED_FUNCTION     => 'Use of Deprecated Function',
-      self::LINT_UNSAFE_DYNAMIC_STRING   => 'Unsafe Usage of Dynamic String',
+      self::LINT_ARRAY_COMBINE          => 'array_combine() Unreliable',
+      self::LINT_DEPRECATED_FUNCTION    => 'Use of Deprecated Function',
+      self::LINT_UNSAFE_DYNAMIC_STRING  => 'Unsafe Usage of Dynamic String',
+      self::LINT_RAGGED_CLASSTREE_EDGE  => 'Class Not abstract Or final',
     );
   }
 
   public function getLintSeverityMap() {
     $warning = ArcanistLintSeverity::SEVERITY_WARNING;
     return array(
-      self::LINT_ARRAY_COMBINE           => $warning,
-      self::LINT_DEPRECATED_FUNCTION     => $warning,
-      self::LINT_UNSAFE_DYNAMIC_STRING   => $warning,
+      self::LINT_ARRAY_COMBINE          => $warning,
+      self::LINT_DEPRECATED_FUNCTION    => $warning,
+      self::LINT_UNSAFE_DYNAMIC_STRING  => $warning,
+      self::LINT_RAGGED_CLASSTREE_EDGE  => $warning,
     );
   }
 
@@ -62,7 +65,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '2';
+    return '3';
   }
 
   public function getLinterConfigurationOptions() {
@@ -117,6 +120,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintArrayCombine' => self::LINT_ARRAY_COMBINE,
       'lintUnsafeDynamicString' => self::LINT_UNSAFE_DYNAMIC_STRING,
       'lintDeprecatedFunctions' => self::LINT_DEPRECATED_FUNCTION,
+      'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -128,7 +132,6 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
-
 
   private function lintUnsafeDynamicString(XHPASTNode $root) {
     $safe = $this->dynamicStringFunctions + array(
@@ -192,11 +195,10 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $call,
           self::LINT_UNSAFE_DYNAMIC_STRING,
           "Parameter ".($param + 1)." of {$name}() should be a scalar string, ".
-            "otherwise it's not safe.");
+          "otherwise it's not safe.");
       }
     }
   }
-
 
   private function lintArrayCombine(XHPASTNode $root) {
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
@@ -239,6 +241,41 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $call,
         self::LINT_DEPRECATED_FUNCTION,
         $map[$name]);
+    }
+  }
+
+  private function lintRaggedClasstreeEdges(XHPASTNode $root) {
+    $parser = new PhutilDocblockParser();
+
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+    foreach ($classes as $class) {
+      $is_final = false;
+      $is_abstract = false;
+      $is_concrete_extensible = false;
+
+      $attributes = $class->getChildOfType(0, 'n_CLASS_ATTRIBUTES');
+      foreach ($attributes->getChildren() as $child) {
+        if ($child->getConcreteString() == 'final') {
+          $is_final = true;
+        }
+        if ($child->getConcreteString() == 'abstract') {
+          $is_abstract = true;
+        }
+      }
+
+      $docblock = $class->getDocblockToken();
+      if ($docblock) {
+        list($text, $specials) = $parser->parse($docblock->getValue());
+        $is_concrete_extensible = idx($specials, 'concrete-extensible');
+      }
+
+      if (!$is_final && !$is_abstract && !$is_concrete_extensible) {
+        $this->raiseLintAtNode(
+          $class->getChildOfType(1, 'n_CLASS_NAME'),
+          self::LINT_RAGGED_CLASSTREE_EDGE,
+          "This class is neither 'final' nor 'abstract', and does not have ".
+          "a docblock marking it '@concrete-extensible'.");
+      }
     }
   }
 
