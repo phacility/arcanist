@@ -89,7 +89,6 @@ warning:48:3
 warning:53:3
 warning:57:3
 warning:66:3
-disabled:68:7 # PHP 5.3 features
 warning:71:3
 warning:75:3
 ~~~~~~~~~~

@@ -29,10 +29,7 @@ error:9:13
 warning:12:16
 warning:15:37
 warning:18:33
-disabled:22:3
-disabled:23:3
 warning:23:14
-disabled:24:3
 warning:24:14
 ~~~~~~~~~~
 <?php

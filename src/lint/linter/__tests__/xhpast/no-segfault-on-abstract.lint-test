@@ -1,4 +1,4 @@
 <?php
-abstract class A { }
-final class F { }
+abstract class A {}
+final class F {}
 ~~~~~~~~~~
