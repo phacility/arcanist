@@ -208,6 +208,7 @@ EOTEXT
 
       __--arcrc-file__ __filename__
           Use provided file instead of ~/.arcrc.
+
 EOTEXT
     );
   }
