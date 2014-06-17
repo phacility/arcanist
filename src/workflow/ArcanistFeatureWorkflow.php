@@ -51,7 +51,6 @@ EOTEXT
     return !$this->getArgument('branch');
   }
 
-
   public function getArguments() {
     return array(
       'view-all' => array(
@@ -63,7 +62,7 @@ EOTEXT
       'output' => array(
         'param' => 'format',
         'support' => array(
-          'json'
+          'json',
         ),
         'help' => "With 'json', show features in machine-readable JSON format.",
       ),
@@ -93,9 +92,7 @@ EOTEXT
     }
 
     $branches = $this->loadCommitInfo($branches);
-
     $revisions = $this->loadRevisions($branches);
-
     $this->printBranches($branches, $revisions);
 
     return 0;
@@ -116,15 +113,12 @@ EOTEXT
     if (isset($names[1])) {
       $start = $names[1];
     } else {
-      $start = $this->getConfigFromAnySource(
-        'arc.feature.start.default');
+      $start = $this->getConfigFromAnySource('arc.feature.start.default');
     }
 
     $branches = $api->getAllBranches();
     if (in_array($name, ipull($branches, 'name'))) {
-      list($err, $stdout, $stderr) = $api->execManualLocal(
-        $command,
-        $name);
+      list($err, $stdout, $stderr) = $api->execManualLocal($command, $name);
     }
 
     if ($err) {
@@ -155,10 +149,7 @@ EOTEXT
           $rev = csprintf('-r %s', $start);
         }
 
-        $exec = $api->execManualLocal(
-          'bookmark %C %s',
-          $rev,
-          $name);
+        $exec = $api->execManualLocal('bookmark %C %s', $rev, $name);
 
         if (!$exec[0] && $start) {
           $api->execxLocal('update %s', $name);
@@ -189,7 +180,6 @@ EOTEXT
           'log -l 1 --template %s -r %s',
           "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
           hgsprintf('%s', $branch['name']));
-
       } else {
         // NOTE: "-s" is an option deep in git's diff argument parser that
         // doesn't seem to have much documentation and has no long form. It
@@ -353,16 +343,24 @@ EOTEXT
       }
       echo json_encode(ipull($out, null, 'name'))."\n";
     } else {
-      $console = PhutilConsole::getConsole();
+      $table = id(new PhutilConsoleTable())
+        ->setShowHeader(false)
+        ->addColumn('current', array('title' => ''))
+        ->addColumn('name',    array('title' => 'Name'))
+        ->addColumn('status',  array('title' => 'Status'))
+        ->addColumn('descr',   array('title' => 'Description'));
+
       foreach ($out as $line) {
-        $color = $line['color'];
-        $console->writeOut(
-          "%s **%s** <fg:{$color}>%s</fg> %s\n",
-          $line['current'] ? '* ' : '  ',
-          str_pad($line['name'], $len_name),
-          str_pad($line['status'], $len_status),
-          $line['desc']);
+        $table->addRow(array(
+          'current' => $line['current'] ? '*' : '',
+          'name'    => phutil_console_format('**%s**', $line['name']),
+          'status'  => phutil_console_format(
+            "<fg:{$line['color']}>%s</fg>", $line['status']),
+          'descr'   => $line['desc'],
+        ));
       }
+
+      $table->draw();
     }
   }
 
