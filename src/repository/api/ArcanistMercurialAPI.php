@@ -247,9 +247,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         list($node, $rev, $full_author, $date, $branch, $tag,
           $parents, $desc) = explode("\1", $log, 9);
 
-        $email = new PhutilEmailAddress($full_author);
-        $author = $email->getDisplayName();
-        $author_email = $email->getAddress();
+        // Not everyone enters their email address as a part of the username
+        // field. Try to make it work when it's obvious
+        if (strpos($full_author, '@') === false) {
+          $author = $full_author;
+          $author_email = null;
+        } else {
+          $email = new PhutilEmailAddress($full_author);
+          $author = $email->getDisplayName();
+          $author_email = $email->getAddress();
+        }
 
         // NOTE: If a commit has only one parent, {parents} returns empty.
         // If it has two parents, {parents} returns revs and short hashes, not
