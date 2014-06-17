@@ -555,6 +555,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAllBranches() {
     list($branch_info) = $this->execxLocal('bookmarks');
+    if (trim($branch_info) == 'no bookmarks set') {
+      return array();
+    }
+
     $matches = null;
     preg_match_all(
       '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
