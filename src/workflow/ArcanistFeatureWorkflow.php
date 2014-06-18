@@ -197,22 +197,22 @@ EOTEXT
       list($info) = $future->resolvex();
       list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
 
-      $branch = $branches[$name];
-      $branch['hash'] = $hash;
-      $branch['desc'] = $desc;
+      $branch = $branches[$name] + array(
+        'hash' => $hash,
+        'desc' => $desc,
+        'tree' => $tree,
+        'epoch' => (int)$epoch,
+      );
 
       try {
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
         $id = $message->getRevisionID();
 
-        $branch += array(
-          'epoch'       => (int)$epoch,
-          'tree'        => $tree,
-          'revisionID'  => $id,
-        );
+        $branch['revisionID'] = $id;
       } catch (ArcanistUsageException $ex) {
         // In case of invalid commit message which fails the parsing,
         // do nothing.
+        $branch['revisionID'] = null;
       }
 
       $branches[$name] = $branch;
