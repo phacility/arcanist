@@ -600,10 +600,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $futures = array(
       $uncommitted_future,
       $untracked_future,
-      $unstaged_future,
+      // NOTE: `git diff-files` races with each of these other commands
+      // internally, and resolves with inconsistent results if executed
+      // in parallel. To work around this, DO NOT run it at the same time.
+      // After the other commands exit, we can start the `diff-files` command.
     );
 
     Futures($futures)->resolveAll();
+
+    // We're clear to start the `git diff-files` now.
+    $unstaged_future->start();
 
     $result = new PhutilArrayWithDefaultValue();
 
