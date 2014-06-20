@@ -1,9 +1,8 @@
 <?php
 
 /**
- * You can extend this class and set ##"lint.xhpast.naminghook"## in your
- * ##.arcconfig## to have an opportunity to override lint results for symbol
- * names.
+ * You can extend this class and set `xhpast.naminghook` in your `.arclint` to
+ * have an opportunity to override lint results for symbol names.
  *
  * @task override   Overriding Symbol Name Lint Messages
  * @task util       Name Utilities
@@ -15,7 +14,6 @@ abstract class ArcanistXHPASTLintNamingHook {
 
 
 /* -(  Internals  )---------------------------------------------------------- */
-
 
   /**
    * The constructor is final because @{class:ArcanistXHPASTLinter} is
@@ -30,7 +28,6 @@ abstract class ArcanistXHPASTLintNamingHook {
 
 
 /* -(  Overriding Symbol Name Lint Messages  )------------------------------- */
-
 
   /**
    * Callback invoked for each symbol, which can override the default
@@ -63,7 +60,6 @@ abstract class ArcanistXHPASTLintNamingHook {
 
 /* -(  Name Utilities  )----------------------------------------------------- */
 
-
   /**
    * Returns true if a symbol name is UpperCamelCase.
    *
@@ -74,7 +70,6 @@ abstract class ArcanistXHPASTLintNamingHook {
   public static function isUpperCamelCase($symbol) {
     return preg_match('/^[A-Z][A-Za-z0-9]*$/', $symbol);
   }
-
 
   /**
    * Returns true if a symbol name is lowerCamelCase.
@@ -87,7 +82,6 @@ abstract class ArcanistXHPASTLintNamingHook {
     return preg_match('/^[a-z][A-Za-z0-9]*$/', $symbol);
   }
 
-
   /**
    * Returns true if a symbol name is UPPERCASE_WITH_UNDERSCORES.
    *
@@ -99,7 +93,6 @@ abstract class ArcanistXHPASTLintNamingHook {
     return preg_match('/^[A-Z0-9_]+$/', $symbol);
   }
 
-
   /**
    * Returns true if a symbol name is lowercase_with_underscores.
    *
@@ -110,7 +103,6 @@ abstract class ArcanistXHPASTLintNamingHook {
   public static function isLowercaseWithUnderscores($symbol) {
     return preg_match('/^[a-z0-9_]+$/', $symbol);
   }
-
 
   /**
    * Strip non-name components from PHP function symbols. Notably, this discards
@@ -126,7 +118,6 @@ abstract class ArcanistXHPASTLintNamingHook {
     //  enumerate these explicitly.
     return preg_replace('/^__/', '', $symbol);
   }
-
 
   /**
    * Strip non-name components from PHP variable symbols. Notably, this discards

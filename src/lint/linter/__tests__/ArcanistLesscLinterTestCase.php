@@ -1,7 +1,6 @@
 <?php
 
-final class ArcanistLesscLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+final class ArcanistLesscLinterTestCase extends ArcanistArcanistLinterTestCase {
 
   public function testLesscLinter() {
     $this->executeTestsInDirectory(

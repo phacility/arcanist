@@ -174,7 +174,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       ),
       'xhpast.php-version.windows' => array(
         'type' => 'optional string',
-        'help' => pht('PHP version to target on Windows.')
+        'help' => pht('PHP version to target on Windows.'),
       ),
     );
   }

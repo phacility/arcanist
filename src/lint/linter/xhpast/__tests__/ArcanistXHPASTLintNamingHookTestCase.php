@@ -5,26 +5,25 @@
  *
  * @group testcase
  */
-final class ArcanistXHPASTLintNamingHookTestCase
-  extends ArcanistTestCase {
+final class ArcanistXHPASTLintNamingHookTestCase extends ArcanistTestCase {
 
   public function testCaseUtilities() {
     $tests = array(
-      'UpperCamelCase'                    => array(1, 0, 0, 0),
-      'UpperCamelCaseROFL'                => array(1, 0, 0, 0),
+      'UpperCamelCase'                   => array(1, 0, 0, 0),
+      'UpperCamelCaseROFL'               => array(1, 0, 0, 0),
 
-      'lowerCamelCase'                    => array(0, 1, 0, 0),
-      'lowerCamelCaseROFL'                => array(0, 1, 0, 0),
+      'lowerCamelCase'                   => array(0, 1, 0, 0),
+      'lowerCamelCaseROFL'               => array(0, 1, 0, 0),
 
-      'UPPERCASE_WITH_UNDERSCORES'        => array(0, 0, 1, 0),
-      '_UPPERCASE_WITH_UNDERSCORES_'      => array(0, 0, 1, 0),
-      '__UPPERCASE__WITH__UNDERSCORES__'  => array(0, 0, 1, 0),
+      'UPPERCASE_WITH_UNDERSCORES'       => array(0, 0, 1, 0),
+      '_UPPERCASE_WITH_UNDERSCORES_'     => array(0, 0, 1, 0),
+      '__UPPERCASE__WITH__UNDERSCORES__' => array(0, 0, 1, 0),
 
-      'lowercase_with_underscores'        => array(0, 0, 0, 1),
-      '_lowercase_with_underscores_'      => array(0, 0, 0, 1),
-      '__lowercase__with__underscores__'  => array(0, 0, 0, 1),
+      'lowercase_with_underscores'       => array(0, 0, 0, 1),
+      '_lowercase_with_underscores_'     => array(0, 0, 0, 1),
+      '__lowercase__with__underscores__' => array(0, 0, 0, 1),
 
-      'mixedCASE_NoNsEnSe'                => array(0, 0, 0, 0),
+      'mixedCASE_NoNsEnSe'               => array(0, 0, 0, 0),
     );
 
     foreach ($tests as $test => $expect) {

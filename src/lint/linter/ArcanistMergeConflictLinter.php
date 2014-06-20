@@ -45,12 +45,6 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
     }
   }
 
-  public function getLintSeverityMap() {
-    return array(
-      self::LINT_MERGECONFLICT => ArcanistLintSeverity::SEVERITY_ERROR,
-    );
-  }
-
   public function getLintNameMap() {
     return array(
       self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),

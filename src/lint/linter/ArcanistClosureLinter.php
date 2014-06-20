@@ -14,8 +14,7 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Uses Google\'s Closure Linter to check Javascript code.');
+    return pht("Uses Google's Closure Linter to check Javascript code.");
   }
 
   public function getLinterName() {
@@ -26,16 +25,13 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
     return 'gjslint';
   }
 
-  protected function getDefaultMessageSeverity($code) {
-    return ArcanistLintSeverity::SEVERITY_ERROR;
-  }
-
   public function getDefaultBinary() {
     return 'gjslint';
   }
 
   public function getInstallInstructions() {
-    return pht('Install gJSLint using `sudo easy_install http://closure-linter'.
+    return pht(
+      'Install gJSLint using `sudo easy_install http://closure-linter'.
       '.googlecode.com/files/closure_linter-latest.tar.gz`');
   }
 
@@ -53,7 +49,7 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
     $regex = '/^Line (\d+), (E:\d+): (.*)/';
     $severity_code = ArcanistLintSeverity::SEVERITY_ERROR;
 
-    $lines = explode("\n", $stdout);
+    $lines = phutil_split_lines($stdout, false);
 
     $messages = array();
     foreach ($lines as $line) {
@@ -79,4 +75,5 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
+
 }

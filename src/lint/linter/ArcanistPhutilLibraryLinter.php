@@ -10,9 +10,9 @@
  */
 final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
-  const LINT_UNKNOWN_SYMBOL               = 1;
-  const LINT_DUPLICATE_SYMBOL             = 2;
-  const LINT_ONE_CLASS_PER_FILE           = 3;
+  const LINT_UNKNOWN_SYMBOL      = 1;
+  const LINT_DUPLICATE_SYMBOL    = 2;
+  const LINT_ONE_CLASS_PER_FILE  = 3;
 
   public function getInfoName() {
     return 'Phutil Library Linter';
@@ -30,9 +30,9 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_UNKNOWN_SYMBOL         => 'Unknown Symbol',
-      self::LINT_DUPLICATE_SYMBOL       => 'Duplicate Symbol',
-      self::LINT_ONE_CLASS_PER_FILE     => 'One Class Per File',
+      self::LINT_UNKNOWN_SYMBOL     => 'Unknown Symbol',
+      self::LINT_DUPLICATE_SYMBOL   => 'Duplicate Symbol',
+      self::LINT_ONE_CLASS_PER_FILE => 'One Class Per File',
     );
   }
 
@@ -58,7 +58,7 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     // the working copy.
 
     $arc_root = dirname(phutil_get_library_root('arcanist'));
-    $bin = "{$arc_root}/scripts/phutil_rebuild_map.php";
+    $bin = $arc_root.'/scripts/phutil_rebuild_map.php';
 
     $symbols = array();
     foreach ($libs as $lib) {

@@ -70,4 +70,5 @@ final class ArcanistXMLLinter extends ArcanistLinter {
       $this->addLintMessage($message);
     }
   }
+
 }

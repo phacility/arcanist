@@ -51,8 +51,7 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
       ),
       'lessc.strict-units' => array(
         'type' => 'optional bool',
-        'help' => pht(
-          'Enable strict handling of units in expressions.'),
+        'help' => pht('Enable strict handling of units in expressions.'),
       ),
     );
   }
@@ -195,4 +194,5 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
+
 }

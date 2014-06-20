@@ -22,7 +22,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       pht('Expected to find some .lint-test tests in directory %s!', $root));
   }
 
-  private function lintFile($file, $linter) {
+  private function lintFile($file, ArcanistLinter $linter) {
     $linter = clone $linter;
 
     $contents = Filesystem::readFile($file);
@@ -38,14 +38,10 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
     $basename = basename($file);
 
-    if ($config) {
-      $config = json_decode($config, true);
-      if (!is_array($config)) {
-        throw new Exception(
-          "Invalid configuration in test '{$basename}', not valid JSON.");
-      }
-    } else {
-      $config = array();
+    $config = phutil_json_decode($config);
+    if (!is_array($config)) {
+      throw new Exception(
+        "Invalid configuration in test '{$basename}', not valid JSON.");
     }
 
     PhutilTypeSpec::checkMap(
@@ -62,8 +58,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $messages = null;
     $exception_message = false;
     $caught_exception = false;
-    try {
 
+    try {
       $tmp = new TempFile($basename);
       Filesystem::writeFile($tmp, $data);
       $full_path = (string)$tmp;
@@ -112,7 +108,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
       $after_lint = $patcher->getModifiedFileContent();
-
     } catch (ArcanistPhutilTestTerminatedException $ex) {
       throw $ex;
     } catch (Exception $exception) {
@@ -133,19 +128,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
                            $exception->getTraceAsString();
     }
 
-    switch ($basename) {
-      default:
-        $this->assertEqual(false, $caught_exception, $exception_message);
-        $this->compareLint($basename, $expect, $result);
-        $this->compareTransform($xform, $after_lint);
-        break;
-    }
+    $this->assertEqual(false, $caught_exception, $exception_message);
+    $this->compareLint($basename, $expect, $result);
+    $this->compareTransform($xform, $after_lint);
   }
 
-  private function compareLint($file, $expect, $result) {
+  private function compareLint($file, $expect, ArcanistLintResult $result) {
     $seen = array();
     $raised = array();
     $message_map = array();
+
     foreach ($result->getMessages() as $message) {
       $sev = $message->getSeverity();
       $line = $message->getLine();
@@ -195,7 +187,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     }
   }
 
-  protected function compareTransform($expected, $actual) {
+  private function compareTransform($expected, $actual) {
     if (!strlen($expected)) {
       return;
     }

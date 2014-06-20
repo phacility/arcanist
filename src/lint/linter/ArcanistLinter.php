@@ -28,7 +28,6 @@ abstract class ArcanistLinter {
 
 /*  -(  Human Readable Information  )---------------------------------------- */
 
-
   /**
    * Return an optional informative URI where humans can learn more about this
    * linter.
@@ -43,7 +42,6 @@ abstract class ArcanistLinter {
     return null;
   }
 
-
   /**
    * Return a brief human-readable description of the linter.
    *
@@ -55,7 +53,6 @@ abstract class ArcanistLinter {
   public function getInfoDescription() {
     return null;
   }
-
 
   /**
    * Return a human-readable linter name.
@@ -72,7 +69,6 @@ abstract class ArcanistLinter {
       $this->getLinterConfigurationName(),
       get_class($this));
   }
-
 
   public function getLinterPriority() {
     return 1.0;
@@ -264,10 +260,7 @@ abstract class ArcanistLinter {
     return $this->addLintMessage($message);
   }
 
-  final protected function raiseLintAtPath(
-    $code,
-    $desc) {
-
+  final protected function raiseLintAtPath($code, $desc) {
     return $this->raiseLintAtLine(null, null, $code, $desc, null, null);
   }
 
@@ -464,7 +457,6 @@ abstract class ArcanistLinter {
     return $code;
   }
 
-
   /**
    * Retrieve an old lint configuration value from `.arcconfig` or a similar
    * source.
@@ -477,7 +469,6 @@ abstract class ArcanistLinter {
    * @return  wild    Configured value, or default if no configuration exists.
    */
   final protected function getDeprecatedConfiguration($key, $default = null) {
-
     // If we're being called in a context without an engine (probably from
     // `arc linters`), just return the default value.
     if (!$this->engine) {

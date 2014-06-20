@@ -159,7 +159,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 
   private $output = array();
 
-
   public function getInfoName() {
     return pht('Script and Regex');
   }
@@ -195,7 +194,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       $this->output[$path] = $stdout;
     }
   }
-
 
   /**
    * Run the regex on the output of the script.
@@ -247,13 +245,13 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       list($line, $char) = $this->getMatchLineAndChar($match, $path);
 
       $dict = array(
-        'path'          => idx($match, 'file', $path),
-        'line'          => $line,
-        'char'          => $char,
-        'code'          => idx($match, 'code', $this->getLinterName()),
-        'severity'      => $this->getMatchSeverity($match),
-        'name'          => idx($match, 'name', 'Lint'),
-        'description'   => idx($match, 'message', 'Undefined Lint Message'),
+        'path'        => idx($match, 'file', $path),
+        'line'        => $line,
+        'char'        => $char,
+        'code'        => idx($match, 'code', $this->getLinterName()),
+        'severity'    => $this->getMatchSeverity($match),
+        'name'        => idx($match, 'name', 'Lint'),
+        'description' => idx($match, 'message', 'Undefined Lint Message'),
       );
 
       $original = idx($match, 'original');
@@ -274,7 +272,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 
 /* -(  Linter Information  )------------------------------------------------- */
 
-
   /**
    * Return the short name of the linter.
    *
@@ -290,8 +287,8 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     return 'script-and-regex';
   }
 
-/* -(  Parsing Output  )----------------------------------------------------- */
 
+/* -(  Parsing Output  )----------------------------------------------------- */
 
   /**
    * Get the line and character of the message from the regex match.
@@ -315,7 +312,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     return array($line, $char);
   }
 
-
   /**
    * Map the regex matching groups to a message severity. We look for either
    * a nonempty severity name group like 'error', or a group called 'severity'
@@ -328,11 +324,11 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    */
   private function getMatchSeverity(array $match) {
     $map = array(
-      'error'     => ArcanistLintSeverity::SEVERITY_ERROR,
-      'warning'   => ArcanistLintSeverity::SEVERITY_WARNING,
-      'autofix'   => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-      'advice'    => ArcanistLintSeverity::SEVERITY_ADVICE,
-      'disabled'  => ArcanistLintSeverity::SEVERITY_DISABLED,
+      'error'    => ArcanistLintSeverity::SEVERITY_ERROR,
+      'warning'  => ArcanistLintSeverity::SEVERITY_WARNING,
+      'autofix'  => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      'advice'   => ArcanistLintSeverity::SEVERITY_ADVICE,
+      'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
 
     $severity_name = strtolower(idx($match, 'severity'));
@@ -340,8 +336,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     foreach ($map as $name => $severity) {
       if (!empty($match[$name])) {
         return $severity;
-      }
-      if ($severity_name == $name) {
+      } else if ($severity_name == $name) {
         return $severity;
       }
     }
@@ -351,7 +346,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 
 
 /* -(  Validating Configuration  )------------------------------------------- */
-
 
   /**
    * Load, validate, and return the "script" configuration.
@@ -378,7 +372,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 
     return $config;
   }
-
 
   /**
    * Load, validate, and return the "regex" configuration.

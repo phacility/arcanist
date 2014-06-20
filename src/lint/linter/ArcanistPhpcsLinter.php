@@ -1,15 +1,7 @@
 <?php
 
 /**
- * Uses "PHP_CodeSniffer" to detect checkstyle errors in php code.
- * To use this linter, you must install PHP_CodeSniffer.
- * http://pear.php.net/package/PHP_CodeSniffer.
- *
- * Optional configurations in .arcconfig:
- *
- *   lint.phpcs.standard
- *   lint.phpcs.options
- *   lint.phpcs.bin
+ * Uses "PHP_CodeSniffer" to detect checkstyle errors in PHP code.
  *
  * @group linter
  */
@@ -50,6 +42,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   public function getDefaultFlags() {
     $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
     $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
+
     if (!empty($standard)) {
       if (is_array($options)) {
         $options[] = '--standard='.$standard;

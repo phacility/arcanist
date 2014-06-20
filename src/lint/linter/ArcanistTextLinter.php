@@ -5,15 +5,15 @@
  */
 final class ArcanistTextLinter extends ArcanistLinter {
 
-  const LINT_DOS_NEWLINE            = 1;
-  const LINT_TAB_LITERAL            = 2;
-  const LINT_LINE_WRAP              = 3;
-  const LINT_EOF_NEWLINE            = 4;
-  const LINT_BAD_CHARSET            = 5;
-  const LINT_TRAILING_WHITESPACE    = 6;
-  const LINT_NO_COMMIT              = 7;
-  const LINT_BOF_WHITESPACE         = 8;
-  const LINT_EOF_WHITESPACE         = 9;
+  const LINT_DOS_NEWLINE          = 1;
+  const LINT_TAB_LITERAL          = 2;
+  const LINT_LINE_WRAP            = 3;
+  const LINT_EOF_NEWLINE          = 4;
+  const LINT_BAD_CHARSET          = 5;
+  const LINT_TRAILING_WHITESPACE  = 6;
+  const LINT_NO_COMMIT            = 7;
+  const LINT_BOF_WHITESPACE       = 8;
+  const LINT_EOF_WHITESPACE       = 9;
 
   private $maxLineLength = 80;
 
@@ -69,24 +69,24 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
   public function getLintSeverityMap() {
     return array(
-      self::LINT_LINE_WRAP => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_LINE_WRAP           => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_TRAILING_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-      self::LINT_BOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-      self::LINT_EOF_WHITESPACE => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_BOF_WHITESPACE      => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      self::LINT_EOF_WHITESPACE      => ArcanistLintSeverity::SEVERITY_AUTOFIX,
     );
   }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_DOS_NEWLINE          => pht('DOS Newlines'),
-      self::LINT_TAB_LITERAL          => pht('Tab Literal'),
-      self::LINT_LINE_WRAP            => pht('Line Too Long'),
-      self::LINT_EOF_NEWLINE          => pht('File Does Not End in Newline'),
-      self::LINT_BAD_CHARSET          => pht('Bad Charset'),
-      self::LINT_TRAILING_WHITESPACE  => pht('Trailing Whitespace'),
-      self::LINT_NO_COMMIT            => pht('Explicit %s', '@no'.'commit'),
-      self::LINT_BOF_WHITESPACE       => pht('Leading Whitespace at BOF'),
-      self::LINT_EOF_WHITESPACE       => pht('Trailing Whitespace at EOF'),
+      self::LINT_DOS_NEWLINE         => pht('DOS Newlines'),
+      self::LINT_TAB_LITERAL         => pht('Tab Literal'),
+      self::LINT_LINE_WRAP           => pht('Line Too Long'),
+      self::LINT_EOF_NEWLINE         => pht('File Does Not End in Newline'),
+      self::LINT_BAD_CHARSET         => pht('Bad Charset'),
+      self::LINT_TRAILING_WHITESPACE => pht('Trailing Whitespace'),
+      self::LINT_NO_COMMIT           => pht('Explicit %s', '@no'.'commit'),
+      self::LINT_BOF_WHITESPACE      => pht('Leading Whitespace at BOF'),
+      self::LINT_EOF_WHITESPACE      => pht('Trailing Whitespace at EOF'),
     );
   }
 

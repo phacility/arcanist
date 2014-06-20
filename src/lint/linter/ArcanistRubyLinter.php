@@ -64,12 +64,8 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     return array('-w', '-c');
   }
 
-  protected function getDefaultMessageSeverity($code) {
-    return ArcanistLintSeverity::SEVERITY_ERROR;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $lines = phutil_split_lines($stderr, $retain_endings = false);
+    $lines = phutil_split_lines($stderr, false);
 
     $messages = array();
     foreach ($lines as $line) {

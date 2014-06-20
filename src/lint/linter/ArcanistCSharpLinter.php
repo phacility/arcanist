@@ -129,8 +129,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     $this->loaded = true;
   }
 
-  public function lintPath($path) {
-  }
+  public function lintPath($path) {}
 
   public function willLintPaths(array $paths) {
     $this->loadEnvironment();

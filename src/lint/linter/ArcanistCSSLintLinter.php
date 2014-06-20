@@ -14,8 +14,7 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Use `csslint` to detect issues with CSS source files.');
+    return pht('Use `csslint` to detect issues with CSS source files.');
   }
 
   public function getLinterName() {

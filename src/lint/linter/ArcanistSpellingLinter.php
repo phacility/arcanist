@@ -56,14 +56,14 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
 
   public function getLintSeverityMap() {
     return array(
-      self::LINT_SPELLING_PICKY => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_SPELLING_PICKY     => ArcanistLintSeverity::SEVERITY_WARNING,
       self::LINT_SPELLING_IMPORTANT => ArcanistLintSeverity::SEVERITY_ERROR,
     );
   }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_SPELLING_PICKY => pht('Possible Spelling Mistake'),
+      self::LINT_SPELLING_PICKY     => pht('Possible Spelling Mistake'),
       self::LINT_SPELLING_IMPORTANT => pht('Possible Spelling Mistake'),
     );
   }
@@ -105,7 +105,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
       $this->raiseLintAtOffset(
         $next,
         $severity,
-        sprintf(
+        pht(
           "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
           $correct_word),
@@ -132,7 +132,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
       $this->raiseLintAtOffset(
         $match[1],
         $severity,
-        sprintf(
+        pht(
           "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
           $correct_word),
@@ -144,14 +144,13 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   public static function fixLetterCase($string, $case) {
     if ($case == strtolower($case)) {
       return strtolower($string);
-    }
-    if ($case == strtoupper($case)) {
+    } else if ($case == strtoupper($case)) {
       return strtoupper($string);
-    }
-    if ($case == ucwords(strtolower($case))) {
+    } else if ($case == ucwords(strtolower($case))) {
       return ucwords(strtolower($string));
+    } else {
+      return null;
     }
-    return null;
   }
 
 }

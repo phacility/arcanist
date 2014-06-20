@@ -55,7 +55,6 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
 /* -(  Sharing Parse Trees  )------------------------------------------------ */
 
-
   /**
    * Get the linter object which is responsible for building parse trees.
    *
@@ -94,7 +93,6 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     return $linter;
   }
 
-
   /**
    * Build futures on this linter, for use and to share with other linters.
    *
@@ -110,7 +108,6 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     }
     return array_select_keys($this->futures, $paths);
   }
-
 
   /**
    * Get a path's tree from the responsible linter.
@@ -144,7 +141,6 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     return $this->trees[$path];
   }
 
-
   /**
    * Get a path's parse exception from the responsible linter.
    *
@@ -159,6 +155,5 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
     return idx($this->exceptions, $path);
   }
-
 
 }

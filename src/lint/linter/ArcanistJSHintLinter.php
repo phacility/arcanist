@@ -17,8 +17,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Use `jshint` to detect issues with Javascript source files.');
+    return pht('Use `jshint` to detect issues with Javascript source files.');
   }
 
   public function getLinterName() {
@@ -179,4 +178,5 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
 
     return $code;
   }
+
 }
