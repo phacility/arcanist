@@ -38,7 +38,11 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
     $basename = basename($file);
 
-    $config = phutil_json_decode($config);
+    if ($config) {
+      $config = phutil_json_decode($config);
+    } else {
+      $config = array();
+    }
     PhutilTypeSpec::checkMap(
       $config,
       array(
