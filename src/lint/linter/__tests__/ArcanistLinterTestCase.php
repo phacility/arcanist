@@ -39,11 +39,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $basename = basename($file);
 
     $config = phutil_json_decode($config);
-    if (!is_array($config)) {
-      throw new Exception(
-        "Invalid configuration in test '{$basename}', not valid JSON.");
-    }
-
     PhutilTypeSpec::checkMap(
       $config,
       array(
