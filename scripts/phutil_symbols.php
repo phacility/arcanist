@@ -368,7 +368,7 @@ foreach ($calls as $call) {
 // -(  Interfaces  )------------------------------------------------------------
 
 
-// Find interfaces declared in ths file.
+// Find interfaces declared in this file.
 
 
 // This is "interface X .. { ... }".
@@ -488,8 +488,8 @@ if ($args->getArg('ugly')) {
 function phutil_fail_on_unsupported_feature(XHPASTNode $node, $file, $what) {
   $line = $node->getLineNumber();
   $message = phutil_console_wrap(pht(
-      "`arc liberate` has limited support for features introduced after PHP ".
-      "5.2.3. This library uses an unsupported feature (%s) on line %d of %s",
+      '`arc liberate` has limited support for features introduced after PHP '.
+      '5.2.3. This library uses an unsupported feature (%s) on line %d of %s',
     $what,
     $line,
     Filesystem::readablePath($file)));
@@ -512,14 +512,17 @@ function phutil_symbols_get_builtins() {
   $funcs  = get_defined_functions();
   $builtin['functions']  = $funcs['internal'];
 
-  foreach (array('functions', 'classes') as $type) {
+  $compat = json_decode(
+    file_get_contents(
+      dirname(__FILE__).'/../resources/php_compat_info.json'),
+    true);
+
+  foreach (array('functions', 'classes', 'interfaces') as $type) {
     // Developers may not have every extension that a library potentially uses
-    // installed. We supplement the list of declared functions and classses with
+    // installed. We supplement the list of declared functions and classes with
     // a list of known extension functions to avoid raising false positives just
     // because you don't have pcntl, etc.
-    $list = dirname(__FILE__)."/php_extension_{$type}.txt";
-    $extensions = file_get_contents($list);
-    $extensions = explode("\n", trim($extensions));
+    $extensions = array_keys($compat[$type]);
     $builtin[$type] = array_merge($builtin[$type], $extensions);
   }
 
