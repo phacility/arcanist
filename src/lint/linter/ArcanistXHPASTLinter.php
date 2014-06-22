@@ -394,7 +394,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $target = phutil_get_library_root('arcanist').
       '/../resources/php_compat_info.json';
-    $compat_info = json_decode(file_get_contents($target), true);
+    $compat_info = phutil_json_decode(Filesystem::readFile($target));
 
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($calls as $call) {
