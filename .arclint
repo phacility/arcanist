@@ -13,6 +13,15 @@
     "generated": {
       "type": "generated"
     },
+    "json": {
+      "type": "json",
+      "include": [
+        "(^resources/arclint/.*\\.arclint\\.example$)",
+        "(^\\.arcconfig$)",
+        "(^\\.arclint$)",
+        "(\\.json$)"
+      ]
+    },
     "merge-conflict": {
       "type": "merge-conflict"
     },
