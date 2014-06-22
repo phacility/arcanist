@@ -467,7 +467,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       if ($version && version_compare($version['min'], $this->version, '>')) {
         $this->raiseLintAtNode(
           $node,
-          self::LINT_PHP_53_FEATURES,
+          self::LINT_PHP_COMPATIBILITY,
           "This codebase targets PHP {$this->version}, but `{$name}` was not ".
           "introduced until PHP {$version['min']}.");
       }
