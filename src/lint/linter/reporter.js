@@ -10,7 +10,6 @@ module.exports = {
         'col'     : error.character,
         'reason'  : error.reason,
         'code'    : error.code,
-        'evidence': error.evidence,
       });
     });
 

@@ -157,7 +157,6 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
       $message->setName('JSHint'.idx($err, 'code'));
       $message->setDescription(idx($err, 'reason'));
       $message->setSeverity($this->getLintMessageSeverity(idx($err, 'code')));
-      $message->setOriginalText(idx($err, 'evidence'));
 
       $messages[] = $message;
     }
