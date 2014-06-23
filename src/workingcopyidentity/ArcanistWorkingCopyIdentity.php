@@ -201,17 +201,13 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   private static function parseRawConfigFile($raw_config, $from_where) {
-    $proj = json_decode($raw_config, true);
-
-    if (!is_array($proj)) {
-      throw new Exception(
-        "Unable to parse '.arcconfig' file '{$from_where}'. The file contents ".
-        "should be valid JSON.\n\n".
-        "FILE CONTENTS\n".
-        substr($raw_config, 0, 2048));
+    try {
+      return phutil_json_decode($raw_config);
+    } catch (PhutilJSONParserException $ex) {
+      throw new PhutilProxyException(
+        pht("Unable to parse '.arcconfig' file '%s'.", $from_where),
+        $ex);
     }
-
-    return $proj;
   }
 
   private function __construct($root, array $config) {
@@ -297,15 +293,13 @@ final class ArcanistWorkingCopyIdentity {
    *
    * @task config
    */
-  public function getLocalConfig($key, $default=null) {
+  public function getLocalConfig($key, $default = null) {
     return idx($this->localConfig, $key, $default);
   }
 
   public function readLocalArcConfig() {
     if (strlen($this->localMetaDir)) {
-      $local_path = Filesystem::resolvePath(
-        'arc/config',
-        $this->localMetaDir);
+      $local_path = Filesystem::resolvePath('arc/config', $this->localMetaDir);
 
       $console = PhutilConsole::getConsole();
 
@@ -316,9 +310,12 @@ final class ArcanistWorkingCopyIdentity {
             'Config: Reading local configuration file "%s"...',
             $local_path));
 
-        $file = Filesystem::readFile($local_path);
-        if ($file) {
-          return json_decode($file, true);
+        try {
+          return phutil_json_decode($local_path);
+        } catch (PhutilJSONParserException $ex) {
+          throw new PhutilProxyException(
+            pht("Failed to parse '%s' as JSON.", $local_path),
+            $ex);
         }
       } else {
         $console->writeLog(
@@ -327,8 +324,8 @@ final class ArcanistWorkingCopyIdentity {
             'Config: Did not find local configuration at "%s".',
             $local_path));
       }
-
     }
+
     return array();
   }
 

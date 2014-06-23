@@ -63,13 +63,13 @@ final class ArcanistConfigurationManager {
   }
 
   /**
-   * For the advanced case where you want customized configuratin handling.
+   * For the advanced case where you want customized configuration handling.
    *
    * Reads the configuration from all available sources, returning a map (array)
    * of results, with the source as key. Missing values will not be in the map,
    * so an empty array will be returned if no results are found.
    *
-   * The map is ordered by the cannonical sources precedence, which is:
+   * The map is ordered by the canonical sources precedence, which is:
    * runtime > local > project > user > system
    *
    * @param key   Key to read
@@ -198,10 +198,12 @@ final class ArcanistConfigurationManager {
         }
 
         $user_config_data = Filesystem::readFile($user_config_path);
-        $user_config = json_decode($user_config_data, true);
-        if (!is_array($user_config)) {
-          throw new ArcanistUsageException(
-            "Your '~/.arcrc' file is not a valid JSON file.");
+        try {
+          $user_config = phutil_json_decode($user_config_data);
+        } catch (PhutilJSONParserException $ex) {
+          throw new PhutilProxyException(
+            "Your '~/.arcrc' file is not a valid JSON file.".
+            $ex);
         }
       } else {
         $console->writeLog(
@@ -290,8 +292,14 @@ final class ArcanistConfigurationManager {
             'Config: Reading system configuration file "%s"...',
             $system_config_path));
         $file = Filesystem::readFile($system_config_path);
-        if ($file) {
-          $system_config = json_decode($file, true);
+        try {
+          $system_config = phutil_json_decode($file);
+        } catch (PhutilJSONParserException $ex) {
+          throw new PhutilProxyException(
+            pht(
+              "Your '%s' file is not a valid JSON file.",
+              $system_config_path),
+            $ex);
         }
       } else {
         $console->writeLog(
@@ -324,7 +332,7 @@ final class ArcanistConfigurationManager {
     return $this->runtimeConfig;
   }
 
-    public function readDefaultConfig() {
+  public function readDefaultConfig() {
     $settings = new ArcanistSettings();
     return $settings->getDefaultSettings();
   }
