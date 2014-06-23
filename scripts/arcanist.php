@@ -365,10 +365,19 @@ try {
   }
 
   if (!$is_usage) {
-    echo phutil_console_format(
-      "**Exception**\n%s\n%s\n",
-      $ex->getMessage(),
-      '(Run with --trace for a full exception trace.)');
+    echo phutil_console_format("**Exception**\n");
+
+    while ($ex) {
+      echo $ex->getMessage()."\n";
+
+      if ($ex instanceof PhutilProxyException) {
+        $ex = $ex->getPreviousException();
+      } else {
+        $ex = null;
+      }
+    }
+
+    echo "(Run with --trace for a full exception trace.)\n";
   }
 
   exit(1);
