@@ -31,6 +31,13 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   protected function getDefaultMessageSeverity($code) {
     if (preg_match('/^W/', $code)) {
       return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else if (preg_match('/^E043$/', $code)) {
+      // TODO: If JSHint encounters a large number of errors, it will quit
+      // prematurely and add an additional "Too Many Errors" error. Ideally, we
+      // should be able to pass some sort of `--force` option to `jshint`.
+      //
+      // See https://github.com/jshint/jshint/issues/180
+      return ArcanistLintSeverity::SEVERITY_DISABLED;
     } else {
       return ArcanistLintSeverity::SEVERITY_ERROR;
     }
