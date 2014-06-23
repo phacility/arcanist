@@ -218,21 +218,7 @@ EOTEXT
     }
 
     if ($everything) {
-      // Recurse through project from root
-      switch ($this->getRepositoryApi()->getSourceControlSystemName()) {
-        case 'git':
-          $filter = '*/.git';
-          break;
-        case 'svn':
-          $filter = '*/.svn';
-          break;
-        case 'hg':
-          $filter = '*/.hg';
-          break;
-      }
-      $paths = id(new FileFinder($working_copy->getProjectRoot()))
-        ->excludePath($filter)
-        ->find();
+      $paths = iterator_to_array($this->getRepositoryApi()->getAllFiles());
       $this->shouldLintAll = true;
     } else {
       $paths = $this->selectPathsForWorkflow($paths, $rev);
