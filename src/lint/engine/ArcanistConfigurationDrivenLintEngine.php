@@ -13,11 +13,16 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
     }
 
     $data = Filesystem::readFile($config_path);
-    $config = json_decode($data, true);
-    if (!is_array($config)) {
-      throw new Exception(
-        "Expected '.arclint' file to be a valid JSON file, but failed to ".
-        "decode it: {$config_path}");
+    $config = null;
+    try {
+      $config = phutil_json_decode($data);
+    } catch (PhutilJSONParserException $ex) {
+      throw new PhutilProxyException(
+        pht(
+          "Expected '.arclint' file to be a valid JSON file, but failed to ".
+          "decode %s",
+          $config_path),
+        $ex);
     }
 
     $linters = $this->loadAvailableLinters();
