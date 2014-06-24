@@ -311,7 +311,8 @@ final class ArcanistWorkingCopyIdentity {
             $local_path));
 
         try {
-          return phutil_json_decode($local_path);
+          $json = Filesystem::readFile($local_path);
+          return phutil_json_decode($json);
         } catch (PhutilJSONParserException $ex) {
           throw new PhutilProxyException(
             pht("Failed to parse '%s' as JSON.", $local_path),
