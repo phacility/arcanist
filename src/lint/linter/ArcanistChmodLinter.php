@@ -46,6 +46,59 @@ final class ArcanistChmodLinter extends ArcanistLinter {
   public function lintPath($path) {
     if (is_executable($path)) {
       if ($this->getEngine()->isBinaryFile($path)) {
+        $mime = Filesystem::getMimeType($path);
+
+        switch ($mime) {
+          // Archives
+          case 'application/jar':
+          case 'application/java-archive':
+          case 'application/x-bzip2':
+          case 'application/x-gzip':
+          case 'application/x-rar-compressed':
+          case 'application/x-tar':
+          case 'application/zip':
+
+          // Audio
+          case 'audio/midi':
+          case 'audio/mpeg':
+          case 'audio/mp4':
+          case 'audio/x-wav':
+
+          // Fonts
+          case 'application/vnd.ms-fontobject':
+          case 'application/x-font-ttf':
+          case 'application/x-woff':
+
+          // Images
+          case 'application/x-shockwave-flash':
+          case 'image/gif':
+          case 'image/jpeg':
+          case 'image/png':
+          case 'image/tiff':
+          case 'image/x-icon':
+          case 'image/x-ms-bmp':
+
+          // Miscellaneous
+          case 'application/msword':
+          case 'application/pdf':
+          case 'application/postscript':
+          case 'application/rtf':
+          case 'application/vnd.ms-excel':
+          case 'application/vnd.ms-powerpoint':
+
+          // Video
+          case 'video/mpeg':
+          case 'video/quicktime':
+          case 'video/x-flv':
+          case 'video/x-msvideo':
+          case 'video/x-ms-wmv':
+
+            $this->raiseLintAtPath(
+              self::LINT_INVALID_EXECUTABLE,
+              pht("'%s' files should not be executable.", $mime));
+            return;
+        }
+
         // Path is a binary file, which makes it a valid executable.
         return;
       } else if ($this->getShebang($path)) {
