@@ -1,8 +1,8 @@
 function foo() {
-  if (true) return 'foo'; else return 'bar';
+  if (true) return "foo"; else return "bar";
 }
 ~~~~~~~~~~
-error:2:
+error:2:3
 ~~~~~~~~~~
 ~~~~~~~~~~
 {
