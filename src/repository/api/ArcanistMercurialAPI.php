@@ -247,16 +247,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         list($node, $rev, $full_author, $date, $branch, $tag,
           $parents, $desc) = explode("\1", $log, 9);
 
-        // Not everyone enters their email address as a part of the username
-        // field. Try to make it work when it's obvious
-        if (strpos($full_author, '@') === false) {
-          $author = $full_author;
-          $author_email = null;
-        } else {
-          $email = new PhutilEmailAddress($full_author);
-          $author = $email->getDisplayName();
-          $author_email = $email->getAddress();
-        }
+        list ($author, $author_email) = $this->parseFullAuthor($full_author);
 
         // NOTE: If a commit has only one parent, {parents} returns empty.
         // If it has two parents, {parents} returns revs and short hashes, not
@@ -735,9 +726,30 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAuthor() {
     $full_author = $this->getMercurialConfig('ui.username');
-    $email = new PhutilEmailAddress($full_author);
-    $author = $email->getDisplayName();
+    list($author, $author_email) = $this->parseFullAuthor($full_author);
     return $author;
+  }
+
+  /**
+   * Parse the Mercurial author field
+   *
+   * Not everyone enters their email address as a part of the username
+   * field. Try to make it work when it's obvious
+   *
+   * @param string $full_author
+   * @return array
+   */
+  protected function parseFullAuthor($full_author) {
+    if (strpos($full_author, '@') === false) {
+      $author = $full_author;
+      $author_email = null;
+    } else {
+      $email = new PhutilEmailAddress($full_author);
+      $author = $email->getDisplayName();
+      $author_email = $email->getAddress();
+    }
+
+    return array($author, $author_email);
   }
 
   public function addToCommit(array $paths) {
