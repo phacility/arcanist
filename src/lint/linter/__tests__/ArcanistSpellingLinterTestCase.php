@@ -6,7 +6,7 @@ final class ArcanistSpellingLinterTestCase
   public function testSpellingLint() {
     $linter = new ArcanistSpellingLinter();
     $linter->addPartialWordRule('supermn', 'superman');
-    $linter->addWholeWordRule('batmn', 'batman');
+    $linter->addExactWordRule('batmn', 'batman');
 
     $this->executeTestsInDirectory(
       dirname(__FILE__).'/spelling/',

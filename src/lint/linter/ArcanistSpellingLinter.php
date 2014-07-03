@@ -2,18 +2,17 @@
 
 /**
  * Enforces basic spelling. Spelling inside code is actually pretty hard to
- * get right without false positives. I take a conservative approach and
- * just use a blacklisted set of words that are commonly spelled
- * incorrectly.
+ * get right without false positives. I take a conservative approach and just
+ * use a blacklisted set of words that are commonly spelled incorrectly.
  */
 final class ArcanistSpellingLinter extends ArcanistLinter {
 
-  const LINT_SPELLING_PICKY = 0;
-  const LINT_SPELLING_IMPORTANT = 1;
+  const LINT_SPELLING_EXACT   = 1;
+  const LINT_SPELLING_PARTIAL = 2;
 
-  private $partialWordRules;
-  private $wholeWordRules;
-  private $severity;
+  private $dictionaries     = array();
+  private $exactWordRules   = array();
+  private $partialWordRules = array();
 
   public function getInfoName() {
     return pht('Spellchecker');
@@ -21,13 +20,6 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
 
   public function getInfoDescription() {
     return pht('Detects common misspellings of English words.');
-  }
-
-  public function __construct($severity = self::LINT_SPELLING_PICKY) {
-    $this->severity = $severity;
-    $this->wholeWordRules = ArcanistSpellingDefaultData::getFullWordRules();
-    $this->partialWordRules =
-      ArcanistSpellingDefaultData::getPartialWordRules();
   }
 
   public function getLinterName() {
@@ -38,84 +30,94 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     return 'spelling';
   }
 
-  public function addPartialWordRule(
-    $incorrect_word,
-    $correct_word,
-    $severity = self::LINT_SPELLING_IMPORTANT) {
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'spelling.dictionaries' => array(
+        'type' => 'optional list<string>',
+        'help' => pht('Pass in custom dictionaries.'),
+      ),
+    );
 
-    $this->partialWordRules[$severity][$incorrect_word] = $correct_word;
+    return $options + parent::getLinterConfigurationOptions();
   }
 
-  public function addWholeWordRule(
-    $incorrect_word,
-    $correct_word,
-    $severity = self::LINT_SPELLING_IMPORTANT) {
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'spelling.dictionaries':
+        foreach ($value as $dictionary) {
+          $this->loadDictionary($dictionary);
+        }
+        return;
+    }
 
-    $this->wholeWordRules[$severity][$incorrect_word] = $correct_word;
+    return parent::setLinterConfigurationValue($key, $value);
+  }
+
+  public function loadDictionary($path) {
+    $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $path = Filesystem::resolvePath($path, $root);
+
+    $dict = phutil_json_decode(Filesystem::readFile($path));
+    PhutilTypeSpec::checkMap(
+      $dict,
+      array(
+        'rules' => 'map<string, map<string, string>>',
+      ));
+    $rules = $dict['rules'];
+
+    $this->dictionaries[] = $path;
+    $this->exactWordRules = array_merge(
+      $this->exactWordRules,
+      idx($rules, 'exact', array()));
+    $this->partialWordRules = array_merge(
+      $this->partialWordRules,
+      idx($rules, 'partial', array()));
+  }
+
+  public function addExactWordRule($misspelling, $correction) {
+    $this->exactWordRules = array_merge(
+      $this->exactWordRules,
+      array($misspelling => $correction));
+  }
+
+  public function addPartialWordRule($misspelling, $correction) {
+    $this->partialWordRules = array_merge(
+      $this->partialWordRules,
+      array($misspelling => $correction));
   }
 
   public function getLintSeverityMap() {
     return array(
-      self::LINT_SPELLING_PICKY     => ArcanistLintSeverity::SEVERITY_WARNING,
-      self::LINT_SPELLING_IMPORTANT => ArcanistLintSeverity::SEVERITY_ERROR,
+      self::LINT_SPELLING_EXACT   => ArcanistLintSeverity::SEVERITY_WARNING,
+      self::LINT_SPELLING_PARTIAL => ArcanistLintSeverity::SEVERITY_WARNING,
     );
   }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_SPELLING_PICKY     => pht('Possible Spelling Mistake'),
-      self::LINT_SPELLING_IMPORTANT => pht('Possible Spelling Mistake'),
+      self::LINT_SPELLING_EXACT   => pht('Possible Spelling Mistake'),
+      self::LINT_SPELLING_PARTIAL => pht('Possible Spelling Mistake'),
     );
   }
 
   public function lintPath($path) {
-    foreach ($this->partialWordRules as $severity => $wordlist) {
-      if ($severity >= $this->severity) {
-        if (!$this->isCodeEnabled($severity)) {
-          continue;
-        }
-        foreach ($wordlist as $misspell => $correct) {
-          $this->checkPartialWord($path, $misspell, $correct, $severity);
-        }
-      }
+    // TODO: This is a bit hacky. If no dictionaries were specified, then add
+    // the default dictionary.
+    if (!$this->dictionaries) {
+      $root = dirname(phutil_get_library_root('arcanist'));
+      $this->loadDictionary($root.'/resources/spelling/english.json');
     }
 
-    foreach ($this->wholeWordRules as $severity => $wordlist) {
-      if ($severity >= $this->severity) {
-        if (!$this->isCodeEnabled($severity)) {
-          continue;
-        }
-        foreach ($wordlist as $misspell => $correct) {
-          $this->checkWholeWord($path, $misspell, $correct, $severity);
-        }
-      }
+    foreach ($this->exactWordRules as $misspelling => $correction) {
+      $this->checkExactWord($path, $misspelling, $correction);
+    }
+
+    foreach ($this->partialWordRules as $misspelling => $correction) {
+      $this->checkPartialWord($path, $misspelling, $correction);
     }
   }
 
-  protected function checkPartialWord($path, $word, $correct_word, $severity) {
-    $text = $this->getData($path);
-    $pos = 0;
-    while ($pos < strlen($text)) {
-      $next = stripos($text, $word, $pos);
-      if ($next === false) {
-        return;
-      }
-      $original = substr($text, $next, strlen($word));
-      $replacement = self::fixLetterCase($correct_word, $original);
-      $this->raiseLintAtOffset(
-        $next,
-        $severity,
-        pht(
-          "Possible spelling error. You wrote '%s', but did you mean '%s'?",
-          $word,
-          $correct_word),
-        $original,
-        $replacement);
-      $pos = $next + 1;
-    }
-  }
-
-  protected function checkWholeWord($path, $word, $correct_word, $severity) {
+  private function checkExactWord($path, $word, $correction) {
     $text = $this->getData($path);
     $matches = array();
     $num_matches = preg_match_all(
@@ -128,28 +130,52 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     }
     foreach ($matches[0] as $match) {
       $original = $match[0];
-      $replacement = self::fixLetterCase($correct_word, $original);
+      $replacement = self::fixLetterCase($correction, $original);
       $this->raiseLintAtOffset(
         $match[1],
-        $severity,
+        self::LINT_SPELLING_EXACT,
         pht(
           "Possible spelling error. You wrote '%s', but did you mean '%s'?",
           $word,
-          $correct_word),
+          $correction),
         $original,
         $replacement);
     }
   }
 
+  private function checkPartialWord($path, $word, $correction) {
+    $text = $this->getData($path);
+    $pos = 0;
+    while ($pos < strlen($text)) {
+      $next = stripos($text, $word, $pos);
+      if ($next === false) {
+        return;
+      }
+      $original = substr($text, $next, strlen($word));
+      $replacement = self::fixLetterCase($correction, $original);
+      $this->raiseLintAtOffset(
+        $next,
+        self::LINT_SPELLING_PARTIAL,
+        pht(
+          "Possible spelling error. You wrote '%s', but did you mean '%s'?",
+          $word,
+          $correction),
+        $original,
+        $replacement);
+      $pos = $next + 1;
+    }
+  }
+
   public static function fixLetterCase($string, $case) {
-    if ($case == strtolower($case)) {
-      return strtolower($string);
-    } else if ($case == strtoupper($case)) {
-      return strtoupper($string);
-    } else if ($case == ucwords(strtolower($case))) {
-      return ucwords(strtolower($string));
-    } else {
-      return null;
+    switch ($case) {
+      case strtolower($case):
+        return strtolower($string);
+      case strtoupper($case):
+        return strtoupper($string);
+      case ucwords(strtolower($case)):
+        return ucwords(strtolower($string));
+      default:
+        return null;
     }
   }
 

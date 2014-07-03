@@ -38,9 +38,7 @@
     },
     "spelling": {
       "type": "spelling",
-      "exclude": [
-        "(^src/lint/linter/spelling/ArcanistSpellingDefaultData\\.php$)"
-      ]
+      "exclude": "(resources/spelling/.*\\.json$)"
     },
     "text": {
       "type": "text"

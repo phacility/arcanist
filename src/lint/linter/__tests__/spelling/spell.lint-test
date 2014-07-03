@@ -10,14 +10,14 @@ didn't remove acording
 Added ZZZZsupermnZZZZ
 Added full batmn batmnZZZZ
 ~~~~~~~~~~
-error:2:1
-error:4:10
-error:5:15
-error:7:7
-error:7:12
+warning:2:1
+warning:4:10
+warning:5:15
+warning:7:7
+warning:7:12
 warning:9:15
-error:10:11
-error:11:12
+warning:10:11
+warning:11:12
 ~~~~~~~~~~
 ~~~~~~~~~~
 {
