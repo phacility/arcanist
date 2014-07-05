@@ -57,8 +57,8 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     // itself. This means lint results will accurately reflect the state of
     // the working copy.
 
-    $arc_root = dirname(phutil_get_library_root('arcanist'));
-    $bin = $arc_root.'/scripts/phutil_rebuild_map.php';
+    $root = dirname(phutil_get_library_root('phutil'));
+    $bin = $root.'/scripts/phutil_rebuild_map.php';
 
     $symbols = array();
     foreach ($libs as $lib) {

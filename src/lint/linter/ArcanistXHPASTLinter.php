@@ -392,7 +392,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       return;
     }
 
-    $target = phutil_get_library_root('arcanist').
+    $target = phutil_get_library_root('phutil').
       '/../resources/php_compat_info.json';
     $compat_info = phutil_json_decode(Filesystem::readFile($target));
 

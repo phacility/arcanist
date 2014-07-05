@@ -234,7 +234,7 @@ EOTEXT
 
 
   private function getScriptPath($script) {
-    $root = dirname(phutil_get_library_root('arcanist'));
+    $root = dirname(phutil_get_library_root('phutil'));
     return $root.'/'.$script;
   }
 
