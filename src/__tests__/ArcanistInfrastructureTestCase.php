@@ -25,7 +25,7 @@ final class ArcanistInfrastructureTestCase extends ArcanistTestCase {
       ->buildMap();
 
     $bootloader = PhutilBootloader::getInstance();
-    $old_library_map = $bootloader->getLibraryMap('arcanist');
+    $old_library_map = $bootloader->getLibraryMapWithoutExtensions('arcanist');
     unset($old_library_map[PhutilLibraryMapBuilder::LIBRARY_MAP_VERSION_KEY]);
 
     $this->assertEqual(
