@@ -17,7 +17,8 @@ final class ArcanistInfrastructureTestCase extends ArcanistTestCase {
    * that all the library map is up-to-date.
    */
   public function testLibraryMap() {
-    $root = phutil_get_library_root('arcanist');
+    $library = phutil_get_current_library_name();
+    $root = phutil_get_library_root($library);
 
     $new_library_map = id(new PhutilLibraryMapBuilder($root))
       ->setQuiet(true)
@@ -25,7 +26,7 @@ final class ArcanistInfrastructureTestCase extends ArcanistTestCase {
       ->buildMap();
 
     $bootloader = PhutilBootloader::getInstance();
-    $old_library_map = $bootloader->getLibraryMapWithoutExtensions('arcanist');
+    $old_library_map = $bootloader->getLibraryMapWithoutExtensions($library);
     unset($old_library_map[PhutilLibraryMapBuilder::LIBRARY_MAP_VERSION_KEY]);
 
     $this->assertEqual(
@@ -34,4 +35,5 @@ final class ArcanistInfrastructureTestCase extends ArcanistTestCase {
       'The library map does not appear to be up-to-date. Try '.
       'rebuilding the map with `arc liberate`.');
   }
+
 }
