@@ -33,10 +33,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_BINARY_EXPRESSION_SPACING = 27;
   const LINT_ARRAY_INDEX_SPACING       = 28;
   const LINT_IMPLICIT_FALLTHROUGH      = 30;
-  const LINT_PHP_53_FEATURES           = 31; // Deprecated
   const LINT_REUSED_AS_ITERATOR        = 32;
   const LINT_COMMENT_SPACING           = 34;
-  const LINT_PHP_54_FEATURES           = 35; // Deprecated
   const LINT_SLOWNESS                  = 36;
   const LINT_CLOSING_CALL_PAREN        = 37;
   const LINT_CLOSING_DECL_PAREN        = 38;
@@ -95,8 +93,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_BINARY_EXPRESSION_SPACING => 'Space Around Binary Operator',
       self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
       self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
-      self::LINT_PHP_53_FEATURES           => 'Use Of PHP 5.3 Features',
-      self::LINT_PHP_54_FEATURES           => 'Use Of PHP 5.4 Features',
       self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
       self::LINT_COMMENT_SPACING           => 'Comment Spaces',
       self::LINT_SLOWNESS                  => 'Slow Construct',
@@ -146,11 +142,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_ELSEIF_USAGE              => $advice,
       self::LINT_SEMICOLON_SPACING         => $advice,
       self::LINT_CONCATENATION_OPERATOR    => $warning,
-
-      // This is disabled by default because projects don't necessarily target
-      // a specific minimum version.
-      self::LINT_PHP_53_FEATURES           => $disabled,
-      self::LINT_PHP_54_FEATURES           => $disabled,
     );
   }
 
@@ -366,28 +357,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintPHPCompatibility(XHPASTNode $root) {
-    $php53 = self::LINT_PHP_53_FEATURES;
-    $php54 = self::LINT_PHP_54_FEATURES;
-    $disabled = ArcanistLintSeverity::SEVERITY_DISABLED;
-    if ($this->getLintMessageSeverity($php53) !== $disabled) {
-      phutil_deprecated(
-        '`LINT_PHP_53_FEATURES` is deprecated.',
-        "You should set 'xhpast.php-version' instead.");
-
-      if (!$this->version) {
-        $this->version = '5.2.3';
-      }
-    }
-    if ($this->getLintMessageSeverity($php54) !== $disabled) {
-      phutil_deprecated(
-        '`LINT_PHP_54_FEATURES` is deprecated.',
-        "You should set 'xhpast.php-version' instead.");
-
-      if (!$this->version) {
-        $this->version = '5.3.0';
-      }
-    }
-
     if (!$this->version) {
       return;
     }
