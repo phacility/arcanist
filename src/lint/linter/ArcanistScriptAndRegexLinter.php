@@ -152,8 +152,6 @@
  * @task  linterinfo  Linter Information
  * @task  parse       Parsing Output
  * @task  config      Validating Configuration
- *
- * @group linter
  */
 final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 

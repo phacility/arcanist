@@ -17,7 +17,6 @@
  *    - add new flags to existing workflows by overriding
  *      getCustomArgumentsForCommand().
  *
- * @group config
  * @concrete-extensible
  */
 class ArcanistConfiguration {
@@ -65,8 +64,11 @@ class ArcanistConfiguration {
     // This is a hook.
   }
 
-  public function didRunWorkflow($command, ArcanistBaseWorkflow $workflow,
-                                 $err) {
+  public function didRunWorkflow(
+    $command,
+    ArcanistBaseWorkflow $workflow,
+    $err) {
+
     // This is a hook.
   }
 

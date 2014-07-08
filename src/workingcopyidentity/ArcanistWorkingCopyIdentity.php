@@ -3,10 +3,7 @@
 /**
  * Interfaces with basic information about the working copy.
  *
- *
  * @task config
- *
- * @group workingcopy
  */
 final class ArcanistWorkingCopyIdentity {
 
@@ -284,10 +281,10 @@ final class ArcanistWorkingCopyIdentity {
   }
 
   /**
-   * Read a configuration directive from local configuration.  This
+   * Read a configuration directive from local configuration. This
    * reads ONLY the per-working copy configuration,
    * i.e. .(git|hg|svn)/arc/config, and not other configuration
-   * sources.  See @{method:getConfigFromAnySource} to read from any
+   * sources. See @{method:getConfigFromAnySource} to read from any
    * config source or @{method:getProjectConfig} to read permanent
    * project-level config.
    *

@@ -2,8 +2,6 @@
 
 /**
  * Represents a change to an individual path.
- *
- * @group diff
  */
 final class ArcanistDiffChange {
 

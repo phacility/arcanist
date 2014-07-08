@@ -2,8 +2,6 @@
 
 /**
  * Upload a chunk of text to the Paste application, or download one.
- *
- * @group workflow
  */
 final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
 

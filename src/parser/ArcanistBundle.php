@@ -2,8 +2,6 @@
 
 /**
  * Converts changesets between different formats.
- *
- * @group diff
  */
 final class ArcanistBundle {
 
@@ -108,7 +106,6 @@ final class ArcanistBundle {
   }
 
   private function getEOL($patch_type) {
-
     // NOTE: Git always generates "\n" line endings, even under Windows, and
     // can not parse certain patches with "\r\n" line endings. SVN generates
     // patches with "\n" line endings on Mac or Linux and "\r\n" line endings
@@ -198,9 +195,7 @@ final class ArcanistBundle {
     return $obj;
   }
 
-  private function __construct() {
-
-  }
+  private function __construct() {}
 
   public function writeToDisk($path) {
     $changes = $this->getChanges();
@@ -260,7 +255,6 @@ final class ArcanistBundle {
   }
 
   public function toUnifiedDiff() {
-
     $eol = $this->getEOL('unified');
 
     $result = array();

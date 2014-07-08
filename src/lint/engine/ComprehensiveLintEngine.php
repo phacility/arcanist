@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Basic lint engine which just applies several linters based on the file types
- *
- * @group linter
+ * Basic lint engine which just applies several linters based on the file types.
  */
 final class ComprehensiveLintEngine extends ArcanistLintEngine {
 

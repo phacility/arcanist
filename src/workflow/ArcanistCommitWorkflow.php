@@ -2,8 +2,6 @@
 
 /**
  * Executes "svn commit" once a revision has been "Accepted".
- *
- * @group workflow
  */
 final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
 
@@ -335,6 +333,5 @@ EOTEXT
       }
     }
   }
-
 
 }

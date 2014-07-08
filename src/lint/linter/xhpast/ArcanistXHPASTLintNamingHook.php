@@ -7,7 +7,6 @@
  * @task override   Overriding Symbol Name Lint Messages
  * @task util       Name Utilities
  * @task internal   Internals
- * @group lint
  * @stable
  */
 abstract class ArcanistXHPASTLintNamingHook {
@@ -114,8 +113,8 @@ abstract class ArcanistXHPASTLintNamingHook {
    * @task util
    */
   public static function stripPHPFunction($symbol) {
-    //  Allow initial "__" for magic methods like __construct; we could also
-    //  enumerate these explicitly.
+    // Allow initial "__" for magic methods like __construct; we could also
+    // enumerate these explicitly.
     return preg_replace('/^__/', '', $symbol);
   }
 

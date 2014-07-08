@@ -50,4 +50,5 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
       self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),
     );
   }
+
 }

@@ -3,13 +3,7 @@
 /**
  * Go Test Result Parsing utility
  *
- * Intended to enable custom unit engines derived
- * from Go's built-in test utility to reuse
- * common business logic related to parsing
- * Go test results.
- *
- * (To generate test output, run something like:
- * `go test -v`)
+ * (To generate test output, run something like: `go test -v`)
  */
 final class GoTestResultParser extends ArcanistBaseTestResultParser {
 
@@ -23,7 +17,6 @@ final class GoTestResultParser extends ArcanistBaseTestResultParser {
    * @return array
    */
   public function parseTestResults($path, $test_results) {
-
     $test_results = explode("\n", $test_results);
 
     $results = array();
@@ -137,4 +130,5 @@ final class GoTestResultParser extends ArcanistBaseTestResultParser {
 
     return $test_case_results;
   }
+
 }

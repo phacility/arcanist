@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * Client for an @{class:ArcanistHgProxyServer}. This client talks to a PHP
  * process which serves as a proxy in front of a Mercurial server process.

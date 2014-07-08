@@ -2,8 +2,6 @@
 
 /**
  * Runs unit tests which cover your changes.
- *
- * @group workflow
  */
 final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
 
@@ -354,4 +352,5 @@ EOTEXT
     );
     return idx($known_formats, $format, 'full');
   }
+
 }

@@ -7,8 +7,6 @@
  * @task message    Commit and Update Messages
  * @task diffspec   Diff Specification
  * @task diffprop   Diff Properties
- *
- * @group workflow
  */
 final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
 

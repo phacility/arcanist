@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Alias for arc feature
- *
- * @group workflow
+ * Alias for `arc feature`.
  */
 final class ArcanistBranchWorkflow extends ArcanistFeatureWorkflow {
 

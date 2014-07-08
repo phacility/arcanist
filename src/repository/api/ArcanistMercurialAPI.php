@@ -2,8 +2,6 @@
 
 /**
  * Interfaces with the Mercurial working copies.
- *
- * @group workingcopy
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
@@ -15,7 +13,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $supportsPhases;
 
   protected function buildLocalFuture(array $argv) {
-
     // Mercurial has a "defaults" feature which basically breaks automation by
     // allowing the user to add random flags to any command. This feature is
     // "deprecated" and "a bad idea" that you should "forget ... existed"
@@ -82,8 +79,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       '{node}',
        $string);
     if (!$stdout) {
-      throw new ArcanistUsageException("Cannot find the HG equivalent "
-                                       ."of {$revision_id} given.");
+      throw new ArcanistUsageException(
+        "Cannot find the HG equivalent of {$revision_id} given.");
     }
     return $stdout;
   }
@@ -94,8 +91,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'log -r %s --template {svnrev}', $hash);
     if (!$stdout) {
-      throw new ArcanistUsageException("Cannot find the SVN equivalent "
-                                       ."of {$hash} given.");
+      throw new ArcanistUsageException(
+        "Cannot find the SVN equivalent of {$hash} given.");
     }
     return $stdout;
   }
@@ -128,13 +125,14 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             hgsprintf('ancestor(%R,.)', $symbolic_commit));
         } catch (Exception $ex) {
           throw new ArcanistUsageException(
-          "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
-          "identifier.");
+            "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+            "identifier.");
         }
       }
 
-      $this->setBaseCommitExplanation('it is the greatest common ancestor of '.
-        'the working directory and the commit you specified explicitly.');
+      $this->setBaseCommitExplanation(
+        'it is the greatest common ancestor of the working directory '.
+        'and the commit you specified explicitly.');
       return $commit;
     }
 
@@ -161,7 +159,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     } else {
       list($err, $stdout) = $this->execManualLocal(
         'outgoing --branch %s --style default',
-      $this->getBranchName());
+        $this->getBranchName());
     }
 
     if (!$err) {
@@ -464,7 +462,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function getBulkFileDataAtRevision($paths, $revision) {
     // Calling 'hg cat' on each file individually is slow (1 second per file
     // on a large repo) because mercurial has to decompress and parse the
-    // entire manifest every time.  Do it in one large batch instead.
+    // entire manifest every time. Do it in one large batch instead.
 
     // hg cat will write the file data to files in a temp directory
     $tmpdir = Filesystem::createTemporaryDirectory();
@@ -731,10 +729,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   /**
-   * Parse the Mercurial author field
+   * Parse the Mercurial author field.
    *
    * Not everyone enters their email address as a part of the username
-   * field. Try to make it work when it's obvious
+   * field. Try to make it work when it's obvious.
    *
    * @param string $full_author
    * @return array
@@ -762,9 +760,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal(
-      'commit -l %s',
-      $tmp_file);
+    $this->execxLocal('commit -l %s', $tmp_file);
     $this->reloadWorkingCopy();
   }
 

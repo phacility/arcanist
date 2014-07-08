@@ -2084,7 +2084,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   /**
    * preg_quote() takes two arguments, but the second one is optional because
-   * it is possible to use (), [] or {} as regular expression delimiters.  If
+   * it is possible to use (), [] or {} as regular expression delimiters. If
    * you don't pass a second argument, you're probably going to get something
    * wrong.
    */
@@ -2248,7 +2248,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   /**
    * Finds duplicate keys in array initializers, as in
-   * array(1 => 'anything', 1 => 'foo').  Since the first entry is ignored,
+   * array(1 => 'anything', 1 => 'foo'). Since the first entry is ignored,
    * this is almost certainly an error.
    */
   private function lintDuplicateKeysInArray(XHPASTNode $root) {

@@ -2,8 +2,6 @@
 
 /**
  * A group of @{class:ArcanistLintMessage}s that apply to a file.
- *
- * @group lint
  */
 final class ArcanistLintResult {
 
@@ -101,7 +99,6 @@ final class ArcanistLintResult {
 
     $this->effectiveMessages = $messages;
     $this->needsSort = false;
-
   }
 
 }

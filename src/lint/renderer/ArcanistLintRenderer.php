@@ -2,8 +2,6 @@
 
 /**
  * Shows lint messages to the user.
- *
- * @group lint
  */
 abstract class ArcanistLintRenderer {
 

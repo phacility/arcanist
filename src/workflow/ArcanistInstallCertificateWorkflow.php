@@ -2,8 +2,6 @@
 
 /**
  * Installs arcanist certificates.
- *
- * @group workflow
  */
 final class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
 
@@ -50,7 +48,6 @@ EOTEXT
   }
 
   public function run() {
-
     $uri = $this->determineConduitURI();
     $this->setConduitURI($uri);
     $configuration_manager = $this->getConfigurationManager();

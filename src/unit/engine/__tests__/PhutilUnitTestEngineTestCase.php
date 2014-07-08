@@ -2,8 +2,6 @@
 
 /**
  * Very meta test for @{class:PhutilUnitTestEngine}.
- *
- * @group testcase
  */
 final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
 

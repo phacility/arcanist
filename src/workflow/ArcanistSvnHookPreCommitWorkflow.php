@@ -2,8 +2,6 @@
 
 /**
  * Installable as an SVN "pre-commit" hook.
- *
- * @group workflow
  */
 final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
 
@@ -39,7 +37,6 @@ EOTEXT
   }
 
   public function run() {
-
     $svnargs = $this->getArgument('svnargs');
     $repository = $svnargs[0];
     $transaction = $svnargs[1];
@@ -229,4 +226,5 @@ EOTEXT
 
     return 0;
   }
+
 }

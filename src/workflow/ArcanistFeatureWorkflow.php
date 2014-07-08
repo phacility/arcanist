@@ -1,9 +1,8 @@
 <?php
 
 /**
- * Displays user's Git branches or Mercurial bookmarks
+ * Displays user's Git branches or Mercurial bookmarks.
  *
- * @group workflow
  * @concrete-extensible
  */
 class ArcanistFeatureWorkflow extends ArcanistBaseWorkflow {

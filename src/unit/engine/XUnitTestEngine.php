@@ -7,7 +7,6 @@
  * that the test assembly that verifies the functionality of `SomeAssembly` is
  * located at `SomeAssembly.Tests`.
  *
- * @group unitrun
  * @concrete-extensible
  */
 class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
@@ -27,10 +26,10 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Determines what executables and test paths to use.  Between platforms
-   * this also changes whether the test engine is run under .NET or Mono.  It
-   * also ensures that all of the required binaries are available for the tests
-   * to run successfully.
+   * Determines what executables and test paths to use. Between platforms this
+   * also changes whether the test engine is run under .NET or Mono. It also
+   * ensures that all of the required binaries are available for the tests to
+   * run successfully.
    *
    * @return void
    */
@@ -78,14 +77,14 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
       $this->testEngine = 'xunit.console.clr4.exe';
     } else {
       throw new Exception(
-        "Unable to locate xUnit console runner.  Configure ".
+        "Unable to locate xUnit console runner. Configure ".
         "it with the `unit.csharp.xunit.binary' option in .arcconfig");
     }
   }
 
   /**
-   * Main entry point for the test engine.  Determines what assemblies to
-   * build and test based on the files that have changed.
+   * Main entry point for the test engine. Determines what assemblies to build
+   * and test based on the files that have changed.
    *
    * @return array   Array of test results.
    */
@@ -137,7 +136,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
               if (!$exists) {
                 $results[] = array(
                   'project' => $project,
-                  'assembly' => $assembly);
+                  'assembly' => $assembly,
+                );
               }
             }
           }
@@ -192,7 +192,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * If the `Build` directory exists, we assume that this is a multi-platform
-   * project that requires generation of C# project files.  Because we want to
+   * project that requires generation of C# project files. Because we want to
    * test that the generation and subsequent build is whole, we need to
    * regenerate any projects in case the developer has added files through an
    * IDE and then forgotten to add them to the respective `.definitions` file.
@@ -202,7 +202,6 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    * @return array   Array of test results.
    */
   private function generateProjects() {
-
     // No "Build" directory; so skip generation of projects.
     if (!is_dir(Filesystem::resolvePath($this->projectRoot.'/Build'))) {
       return array();
@@ -255,7 +254,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * Build the projects relevant for the specified test assemblies and return
-   * the results of the builds as test results.  This build also passes the
+   * the results of the builds as test results. This build also passes the
    * "SkipTestsOnBuild" parameter when building the projects, so that MSBuild
    * conditionals can be used to prevent any tests running as part of the
    * build itself (since the unit tester is about to run each of the tests
@@ -302,9 +301,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Build the future for running a unit test.  This can be
-   * overridden to enable support for code coverage via
-   * another tool
+   * Build the future for running a unit test. This can be overridden to enable
+   * support for code coverage via another tool.
    *
    * @param  string  Name of the test assembly.
    * @return array   The future, output filename and coverage filename
@@ -312,7 +310,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    */
   protected function buildTestFuture($test_assembly) {
       // FIXME: Can't use TempFile here as xUnit doesn't like
-      // UNIX-style full paths.  It sees the leading / as the
+      // UNIX-style full paths. It sees the leading / as the
       // start of an option flag, even when quoted.
       $xunit_temp = Filesystem::readRandomCharacters(10).'.results.xml';
       if (file_exists($xunit_temp)) {
@@ -340,7 +338,6 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    * @return array   Array of test results.
    */
   private function testAssemblies(array $test_assemblies) {
-
     $results = array();
 
     // Build the futures for running the tests.
@@ -368,13 +365,12 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
       } else {
         // FIXME: There's a bug in Mono which causes a segmentation fault
         // when xUnit.NET runs; this causes the XML file to not appear
-        // (depending on when the segmentation fault occurs).  See
+        // (depending on when the segmentation fault occurs). See
         // https://bugzilla.xamarin.com/show_bug.cgi?id=16379
         // for more information.
 
         // Since it's not possible for the user to correct this error, we
         // ignore the fact the tests didn't run here.
-        //
       }
     }
 
@@ -383,8 +379,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * Returns null for this implementation as xUnit does not support code
-   * coverage directly.  Override this method in another class to provide
-   * code coverage information (also see `CSharpToolsUnitEngine`).
+   * coverage directly. Override this method in another class to provide code
+   * coverage information (also see @{class:CSharpToolsUnitEngine}).
    *
    * @param  string  The name of the coverage file if one was provided by
    *                 `buildTestFuture`.
@@ -399,7 +395,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    *
    * @param  string  The name of the xUnit results file.
    * @param  string  The name of the coverage file if one was provided by
-   *                 `buildTestFuture`.  This is passed through to
+   *                 `buildTestFuture`. This is passed through to
    *                 `parseCoverageResult`.
    * @return array   Test results.
    */

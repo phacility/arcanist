@@ -2,8 +2,6 @@
 
 /**
  * Lists open revisions in Differential.
- *
- * @group workflow
  */
 final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
 
@@ -104,4 +102,5 @@ EOTEXT
     $table->draw();
     return 0;
   }
+
 }

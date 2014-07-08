@@ -2,8 +2,6 @@
 
 /**
  * Powers shell-completion scripts.
- *
- * @group workflow
  */
 final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
 
@@ -194,4 +192,5 @@ EOTEXT
       }
     }
   }
+
 }

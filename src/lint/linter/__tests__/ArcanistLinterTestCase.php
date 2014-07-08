@@ -195,4 +195,5 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $actual,
       'File as patched by lint did not match the expected patched file.');
   }
+
 }

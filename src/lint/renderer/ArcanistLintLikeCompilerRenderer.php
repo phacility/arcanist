@@ -2,10 +2,9 @@
 
 /**
  * Shows lint messages to the user.
- *
- * @group lint
  */
 final class ArcanistLintLikeCompilerRenderer extends ArcanistLintRenderer {
+
   public function renderLintResult(ArcanistLintResult $result) {
     $lines = array();
     $messages = $result->getMessages();
@@ -32,4 +31,5 @@ final class ArcanistLintLikeCompilerRenderer extends ArcanistLintRenderer {
   public function renderOkayResult() {
     return '';
   }
+
 }

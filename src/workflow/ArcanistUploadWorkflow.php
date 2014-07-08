@@ -2,8 +2,6 @@
 
 /**
  * Upload a file to Phabricator.
- *
- * @group workflow
  */
 final class ArcanistUploadWorkflow extends ArcanistBaseWorkflow {
 
@@ -60,7 +58,6 @@ EOTEXT
   }
 
   public function run() {
-
     $conduit = $this->getConduit();
 
     $results = array();

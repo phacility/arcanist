@@ -2,8 +2,6 @@
 
 /**
  * This class holds everything related to configuration and configuration files.
- *
- * @group config
  */
 final class ArcanistConfigurationManager {
 

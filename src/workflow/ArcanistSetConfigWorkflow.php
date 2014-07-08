@@ -23,11 +23,11 @@ EOTEXT
 
           Options are either user (apply to all arc commands you invoke
           from the current user) or local (apply only to the current working
-          copy).  By default, user configuration is written.  Use __--local__
+          copy). By default, user configuration is written. Use __--local__
           to write local configuration.
 
           User values are written to '~/.arcrc' on Linux and Mac OS X, and an
-          undisclosed location on Windows.  Local values are written to an arc
+          undisclosed location on Windows. Local values are written to an arc
           directory under either .git, .hg, or .svn as appropriate.
 EOTEXT
       );

@@ -2,8 +2,6 @@
 
 /**
  * Message emitted by a linter, like an error or warning.
- *
- * @group lint
  */
 final class ArcanistLintMessage {
 

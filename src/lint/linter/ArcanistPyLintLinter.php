@@ -48,20 +48,18 @@
  *   (E) error, for probable bugs in the code
  *   (F) fatal, if an error occurred which prevented pylint from
  *       doing further processing.
- *
- * @group linter
  */
 final class ArcanistPyLintLinter extends ArcanistLinter {
 
   private function getMessageCodeSeverity($code) {
     $config = $this->getEngine()->getConfigurationManager();
 
-    $error_regexp   =
-      $config->getConfigFromAnySource('lint.pylint.codes.error');
-    $warning_regexp =
-      $config->getConfigFromAnySource('lint.pylint.codes.warning');
-    $advice_regexp  =
-      $config->getConfigFromAnySource('lint.pylint.codes.advice');
+    $error_regexp   = $config->getConfigFromAnySource(
+      'lint.pylint.codes.error');
+    $warning_regexp = $config->getConfigFromAnySource(
+      'lint.pylint.codes.warning');
+    $advice_regexp  = $config->getConfigFromAnySource(
+      'lint.pylint.codes.advice');
 
     if (!$error_regexp && !$warning_regexp && !$advice_regexp) {
       throw new ArcanistUsageException(

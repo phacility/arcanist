@@ -2,8 +2,6 @@
 
 /**
  * Very basic unit test engine which runs libphutil tests.
- *
- * @group unitrun
  */
 final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
 

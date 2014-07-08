@@ -2,8 +2,6 @@
 
 /**
  * Download a file from Phabricator.
- *
- * @group workflow
  */
 final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
 
@@ -36,8 +34,9 @@ EOTEXT
     return array(
       'show' => array(
         'conflicts' => array(
-          'as' => 'Use --show to direct the file to stdout, or --as to direct '.
-                  'it to a named location.',
+          'as' =>
+            'Use --show to direct the file to stdout, or --as to direct '.
+            'it to a named location.',
         ),
         'help' => 'Write file to stdout instead of to disk.',
       ),

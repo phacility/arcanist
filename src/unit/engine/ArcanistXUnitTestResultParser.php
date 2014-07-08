@@ -2,14 +2,12 @@
 
 /**
  * Parser for JUnit, NUnit, etc results format - https://gist.github.com/959290
- *
- * @group unitrun
  */
 final class ArcanistXUnitTestResultParser {
 
   /**
    * Parse test results from provided input and return an array
-   * of ArcanistUnitTestResult
+   * of @{class:ArcanistUnitTestResult}.
    *
    * @param string $test_results String containing test results
    *
@@ -42,7 +40,7 @@ final class ArcanistXUnitTestResultParser {
       $user_data = '';
 
       // A skipped test is a test which was ignored using framework
-      // mechanizms (e.g. @skip decorator)
+      // mechanisms (e.g. @skip decorator)
       $skipped = $testcase->getElementsByTagName('skipped');
       if ($skipped->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_SKIP;
@@ -55,7 +53,7 @@ final class ArcanistXUnitTestResultParser {
       }
 
       // Failure is a test which the code has explicitly failed by using
-      // the mechanizms for that purpose. e.g., via an assertEquals
+      // the mechanisms for that purpose. e.g., via an assertEquals
       $failures = $testcase->getElementsByTagName('failure');
       if ($failures->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_FAIL;
@@ -68,8 +66,7 @@ final class ArcanistXUnitTestResultParser {
       }
 
       // An errored test is one that had an unanticipated problem. e.g., an
-      // unchecked throwable, or a problem with an implementation of the
-      // test.
+      // unchecked throwable, or a problem with an implementation of the test.
       $errors = $testcase->getElementsByTagName('error');
       if ($errors->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_BROKEN;

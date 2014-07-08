@@ -2,8 +2,6 @@
 
 /**
  * Very basic 'py.test' unit test engine wrapper.
- *
- * @group unitrun
  */
 final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
 
@@ -27,12 +25,13 @@ final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
   public function buildTestFuture($junit_tmp, $cover_tmp) {
     $paths = $this->getPaths();
 
-    $cmd_line = csprintf('py.test --junitxml %s',
-                         $junit_tmp);
+    $cmd_line = csprintf('py.test --junitxml %s', $junit_tmp);
 
-  if ($this->getEnableCoverage() !== false) {
-      $cmd_line = csprintf('coverage run --source %s -m %C',
-                           $this->project_root, $cmd_line);
+    if ($this->getEnableCoverage() !== false) {
+      $cmd_line = csprintf(
+        'coverage run --source %s -m %C',
+        $this->project_root,
+        $cmd_line);
     }
 
     return new ExecFuture('%C', $cmd_line);
@@ -132,4 +131,5 @@ final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
 
     return $reports;
   }
+
 }

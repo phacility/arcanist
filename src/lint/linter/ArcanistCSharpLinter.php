@@ -64,9 +64,9 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         throw new Exception(
           "In order to keep StyleCop integration with IDEs and other tools ".
           "consistent with Arcanist results, you aren't permitted to ".
-          "disable StyleCop rules within '.arclint'.  ".
+          "disable StyleCop rules within '.arclint'. ".
           "Instead configure the severity using the StyleCop settings dialog ".
-          "(usually accessible from within your IDE).  StyleCop settings ".
+          "(usually accessible from within your IDE). StyleCop settings ".
           "for your project will be used when linting for Arcanist.");
       }
     }
@@ -74,8 +74,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
   }
 
   /**
-   * Determines what executables and lint paths to use.  Between platforms
-   * this also changes whether the lint engine is run under .NET or Mono.  It
+   * Determines what executables and lint paths to use. Between platforms
+   * this also changes whether the lint engine is run under .NET or Mono. It
    * also ensures that all of the required binaries are available for the lint
    * to run successfully.
    *
@@ -112,18 +112,18 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     list($err, $stdout, $stderr) = $ver_future->resolve();
     if ($err !== 0) {
       throw new Exception(
-        'You are running an old version of cslint.  Please '.
+        'You are running an old version of cslint. Please '.
         'upgrade to version '.self::SUPPORTED_VERSION.'.');
     }
     $ver = (int)$stdout;
     if ($ver < self::SUPPORTED_VERSION) {
       throw new Exception(
-        'You are running an old version of cslint.  Please '.
+        'You are running an old version of cslint. Please '.
         'upgrade to version '.self::SUPPORTED_VERSION.'.');
     } else if ($ver > self::SUPPORTED_VERSION) {
       throw new Exception(
         'Arcanist does not support this version of cslint (it is '.
-        'newer).  You can try upgrading Arcanist with `arc upgrade`.');
+        'newer). You can try upgrading Arcanist with `arc upgrade`.');
     }
 
     $this->loaded = true;
@@ -149,11 +149,11 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
       }
       if ($total + strlen($path) > 6000) {
         // %s won't pass through the JSON correctly
-        // under Windows.  This is probably because not only
+        // under Windows. This is probably because not only
         // does the JSON have quotation marks in the content,
         // but because there'll be a lot of escaping and
         // double escaping because the JSON also contains
-        // regular expressions.  cslint supports passing the
+        // regular expressions. cslint supports passing the
         // settings JSON through base64-encoded to mitigate
         // this issue.
         $futures[] = new ExecFuture(

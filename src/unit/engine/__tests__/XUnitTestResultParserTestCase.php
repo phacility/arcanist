@@ -2,11 +2,6 @@
 
 /**
  * Test for @{class:ArcanistXUnitTestResultParser}.
- *
- * (putting tests in your tests so you can test
- * while you test)
- *
- * @group testcase
  */
 final class XUnitTestResultParserTestCase extends ArcanistTestCase {
 

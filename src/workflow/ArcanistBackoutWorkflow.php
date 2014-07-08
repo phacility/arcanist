@@ -1,10 +1,10 @@
 <?php
-/**
- * Runs git revert and assigns hi pri task to original author
- * @group workflow
- */
 
+/**
+ * Runs git revert and assigns a high priority task to original author.
+ */
 final class ArcanistBackoutWorkflow extends ArcanistBaseWorkflow {
+
   private $console;
   private $conduit;
   private $revision;
@@ -49,7 +49,9 @@ EOTEXT
     return true;
   }
 
-  // Given a differential revision ID, fetches the commit ID
+  /**
+   * Given a differential revision ID, fetches the commit ID.
+   */
   private function getCommitIDFromRevisionID($revision_id) {
     $conduit = $this->getConduit();
     $revisions = $conduit->callMethodSynchronous(
@@ -81,8 +83,10 @@ EOTEXT
     return $commit_id;
   }
 
-  // Fetches an array of commit info provided a Commit_id
-  // in the form of rE123456 (not local commit hash)
+  /**
+   * Fetches an array of commit info provided a Commit_id in the form of
+   * rE123456 (not local commit hash).
+   */
   private function getDiffusionCommit($commit_id) {
     $result = $this->getConduit()->callMethodSynchronous(
       'diffusion.getcommits',
@@ -97,15 +101,18 @@ EOTEXT
     return $commit;
   }
 
-  // Retrieves default template from differential and prefills info
+  /**
+   * Retrieves default template from differential and pre-fills info.
+   */
   private function buildCommitMessage($commit_hash) {
     $conduit = $this->getConduit();
     $repository_api = $this->getRepositoryAPI();
 
     $summary = $repository_api->getBackoutMessage($commit_hash);
-    $fields = array('summary' => $summary,
-                    'testPlan' => 'revert-hammer',
-                   );
+    $fields = array(
+      'summary' => $summary,
+      'testPlan' => 'revert-hammer',
+    );
     $template = $conduit->callMethodSynchronous(
       'differential.getcommitmessage',
       array(
@@ -119,7 +126,9 @@ EOTEXT
     return $template;
   }
 
-  // Performs the backout/revert of a revision and creates a commit
+  /**
+   * Performs the backout/revert of a revision and creates a commit.
+   */
   public function run() {
     $console = PhutilConsole::getConsole();
     $conduit = $this->getConduit();
@@ -128,7 +137,7 @@ EOTEXT
     $is_git_svn = $repository_api instanceof ArcanistGitAPI &&
                   $repository_api->isGitSubversionRepo();
     $is_hg_svn = $repository_api instanceof ArcanistMercurialAPI &&
-                  $repository_api->isHgSubversionRepo();
+                 $repository_api->isHgSubversionRepo();
     $revision_id = null;
 
     if (!($repository_api instanceof ArcanistGitAPI) &&
@@ -163,8 +172,8 @@ EOTEXT
       $commit_hash = $input[0];
     }
     if (!$repository_api->hasLocalCommit($commit_hash)) {
-      throw new ArcanistUsageException('Invalid commit provided or does not'.
-                                        'exist in the working copy!');
+      throw new ArcanistUsageException(
+        'Invalid commit provided or does not exist in the working copy!');
     }
 
     // Run 'backout'.
@@ -177,6 +186,6 @@ EOTEXT
     $message = $this->buildCommitMessage($commit_hash);
     $repository_api->doCommit($message);
     $console->writeOut("Double-check the commit and push when ready\n");
-
   }
+
 }

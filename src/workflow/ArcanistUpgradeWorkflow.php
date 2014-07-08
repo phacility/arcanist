@@ -2,8 +2,6 @@
 
 /**
  * Upgrade arcanist itself.
- *
- * @group workflow
  */
 final class ArcanistUpgradeWorkflow extends ArcanistBaseWorkflow {
 

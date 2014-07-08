@@ -2,8 +2,6 @@
 
 /**
  * Explicitly closes Differential revisions.
- *
- * @group workflow
  */
 final class ArcanistCloseRevisionWorkflow extends ArcanistBaseWorkflow {
 
@@ -151,4 +149,5 @@ EOTEXT
 
     return 0;
   }
+
 }

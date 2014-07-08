@@ -8,8 +8,6 @@
  *
  * Set which linter should be run by configuring `lint.engine.single.linter` in
  * `.arcconfig` or user config.
- *
- * @group linter
  */
 final class ArcanistSingleLintEngine extends ArcanistLintEngine {
 
@@ -60,4 +58,5 @@ final class ArcanistSingleLintEngine extends ArcanistLintEngine {
 
     return array($linter);
   }
+
 }

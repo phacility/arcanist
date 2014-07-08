@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group config
- */
 final class ArcanistSettings {
 
   private function getOptions() {
@@ -167,7 +164,7 @@ final class ArcanistSettings {
         'type' => 'bool',
         'help' =>
           'Whether arc should permit the automatic stashing of changes in '.
-          'the working directory when requiring a clean working copy.  '.
+          'the working directory when requiring a clean working copy. '.
           'This option should only be used when users understand how '.
           'to restore their working directory from the local stash if '.
           'an Arcanist operation causes an unrecoverable error.',
@@ -328,6 +325,5 @@ final class ArcanistSettings {
 
     return $value;
   }
-
 
 }

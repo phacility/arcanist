@@ -93,4 +93,5 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
+
 }

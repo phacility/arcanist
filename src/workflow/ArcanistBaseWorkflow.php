@@ -76,9 +76,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   private $changeCache = array();
 
 
-  public function __construct() {
-
-  }
+  public function __construct() {}
 
 
   abstract public function run();
@@ -320,12 +318,14 @@ abstract class ArcanistBaseWorkflow extends Phobject {
       }
 
       if (empty($credentials['user'])) {
-        throw new ConduitClientException('ERR-INVALID-USER',
-                                         'Empty user in credentials.');
+        throw new ConduitClientException(
+          'ERR-INVALID-USER',
+          'Empty user in credentials.');
       }
       if (empty($credentials['certificate'])) {
-        throw new ConduitClientException('ERR-NO-CERTIFICATE',
-                                         'Empty certificate in credentials.');
+        throw new ConduitClientException(
+          'ERR-NO-CERTIFICATE',
+          'Empty certificate in credentials.');
       }
 
       $description = idx($credentials, 'description', '');

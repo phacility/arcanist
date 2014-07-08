@@ -39,7 +39,6 @@
  * See @{article@phabricator:Arcanist User Guide: Customizing Lint, Unit Tests
  * and Workflows} for more information about configuring lint engines.
  *
- * @group lint
  * @stable
  */
 abstract class ArcanistLintEngine {
@@ -385,8 +384,10 @@ abstract class ArcanistLintEngine {
     return ArcanistLintSeverity::isAtLeastAsSevere($severity, $minimum);
   }
 
-  final private function shouldUseCache($cache_granularity,
-                                        $repository_version) {
+  final private function shouldUseCache(
+    $cache_granularity,
+    $repository_version) {
+
     if ($this->commitHookMode) {
       return false;
     }
@@ -579,6 +580,5 @@ abstract class ArcanistLintEngine {
     $this->linterResources[$key] = $value;
     return $this;
   }
-
 
 }

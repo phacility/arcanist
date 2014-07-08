@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Close a task
- *
- * @group workflow
+ * Close a task.
  */
 final class ArcanistCloseWorkflow extends ArcanistBaseWorkflow {
 
@@ -73,8 +71,9 @@ EOTEXT
       'status'  => array(
         'param' => 'status',
         'short' => 's',
-        'help'  => pht('Specify a new status. Valid status options can be '.
-                       'seen with the `list-statuses` argument.'),
+        'help'  => pht(
+          'Specify a new status. Valid status options can be '.
+          'seen with the `list-statuses` argument.'),
       ),
       'list-statuses' => array(
         'help' => 'Show available status options and exit.',

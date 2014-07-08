@@ -2,8 +2,6 @@
 
 /**
  * Provides command-line access to the Conduit API.
- *
- * @group workflow
  */
 final class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
 
@@ -91,4 +89,5 @@ EOTEXT
 
     return 0;
   }
+
 }

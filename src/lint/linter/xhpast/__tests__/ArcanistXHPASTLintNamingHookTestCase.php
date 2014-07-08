@@ -2,8 +2,6 @@
 
 /**
  * Test cases for @{class:ArcanistXHPASTLintNamingHook}.
- *
- * @group testcase
  */
 final class ArcanistXHPASTLintNamingHookTestCase extends ArcanistTestCase {
 

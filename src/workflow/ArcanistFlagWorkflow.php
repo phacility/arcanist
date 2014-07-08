@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group workflow
- */
 final class ArcanistFlagWorkflow extends ArcanistBaseWorkflow {
 
   private static $colorMap = array(
@@ -60,18 +57,18 @@ EOTEXT
     return array(
       '*' => 'objects',
       'clear' => array(
-        'help' => 'Delete the flag on an object.'
+        'help' => 'Delete the flag on an object.',
       ),
       'edit' => array(
-        'help' => 'Edit the flag on an object.'
+        'help' => 'Edit the flag on an object.',
       ),
       'color' => array(
         'param' => 'color',
-        'help' => 'Set the color of a flag.'
+        'help' => 'Set the color of a flag.',
       ),
       'note' => array(
         'param' => 'note',
-        'help' => 'Set the note on a flag.'
+        'help' => 'Set the note on a flag.',
       ),
     );
   }

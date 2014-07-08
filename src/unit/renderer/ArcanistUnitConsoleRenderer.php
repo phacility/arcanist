@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group unit
- */
 final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
 
   public function renderUnitResult(ArcanistUnitTestResult $result) {

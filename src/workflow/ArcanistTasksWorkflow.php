@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Displays User Tasks
- *
- * @group workflow
+ * Displays User Tasks.
  */
 final class ArcanistTasksWorkflow extends ArcanistBaseWorkflow {
 
@@ -50,7 +48,7 @@ EOTEXT
         'paramtype' => 'username',
         'help' =>
           'Only show tasks assigned to the given username, '.
-            'also accepts @all to show all, default is you.',
+          'also accepts @all to show all, default is you.',
         'conflict' => array(
           'unassigned' => '--owner suppresses unassigned',
         ),
@@ -59,7 +57,7 @@ EOTEXT
         'param' => 'task_order',
         'help' =>
           'Arrange tasks based on priority, created, or modified, '.
-            'default is priority.',
+          'default is priority.',
       ),
       'limit' => array(
         'param' => 'n',

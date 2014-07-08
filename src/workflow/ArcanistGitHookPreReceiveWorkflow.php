@@ -2,8 +2,6 @@
 
 /**
  * Installable as a git pre-receive hook.
- *
- * @group workflow
  */
 final class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
 
@@ -119,4 +117,5 @@ EOTEXT
 
     return 0;
   }
+
 }

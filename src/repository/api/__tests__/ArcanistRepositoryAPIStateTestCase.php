@@ -120,5 +120,4 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
     }
   }
 
-
 }

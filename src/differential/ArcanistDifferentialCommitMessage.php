@@ -2,8 +2,6 @@
 
 /**
  * Represents a parsed commit message.
- *
- * @group differential
  */
 final class ArcanistDifferentialCommitMessage {
 

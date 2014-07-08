@@ -1,9 +1,8 @@
 <?php
-/**
- * Redirects to arc backout workflow
- * @group workflow
- */
 
+/**
+ * Redirects to `arc backout` workflow.
+ */
 final class ArcanistRevertWorkflow extends ArcanistBaseWorkflow {
 
   public function getWorkflowName() {
@@ -34,4 +33,5 @@ EOTEXT
     $console = PhutilConsole::getConsole();
     $console->writeOut("Please use arc backout instead.\n");
   }
+
 }

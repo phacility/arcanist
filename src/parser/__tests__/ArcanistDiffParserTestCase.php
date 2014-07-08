@@ -2,8 +2,6 @@
 
 /**
  * Test cases for @{class:ArcanistDiffParser}.
- *
- * @group testcase
  */
 final class ArcanistDiffParserTestCase extends ArcanistTestCase {
 

@@ -85,18 +85,17 @@ final class ArcanistConduitLinter extends ArcanistLinter {
     // customization directly.
     throw new ArcanistUsageException(
       'ArcanistConduitLinter does not support client-side severity '.
-      'customization.'
-    );
+      'customization.');
   }
 
   public function getLintNameMap() {
     // See getLintSeverityMap for rationale.
     throw new ArcanistUsageException(
-      'ArcanistConduitLinter does not support a name map.'
-    );
+      'ArcanistConduitLinter does not support a name map.');
   }
 
   protected function canCustomizeLintSeverities() {
     return false;
   }
+
 }

@@ -103,4 +103,5 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
+
 }

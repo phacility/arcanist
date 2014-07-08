@@ -1,15 +1,7 @@
 <?php
 
 /**
- * PHPUnit wrapper
- *
- * To use, set unit.engine in .arcconfig, or use --engine flag
- * with arc unit. Currently supports only class & test files
- * (no directory support).
- * To use custom phpunit configuration, set phpunit_config in
- * .arcconfig (e.g. app/phpunit.xml.dist).
- *
- * @group unitrun
+ * PHPUnit wrapper.
  */
 final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
 
@@ -19,7 +11,6 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
   private $projectRoot;
 
   public function run() {
-
     $this->projectRoot = $this->getWorkingCopy()->getProjectRoot();
     $this->affectedTests = array();
     foreach ($this->getPaths() as $path) {
@@ -79,8 +70,6 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
         'json' => $json_tmp,
         'clover' => $clover_tmp,
       );
-
-
     }
 
     $results = array();
@@ -99,7 +88,7 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Parse test results from phpunit json report
+   * Parse test results from phpunit json report.
    *
    * @param string $path Path to test
    * @param string $json_tmp Path to phpunit json report
@@ -257,8 +246,8 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Tries to find and update phpunit configuration file
-   * based on phpunit_config option in .arcconfig
+   * Tries to find and update phpunit configuration file based on
+   * `phpunit_config` option in `.arcconfig`.
    */
   private function prepareConfigFile() {
     $project_root = $this->projectRoot.DIRECTORY_SEPARATOR;
@@ -284,4 +273,5 @@ final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
       }
     }
   }
+
 }

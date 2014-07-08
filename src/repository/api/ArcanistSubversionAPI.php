@@ -2,8 +2,6 @@
 
 /**
  * Interfaces with Subversion working copies.
- *
- * @group workingcopy
  */
 final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
@@ -25,7 +23,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     static $svn_dir = null;
     if ($svn_dir === null) {
       // from svn 1.7, subversion keeps a single .svn directly under
-      // the working copy root.  However, we allow .arcconfigs that
+      // the working copy root. However, we allow .arcconfigs that
       // aren't at the working copy root.
       foreach (Filesystem::walkToRoot($this->getPath()) as $parent) {
         $possible_svn_dir = Filesystem::resolvePath('.svn', $parent);
@@ -316,7 +314,6 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getSVNInfo($path) {
-
     if (empty($this->svnInfo[$path])) {
 
       if (empty($this->svnInfoRaw[$path])) {

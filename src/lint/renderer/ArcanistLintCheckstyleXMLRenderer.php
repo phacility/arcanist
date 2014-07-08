@@ -2,8 +2,6 @@
 
 /**
  * Shows lint messages to the user.
- *
- * @group lint
  */
 final class ArcanistLintCheckstyleXMLRenderer extends ArcanistLintRenderer {
 
@@ -53,4 +51,5 @@ final class ArcanistLintCheckstyleXMLRenderer extends ArcanistLintRenderer {
     $this->writer->endDocument();
     return $this->writer->flush();
   }
+
 }

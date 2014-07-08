@@ -2,11 +2,6 @@
 
 /**
  * Test for @{class:GoTestResultParser}.
- *
- * (putting tests in your tests so you can test
- * while you test)
- *
- * @group testcase
  */
 final class GoTestResultParserTestCase extends ArcanistTestCase {
 
@@ -107,4 +102,5 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
         $result->getResult());
     }
   }
+
 }

@@ -2,8 +2,6 @@
 
 /**
  * Dumping ground for diff- and diff-algorithm-related miscellany.
- *
- * @group diff
  */
 final class ArcanistDiffUtils {
 

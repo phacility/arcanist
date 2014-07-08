@@ -91,7 +91,6 @@ final class ArcanistBaseCommitParser {
    * Handle resolving individual rules.
    */
   private function resolveRule($rule, $source) {
-
     // NOTE: Returning `null` from this method means "no match".
     // Returning `false` from this method means "stop current ruleset".
 

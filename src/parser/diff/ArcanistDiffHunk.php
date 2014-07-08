@@ -2,8 +2,6 @@
 
 /**
  * Represents a contiguous set of added and removed lines in a diff.
- *
- * @group diff
  */
 final class ArcanistDiffHunk {
 

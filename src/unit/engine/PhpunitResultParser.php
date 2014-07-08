@@ -3,13 +3,8 @@
 /**
  * PHPUnit Result Parsing utility
  *
- * Intended to enable custom unit engines derived
- * from phpunit to reuse common business logic related
- * to parsing phpunit test results and reports
- *
- * For an example on how to integrate with your test
- * engine, see PhpunitTestEngine.
- *
+ * For an example on how to integrate with your test engine, see
+ * @{class:PhpunitTestEngine}.
  */
 final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
@@ -22,7 +17,6 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
    * @return array
    */
   public function parseTestResults($path, $test_results) {
-
     if (!$test_results) {
       $result = id(new ArcanistUnitTestResult())
         ->setName($path)
@@ -163,7 +157,6 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
    * valid.
    *
    * @param string $json String containing JSON report
-   *
    * @return array JSON decoded array
    */
   private function getJsonReport($json) {
@@ -186,4 +179,5 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
     return $json;
   }
+
 }

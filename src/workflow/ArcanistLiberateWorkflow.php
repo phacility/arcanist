@@ -3,13 +3,11 @@
 /**
  * Create and update libphutil libraries.
  *
- * This workflow is unusual and involves reexecuting 'arc liberate' as a
- * subprocess with "--remap" and "--verify". This is because there is no way
+ * This workflow is unusual and involves re-executing 'arc liberate' as a
+ * subprocess with `--remap` and `--verify`. This is because there is no way
  * to unload or reload a library, so every process is stuck with the library
  * definition it had when it first loaded. This is normally fine, but
- * problematic in this case because 'arc liberate' modifies library definitions.
- *
- * @group workflow
+ * problematic in this case because `arc liberate` modifies library definitions.
  */
 final class ArcanistLiberateWorkflow extends ArcanistBaseWorkflow {
 

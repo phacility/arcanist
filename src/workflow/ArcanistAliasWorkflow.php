@@ -2,8 +2,6 @@
 
 /**
  * Manages aliases for commands with options.
- *
- * @group workflow
  */
 final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
 

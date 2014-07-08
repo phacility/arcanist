@@ -446,7 +446,6 @@ final class ArcanistHgProxyServer {
   }
 
   private function daemonize() {
-
     // Keep stdout if it's been redirected somewhere, otherwise shut it down.
     $keep_stdout = false;
     $keep_stderr = false;

@@ -4,7 +4,6 @@
  * Implements lint rules, like syntax checks for a specific language.
  *
  * @task info Human Readable Information
- *
  * @stable
  */
 abstract class ArcanistLinter {

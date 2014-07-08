@@ -85,4 +85,5 @@ final class ArcanistMercurialParserTestCase extends ArcanistTestCase {
         throw new Exception("No test information for test data '{$name}'!");
     }
   }
+
 }

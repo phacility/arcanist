@@ -2,8 +2,6 @@
 
 /**
  * Seduces the reader with majestic prose.
- *
- * @group workflow
  */
 final class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
 

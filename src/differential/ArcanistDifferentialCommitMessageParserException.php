@@ -2,8 +2,6 @@
 
 /**
  * Thrown when a commit message isn't parseable.
- *
- * @group differential
  */
 final class ArcanistDifferentialCommitMessageParserException extends Exception {
 

@@ -6,10 +6,7 @@
  * This engine inherits from `XUnitTestEngine`, where xUnit is used to actually
  * run the unit tests and this class provides a thin layer on top to collect
  * code coverage data with a third-party tool.
- *
- * @group unitrun
  */
-
 final class CSharpToolsTestEngine extends XUnitTestEngine {
 
   private $cscoverHintPath;
@@ -19,19 +16,17 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
   private $excludedFiles;
 
   /**
-   * Overridden version of `loadEnvironment` to support a different set
-   * of configuration values and to pull in the cstools config for
-   * code coverage.
+   * Overridden version of `loadEnvironment` to support a different set of
+   * configuration values and to pull in the cstools config for code coverage.
    */
   protected function loadEnvironment() {
-
     $config = $this->getConfigurationManager();
-    $this->cscoverHintPath =
-      $config->getConfigFromAnySource('unit.csharp.cscover.binary');
-    $this->matchRegex =
-      $config->getConfigFromAnySource('unit.csharp.coverage.match');
-    $this->excludedFiles =
-      $config->getConfigFromAnySource('unit.csharp.coverage.excluded');
+    $this->cscoverHintPath = $config->getConfigFromAnySource(
+      'unit.csharp.cscover.binary');
+    $this->matchRegex = $config->getConfigFromAnySource(
+      'unit.csharp.coverage.match');
+    $this->excludedFiles = $config->getConfigFromAnySource(
+      'unit.csharp.coverage.excluded');
 
     parent::loadEnvironment();
 
@@ -42,7 +37,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     // Determine coverage path.
     if ($this->cscoverHintPath === null) {
       throw new Exception(
-        "Unable to locate cscover.  Configure it with ".
+        "Unable to locate cscover. Configure it with ".
         "the `unit.csharp.coverage.binary' option in .arcconfig");
     }
     $cscover = $this->projectRoot.DIRECTORY_SEPARATOR.$this->cscoverHintPath;
@@ -50,15 +45,13 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
       $this->coverEngine = Filesystem::resolvePath($cscover);
     } else {
       throw new Exception(
-        'Unable to locate cscover coverage runner '.
-        '(have you built yet?)');
+        'Unable to locate cscover coverage runner (have you built yet?)');
     }
-
   }
 
   /**
    * Returns whether the specified assembly should be instrumented for
-   * code coverage reporting.  Checks the excluded file list and the
+   * code coverage reporting. Checks the excluded file list and the
    * matching regex if they are configured.
    *
    * @return boolean Whether the assembly should be instrumented.
@@ -93,7 +86,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     }
 
     // FIXME: Can't use TempFile here as xUnit doesn't like
-    // UNIX-style full paths.  It sees the leading / as the
+    // UNIX-style full paths. It sees the leading / as the
     // start of an option flag, even when quoted.
     $xunit_temp = Filesystem::readRandomCharacters(10).'.results.xml';
     if (file_exists($xunit_temp)) {
@@ -158,7 +151,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
   }
 
   /**
-   * Retrieves the cached results for a coverage result file.  The coverage
+   * Retrieves the cached results for a coverage result file. The coverage
    * result file is XML and can be large depending on what has been instrumented
    * so we cache it in case it's requested again.
    *
@@ -189,7 +182,7 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
   }
 
   /**
-   * Processes a set of XML tags as code coverage results.  We parse
+   * Processes a set of XML tags as code coverage results. We parse
    * the `instrumented` and `executed` tags with this method so that
    * we can access the data multiple times without a performance hit.
    *
@@ -283,4 +276,5 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     $this->addCachedResults($cover_file, $reports);
     return $reports;
   }
+
 }

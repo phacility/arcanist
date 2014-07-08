@@ -2,10 +2,9 @@
 
 /**
  * Shows lint messages to the user.
- *
- * @group lint
  */
 final class ArcanistLintJSONRenderer extends ArcanistLintRenderer {
+
   const LINES_OF_CONTEXT = 3;
 
   public function renderLintResult(ArcanistLintResult $result) {
@@ -32,4 +31,5 @@ final class ArcanistLintJSONRenderer extends ArcanistLintRenderer {
   public function renderOkayResult() {
     return '';
   }
+
 }

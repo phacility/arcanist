@@ -2,8 +2,6 @@
 
 /**
  * Covers your professional reputation by blaming changes to locate reviewers.
- *
- * @group workflow
  */
 final class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
 
@@ -63,7 +61,6 @@ EOTEXT
   }
 
   public function run() {
-
     $repository_api = $this->getRepositoryAPI();
 
     $in_paths = $this->getArgument('paths');

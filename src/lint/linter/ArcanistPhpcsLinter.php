@@ -2,8 +2,6 @@
 
 /**
  * Uses "PHP_CodeSniffer" to detect checkstyle errors in PHP code.
- *
- * @group linter
  */
 final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 

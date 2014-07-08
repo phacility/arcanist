@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group workflow
- */
 final class ArcanistInlinesWorkflow extends ArcanistBaseWorkflow {
 
   public function getWorkflowName() {
@@ -102,4 +99,5 @@ EOTEXT
       }
     }
   }
+
 }

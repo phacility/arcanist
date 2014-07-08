@@ -73,7 +73,6 @@ EOTEXT
   }
 
   public function run() {
-
     $console = PhutilConsole::getConsole();
 
     $this->printRepositorySection();

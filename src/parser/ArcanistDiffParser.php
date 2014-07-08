@@ -2,8 +2,6 @@
 
 /**
  * Parses diffs from a working copy.
- *
- * @group diff
  */
 final class ArcanistDiffParser {
 
@@ -453,7 +451,6 @@ final class ArcanistDiffParser {
   }
 
   private function parseSVNPropertyChange($op, $prop) {
-
     $old = array();
     $new = array();
 
@@ -1378,7 +1375,6 @@ final class ArcanistDiffParser {
    * Returns a parseable normal diff and a textual commit message.
    */
   private function stripGitFormatPatch($diff) {
-
     // We can parse this by splitting it into two pieces over and over again
     // along different section dividers:
     //

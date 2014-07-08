@@ -2,8 +2,6 @@
 
 /**
  * Applies lint patches to the working copy.
- *
- * @group lint
  */
 final class ArcanistLintPatcher {
 

@@ -2,10 +2,9 @@
 
 /**
  * Lands a branch by rebasing, merging and amending it.
- *
- * @group workflow
  */
 final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
+
   private $isGit;
   private $isGitSvn;
   private $isHg;
@@ -81,29 +80,31 @@ EOTEXT
     return array(
       'onto' => array(
         'param' => 'master',
-        'help' => pht('Land feature branch onto a branch other than the '.
-                      'default (\'master\' in git, \'default\' in hg). You '.
-                      'can change the default by setting '.
-                      '\'arc.land.onto.default\' with `arc set-config` or '.
-                      'for the entire project in .arcconfig.'),
+        'help' => pht(
+          "Land feature branch onto a branch other than the default ".
+          "('master' in git, 'default' in hg). You can change the default ".
+          "by setting 'arc.land.onto.default' with `arc set-config` or ".
+          "for the entire project in .arcconfig."),
       ),
       'hold' => array(
-        'help' => pht('Prepare the change to be pushed, but do not actually '.
-                      'push it.'),
+        'help' => pht(
+          'Prepare the change to be pushed, but do not actually push it.'),
       ),
       'keep-branch' => array(
-        'help' => pht('Keep the feature branch after pushing changes to the '.
-                      'remote (by default, it is deleted).'),
+        'help' => pht(
+          'Keep the feature branch after pushing changes to the '.
+          'remote (by default, it is deleted).'),
       ),
       'remote' => array(
         'param' => 'origin',
-        'help' => pht('Push to a remote other than the default (\'origin\' '.
-                      'in git).'),
+        'help' => pht(
+          "Push to a remote other than the default ('origin' in git)."),
       ),
       'merge' => array(
-        'help' => pht('Perform a --no-ff merge, not a --squash merge. If the '.
-                      'project is marked as having an immutable history, '.
-                      'this is the default behavior.'),
+        'help' => pht(
+          'Perform a --no-ff merge, not a --squash merge. If the project '.
+          'is marked as having an immutable history, this is the default '.
+          'behavior.'),
         'supports' => array(
           'git',
         ),
@@ -112,45 +113,45 @@ EOTEXT
         ),
       ),
       'squash' => array(
-        'help' => pht('Perform a --squash merge, not a --no-ff merge. If the '.
-                      'project is marked as having a mutable history, this '.
-                      'is the default behavior.'),
+        'help' => pht(
+          'Perform a --squash merge, not a --no-ff merge. If the project is '.
+          'marked as having a mutable history, this is the default behavior.'),
         'conflicts' => array(
           'merge' => '--merge and --squash are conflicting merge strategies.',
         ),
       ),
       'delete-remote' => array(
-        'help'      => pht('Delete the feature branch in the remote after '.
-                           'landing it.'),
+        'help' => pht(
+          'Delete the feature branch in the remote after landing it.'),
         'conflicts' => array(
           'keep-branch' => true,
         ),
       ),
       'update-with-rebase' => array(
-        'help'    => pht('When updating the feature branch, use rebase '.
-                         'instead of merge. This might make things work '.
-                         'better in some cases. Set arc.land.update.default '.
-                         'to \'rebase\' to make this the default.'),
+        'help' => pht(
+          "When updating the feature branch, use rebase instead of merge. ".
+          "This might make things work better in some cases. Set ".
+          "arc.land.update.default to 'rebase' to make this the default."),
         'conflicts' => array(
-          'merge' => pht('The --merge strategy does not update the feature '.
-                         'branch.'),
-          'update-with-merge' => pht('Cannot be used with '.
-                                     '--update-with-merge.'),
+          'merge' => pht(
+            'The --merge strategy does not update the feature branch.'),
+          'update-with-merge' => pht(
+            'Cannot be used with --update-with-merge.'),
         ),
         'supports' => array(
           'git',
         ),
       ),
       'update-with-merge' => array(
-        'help'    => pht('When updating the feature branch, use merge instead '.
-                         'of rebase. This is the default behavior. Setting '.
-                         'arc.land.update.default to \'merge\' can also be '.
-                         'used to make this the default.'),
+        'help' => pht(
+          "When updating the feature branch, use merge instead of rebase. ".
+          "This is the default behavior. Setting arc.land.update.default to ".
+          "'merge' can also be used to make this the default."),
         'conflicts' => array(
-          'merge' => pht('The --merge strategy does not update the feature '.
-                         'branch.'),
-          'update-with-rebase' => pht('Cannot be used with '.
-                                      '--update-with-rebase.'),
+          'merge' => pht(
+            'The --merge strategy does not update the feature branch.'),
+          'update-with-rebase' => pht(
+            'Cannot be used with --update-with-rebase.'),
         ),
         'supports' => array(
           'git',
@@ -158,12 +159,14 @@ EOTEXT
       ),
       'revision' => array(
         'param' => 'id',
-        'help'  => pht('Use the message from a specific revision, rather than '.
-                       'inferring the revision based on branch content.'),
+        'help' => pht(
+          'Use the message from a specific revision, rather than '.
+          'inferring the revision based on branch content.'),
       ),
       'preview' => array(
-        'help' => pht('Prints the commits that would be landed. Does not '.
-                      'actually modify or land the commits.'),
+        'help' => pht(
+          'Prints the commits that would be landed. Does not '.
+          'actually modify or land the commits.'),
       ),
       '*' => 'branch',
     );
@@ -318,8 +321,9 @@ EOTEXT
       if ($this->useSquash) {
         if (!$repository_api->supportsRebase()) {
           throw new ArcanistUsageException(
-            pht('You must enable the rebase extension to use the --squash '.
-                'strategy.'));
+            pht(
+              'You must enable the rebase extension to use the --squash '.
+              'strategy.'));
         }
       }
 
@@ -613,7 +617,7 @@ EOTEXT
         }
       }
 
-      // Pull succeeded.  Now make sure master is not on an outgoing change
+      // Pull succeeded. Now make sure master is not on an outgoing change
       if ($repository_api->supportsPhases()) {
         list($out) = $repository_api->execxLocal(
           'log -r %s --template %s', $this->onto, '{phase}');
@@ -937,7 +941,9 @@ EOTEXT
           'commit -F %s',
           $this->messageFile);
         if (phutil_is_windows()) {
-          // Occasionally on large repositories on Windows, Git can exit with an unclean working copy here.  This prevents reverts from being pushed to the remote when this occurs.
+          // Occasionally on large repositories on Windows, Git can exit with
+          // an unclean working copy here. This prevents reverts from being
+          // pushed to the remote when this occurs.
           $this->requireCleanWorkingCopy();
         }
       } else if ($this->isHg) {

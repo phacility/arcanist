@@ -4,7 +4,6 @@
  * Interfaces with the VCS in the working copy.
  *
  * @task  status      Path Status
- * @group workingcopy
  */
 abstract class ArcanistRepositoryAPI {
 

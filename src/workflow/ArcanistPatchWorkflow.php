@@ -2,8 +2,6 @@
 
 /**
  * Applies changes from Differential or a file to the working copy.
- *
- * @group workflow
  */
 final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
 
@@ -66,46 +64,35 @@ EOTEXT
       'patch' => array(
         'param' => 'patchfile',
         'paramtype' => 'file',
-        'help' =>
-          'Apply changes from a git patchfile or unified patchfile.',
+        'help' => 'Apply changes from a git patchfile or unified patchfile.',
       ),
       'encoding' => array(
         'param' => 'encoding',
-        'help' =>
-          'Attempt to convert non UTF-8 patch into specified encoding.',
+        'help' => 'Attempt to convert non UTF-8 patch into specified encoding.',
       ),
       'update' => array(
-        'supports' => array(
-          'git', 'svn', 'hg'
-        ),
-        'help' =>
-          'Update the local working copy before applying the patch.',
+        'supports' => array('git', 'svn', 'hg'),
+        'help' => 'Update the local working copy before applying the patch.',
         'conflicts' => array(
           'nobranch' => true,
           'bookmark' => true,
         ),
       ),
       'nocommit' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
           'Normally under git/hg, if the patch is successful, the changes '.
           'are committed to the working copy. This flag prevents the commit.',
       ),
       'skip-dependencies' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
           'Normally, if a patch has dependencies that are not present in the '.
           'working copy, arc tries to apply them as well. This flag prevents '.
           'such work.',
       ),
       'nobranch' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
           'Normally, a new branch (git) or bookmark (hg) is created and then '.
           'the patch is applied and committed in the new branch/bookmark. '.
@@ -116,8 +103,7 @@ EOTEXT
         ),
       ),
       'force' => array(
-        'help' =>
-          'Do not run any sanity checks.',
+        'help' => 'Do not run any sanity checks.',
       ),
       '*' => 'name',
     );
@@ -242,7 +228,7 @@ EOTEXT
 
     if (!$branch_name) {
       throw new Exception(
-        'Arc was unable to automagically make a name for this patch.  '.
+        'Arc was unable to automagically make a name for this patch. '.
         'Please clean up your working copy and try again.'
       );
     }
@@ -251,7 +237,7 @@ EOTEXT
   }
 
   private function getBookmarkName(ArcanistBundle $bundle) {
-    $bookmark_name    = null;
+    $bookmark_name  = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
     $base_name      = 'arcpatch';
@@ -325,9 +311,7 @@ EOTEXT
           $base_revision);
       }
 
-      $repository_api->execxLocal(
-        'bookmark %s',
-        $branch_name);
+      $repository_api->execxLocal('bookmark %s', $branch_name);
 
       echo phutil_console_format(
         "Created and checked out bookmark %s.\n",
@@ -352,7 +336,6 @@ EOTEXT
   }
 
   public function run() {
-
     $source = $this->getSource();
     $param = $this->getSourceParam();
     try {
@@ -831,7 +814,7 @@ EOTEXT
     if (!$commit_message) {
       $template =
         "\n\n".
-        "# Enter a commit message for this patch.  If you just want to apply ".
+        "# Enter a commit message for this patch. If you just want to apply ".
         "the patch to the working copy without committing, re-run arc patch ".
         "with the --nocommit flag.".
         $prompt_message.
@@ -931,7 +914,7 @@ EOTEXT
     } else if ($bundle_project_id != $working_copy_project_id) {
       if ($working_copy_project_id) {
         $issue =
-          "This patch is for the '{$bundle_project_id}' project,  but the ".
+          "This patch is for the '{$bundle_project_id}' project, but the ".
           "working copy belongs to the '{$working_copy_project_id}' project.";
       } else {
         $issue =
@@ -985,17 +968,19 @@ EOTEXT
 
           if ($bundle_revision) {
             $bundle_base_rev_str = $bundle_base_rev.
-                                   ' \ D'.$bundle_revision['id'];
+              ' \ D'.$bundle_revision['id'];
           }
           if ($source_revision) {
             $source_base_rev_str = $source_base_rev.
-                                   ' \ D'.$source_revision['id'];
+              ' \ D'.$source_revision['id'];
           }
         }
-        $bundle_base_rev_str = nonempty($bundle_base_rev_str,
-                                        $bundle_base_rev);
-        $source_base_rev_str = nonempty($source_base_rev_str,
-                                        $source_base_rev);
+        $bundle_base_rev_str = nonempty(
+          $bundle_base_rev_str,
+          $bundle_base_rev);
+        $source_base_rev_str = nonempty(
+          $source_base_rev_str,
+          $source_base_rev);
 
         $ok = phutil_console_confirm(
           "This diff is against commit {$bundle_base_rev_str}, but the ".
@@ -1090,4 +1075,5 @@ EOTEXT
 
     return $graph;
   }
+
 }

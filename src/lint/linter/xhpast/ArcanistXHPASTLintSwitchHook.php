@@ -3,8 +3,6 @@
 /**
  * You can extend this class and set `xhpast.switchhook` in your `.arclint`
  * to have an opportunity to override results for linting `switch` statements.
- *
- * @group lint
  */
 abstract class ArcanistXHPASTLintSwitchHook {
 

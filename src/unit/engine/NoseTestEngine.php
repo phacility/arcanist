@@ -4,13 +4,10 @@
  * Very basic 'nose' unit test engine wrapper.
  *
  * Requires nose 1.1.3 for code coverage.
- *
- * @group unitrun
  */
 final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
 
   public function run() {
-
     $paths = $this->getPaths();
 
     $affected_tests = array();
@@ -52,9 +49,7 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
       $xunit_tmp = new TempFile();
       $cover_tmp = new TempFile();
 
-      $future = $this->buildTestFuture($test_path,
-                                       $xunit_tmp,
-                                       $cover_tmp);
+      $future = $this->buildTestFuture($test_path, $xunit_tmp, $cover_tmp);
 
       $futures[$test_path] = $future;
       $tmpfiles[$test_path] = array(
@@ -91,9 +86,9 @@ final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
                          $xunit_tmp);
 
     if ($this->getEnableCoverage() !== false) {
-      $cmd_line .= csprintf(' --with-coverage --cover-xml '.
-                            '--cover-xml-file=%s',
-                            $cover_tmp);
+      $cmd_line .= csprintf(
+        ' --with-coverage --cover-xml --cover-xml-file=%s',
+        $cover_tmp);
     }
 
     return new ExecFuture('%C %s', $cmd_line, $path);

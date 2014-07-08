@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Quickly create a task
- *
- * @group workflow
+ * Quickly create a task.
  */
 final class ArcanistTodoWorkflow extends ArcanistBaseWorkflow {
 
