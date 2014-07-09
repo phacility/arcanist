@@ -30,9 +30,9 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_UNKNOWN_SYMBOL     => 'Unknown Symbol',
-      self::LINT_DUPLICATE_SYMBOL   => 'Duplicate Symbol',
-      self::LINT_ONE_CLASS_PER_FILE => 'One Class Per File',
+      self::LINT_UNKNOWN_SYMBOL     => pht('Unknown Symbol'),
+      self::LINT_DUPLICATE_SYMBOL   => pht('Duplicate Symbol'),
+      self::LINT_ONE_CLASS_PER_FILE => pht('One Class Per File'),
     );
   }
 
@@ -57,18 +57,10 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     // itself. This means lint results will accurately reflect the state of
     // the working copy.
 
-    $root = dirname(phutil_get_library_root('phutil'));
-    $bin = $root.'/scripts/phutil_rebuild_map.php';
-
     $symbols = array();
     foreach ($libs as $lib) {
-      // Do these one at a time since they individually fanout to saturate
-      // available system resources.
-      $future = new ExecFuture(
-        'php %s --show --quiet --ugly -- %s',
-        $bin,
-        phutil_get_library_root($lib));
-      $symbols[$lib] = $future->resolveJSON();
+      $root = phutil_get_library_root($lib);
+      $symbols[$lib] = id(new PhutilLibraryMapBuilder($root))->buildMap();
     }
 
     $all_symbols = array();
