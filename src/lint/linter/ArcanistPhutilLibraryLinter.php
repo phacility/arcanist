@@ -40,6 +40,10 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     return 'PHL';
   }
 
+  public function getLinterPriority() {
+    return 2.0;
+  }
+
   public function willLintPaths(array $paths) {
     if (!xhpast_is_available()) {
       throw new Exception(xhpast_get_build_instructions());
