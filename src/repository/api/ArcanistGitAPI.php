@@ -279,7 +279,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     if (!$default_relative) {
       list($err, $upstream) = $this->execManualLocal(
-        "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+        'rev-parse --abbrev-ref --symbolic-full-name %s',
+        '@{upstream}');
 
       if (!$err) {
         $default_relative = trim($upstream);
@@ -1164,7 +1165,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             break;
           case 'upstream':
             list($err, $upstream) = $this->execManualLocal(
-              "rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'");
+              'rev-parse --abbrev-ref --symbolic-full-name %s',
+              '@{upstream}');
             if (!$err) {
               $upstream = rtrim($upstream);
               list($upstream_merge_base) = $this->execxLocal(
