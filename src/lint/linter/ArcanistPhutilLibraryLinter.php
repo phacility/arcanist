@@ -64,7 +64,14 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     $symbols = array();
     foreach ($libs as $lib) {
       $root = phutil_get_library_root($lib);
-      $symbols[$lib] = id(new PhutilLibraryMapBuilder($root))->buildMap();
+
+      try {
+        $symbols[$lib] = id(new PhutilLibraryMapBuilder($root))->buildMap();
+      } catch (XHPASTSyntaxErrorException $ex) {
+        // If the library contains a syntax error then there isn't much that we
+        // can do.
+        continue;
+      }
     }
 
     $all_symbols = array();
