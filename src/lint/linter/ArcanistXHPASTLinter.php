@@ -56,11 +56,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Use XHPAST to enforce Phabricator coding conventions on PHP source '.
-      'files. This linter is intended for use in Phabricator libraries and '.
-      'extensions, and enforces some Phabricator-specific style rules. It '.
-      'may not work well for general PHP source.');
+    return pht('Use XHPAST to enforce coding conventions on PHP source files.');
   }
 
   public function getLintNameMap() {
