@@ -429,17 +429,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @param head revision. If this is null, the generated diff will include the
    * working copy
    */
-  public function getFullGitDiff($base, $head=null) {
+  public function getFullGitDiff($base, $head = null) {
     $options = $this->getDiffFullOptions();
 
-    $diff_revision = $base;
-    if ($head) {
-      $diff_revision .= '..'.$head;
+    if ($head !== null) {
+      list($stdout) = $this->execxLocal(
+        "diff {$options} %s %s --",
+        $base,
+        $head);
+    } else {
+      list($stdout) = $this->execxLocal(
+        "diff {$options} %s --",
+        $base);
     }
 
-    list($stdout) = $this->execxLocal(
-      "diff {$options} %s --",
-      $diff_revision);
     return $stdout;
   }
 
