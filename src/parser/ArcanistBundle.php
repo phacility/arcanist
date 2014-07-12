@@ -803,7 +803,7 @@ final class ArcanistBundle {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
-    // It is also implemeted awkwardly to work correctly on 32-bit machines.
+    // It is also implemented awkwardly to work correctly on 32-bit machines.
     // Broadly, this algorithm converts the binary input to printable output
     // by transforming each 4 binary bytes of input to 5 printable bytes of
     // output, one piece at a time.

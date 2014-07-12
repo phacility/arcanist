@@ -226,7 +226,7 @@ abstract class ArcanistRepositoryAPI {
   /**
    * Get a list of paths affected by commits in the current commit range, or
    * uncommitted changes in the working copy. See @{method:getUncommittedStatus}
-   * or @{method:getCommitRangeStatus} to retreive smaller parts of the status.
+   * or @{method:getCommitRangeStatus} to retrieve smaller parts of the status.
    *
    * See @{method:getUncommittedStatus} for a description of the return value.
    *

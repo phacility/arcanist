@@ -568,7 +568,7 @@ abstract class ArcanistLintEngine {
 
 
   /**
-   * Set a linter resource that other linters can accesss.
+   * Set a linter resource that other linters can access.
    *
    * See @{method:getLinterResource} for a description of this mechanism.
    *

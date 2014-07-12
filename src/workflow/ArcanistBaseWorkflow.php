@@ -1225,7 +1225,7 @@ abstract class ArcanistBaseWorkflow extends Phobject {
   /**
    * Workflows like 'lint' and 'unit' operate on a list of working copy paths.
    * The user can either specify the paths explicitly ("a.js b.php"), or by
-   * specfifying a revision ("--rev a3f10f1f") to select all paths modified
+   * specifying a revision ("--rev a3f10f1f") to select all paths modified
    * since that revision, or by omitting both and letting arc choose the
    * default relative revision.
    *

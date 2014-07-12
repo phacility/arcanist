@@ -211,7 +211,8 @@ final class ArcanistHgProxyServer {
       foreach ($clients as $key => $client) {
         if ($this->updateClient($client, $hg)) {
           // In this case, the client is still connected so just move on to
-          // the next one. Otherwise we continue below and handle the disconect.
+          // the next one. Otherwise we continue below and handle the
+          // disconnect.
           continue;
         }
 

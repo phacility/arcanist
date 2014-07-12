@@ -94,7 +94,7 @@ final class ArcanistHgProxyClient {
 
     // Note that we're adding "runcommand" to make the server run the command.
     // Theoretically the server supports other capabilities, but in practice
-    // we are only concerend with "runcommand".
+    // we are only concerned with "runcommand".
 
     $server->write(array_merge(array('runcommand'), $argv));
 

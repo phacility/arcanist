@@ -158,7 +158,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     // NOTE: Windows escaping of "%" symbols apparently is inherently broken;
-    // when passed throuhgh escapeshellarg() they are replaced with spaces.
+    // when passed through escapeshellarg() they are replaced with spaces.
 
     // TODO: Learn how cmd.exe works and find some clever workaround?
 

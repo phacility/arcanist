@@ -319,7 +319,7 @@ try {
       try {
         id(new $listener())->register();
       } catch (PhutilMissingSymbolException $ex) {
-        // Continue anwyay, since you may otherwise be unable to run commands
+        // Continue anyway, since you may otherwise be unable to run commands
         // like `arc set-config events.listeners` in order to repair the damage
         // you've caused. We're writing out the entire exception here because
         // it might not have been triggered by the listener itself (for example,
