@@ -292,6 +292,11 @@ EOTEXT
       $locales = array_fill_keys($locales, true);
       if (isset($locales['en_US.UTF-8'])) {
         $locale = 'en_US.UTF-8';
+      } elseif (isset($locales['en_US.utf8'])) {
+        $locale = 'en_US.utf8';
+      } else {
+        // If en_US is not available, use system default
+        $locale = $_ENV['LANG'];
       }
     } catch (Exception $ex) {
       // Ignore.
