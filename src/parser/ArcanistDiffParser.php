@@ -852,6 +852,14 @@ final class ArcanistDiffParser {
   }
 
   protected function parseChangeset(ArcanistDiffChange $change) {
+    // If a diff includes two sets of changes to the same file, let the
+    // second one win. In particular, this occurs when adding subdirectories
+    // in Subversion that contain files: the file text will be present in
+    // both the directory diff and the file diff. See T5555. Dropping the
+    // hunks lets whichever one shows up later win instead of showing changes
+    // twice.
+    $change->dropHunks();
+
     $all_changes = array();
     do {
       $hunk = new ArcanistDiffHunk();

@@ -192,6 +192,11 @@ final class ArcanistDiffChange {
     return $this;
   }
 
+  public function dropHunks() {
+    $this->hunks = array();
+    return $this;
+  }
+
   public function getHunks() {
     return $this->hunks;
   }

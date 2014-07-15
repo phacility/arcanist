@@ -588,6 +588,13 @@ EOTEXT
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
         break;
+      case 'svn-double-diff.svndiff':
+        $this->assertEqual(1, count($changes));
+
+        $change = array_shift($changes);
+        $hunks = $change->getHunks();
+        $this->assertEqual(1, count($hunks));
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;
