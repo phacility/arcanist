@@ -49,14 +49,10 @@ abstract class ArcanistPhrequentWorkflow extends ArcanistBaseWorkflow {
 
     $i = 0;
     foreach ($results as $result) {
-      if ($result['ongoing']) {
-        if ($i === 0) {
-          $column_type = 'In Progress';
-        } else {
-          $column_type = 'Suspended';
-        }
+      if ($i === 0) {
+        $column_type = 'In Progress';
       } else {
-        $column_type = 'Stopped';
+        $column_type = 'Suspended';
       }
 
       $table->addRow(array(
