@@ -3,7 +3,7 @@
 /**
  * Write configuration settings.
  */
-final class ArcanistSetConfigWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistSetConfigWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'set-config';

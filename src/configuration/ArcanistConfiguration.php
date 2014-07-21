@@ -38,7 +38,7 @@ class ArcanistConfiguration {
     $workflows_by_name = array();
 
     $workflows_by_class_name = id(new PhutilSymbolLoader())
-      ->setAncestorClass('ArcanistBaseWorkflow')
+      ->setAncestorClass('ArcanistWorkflow')
       ->loadObjects();
     foreach ($workflows_by_class_name as $class => $workflow) {
       $name = $workflow->getWorkflowName();
@@ -60,14 +60,11 @@ class ArcanistConfiguration {
     return (bool)$this->buildWorkflow($workflow);
   }
 
-  public function willRunWorkflow($command, ArcanistBaseWorkflow $workflow) {
+  public function willRunWorkflow($command, ArcanistWorkflow $workflow) {
     // This is a hook.
   }
 
-  public function didRunWorkflow(
-    $command,
-    ArcanistBaseWorkflow $workflow,
-    $err) {
+  public function didRunWorkflow($command, ArcanistWorkflow $workflow, $err) {
 
     // This is a hook.
   }

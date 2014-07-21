@@ -3,7 +3,7 @@
 /**
  * List available linters.
  */
-final class ArcanistLintersWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLintersWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'linters';

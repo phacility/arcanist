@@ -3,7 +3,7 @@
 /**
  * Lands a branch by rebasing, merging and amending it.
  */
-final class ArcanistLandWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLandWorkflow extends ArcanistWorkflow {
 
   private $isGit;
   private $isGitSvn;

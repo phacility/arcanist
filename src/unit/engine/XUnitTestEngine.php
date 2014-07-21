@@ -9,7 +9,7 @@
  *
  * @concrete-extensible
  */
-class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
+class XUnitTestEngine extends ArcanistUnitTestEngine {
 
   protected $runtimeEngine;
   protected $buildEngine;

@@ -3,7 +3,7 @@
 /**
  * Very basic unit test engine which runs libphutil tests.
  */
-final class PhutilUnitTestEngine extends ArcanistBaseUnitTestEngine {
+final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
 
   protected function supportsRunAllTests() {
     return true;

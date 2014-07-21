@@ -3,7 +3,7 @@
 /**
  * Covers your professional reputation by blaming changes to locate reviewers.
  */
-final class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCoverWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'cover';

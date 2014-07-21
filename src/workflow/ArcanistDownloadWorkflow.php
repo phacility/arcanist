@@ -3,7 +3,7 @@
 /**
  * Download a file from Phabricator.
  */
-final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistDownloadWorkflow extends ArcanistWorkflow {
 
   private $id;
   private $saveAs;

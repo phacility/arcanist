@@ -5,7 +5,7 @@
  *
  * Requires nose 1.1.3 for code coverage.
  */
-final class NoseTestEngine extends ArcanistBaseUnitTestEngine {
+final class NoseTestEngine extends ArcanistUnitTestEngine {
 
   public function run() {
     $paths = $this->getPaths();

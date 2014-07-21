@@ -3,7 +3,7 @@
 /**
  * Browse files in the Diffusion web interface.
  */
-final class ArcanistBrowseWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistBrowseWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'browse';

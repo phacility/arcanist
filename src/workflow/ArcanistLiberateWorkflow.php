@@ -9,7 +9,7 @@
  * definition it had when it first loaded. This is normally fine, but
  * problematic in this case because `arc liberate` modifies library definitions.
  */
-final class ArcanistLiberateWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLiberateWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'liberate';

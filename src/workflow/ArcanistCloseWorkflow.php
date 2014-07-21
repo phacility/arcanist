@@ -3,7 +3,7 @@
 /**
  * Close a task.
  */
-final class ArcanistCloseWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCloseWorkflow extends ArcanistWorkflow {
 
   private $tasks;
   private $statusOptions;

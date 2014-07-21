@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistFlagWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistFlagWorkflow extends ArcanistWorkflow {
 
   private static $colorMap = array(
     0 => 'red',     // Red

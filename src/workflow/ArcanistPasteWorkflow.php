@@ -3,7 +3,7 @@
 /**
  * Upload a chunk of text to the Paste application, or download one.
  */
-final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistPasteWorkflow extends ArcanistWorkflow {
 
   private $id;
   private $language;

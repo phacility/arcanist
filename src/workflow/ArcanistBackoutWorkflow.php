@@ -3,7 +3,7 @@
 /**
  * Runs git revert and assigns a high priority task to original author.
  */
-final class ArcanistBackoutWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistBackoutWorkflow extends ArcanistWorkflow {
 
   private $console;
   private $conduit;

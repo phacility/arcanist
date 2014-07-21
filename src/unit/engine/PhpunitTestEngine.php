@@ -3,7 +3,7 @@
 /**
  * PHPUnit wrapper.
  */
-final class PhpunitTestEngine extends ArcanistBaseUnitTestEngine {
+final class PhpunitTestEngine extends ArcanistUnitTestEngine {
 
   private $configFile;
   private $phpunitBinary = 'phpunit';

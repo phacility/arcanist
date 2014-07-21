@@ -3,7 +3,7 @@
 /**
  * Executes "svn commit" once a revision has been "Accepted".
  */
-final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCommitWorkflow extends ArcanistWorkflow {
 
   private $revisionID;
 

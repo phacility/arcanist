@@ -3,7 +3,7 @@
 /**
  * Powers shell-completion scripts.
  */
-final class ArcanistShellCompleteWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistShellCompleteWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'shell-complete';

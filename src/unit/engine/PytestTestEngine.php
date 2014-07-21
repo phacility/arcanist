@@ -3,7 +3,7 @@
 /**
  * Very basic 'py.test' unit test engine wrapper.
  */
-final class PytestTestEngine extends ArcanistBaseUnitTestEngine {
+final class PytestTestEngine extends ArcanistUnitTestEngine {
 
   public function run() {
     $working_copy = $this->getWorkingCopy();

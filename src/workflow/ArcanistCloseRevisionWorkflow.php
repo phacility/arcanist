@@ -3,7 +3,7 @@
 /**
  * Explicitly closes Differential revisions.
  */
-final class ArcanistCloseRevisionWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCloseRevisionWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'close-revision';

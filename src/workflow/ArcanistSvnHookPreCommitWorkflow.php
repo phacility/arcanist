@@ -3,7 +3,7 @@
 /**
  * Installable as an SVN "pre-commit" hook.
  */
-final class ArcanistSvnHookPreCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistSvnHookPreCommitWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'svn-hook-pre-commit';

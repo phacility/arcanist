@@ -6,7 +6,7 @@
  * For an example on how to integrate with your test engine, see
  * @{class:PhpunitTestEngine}.
  */
-final class PhpunitResultParser extends ArcanistBaseTestResultParser {
+final class PhpunitResultParser extends ArcanistTestResultParser {
 
   /**
    * Parse test results from phpunit json report

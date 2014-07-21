@@ -8,7 +8,7 @@
  * @task diffspec   Diff Specification
  * @task diffprop   Diff Properties
  */
-final class ArcanistDiffWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistDiffWorkflow extends ArcanistWorkflow {
 
   private $console;
   private $hasWarnedExternals = false;

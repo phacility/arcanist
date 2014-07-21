@@ -3,7 +3,7 @@
 /**
  * Base workflow for Phrequent workflows
  */
-abstract class ArcanistPhrequentWorkflow extends ArcanistBaseWorkflow {
+abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
 
   protected function printCurrentTracking() {
     $conduit = $this->getConduit();

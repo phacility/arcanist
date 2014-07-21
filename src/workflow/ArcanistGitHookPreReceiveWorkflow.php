@@ -3,7 +3,7 @@
 /**
  * Installable as a git pre-receive hook.
  */
-final class ArcanistGitHookPreReceiveWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistGitHookPreReceiveWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'git-hook-pre-receive';

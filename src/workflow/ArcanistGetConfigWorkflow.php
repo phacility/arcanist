@@ -3,7 +3,7 @@
 /**
  * Read configuration settings.
  */
-final class ArcanistGetConfigWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistGetConfigWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'get-config';

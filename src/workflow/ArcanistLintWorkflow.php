@@ -3,7 +3,7 @@
 /**
  * Runs lint rules on changes.
  */
-final class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLintWorkflow extends ArcanistWorkflow {
 
   const RESULT_OKAY       = 0;
   const RESULT_WARNINGS   = 1;

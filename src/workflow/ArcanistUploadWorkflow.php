@@ -3,7 +3,7 @@
 /**
  * Upload a file to Phabricator.
  */
-final class ArcanistUploadWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUploadWorkflow extends ArcanistWorkflow {
 
   private $paths;
   private $json;

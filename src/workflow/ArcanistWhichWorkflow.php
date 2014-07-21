@@ -3,7 +3,7 @@
 /**
  * Show which revision or revisions are in the working copy.
  */
-final class ArcanistWhichWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistWhichWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'which';

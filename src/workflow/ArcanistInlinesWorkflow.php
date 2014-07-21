@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistInlinesWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistInlinesWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'inlines';

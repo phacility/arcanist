@@ -3,7 +3,7 @@
 /**
  * Applies changes from Differential or a file to the working copy.
  */
-final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistPatchWorkflow extends ArcanistWorkflow {
 
   const SOURCE_BUNDLE         = 'bundle';
   const SOURCE_PATCH          = 'patch';

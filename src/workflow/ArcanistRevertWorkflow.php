@@ -3,7 +3,7 @@
 /**
  * Redirects to `arc backout` workflow.
  */
-final class ArcanistRevertWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistRevertWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'revert';

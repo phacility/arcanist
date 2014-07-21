@@ -5,7 +5,7 @@
  *
  * @concrete-extensible
  */
-class ArcanistFeatureWorkflow extends ArcanistBaseWorkflow {
+class ArcanistFeatureWorkflow extends ArcanistWorkflow {
 
   private $branches;
 

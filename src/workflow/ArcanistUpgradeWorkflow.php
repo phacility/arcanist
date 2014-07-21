@@ -3,7 +3,7 @@
 /**
  * Upgrade arcanist itself.
  */
-final class ArcanistUpgradeWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUpgradeWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'upgrade';

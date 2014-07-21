@@ -3,7 +3,7 @@
 /**
  * Manages aliases for commands with options.
  */
-final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistAliasWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'alias';

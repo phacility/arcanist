@@ -3,7 +3,7 @@
 /**
  * Exports changes from Differential or the working copy to a file.
  */
-final class ArcanistExportWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistExportWorkflow extends ArcanistWorkflow {
 
   const SOURCE_LOCAL      = 'local';
   const SOURCE_DIFF       = 'diff';

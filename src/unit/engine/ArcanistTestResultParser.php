@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Abstract Base class for test result parsers.
+ * Abstract base class for test result parsers.
  */
-abstract class ArcanistBaseTestResultParser {
+abstract class ArcanistTestResultParser {
 
   protected $enableCoverage;
   protected $projectRoot;
@@ -36,13 +36,12 @@ abstract class ArcanistBaseTestResultParser {
   }
 
   /**
-   * Parse test results from provided input and return an array
-   * of ArcanistUnitTestResult
+   * Parse test results from provided input and return an array of
+   * @{class:ArcanistUnitTestResult}.
    *
-   * @param string $path Path to test
-   * @param string $test_results String containing test results
-   *
-   * @return array ArcanistUnitTestResult
+   * @param string Path to test.
+   * @param string String containing test results.
+   * @return array
    */
   abstract public function parseTestResults($path, $test_results);
 

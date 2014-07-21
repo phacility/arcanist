@@ -3,7 +3,7 @@
 /**
  * Lists open revisions in Differential.
  */
-final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistListWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'list';

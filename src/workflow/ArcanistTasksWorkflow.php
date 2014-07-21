@@ -3,7 +3,7 @@
 /**
  * Displays User Tasks.
  */
-final class ArcanistTasksWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistTasksWorkflow extends ArcanistWorkflow {
 
   private $tasks;
 

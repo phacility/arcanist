@@ -3,7 +3,7 @@
 /**
  * Seduces the reader with majestic prose.
  */
-final class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistHelpWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'help';

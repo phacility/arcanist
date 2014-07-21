@@ -3,7 +3,7 @@
 /**
  * Runs unit tests which cover your changes.
  */
-final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUnitWorkflow extends ArcanistWorkflow {
 
   const RESULT_OKAY      = 0;
   const RESULT_UNSOUND   = 1;
@@ -133,10 +133,10 @@ EOTEXT
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
     if (!class_exists($engine_class) ||
-        !is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {
+        !is_subclass_of($engine_class, 'ArcanistUnitTestEngine')) {
       throw new ArcanistUsageException(
         "Configured unit test engine '{$engine_class}' is not a subclass of ".
-        "'ArcanistBaseUnitTestEngine'.");
+        "'ArcanistUnitTestEngine'.");
     }
 
     $this->engine = newv($engine_class, array());

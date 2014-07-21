@@ -3,7 +3,7 @@
 /**
  * Provides command-line access to the Conduit API.
  */
-final class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCallConduitWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'call-conduit';

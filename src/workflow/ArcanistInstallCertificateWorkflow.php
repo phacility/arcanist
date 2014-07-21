@@ -3,7 +3,7 @@
 /**
  * Installs arcanist certificates.
  */
-final class ArcanistInstallCertificateWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistInstallCertificateWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'install-certificate';

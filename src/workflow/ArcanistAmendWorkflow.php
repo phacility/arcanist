@@ -3,7 +3,7 @@
 /**
  * Synchronizes commit messages from Differential.
  */
-final class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistAmendWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'amend';

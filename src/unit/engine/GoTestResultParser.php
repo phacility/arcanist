@@ -5,7 +5,7 @@
  *
  * (To generate test output, run something like: `go test -v`)
  */
-final class GoTestResultParser extends ArcanistBaseTestResultParser {
+final class GoTestResultParser extends ArcanistTestResultParser {
 
   /**
    * Parse test results from Go test report

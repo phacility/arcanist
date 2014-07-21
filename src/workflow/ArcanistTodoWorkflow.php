@@ -3,7 +3,7 @@
 /**
  * Quickly create a task.
  */
-final class ArcanistTodoWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistTodoWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'todo';

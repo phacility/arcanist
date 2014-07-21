@@ -3,7 +3,7 @@
 /**
  * Display the current version of Arcanist.
  */
-final class ArcanistVersionWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistVersionWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'version';
