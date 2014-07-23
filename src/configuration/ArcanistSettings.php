@@ -112,7 +112,6 @@ final class ArcanistSettings {
           'amending or rebasing). Defaults to true in Mercurial and false in '.
           'Git. This setting has no effect in Subversion.',
         'example' => 'false',
-        'default' => false,
       ),
       'editor' => array(
         'type' => 'string',
