@@ -424,30 +424,30 @@ EOTEXT
 
     switch ($this->getArgument('output')) {
       case 'json':
-        $renderer = new ArcanistLintJSONRenderer();
+        $renderer = new ArcanistJSONLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
       case 'summary':
-        $renderer = new ArcanistLintSummaryRenderer();
+        $renderer = new ArcanistSummaryLintRenderer();
         break;
       case 'none':
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
-        $renderer = new ArcanistLintNoneRenderer();
+        $renderer = new ArcanistNoneLintRenderer();
         break;
       case 'compiler':
-        $renderer = new ArcanistLintLikeCompilerRenderer();
+        $renderer = new ArcanistCompilerLikeLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
       case 'xml':
-        $renderer = new ArcanistLintCheckstyleXMLRenderer();
+        $renderer = new ArcanistCheckstyleXMLLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
       default:
-        $renderer = new ArcanistLintConsoleRenderer();
+        $renderer = new ArcanistConsoleLintRenderer();
         $renderer->setShowAutofixPatches($prompt_autofix_patches);
         break;
     }
@@ -539,7 +539,7 @@ EOTEXT
 
     if ($failed) {
       if ($failed instanceof ArcanistNoEffectException) {
-        if ($renderer instanceof ArcanistLintNoneRenderer) {
+        if ($renderer instanceof ArcanistNoneLintRenderer) {
           return 0;
         }
       }

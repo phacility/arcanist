@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-final class ArcanistLintCheckstyleXMLRenderer extends ArcanistLintRenderer {
+final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
 
   private $writer;
 

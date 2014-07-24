@@ -217,7 +217,7 @@ EOTEXT
         "errors to disable lint for that file.\n\n");
       echo phutil_console_wrap($msg);
 
-      $renderer = new ArcanistLintConsoleRenderer();
+      $renderer = new ArcanistConsoleLintRenderer();
       foreach ($failures as $result) {
         echo $renderer->renderLintResult($result);
       }

@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-final class ArcanistLintConsoleRenderer extends ArcanistLintRenderer {
+final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
   private $showAutofixPatches = false;
 

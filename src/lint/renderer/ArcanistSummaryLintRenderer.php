@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-final class ArcanistLintSummaryRenderer extends ArcanistLintRenderer {
+final class ArcanistSummaryLintRenderer extends ArcanistLintRenderer {
 
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();

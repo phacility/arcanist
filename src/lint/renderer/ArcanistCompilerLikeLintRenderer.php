@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-final class ArcanistLintLikeCompilerRenderer extends ArcanistLintRenderer {
+final class ArcanistCompilerLikeLintRenderer extends ArcanistLintRenderer {
 
   public function renderLintResult(ArcanistLintResult $result) {
     $lines = array();

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistLintNoneRenderer extends ArcanistLintRenderer {
+final class ArcanistNoneLintRenderer extends ArcanistLintRenderer {
 
   public function renderLintResult(ArcanistLintResult $result) {
     return '';

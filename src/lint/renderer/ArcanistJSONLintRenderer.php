@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-final class ArcanistLintJSONRenderer extends ArcanistLintRenderer {
+final class ArcanistJSONLintRenderer extends ArcanistLintRenderer {
 
   const LINES_OF_CONTEXT = 3;
 
