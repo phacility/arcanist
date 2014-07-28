@@ -218,6 +218,22 @@ EOTEXT
     return 0;
   }
 
+  private function getUpstreamMatching($branch, $pattern) {
+    if ($this->isGit) {
+      $repository_api = $this->getRepositoryAPI();
+      list($err, $fullname) = $repository_api->execManualLocal(
+        'rev-parse --symbolic-full-name %s@{upstream}',
+        $branch);
+      if (!$err) {
+        $matches = null;
+        if (preg_match($pattern, $fullname, $matches)) {
+          return last($matches);
+        }
+      }
+    }
+    return null;
+  }
+
   private function readArguments() {
     $repository_api = $this->getRepositoryAPI();
     $this->isGit = $repository_api instanceof ArcanistGitAPI;
@@ -275,10 +291,16 @@ EOTEXT
     $onto_default = nonempty(
       $this->getConfigFromAnySource('arc.land.onto.default'),
       $onto_default);
+    $onto_default = coalesce(
+      $this->getUpstreamMatching($this->branch, '/^refs\/heads\/(.+)$/'),
+      $onto_default);
     $this->onto = $this->getArgument('onto', $onto_default);
     $this->ontoType = $this->getBranchType($this->onto);
 
     $remote_default = $this->isGit ? 'origin' : '';
+    $remote_default = coalesce(
+      $this->getUpstreamMatching($this->onto, '/^refs\/remotes\/(.+?)\//'),
+      $remote_default);
     $this->remote = $this->getArgument('remote', $remote_default);
 
     if ($this->getArgument('merge')) {
