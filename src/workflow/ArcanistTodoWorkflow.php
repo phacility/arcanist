@@ -49,6 +49,9 @@ EOTEXT
         'repeat' => true,
         'help'   => pht('Projects to assign to the task.'),
       ),
+      'browse' => array(
+        'help' => pht('After creating the task, open it in a web browser.'),
+      ),
     );
   }
 
@@ -108,6 +111,11 @@ EOTEXT
       $result['id'],
       $result['title'],
       $result['uri']);
+
+    if ($this->getArgument('browse')) {
+      $this->openURIsInBrowser(array($result['uri']));
+    }
+
   }
 
 }
