@@ -392,6 +392,10 @@ EOTEXT
           'unit' => true,
         ),
       ),
+      'browse' => array(
+        'help' => pht(
+          'After creating a diff or revision, open it in a web browser.'),
+      ),
       '*' => 'paths',
       'head' => array(
         'param' => 'commit',
@@ -570,6 +574,10 @@ EOTEXT
         ))."\n";
         ob_start();
       }
+
+      if ($this->shouldOpenCreatedObjectsInBrowser()) {
+        $this->openURIsInBrowser(array($diff_info['uri']));
+      }
     } else {
       $revision['diffid'] = $this->getDiffID();
 
@@ -625,6 +633,10 @@ EOTEXT
             'action' => 'rethink',
           ));
         echo "Planned changes to the revision.\n";
+      }
+
+      if ($this->shouldOpenCreatedObjectsInBrowser()) {
+        $this->openURIsInBrowser(array($uri));
       }
     }
 
@@ -2621,6 +2633,10 @@ EOTEXT
     $tmp = new TempFile();
     Filesystem::writeFile($tmp, $data);
     return Filesystem::getMimeType($tmp);
+  }
+
+  private function shouldOpenCreatedObjectsInBrowser() {
+    return $this->getArgument('browse');
   }
 
 }
