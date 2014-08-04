@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Browse files in the Diffusion web interface.
+ * Browse files or objects in the Phabricator web interface.
  */
 final class ArcanistBrowseWorkflow extends ArcanistWorkflow {
 
@@ -12,6 +12,7 @@ final class ArcanistBrowseWorkflow extends ArcanistWorkflow {
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **browse** [__options__] __path__ ...
+      **browse** [__options__] __object__ ...
 EOTEXT
       );
   }
@@ -19,7 +20,10 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: git, hg, svn
-          Browse files in the Diffusion web interface.
+          Open a file or object (like a task or revision) in your web browser.
+
+            $ arc browse README   # Open a file in Diffusion.
+            $ arc browse T123     # View a task.
 
           Set the 'browser' value using 'arc set-config' to select a browser. If
           no browser is set, the command will try to guess which browser to use.
@@ -34,11 +38,16 @@ EOTEXT
         'help' => pht(
           'Default branch name to view on server. Defaults to "master".'),
       ),
+      'force' => array(
+        'help' => pht(
+          'Open arguments as paths, even if they do not exist in the '.
+          'working copy.'),
+      ),
       '*' => 'paths',
     );
   }
 
-  public function requiresWorkingCopy() {
+  public function desiresWorkingCopy() {
     return true;
   }
 
@@ -50,44 +59,100 @@ EOTEXT
     return true;
   }
 
-  public function requiresRepositoryAPI() {
+  public function desiresRepositoryAPI() {
     return true;
   }
 
   public function run() {
-    $repository_api = $this->getRepositoryAPI();
-    $project_root = $this->getWorkingCopy()->getProjectRoot();
+    $console = PhutilConsole::getConsole();
 
-    $in_paths = $this->getArgument('paths');
-    if (!$in_paths) {
+    $is_force = $this->getArgument('force');
+
+    $things = $this->getArgument('paths');
+    if (!$things) {
       throw new ArcanistUsageException(
         pht(
-          'Specify one or more paths to browse. Use the command '.
+          'Specify one or more paths or objects to browse. Use the command '.
           '"arc browse ." if you want to browse this directory.'));
     }
+    $things = array_fuse($things);
 
-    $paths = array();
-    foreach ($in_paths as $key => $path) {
-      $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
-      $full_path = Filesystem::resolvePath($path);
+    $objects = $this->getConduit()->callMethodSynchronous(
+      'phid.lookup',
+      array(
+        'names' => array_keys($things),
+      ));
 
-      if ($full_path == $project_root) {
-        $paths[$key] = '';
-      } else {
-        $paths[$key] = Filesystem::readablePath($full_path, $project_root);
+    $uris = array();
+    foreach ($objects as $name => $object) {
+      $uris[] = $object['uri'];
+
+      $console->writeOut(
+        pht(
+          'Opening **%s** as an object.',
+          $name)."\n");
+
+      unset($things[$name]);
+    }
+
+    if ($this->hasRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+      $project_root = $this->getWorkingCopy()->getProjectRoot();
+
+      foreach ($things as $key => $path) {
+        $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
+        $full_path = Filesystem::resolvePath($path);
+
+        if (!$is_force && !Filesystem::pathExists($full_path)) {
+          continue;
+        }
+
+        $console->writeOut(
+          pht(
+            'Opening **%s** as a repository path.',
+            $key)."\n");
+
+        unset($things[$key]);
+
+        if ($full_path == $project_root) {
+          $path = '';
+        } else {
+          $path = Filesystem::readablePath($full_path, $project_root);
+        }
+
+        $base_uri = $this->getBaseURI();
+        $uris[] = $base_uri.$path;
+      }
+    } else {
+      if ($things) {
+        $console->writeOut(
+          pht(
+            "The current working directory is not a repository working ".
+            "copy, so remaining arguments can not be resolved as paths. ".
+            "To browse paths in Diffusion, run 'arc browse' from inside ".
+            "a working copy.")."\n");
       }
     }
 
-    $base_uri = $this->getBaseURI();
-    $browser = $this->getBrowserCommand();
+    foreach ($things as $thing) {
+      $console->writeOut(
+        pht(
+          'Unable to find an object named **%s**, and no such path exists '.
+          'in the working copy. Use __--force__ to treat this as a path '.
+          'anyway.',
+          $thing)."\n");
+    }
 
-    foreach ($paths as $path) {
-      $ret_code = phutil_passthru('%s %s', $browser, $base_uri.$path);
-      if ($ret_code) {
-        throw new ArcanistUsageException(
-          "It seems we failed to open the browser; perhaps you should try to ".
-          "set the 'browser' config option. The command we tried to use was: ".
-          $browser);
+    if ($uris) {
+      $browser = $this->getBrowserCommand();
+      foreach ($uris as $uri) {
+        $err = phutil_passthru('%s %s', $browser, $uri);
+        if ($err) {
+          throw new ArcanistUsageException(
+            pht(
+              "Failed to execute browser ('%s'). Check your 'browser' config ".
+              "option."));
+        }
       }
     }
 
