@@ -214,7 +214,13 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
-    throw new ArcanistCapabilityNotSupportedException($this);
+    // TODO: This could be more accurate, but is only used by `arc browse`
+    // for now.
+
+    if (is_numeric($string)) {
+      return $string;
+    }
+    return null;
   }
 
   public function getSVNBaseRevisionNumber() {

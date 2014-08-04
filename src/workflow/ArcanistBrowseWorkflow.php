@@ -24,6 +24,7 @@ EOTEXT
 
             $ arc browse README   # Open a file in Diffusion.
             $ arc browse T123     # View a task.
+            $ arc browse HEAD     # View a symbolic commit.
 
           Set the 'browser' value using 'arc set-config' to select a browser. If
           no browser is set, the command will try to guess which browser to use.
@@ -99,6 +100,39 @@ EOTEXT
       $repository_api = $this->getRepositoryAPI();
       $project_root = $this->getWorkingCopy()->getProjectRoot();
 
+      // First, try to resolve arguments as symbolic commits.
+
+      $commits = array();
+      foreach ($things as $key => $thing) {
+        $commit = $repository_api->getCanonicalRevisionName($thing);
+        if ($commit) {
+          $commits[$commit] = $key;
+        }
+      }
+
+      if ($commits) {
+        $commit_info = $this->getConduit()->callMethodSynchronous(
+          'diffusion.querycommits',
+          array(
+            'repositoryPHID' => $this->getRepositoryPHID(),
+            'names' => array_keys($commits),
+          ));
+
+        foreach ($commit_info['identifierMap'] as $ckey => $cphid) {
+          $thing = $commits[$ckey];
+          unset($things[$thing]);
+
+          $uris[] = $commit_info['data'][$cphid]['uri'];
+
+          $console->writeOut(
+            pht(
+              'Opening **%s** as a commit.',
+              $thing)."\n");
+        }
+      }
+
+      // If we fail, try to resolve them as paths.
+
       foreach ($things as $key => $path) {
         $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
         $full_path = Filesystem::resolvePath($path);
@@ -128,18 +162,18 @@ EOTEXT
         $console->writeOut(
           pht(
             "The current working directory is not a repository working ".
-            "copy, so remaining arguments can not be resolved as paths. ".
-            "To browse paths in Diffusion, run 'arc browse' from inside ".
-            "a working copy.")."\n");
+            "copy, so remaining arguments can not be resolved as paths or ".
+            "commits. To browse paths or symbolic commits in Diffusion, run ".
+            "'arc browse' from inside a working copy.")."\n");
       }
     }
 
     foreach ($things as $thing) {
       $console->writeOut(
         pht(
-          'Unable to find an object named **%s**, and no such path exists '.
-          'in the working copy. Use __--force__ to treat this as a path '.
-          'anyway.',
+          'Unable to find an object named **%s**, no such commit exists in '.
+          'the remote, and no such path exists in the working copy. Use '.
+          '__--force__ to treat this as a path anyway.',
           $thing)."\n");
     }
 
