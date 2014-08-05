@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistPHPCSLinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistPhpcsLinterTestCase extends ArcanistArcanistLinterTestCase {
 
   public function testPHPCSLint() {
     $this->executeTestsInDirectory(
