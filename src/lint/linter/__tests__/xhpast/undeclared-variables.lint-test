@@ -141,7 +141,7 @@ abstract class P {
 
 function x() {
   $lib = $_SERVER['PHP_ROOT'].'/lib/titan/display/read/init.php';
-  require_once($lib);
+  require_once $lib;
   f(((($lib)))); // Tests for paren expressions.
   f(((($lub))));
 }

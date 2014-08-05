@@ -45,6 +45,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_SEMICOLON_SPACING         = 43;
   const LINT_CONCATENATION_OPERATOR    = 44;
   const LINT_PHP_COMPATIBILITY         = 45;
+  const LINT_LANGUAGE_CONSTRUCT_PAREN  = 46;
 
   private $naminghook;
   private $switchhook;
@@ -101,6 +102,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_SEMICOLON_SPACING         => 'Semicolon Spacing',
       self::LINT_CONCATENATION_OPERATOR    => 'Concatenation Spacing',
       self::LINT_PHP_COMPATIBILITY         => 'PHP Compatibility',
+      self::LINT_LANGUAGE_CONSTRUCT_PAREN  => 'Language Construct Parentheses',
     );
   }
 
@@ -138,6 +140,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_ELSEIF_USAGE              => $advice,
       self::LINT_SEMICOLON_SPACING         => $advice,
       self::LINT_CONCATENATION_OPERATOR    => $warning,
+      self::LINT_LANGUAGE_CONSTRUCT_PAREN  => $warning,
     );
   }
 
@@ -187,7 +190,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '7';
+    return '8';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -255,6 +258,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintSpaceAroundConcatenationOperators' =>
         self::LINT_CONCATENATION_OPERATOR,
       'lintPHPCompatibility' => self::LINT_PHP_COMPATIBILITY,
+      'lintLanguageConstructParentheses' => self::LINT_LANGUAGE_CONSTRUCT_PAREN,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2517,6 +2521,36 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_SEMICOLON_SPACING,
           pht('Space found before semicolon.'),
           '');
+      }
+    }
+  }
+
+  protected function lintLanguageConstructParentheses(XHPASTNode $root) {
+    $nodes = $root->selectDescendantsOfTypes(array(
+      'n_INCLUDE_FILE',
+      'n_ECHO_LIST',
+    ));
+
+    foreach ($nodes as $node) {
+      $child = head($node->getChildren());
+
+      if ($child->getTypeName() === 'n_PARENTHETICAL_EXPRESSION') {
+        list($before, $after) = $child->getSurroundingNonsemanticTokens();
+
+        $replace = preg_replace(
+          '/^\((.*)\)$/',
+          '$1',
+          $child->getConcreteString());
+
+        if (!$before) {
+          $replace = ' '.$replace;
+        }
+
+        $this->raiseLintAtNode(
+          $child,
+          self::LINT_LANGUAGE_CONSTRUCT_PAREN,
+          pht('Language constructs do not require parentheses.'),
+          $replace);
       }
     }
   }
