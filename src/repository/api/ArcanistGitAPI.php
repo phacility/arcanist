@@ -535,7 +535,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $stdout = $this->getHashFromFromSVNRevisionNumber($match[1]);
     } else {
       list($stdout) = $this->execxLocal(
-        'show -s --format=%C %s',
+        'show -s --format=%s %s --',
         '%H',
         $string);
     }

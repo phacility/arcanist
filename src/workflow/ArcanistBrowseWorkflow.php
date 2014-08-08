@@ -104,9 +104,19 @@ EOTEXT
 
       $commits = array();
       foreach ($things as $key => $thing) {
-        $commit = $repository_api->getCanonicalRevisionName($thing);
-        if ($commit) {
-          $commits[$commit] = $key;
+        if ($thing == '.') {
+          // Git resolves '.' like HEAD, but it should be interpreted to mean
+          // "the current directory". Just skip resolution and fall through.
+          continue;
+        }
+
+        try {
+          $commit = $repository_api->getCanonicalRevisionName($thing);
+          if ($commit) {
+            $commits[$commit] = $key;
+          }
+        } catch (Exception $ex) {
+          // Ignore.
         }
       }
 
