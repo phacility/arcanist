@@ -1,0 +1,3 @@
+f xs = length xs == 0
+~~~~~~~~~~
+warning:1:8

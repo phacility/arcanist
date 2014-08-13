@@ -1,0 +1,5 @@
+f x = x
+
+test x = f x
+~~~~~~~~~~
+error:3:1
