@@ -26,7 +26,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $linter = clone $linter;
 
     $contents = Filesystem::readFile($file);
-    $contents = explode("~~~~~~~~~~\n", $contents);
+    $contents = preg_split('/^~{4,}\n/m', $contents);
     if (count($contents) < 2) {
       throw new Exception(
         "Expected '~~~~~~~~~~' separating test case and results.");
