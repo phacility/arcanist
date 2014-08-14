@@ -830,6 +830,10 @@ final class ArcanistDiffParser {
       $remainder = '\t.*';
     } else if ($this->isRCS) {
       $remainder = '\s.*';
+    } else if ($this->getIsGit()) {
+      // When filenames contain spaces, Git terminates this line with a tab.
+      // Normally, the tab is not present. If there's a tab, ignore it.
+      $remainder = '(?:\t.*)?';
     }
 
     $ok = preg_match(

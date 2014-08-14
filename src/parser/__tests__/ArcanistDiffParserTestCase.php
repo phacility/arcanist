@@ -595,6 +595,12 @@ EOTEXT
         $hunks = $change->getHunks();
         $this->assertEqual(1, count($hunks));
         break;
+      case 'git-remove-spaces.gitdiff':
+        $this->assertEqual(1, count($changes));
+
+        $change = array_shift($changes);
+        $this->assertEqual('file with spaces.txt', $change->getOldPath());
+        break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
         break;

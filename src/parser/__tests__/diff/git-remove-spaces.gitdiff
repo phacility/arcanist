@@ -1,0 +1,11 @@
+diff --git a/file with spaces.txt b/file with spaces.txt
+deleted file mode 100644
+index ae9854d..0000000
+--- a/file with spaces.txt	
++++ /dev/null
+@@ -1,5 +0,0 @@
+-duck
+-duck
+-duck
+-duck
+-goose
