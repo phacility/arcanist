@@ -1839,4 +1839,34 @@ abstract class ArcanistWorkflow extends Phobject {
         "Arcanist config to specify a command to use."));
   }
 
+
+  /**
+   * Ask Phabricator to update the current repository as soon as possible.
+   *
+   * Calling this method after pushing commits allows Phabricator to discover
+   * the commits more quickly, so the system overall is more responsive.
+   *
+   * @return void
+   */
+  protected function askForRepositoryUpdate() {
+    // If we know which repository we're in, try to tell Phabricator that we
+    // pushed commits to it so it can update. This hint can help pull updates
+    // more quickly, especially in rarely-used repositories.
+    if ($this->getRepositoryCallsign()) {
+      try {
+        $this->getConduit()->callMethodSynchronous(
+          'diffusion.looksoon',
+          array(
+            'callsigns' => array($this->getRepositoryCallsign()),
+          ));
+      } catch (ConduitClientException $ex) {
+        // If we hit an exception, just ignore it. Likely, we are running
+        // against a Phabricator which is too old to support this method.
+        // Since this hint is purely advisory, it doesn't matter if it has
+        // no effect.
+      }
+    }
+  }
+
+
 }

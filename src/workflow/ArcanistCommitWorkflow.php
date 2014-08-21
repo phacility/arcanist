@@ -160,6 +160,8 @@ EOTEXT
       throw new Exception("Executing 'svn commit' failed!");
     }
 
+    $this->askForRepositoryUpdate();
+
     $mark_workflow = $this->buildChildWorkflow(
       'close-revision',
       array(
