@@ -241,7 +241,9 @@ EOTEXT
 
     if (!$this->isGit && !$this->isHg) {
       throw new ArcanistUsageException(
-        pht("'arc land' only supports git and mercurial."));
+        pht(
+          "'arc land' only supports Git and Mercurial. For Subversion, try ".
+          "'arc commit'."));
     }
 
     if ($this->isGit) {
