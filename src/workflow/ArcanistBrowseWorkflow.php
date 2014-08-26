@@ -144,10 +144,10 @@ EOTEXT
       // If we fail, try to resolve them as paths.
 
       foreach ($things as $key => $path) {
-        $line = null;
+        $lines = null;
         $parts = explode(':', $path);
         if (count($parts) > 1) {
-          $line = (int)array_pop($parts);
+          $lines = array_pop($parts);
         }
         $path = implode(':', $parts);
 
@@ -173,8 +173,8 @@ EOTEXT
         $base_uri = $this->getBaseURI();
         $uri = $base_uri.$path;
 
-        if ($line) {
-          $uri = $uri.'$'.$line;
+        if ($lines) {
+          $uri = $uri.'$'.$lines;
         }
 
         $uris[] = $uri;
