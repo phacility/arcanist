@@ -58,14 +58,6 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return pht('Install flake8 using `easy_install flake8`.');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '-';
-  }
-
   public function shouldExpectCommandErrors() {
     return true;
   }
