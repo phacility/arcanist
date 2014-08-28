@@ -200,7 +200,7 @@ final class ArcanistConfigurationManager {
           $user_config = phutil_json_decode($user_config_data);
         } catch (PhutilJSONParserException $ex) {
           throw new PhutilProxyException(
-            "Your '~/.arcrc' file is not a valid JSON file.".
+            "Your '~/.arcrc' file is not a valid JSON file.",
             $ex);
         }
       } else {
