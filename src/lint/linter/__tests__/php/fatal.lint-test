@@ -1,0 +1,7 @@
+<?php
+
+function f() {
+  $this = "cannot be re-assigned";
+}
+~~~~~~~~~
+error:4:
