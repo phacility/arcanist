@@ -24,7 +24,9 @@ final class ArcanistXUnitTestResultParser {
     $load_success = @$xunit_dom->loadXML($test_results);
 
     if (!$load_success) {
-      $input_start = phutil_utf8_shorten($test_results, 150);
+      $input_start = id(new PhutilUTF8StringTruncator())
+        ->setMaximumGlyphs(150)
+        ->truncateString($test_results);
       throw new Exception(
         "Failed to load XUnit report; Input starts with:\n\n {$input_start}");
     }

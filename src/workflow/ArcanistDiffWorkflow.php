@@ -1509,7 +1509,9 @@ EOTEXT
         $preview = explode("\n", $saved);
         $preview = array_shift($preview);
         $preview = trim($preview);
-        $preview = phutil_utf8_shorten($preview, 64);
+        $preview = id(new PhutilUTF8StringTruncator())
+          ->setMaximumGlyphs(64)
+          ->truncateString($preview);
 
         if ($preview) {
           $preview = "Message begins:\n\n       {$preview}\n\n";

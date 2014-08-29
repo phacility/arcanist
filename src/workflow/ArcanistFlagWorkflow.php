@@ -88,7 +88,12 @@ EOTEXT
       // Make sure notes that are long or have line breaks in them or
       // whatever don't mess up the formatting.
       $note = implode(' ', preg_split('/\s+/', $note));
-      $note = ' ('.phutil_utf8_shorten($note, 40, '...').')';
+      $note = ' ('.
+        id(new PhutilUTF8StringTruncator())
+        ->setMaximumGlyphs(40)
+        ->setTerminator('...')
+        ->truncateString($note).
+        ')';
     }
     echo phutil_console_format(
       "<fg:{$color}>%s</fg> flag%s $verb!\n",
