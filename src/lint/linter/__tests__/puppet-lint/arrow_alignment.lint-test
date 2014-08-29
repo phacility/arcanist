@@ -3,4 +3,4 @@ exec { 'test':
   refreshonly => true,
 }
 ~~~~~~~~~~
-warning:3:15
+warning:2:13

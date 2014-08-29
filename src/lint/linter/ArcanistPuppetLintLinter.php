@@ -5,12 +5,14 @@
  */
 final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
+  private $config;
+
   public function getInfoURI() {
     return 'http://puppet-lint.com/';
   }
 
   public function getInfoName() {
-    return pht('puppet-lint');
+    return 'puppet-lint';
   }
 
   public function getInfoDescription() {
@@ -62,6 +64,37 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
       '%{kind}',
       '%{check}',
       '%{message}'))));
+  }
+
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'puppet-lint.config' => array(
+        'type' => 'optional string',
+        'help' => pht('Pass in a custom configuration file path.'),
+      ),
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'puppet-lint.config':
+        $this->config = $value;
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
+  }
+
+  protected function getDefaultFlags() {
+    $options = array();
+
+    if ($this->config) {
+      $options[] = '--config='.$this->config;
+    }
+
+    return $options;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
