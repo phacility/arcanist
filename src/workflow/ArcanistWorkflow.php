@@ -575,6 +575,8 @@ abstract class ArcanistWorkflow extends Phobject {
 
     if ($this->conduit) {
       $workflow->conduit = $this->conduit;
+      $workflow->setConduitCredentials($this->conduitCredentials);
+      $workflow->conduitAuthenticated = $this->conduitAuthenticated;
     }
 
     if ($this->workingCopy) {
