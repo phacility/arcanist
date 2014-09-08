@@ -21,17 +21,17 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'linter is intended for use in Phabricator libraries and extensions.');
   }
 
-  public function setDeprecatedFunctions($map) {
+  public function setDeprecatedFunctions(array $map) {
     $this->deprecatedFunctions = $map;
     return $this;
   }
 
-  public function setDynamicStringFunctions($map) {
+  public function setDynamicStringFunctions(array $map) {
     $this->dynamicStringFunctions = $map;
     return $this;
   }
 
-  public function setDynamicStringClasses($map) {
+  public function setDynamicStringClasses(array $map) {
     $this->dynamicStringClasses = $map;
     return $this;
   }
