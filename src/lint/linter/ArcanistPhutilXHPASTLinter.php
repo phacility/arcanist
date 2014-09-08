@@ -38,10 +38,17 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_ARRAY_COMBINE          => 'array_combine() Unreliable',
-      self::LINT_DEPRECATED_FUNCTION    => 'Use of Deprecated Function',
-      self::LINT_UNSAFE_DYNAMIC_STRING  => 'Unsafe Usage of Dynamic String',
-      self::LINT_RAGGED_CLASSTREE_EDGE  => 'Class Not abstract Or final',
+      self::LINT_ARRAY_COMBINE          => pht(
+        '%s Unreliable',
+        'array_combine()'),
+      self::LINT_DEPRECATED_FUNCTION    => pht(
+        'Use of Deprecated Function'),
+      self::LINT_UNSAFE_DYNAMIC_STRING  => pht(
+        'Unsafe Usage of Dynamic String'),
+      self::LINT_RAGGED_CLASSTREE_EDGE  => pht(
+        'Class Not %s Or %s',
+        'abstract',
+        'final'),
     );
   }
 
@@ -194,8 +201,11 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $this->raiseLintAtNode(
           $call,
           self::LINT_UNSAFE_DYNAMIC_STRING,
-          "Parameter ".($param + 1)." of {$name}() should be a scalar string, ".
-          "otherwise it's not safe.");
+          pht(
+            "Parameter %d of %s should be a scalar string, ".
+            "otherwise it's not safe.",
+            $param + 1,
+            $name.'()'));
       }
     }
   }
@@ -218,8 +228,12 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $this->raiseLintAtNode(
             $call,
             self::LINT_ARRAY_COMBINE,
-            'Prior to PHP 5.4, array_combine() fails when given empty '.
-            'arrays. Prefer to write array_combine(x, x) as array_fuse(x).');
+            pht(
+              'Prior to PHP 5.4, `%s` fails when given empty arrays. '.
+              'Prefer to write `%s` as `%s`.',
+              'array_combine()',
+              'array_combine(x, x)',
+              'array_fuse(x)'));
         }
       }
     }
@@ -273,8 +287,12 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $this->raiseLintAtNode(
           $class->getChildOfType(1, 'n_CLASS_NAME'),
           self::LINT_RAGGED_CLASSTREE_EDGE,
-          "This class is neither 'final' nor 'abstract', and does not have ".
-          "a docblock marking it '@concrete-extensible'.");
+          pht(
+            "This class is neither '%s' nor '%s', and does not have ".
+            "a docblock marking it '%s'.",
+            'final',
+            'abstract',
+            '@concrete-extensible'));
       }
     }
   }
