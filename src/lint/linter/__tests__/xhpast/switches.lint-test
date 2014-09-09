@@ -67,7 +67,7 @@ switch ($x) {
     function f() { throw new Exception(); }
     g(function() { return; });
     final class C { public function m() { return; } }
-    interface I { }
+    interface I {}
   case 5:
     do {
       break;

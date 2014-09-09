@@ -1,21 +1,15 @@
 <?php
 
 function f($stuff, $thing) {
-  foreach ($stuff as $ii) {
-
-  }
+  foreach ($stuff as $ii) {}
 
   // OK: Only reused for iteration.
 
-  foreach ($stuff as $ii) {
-
-  }
+  foreach ($stuff as $ii) {}
 }
 
 function g($stuff, $thing) {
-  foreach ($stuff as $thing) {
-
-  }
+  foreach ($stuff as $thing) {}
 
   // OK: Not reused later.
 }
@@ -24,9 +18,7 @@ function h($stuff, $thing) {
 
   // OK: Used afterwards but not before.
 
-  foreach ($stuff as $key => $val) {
-
-  }
+  foreach ($stuff as $key => $val) {}
 
   $key = 1;
   $thing = 1;
@@ -68,11 +60,9 @@ function k($stuff, $thing) {
   f($thing);
 
   $other = array();
-  foreach ($other as $item) {
-
-  }
+  foreach ($other as $item) {}
 }
 
 ~~~~~~~~~~
-error:51:22
-error:61:22
+error:43:22
+error:53:22

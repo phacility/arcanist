@@ -1,0 +1,21 @@
+<?php
+function w() {}
+function x() {
+  // This is deliberately empty.
+}
+function y() { }
+function z() {
+
+
+}
+~~~~~~~~~~
+advice:6:14
+advice:7:14
+~~~~~~~~~~
+<?php
+function w() {}
+function x() {
+  // This is deliberately empty.
+}
+function y() {}
+function z() {}

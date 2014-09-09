@@ -46,6 +46,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_CONCATENATION_OPERATOR    = 44;
   const LINT_PHP_COMPATIBILITY         = 45;
   const LINT_LANGUAGE_CONSTRUCT_PAREN  = 46;
+  const LINT_EMPTY_STATEMENT           = 47;
 
   private $naminghook;
   private $switchhook;
@@ -103,6 +104,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CONCATENATION_OPERATOR    => 'Concatenation Spacing',
       self::LINT_PHP_COMPATIBILITY         => 'PHP Compatibility',
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => 'Language Construct Parentheses',
+      self::LINT_EMPTY_STATEMENT           => 'Empty Block Statement',
     );
   }
 
@@ -141,6 +143,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_SEMICOLON_SPACING         => $advice,
       self::LINT_CONCATENATION_OPERATOR    => $warning,
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => $warning,
+      self::LINT_EMPTY_STATEMENT           => $advice,
     );
   }
 
@@ -259,6 +262,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_CONCATENATION_OPERATOR,
       'lintPHPCompatibility' => self::LINT_PHP_COMPATIBILITY,
       'lintLanguageConstructParentheses' => self::LINT_LANGUAGE_CONSTRUCT_PAREN,
+      'lintEmptyBlockStatements' => self::LINT_EMPTY_STATEMENT,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2551,6 +2555,42 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_LANGUAGE_CONSTRUCT_PAREN,
           pht('Language constructs do not require parentheses.'),
           $replace);
+      }
+    }
+  }
+
+  protected function lintEmptyBlockStatements(XHPASTNode $root) {
+    $nodes = $root->selectDescendantsOfType('n_STATEMENT_LIST');
+
+    foreach ($nodes as $node) {
+      $tokens = $node->getTokens();
+      $token = head($tokens);
+
+      if (count($tokens) <= 2) {
+        continue;
+      }
+
+      // Safety check... if the first token isn't an opening brace then
+      // there's nothing to do here.
+      if ($token->getTypeName() != '{') {
+        continue;
+      }
+
+      $only_whitespace = true;
+      for ($token = $token->getNextToken();
+           $token && $token->getTypeName() != '}';
+           $token = $token->getNextToken()) {
+        $only_whitespace = $only_whitespace && $token->isAnyWhitespace();
+      }
+
+      if (count($tokens) > 2 && $only_whitespace) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_EMPTY_STATEMENT,
+          pht(
+            "Braces for an empty block statement shouldn't ".
+            "contain only whitespace."),
+          '{}');
       }
     }
   }

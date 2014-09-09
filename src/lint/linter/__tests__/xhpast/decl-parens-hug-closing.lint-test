@@ -8,20 +8,20 @@ function &i($x ) {}
 
 final class X {
 
-  function a($x) { }
-  function b($x ) { }
+  function a($x) {}
+  function b($x ) {}
 
-  final public static function &c($x) { }
-  final public static function &d($x ) { }
+  final public static function &c($x) {}
+  final public static function &d($x ) {}
 
   abstract private function e($x);
   abstract private function f($x );
 
 }
 
-f(function($x) { });
-f(function($x ) { });
-f(function($x ) use ($z) { });
+f(function($x) {});
+f(function($x ) {});
+f(function($x ) use ($z) {});
 ~~~~~~~~~~
 warning:4:14
 warning:7:15
@@ -42,17 +42,17 @@ function &i($x) {}
 
 final class X {
 
-  function a($x) { }
-  function b($x) { }
+  function a($x) {}
+  function b($x) {}
 
-  final public static function &c($x) { }
-  final public static function &d($x) { }
+  final public static function &c($x) {}
+  final public static function &d($x) {}
 
   abstract private function e($x);
   abstract private function f($x);
 
 }
 
-f(function($x) { });
-f(function($x) { });
-f(function($x) use ($z) { });
+f(function($x) {});
+f(function($x) {});
+f(function($x) use ($z) {});

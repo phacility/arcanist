@@ -1,24 +1,22 @@
 <?php
-if ( $x ) { }
+if ( $x ) {}
 f( );
 q(                      );
 g();
-if ($x) { }
-else if ( $y ) { }
+if ($x) {}
+else if ( $y ) {}
 
 $obj->m(
   $x,
   $y,
   $z);
-for ( $ii = 0; $ii < 1; $ii++ ) { }
-foreach ( $x as $y ) { }
-function q( $x ) { }
+for ( $ii = 0; $ii < 1; $ii++ ) {}
+foreach ( $x as $y ) {}
+function q( $x ) {}
 final class X {
-  public function f( $y ) {
-  }
+  public function f( $y ) {}
 }
-foreach ( $z as $k => $v ) {
-}
+foreach ( $z as $k => $v ) {}
 some_call( /* respect authorial intent */ $b,
   $a // if comments are present
   );
@@ -38,30 +36,28 @@ warning:15:15
 error:16:13 XHP19 Class-Filename Mismatch
 warning:17:21
 warning:17:24
-warning:20:10
-warning:20:25
+warning:19:10
+warning:19:25
 ~~~~~~~~~~
 <?php
-if ($x) { }
+if ($x) {}
 f();
 q();
 g();
-if ($x) { }
-else if ($y) { }
+if ($x) {}
+else if ($y) {}
 
 $obj->m(
   $x,
   $y,
   $z);
-for ($ii = 0; $ii < 1; $ii++) { }
-foreach ($x as $y) { }
-function q($x) { }
+for ($ii = 0; $ii < 1; $ii++) {}
+foreach ($x as $y) {}
+function q($x) {}
 final class X {
-  public function f($y) {
-  }
+  public function f($y) {}
 }
-foreach ($z as $k => $v) {
-}
+foreach ($z as $k => $v) {}
 some_call( /* respect authorial intent */ $b,
   $a // if comments are present
   );

@@ -9,9 +9,7 @@ function f($a, $b) {
   global $e, $f;
   $g = $h = x();
   list($i, list($j, $k)) = y();
-  foreach (q() as $l => $m) {
-
-  }
+  foreach (q() as $l => $m) {}
 
   $a++;
   $b++;
@@ -59,9 +57,7 @@ function superglobals() {
 }
 
 function ref_foreach($x) {
-  foreach ($x as &$z) {
-
-  }
+  foreach ($x as &$z) {}
   $z++;
 }
 
@@ -110,6 +106,7 @@ function instance_class() {
 
 function exception_vars() {
   try {
+    // This is intentionally left blank.
   } catch (Exception $y) {
     $y++;
   }
@@ -128,7 +125,8 @@ function twice() {
 
 function more_exceptions() {
   try {
-  } catch (Exception $a) {
+    // This is intentionally left blank.
+} catch (Exception $a) {
     $a++;
   } catch (Exception $b) {
     $b++;
@@ -175,21 +173,21 @@ function catchy() {
 }
 
 ~~~~~~~~~~
+error:28:3
 error:30:3
-error:32:3
-error:38:3
+error:36:3
+error:42:5
+error:43:7
 error:44:5
-error:45:7
-error:46:5
-error:47:5
-error:48:10
-error:53:10 worst ever
-warning:65:3
-error:91:3 This stuff is basically testing the lexer/parser for function decls.
-error:108:15 Variables in instance derefs should be checked, static should not.
-error:121:3 isset() and empty() should not trigger errors.
-error:125:3 Should only warn once in this function.
-error:146:8
-error:152:9
-error:166:9
-error:173:5
+error:45:5
+error:46:10
+error:51:10 worst ever
+warning:61:3
+error:87:3 This stuff is basically testing the lexer/parser for function decls.
+error:104:15 Variables in instance derefs should be checked, static should not.
+error:118:3 isset() and empty() should not trigger errors.
+error:122:3 Should only warn once in this function.
+error:144:8
+error:150:9
+error:164:9
+error:171:5

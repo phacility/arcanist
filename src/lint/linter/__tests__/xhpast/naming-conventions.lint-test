@@ -2,29 +2,28 @@
 final class a {
   const b = 1, c = d;
   protected $E, $H;
-  public function F($G, $GG) { }
+  public function F($G, $GG) {}
 }
 
-interface i { }
+interface i {}
 
 
 
-function YY($ZZ) { }
+function YY($ZZ) {}
 
 final class Quack {
   const R = 1, S = 2;
   protected $tX, $uY;
-  public function vV($w_w) { }
+  public function vV($w_w) {}
 }
 
 
 
 
 
-function () use ($this_is_a_closure) { };
+function () use ($this_is_a_closure) {};
 
-function f(&$YY) {
-}
+function f(&$YY) {}
 
 function g() {
   $lowerCamelCase = 0;
@@ -62,7 +61,7 @@ warning:8:11
 warning:12:10
 warning:12:13
 warning:26:13
+warning:29:3
 warning:30:3
 warning:31:3
-warning:32:3
-warning:34:3
+warning:33:3
