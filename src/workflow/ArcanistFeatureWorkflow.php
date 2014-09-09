@@ -136,8 +136,7 @@ EOTEXT
               $command,
               $name);
           }
-        } catch (ConduitClientException $ex) {
-        }
+        } catch (ConduitClientException $ex) {}
       }
     }
 

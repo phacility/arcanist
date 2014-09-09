@@ -66,9 +66,7 @@ abstract class ArcanistLintEngine {
 
   private $linterResources = array();
 
-  public function __construct() {
-
-  }
+  public function __construct() {}
 
   final public function setConfigurationManager(
     ArcanistConfigurationManager $configuration_manager) {

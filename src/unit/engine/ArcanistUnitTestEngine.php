@@ -34,9 +34,7 @@ abstract class ArcanistUnitTestEngine {
     return false;
   }
 
-  final public function __construct() {
-
-  }
+  final public function __construct() {}
 
   public function setConfigurationManager(
     ArcanistConfigurationManager $configuration_manager) {

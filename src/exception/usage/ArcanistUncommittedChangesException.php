@@ -1,5 +1,4 @@
 <?php
 
-final class ArcanistUncommittedChangesException extends ArcanistUsageException {
-
-}
+final class ArcanistUncommittedChangesException
+  extends ArcanistUsageException {}
