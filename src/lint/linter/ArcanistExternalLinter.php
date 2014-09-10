@@ -268,7 +268,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         throw new ArcanistUsageException(
           pht(
             'Unable to locate interpreter "%s" to run linter %s. You may '.
-            'need to install the intepreter, or adjust your linter '.
+            'need to install the interpreter, or adjust your linter '.
             'configuration.'.
             "\nTO INSTALL: %s",
             $interpreter,
