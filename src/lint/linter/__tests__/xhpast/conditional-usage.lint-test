@@ -1,0 +1,20 @@
+<?php
+
+if (function_exists('array_column')) {
+  array_column(array(), '');
+  json_last_error_msg();
+} else {
+  array_column(array(), '');
+}
+
+if (class_exists('CURLFile')) {
+  new CURLFile('');
+  new DateTimeImmutable();
+}
+~~~~~~~~~~
+error:5:3
+error:7:3
+error:12:7
+~~~~~~~~~~
+~~~~~~~~~~
+{"config": {"xhpast.php-version": "5.3.0"}}

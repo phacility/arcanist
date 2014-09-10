@@ -369,6 +369,67 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       '/../resources/php_compat_info.json';
     $compat_info = phutil_json_decode(Filesystem::readFile($target));
 
+    // Create a whitelist for symbols which are being used conditionally.
+    $whitelist = array(
+      'class'    => array(),
+      'function' => array(),
+    );
+
+    $conditionals = $root->selectDescendantsOfType('n_IF');
+    foreach ($conditionals as $conditional) {
+      $condition = $conditional->getChildOfType(0, 'n_CONTROL_CONDITION');
+      $function  = $condition->getChildByIndex(0);
+
+      if ($function->getTypeName() != 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      $function_name = $function
+        ->getChildOfType(0, 'n_SYMBOL_NAME')
+        ->getConcreteString();
+
+      switch ($function_name) {
+        case 'class_exists':
+        case 'function_exists':
+        case 'interface_exists':
+          $type = null;
+          switch ($function_name) {
+            case 'class_exists':
+              $type = 'class';
+              break;
+
+            case 'function_exists':
+              $type = 'function';
+              break;
+
+            case 'interface_exists':
+              $type = 'interface';
+              break;
+          }
+
+          $params = $function->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+          $symbol = $params->getChildByIndex(0);
+
+          if (!$symbol->isStaticScalar()) {
+            continue;
+          }
+
+          $symbol_name = $symbol->evalStatic();
+          if (!idx($whitelist[$type], $symbol_name)) {
+            $whitelist[$type][$symbol_name] = array();
+          }
+
+          $span = $conditional
+            ->getChildOfType(1, 'n_STATEMENT_LIST')
+            ->getTokens();
+
+          $whitelist[$type][$symbol_name][] = range(
+            head_key($span),
+            last_key($span));
+          break;
+      }
+    }
+
     $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
     foreach ($calls as $call) {
       $node = $call->getChildByIndex(0);
@@ -376,6 +437,19 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $version = idx($compat_info['functions'], $name);
 
       if ($version && version_compare($version['min'], $this->version, '>')) {
+        // Check if whitelisted.
+        $whitelisted = false;
+        foreach (idx($whitelist['function'], $name, array()) as $range) {
+          if (array_intersect($range, array_keys($node->getTokens()))) {
+            $whitelisted = true;
+            break;
+          }
+        }
+
+        if ($whitelisted) {
+          continue;
+        }
+
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_COMPATIBILITY,
@@ -422,6 +496,19 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $version = idx($compat_info['interfaces'], $name);
       $version = idx($compat_info['classes'], $name, $version);
       if ($version && version_compare($version['min'], $this->version, '>')) {
+        // Check if whitelisted.
+        $whitelisted = false;
+        foreach (idx($whitelist['class'], $name, array()) as $range) {
+          if (array_intersect($range, array_keys($node->getTokens()))) {
+            $whitelisted = true;
+            break;
+          }
+        }
+
+        if ($whitelisted) {
+          continue;
+        }
+
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_COMPATIBILITY,
