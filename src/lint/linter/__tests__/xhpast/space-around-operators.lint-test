@@ -31,6 +31,7 @@ warning:8:3
 warning:9:4
 warning:10:3
 warning:11:3
+warning:13:14
 warning:20:52
 warning:21:54
 warning:22:21
@@ -48,7 +49,7 @@ $a -= $b;
 $a -= $b;
 $a === $b;
 $a.$b;
-function x($n=null) {}
+function x($n = null) {}
 function x($n = null) {}
 
 $y /* ! */ += // ?

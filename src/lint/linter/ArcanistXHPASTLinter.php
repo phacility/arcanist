@@ -1989,8 +1989,34 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
 
-    // TODO: Spacing around default parameter assignment in function/method
-    // declarations (which is not n_BINARY_EXPRESSION).
+    $parameters = $root->selectDescendantsOfType('n_DECLARATION_PARAMETER');
+    foreach ($parameters as $parameter) {
+      if ($parameter->getChildByIndex(2)->getTypeName() == 'n_EMPTY') {
+        continue;
+      }
+
+      $operator = head($parameter->selectTokensOfType('='));
+      $before = $operator->getNonsemanticTokensBefore();
+      $after = $operator->getNonsemanticTokensAfter();
+
+      $replace = null;
+      if (empty($before) && empty($after)) {
+        $replace = ' = ';
+      } else if (empty($before)) {
+        $replace = ' =';
+      } else if (empty($after)) {
+        $replace = '= ';
+      }
+
+      if ($replace !== null) {
+        $this->raiseLintAtToken(
+          $operator,
+          self::LINT_BINARY_EXPRESSION_SPACING,
+          'Convention: logical and arithmetic operators should be '.
+          'surrounded by whitespace.',
+          $replace);
+      }
+    }
   }
 
   private function lintSpaceAroundConcatenationOperators(XHPASTNode $root) {
