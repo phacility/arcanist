@@ -11,6 +11,11 @@ if (class_exists('CURLFile')) {
   new CURLFile('');
   new DateTimeImmutable();
 }
+
+// These shouldn't fatal.
+if (SomeClass::someStaticMethod($param)) {}
+$var = 'some_func';
+if ($var()) {}
 ~~~~~~~~~~
 error:5:3
 error:7:3

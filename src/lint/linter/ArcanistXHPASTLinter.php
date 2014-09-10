@@ -384,9 +384,15 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         continue;
       }
 
-      $function_name = $function
-        ->getChildOfType(0, 'n_SYMBOL_NAME')
-        ->getConcreteString();
+      $function_token = $function
+        ->getChildByIndex(0);
+
+      if ($function_token->getTypeName() != 'n_SYMBOL_NAME') {
+        // This may be `Class::method(...)` or `$var(...)`.
+        continue;
+      }
+
+      $function_name = $function_token->getConcreteString();
 
       switch ($function_name) {
         case 'class_exists':
