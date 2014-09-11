@@ -192,15 +192,15 @@ abstract class ArcanistLinter {
       return $map[$code];
     }
 
-    $map = $this->getLintSeverityMap();
-    if (isset($map[$code])) {
-      return $map[$code];
-    }
-
     foreach ($this->customSeverityRules as $rule => $severity) {
       if (preg_match($rule, $code)) {
         return $severity;
       }
+    }
+
+    $map = $this->getLintSeverityMap();
+    if (isset($map[$code])) {
+      return $map[$code];
     }
 
     return $this->getDefaultMessageSeverity($code);
