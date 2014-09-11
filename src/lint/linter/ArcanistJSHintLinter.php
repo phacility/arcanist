@@ -17,7 +17,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jshint` to detect issues with Javascript source files.');
+    return pht('Use `jshint` to detect issues with JavaScript source files.');
   }
 
   public function getLinterName() {
