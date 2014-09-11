@@ -25,10 +25,6 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
     return 'merge-conflict';
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
   public function lintPath($path) {
     $lines = phutil_split_lines($this->getData($path), false);
 
