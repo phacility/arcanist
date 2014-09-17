@@ -473,11 +473,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       Filesystem::createDirectory(dirname($tmppath), 0755, true);
     }
 
+    $hgCatCmd = 'cat --revi '.$revision.' --output "'.$tmpdir.'/%%p" -- %C ';
     list($err, $stdout) = $this->execManualLocal(
-      'cat --rev %s --output %s -- %C',
-      $revision,
-      // %p is the formatter for the repo-relative filepath
-      $tmpdir.'/%p',
+      $hgCatCmd,
       implode(' ', $paths));
 
     $filedata = array();
