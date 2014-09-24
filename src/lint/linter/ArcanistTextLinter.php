@@ -123,13 +123,17 @@ final class ArcanistTextLinter extends ArcanistLinter {
   }
 
   protected function lintNewlines($path) {
-    $pos = strpos($this->getData($path), "\r");
+    $data = $this->getData($path);
+    $pos  = strpos($this->getData($path), "\r");
+
     if ($pos !== false) {
       $this->raiseLintAtOffset(
-        $pos,
+        0,
         self::LINT_DOS_NEWLINE,
         pht('You must use ONLY Unix linebreaks ("%s") in source code.', '\n'),
-        "\r");
+        $data,
+        str_replace("\r\n", "\n", $data));
+
       if ($this->isMessageEnabled(self::LINT_DOS_NEWLINE)) {
         $this->stopAllLinters();
       }
