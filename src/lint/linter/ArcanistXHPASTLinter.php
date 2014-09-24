@@ -426,7 +426,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           }
 
           $span = $conditional
-            ->getChildOfType(1, 'n_STATEMENT_LIST')
+            ->getChildByIndex(1)
             ->getTokens();
 
           $whitelist[$type][$symbol_name][] = range(
