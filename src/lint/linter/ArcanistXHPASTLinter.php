@@ -47,6 +47,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_PHP_COMPATIBILITY         = 45;
   const LINT_LANGUAGE_CONSTRUCT_PAREN  = 46;
   const LINT_EMPTY_STATEMENT           = 47;
+  const LINT_ARRAY_SEPARATOR           = 48;
 
   private $naminghook;
   private $switchhook;
@@ -105,6 +106,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_PHP_COMPATIBILITY         => 'PHP Compatibility',
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => 'Language Construct Parentheses',
       self::LINT_EMPTY_STATEMENT           => 'Empty Block Statement',
+      self::LINT_ARRAY_SEPARATOR           => 'Array Separator',
     );
   }
 
@@ -144,6 +146,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CONCATENATION_OPERATOR    => $warning,
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => $warning,
       self::LINT_EMPTY_STATEMENT           => $advice,
+      self::LINT_ARRAY_SEPARATOR           => $advice,
     );
   }
 
@@ -193,7 +196,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '8';
+    return '9';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -263,6 +266,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintPHPCompatibility' => self::LINT_PHP_COMPATIBILITY,
       'lintLanguageConstructParentheses' => self::LINT_LANGUAGE_CONSTRUCT_PAREN,
       'lintEmptyBlockStatements' => self::LINT_EMPTY_STATEMENT,
+      'lintArraySeparator' => self::LINT_ARRAY_SEPARATOR,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2710,6 +2714,48 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
             "Braces for an empty block statement shouldn't ".
             "contain only whitespace."),
           '{}');
+      }
+    }
+  }
+
+  protected function lintArraySeparator(XHPASTNode $root) {
+    $arrays = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
+
+    foreach ($arrays as $array) {
+      $commas = $array->selectTokensOfType(',');
+      $values = $array->selectDescendantsOfType('n_ARRAY_VALUE');
+
+      if ($values->count() == 0) {
+        // There is no need to check an empty array.
+        continue;
+      }
+
+      // This is a little messy... we want to do `last($values)` but
+      // `$values` is an `AASTNodeList`.
+      $last = null;
+      foreach ($values as $value) {
+        $last = $value;
+      }
+
+      $multiline = $array->getLineNumber() != $array->getEndLineNumber();
+
+      if ($multiline && count($commas) != count($values)) {
+        $this->raiseLintAtNode(
+          $last,
+          self::LINT_ARRAY_SEPARATOR,
+          pht('Multi-lined arrays should have trailing commas.'),
+          $last->getConcreteString().',');
+      } else if (!$multiline && count($commas) == count($values)) {
+        $last_comma = null;
+        foreach ($commas as $comma) {
+          $last_comma = $comma;
+        }
+
+        $this->raiseLintAtToken(
+          $last_comma,
+          self::LINT_ARRAY_SEPARATOR,
+          pht('Single lined arrays should not have a trailing comma.'),
+          '');
       }
     }
   }
