@@ -545,10 +545,14 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     if (version_compare($this->version, '5.3.0') < 0) {
       $this->lintPHP53Features($root);
+    } else {
+      $this->lintPHP53Incompatibilities($root);
     }
 
     if (version_compare($this->version, '5.4.0') < 0) {
       $this->lintPHP54Features($root);
+    } else {
+      $this->lintPHP54Incompatibilities($root);
     }
   }
 
@@ -637,19 +641,51 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  private function lintPHP53Incompatibilities(XHPASTNode $root) {}
+
   private function lintPHP54Features(XHPASTNode $root) {
     $indexes = $root->selectDescendantsOfType('n_INDEX_ACCESS');
     foreach ($indexes as $index) {
-      $left = $index->getChildByIndex(0);
-      switch ($left->getTypeName()) {
+      switch ($index->getChildByIndex(0)->getTypeName()) {
         case 'n_FUNCTION_CALL':
         case 'n_METHOD_CALL':
           $this->raiseLintAtNode(
             $index->getChildByIndex(1),
             self::LINT_PHP_COMPATIBILITY,
-            'The f()[...] syntax was not introduced until PHP 5.4, but this '.
-            'codebase targets an earlier version of PHP. You can rewrite '.
-            'this expression using idx().');
+            pht(
+              'The `%s` syntax was not introduced until PHP 5.4, but this '.
+              'codebase targets an earlier version of PHP. You can rewrite '.
+              'this expression using `%s`.',
+              'f()[...]',
+              'idx()'));
+          break;
+      }
+    }
+  }
+
+  private function lintPHP54Incompatibilities(XHPASTNode $root) {
+    $breaks = $root->selectDescendantsOfTypes(array('n_BREAK', 'n_CONTINUE'));
+    foreach ($breaks as $break) {
+      $arg = $break->getChildByIndex(0);
+
+      switch ($arg->getTypeName()) {
+        case 'n_EMPTY':
+          break;
+
+        case 'n_NUMERIC_SCALAR':
+          if ($arg->getConcreteString() != '0') {
+            break;
+          }
+
+        default:
+          $this->raiseLintAtNode(
+            $break->getChildByIndex(0),
+            self::LINT_PHP_COMPATIBILITY,
+            pht(
+              'The `%s` and `%s` statements no longer accept '.
+              'variable arguments.',
+              'break',
+              'continue'));
           break;
       }
     }
