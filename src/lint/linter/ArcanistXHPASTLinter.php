@@ -2722,37 +2722,28 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $arrays = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
 
     foreach ($arrays as $array) {
-      $commas = $array->selectTokensOfType(',');
-      $values = $array->selectDescendantsOfType('n_ARRAY_VALUE');
+      $value_list = $array->getChildOfType(0, 'n_ARRAY_VALUE_LIST');
+      $values = $value_list->getChildrenOfType('n_ARRAY_VALUE');
 
-      if ($values->count() == 0) {
+      if (!$values) {
         // There is no need to check an empty array.
         continue;
       }
 
-      // This is a little messy... we want to do `last($values)` but
-      // `$values` is an `AASTNodeList`.
-      $last = null;
-      foreach ($values as $value) {
-        $last = $value;
-      }
-
       $multiline = $array->getLineNumber() != $array->getEndLineNumber();
 
-      if ($multiline && count($commas) != count($values)) {
+      $value = last($values);
+      $after = last($value->getTokens())->getNextToken();
+
+      if ($multiline && (!$after || $after->getValue() != ',')) {
         $this->raiseLintAtNode(
-          $last,
+          $value,
           self::LINT_ARRAY_SEPARATOR,
           pht('Multi-lined arrays should have trailing commas.'),
-          $last->getConcreteString().',');
-      } else if (!$multiline && count($commas) == count($values)) {
-        $last_comma = null;
-        foreach ($commas as $comma) {
-          $last_comma = $comma;
-        }
-
+          $value->getConcreteString().',');
+      } else if (!$multiline && $after && $after->getValue() == ',') {
         $this->raiseLintAtToken(
-          $last_comma,
+          $after,
           self::LINT_ARRAY_SEPARATOR,
           pht('Single lined arrays should not have a trailing comma.'),
           '');

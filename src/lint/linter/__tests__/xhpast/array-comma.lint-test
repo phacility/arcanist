@@ -11,9 +11,14 @@ array(
   2,
   3
 );
+array(
+  'foo',
+  array('foo')
+);
 ~~~~~~~~~~
 advice:3:14
 advice:12:3
+advice:16:3
 ~~~~~~~~~~
 <?php
 array(1, 2, 3);
@@ -27,4 +32,8 @@ array(
   1,
   2,
   3,
+);
+array(
+  'foo',
+  array('foo'),
 );
