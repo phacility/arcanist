@@ -2140,7 +2140,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
         $this->raiseLintAtToken(
           $wtoken,
-          self::LINT_BINARY_EXPRESSION_SPACING,
+          self::LINT_CONCATENATION_OPERATOR,
           'Convention: no spaces around "." (string concatenation) operator.',
           '');
       }
