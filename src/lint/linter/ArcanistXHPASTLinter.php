@@ -2736,6 +2736,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $after = last($value->getTokens())->getNextToken();
 
       if ($multiline && (!$after || $after->getValue() != ',')) {
+        if ($value->getChildByIndex(1)->getTypeName() == 'n_HEREDOC') {
+          continue;
+        }
+
         $this->raiseLintAtNode(
           $value,
           self::LINT_ARRAY_SEPARATOR,

@@ -15,6 +15,11 @@ array(
   'foo',
   array('foo')
 );
+array(
+  'foo' => <<<EOTEXT
+This is some heredoc text.
+EOTEXT
+);
 ~~~~~~~~~~
 advice:3:14
 advice:12:3
@@ -36,4 +41,9 @@ array(
 array(
   'foo',
   array('foo'),
+);
+array(
+  'foo' => <<<EOTEXT
+This is some heredoc text.
+EOTEXT
 );
