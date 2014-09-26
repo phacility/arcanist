@@ -1904,6 +1904,7 @@ EOTEXT
     } else {
        $proj_reviewers = $this->getWorkingCopy()->getProjectReviewers();
        if($proj_reviewers) {
+          // Remove the current user from the list of reviewers
           $reviewers = array_diff($proj_reviewers, array($this->getUserName()));
           $faux_message[] = 'Reviewers: '.implode(",", $reviewers);
        }
@@ -1912,8 +1913,9 @@ EOTEXT
       $faux_message[] = 'CC: '.$this->getArgument('cc');
     } else {
        $proj_ccs = $this->getWorkingCopy()->getProjectCCs();
-       $pccs = array_diff($proj_ccs, array($this->getUserName()));
-       if($pccs) {
+       if($proj_ccs) {
+          // Remove the current user from the list of CCs
+          $pccs = array_diff($proj_ccs, array($this->getUserName()));
           $faux_message[] = 'CC: '.implode(",", $pccs);
        }
     }
