@@ -1054,7 +1054,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $bookmarks[] = array(
           'is_active' => $is_active,
           'name' => $name,
-          'revision' => $revision);
+          'revision' => $revision,
+        );
       }
     }
 

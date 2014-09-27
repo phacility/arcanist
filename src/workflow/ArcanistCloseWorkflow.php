@@ -129,7 +129,7 @@ EOTEXT
     $info = $conduit->callMethodSynchronous(
       'maniphest.info',
       array(
-        'task_id' => $task_id
+        'task_id' => $task_id,
       ));
     if ($info['status'] == $status) {
       return false;
@@ -139,7 +139,7 @@ EOTEXT
       array(
         'id' => $task_id,
         'status' => $status,
-        'comments' => $comment
+        'comments' => $comment,
       ));
   }
 

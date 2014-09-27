@@ -118,7 +118,7 @@ EOTEXT
       array(
         'revision_id' => null,
         'edit'        => 'create',
-        'fields'      => $fields
+        'fields'      => $fields,
         ));
     $template = $this->newInteractiveEditor($template)
       ->setName('new-commit')

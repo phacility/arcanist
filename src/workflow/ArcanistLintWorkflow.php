@@ -95,7 +95,7 @@ EOTEXT
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'none', show no lint warnings. ".
           "With 'compiler', show lint warnings in suitable for your editor. ".
-          "With 'xml', show lint warnings in the Checkstyle XML format."
+          "With 'xml', show lint warnings in the Checkstyle XML format.",
       ),
       'only-new' => array(
         'param' => 'bool',
@@ -105,7 +105,7 @@ EOTEXT
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          'Override configured lint engine for this project.'
+          'Override configured lint engine for this project.',
       ),
       'apply-patches' => array(
         'help' =>
@@ -135,7 +135,7 @@ EOTEXT
         'help' => 'Lint all files in the project.',
         'conflicts' => array(
           'cache' => '--everything lints all files',
-          'rev' => '--everything lints all files'
+          'rev' => '--everything lints all files',
         ),
       ),
       'severity' => array(

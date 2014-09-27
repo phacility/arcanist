@@ -51,14 +51,14 @@ EOTEXT
       'show' => array(
         'help' =>
           'Show the command which would be issued, but do not actually '.
-          'commit anything.'
+          'commit anything.',
       ),
       'revision' => array(
         'param' => 'revision_id',
         'help' =>
           'Commit a specific revision. If you do not specify a revision, '.
           'arc will look for committable revisions.',
-      )
+      ),
     );
   }
 

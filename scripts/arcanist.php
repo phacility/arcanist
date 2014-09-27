@@ -46,7 +46,7 @@ $base_args->parsePartial(
       'repeat' => true,
       'help'   =>
         'Specify a runtime configuration value. This will take precedence '.
-        'over static values, and only affect the current arcanist invocation.'
+        'over static values, and only affect the current arcanist invocation.',
     ),
 ));
 
@@ -413,7 +413,7 @@ function sanity_check_environment() {
         'text',
         "You need to install the cURL PHP extension, maybe with ".
         "'apt-get install php5-curl' or 'yum install php53-curl' or ".
-        "something similar."),
+        "something similar.",),
       'json_decode'   => array('flag', '--without-json'),
     );
   }

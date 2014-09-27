@@ -133,7 +133,8 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
     return array(
       $future,
       $assembly_dir.DIRECTORY_SEPARATOR.$xunit_temp,
-      $cover_temp);
+      $cover_temp,
+    );
   }
 
   /**
@@ -195,7 +196,8 @@ final class CSharpToolsTestEngine extends XUnitTestEngine {
       $results[] = array(
         'file' => $tag->getAttribute('file'),
         'start' => $tag->getAttribute('start'),
-        'end' => $tag->getAttribute('end'));
+        'end' => $tag->getAttribute('end'),
+      );
     }
     return $results;
   }

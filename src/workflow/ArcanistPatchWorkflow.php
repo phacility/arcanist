@@ -499,7 +499,8 @@ EOTEXT
             } else {
               $copies[] = array(
                 $change->getOldPath(),
-                $change->getCurrentPath());
+                $change->getCurrentPath(),
+              );
             }
             break;
           case ArcanistDiffChangeType::TYPE_ADD:
@@ -864,7 +865,7 @@ EOTEXT
         'differential.query',
         array(
           'phids' => $phids,
-          'arcanistProjects' => array($bundle->getProjectID())
+          'arcanistProjects' => array($bundle->getProjectID()),
         ));
       $revs = array();
       foreach ($dep_on_revs as $dep_on_rev) {
@@ -876,7 +877,8 @@ EOTEXT
         $base_args = array(
           '--force',
           '--skip-dependencies',
-          '--nobranch');
+          '--nobranch',
+        );
         if (!$this->shouldCommit()) {
           $base_args[] = '--nocommit';
         }

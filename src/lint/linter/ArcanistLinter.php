@@ -351,7 +351,7 @@ abstract class ArcanistLinter {
         'type' => 'optional map<string|int, string>',
         'help' => pht(
           'Provide a map from lint codes to adjusted severity levels: error, '.
-          'warning, advice, autofix or disabled.')
+          'warning, advice, autofix or disabled.'),
       ),
       'severity.rules' => array(
         'type' => 'optional map<string, string>',

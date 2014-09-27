@@ -177,7 +177,7 @@ final class ArcanistHgProxyServer {
         array_merge($clients, array($hg)),
         array(
           'read'    => $socket ? array($socket) : array(),
-          'except'  => $socket ? array($socket) : array()
+          'except'  => $socket ? array($socket) : array(),
         ));
 
       if (!$hg->update()) {

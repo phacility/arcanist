@@ -406,7 +406,7 @@ EOTEXT
           'lintall'   => '--head suppresses lint.',
           'advice'    => '--head suppresses lint.',
         ),
-      )
+      ),
     );
 
     return $arguments;

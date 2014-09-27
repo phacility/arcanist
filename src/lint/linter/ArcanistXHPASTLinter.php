@@ -1840,7 +1840,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $global,
 
           // No advice for globals, but hooks have an option to provide some.
-          null);
+          null,
+        );
       }
 
       // Exclude access of static properties, since lint will be raised at
