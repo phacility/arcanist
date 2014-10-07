@@ -73,12 +73,15 @@ abstract class ArcanistLinter {
     return 1.0;
   }
 
+  /**
+   * TODO: This should be `final`.
+   */
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
     return $this;
   }
 
-  public function setCustomSeverityRules(array $rules) {
+  final public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
   }
