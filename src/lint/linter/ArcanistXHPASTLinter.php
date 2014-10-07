@@ -2566,6 +2566,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'null'  => 'null',
       'array' => 'array',
       'new'   => 'new',
+      'class' => 'class',
     );
 
     foreach ($keywords as $keyword) {
