@@ -48,6 +48,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_LANGUAGE_CONSTRUCT_PAREN  = 46;
   const LINT_EMPTY_STATEMENT           = 47;
   const LINT_ARRAY_SEPARATOR           = 48;
+  const LINT_CONSTRUCTOR_PARENTHESES   = 49;
 
   private $naminghook;
   private $switchhook;
@@ -107,6 +108,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => 'Language Construct Parentheses',
       self::LINT_EMPTY_STATEMENT           => 'Empty Block Statement',
       self::LINT_ARRAY_SEPARATOR           => 'Array Separator',
+      self::LINT_CONSTRUCTOR_PARENTHESES   => 'Constructor Parentheses',
     );
   }
 
@@ -147,6 +149,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_LANGUAGE_CONSTRUCT_PAREN  => $warning,
       self::LINT_EMPTY_STATEMENT           => $advice,
       self::LINT_ARRAY_SEPARATOR           => $advice,
+      self::LINT_CONSTRUCTOR_PARENTHESES   => $advice,
     );
   }
 
@@ -196,7 +199,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '9';
+    return '10';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -267,6 +270,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintLanguageConstructParentheses' => self::LINT_LANGUAGE_CONSTRUCT_PAREN,
       'lintEmptyBlockStatements' => self::LINT_EMPTY_STATEMENT,
       'lintArraySeparator' => self::LINT_ARRAY_SEPARATOR,
+      'lintConstructorParentheses' => self::LINT_CONSTRUCTOR_PARENTHESES,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2788,6 +2792,23 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_ARRAY_SEPARATOR,
           pht('Single lined arrays should not have a trailing comma.'),
           '');
+      }
+    }
+  }
+
+  private function lintConstructorParentheses(XHPASTNode $root) {
+    $nodes = $root->selectDescendantsOfType('n_NEW');
+
+    foreach ($nodes as $node) {
+      $class  = $node->getChildByIndex(0);
+      $params = $node->getChildByIndex(1);
+
+      if ($params->getTypeName() == 'n_EMPTY') {
+        $this->raiseLintAtNode(
+          $class,
+          self::LINT_CONSTRUCTOR_PARENTHESES,
+          pht('Use parentheses when invoking a constructor.'),
+          $class->getConcreteString().'()');
       }
     }
   }
