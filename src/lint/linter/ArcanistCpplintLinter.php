@@ -1,68 +1,53 @@
 <?php
 
 /**
- * Uses google's cpplint.py to check code.
- *
- * You can get it here:
- * http://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py
- * @group linter
+ * Uses Google's `cpplint.py` to check code.
  */
-final class ArcanistCpplintLinter extends ArcanistLinter {
+final class ArcanistCpplintLinter extends ArcanistExternalLinter {
 
   public function getLinterName() {
-    return 'cpplint.py';
+    return 'CPPLINT';
   }
 
-  public function getLintOptions() {
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource('lint.cpplint.options', '');
+  public function getLinterConfigurationName() {
+    return 'cpplint';
   }
 
-  public function getLintPath() {
-    $config = $this->getEngine()->getConfigurationManager();
-    $prefix = $config->getConfigFromAnySource('lint.cpplint.prefix');
-    $bin = $config->getConfigFromAnySource('lint.cpplint.bin', 'cpplint.py');
+  public function getDefaultBinary() {
+    $prefix = $this->getDeprecatedConfiguration('lint.cpplint.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.cpplint.bin', 'cpplint.py');
 
-    if ($prefix !== null) {
-      if (!Filesystem::pathExists($prefix.'/'.$bin)) {
-        throw new ArcanistUsageException(
-          "Unable to find cpplint.py binary in a specified directory. Make ".
-          "sure that 'lint.cpplint.prefix' and 'lint.cpplint.bin' keys are ".
-          "set correctly. If you'd rather use a copy of cpplint installed ".
-          "globally, you can just remove these keys from your .arcconfig.");
-      }
-
-      return csprintf("%s/%s", $prefix, $bin);
+    if ($prefix) {
+      return $prefix.'/'.$bin;
+    } else {
+      return $bin;
     }
-
-    // Look for globally installed cpplint.py
-    list($err) = exec_manual('which %s', $bin);
-    if ($err) {
-      throw new ArcanistUsageException(
-        "cpplint.py does not appear to be installed on this system. Install ".
-        "it (e.g., with 'wget \"http://google-styleguide.googlecode.com/".
-        "svn/trunk/cpplint/cpplint.py\"') or configure 'lint.cpplint.prefix' ".
-        "in your .arcconfig to point to the directory where it resides. ".
-        "Also don't forget to chmod a+x cpplint.py!");
-    }
-
-    return $bin;
   }
 
-  public function lintPath($path) {
-    $bin = $this->getLintPath();
-    $options = $this->getLintOptions();
+  public function getInstallInstructions() {
+    return pht('Install cpplint.py using `wget http://google-styleguide.'.
+      'googlecode.com/svn/trunk/cpplint/cpplint.py`.');
+  }
 
-    $f = new ExecFuture("%C %C -", $bin, $options);
-    $f->write($this->getData($path));
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
 
-    list($err, $stdout, $stderr) = $f->resolve();
+  public function supportsReadDataFromStdin() {
+    return true;
+  }
 
-    if ($err === 2) {
-      throw new Exception("cpplint failed to run correctly:\n".$stderr);
-    }
+  public function getReadDataFromStdinFilename() {
+    return '-';
+  }
 
+  protected function getDefaultFlags() {
+    return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
+  }
+
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = explode("\n", $stderr);
+
     $messages = array();
     foreach ($lines as $line) {
       $line = trim($line);
@@ -81,8 +66,29 @@ final class ArcanistCpplintLinter extends ArcanistLinter {
       $message->setName($matches[3]);
       $message->setDescription($matches[2]);
       $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-      $this->addLintMessage($message);
+
+      $messages[] = $message;
     }
+
+    if ($err && !$messages) {
+      return false;
+    }
+
+    return $messages;
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('@^[a-z_]+/[a-z_]+$@', $code)) {
+      throw new Exception(
+        pht(
+          'Unrecognized lint message code "%s". Expected a valid cpplint '.
+          'lint code like "%s" or "%s".',
+          $code,
+          'build/include_order',
+          'whitespace/braces'));
+    }
+
+    return $code;
   }
 
 }

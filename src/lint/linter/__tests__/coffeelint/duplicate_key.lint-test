@@ -1,0 +1,18 @@
+class SomeThing
+  getConfig: ->
+    one = 1
+    one = 5
+    @config =
+      keyA: one
+      keyB: one
+      keyA: 2
+  getConfig: ->
+    @config =
+      foo: 1
+
+  @getConfig: ->
+    config =
+      foo: 1
+~~~~~~~~~~
+error:8:
+error:9:

@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @group workflow
- */
-final class ArcanistAnoidWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistAnoidWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'anoid';

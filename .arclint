@@ -1,0 +1,57 @@
+{
+  "exclude": [
+    "(^externals/)",
+    "(\\.lint-test$)"
+  ],
+  "linters": {
+    "chmod": {
+      "type": "chmod"
+    },
+    "filename": {
+      "type": "filename"
+    },
+    "generated": {
+      "type": "generated"
+    },
+    "json": {
+      "type": "json",
+      "include": [
+        "(^resources/arclint/.*\\.arclint\\.example$)",
+        "(^\\.arcconfig$)",
+        "(^\\.arclint$)",
+        "(\\.json$)"
+      ]
+    },
+    "merge-conflict": {
+      "type": "merge-conflict"
+    },
+    "nolint": {
+      "type": "nolint"
+    },
+    "phutil-library": {
+      "type": "phutil-library",
+      "include": "(\\.php$)"
+    },
+    "phutil-xhpast": {
+      "type": "phutil-xhpast",
+      "include": "(\\.php$)"
+    },
+    "spelling": {
+      "type": "spelling",
+      "exclude": "(resources/spelling/.*\\.json$)"
+    },
+    "text": {
+      "type": "text"
+    },
+    "xhpast": {
+      "type": "xhpast",
+      "include": "(\\.php$)",
+      "severity": {
+        "16": "advice",
+        "34": "error"
+      },
+      "xhpast.php-version": "5.2.3",
+      "xhpast.php-version.windows": "5.3.0"
+    }
+  }
+}

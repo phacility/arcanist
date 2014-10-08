@@ -10,9 +10,7 @@ nUlL;
 array();
 Array();
 
-function f(array $x, ArRaY $y) {
-
-}
+function f(array $x, ArRaY $y) {}
 
 new C();
 NeW C();
@@ -23,7 +21,7 @@ warning:8:1
 warning:9:1
 warning:11:1
 warning:13:22
-warning:18:1
+warning:16:1
 ~~~~~~~~~~
 <?php
 
@@ -37,9 +35,7 @@ null;
 array();
 array();
 
-function f(array $x, array $y) {
-
-}
+function f(array $x, array $y) {}
 
 new C();
 new C();

@@ -1,0 +1,3 @@
+a {outline-@{color}: green}
+~~~~~~~~~~
+error:1:12

@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @group workflow
- */
-final class ArcanistFlagWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistFlagWorkflow extends ArcanistWorkflow {
 
   private static $colorMap = array(
     0 => 'red',     // Red
@@ -60,18 +57,18 @@ EOTEXT
     return array(
       '*' => 'objects',
       'clear' => array(
-        'help' => 'Delete the flag on an object.'
+        'help' => 'Delete the flag on an object.',
       ),
       'edit' => array(
-        'help' => 'Edit the flag on an object.'
+        'help' => 'Edit the flag on an object.',
       ),
       'color' => array(
         'param' => 'color',
-        'help' => 'Set the color of a flag.'
+        'help' => 'Set the color of a flag.',
       ),
       'note' => array(
         'param' => 'note',
-        'help' => 'Set the note on a flag.'
+        'help' => 'Set the note on a flag.',
       ),
     );
   }
@@ -91,7 +88,12 @@ EOTEXT
       // Make sure notes that are long or have line breaks in them or
       // whatever don't mess up the formatting.
       $note = implode(' ', preg_split('/\s+/', $note));
-      $note = ' ('.phutil_utf8_shorten($note, 40, '...').')';
+      $note = ' ('.
+        id(new PhutilUTF8StringTruncator())
+        ->setMaximumGlyphs(40)
+        ->setTerminator('...')
+        ->truncateString($note).
+        ')';
     }
     echo phutil_console_format(
       "<fg:{$color}>%s</fg> flag%s $verb!\n",
@@ -115,7 +117,7 @@ EOTEXT
       throw new ArcanistUsageException("You can't both edit and clear a flag.");
     }
     if (($editing || $clear) && count($objects) != 1) {
-      throw new ArcanistUsageException("Specify exactly one object.");
+      throw new ArcanistUsageException('Specify exactly one object.');
     }
 
     if (!empty($objects)) {
@@ -155,7 +157,7 @@ EOTEXT
       } else {
         self::flagWasEdited($flag, 'deleted');
       }
-    } elseif ($editing) {
+    } else if ($editing) {
       // Let's set some flags. Just like Minesweeper, but less distracting.
       $flag_params = array(
         'objectPHID' => head($phids),

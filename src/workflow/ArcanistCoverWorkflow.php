@@ -2,10 +2,8 @@
 
 /**
  * Covers your professional reputation by blaming changes to locate reviewers.
- *
- * @group workflow
  */
-final class ArcanistCoverWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCoverWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'cover';
@@ -39,7 +37,7 @@ EOTEXT
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "cover does not currently support --rev in svn.",
+          'svn' => 'cover does not currently support --rev in svn.',
         ),
       ),
       '*' => 'paths',
@@ -63,7 +61,6 @@ EOTEXT
   }
 
   public function run() {
-
     $repository_api = $this->getRepositoryAPI();
 
     $in_paths = $this->getArgument('paths');

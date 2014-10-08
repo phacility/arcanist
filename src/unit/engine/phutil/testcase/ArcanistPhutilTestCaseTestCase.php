@@ -2,8 +2,6 @@
 
 /**
  * Test for @{class:PhutilUnitTestEngineTestCase}.
- *
- * @group testcase
  */
 final class ArcanistPhutilTestCaseTestCase extends ArcanistPhutilTestCase {
 

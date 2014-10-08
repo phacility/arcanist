@@ -3,7 +3,7 @@
 /**
  * Synchronizes commit messages from Differential.
  */
-final class ArcanistAmendWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistAmendWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'amend';
@@ -73,15 +73,15 @@ EOTEXT
 
       if ($this->isHistoryImmutable()) {
         throw new ArcanistUsageException(
-          "This project is marked as adhering to a conservative history ".
-          "mutability doctrine (having an immutable local history), which ".
-          "precludes amending commit messages.");
+          'This project is marked as adhering to a conservative history '.
+          'mutability doctrine (having an immutable local history), which '.
+          'precludes amending commit messages.');
       }
 
       if ($repository_api->getUncommittedChanges()) {
         throw new ArcanistUsageException(
-          "You have uncommitted changes in this branch. Stage and commit (or ".
-          "revert) them before proceeding.");
+          'You have uncommitted changes in this branch. Stage and commit (or '.
+          'revert) them before proceeding.');
       }
     }
 

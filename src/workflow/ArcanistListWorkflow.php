@@ -2,10 +2,8 @@
 
 /**
  * Lists open revisions in Differential.
- *
- * @group workflow
  */
-final class ArcanistListWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistListWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'list';
@@ -39,6 +37,16 @@ EOTEXT
   }
 
   public function run() {
+    static $color_map = array(
+      'Closed'          => 'cyan',
+      'Needs Review'    => 'magenta',
+      'Needs Revision'  => 'red',
+      'Changes Planned' => 'red',
+      'Accepted'        => 'green',
+      'No Revision'     => 'blue',
+      'Abandoned'       => 'default',
+    );
+
     $revisions = $this->getConduit()->callMethodSynchronous(
       'differential.query',
       array(
@@ -54,40 +62,45 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     $info = array();
-
-    $status_len = 0;
     foreach ($revisions as $key => $revision) {
       $revision_path = Filesystem::resolvePath($revision['sourcePath']);
       $current_path  = Filesystem::resolvePath($repository_api->getPath());
       if ($revision_path == $current_path) {
-        $info[$key]['here'] = 1;
+        $info[$key]['exists'] = 1;
       } else {
-        $info[$key]['here'] = 0;
+        $info[$key]['exists'] = 0;
       }
       $info[$key]['sort'] = sprintf(
         '%d%04d%08d',
-        $info[$key]['here'],
+        $info[$key]['exists'],
         $revision['status'],
         $revision['id']);
       $info[$key]['statusName'] = $revision['statusName'];
-      $status_len = max(
-        $status_len,
-        strlen($info[$key]['statusName']));
+      $info[$key]['color'] = idx(
+        $color_map, $revision['statusName'], 'default');
     }
+
+    $table = id(new PhutilConsoleTable())
+      ->setShowHeader(false)
+      ->addColumn('exists', array('title' => ''))
+      ->addColumn('status', array('title' => 'Status'))
+      ->addColumn('title',  array('title' => 'Title'));
 
     $info = isort($info, 'sort');
     foreach ($info as $key => $spec) {
       $revision = $revisions[$key];
-      printf(
-        "%s %-".($status_len + 4)."s D%d: %s\n",
-        $spec['here']
-          ? phutil_console_format('**%s**', '*')
-          : ' ',
-        $spec['statusName'],
-        $revision['id'],
-        $revision['title']);
+
+      $table->addRow(array(
+        'exists' => $spec['exists'] ? phutil_console_format('**%s**', '*') : '',
+        'status' => phutil_console_format(
+          "<fg:{$spec['color']}>%s</fg>", $spec['statusName']),
+        'title'  => phutil_console_format(
+          '**D%d:** %s', $revision['id'], $revision['title']),
+      ));
     }
 
+    $table->draw();
     return 0;
   }
+
 }

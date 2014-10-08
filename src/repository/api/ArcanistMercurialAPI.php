@@ -2,8 +2,6 @@
 
 /**
  * Interfaces with the Mercurial working copies.
- *
- * @group workingcopy
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
@@ -15,7 +13,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $supportsPhases;
 
   protected function buildLocalFuture(array $argv) {
-
     // Mercurial has a "defaults" feature which basically breaks automation by
     // allowing the user to add random flags to any command. This feature is
     // "deprecated" and "a bad idea" that you should "forget ... existed"
@@ -82,8 +79,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       '{node}',
        $string);
     if (!$stdout) {
-      throw new ArcanistUsageException("Cannot find the HG equivalent "
-                                       ."of {$revision_id} given.");
+      throw new ArcanistUsageException(
+        "Cannot find the HG equivalent of {$revision_id} given.");
     }
     return $stdout;
   }
@@ -94,8 +91,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'log -r %s --template {svnrev}', $hash);
     if (!$stdout) {
-      throw new ArcanistUsageException("Cannot find the SVN equivalent "
-                                       ."of {$hash} given.");
+      throw new ArcanistUsageException(
+        "Cannot find the SVN equivalent of {$hash} given.");
     }
     return $stdout;
   }
@@ -128,13 +125,14 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
             hgsprintf('ancestor(%R,.)', $symbolic_commit));
         } catch (Exception $ex) {
           throw new ArcanistUsageException(
-          "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
-          "identifier.");
+            "Commit '{$symbolic_commit}' is not a valid Mercurial commit ".
+            "identifier.");
         }
       }
 
-      $this->setBaseCommitExplanation("it is the greatest common ancestor of ".
-        "the working directory and the commit you specified explicitly.");
+      $this->setBaseCommitExplanation(
+        'it is the greatest common ancestor of the working directory '.
+        'and the commit you specified explicitly.');
       return $commit;
     }
 
@@ -161,7 +159,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     } else {
       list($err, $stdout) = $this->execManualLocal(
         'outgoing --branch %s --style default',
-      $this->getBranchName());
+        $this->getBranchName());
     }
 
     if (!$err) {
@@ -174,8 +172,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     if (!$logs) {
       $this->setBaseCommitExplanation(
-        "you have no outgoing commits, so arc assumes you intend to submit ".
-        "uncommitted changes in the working copy.");
+        'you have no outgoing commits, so arc assumes you intend to submit '.
+        'uncommitted changes in the working copy.');
       return $this->getWorkingCopyRevision();
     }
 
@@ -217,11 +215,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     if ($against == 'null') {
       $this->setBaseCommitExplanation(
-        "this is a new repository (all changes are outgoing).");
+        'this is a new repository (all changes are outgoing).');
     } else {
       $this->setBaseCommitExplanation(
-        "it is the first commit reachable from the working copy state ".
-        "which is not outgoing.");
+        'it is the first commit reachable from the working copy state '.
+        'which is not outgoing.');
     }
 
     return $against;
@@ -231,7 +229,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($this->localCommitInfo === null) {
       $base_commit = $this->getBaseCommit();
       list($info) = $this->execxLocal(
-        "log --template %s --rev %s --branch %s --",
+        'log --template %s --rev %s --branch %s --',
         "{node}\1{rev}\1{author}\1".
           "{date|rfc822date}\1{branch}\1{tag}\1{parents}\1{desc}\2",
         hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
@@ -247,9 +245,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         list($node, $rev, $full_author, $date, $branch, $tag,
           $parents, $desc) = explode("\1", $log, 9);
 
-        $email = new PhutilEmailAddress($full_author);
-        $author = $email->getDisplayName();
-        $author_email = $email->getAddress();
+        list ($author, $author_email) = $this->parseFullAuthor($full_author);
 
         // NOTE: If a commit has only one parent, {parents} returns empty.
         // If it has two parents, {parents} returns revs and short hashes, not
@@ -266,7 +262,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
           // We didn't get a cheap hit on previous commit, so do the full-cost
           // "hg parents" call. We can run these in parallel, at least.
           $futures[$node] = $this->execFutureLocal(
-            "parents --template='{node}\\n' --rev %s",
+            'parents --template %s --rev %s',
+            '{node}\n',
             $node);
         }
 
@@ -465,7 +462,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function getBulkFileDataAtRevision($paths, $revision) {
     // Calling 'hg cat' on each file individually is slow (1 second per file
     // on a large repo) because mercurial has to decompress and parse the
-    // entire manifest every time.  Do it in one large batch instead.
+    // entire manifest every time. Do it in one large batch instead.
 
     // hg cat will write the file data to files in a temp directory
     $tmpdir = Filesystem::createTemporaryDirectory();
@@ -522,13 +519,13 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     if ($err) {
       return false;
     } else {
-      return (strpos($stdout, "amend") !== false);
+      return (strpos($stdout, 'amend') !== false);
     }
   }
 
   public function supportsRebase() {
     if ($this->supportsRebase === null) {
-      list ($err) = $this->execManualLocal("help rebase");
+      list ($err) = $this->execManualLocal('help rebase');
       $this->supportsRebase = $err === 0;
     }
 
@@ -537,7 +534,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function supportsPhases() {
     if ($this->supportsPhases === null) {
-      list ($err) = $this->execManualLocal("help phase");
+      list ($err) = $this->execManualLocal('help phase');
       $this->supportsPhases = $err === 0;
     }
 
@@ -554,6 +551,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAllBranches() {
     list($branch_info) = $this->execxLocal('bookmarks');
+    if (trim($branch_info) == 'no bookmarks set') {
+      return array();
+    }
+
     $matches = null;
     preg_match_all(
       '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
@@ -616,7 +617,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     if ($err) {
-      throw new ArcanistUsageException("Merge failed!");
+      throw new ArcanistUsageException('Merge failed!');
     }
   }
 
@@ -628,7 +629,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function getCommitMessageLog() {
     $base_commit = $this->getBaseCommit();
     list($stdout) = $this->execxLocal(
-      "log --template %s --rev %s --branch %s --",
+      'log --template %s --rev %s --branch %s --',
       "{node}\1{desc}\2",
       hgsprintf('(%s::. - %s)', $base_commit, $base_commit),
       $this->getBranchName());
@@ -698,8 +699,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
       foreach ($results as $key => $hash) {
         $results[$key]['why'] =
-          "A mercurial commit hash in the commit range is already attached ".
-          "to the Differential revision.";
+          'A mercurial commit hash in the commit range is already attached '.
+          'to the Differential revision.';
       }
 
       return $results;
@@ -723,9 +724,30 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getAuthor() {
     $full_author = $this->getMercurialConfig('ui.username');
-    $email = new PhutilEmailAddress($full_author);
-    $author = $email->getDisplayName();
+    list($author, $author_email) = $this->parseFullAuthor($full_author);
     return $author;
+  }
+
+  /**
+   * Parse the Mercurial author field.
+   *
+   * Not everyone enters their email address as a part of the username
+   * field. Try to make it work when it's obvious.
+   *
+   * @param string $full_author
+   * @return array
+   */
+  protected function parseFullAuthor($full_author) {
+    if (strpos($full_author, '@') === false) {
+      $author = $full_author;
+      $author_email = null;
+    } else {
+      $email = new PhutilEmailAddress($full_author);
+      $author = $email->getDisplayName();
+      $author_email = $email->getAddress();
+    }
+
+    return array($author, $author_email);
   }
 
   public function addToCommit(array $paths) {
@@ -738,9 +760,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal(
-      'commit -l %s',
-      $tmp_file);
+    $this->execxLocal('commit -l %s', $tmp_file);
     $this->reloadWorkingCopy();
   }
 
@@ -796,7 +816,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBackoutMessage($commit_hash) {
-    return "Backed out changeset ".$commit_hash.".";
+    return 'Backed out changeset '.$commit_hash.'.';
   }
 
   public function resolveBaseCommitRule($rule, $source) {
@@ -1034,7 +1054,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $bookmarks[] = array(
           'is_active' => $is_active,
           'name' => $name,
-          'revision' => $revision);
+          'revision' => $revision,
+        );
       }
     }
 

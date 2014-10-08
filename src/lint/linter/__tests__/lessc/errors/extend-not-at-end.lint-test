@@ -1,0 +1,5 @@
+.a:extend(.b all).c {
+  property: red;
+}
+~~~~~~~~~~
+error:1:21

@@ -2,8 +2,6 @@
 
 /**
  * Represents a change to an individual path.
- *
- * @group diff
  */
 final class ArcanistDiffChange {
 
@@ -194,6 +192,11 @@ final class ArcanistDiffChange {
     return $this;
   }
 
+  public function dropHunks() {
+    $this->hunks = array();
+    return $this;
+  }
+
   public function getHunks() {
     return $this->hunks;
   }
@@ -271,7 +274,7 @@ final class ArcanistDiffChange {
 
     $summary = array();
     $summary[] = sprintf(
-      "%s %5.5s %s",
+      '%s %5.5s %s',
       $char,
       $attr,
       $this->getCurrentPath());
@@ -289,14 +292,14 @@ final class ArcanistDiffChange {
 
   public function getSymlinkTarget() {
     if ($this->getFileType() != ArcanistDiffChangeType::FILE_SYMLINK) {
-      throw new Exception("Not a symlink!");
+      throw new Exception('Not a symlink!');
     }
     $hunks = $this->getHunks();
     $hunk = reset($hunks);
     $corpus = $hunk->getCorpus();
     $match = null;
     if (!preg_match('/^\+(?:link )?(.*)$/m', $corpus, $match)) {
-      throw new Exception("Failed to extract link target!");
+      throw new Exception('Failed to extract link target!');
     }
     return trim($match[1]);
   }

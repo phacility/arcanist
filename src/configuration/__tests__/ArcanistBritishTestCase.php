@@ -56,7 +56,6 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
       "Correction of {$input} against: {$commands}");
   }
 
-
   public function testArgumentCompletion() {
     $this->assertArgumentCompletion(
       array('nolint'),

@@ -32,4 +32,5 @@ final class ArcanistSubversionHookAPI extends ArcanistHookAPI {
       $this->root."/$path");
     return ($err ? null : $file);
   }
+
 }

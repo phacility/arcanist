@@ -1,0 +1,52 @@
+{
+  "linters": {
+    "pep8": {
+      "type": "pep8",
+      "include": "(\\.py$)",
+      "exclude": "(^exclude.py)",
+      "severity": {
+        "E401": "warning"
+      }
+    },
+    "flake8": {
+      "type": "flake8",
+      "include": "(\\.py$)",
+      "exclude": "(^exclude\\.py)",
+      "severity": {
+        "E901": "advice"
+      }
+    },
+    "csslint": {
+      "type": "csslint",
+      "include": "(\\.css$)"
+    },
+    "text": {
+      "type": "text",
+      "include": "(\\.txt$)"
+    },
+    "ruby": {
+      "type": "ruby",
+      "include": "(\\.rb$)"
+    },
+    "filename": {
+      "type": "filename"
+    },
+    "spelling": {
+      "type": "spelling"
+    },
+    "nolint": {
+      "type": "nolint"
+    },
+    "generated": {
+      "type": "generated"
+    },
+    "phpcs": {
+      "type": "phpcs",
+      "include": "(\\.php)",
+      "severity.rules": {
+        "(^PHPCS\\.E\\.)": "warning",
+        "(^PHPCS\\.W\\.)": "advice"
+      }
+    }
+  }
+}

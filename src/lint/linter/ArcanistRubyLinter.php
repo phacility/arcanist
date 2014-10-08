@@ -2,10 +2,20 @@
 
 /**
  * Uses `ruby` to detect various errors in Ruby code.
- *
- * @group linter
  */
 final class ArcanistRubyLinter extends ArcanistExternalLinter {
+
+  public function getInfoURI() {
+    return 'https://www.ruby-lang.org/';
+  }
+
+  public function getInfoName() {
+    return pht('Ruby');
+  }
+
+  public function getInfoDescription() {
+    return pht('Use `ruby` to check for syntax errors in Ruby source files.');
+  }
 
   public function getLinterName() {
     return 'RUBY';
@@ -16,14 +26,24 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    // TODO: Deprecation warning.
-    $config = $this->getEngine()->getConfigurationManager();
-    $prefix = $config->getConfigFromAnySource('lint.ruby.prefix');
+    $prefix = $this->getDeprecatedConfiguration('lint.ruby.prefix');
     if ($prefix !== null) {
       $ruby_bin = $prefix.'ruby';
     }
 
     return 'ruby';
+  }
+
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)p\d+/';
+    if (preg_match($regex, $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
   }
 
   public function getInstallInstructions() {
@@ -44,18 +64,14 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     return array('-w', '-c');
   }
 
-  protected function getDefaultMessageSeverity($code) {
-    return ArcanistLintSeverity::SEVERITY_ERROR;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $lines = phutil_split_lines($stderr, $retain_endings = false);
+    $lines = phutil_split_lines($stderr, false);
 
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
 
-      if (!preg_match("/(.*?):(\d+): (.*?)$/", $line, $matches)) {
+      if (!preg_match('/(.*?):(\d+): (.*?)$/', $line, $matches)) {
         continue;
       }
 

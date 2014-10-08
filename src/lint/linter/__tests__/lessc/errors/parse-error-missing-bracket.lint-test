@@ -1,0 +1,4 @@
+body {
+  background-color: #fff;
+~~~~~~~~~~
+error:1:6

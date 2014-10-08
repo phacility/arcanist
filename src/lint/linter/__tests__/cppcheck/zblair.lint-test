@@ -1,0 +1,20 @@
+/**
+ * Taken from http://www.slideshare.net/zblair/cppcheck-10316379
+ */
+void foo(char* str) {
+    char* buf = new char[8];
+    strcpy(buf, str);
+
+    FILE* file = fopen("out.txt", "w");
+    if (!file)
+        return;
+
+    for (char* c = buf; *c; ++c)
+        fputc((int)*c, file);
+
+    delete buf;
+}
+~~~~~~~~~~
+error:10:
+error:15:
+error:16:

@@ -2,8 +2,6 @@
 
 /**
  * Describes the severity of an @{class:ArcanistLintMessage}.
- *
- * @group lint
  */
 final class ArcanistLintSeverity {
 
@@ -34,7 +32,6 @@ final class ArcanistLintSeverity {
   }
 
   public static function isAtLeastAsSevere($message_sev, $level) {
-
     static $map = array(
       self::SEVERITY_DISABLED => 10,
       self::SEVERITY_ADVICE   => 20,
@@ -49,6 +46,5 @@ final class ArcanistLintSeverity {
 
     return $map[$message_sev] >= idx($map, $level, 0);
   }
-
 
 }

@@ -2,10 +2,8 @@
 
 /**
  * Provides command-line access to the Conduit API.
- *
- * @group workflow
  */
-final class ArcanistCallConduitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCallConduitWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'call-conduit';
@@ -58,15 +56,17 @@ EOTEXT
     $method = $this->getArgument('method', array());
     if (count($method) !== 1) {
       throw new ArcanistUsageException(
-        "Provide exactly one Conduit method name.");
+        'Provide exactly one Conduit method name.');
     }
     $method = reset($method);
 
+    $console = PhutilConsole::getConsole();
+    $console->writeErr("%s\n", pht('Waiting for JSON parameters on stdin...'));
     $params = @file_get_contents('php://stdin');
     $params = json_decode($params, true);
     if (!is_array($params)) {
       throw new ArcanistUsageException(
-        "Provide method parameters on stdin as a JSON blob.");
+        'Provide method parameters on stdin as a JSON blob.');
     }
 
     $error = null;
@@ -89,4 +89,5 @@ EOTEXT
 
     return 0;
   }
+
 }

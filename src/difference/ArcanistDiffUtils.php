@@ -2,8 +2,6 @@
 
 /**
  * Dumping ground for diff- and diff-algorithm-related miscellany.
- *
- * @group diff
  */
 final class ArcanistDiffUtils {
 
@@ -54,7 +52,7 @@ final class ArcanistDiffUtils {
     if (($o === $n) || !$ol || !$nl) {
       return array(
         array(array(0, $ol)),
-        array(array(0, $nl))
+        array(array(0, $nl)),
       );
     }
 

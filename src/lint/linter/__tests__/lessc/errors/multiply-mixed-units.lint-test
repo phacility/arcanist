@@ -1,0 +1,12 @@
+/* Test */
+#blah {
+  // blah
+}
+.a {
+  error: (1px * 1em);
+}
+~~~~~~~~~~
+error:6:3
+~~~~~~~~~~
+~~~~~~~~~~
+{"config":{"lessc.strict-units":true}}

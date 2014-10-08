@@ -2,10 +2,8 @@
 
 /**
  * Manages aliases for commands with options.
- *
- * @group workflow
  */
-final class ArcanistAliasWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistAliasWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'alias';

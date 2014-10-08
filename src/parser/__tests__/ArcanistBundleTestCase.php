@@ -84,7 +84,9 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
         $configuration_manager);
 
       $repository_api->setBaseCommitArgumentRules('arc:this');
-      $diff = $repository_api->getFullGitDiff();
+      $diff = $repository_api->getFullGitDiff(
+        $repository_api->getBaseCommit(),
+        $repository_api->getHeadCommit());
 
       $parser = new ArcanistDiffParser();
       $parser->setRepositoryAPI($repository_api);
@@ -148,7 +150,7 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     foreach ($raw_changes as $change) {
       $this->assertTrue(
         empty($changes[$change->getCurrentPath()]),
-        "Unique Path: ".$change->getCurrentPath());
+        'Unique Path: '.$change->getCurrentPath());
       $changes[$change->getCurrentPath()] = $change;
     }
 
@@ -567,7 +569,7 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       case '228d7be4840313ed805c25c15bba0f7b188af3e6':
         // "Add a text file."
         // This commit is never reached because we skip the 0th commit junk.
-        $this->assertTrue(true, "This is never reached.");
+        $this->assertTrue(true, 'This is never reached.');
         break;
       default:
         throw new Exception(

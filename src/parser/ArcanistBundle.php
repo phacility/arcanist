@@ -2,8 +2,6 @@
 
 /**
  * Converts changesets between different formats.
- *
- * @group diff
  */
 final class ArcanistBundle {
 
@@ -108,7 +106,6 @@ final class ArcanistBundle {
   }
 
   private function getEOL($patch_type) {
-
     // NOTE: Git always generates "\n" line endings, even under Windows, and
     // can not parse certain patches with "\r\n" line endings. SVN generates
     // patches with "\n" line endings on Mac or Linux and "\r\n" line endings
@@ -198,9 +195,7 @@ final class ArcanistBundle {
     return $obj;
   }
 
-  private function __construct() {
-
-  }
+  private function __construct() {}
 
   public function writeToDisk($path) {
     $changes = $this->getChanges();
@@ -260,7 +255,6 @@ final class ArcanistBundle {
   }
 
   public function toUnifiedDiff() {
-
     $eol = $this->getEOL('unified');
 
     $result = array();
@@ -379,7 +373,7 @@ final class ArcanistBundle {
 
       if (!$decompose_okay) {
         throw new Exception(
-          "Failed to decompose multicopy changeset in order to generate diff.");
+          'Failed to decompose multicopy changeset in order to generate diff.');
       }
     }
 
@@ -763,7 +757,7 @@ final class ArcanistBundle {
 
     $content = array();
     $content[] = "index {$old_sha1}..{$new_sha1}".$eol;
-    $content[] = "GIT binary patch".$eol;
+    $content[] = 'GIT binary patch'.$eol;
 
     $content[] = "literal {$new_length}".$eol;
     $content[] = $this->emitBinaryDiffBody($new_data).$eol;
@@ -779,9 +773,9 @@ final class ArcanistBundle {
 
     if (!function_exists('gzcompress')) {
       throw new Exception(
-        "This patch has binary data. The PHP zlib extension is required to ".
-        "apply patches with binary data to git. Install the PHP zlib ".
-        "extension to continue.");
+        'This patch has binary data. The PHP zlib extension is required to '.
+        'apply patches with binary data to git. Install the PHP zlib '.
+        'extension to continue.');
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.
@@ -809,7 +803,7 @@ final class ArcanistBundle {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
-    // It is also implemeted awkwardly to work correctly on 32-bit machines.
+    // It is also implemented awkwardly to work correctly on 32-bit machines.
     // Broadly, this algorithm converts the binary input to printable output
     // by transforming each 4 binary bytes of input to 5 printable bytes of
     // output, one piece at a time.

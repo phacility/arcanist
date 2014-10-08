@@ -177,11 +177,11 @@ final class ArcanistHgProxyServer {
         array_merge($clients, array($hg)),
         array(
           'read'    => $socket ? array($socket) : array(),
-          'except'  => $socket ? array($socket) : array()
+          'except'  => $socket ? array($socket) : array(),
         ));
 
       if (!$hg->update()) {
-        throw new Exception("Server exited unexpectedly!");
+        throw new Exception('Server exited unexpectedly!');
       }
 
       // Accept any new clients.
@@ -211,7 +211,8 @@ final class ArcanistHgProxyServer {
       foreach ($clients as $key => $client) {
         if ($this->updateClient($client, $hg)) {
           // In this case, the client is still connected so just move on to
-          // the next one. Otherwise we continue below and handle the disconect.
+          // the next one. Otherwise we continue below and handle the
+          // disconnect.
           continue;
         }
 
@@ -353,7 +354,7 @@ final class ArcanistHgProxyServer {
 
     $ok = stream_set_blocking($socket, 0);
     if ($ok === false) {
-      throw new Exception("Unable to set socket nonblocking!");
+      throw new Exception('Unable to set socket nonblocking!');
     }
 
     return $socket;
@@ -446,7 +447,6 @@ final class ArcanistHgProxyServer {
   }
 
   private function daemonize() {
-
     // Keep stdout if it's been redirected somewhere, otherwise shut it down.
     $keep_stdout = false;
     $keep_stderr = false;
@@ -461,7 +461,7 @@ final class ArcanistHgProxyServer {
 
     $pid = pcntl_fork();
     if ($pid === -1) {
-      throw new Exception("Unable to fork!");
+      throw new Exception('Unable to fork!');
     } else if ($pid) {
       // We're the parent; exit. First, drop our reference to the socket so
       // our __destruct() doesn't tear it down; the child will tear it down

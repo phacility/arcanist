@@ -11,7 +11,6 @@
  * When looking in these places, we expect to find a 'libphutil/' directory.
  */
 function arcanist_adjust_php_include_path() {
-
   // The 'arcanist/' directory.
   $arcanist_dir = dirname(dirname(__FILE__));
 

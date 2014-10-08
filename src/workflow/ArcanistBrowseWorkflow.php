@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Browse files in the Diffusion web interface.
+ * Browse files or objects in the Phabricator web interface.
  */
-final class ArcanistBrowseWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistBrowseWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'browse';
@@ -12,6 +12,7 @@ final class ArcanistBrowseWorkflow extends ArcanistBaseWorkflow {
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
       **browse** [__options__] __path__ ...
+      **browse** [__options__] __object__ ...
 EOTEXT
       );
   }
@@ -19,7 +20,11 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: git, hg, svn
-          Browse files in the Diffusion web interface.
+          Open a file or object (like a task or revision) in your web browser.
+
+            $ arc browse README   # Open a file in Diffusion.
+            $ arc browse T123     # View a task.
+            $ arc browse HEAD     # View a symbolic commit.
 
           Set the 'browser' value using 'arc set-config' to select a browser. If
           no browser is set, the command will try to guess which browser to use.
@@ -34,11 +39,16 @@ EOTEXT
         'help' => pht(
           'Default branch name to view on server. Defaults to "master".'),
       ),
+      'force' => array(
+        'help' => pht(
+          'Open arguments as paths, even if they do not exist in the '.
+          'working copy.'),
+      ),
       '*' => 'paths',
     );
   }
 
-  public function requiresWorkingCopy() {
+  public function desiresWorkingCopy() {
     return true;
   }
 
@@ -50,45 +60,147 @@ EOTEXT
     return true;
   }
 
-  public function requiresRepositoryAPI() {
+  public function desiresRepositoryAPI() {
     return true;
   }
 
   public function run() {
-    $repository_api = $this->getRepositoryAPI();
-    $project_root = $this->getWorkingCopy()->getProjectRoot();
+    $console = PhutilConsole::getConsole();
 
-    $in_paths = $this->getArgument('paths');
-    if (!$in_paths) {
+    $is_force = $this->getArgument('force');
+
+    $things = $this->getArgument('paths');
+    if (!$things) {
       throw new ArcanistUsageException(
         pht(
-          'Specify one or more paths to browse. Use the command '.
+          'Specify one or more paths or objects to browse. Use the command '.
           '"arc browse ." if you want to browse this directory.'));
     }
+    $things = array_fuse($things);
 
-    $paths = array();
-    foreach ($in_paths as $key => $path) {
-      $path = preg_replace('/:([0-9]+)$/', '$\1', $path);
-      $full_path = Filesystem::resolvePath($path);
+    $objects = $this->getConduit()->callMethodSynchronous(
+      'phid.lookup',
+      array(
+        'names' => array_keys($things),
+      ));
 
-      if ($full_path == $project_root) {
-        $paths[$key] = '';
-      } else {
-        $paths[$key] = Filesystem::readablePath($full_path, $project_root);
+    $uris = array();
+    foreach ($objects as $name => $object) {
+      $uris[] = $object['uri'];
+
+      $console->writeOut(
+        pht(
+          'Opening **%s** as an object.',
+          $name)."\n");
+
+      unset($things[$name]);
+    }
+
+    if ($this->hasRepositoryAPI()) {
+      $repository_api = $this->getRepositoryAPI();
+      $project_root = $this->getWorkingCopy()->getProjectRoot();
+
+      // First, try to resolve arguments as symbolic commits.
+
+      $commits = array();
+      foreach ($things as $key => $thing) {
+        if ($thing == '.') {
+          // Git resolves '.' like HEAD, but it should be interpreted to mean
+          // "the current directory". Just skip resolution and fall through.
+          continue;
+        }
+
+        try {
+          $commit = $repository_api->getCanonicalRevisionName($thing);
+          if ($commit) {
+            $commits[$commit] = $key;
+          }
+        } catch (Exception $ex) {
+          // Ignore.
+        }
+      }
+
+      if ($commits) {
+        $commit_info = $this->getConduit()->callMethodSynchronous(
+          'diffusion.querycommits',
+          array(
+            'repositoryPHID' => $this->getRepositoryPHID(),
+            'names' => array_keys($commits),
+          ));
+
+        foreach ($commit_info['identifierMap'] as $ckey => $cphid) {
+          $thing = $commits[$ckey];
+          unset($things[$thing]);
+
+          $uris[] = $commit_info['data'][$cphid]['uri'];
+
+          $console->writeOut(
+            pht(
+              'Opening **%s** as a commit.',
+              $thing)."\n");
+        }
+      }
+
+      // If we fail, try to resolve them as paths.
+
+      foreach ($things as $key => $path) {
+        $lines = null;
+        $parts = explode(':', $path);
+        if (count($parts) > 1) {
+          $lines = array_pop($parts);
+        }
+        $path = implode(':', $parts);
+
+        $full_path = Filesystem::resolvePath($path);
+
+        if (!$is_force && !Filesystem::pathExists($full_path)) {
+          continue;
+        }
+
+        $console->writeOut(
+          pht(
+            'Opening **%s** as a repository path.',
+            $key)."\n");
+
+        unset($things[$key]);
+
+        if ($full_path == $project_root) {
+          $path = '';
+        } else {
+          $path = Filesystem::readablePath($full_path, $project_root);
+        }
+
+        $base_uri = $this->getBaseURI();
+        $uri = $base_uri.$path;
+
+        if ($lines) {
+          $uri = $uri.'$'.$lines;
+        }
+
+        $uris[] = $uri;
+      }
+    } else {
+      if ($things) {
+        $console->writeOut(
+          pht(
+            "The current working directory is not a repository working ".
+            "copy, so remaining arguments can not be resolved as paths or ".
+            "commits. To browse paths or symbolic commits in Diffusion, run ".
+            "'arc browse' from inside a working copy.")."\n");
       }
     }
 
-    $base_uri = $this->getBaseURI();
-    $browser = $this->getBrowserCommand();
+    foreach ($things as $thing) {
+      $console->writeOut(
+        pht(
+          'Unable to find an object named **%s**, no such commit exists in '.
+          'the remote, and no such path exists in the working copy. Use '.
+          '__--force__ to treat this as a path anyway.',
+          $thing)."\n");
+    }
 
-    foreach ($paths as $path) {
-      $ret_code = phutil_passthru('%s %s', $browser, $base_uri.$path);
-      if ($ret_code) {
-        throw new ArcanistUsageException(
-          "It seems we failed to open the browser; perhaps you should try to ".
-          "set the 'browser' config option. The command we tried to use was: ".
-          $browser);
-      }
+    if ($uris) {
+      $this->openURIsInBrowser($uris);
     }
 
     return 0;
@@ -109,32 +221,4 @@ EOTEXT
     return $repo_uri.'browse/'.$branch.'/';
   }
 
-  private function getBrowserCommand() {
-    $config = $this->getConfigFromAnySource('browser');
-    if ($config) {
-      return $config;
-    }
-
-    if (phutil_is_windows()) {
-      return 'start';
-    }
-
-    $candidates = array('sensible-browser', 'xdg-open', 'open');
-
-    // NOTE: The "open" command works well on OS X, but on many Linuxes "open"
-    // exists and is not a browser. For now, we're just looking for other
-    // commands first, but we might want to be smarter about selecting "open"
-    // only on OS X.
-
-    foreach ($candidates as $cmd) {
-      if (Filesystem::binaryExists($cmd)) {
-        return $cmd;
-      }
-    }
-
-    throw new ArcanistUsageException(
-      pht(
-        "Unable to find a browser command to run. Set 'browser' in your ".
-        "arc config to specify one."));
-  }
 }

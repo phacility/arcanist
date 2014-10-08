@@ -2,10 +2,8 @@
 
 /**
  * Download a file from Phabricator.
- *
- * @group workflow
  */
-final class ArcanistDownloadWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistDownloadWorkflow extends ArcanistWorkflow {
 
   private $id;
   private $saveAs;
@@ -36,8 +34,9 @@ EOTEXT
     return array(
       'show' => array(
         'conflicts' => array(
-          'as' => 'Use --show to direct the file to stdout, or --as to direct '.
-                  'it to a named location.',
+          'as' =>
+            'Use --show to direct the file to stdout, or --as to direct '.
+            'it to a named location.',
         ),
         'help' => 'Write file to stdout instead of to disk.',
       ),
@@ -52,15 +51,15 @@ EOTEXT
   protected function didParseArguments() {
     $argv = $this->getArgument('argv');
     if (!$argv) {
-      throw new ArcanistUsageException("Specify a file to download.");
+      throw new ArcanistUsageException('Specify a file to download.');
     }
     if (count($argv) > 1) {
-      throw new ArcanistUsageException("Specify exactly one file to download.");
+      throw new ArcanistUsageException('Specify exactly one file to download.');
     }
 
     $file = reset($argv);
     if (!preg_match('/^F?\d+$/', $file)) {
-      throw new ArcanistUsageException("Specify file by ID, e.g. F123.");
+      throw new ArcanistUsageException('Specify file by ID, e.g. F123.');
     }
 
     $this->id = (int)ltrim($file, 'F');

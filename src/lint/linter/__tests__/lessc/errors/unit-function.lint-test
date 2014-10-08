@@ -1,0 +1,8 @@
+.a {
+  font-size: unit(80/16,rem);
+}
+~~~~~~~~~~
+error:2:14
+~~~~~~~~~~
+~~~~~~~~~~
+{"config":{"lessc.strict-math":true}}

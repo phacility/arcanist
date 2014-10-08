@@ -1,11 +1,9 @@
 <?php
 
 /**
- * Quickly create a task
- *
- * @group workflow
+ * Quickly create a task.
  */
-final class ArcanistTodoWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistTodoWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'todo';
@@ -37,15 +35,22 @@ EOTEXT
     return true;
   }
 
-
   public function getArguments() {
     return array(
       '*' => 'summary',
       'cc' => array(
-        'param' => 'cc',
-        'short' => 'C',
+        'param'  => 'cc',
+        'short'  => 'C',
         'repeat' => true,
-        'help'  => 'Other users to CC on the new task.',
+        'help'   => pht('Other users to CC on the new task.'),
+      ),
+      'project' => array(
+        'param'  => 'project',
+        'repeat' => true,
+        'help'   => pht('Projects to assign to the task.'),
+      ),
+      'browse' => array(
+        'help' => pht('After creating the task, open it in a web browser.'),
       ),
     );
   }
@@ -53,6 +58,8 @@ EOTEXT
   public function run() {
     $summary = implode(' ', $this->getArgument('summary'));
     $ccs = $this->getArgument('cc');
+    $slugs = $this->getArgument('project');
+
     $conduit = $this->getConduit();
 
     if (trim($summary) == '') {
@@ -62,7 +69,7 @@ EOTEXT
 
     $args = array(
       'title' => $summary,
-      'ownerPHID' => $this->getUserPHID()
+      'ownerPHID' => $this->getUserPHID(),
     );
 
     if ($ccs) {
@@ -70,7 +77,7 @@ EOTEXT
       $users = $conduit->callMethodSynchronous(
         'user.query',
         array(
-          'usernames' => $ccs
+          'usernames' => $ccs,
         ));
       foreach ($users as $user => $info) {
         $phids[] = $info['phid'];
@@ -78,15 +85,37 @@ EOTEXT
       $args['ccPHIDs'] = $phids;
     }
 
-    $result = $conduit->callMethodSynchronous(
-      'maniphest.createtask',
-      $args);
+    if ($slugs) {
+      $phids = array();
+      $projects = $conduit->callMethodSynchronous(
+        'project.query',
+        array(
+          'slugs' => $slugs,
+        ));
 
+      foreach ($slugs as $slug) {
+        $project = idx($projects['slugMap'], $slug);
+
+        if (!$project) {
+          throw new ArcanistUsageException('No such project: "'.$slug.'"');
+        }
+        $phids[] = $project;
+      }
+
+      $args['projectPHIDs'] = $phids;
+    }
+
+    $result = $conduit->callMethodSynchronous('maniphest.createtask', $args);
     echo phutil_console_format(
       "Created task T%s: '<fg:green>**%s**</fg>' at <fg:blue>**%s**</fg>\n",
       $result['id'],
       $result['title'],
       $result['uri']);
+
+    if ($this->getArgument('browse')) {
+      $this->openURIsInBrowser(array($result['uri']));
+    }
+
   }
 
 }

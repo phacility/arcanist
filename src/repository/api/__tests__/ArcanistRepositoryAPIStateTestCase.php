@@ -27,7 +27,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
   }
 
   private function parseState($test) {
-    $dir = dirname(__FILE__) . '/state/';
+    $dir = dirname(__FILE__).'/state/';
     $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
 
     $fixture_path = $fixture->getPath();
@@ -119,6 +119,5 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
           "No test cases for working copy '{$test}'!");
     }
   }
-
 
 }

@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group unit
- */
 final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
 
   public function renderUnitResult(ArcanistUnitTestResult $result) {
@@ -57,7 +54,7 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
     $star = "\xE2\x98\x85";
     if (phutil_is_windows()) {
       // Fall-back to normal asterisk for Windows consoles.
-      $star = "*";
+      $star = '*';
     }
     $acceptableness = array(
       50   => "<fg:green>%s</fg><fg:yellow>{$star}</fg> ",

@@ -1,0 +1,7 @@
+@media (extra: bracket)) {
+  body {
+    background-color: #fff;
+  }
+}
+~~~~~~~~~~
+error:1:24

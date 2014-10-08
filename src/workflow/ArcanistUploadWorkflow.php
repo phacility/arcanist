@@ -2,10 +2,8 @@
 
 /**
  * Upload a file to Phabricator.
- *
- * @group workflow
  */
-final class ArcanistUploadWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUploadWorkflow extends ArcanistWorkflow {
 
   private $paths;
   private $json;
@@ -40,7 +38,7 @@ EOTEXT
 
   protected function didParseArguments() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException("Specify one or more files to upload.");
+      throw new ArcanistUsageException('Specify one or more files to upload.');
     }
 
     $this->paths = $this->getArgument('paths');
@@ -60,7 +58,6 @@ EOTEXT
   }
 
   public function run() {
-
     $conduit = $this->getConduit();
 
     $results = array();

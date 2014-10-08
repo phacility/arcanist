@@ -1,11 +1,8 @@
 <?php
 
 /**
- * You can extend this class and set `lint.xhpast.switchhook` in your
- * `.arcconfig` to have an opportunity to override results for linting `switch`
- * statements.
- *
- * @group lint
+ * You can extend this class and set `xhpast.switchhook` in your `.arclint`
+ * to have an opportunity to override results for linting `switch` statements.
  */
 abstract class ArcanistXHPASTLintSwitchHook {
 

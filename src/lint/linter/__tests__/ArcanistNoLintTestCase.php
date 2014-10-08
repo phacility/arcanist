@@ -1,13 +1,6 @@
 <?php
 
 /**
- * Test for @{class:ArcanistNoLintLinter}.
- *
- * Not a real test... meant to fail lint
- * if @nolint is not respected.
- *
- * @group testcase
+ * Not a real test... meant to fail lint if @nolint is not respected.
  */
-final class ArcanistNoLintTestCaseMisnamed extends ArcanistLinterTestCase {
-
-}
+final class ArcanistNoLintTestCaseMisnamed extends ArcanistLinterTestCase {}

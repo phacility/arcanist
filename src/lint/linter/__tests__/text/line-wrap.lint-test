@@ -1,0 +1,6 @@
+The quick brown fox jumps over the lazy dog.
+~~~~~~~~~~
+warning:1:1
+~~~~~~~~~~
+~~~~~~~~~~
+{"config": {"text.max-line-length": 40}}

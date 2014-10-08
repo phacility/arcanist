@@ -7,10 +7,9 @@
  * that the test assembly that verifies the functionality of `SomeAssembly` is
  * located at `SomeAssembly.Tests`.
  *
- * @group unitrun
  * @concrete-extensible
  */
-class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
+class XUnitTestEngine extends ArcanistUnitTestEngine {
 
   protected $runtimeEngine;
   protected $buildEngine;
@@ -27,10 +26,10 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Determines what executables and test paths to use.  Between platforms
-   * this also changes whether the test engine is run under .NET or Mono.  It
-   * also ensures that all of the required binaries are available for the tests
-   * to run successfully.
+   * Determines what executables and test paths to use. Between platforms this
+   * also changes whether the test engine is run under .NET or Mono. It also
+   * ensures that all of the required binaries are available for the tests to
+   * run successfully.
    *
    * @return void
    */
@@ -38,21 +37,21 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $this->projectRoot = $this->getWorkingCopy()->getProjectRoot();
 
     // Determine build engine.
-    if (Filesystem::binaryExists("msbuild")) {
-      $this->buildEngine = "msbuild";
-    } else if (Filesystem::binaryExists("xbuild")) {
-      $this->buildEngine = "xbuild";
+    if (Filesystem::binaryExists('msbuild')) {
+      $this->buildEngine = 'msbuild';
+    } else if (Filesystem::binaryExists('xbuild')) {
+      $this->buildEngine = 'xbuild';
     } else {
-      throw new Exception("Unable to find msbuild or xbuild in PATH!");
+      throw new Exception('Unable to find msbuild or xbuild in PATH!');
     }
 
     // Determine runtime engine (.NET or Mono).
     if (phutil_is_windows()) {
-      $this->runtimeEngine = "";
-    } else if (Filesystem::binaryExists("mono")) {
-      $this->runtimeEngine = Filesystem::resolveBinary("mono");
+      $this->runtimeEngine = '';
+    } else if (Filesystem::binaryExists('mono')) {
+      $this->runtimeEngine = Filesystem::resolveBinary('mono');
     } else {
-      throw new Exception("Unable to find Mono and you are not on Windows!");
+      throw new Exception('Unable to find Mono and you are not on Windows!');
     }
 
     // Read the discovery rules.
@@ -61,8 +60,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
         'unit.csharp.discovery');
     if ($this->discoveryRules === null) {
       throw new Exception(
-        "You must configure discovery rules to map C# files ".
-        "back to test projects (`unit.csharp.discovery` in .arcconfig).");
+        'You must configure discovery rules to map C# files '.
+        'back to test projects (`unit.csharp.discovery` in .arcconfig).');
     }
 
     // Determine xUnit test runner path.
@@ -74,18 +73,18 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $xunit = $this->projectRoot.DIRECTORY_SEPARATOR.$this->xunitHintPath;
     if (file_exists($xunit) && $this->xunitHintPath !== null) {
       $this->testEngine = Filesystem::resolvePath($xunit);
-    } else if (Filesystem::binaryExists("xunit.console.clr4.exe")) {
-      $this->testEngine = "xunit.console.clr4.exe";
+    } else if (Filesystem::binaryExists('xunit.console.clr4.exe')) {
+      $this->testEngine = 'xunit.console.clr4.exe';
     } else {
       throw new Exception(
-        "Unable to locate xUnit console runner.  Configure ".
+        "Unable to locate xUnit console runner. Configure ".
         "it with the `unit.csharp.xunit.binary' option in .arcconfig");
     }
   }
 
   /**
-   * Main entry point for the test engine.  Determines what assemblies to
-   * build and test based on the files that have changed.
+   * Main entry point for the test engine. Determines what assemblies to build
+   * and test based on the files that have changed.
    *
    * @return array   Array of test results.
    */
@@ -137,7 +136,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
               if (!$exists) {
                 $results[] = array(
                   'project' => $project,
-                  'assembly' => $assembly);
+                  'assembly' => $assembly,
+                );
               }
             }
           }
@@ -192,7 +192,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * If the `Build` directory exists, we assume that this is a multi-platform
-   * project that requires generation of C# project files.  Because we want to
+   * project that requires generation of C# project files. Because we want to
    * test that the generation and subsequent build is whole, we need to
    * regenerate any projects in case the developer has added files through an
    * IDE and then forgotten to add them to the respective `.definitions` file.
@@ -202,25 +202,24 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    * @return array   Array of test results.
    */
   private function generateProjects() {
-
     // No "Build" directory; so skip generation of projects.
-    if (!is_dir(Filesystem::resolvePath($this->projectRoot."/Build"))) {
+    if (!is_dir(Filesystem::resolvePath($this->projectRoot.'/Build'))) {
       return array();
     }
 
     // No "Protobuild.exe" file; so skip generation of projects.
     if (!is_file(Filesystem::resolvePath(
-      $this->projectRoot."/Protobuild.exe"))) {
+      $this->projectRoot.'/Protobuild.exe'))) {
 
       return array();
     }
 
     // Work out what platform the user is building for already.
-    $platform = phutil_is_windows() ? "Windows" : "Linux";
+    $platform = phutil_is_windows() ? 'Windows' : 'Linux';
     $files = Filesystem::listDirectory($this->projectRoot);
     foreach ($files as $file) {
-      if (strtolower(substr($file, -4)) == ".sln") {
-        $parts = explode(".", $file);
+      if (strtolower(substr($file, -4)) == '.sln') {
+        $parts = explode('.', $file);
         $platform = $parts[count($parts) - 2];
         break;
       }
@@ -228,7 +227,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
     $regenerate_start = microtime(true);
     $regenerate_future = new ExecFuture(
-      "%C Protobuild.exe --resync %s",
+      '%C Protobuild.exe --resync %s',
       $this->runtimeEngine,
       $platform);
     $regenerate_future->setCWD(Filesystem::resolvePath(
@@ -255,7 +254,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * Build the projects relevant for the specified test assemblies and return
-   * the results of the builds as test results.  This build also passes the
+   * the results of the builds as test results. This build also passes the
    * "SkipTestsOnBuild" parameter when building the projects, so that MSBuild
    * conditionals can be used to prevent any tests running as part of the
    * build itself (since the unit tester is about to run each of the tests
@@ -271,9 +270,9 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $results = array();
     foreach ($test_assemblies as $test_assembly) {
       $build_future = new ExecFuture(
-        "%C %s",
+        '%C %s',
         $this->buildEngine,
-        "/p:SkipTestsOnBuild=True");
+        '/p:SkipTestsOnBuild=True');
       $build_future->setCWD(Filesystem::resolvePath(
         dirname($test_assembly['project'])));
       $build_futures[$test_assembly['project']] = $build_future;
@@ -281,7 +280,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $iterator = Futures($build_futures)->limit(1);
     foreach ($iterator as $test_assembly => $future) {
       $result = new ArcanistUnitTestResult();
-      $result->setName("(build) ".$test_assembly);
+      $result->setName('(build) '.$test_assembly);
 
       try {
         $future->resolvex();
@@ -302,9 +301,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
   }
 
   /**
-   * Build the future for running a unit test.  This can be
-   * overridden to enable support for code coverage via
-   * another tool
+   * Build the future for running a unit test. This can be overridden to enable
+   * support for code coverage via another tool.
    *
    * @param  string  Name of the test assembly.
    * @return array   The future, output filename and coverage filename
@@ -312,22 +310,22 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    */
   protected function buildTestFuture($test_assembly) {
       // FIXME: Can't use TempFile here as xUnit doesn't like
-      // UNIX-style full paths.  It sees the leading / as the
+      // UNIX-style full paths. It sees the leading / as the
       // start of an option flag, even when quoted.
-      $xunit_temp = Filesystem::readRandomCharacters(10).".results.xml";
+      $xunit_temp = Filesystem::readRandomCharacters(10).'.results.xml';
       if (file_exists($xunit_temp)) {
         unlink($xunit_temp);
       }
       $future = new ExecFuture(
-        "%C %s /xml %s",
-        trim($this->runtimeEngine." ".$this->testEngine),
+        '%C %s /xml %s',
+        trim($this->runtimeEngine.' '.$this->testEngine),
         $test_assembly,
         $xunit_temp);
       $folder = Filesystem::resolvePath($this->projectRoot);
       $future->setCWD($folder);
-      $combined = $folder."/".$xunit_temp;
+      $combined = $folder.'/'.$xunit_temp;
       if (phutil_is_windows()) {
-        $combined = $folder."\\".$xunit_temp;
+        $combined = $folder.'\\'.$xunit_temp;
       }
       return array($future, $combined, null);
   }
@@ -340,7 +338,6 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    * @return array   Array of test results.
    */
   private function testAssemblies(array $test_assemblies) {
-
     $results = array();
 
     // Build the futures for running the tests.
@@ -368,13 +365,12 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
       } else {
         // FIXME: There's a bug in Mono which causes a segmentation fault
         // when xUnit.NET runs; this causes the XML file to not appear
-        // (depending on when the segmentation fault occurs).  See
+        // (depending on when the segmentation fault occurs). See
         // https://bugzilla.xamarin.com/show_bug.cgi?id=16379
         // for more information.
 
         // Since it's not possible for the user to correct this error, we
         // ignore the fact the tests didn't run here.
-        //
       }
     }
 
@@ -383,8 +379,8 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
 
   /**
    * Returns null for this implementation as xUnit does not support code
-   * coverage directly.  Override this method in another class to provide
-   * code coverage information (also see `CSharpToolsUnitEngine`).
+   * coverage directly. Override this method in another class to provide code
+   * coverage information (also see @{class:CSharpToolsUnitEngine}).
    *
    * @param  string  The name of the coverage file if one was provided by
    *                 `buildTestFuture`.
@@ -399,7 +395,7 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
    *
    * @param  string  The name of the xUnit results file.
    * @param  string  The name of the coverage file if one was provided by
-   *                 `buildTestFuture`.  This is passed through to
+   *                 `buildTestFuture`. This is passed through to
    *                 `parseCoverageResult`.
    * @return array   Test results.
    */
@@ -408,32 +404,32 @@ class XUnitTestEngine extends ArcanistBaseUnitTestEngine {
     $xunit_dom->loadXML(Filesystem::readFile($xunit_tmp));
 
     $results = array();
-    $tests = $xunit_dom->getElementsByTagName("test");
+    $tests = $xunit_dom->getElementsByTagName('test');
     foreach ($tests as $test) {
-      $name = $test->getAttribute("name");
-      $time = $test->getAttribute("time");
+      $name = $test->getAttribute('name');
+      $time = $test->getAttribute('time');
       $status = ArcanistUnitTestResult::RESULT_UNSOUND;
-      switch ($test->getAttribute("result")) {
-        case "Pass":
+      switch ($test->getAttribute('result')) {
+        case 'Pass':
           $status = ArcanistUnitTestResult::RESULT_PASS;
           break;
-        case "Fail":
+        case 'Fail':
           $status = ArcanistUnitTestResult::RESULT_FAIL;
           break;
-        case "Skip":
+        case 'Skip':
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           break;
       }
-      $userdata = "";
-      $reason = $test->getElementsByTagName("reason");
-      $failure = $test->getElementsByTagName("failure");
+      $userdata = '';
+      $reason = $test->getElementsByTagName('reason');
+      $failure = $test->getElementsByTagName('failure');
       if ($reason->length > 0 || $failure->length > 0) {
         $node = ($reason->length > 0) ? $reason : $failure;
-        $message = $node->item(0)->getElementsByTagName("message");
+        $message = $node->item(0)->getElementsByTagName('message');
         if ($message->length > 0) {
           $userdata = $message->item(0)->nodeValue;
         }
-        $stacktrace = $node->item(0)->getElementsByTagName("stack-trace");
+        $stacktrace = $node->item(0)->getElementsByTagName('stack-trace');
         if ($stacktrace->length > 0) {
           $userdata .= "\n".$stacktrace->item(0)->nodeValue;
         }

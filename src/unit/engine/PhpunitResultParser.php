@@ -3,15 +3,10 @@
 /**
  * PHPUnit Result Parsing utility
  *
- * Intended to enable custom unit engines derived
- * from phpunit to reuse common business logic related
- * to parsing phpunit test results and reports
- *
- * For an example on how to integrate with your test
- * engine, see PhpunitTestEngine.
- *
+ * For an example on how to integrate with your test engine, see
+ * @{class:PhpunitTestEngine}.
  */
-final class PhpunitResultParser extends ArcanistBaseTestResultParser {
+final class PhpunitResultParser extends ArcanistTestResultParser {
 
   /**
    * Parse test results from phpunit json report
@@ -22,7 +17,6 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
    * @return array
    */
   public function parseTestResults($path, $test_results) {
-
     if (!$test_results) {
       $result = id(new ArcanistUnitTestResult())
         ->setName($path)
@@ -56,7 +50,7 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
       if ('fail' == $event->status) {
         $status = ArcanistUnitTestResult::RESULT_FAIL;
-        $user_data  .= $event->message . "\n";
+        $user_data  .= $event->message."\n";
         foreach ($event->trace as $trace) {
           $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
         }
@@ -150,7 +144,7 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
         $coverage .= 'N';
       }
 
-      $len = strlen($this->projectRoot . DIRECTORY_SEPARATOR);
+      $len = strlen($this->projectRoot.DIRECTORY_SEPARATOR);
       $class_path = substr($class_path, $len);
       $reports[$class_path] = $coverage;
     }
@@ -163,22 +157,21 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
    * valid.
    *
    * @param string $json String containing JSON report
-   *
    * @return array JSON decoded array
    */
   private function getJsonReport($json) {
 
     if (empty($json)) {
-      throw new Exception('JSON report file is empty, '
-        . 'it probably means that phpunit failed to run tests. '
-        . 'Try running arc unit with --trace option and then run '
-        . 'generated phpunit command yourself, you might get the '
-        . 'answer.'
+      throw new Exception('JSON report file is empty, '.
+        'it probably means that phpunit failed to run tests. '.
+        'Try running arc unit with --trace option and then run '.
+        'generated phpunit command yourself, you might get the '.
+        'answer.'
       );
     }
 
     $json = preg_replace('/}{\s*"/', '},{"', $json);
-    $json = '[' . $json . ']';
+    $json = '['.$json.']';
     $json = json_decode($json);
     if (!is_array($json)) {
       throw new Exception('JSON could not be decoded');
@@ -186,4 +179,5 @@ final class PhpunitResultParser extends ArcanistBaseTestResultParser {
 
     return $json;
   }
+
 }

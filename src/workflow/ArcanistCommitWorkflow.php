@@ -2,10 +2,8 @@
 
 /**
  * Executes "svn commit" once a revision has been "Accepted".
- *
- * @group workflow
  */
-final class ArcanistCommitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistCommitWorkflow extends ArcanistWorkflow {
 
   private $revisionID;
 
@@ -52,15 +50,15 @@ EOTEXT
     return array(
       'show' => array(
         'help' =>
-          "Show the command which would be issued, but do not actually ".
-          "commit anything."
+          'Show the command which would be issued, but do not actually '.
+          'commit anything.',
       ),
       'revision' => array(
         'param' => 'revision_id',
         'help' =>
-          "Commit a specific revision. If you do not specify a revision, ".
-          "arc will look for committable revisions.",
-      )
+          'Commit a specific revision. If you do not specify a revision, '.
+          'arc will look for committable revisions.',
+      ),
     );
   }
 
@@ -162,6 +160,8 @@ EOTEXT
       throw new Exception("Executing 'svn commit' failed!");
     }
 
+    $this->askForRepositoryUpdate();
+
     $mark_workflow = $this->buildChildWorkflow(
       'close-revision',
       array(
@@ -246,7 +246,7 @@ EOTEXT
       $prefix = pht(
         'Revision includes changes to path(s) that do not exist:',
         count($do_not_exist));
-      $prompt = "Commit this revision anyway?";
+      $prompt = 'Commit this revision anyway?';
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }
 
@@ -255,7 +255,7 @@ EOTEXT
 
     if (empty($files)) {
       throw new ArcanistUsageException(
-        "There is nothing left to commit. None of the modified paths exist.");
+        'There is nothing left to commit. None of the modified paths exist.');
     }
 
     return $files;
@@ -335,6 +335,5 @@ EOTEXT
       }
     }
   }
-
 
 }

@@ -28,7 +28,9 @@ catch (Exception $x)
 
 function h(){}
 ~~~~~~~~~~
+advice:3:14
 warning:7:13
+advice:8:1
 warning:12:7
 warning:15:20
 warning:18:10
@@ -39,13 +41,9 @@ warning:29:13
 ~~~~~~~~~~
 <?php
 
-function f() {
+function f() {}
 
-}
-
-function g() {
-
-}
+function g() {}
 
 if (1) {}
 

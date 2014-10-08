@@ -1,0 +1,6 @@
+@ie8: true;
+.a,
+.b when (@ie8 = true) {
+}
+~~~~~~~~~~
+error:3:23

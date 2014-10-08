@@ -1,5 +1,5 @@
 <?php $x ?>
-  
+
 This shouldn't fatal the parser.
 ~~~~~~~~~~
 error:1:10

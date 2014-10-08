@@ -2,8 +2,6 @@
 
 /**
  * C# linter for Arcanist.
- *
- * @group linter
  */
 final class ArcanistCSharpLinter extends ArcanistLinter {
 
@@ -27,8 +25,19 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
   public function getLinterConfigurationOptions() {
     $options = parent::getLinterConfigurationOptions();
 
-    $options["discovery"] = 'map<string, list<string>>';
-    $options["binary"] = 'string';
+    $options['discovery'] = array(
+      'type' => 'map<string, list<string>>',
+      'help' => pht('Provide a discovery map.'),
+    );
+
+
+    // TODO: This should probably be replaced with "bin" when this moves
+    // to extend ExternalLinter.
+
+    $options['binary'] = array(
+      'type' => 'string',
+      'help' => pht('Override default binary.'),
+    );
 
     return $options;
   }
@@ -51,13 +60,13 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
   public function setCustomSeverityMap(array $map) {
     foreach ($map as $code => $severity) {
-      if (substr($code, 0, 2) === "SA" && $severity == "disabled") {
+      if (substr($code, 0, 2) === 'SA' && $severity == 'disabled') {
         throw new Exception(
           "In order to keep StyleCop integration with IDEs and other tools ".
           "consistent with Arcanist results, you aren't permitted to ".
-          "disable StyleCop rules within '.arclint'.  ".
+          "disable StyleCop rules within '.arclint'. ".
           "Instead configure the severity using the StyleCop settings dialog ".
-          "(usually accessible from within your IDE).  StyleCop settings ".
+          "(usually accessible from within your IDE). StyleCop settings ".
           "for your project will be used when linting for Arcanist.");
       }
     }
@@ -65,8 +74,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
   }
 
   /**
-   * Determines what executables and lint paths to use.  Between platforms
-   * this also changes whether the lint engine is run under .NET or Mono.  It
+   * Determines what executables and lint paths to use. Between platforms
+   * this also changes whether the lint engine is run under .NET or Mono. It
    * also ensures that all of the required binaries are available for the lint
    * to run successfully.
    *
@@ -79,49 +88,48 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
     // Determine runtime engine (.NET or Mono).
     if (phutil_is_windows()) {
-      $this->runtimeEngine = "";
-    } else if (Filesystem::binaryExists("mono")) {
-      $this->runtimeEngine = "mono ";
+      $this->runtimeEngine = '';
+    } else if (Filesystem::binaryExists('mono')) {
+      $this->runtimeEngine = 'mono ';
     } else {
-      throw new Exception("Unable to find Mono and you are not on Windows!");
+      throw new Exception('Unable to find Mono and you are not on Windows!');
     }
 
     // Determine cslint path.
     $cslint = $this->cslintHintPath;
     if ($cslint !== null && file_exists($cslint)) {
       $this->cslintEngine = Filesystem::resolvePath($cslint);
-    } else if (Filesystem::binaryExists("cslint.exe")) {
-      $this->cslintEngine = "cslint.exe";
+    } else if (Filesystem::binaryExists('cslint.exe')) {
+      $this->cslintEngine = 'cslint.exe';
     } else {
-      throw new Exception("Unable to locate cslint.");
+      throw new Exception('Unable to locate cslint.');
     }
 
     // Determine cslint version.
     $ver_future = new ExecFuture(
-      "%C -v",
+      '%C -v',
       $this->runtimeEngine.$this->cslintEngine);
     list($err, $stdout, $stderr) = $ver_future->resolve();
     if ($err !== 0) {
       throw new Exception(
-        "You are running an old version of cslint.  Please ".
-        "upgrade to version ".self::SUPPORTED_VERSION.".");
+        'You are running an old version of cslint. Please '.
+        'upgrade to version '.self::SUPPORTED_VERSION.'.');
     }
     $ver = (int)$stdout;
     if ($ver < self::SUPPORTED_VERSION) {
       throw new Exception(
-        "You are running an old version of cslint.  Please ".
-        "upgrade to version ".self::SUPPORTED_VERSION.".");
-    } elseif ($ver > self::SUPPORTED_VERSION) {
+        'You are running an old version of cslint. Please '.
+        'upgrade to version '.self::SUPPORTED_VERSION.'.');
+    } else if ($ver > self::SUPPORTED_VERSION) {
       throw new Exception(
-        "Arcanist does not support this version of cslint (it is ".
-        "newer).  You can try upgrading Arcanist with `arc upgrade`.");
+        'Arcanist does not support this version of cslint (it is '.
+        'newer). You can try upgrading Arcanist with `arc upgrade`.');
     }
 
     $this->loaded = true;
   }
 
-  public function lintPath($path) {
-  }
+  public function lintPath($path) {}
 
   public function willLintPaths(array $paths) {
     $this->loadEnvironment();
@@ -141,15 +149,15 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
       }
       if ($total + strlen($path) > 6000) {
         // %s won't pass through the JSON correctly
-        // under Windows.  This is probably because not only
+        // under Windows. This is probably because not only
         // does the JSON have quotation marks in the content,
         // but because there'll be a lot of escaping and
         // double escaping because the JSON also contains
-        // regular expressions.  cslint supports passing the
+        // regular expressions. cslint supports passing the
         // settings JSON through base64-encoded to mitigate
         // this issue.
         $futures[] = new ExecFuture(
-          "%C --settings-base64=%s -r=. %Ls",
+          '%C --settings-base64=%s -r=. %Ls',
           $this->runtimeEngine.$this->cslintEngine,
           base64_encode(json_encode($this->discoveryMap)),
           $current_paths);
@@ -164,7 +172,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     // a future for those too.
     if (count($current_paths) > 0) {
       $futures[] = new ExecFuture(
-        "%C --settings-base64=%s -r=. %Ls",
+        '%C --settings-base64=%s -r=. %Ls',
         $this->runtimeEngine.$this->cslintEngine,
         base64_encode(json_encode($this->discoveryMap)),
         $current_paths);
@@ -198,8 +206,11 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         $message->setChar($issue->Column);
         $message->setOriginalText($issue->OriginalText);
         $message->setReplacementText($issue->ReplacementText);
-        $message->setDescription(
-          vsprintf($issue->Index->Message, $issue->Parameters));
+        $desc = @vsprintf($issue->Index->Message, $issue->Parameters);
+        if ($desc === false) {
+          $desc = $issue->Index->Message;
+        }
+        $message->setDescription($desc);
         $severity = ArcanistLintSeverity::SEVERITY_ADVICE;
         switch ($issue->Index->Severity) {
           case 0:

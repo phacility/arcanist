@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<languages xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <lang name="C">
+        <appeared>1972</appeared>
+        <dc:creator>Dennis Ritchie</dc:creator>
+    </lang>
+    <lang name="PHP">
+        <appeared>1995</appeared>
+        <dc:creator>Rasmus Lerdorf</dc:creator>
+    </lang>
+    <lang name="Java">
+        <appeared>1995</appeared>
+        <dc:creator>James Gosling</dc:creator>
+    </lang>
+</languages>
+~~~~~~~~~~

@@ -2,11 +2,6 @@
 
 /**
  * Test for @{class:GoTestResultParser}.
- *
- * (putting tests in your tests so you can test
- * while you test)
- *
- * @group testcase
  */
 final class GoTestResultParserTestCase extends ArcanistTestCase {
 
@@ -19,7 +14,7 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
 
     $this->assertEqual(2, count($parsed_results));
     $this->assertEqual(
-      "Go::Test::package::subpackage::TestFoo",
+      'Go::Test::package::subpackage::TestFoo',
       $parsed_results[0]->getName());
     foreach ($parsed_results as $result) {
       $this->assertEqual(
@@ -53,10 +48,10 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
 
     $this->assertEqual(3, count($parsed_results));
     $this->assertEqual(
-      "Go::Test::package::subpackage1::TestFoo1",
+      'Go::Test::package::subpackage1::TestFoo1',
       $parsed_results[0]->getName());
     $this->assertEqual(
-      "Go::Test::package::subpackage2::TestFoo2",
+      'Go::Test::package::subpackage2::TestFoo2',
       $parsed_results[2]->getName());
     foreach ($parsed_results as $result) {
       $this->assertEqual(
@@ -74,10 +69,10 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
 
     $this->assertEqual(3, count($parsed_results));
     $this->assertEqual(
-      "Go::Test::package::subpackage1::TestFoo1",
+      'Go::Test::package::subpackage1::TestFoo1',
       $parsed_results[0]->getName());
     $this->assertEqual(
-      "Go::Test::package::subpackage2::TestFoo2",
+      'Go::Test::package::subpackage2::TestFoo2',
       $parsed_results[2]->getName());
     $this->assertEqual(
       ArcanistUnitTestResult::RESULT_PASS,
@@ -96,10 +91,10 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
 
     $this->assertEqual(2, count($parsed_results));
     $this->assertEqual(
-      "Go::TestCase::package::subpackage1",
+      'Go::TestCase::package::subpackage1',
       $parsed_results[0]->getName());
     $this->assertEqual(
-      "Go::TestCase::package::subpackage2",
+      'Go::TestCase::package::subpackage2',
       $parsed_results[1]->getName());
     foreach ($parsed_results as $result) {
       $this->assertEqual(
@@ -107,4 +102,5 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
         $result->getResult());
     }
   }
+
 }

@@ -1,0 +1,3 @@
+@import "this-statement-is-invalid.less"
+~~~~~~~~~~
+error:1:1

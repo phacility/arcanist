@@ -1,44 +1,24 @@
 <?php
 
 /**
- * Uses "JSHint" to detect errors and potential problems in JavaScript code.
- * To use this linter, you must install jshint through NPM (Node Package
- * Manager). You can configure different JSHint options on a per-file basis.
- *
- * If you have NodeJS installed you should be able to install jshint with
- * ##npm install jshint -g## (don't forget the -g flag or NPM will install
- * the package locally). If your system is unusual, you can manually specify
- * the location of jshint and its dependencies by configuring these keys in
- * your .arcconfig:
- *
- *   lint.jshint.prefix
- *   lint.jshint.bin
- *
- * If you want to configure custom options for your project, create a JSON
- * file with these options and add the path to the file to your .arcconfig
- * by configuring this key:
- *
- *   lint.jshint.config
- *
- * Example JSON file (config.json):
- *
- * {
- *     "predef": [    // Custom globals
- *       "myGlobalVariable",
- *       "anotherGlobalVariable"
- *     ],
- *
- *     "es5": true,   // Allow ES5 syntax
- *     "strict": true // Require strict mode
- * }
- *
- * For more options see http://www.jshint.com/options/.
- *
- * @group linter
+ * Uses JSHint to detect errors and potential problems in JavaScript code.
  */
-final class ArcanistJSHintLinter extends ArcanistLinter {
+final class ArcanistJSHintLinter extends ArcanistExternalLinter {
 
-  const JSHINT_ERROR = 1;
+  private $jshintignore;
+  private $jshintrc;
+
+  public function getInfoName() {
+    return 'JSHint';
+  }
+
+  public function getInfoURI() {
+    return 'http://www.jshint.com';
+  }
+
+  public function getInfoDescription() {
+    return pht('Use `jshint` to detect issues with JavaScript source files.');
+  }
 
   public function getLinterName() {
     return 'JSHint';
@@ -48,116 +28,124 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
     return 'jshint';
   }
 
-  public function getLintSeverityMap() {
-    return array(
-      self::JSHINT_ERROR => ArcanistLintSeverity::SEVERITY_ERROR
-    );
+  protected function getDefaultMessageSeverity($code) {
+    if (preg_match('/^W/', $code)) {
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+    } else if (preg_match('/^E043$/', $code)) {
+      // TODO: If JSHint encounters a large number of errors, it will quit
+      // prematurely and add an additional "Too Many Errors" error. Ideally, we
+      // should be able to pass some sort of `--force` option to `jshint`.
+      //
+      // See https://github.com/jshint/jshint/issues/180
+      return ArcanistLintSeverity::SEVERITY_DISABLED;
+    } else {
+      return ArcanistLintSeverity::SEVERITY_ERROR;
+    }
   }
 
-  // placeholder if/until we get a map code -> name map
-  // jshint only offers code -> description right now (parsed as 'reason')
-  public function getLintMessageName($code) {
-    return "JSHint".$code;
+  public function getDefaultBinary() {
+    $prefix = $this->getDeprecatedConfiguration('lint.jshint.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.jshint.bin', 'jshint');
+
+    if ($prefix) {
+      return $prefix.'/'.$bin;
+    } else {
+      return $bin;
+    }
   }
 
-  public function getLintNameMap() {
-    return array(
-      self::JSHINT_ERROR => "JSHint Error"
-    );
+  public function getVersion() {
+    // NOTE: `jshint --version` emits version information on stderr, not stdout.
+    list($stdout, $stderr) = execx(
+      '%C --version',
+      $this->getExecutableCommand());
+
+    $matches = array();
+    $regex = '/^jshint v(?P<version>\d+\.\d+\.\d+)$/';
+    if (preg_match($regex, $stderr, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
   }
 
-  public function getJSHintOptions() {
-    $config_manager = $this->getEngine()->getConfigurationManager();
-    $options = '--reporter '.dirname(realpath(__FILE__)).'/reporter.js';
-    $config = $config_manager->getConfigFromAnySource('lint.jshint.config');
+  public function getInstallInstructions() {
+    return pht('Install JSHint using `npm install -g jshint`.');
+  }
 
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    if ($config !== null) {
-      $config = Filesystem::resolvePath(
-        $config,
-        $working_copy->getProjectRoot());
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
 
-      if (!Filesystem::pathExists($config)) {
-        throw new ArcanistUsageException(
-          "Unable to find custom options file defined by ".
-          "'lint.jshint.config'. Make sure that the path is correct.");
-      }
+  public function supportsReadDataFromStdin() {
+    return true;
+  }
 
-      $options .= ' --config '.$config;
+  public function getReadDataFromStdinFilename() {
+    return '-';
+  }
+
+  protected function getMandatoryFlags() {
+    $options = array();
+
+    $options[] = '--reporter='.dirname(realpath(__FILE__)).'/reporter.js';
+
+    if ($this->jshintrc) {
+      $options[] = '--config='.$this->jshintrc;
+    }
+
+    if ($this->jshintignore) {
+      $options[] = '--exclude-path='.$this->jshintignore;
     }
 
     return $options;
   }
 
-  private function getJSHintPath() {
-    $config_manager = $this->getEngine()->getConfigurationManager();
-    $prefix = $config_manager->getConfigFromAnySource('lint.jshint.prefix');
-    $bin = $config_manager->getConfigFromAnySource('lint.jshint.bin');
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'jshint.jshintignore' => array(
+        'type' => 'optional string',
+        'help' => pht('Pass in a custom jshintignore file path.'),
+      ),
+      'jshint.jshintrc' => array(
+        'type' => 'optional string',
+        'help' => pht('Custom configuration file.'),
+      ),
+    );
 
-    if ($bin === null) {
-      $bin = "jshint";
-    }
-
-    if ($prefix !== null) {
-      $bin = $prefix."/".$bin;
-
-      if (!Filesystem::pathExists($bin)) {
-        throw new ArcanistUsageException(
-          "Unable to find JSHint binary in a specified directory. Make sure ".
-          "that 'lint.jshint.prefix' and 'lint.jshint.bin' keys are set ".
-          "correctly. If you'd rather use a copy of JSHint installed ".
-          "globally, you can just remove these keys from your .arcconfig");
-      }
-
-      return $bin;
-    }
-
-    if (!Filesystem::binaryExists($bin)) {
-      throw new ArcanistUsageException(
-        "JSHint does not appear to be installed on this system. Install it ".
-        "(e.g., with 'npm install jshint -g') or configure ".
-        "'lint.jshint.prefix' in your .arcconfig to point to the directory ".
-        "where it resides.");
-    }
-
-    return $bin;
+    return $options + parent::getLinterConfigurationOptions();
   }
 
-  public function willLintPaths(array $paths) {
-    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
-      return;
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'jshint.jshintignore':
+        $this->jshintignore = $value;
+        return;
+
+      case 'jshint.jshintrc':
+        $this->jshintrc = $value;
+        return;
     }
 
-    $jshint_bin = $this->getJSHintPath();
-    $jshint_options = $this->getJSHintOptions();
-    $futures = array();
-
-    foreach ($paths as $path) {
-      $filepath = $this->getEngine()->getFilePathOnDisk($path);
-      $futures[$path] = new ExecFuture(
-        "%s %s %C",
-        $jshint_bin,
-        $filepath,
-        $jshint_options);
-    }
-
-    foreach (Futures($futures)->limit(8) as $path => $future) {
-      $this->results[$path] = $future->resolve();
-    }
+    return parent::setLinterConfigurationValue($key, $value);
   }
 
-  public function lintPath($path) {
-    if (!$this->isCodeEnabled(self::JSHINT_ERROR)) {
-      return;
+  protected function getDefaultFlags() {
+    $options = $this->getDeprecatedConfiguration(
+      'lint.jshint.options',
+      array());
+
+    $config = $this->getDeprecatedConfiguration('lint.jshint.config');
+    if ($config) {
+      $options[] = '--config='.$config;
     }
 
-    list($rc, $stdout, $stderr) = $this->results[$path];
+    return $options;
+  }
 
-    if ($rc === 0) {
-      return;
-    }
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+    $errors = json_decode($stdout, true);
 
-    $errors = json_decode($stdout);
     if (!is_array($errors)) {
       // Something went wrong and we can't decode the output. Exit abnormally.
       throw new ArcanistUsageException(
@@ -166,12 +154,35 @@ final class ArcanistJSHintLinter extends ArcanistLinter {
         "stderr:\n\n{$stderr}");
     }
 
+    $messages = array();
     foreach ($errors as $err) {
-      $this->raiseLintAtLine(
-        $err->line,
-        $err->col,
-        $err->code,
-        $err->reason);
+      $message = new ArcanistLintMessage();
+      $message->setPath($path);
+      $message->setLine(idx($err, 'line'));
+      $message->setChar(idx($err, 'col'));
+      $message->setCode(idx($err, 'code'));
+      $message->setName('JSHint'.idx($err, 'code'));
+      $message->setDescription(idx($err, 'reason'));
+      $message->setSeverity($this->getLintMessageSeverity(idx($err, 'code')));
+
+      $messages[] = $message;
     }
+
+    return $messages;
   }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    if (!preg_match('/^(E|W)\d+$/', $code)) {
+      throw new Exception(
+        pht(
+          'Unrecognized lint message code "%s". Expected a valid JSHint '.
+          'lint code like "%s" or "%s".',
+          $code,
+          'E033',
+          'W093'));
+    }
+
+    return $code;
+  }
+
 }

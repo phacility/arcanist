@@ -2,10 +2,8 @@
 
 /**
  * Seduces the reader with majestic prose.
- *
- * @group workflow
  */
-final class ArcanistHelpWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistHelpWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'help';
@@ -86,37 +84,37 @@ EOTEXT
         if (isset($spec['param'])) {
           if (isset($spec['short'])) {
             $optref[] = phutil_console_format(
-              "          __--%s__ __%s__, __-%s__ __%s__",
+              '          __--%s__ __%s__, __-%s__ __%s__',
               $argument,
               $spec['param'],
               $spec['short'],
               $spec['param']);
           } else {
             $optref[] = phutil_console_format(
-              "          __--%s__ __%s__",
+              '          __--%s__ __%s__',
               $argument,
               $spec['param']);
           }
         } else {
           if (isset($spec['short'])) {
             $optref[] = phutil_console_format(
-              "          __--%s__, __-%s__",
+              '          __--%s__, __-%s__',
               $argument,
               $spec['short']);
           } else {
             $optref[] = phutil_console_format(
-              "          __--%s__",
+              '          __--%s__',
               $argument);
           }
         }
 
         if (isset($config_arguments[$argument])) {
-          $optref[] = "              (This is a custom option for this ".
-                      "project.)";
+          $optref[] = '              (This is a custom option for this '.
+                      'project.)';
         }
 
         if (isset($spec['supports'])) {
-          $optref[] = "              Supports: ".
+          $optref[] = '              Supports: '.
                       implode(', ', $spec['supports']);
         }
 
@@ -199,11 +197,16 @@ EOTEXT
       __--conduit-timeout__ __timeout__
           Override the default Conduit timeout. Specified in seconds.
 
+      __--config__ __key=value__
+          Specify a runtime configuration value. This will take precedence
+          over static values, and only affect the current arcanist invocation.
+
       __--skip-arcconfig__
           Skip the working copy configuration file
 
       __--arcrc-file__ __filename__
           Use provided file instead of ~/.arcrc.
+
 EOTEXT
     );
   }

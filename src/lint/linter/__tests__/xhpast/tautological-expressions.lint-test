@@ -1,16 +1,12 @@
 <?php
 
-if ($x == $x) {
-}
+if ($x == $x) {}
 
-if ($x->m(3) < $x->m(3)) {
-}
+if ($x->m(3) < $x->m(3)) {}
 
-if ($y[2] - $y[2]) {
-}
+if ($y[2] - $y[2]) {}
 
-if ($x == $y) {
-}
+if ($x == $y) {}
 
 // See xhpast 0.54 -> 0.55.
 return $a->sub->value < $b->sub->value;
@@ -22,7 +18,7 @@ $skip_cache = f();
 
 ~~~~~~~~~~
 error:3:5
-error:6:5
-error:9:5
-error:18:15
-error:20:15
+error:5:5
+error:7:5
+error:14:15
+error:16:15

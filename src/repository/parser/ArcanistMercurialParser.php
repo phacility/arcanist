@@ -5,7 +5,6 @@
  * provides low-level APIs for reading "hg" output.
  *
  * @task  parse Parsing "hg" Output
- * @group workingcopy
  */
 final class ArcanistMercurialParser {
 

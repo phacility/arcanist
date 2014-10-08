@@ -2,14 +2,12 @@
 
 /**
  * Parser for JUnit, NUnit, etc results format - https://gist.github.com/959290
- *
- * @group unitrun
  */
 final class ArcanistXUnitTestResultParser {
 
   /**
    * Parse test results from provided input and return an array
-   * of ArcanistUnitTestResult
+   * of @{class:ArcanistUnitTestResult}.
    *
    * @param string $test_results String containing test results
    *
@@ -26,24 +24,26 @@ final class ArcanistXUnitTestResultParser {
     $load_success = @$xunit_dom->loadXML($test_results);
 
     if (!$load_success) {
-      $input_start = phutil_utf8_shorten($test_results, 150);
+      $input_start = id(new PhutilUTF8StringTruncator())
+        ->setMaximumGlyphs(150)
+        ->truncateString($test_results);
       throw new Exception(
         "Failed to load XUnit report; Input starts with:\n\n {$input_start}");
     }
 
     $results = array();
-    $testcases = $xunit_dom->getElementsByTagName("testcase");
+    $testcases = $xunit_dom->getElementsByTagName('testcase');
     foreach ($testcases as $testcase) {
-      $classname = $testcase->getAttribute("classname");
-      $name = $testcase->getAttribute("name");
-      $time = $testcase->getAttribute("time");
+      $classname = $testcase->getAttribute('classname');
+      $name = $testcase->getAttribute('name');
+      $time = $testcase->getAttribute('time');
 
       $status = ArcanistUnitTestResult::RESULT_PASS;
-      $user_data = "";
+      $user_data = '';
 
       // A skipped test is a test which was ignored using framework
-      // mechanizms (e.g. @skip decorator)
-      $skipped = $testcase->getElementsByTagName("skipped");
+      // mechanisms (e.g. @skip decorator)
+      $skipped = $testcase->getElementsByTagName('skipped');
       if ($skipped->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_SKIP;
         $messages = array();
@@ -55,8 +55,8 @@ final class ArcanistXUnitTestResultParser {
       }
 
       // Failure is a test which the code has explicitly failed by using
-      // the mechanizms for that purpose. e.g., via an assertEquals
-      $failures = $testcase->getElementsByTagName("failure");
+      // the mechanisms for that purpose. e.g., via an assertEquals
+      $failures = $testcase->getElementsByTagName('failure');
       if ($failures->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_FAIL;
         $messages = array();
@@ -68,9 +68,8 @@ final class ArcanistXUnitTestResultParser {
       }
 
       // An errored test is one that had an unanticipated problem. e.g., an
-      // unchecked throwable, or a problem with an implementation of the
-      // test.
-      $errors = $testcase->getElementsByTagName("error");
+      // unchecked throwable, or a problem with an implementation of the test.
+      $errors = $testcase->getElementsByTagName('error');
       if ($errors->length > 0) {
         $status = ArcanistUnitTestResult::RESULT_BROKEN;
         $messages = array();
@@ -82,7 +81,7 @@ final class ArcanistXUnitTestResultParser {
       }
 
       $result = new ArcanistUnitTestResult();
-      $result->setName($classname.".".$name);
+      $result->setName($classname.'.'.$name);
       $result->setResult($status);
       $result->setDuration($time);
       $result->setUserData($user_data);

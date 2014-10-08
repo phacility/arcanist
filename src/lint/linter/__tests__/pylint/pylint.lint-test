@@ -1,0 +1,7 @@
+import sys, os
+
+x += 1
+~~~~~~~~~~
+warning:1:0
+advice:1:0
+error:3:0

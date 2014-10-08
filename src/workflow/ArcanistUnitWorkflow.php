@@ -2,10 +2,8 @@
 
 /**
  * Runs unit tests which cover your changes.
- *
- * @group workflow
  */
-final class ArcanistUnitWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistUnitWorkflow extends ArcanistWorkflow {
 
   const RESULT_OKAY      = 0;
   const RESULT_UNSOUND   = 1;
@@ -42,19 +40,19 @@ EOTEXT
     return array(
       'rev' => array(
         'param' => 'revision',
-        'help' => "Run unit tests covering changes since a specific revision.",
+        'help' => 'Run unit tests covering changes since a specific revision.',
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "Arc unit does not currently support --rev in SVN.",
+          'svn' => 'Arc unit does not currently support --rev in SVN.',
         ),
       ),
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          "Override configured unit engine for this project."
+          'Override configured unit engine for this project.',
       ),
       'coverage' => array(
         'help' => 'Always enable coverage information.',
@@ -66,8 +64,8 @@ EOTEXT
         'help' => 'Always disable coverage information.',
       ),
       'detailed-coverage' => array(
-        'help' => "Show a detailed coverage report on the CLI. Implies ".
-                  "--coverage.",
+        'help' => 'Show a detailed coverage report on the CLI. Implies '.
+                  '--coverage.',
       ),
       'json' => array(
         'help' => 'Report results in JSON format.',
@@ -82,7 +80,7 @@ EOTEXT
         'conflicts' => array(
           'json' => 'Only one output format allowed',
           'ugly' => 'Only one output format allowed',
-        )
+        ),
       ),
       'everything' => array(
         'help' => 'Run every test.',
@@ -119,8 +117,8 @@ EOTEXT
 
     if (!$engine_class) {
       throw new ArcanistNoEngineException(
-        "No unit test engine is configured for this project. Edit .arcconfig ".
-        "to specify a unit test engine.");
+        'No unit test engine is configured for this project. Edit .arcconfig '.
+        'to specify a unit test engine.');
     }
 
     $paths = $this->getArgument('paths');
@@ -128,17 +126,17 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        "You can not specify paths with --everything. The --everything ".
-        "flag runs every test.");
+        'You can not specify paths with --everything. The --everything '.
+        'flag runs every test.');
     }
 
     $paths = $this->selectPathsForWorkflow($paths, $rev);
 
     if (!class_exists($engine_class) ||
-        !is_subclass_of($engine_class, 'ArcanistBaseUnitTestEngine')) {
+        !is_subclass_of($engine_class, 'ArcanistUnitTestEngine')) {
       throw new ArcanistUsageException(
         "Configured unit test engine '{$engine_class}' is not a subclass of ".
-        "'ArcanistBaseUnitTestEngine'.");
+        "'ArcanistUnitTestEngine'.");
     }
 
     $this->engine = newv($engine_class, array());
@@ -354,4 +352,5 @@ EOTEXT
     );
     return idx($known_formats, $format, 'full');
   }
+
 }

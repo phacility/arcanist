@@ -2,10 +2,22 @@
 
 /**
  * Uses "pep8.py" to enforce PEP8 rules for Python.
- *
- * @group linter
  */
 final class ArcanistPEP8Linter extends ArcanistExternalLinter {
+
+  public function getInfoName() {
+    return 'pep8';
+  }
+
+  public function getInfoURI() {
+    return 'https://pypi.python.org/pypi/pep8';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'pep8 is a tool to check your Python code against some of the '.
+      'style conventions in PEP 8.');
+  }
 
   public function getLinterName() {
     return 'PEP8';
@@ -15,17 +27,8 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'pep8';
   }
 
-  public function getCacheVersion() {
-    list($stdout) = execx('%C --version', $this->getExecutableCommand());
-    return $stdout.implode(' ', $this->getCommandFlags());
-  }
-
   public function getDefaultFlags() {
-    // TODO: Warn that all of this is deprecated.
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource(
-      'lint.pep8.options',
-      $this->getConfig('options', array()));
+    return $this->getDeprecatedConfiguration('lint.pep8.options', array());
   }
 
   public function shouldUseInterpreter() {
@@ -41,18 +44,26 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       return 'pep8';
     }
 
-    $config = $this->getEngine()->getConfigurationManager();
-    $old_prefix = $config->getConfigFromAnySource('lint.pep8.prefix');
-    $old_bin = $config->getConfigFromAnySource('lint.pep8.bin');
-
+    $old_prefix = $this->getDeprecatedConfiguration('lint.pep8.prefix');
+    $old_bin = $this->getDeprecatedConfiguration('lint.pep8.bin');
     if ($old_prefix || $old_bin) {
-      // TODO: Deprecation warning.
       $old_bin = nonempty($old_bin, 'pep8');
       return $old_prefix.'/'.$old_bin;
     }
 
     $arc_root = dirname(phutil_get_library_root('arcanist'));
     return $arc_root.'/externals/pep8/pep8.py';
+  }
+
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
   }
 
   public function getInstallInstructions() {
@@ -64,7 +75,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $lines = phutil_split_lines($stdout, $retain_endings = false);
+    $lines = phutil_split_lines($stdout, false);
 
     $messages = array();
     foreach ($lines as $line) {
@@ -98,12 +109,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     if (preg_match('/^W/', $code)) {
       return ArcanistLintSeverity::SEVERITY_WARNING;
     } else {
-
-      // TODO: Once severities/.arclint are more usable, restore this to
-      // "ERROR".
-      // return ArcanistLintSeverity::SEVERITY_ERROR;
-
-      return ArcanistLintSeverity::SEVERITY_WARNING;
+      return ArcanistLintSeverity::SEVERITY_ERROR;
     }
   }
 
@@ -114,8 +120,8 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
           'Unrecognized lint message code "%s". Expected a valid PEP8 '.
           'lint code like "%s" or "%s".',
           $code,
-          "E101",
-          "W291"));
+          'E101',
+          'W291'));
     }
 
     return $code;

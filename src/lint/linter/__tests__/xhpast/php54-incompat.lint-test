@@ -1,0 +1,17 @@
+<?php
+break;
+break 0;
+break 1;
+break 1 + foo() * $bar;
+continue;
+continue 0;
+continue 1;
+continue 1 + foo() * $bar;
+~~~~~~~~~~
+error:3:7
+error:5:7
+error:7:10
+error:9:10
+~~~~~~~~~~
+~~~~~~~~~~
+{"config": {"xhpast.php-version": "5.4.0"}}

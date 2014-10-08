@@ -1,0 +1,12 @@
+function foo() {
+  if (true) return "foo"; else return "bar";
+}
+~~~~~~~~~~
+error:2:3
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "jscs.preset": "jquery"
+  }
+}

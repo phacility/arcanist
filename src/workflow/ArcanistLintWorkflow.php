@@ -2,10 +2,8 @@
 
 /**
  * Runs lint rules on changes.
- *
- * @group workflow
  */
-final class ArcanistLintWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistLintWorkflow extends ArcanistWorkflow {
 
   const RESULT_OKAY       = 0;
   const RESULT_WARNINGS   = 1;
@@ -63,31 +61,31 @@ EOTEXT
     return array(
       'lintall' => array(
         'help' =>
-        "Show all lint warnings, not just those on changed lines.  When " .
-        "paths are specified, this is the default behavior.",
+        'Show all lint warnings, not just those on changed lines. When '.
+        'paths are specified, this is the default behavior.',
         'conflicts' => array(
           'only-changed' => true,
         ),
       ),
       'only-changed' => array(
         'help' =>
-        "Show lint warnings just on changed lines.  When no paths are " .
-        "specified, this is the default.  This differs from only-new " .
-        "in cases where line modifications introduce lint on other " .
-        "unmodified lines.",
+        'Show lint warnings just on changed lines. When no paths are '.
+        'specified, this is the default. This differs from only-new '.
+        'in cases where line modifications introduce lint on other '.
+        'unmodified lines.',
         'conflicts' => array(
           'lintall' => true,
         ),
       ),
       'rev' => array(
         'param' => 'revision',
-        'help' => "Lint changes since a specific revision.",
+        'help' => 'Lint changes since a specific revision.',
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => "Lint does not currently support --rev in SVN.",
+          'svn' => 'Lint does not currently support --rev in SVN.',
         ),
       ),
       'output' => array(
@@ -96,7 +94,8 @@ EOTEXT
           "With 'summary', show lint warnings in a more compact format. ".
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'none', show no lint warnings. ".
-          "With 'compiler', show lint warnings in suitable for your editor."
+          "With 'compiler', show lint warnings in suitable for your editor. ".
+          "With 'xml', show lint warnings in the Checkstyle XML format.",
       ),
       'only-new' => array(
         'param' => 'bool',
@@ -106,7 +105,7 @@ EOTEXT
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          "Override configured lint engine for this project."
+          'Override configured lint engine for this project.',
       ),
       'apply-patches' => array(
         'help' =>
@@ -136,7 +135,7 @@ EOTEXT
         'help' => 'Lint all files in the project.',
         'conflicts' => array(
           'cache' => '--everything lints all files',
-          'rev' => '--everything lints all files'
+          'rev' => '--everything lints all files',
         ),
       ),
       'severity' => array(
@@ -184,22 +183,7 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     $configuration_manager = $this->getConfigurationManager();
 
-    $engine = $this->getArgument('engine');
-    if (!$engine) {
-      $engine = $configuration_manager->getConfigFromAnySource('lint.engine');
-    }
-
-    if (!$engine) {
-      if (Filesystem::pathExists($working_copy->getProjectPath('.arclint'))) {
-        $engine = 'ArcanistConfigurationDrivenLintEngine';
-      }
-    }
-
-    if (!$engine) {
-      throw new ArcanistNoEngineException(
-        "No lint engine configured for this project. Edit '.arcconfig' to ".
-        "specify a lint engine, or create an '.arclint' file.");
-    }
+    $engine = $this->newLintEngine($this->getArgument('engine'));
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
@@ -207,8 +191,8 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        "You can not specify paths with --everything. The --everything ".
-        "flag lints every file.");
+        'You can not specify paths with --everything. The --everything '.
+        'flag lints every file.');
     }
     if ($use_cache === null) {
       $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
@@ -217,7 +201,7 @@ EOTEXT
     }
 
     if ($rev && $paths) {
-      throw new ArcanistUsageException("Specify either --rev or paths.");
+      throw new ArcanistUsageException('Specify either --rev or paths.');
     }
 
 
@@ -232,37 +216,14 @@ EOTEXT
     }
 
     if ($everything) {
-      // Recurse through project from root
-      switch ($this->getRepositoryApi()->getSourceControlSystemName()) {
-        case 'git':
-          $filter = '*/.git';
-          break;
-        case 'svn':
-          $filter = '*/.svn';
-          break;
-        case 'hg':
-          $filter = '*/.hg';
-          break;
-      }
-      $paths = id(new FileFinder($working_copy->getProjectRoot()))
-        ->excludePath($filter)
-        ->find();
+      $paths = iterator_to_array($this->getRepositoryApi()->getAllFiles());
       $this->shouldLintAll = true;
     } else {
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }
 
-    if (!class_exists($engine) ||
-        !is_subclass_of($engine, 'ArcanistLintEngine')) {
-      throw new ArcanistUsageException(
-        "Configured lint engine '{$engine}' is not a subclass of ".
-        "'ArcanistLintEngine'.");
-    }
-
-    $engine = newv($engine, array());
     $this->engine = $engine;
-    $engine->setWorkingCopy($working_copy);
-    $engine->setConfigurationManager($configuration_manager);
+
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
 
@@ -463,30 +424,36 @@ EOTEXT
 
     switch ($this->getArgument('output')) {
       case 'json':
-        $renderer = new ArcanistLintJSONRenderer();
+        $renderer = new ArcanistJSONLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
       case 'summary':
-        $renderer = new ArcanistLintSummaryRenderer();
+        $renderer = new ArcanistSummaryLintRenderer();
         break;
       case 'none':
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
-        $renderer = new ArcanistLintNoneRenderer();
+        $renderer = new ArcanistNoneLintRenderer();
         break;
       case 'compiler':
-        $renderer = new ArcanistLintLikeCompilerRenderer();
+        $renderer = new ArcanistCompilerLikeLintRenderer();
+        $prompt_patches = false;
+        $apply_patches = $this->getArgument('apply-patches');
+        break;
+      case 'xml':
+        $renderer = new ArcanistCheckstyleXMLLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;
       default:
-        $renderer = new ArcanistLintConsoleRenderer();
+        $renderer = new ArcanistConsoleLintRenderer();
         $renderer->setShowAutofixPatches($prompt_autofix_patches);
         break;
     }
 
     $all_autofix = true;
+    $console->writeOut('%s', $renderer->renderPreamble());
 
     foreach ($results as $result) {
       $result_all_autofix = $result->isAllAutofix();
@@ -520,12 +487,12 @@ EOTEXT
           // TODO: Improve the behavior here, make it more like
           // difference_render().
           list(, $stdout, $stderr) =
-            exec_manual("diff -u %s %s", $old_file, $new_file);
+            exec_manual('diff -u %s %s', $old_file, $new_file);
           $console->writeOut('%s', $stdout);
           $console->writeErr('%s', $stderr);
 
           $prompt = phutil_console_format(
-            "Apply this patch to __%s__?",
+            'Apply this patch to __%s__?',
             $result->getPath());
           if (!$console->confirm($prompt, $default_no = false)) {
             continue;
@@ -538,6 +505,8 @@ EOTEXT
       }
     }
 
+    $console->writeOut('%s', $renderer->renderPostamble());
+
     if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
           ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
@@ -546,7 +515,7 @@ EOTEXT
           "with lint patches.\n");
         $amend = true;
       } else {
-        $amend = $console->confirm("Amend HEAD with lint patches?");
+        $amend = $console->confirm('Amend HEAD with lint patches?');
       }
 
       if ($amend) {
@@ -558,8 +527,8 @@ EOTEXT
         $repository_api->amendCommit();
       } else {
         throw new ArcanistUsageException(
-          "Sort out the lint changes that were applied to the working ".
-          "copy and relint.");
+          'Sort out the lint changes that were applied to the working '.
+          'copy and relint.');
       }
     }
 
@@ -570,7 +539,7 @@ EOTEXT
 
     if ($failed) {
       if ($failed instanceof ArcanistNoEffectException) {
-        if ($renderer instanceof ArcanistLintNoneRenderer) {
+        if ($renderer instanceof ArcanistNoneLintRenderer) {
           return 0;
         }
       }

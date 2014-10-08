@@ -2,8 +2,6 @@
 
 /**
  * Interfaces with Subversion working copies.
- *
- * @group workingcopy
  */
 final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
@@ -25,7 +23,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     static $svn_dir = null;
     if ($svn_dir === null) {
       // from svn 1.7, subversion keeps a single .svn directly under
-      // the working copy root.  However, we allow .arcconfigs that
+      // the working copy root. However, we allow .arcconfigs that
       // aren't at the working copy root.
       foreach (Filesystem::walkToRoot($this->getPath()) as $parent) {
         $possible_svn_dir = Filesystem::resolvePath('.svn', $parent);
@@ -128,7 +126,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
 
       foreach ($files as $path => $mask) {
         foreach ($externals as $external) {
-          if (!strncmp($path . '/', $external . '/', strlen($external) + 1)) {
+          if (!strncmp($path.'/', $external.'/', strlen($external) + 1)) {
             $files[$path] |= self::FLAG_EXTERNALS;
           }
         }
@@ -216,7 +214,13 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
-    throw new ArcanistCapabilityNotSupportedException($this);
+    // TODO: This could be more accurate, but is only used by `arc browse`
+    // for now.
+
+    if (is_numeric($string)) {
+      return $string;
+    }
+    return null;
   }
 
   public function getSVNBaseRevisionNumber() {
@@ -274,6 +278,8 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function buildDiffFuture($path) {
+    $root = phutil_get_library_root('arcanist');
+
     // The "--depth empty" flag prevents us from picking up changes in
     // children when we run 'diff' against a directory. Specifically, when a
     // user has added or modified some directory "example/", we want to return
@@ -281,8 +287,9 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     // without "--depth empty", svn will give us changes to the directory
     // itself (such as property changes) and also give us changes to any
     // files within the directory (basically, implicit recursion). We don't
-    // want that, so prevent recursive diffing.
-    $root = phutil_get_library_root('arcanist');
+    // want that, so prevent recursive diffing. This flag does not work if the
+    // directory is newly added (see T5555) so we need to filter the results
+    // out later as well.
 
     if (phutil_is_windows()) {
       // TODO: Provide a binary_safe_diff script for Windows.
@@ -316,7 +323,6 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   public function getSVNInfo($path) {
-
     if (empty($this->svnInfo[$path])) {
 
       if (empty($this->svnInfoRaw[$path])) {
@@ -631,7 +637,7 @@ EODIFF;
   public function getFinalizedRevisionMessage() {
     // In other VCSes we give push instructions here, but it never makes sense
     // in SVN.
-    return "Done.";
+    return 'Done.';
   }
 
   public function loadWorkingCopyDifferentialRevisions(
@@ -660,7 +666,7 @@ EODIFF;
 
     foreach ($results as $key => $result) {
       $results[$key]['why'] =
-        "Matching arcanist project name and working copy directory path.";
+        'Matching arcanist project name and working copy directory path.';
     }
 
     return $results;

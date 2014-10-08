@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @group testcase
- */
 abstract class ArcanistArcanistLinterTestCase extends ArcanistLinterTestCase {
 
   protected function getLink($method) {

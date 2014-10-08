@@ -2,14 +2,33 @@
 
 /**
  * Checks files for unresolved merge conflicts.
- *
- * @group linter
  */
 final class ArcanistMergeConflictLinter extends ArcanistLinter {
+
   const LINT_MERGECONFLICT = 1;
 
-  public function willLintPaths(array $paths) {
-    return;
+  public function getInfoName() {
+    return pht('Merge Conflicts');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Raises errors on unresolved merge conflicts in source files, to catch '.
+      'mistakes where a conflicted file is accidentally marked as resolved.');
+  }
+
+  public function getLinterName() {
+    return 'MERGECONFLICT';
+  }
+
+  public function getLinterConfigurationName() {
+    return 'merge-conflict';
+  }
+
+  public function getLintNameMap() {
+    return array(
+      self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),
+    );
   }
 
   public function lintPath($path) {
@@ -21,26 +40,11 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
       if (preg_match('/^(>{7}|<{7}|={7})$/', $line)) {
         $this->raiseLintAtLine(
           $lineno + 1,
-          0,
+          1,
           self::LINT_MERGECONFLICT,
-          "This syntax indicates there is an unresolved merge conflict.");
+          pht('This syntax indicates there is an unresolved merge conflict.'));
       }
     }
   }
 
-  public function getLinterName() {
-    return "MERGECONFLICT";
-  }
-
-  public function getLintSeverityMap() {
-    return array(
-      self::LINT_MERGECONFLICT => ArcanistLintSeverity::SEVERITY_ERROR
-    );
-  }
-
-  public function getLintNameMap() {
-    return array(
-      self::LINT_MERGECONFLICT => "Unresolved merge conflict"
-    );
-  }
 }

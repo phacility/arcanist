@@ -2,13 +2,10 @@
 
 /**
  * Tests for @{class:PHPUnitTestEngine}.
- *
- * @group testcase
  */
 final class PHPUnitTestEngineTestCase extends ArcanistTestCase {
 
   public function testSearchLocations() {
-
     $path = '/path/to/some/file/X.php';
 
     $this->assertEqual(

@@ -2,8 +2,6 @@
 
 /**
  * Test cases for @{class:ArcanistDiffParser}.
- *
- * @group testcase
  */
 final class ArcanistDiffParserTestCase extends ArcanistTestCase {
 
@@ -583,12 +581,25 @@ EOTEXT
         $this->assertEqual(
           ArcanistDiffChangeType::TYPE_MESSAGE,
           $change->getType());
-        $this->assertEqual("WIP", $change->getMetadata('message'));
+        $this->assertEqual('WIP', $change->getMetadata('message'));
 
         $change = array_shift($changes);
         $this->assertEqual(
           ArcanistDiffChangeType::TYPE_CHANGE,
           $change->getType());
+        break;
+      case 'svn-double-diff.svndiff':
+        $this->assertEqual(1, count($changes));
+
+        $change = array_shift($changes);
+        $hunks = $change->getHunks();
+        $this->assertEqual(1, count($hunks));
+        break;
+      case 'git-remove-spaces.gitdiff':
+        $this->assertEqual(1, count($changes));
+
+        $change = array_shift($changes);
+        $this->assertEqual('file with spaces.txt', $change->getOldPath());
         break;
       default:
         throw new Exception("No test block for diff file {$diff_file}.");
@@ -620,11 +631,11 @@ EOTEXT
 
   public function testGitPathSplitting() {
     static $tests = array(
-      "a/old.c b/new.c"       => array('old.c', 'new.c'),
+      'a/old.c b/new.c'       => array('old.c', 'new.c'),
       "a/old.c b/new.c\n"     => array('old.c', 'new.c'),
       "a/old.c b/new.c\r\n"   => array('old.c', 'new.c'),
-      "old.c new.c"           => array('old.c', 'new.c'),
-      "1/old.c 2/new.c"       => array('old.c', 'new.c'),
+      'old.c new.c'           => array('old.c', 'new.c'),
+      '1/old.c 2/new.c'       => array('old.c', 'new.c'),
       '"a/\\"quotes1\\"" "b/\\"quotes2\\""' => array(
         '"quotes1"',
         '"quotes2"',
@@ -637,11 +648,11 @@ EOTEXT
         "\xE2\x98\x831",
         "\xE2\x98\x832",
       ),
-      "a/Core Data/old.c b/Core Data/new.c" => array(
+      'a/Core Data/old.c b/Core Data/new.c' => array(
         'Core Data/old.c',
         'Core Data/new.c',
       ),
-      "some file with spaces.c some file with spaces.c" => array(
+      'some file with spaces.c some file with spaces.c' => array(
         'some file with spaces.c',
         'some file with spaces.c',
       ),
@@ -657,7 +668,7 @@ EOTEXT
 
 
     static $ambiguous = array(
-      "old file with spaces.c new file with spaces.c",
+      'old file with spaces.c new file with spaces.c',
     );
 
     foreach ($ambiguous as $input) {

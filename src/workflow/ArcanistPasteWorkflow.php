@@ -2,10 +2,8 @@
 
 /**
  * Upload a chunk of text to the Paste application, or download one.
- *
- * @group workflow
  */
-final class ArcanistPasteWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistPasteWorkflow extends ArcanistWorkflow {
 
   private $id;
   private $language;
@@ -67,17 +65,17 @@ EOTEXT
 
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
-      throw new ArcanistUsageException("Specify only one paste to retrieve.");
+      throw new ArcanistUsageException('Specify only one paste to retrieve.');
     } else if (count($argv) == 1) {
       $id = $argv[0];
       if (!preg_match('/^P?\d+/', $id)) {
-        throw new ArcanistUsageException("Specify a paste ID, like P123.");
+        throw new ArcanistUsageException('Specify a paste ID, like P123.');
       }
       $this->id = (int)ltrim($id, 'P');
 
       if ($this->language || $this->title) {
         throw new ArcanistUsageException(
-          "Use options --lang and --title only when creating pastes.");
+          'Use options --lang and --title only when creating pastes.');
       }
     }
   }

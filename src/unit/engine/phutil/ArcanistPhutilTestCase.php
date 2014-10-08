@@ -97,13 +97,13 @@ abstract class ArcanistPhutilTestCase {
 
     if ($message !== null) {
       $output = pht(
-        "Assertion failed, expected values to be equal (at %s:%d): %s",
+        'Assertion failed, expected values to be equal (at %s:%d): %s',
         $file,
         $line,
         $message);
     } else {
       $output = pht(
-        "Assertion failed, expected values to be equal (at %s:%d).",
+        'Assertion failed, expected values to be equal (at %s:%d).',
         $file,
         $line);
     }
@@ -216,7 +216,7 @@ abstract class ArcanistPhutilTestCase {
 
     if (count($inputs) !== count($expect)) {
       $this->assertFailure(
-        "Input and expectations must have the same number of values.");
+        'Input and expectations must have the same number of values.');
     }
 
     $labels = array_keys($inputs);
@@ -388,9 +388,7 @@ abstract class ArcanistPhutilTestCase {
    *
    * @task internal
    */
-  final public function __construct() {
-
-  }
+  final public function __construct() {}
 
 
   /**
@@ -500,7 +498,7 @@ abstract class ArcanistPhutilTestCase {
               throw head($exceptions);
             } else {
               throw new PhutilAggregateException(
-                "Multiple exceptions were raised during test execution.",
+                'Multiple exceptions were raised during test execution.',
                 $exceptions);
             }
           }
@@ -576,6 +574,8 @@ abstract class ArcanistPhutilTestCase {
           // TODO: This indicates "unreachable", but it flags the closing braces
           // of functions which end in "return", which is super ridiculous. Just
           // ignore it for now.
+          //
+          // See http://bugs.xdebug.org/view.php?id=1041
           $str .= 'N'; // Not executable.
         } else if ($c === 1) {
           $str .= 'C'; // Covered.

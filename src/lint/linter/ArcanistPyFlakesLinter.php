@@ -2,72 +2,68 @@
 
 /**
  * Uses "PyFlakes" to detect various errors in Python code.
- *
- * @group linter
  */
-final class ArcanistPyFlakesLinter extends ArcanistLinter {
+final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
+
+  public function getInfoURI() {
+    return 'https://pypi.python.org/pypi/pyflakes';
+  }
+
+  public function getInfoName() {
+    return pht('PyFlakes');
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'PyFlakes is a simple program which checks Python source files for '.
+      'errors.');
+  }
 
   public function getLinterName() {
-    return 'PyFlakes';
+    return 'PYFLAKES';
   }
 
-  public function getPyFlakesOptions() {
-    return null;
+  public function getLinterConfigurationName() {
+    return 'pyflakes';
   }
 
-  public function lintPath($path) {
-    $config = $this->getEngine()->getConfigurationManager();
-    $pyflakes_path = $config->getConfigFromAnySource('lint.pyflakes.path');
-    $pyflakes_prefix = $config->getConfigFromAnySource('lint.pyflakes.prefix');
+  public function getDefaultBinary() {
+    $prefix = $this->getDeprecatedConfiguration('lint.pyflakes.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.pyflakes.bin', 'pyflakes');
 
-    // Default to just finding pyflakes in the users path
-    $pyflakes_bin = 'pyflakes';
-    $python_path = array();
-
-    // If a pyflakes path was specified, then just use that as the
-    // pyflakes binary and assume that the libraries will be imported
-    // correctly.
-    //
-    // If no pyflakes path was specified and a pyflakes prefix was
-    // specified, then use the binary from this prefix and add it to
-    // the PYTHONPATH environment variable so that the libs are imported
-    // correctly.  This is useful when pyflakes is installed into a
-    // non-default location.
-    if ($pyflakes_path !== null) {
-      $pyflakes_bin = $pyflakes_path;
-    } else if ($pyflakes_prefix !== null) {
-      $pyflakes_bin = $pyflakes_prefix.'/bin/pyflakes';
-      $python_path[] = $pyflakes_prefix.'/lib/python2.7/site-packages';
-      $python_path[] = $pyflakes_prefix.'/lib/python2.7/dist-packages';
-      $python_path[] = $pyflakes_prefix.'/lib/python2.6/site-packages';
-      $python_path[] = $pyflakes_prefix.'/lib/python2.6/dist-packages';
+    if ($prefix) {
+      return $prefix.'/'.$bin;
+    } else {
+      return $bin;
     }
-    $python_path[] = '';
-    $python_path = implode(':', $python_path);
-    $options = $this->getPyFlakesOptions();
+  }
 
-    $f = new ExecFuture(
-      '/usr/bin/env PYTHONPATH=%s$PYTHONPATH %s %C',
-      $python_path,
-      $pyflakes_bin,
-      $options);
-    $f->write($this->getData($path));
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
-    try {
-      list($stdout, $_) = $f->resolvex();
-    } catch (CommandException $e) {
-      // PyFlakes will return an exit code of 1 if warnings/errors
-      // are found but print nothing to stderr in this case.  Therefore,
-      // if we see any output on stderr or a return code other than 1 or 0,
-      // pyflakes failed.
-      if ($e->getError() !== 1 || $e->getStderr() !== '') {
-        throw $e;
-      } else {
-        $stdout = $e->getStdout();
-      }
+    $matches = array();
+    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
     }
+  }
 
-    $lines = explode("\n", $stdout);
+  public function getInstallInstructions() {
+    return pht('Install pyflakes with `pip install pyflakes`.');
+  }
+
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
+
+  public function supportsReadDataFromStdin() {
+    return true;
+  }
+
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+    $lines = phutil_split_lines($stdout, false);
+
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
@@ -92,8 +88,19 @@ final class ArcanistPyFlakesLinter extends ArcanistLinter {
       $message->setCode($this->getLinterName());
       $message->setDescription($description);
       $message->setSeverity($severity);
-      $this->addLintMessage($message);
+
+      $messages[] = $message;
     }
+
+    if ($err && !$messages) {
+      return false;
+    }
+
+    return $messages;
+  }
+
+  protected function canCustomizeLintSeverities() {
+    return false;
   }
 
 }

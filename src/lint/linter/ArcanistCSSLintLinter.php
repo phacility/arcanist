@@ -1,14 +1,21 @@
 <?php
 
 /**
- * Uses "CSS lint" to detect checkstyle errors in css code.
- * To use this linter, you must install CSS lint.
- * ##npm install csslint -g## (don't forget the -g flag or NPM will install
- * the package locally).
- *
- * @group linter
+ * Uses "CSS Lint" to detect checkstyle errors in css code.
  */
 final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
+
+  public function getInfoName() {
+    return 'CSSLint';
+  }
+
+  public function getInfoURI() {
+    return 'http://csslint.net';
+  }
+
+  public function getInfoDescription() {
+    return pht('Use `csslint` to detect issues with CSS source files.');
+  }
 
   public function getLinterName() {
     return 'CSSLint';
@@ -19,19 +26,29 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   public function getMandatoryFlags() {
-    return array('--format=lint-xml');
+    return array(
+      '--format=lint-xml',
+      '--quiet',
+    );
   }
 
   public function getDefaultFlags() {
-    // TODO: Deprecation warning.
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource('lint.csslint.options', array());
+    return $this->getDeprecatedConfiguration('lint.csslint.options', array());
   }
 
   public function getDefaultBinary() {
-    // TODO: Deprecation warning.
-    $config = $this->getEngine()->getConfigurationManager();
-    return $config->getConfigFromAnySource('lint.csslint.bin', 'csslint');
+    return $this->getDeprecatedConfiguration('lint.csslint.bin', 'csslint');
+  }
+
+  public function getVersion() {
+    list($stdout) = execx('%C --version', $this->getExecutableCommand());
+
+    $matches = array();
+    if (preg_match('/^v(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+      return $matches['version'];
+    } else {
+      return false;
+    }
   }
 
   public function getInstallInstructions() {

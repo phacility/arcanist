@@ -1,19 +1,14 @@
 <?php
 
-/**
- * Test cases for @{class:ArcanistSpellingLinter}.
- *
- * @group testcase
- */
 final class ArcanistSpellingLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
   public function testSpellingLint() {
     $linter = new ArcanistSpellingLinter();
     $linter->addPartialWordRule('supermn', 'superman');
-    $linter->addWholeWordRule('batmn', 'batman');
+    $linter->addExactWordRule('batmn', 'batman');
 
-    return $this->executeTestsInDirectory(
+    $this->executeTestsInDirectory(
       dirname(__FILE__).'/spelling/',
       $linter);
   }

@@ -7,25 +7,41 @@
  *   # If you define a symbol, it must not duplicate another definition.
  *   # If you define a class or interface in a file, it MUST be the only symbol
  *     defined in that file.
- *
- * @group linter
  */
 final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
-  const LINT_UNKNOWN_SYMBOL               = 1;
-  const LINT_DUPLICATE_SYMBOL             = 2;
-  const LINT_ONE_CLASS_PER_FILE           = 3;
+  const LINT_UNKNOWN_SYMBOL      = 1;
+  const LINT_DUPLICATE_SYMBOL    = 2;
+  const LINT_ONE_CLASS_PER_FILE  = 3;
+
+  public function getInfoName() {
+    return 'Phutil Library Linter';
+  }
+
+  public function getInfoDescription() {
+    return pht(
+      'Make sure all the symbols use in a libphutil library are defined and '.
+      'known. This linter is specific to PHP source in libphutil libraries.');
+  }
+
+  public function getLinterConfigurationName() {
+    return 'phutil-library';
+  }
 
   public function getLintNameMap() {
     return array(
-      self::LINT_UNKNOWN_SYMBOL         => 'Unknown Symbol',
-      self::LINT_DUPLICATE_SYMBOL       => 'Duplicate Symbol',
-      self::LINT_ONE_CLASS_PER_FILE     => 'One Class Per File',
+      self::LINT_UNKNOWN_SYMBOL     => pht('Unknown Symbol'),
+      self::LINT_DUPLICATE_SYMBOL   => pht('Duplicate Symbol'),
+      self::LINT_ONE_CLASS_PER_FILE => pht('One Class Per File'),
     );
   }
 
   public function getLinterName() {
     return 'PHL';
+  }
+
+  public function getLinterPriority() {
+    return 2.0;
   }
 
   public function willLintPaths(array $paths) {
@@ -45,18 +61,18 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
     // itself. This means lint results will accurately reflect the state of
     // the working copy.
 
-    $arc_root = dirname(phutil_get_library_root('arcanist'));
-    $bin = "{$arc_root}/scripts/phutil_rebuild_map.php";
-
     $symbols = array();
     foreach ($libs as $lib) {
-      // Do these one at a time since they individually fanout to saturate
-      // available system resources.
-      $future = new ExecFuture(
-        'php %s --show --quiet --ugly -- %s',
-        $bin,
-        phutil_get_library_root($lib));
-      $symbols[$lib] = $future->resolveJSON();
+      $root = phutil_get_library_root($lib);
+
+      try {
+        $symbols[$lib] = id(new PhutilLibraryMapBuilder($root))
+          ->buildFileSymbolMap();
+      } catch (XHPASTSyntaxErrorException $ex) {
+        // If the library contains a syntax error then there isn't much that we
+        // can do.
+        continue;
+      }
     }
 
     $all_symbols = array();

@@ -2,10 +2,8 @@
 
 /**
  * Applies changes from Differential or a file to the working copy.
- *
- * @group workflow
  */
-final class ArcanistPatchWorkflow extends ArcanistBaseWorkflow {
+final class ArcanistPatchWorkflow extends ArcanistWorkflow {
 
   const SOURCE_BUNDLE         = 'bundle';
   const SOURCE_PATCH          = 'patch';
@@ -52,10 +50,10 @@ EOTEXT
       'diff' => array(
         'param' => 'diff_id',
         'help' =>
-          "Apply changes from a Differential diff. Normally you want to use ".
-          "--revision to get the most recent changes, but you can ".
-          "specifically apply an out-of-date diff or a diff which was never ".
-          "attached to a revision by using this flag.",
+          'Apply changes from a Differential diff. Normally you want to use '.
+          '--revision to get the most recent changes, but you can '.
+          'specifically apply an out-of-date diff or a diff which was never '.
+          'attached to a revision by using this flag.',
       ),
       'arcbundle' => array(
         'param' => 'bundlefile',
@@ -66,58 +64,46 @@ EOTEXT
       'patch' => array(
         'param' => 'patchfile',
         'paramtype' => 'file',
-        'help' =>
-          "Apply changes from a git patchfile or unified patchfile.",
+        'help' => 'Apply changes from a git patchfile or unified patchfile.',
       ),
       'encoding' => array(
         'param' => 'encoding',
-        'help' =>
-          "Attempt to convert non UTF-8 patch into specified encoding.",
+        'help' => 'Attempt to convert non UTF-8 patch into specified encoding.',
       ),
       'update' => array(
-        'supports' => array(
-          'git', 'svn', 'hg'
-        ),
-        'help' =>
-          "Update the local working copy before applying the patch.",
+        'supports' => array('git', 'svn', 'hg'),
+        'help' => 'Update the local working copy before applying the patch.',
         'conflicts' => array(
           'nobranch' => true,
           'bookmark' => true,
         ),
       ),
       'nocommit' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
-          "Normally under git/hg, if the patch is successful, the changes ".
-          "are committed to the working copy. This flag prevents the commit.",
+          'Normally under git/hg, if the patch is successful, the changes '.
+          'are committed to the working copy. This flag prevents the commit.',
       ),
       'skip-dependencies' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
           'Normally, if a patch has dependencies that are not present in the '.
           'working copy, arc tries to apply them as well. This flag prevents '.
           'such work.',
       ),
       'nobranch' => array(
-        'supports' => array(
-          'git', 'hg'
-        ),
+        'supports' => array('git', 'hg'),
         'help' =>
-          "Normally, a new branch (git) or bookmark (hg) is created and then ".
-          "the patch is applied and committed in the new branch/bookmark. ".
-          "This flag cherry-picks the resultant commit onto the original ".
-          "branch and deletes the temporary branch.",
+          'Normally, a new branch (git) or bookmark (hg) is created and then '.
+          'the patch is applied and committed in the new branch/bookmark. '.
+          'This flag cherry-picks the resultant commit onto the original '.
+          'branch and deletes the temporary branch.',
         'conflicts' => array(
           'update' => true,
         ),
       ),
       'force' => array(
-        'help' =>
-          "Do not run any sanity checks.",
+        'help' => 'Do not run any sanity checks.',
       ),
       '*' => 'name',
     );
@@ -147,7 +133,7 @@ EOTEXT
     if ($this->getArgument('name')) {
       $namev = $this->getArgument('name');
       if (count($namev) > 1) {
-        throw new ArcanistUsageException("Specify at most one revision name.");
+        throw new ArcanistUsageException('Specify at most one revision name.');
       }
       $source = self::SOURCE_REVISION;
       $requested++;
@@ -216,7 +202,7 @@ EOTEXT
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
-    $base_name      = "arcpatch";
+    $base_name      = 'arcpatch';
     if ($revision_id) {
       $base_name .= "-D{$revision_id}";
     }
@@ -242,8 +228,8 @@ EOTEXT
 
     if (!$branch_name) {
       throw new Exception(
-        "Arc was unable to automagically make a name for this patch.  ".
-        "Please clean up your working copy and try again."
+        'Arc was unable to automagically make a name for this patch. '.
+        'Please clean up your working copy and try again.'
       );
     }
 
@@ -251,10 +237,10 @@ EOTEXT
   }
 
   private function getBookmarkName(ArcanistBundle $bundle) {
-    $bookmark_name    = null;
+    $bookmark_name  = null;
     $repository_api = $this->getRepositoryAPI();
     $revision_id    = $bundle->getRevisionID();
-    $base_name      = "arcpatch";
+    $base_name      = 'arcpatch';
     if ($revision_id) {
       $base_name .= "-D{$revision_id}";
     }
@@ -281,8 +267,8 @@ EOTEXT
 
     if (!$bookmark_name) {
       throw new Exception(
-        "Arc was unable to automagically make a name for this patch. ".
-        "Please clean up your working copy and try again."
+        'Arc was unable to automagically make a name for this patch. '.
+        'Please clean up your working copy and try again.'
       );
     }
 
@@ -325,9 +311,7 @@ EOTEXT
           $base_revision);
       }
 
-      $repository_api->execxLocal(
-        'bookmark %s',
-        $branch_name);
+      $repository_api->execxLocal('bookmark %s', $branch_name);
 
       echo phutil_console_format(
         "Created and checked out bookmark %s.\n",
@@ -352,7 +336,6 @@ EOTEXT
   }
 
   public function run() {
-
     $source = $this->getSource();
     $param = $this->getSourceParam();
     try {
@@ -362,7 +345,7 @@ EOTEXT
             $patch = @file_get_contents('php://stdin');
             if (!strlen($patch)) {
               throw new ArcanistUsageException(
-                "Failed to read patch from stdin!");
+                'Failed to read patch from stdin!');
             }
           } else {
             $patch = Filesystem::readFile($param);
@@ -516,7 +499,8 @@ EOTEXT
             } else {
               $copies[] = array(
                 $change->getOldPath(),
-                $change->getCurrentPath());
+                $change->getCurrentPath(),
+              );
             }
             break;
           case ArcanistDiffChangeType::TYPE_ADD:
@@ -685,7 +669,7 @@ EOTEXT
         // can not apply these patches on case-insensitive filesystems and
         // there is no way to build a patch which works.
 
-        throw new ArcanistUsageException("Unable to apply patch!");
+        throw new ArcanistUsageException('Unable to apply patch!');
       }
 
       // in case there were any submodule changes involved
@@ -701,7 +685,7 @@ EOTEXT
 
         $commit_message = $this->getCommitMessage($bundle);
         $future = $repository_api->execFutureLocal(
-          'commit -a %C -F -',
+          'commit -a %C -F - --no-verify',
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
@@ -831,7 +815,7 @@ EOTEXT
     if (!$commit_message) {
       $template =
         "\n\n".
-        "# Enter a commit message for this patch.  If you just want to apply ".
+        "# Enter a commit message for this patch. If you just want to apply ".
         "the patch to the working copy without committing, re-run arc patch ".
         "with the --nocommit flag.".
         $prompt_message.
@@ -881,7 +865,7 @@ EOTEXT
         'differential.query',
         array(
           'phids' => $phids,
-          'arcanistProjects' => array($bundle->getProjectID())
+          'arcanistProjects' => array($bundle->getProjectID()),
         ));
       $revs = array();
       foreach ($dep_on_revs as $dep_on_rev) {
@@ -893,7 +877,8 @@ EOTEXT
         $base_args = array(
           '--force',
           '--skip-dependencies',
-          '--nobranch');
+          '--nobranch',
+        );
         if (!$this->shouldCommit()) {
           $base_args[] = '--nocommit';
         }
@@ -931,7 +916,7 @@ EOTEXT
     } else if ($bundle_project_id != $working_copy_project_id) {
       if ($working_copy_project_id) {
         $issue =
-          "This patch is for the '{$bundle_project_id}' project,  but the ".
+          "This patch is for the '{$bundle_project_id}' project, but the ".
           "working copy belongs to the '{$working_copy_project_id}' project.";
       } else {
         $issue =
@@ -984,18 +969,20 @@ EOTEXT
           $source_revision = $this->loadRevisionFromHash($hash);
 
           if ($bundle_revision) {
-            $bundle_base_rev_str = $bundle_base_rev .
-                                   ' \ D' . $bundle_revision['id'];
+            $bundle_base_rev_str = $bundle_base_rev.
+              ' \ D'.$bundle_revision['id'];
           }
           if ($source_revision) {
-            $source_base_rev_str = $source_base_rev .
-                                   ' \ D' . $source_revision['id'];
+            $source_base_rev_str = $source_base_rev.
+              ' \ D'.$source_revision['id'];
           }
         }
-        $bundle_base_rev_str = nonempty($bundle_base_rev_str,
-                                        $bundle_base_rev);
-        $source_base_rev_str = nonempty($source_base_rev_str,
-                                        $source_base_rev);
+        $bundle_base_rev_str = nonempty(
+          $bundle_base_rev_str,
+          $bundle_base_rev);
+        $source_base_rev_str = nonempty(
+          $source_base_rev_str,
+          $source_base_rev);
 
         $ok = phutil_console_confirm(
           "This diff is against commit {$bundle_base_rev_str}, but the ".
@@ -1090,4 +1077,5 @@ EOTEXT
 
     return $graph;
   }
+
 }
