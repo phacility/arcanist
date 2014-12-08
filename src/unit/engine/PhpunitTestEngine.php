@@ -267,8 +267,7 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     if ($bin) {
       if (Filesystem::binaryExists($bin)) {
         $this->phpunitBinary = $bin;
-      }
-      else {
+      } else {
         $this->phpunitBinary = Filesystem::resolvePath($bin, $project_root);
       }
     }

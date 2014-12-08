@@ -68,8 +68,7 @@ EOTEXT
     if (!$commits) {
       throw new ArcanistUsageException(
         'This revision has not been committed yet!');
-    }
-    else if (count($commits) > 1) {
+    } else if (count($commits) > 1) {
       throw new ArcanistUsageException(
         'The revision you provided has multiple commits!');
     }
