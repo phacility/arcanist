@@ -30,6 +30,10 @@ function h(){}
 if ($x) foo();
 else bar();
 do baz(); while ($x);
+
+if ($x) {}
+else if ($y) {}
+else {}
 ~~~~~~~~~~
 advice:3:14
 warning:7:13
@@ -44,6 +48,8 @@ warning:29:13
 warning:30:9
 warning:31:6
 warning:32:4
+warning:34:11
+warning:35:16
 ~~~~~~~~~~
 <?php
 
@@ -66,3 +72,5 @@ function h() {}
 if ($x) foo();
 else bar();
 do baz(); while ($x);
+
+if ($x) {} else if ($y) {} else {}

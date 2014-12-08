@@ -24,6 +24,7 @@ do {
 } while(true);
 ~~~~~~~~~~
 warning:2:1
+warning:2:10
 warning:3:1
 warning:4:1
 warning:5:1
@@ -31,21 +32,20 @@ warning:6:1
 warning:7:1
 warning:7:6
 warning:8:1
+warning:9:11
+warning:10:16
 warning:13:3
 warning:14:3
 warning:24:3
 ~~~~~~~~~~
 <?php
-if ($x) {}
-else {}
+if ($x) {} else {}
 for (;;) {}
 foreach ($x as $y) {}
 while ($x) {}
 do {} while ($x);
 switch ($x) {}
-if ($x) {}
-else if ($y) {}
-else if ($z) {}
+if ($x) {} else if ($y) {} else if ($z) {}
 
 if ($x) {}
 if ($x) {}
