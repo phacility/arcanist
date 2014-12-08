@@ -890,6 +890,18 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         }
       }
     }
+
+    $nodes = $root->selectDescendantsOfType('n_STATEMENT');
+    foreach ($nodes as $node) {
+      $parent = $node->getParentNode();
+
+      if ($parent && $parent->getTypeName() != 'n_STATEMENT_LIST') {
+        $this->raiseLintAtNode(
+            $node,
+            self::LINT_BRACE_FORMATTING,
+            'Use braces to surround a statement block.');
+      }
+    }
   }
 
   private function lintTautologicalExpressions(XHPASTNode $root) {
