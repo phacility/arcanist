@@ -275,29 +275,34 @@ try {
   $host_config = idx($hosts_config, $conduit_uri, array());
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
+  $conduit_token = idx($host_config, 'token');
 
   $description = implode(' ', $original_argv);
   $credentials = array(
-    'user'        => $user_name,
+    'user' => $user_name,
     'certificate' => $certificate,
     'description' => $description,
+    'token' => $conduit_token,
   );
   $workflow->setConduitCredentials($credentials);
 
   if ($need_auth) {
-    if (!$user_name || !$certificate) {
+    if ((!$user_name || !$certificate) && (!$conduit_token)) {
       $arc = 'arc';
       if ($force_conduit) {
         $arc .= csprintf(' --conduit-uri=%s', $conduit_uri);
       }
 
+      $conduit_domain = id(new PhutilURI($conduit_uri))->getDomain();
+
       throw new ArcanistUsageException(
         phutil_console_format(
-          "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR\n\n".
-          "You are trying to connect to '{$conduit_uri}' but do not have ".
-          "a certificate installed for this host. Run:\n\n".
-          "      $ **{$arc} install-certificate**\n\n".
-          "...to install one."));
+          "YOU NEED TO AUTHENTICATE TO CONTINUE\n\n".
+          "You are trying to connect to a server ({$conduit_domain}) that you ".
+          "do not have any credentials stored for.\n\n".
+          "To retrieve and store credentials for this server, ".
+          "**run this command:**\n\n".
+          "      $ **{$arc} install-certificate**\n"));
     }
     $workflow->authenticateConduit();
   }
