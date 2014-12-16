@@ -22,11 +22,23 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
+    if (Filesystem::binaryExists('scalastyle')) {
+      return 'scalastyle';
+    } else {
+      return 'java';
+    }
+  }
+
+  public function shouldUseInterpreter() {
+    return ($this->getDefaultBinary() !== 'scalastyle');
+  }
+
+  public function getDefaultInterpreter() {
     return 'java';
   }
 
   public function getInstallInstructions() {
-    return 'See http://www.scalastyle.org/command-line.html';
+    return 'See http://www.scalastyle.org/command-line.html or run "brew install scalastyle" on OS X';
   }
 
   public function shouldExpectCommandErrors() {
@@ -34,17 +46,12 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    if ($this->jarPath === null) {
-      throw new ArcanistUsageException(
-        pht('Scalastyle JAR path must be configured.'));
-    }
     if ($this->configPath === null) {
       throw new ArcanistUsageException(
         pht('Scalastyle config XML path must be configured.'));
     }
 
     return array(
-      '-jar', $this->jarPath,
       '--config', $this->configPath,
       '--quiet', 'true');
   }
