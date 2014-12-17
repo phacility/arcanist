@@ -5,6 +5,10 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
   private $jarPath = null;
   private $configPath = null;
 
+  private function usesScalaStyle() {
+    return $this->jarPath === null;
+  }
+
   public function getInfoURI() {
     return 'http://www.scalastyle.org/';
   }
@@ -22,7 +26,7 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    if (Filesystem::binaryExists('scalastyle')) {
+    if ($this->usesScalaStyle()) {
       return 'scalastyle';
     } else {
       return 'java';
@@ -43,16 +47,15 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
         pht('Scalastyle config XML path must be configured.'));
     }
 
-    if ($this->jarPath !== null && $this->getDefaultBinary() === 'java') {
-      return array(
-        '-jar', $this->jarPath,
-        '--config', $this->configPath,
-        '--quiet', 'true');
-    } else {
-      return array(
-        '--config', $this->configPath,
-        '--quiet', 'true');
+    $options = array(
+      '--config', $this->configPath,
+      '--quiet', 'true');
+
+    if (!$this->usesScalaStyle()) {
+      array_unshift($options, '-jar', $this->jarPath);
     }
+
+    return $options;
   }
 
   protected function getDefaultFlags() {
