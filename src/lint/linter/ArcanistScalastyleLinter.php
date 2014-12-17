@@ -29,14 +29,6 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
     }
   }
 
-  public function shouldUseInterpreter() {
-    return ($this->getDefaultBinary() !== 'scalastyle');
-  }
-
-  public function getDefaultInterpreter() {
-    return 'java';
-  }
-
   public function getInstallInstructions() {
     return 'See http://www.scalastyle.org/command-line.html or run "brew install scalastyle" on OS X';
   }
@@ -51,9 +43,16 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
         pht('Scalastyle config XML path must be configured.'));
     }
 
-    return array(
-      '--config', $this->configPath,
-      '--quiet', 'true');
+    if ($this->jarPath !== null && $this->getDefaultBinary() === 'java') {
+      return array(
+        '-jar', $this->jarPath,
+        '--config', $this->configPath,
+        '--quiet', 'true');
+    } else {
+      return array(
+        '--config', $this->configPath,
+        '--quiet', 'true');
+    }
   }
 
   protected function getDefaultFlags() {
