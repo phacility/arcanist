@@ -22,7 +22,7 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    if ($this->usesScalaStyleBinary()) {
+    if ($this->usesScalastyleBinary()) {
       return 'scalastyle';
     } else {
       return 'java';
@@ -47,7 +47,7 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
       '--config', $this->configPath,
       '--quiet', 'true');
 
-    if (!$this->usesScalaStyleBinary()) {
+    if (!$this->usesScalastyleBinary()) {
       array_unshift($options, '-jar', $this->jarPath);
     }
 
@@ -180,7 +180,7 @@ final class ArcanistScalastyleLinter extends ArcanistExternalLinter {
     return parent::setLinterConfigurationValue($key, $value);
   }
 
-  private function usesScalaStyleBinary() {
+  private function usesScalastyleBinary() {
     return $this->jarPath === null;
   }
 }
