@@ -51,6 +51,22 @@
  */
 final class ArcanistPyLintLinter extends ArcanistLinter {
 
+  public function getLinterConfigurationName() {
+      return 'pylint';
+  }
+
+  public function getInfoName() {
+      return 'pylint';
+  }
+
+  public function getInfoURI() {
+      return 'http://www.pylint.org/';
+  }
+
+  public function getInfoDescription() {
+      return pht('PyLint is a tool to to detect various errors in Python code');
+  }
+
   private function getMessageCodeSeverity($code) {
     $config = $this->getEngine()->getConfigurationManager();
 
