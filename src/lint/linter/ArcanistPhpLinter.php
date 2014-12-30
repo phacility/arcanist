@@ -63,8 +63,8 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
     // Combine $stdout and $stderr for consistency
     $stdout = $stderr."\n".$stdout;
     $matches = array();
-    $regex = '/PHP (?<type>.+?) error:\s+(?<error>.*?)\s+in\s+(?<file>.*?)'.
-      '\s+on line\s+(?<line>\d*)/';
+    $regex = '/^(?<type>.+?) error:\s+(?<error>.*?)\s+in\s+(?<file>.*?)'.
+      '\s+on line\s+(?<line>\d*)$/m';
     if (preg_match($regex, $stdout, $matches)) {
       $type = strtolower($matches['type']);
       $message = new ArcanistLintMessage();

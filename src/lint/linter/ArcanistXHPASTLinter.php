@@ -1902,9 +1902,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $statics = $def->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
       foreach ($statics as $static) {
         $rhs = $static->getChildByIndex(1);
-        $rhs_vars = $def->selectDescendantsOfType('n_VARIABLE');
-        foreach ($rhs_vars as $var) {
-          $exclude_tokens[$var->getID()] = true;
+        if ($rhs->getTypeName() == 'n_VARIABLE') {
+          $exclude_tokens[$rhs->getID()] = true;
+        } else {
+          $rhs_vars = $rhs->selectDescendantsOfType('n_VARIABLE');
+          foreach ($rhs_vars as $var) {
+            $exclude_tokens[$var->getID()] = true;
+          }
         }
       }
 
