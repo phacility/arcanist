@@ -73,7 +73,9 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     }
 
     $results = array();
-    foreach (Futures($futures)->limit(4) as $test => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $test => $future) {
 
       list($err, $stdout, $stderr) = $future->resolve();
 

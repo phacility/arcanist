@@ -191,7 +191,9 @@ EOTEXT
 
     $branches = ipull($branches, null, 'name');
 
-    foreach (Futures($futures)->limit(16) as $name => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(16);
+    foreach ($futures as $name => $future) {
       list($info) = $future->resolvex();
       list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
 
@@ -250,7 +252,7 @@ EOTEXT
     }
 
     $results = array();
-    foreach (Futures($calls) as $call) {
+    foreach (new FutureIterator($calls) as $call) {
       $results[] = $call->resolve();
     }
 

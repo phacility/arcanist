@@ -113,7 +113,8 @@ EOTEXT
         ));
     }
 
-    Futures($futures)->resolveAll();
+    id(new FutureIterator($futures))
+      ->resolveAll();
 
     return 0;
   }

@@ -284,7 +284,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $last_node = $node;
       }
 
-      foreach (Futures($futures)->limit(4) as $node => $future) {
+      $futures = id(new FutureIterator($futures))
+        ->limit(4);
+      foreach ($futures as $node => $future) {
         list($parents) = $future->resolvex();
         $parents = array_filter(explode("\n", $parents));
         $commits[$node]['parents'] = $parents;
