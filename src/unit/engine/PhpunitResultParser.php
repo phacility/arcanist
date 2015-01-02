@@ -39,7 +39,7 @@ final class PhpunitResultParser extends ArcanistTestResultParser {
       case 'test':
         break;
       case 'testStart':
-        $lastTestFinished = false;
+        $last_test_finished = false;
         // fall through
         default:
           continue 2; // switch + loop
@@ -80,10 +80,10 @@ final class PhpunitResultParser extends ArcanistTestResultParser {
       $result->setUserData($user_data);
 
       $results[] = $result;
-      $lastTestFinished = true;
+      $last_test_finished = true;
     }
 
-    if (!$lastTestFinished) {
+    if (!$last_test_finished) {
       $results[] = id(new ArcanistUnitTestResult())
         ->setName($event->test) // use last event
         ->setUserData($this->stderr)
