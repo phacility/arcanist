@@ -49,7 +49,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         'hook' => 'optional bool',
         'config' => 'optional wild',
         'path' => 'optional string',
-        'arcconfig' => 'optional map<string, string>',
       ));
 
     $exception = null;
@@ -65,15 +64,10 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       $dir = dirname($full_path);
       $path = basename($full_path);
-      $config_file = null;
-      $arcconfig = idx($config, 'arcconfig');
-      if ($arcconfig) {
-        $config_file = json_encode($arcconfig);
-      }
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
-        $config_file,
+        null,
         'Unit Test');
       $configuration_manager = new ArcanistConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
