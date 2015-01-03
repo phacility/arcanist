@@ -47,7 +47,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $config,
       array(
         'hook' => 'optional bool',
-        'config' => 'optional wild',
+        'config' => 'optional map<string, wild>',
         'path' => 'optional string',
       ));
 
