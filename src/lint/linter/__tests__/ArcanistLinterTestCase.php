@@ -29,7 +29,9 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $contents = preg_split('/^~{4,}\n/m', $contents);
     if (count($contents) < 2) {
       throw new Exception(
-        "Expected '~~~~~~~~~~' separating test case and results.");
+        pht(
+          "Expected '%s' separating test case and results.",
+          '~~~~~~~~~~'));
     }
 
     list ($data, $expect, $xform, $config) = array_merge(
@@ -96,7 +98,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $this->assertEqual(
         1,
         count($results),
-        'Expect one result returned by linter.');
+        pht('Expect one result returned by linter.'));
 
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
@@ -140,7 +142,11 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $message_key = $sev.':'.$line.':'.$char;
       $message_map[$message_key] = $message;
       $seen[] = $message_key;
-      $raised[] = "  {$sev} at line {$line}, char {$char}: {$code} {$name}";
+      $raised[] = sprintf(
+        '  %s: %s %s',
+        pht('%s at line %d, char %d', $sev, $line, $char),
+        $code,
+        $name);
     }
     $expect = trim($expect);
     if ($expect) {
@@ -156,16 +162,25 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $seen   = array_fill_keys($seen, true);
 
     if (!$raised) {
-      $raised = array('No messages.');
+      $raised = array(pht('No messages.'));
     }
-    $raised = "Actually raised:\n".implode("\n", $raised);
+    $raised = sprintf(
+      "%s:\n%s",
+      pht('Actually raised'),
+      implode("\n", $raised));
 
     foreach (array_diff_key($expect, $seen) as $missing => $ignored) {
       list($sev, $line, $char) = explode(':', $missing);
       $this->assertFailure(
-        "In '{$file}', ".
-        "expected lint to raise {$sev} on line {$line} at char {$char}, ".
-        "but no {$sev} was raised. {$raised}");
+        pht(
+          "In '%s', expected lint to raise %s on line %d at char %d, ".
+          "but no %s was raised. %s",
+          $file,
+          $sev,
+          $line,
+          $char,
+          $sev,
+          $raised));
     }
 
     foreach (array_diff_key($seen, $expect) as $surprising => $ignored) {
@@ -174,9 +189,17 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       list($sev, $line, $char) = explode(':', $surprising);
       $this->assertFailure(
-        "In '{$file}', ".
-        "lint raised {$sev} on line {$line} at char {$char}, ".
-        "but nothing was expected:\n\n{$message_info}\n\n{$raised}");
+        sprintf(
+          "%s:\n\n%s\n\n%s",
+          pht(
+            "In '%s', lint raised %s on line %d at char %d, ".
+            "but nothing was expected",
+            $file,
+            $sev,
+            $line,
+            $char),
+          $message_info,
+          $raised));
     }
   }
 
@@ -187,7 +210,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $this->assertEqual(
       $expected,
       $actual,
-      'File as patched by lint did not match the expected patched file.');
+      pht('File as patched by lint did not match the expected patched file.'));
   }
 
 }
