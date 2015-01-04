@@ -192,7 +192,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   public function getDefaultInterpreter() {
-    throw new Exception('Incomplete implementation!');
+    throw new PhutilMethodNotImplementedException();
   }
 
   /**
