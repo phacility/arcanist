@@ -62,7 +62,6 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
       '--reporter=checkstyle',
       '--color=never',
       '--noconfig',
-      '--quiet',
     );
 
     if ($this->config) {
