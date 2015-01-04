@@ -201,7 +201,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '11';
+    return '12';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -451,27 +451,44 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     foreach ($calls as $call) {
       $node = $call->getChildByIndex(0);
       $name = $node->getConcreteString();
-      $version = idx($compat_info['functions'], $name);
 
-      if ($version && version_compare($version['min'], $this->version, '>')) {
-        // Check if whitelisted.
-        $whitelisted = false;
-        foreach (idx($whitelist['function'], $name, array()) as $range) {
-          if (array_intersect($range, array_keys($node->getTokens()))) {
-            $whitelisted = true;
-            break;
-          }
+      $version = idx($compat_info['functions'], $name, array());
+      $min = idx($version, 'min');
+      $max = idx($version, 'max');
+
+      // Check if whitelisted.
+      $whitelisted = false;
+      foreach (idx($whitelist['function'], $name, array()) as $range) {
+        if (array_intersect($range, array_keys($node->getTokens()))) {
+          $whitelisted = true;
+          break;
         }
+      }
 
-        if ($whitelisted) {
-          continue;
-        }
+      if ($whitelisted) {
+        continue;
+      }
 
+      if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_COMPATIBILITY,
-          "This codebase targets PHP {$this->version}, but `{$name}()` was ".
-          "not introduced until PHP {$version['min']}.");
+          pht(
+            'This codebase targets PHP %s, but `%s()` was not '.
+            'introduced until PHP %s.',
+            $this->version,
+            $name,
+            $min));
+      } else if ($max && version_compare($max, $this->version, '<')) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_COMPATIBILITY,
+          pht(
+            'This codebase targets PHP %s, but `%s()` was '.
+            'removed in PHP %s.',
+            $this->version,
+            $name,
+            $max));
       } else if (array_key_exists($name, $compat_info['params'])) {
         $params = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
         foreach (array_values($params->getChildren()) as $i => $param) {
@@ -480,9 +497,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
             $this->raiseLintAtNode(
               $param,
               self::LINT_PHP_COMPATIBILITY,
-              "This codebase targets PHP {$this->version}, but parameter ".
-              ($i + 1)." of `{$name}()` was not introduced until PHP ".
-              "{$version}.");
+              pht(
+                'This codebase targets PHP %s, but parameter %d '.
+                'of `%s()` was not introduced until PHP %s.',
+                $this->version,
+                $i + 1,
+                $name,
+                $version));
           }
         }
       }
@@ -494,15 +515,21 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $this->raiseLintAtNode(
             $node,
             self::LINT_PHP_COMPATIBILITY,
-            "This codebase targets PHP {$this->windowsVersion} on Windows, ".
-            "but `{$name}()` is not available there.");
+            pht(
+              'This codebase targets PHP %s on Windows, '.
+              'but `%s()` is not available there.',
+              $this->windowsVersion,
+              $name));
         } else if (version_compare($windows, $this->windowsVersion, '>')) {
           $this->raiseLintAtNode(
             $node,
             self::LINT_PHP_COMPATIBILITY,
-            "This codebase targets PHP {$this->windowsVersion} on Windows, ".
-            "but `{$name}()` is not available there until PHP ".
-            "{$this->windowsVersion}.");
+            pht(
+              'This codebase targets PHP %s on Windows, '.
+              'but `%s()` is not available there until PHP %s.',
+              $this->windowsVersion,
+              $name,
+              $windows));
         }
       }
     }
@@ -510,9 +537,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $classes = $root->selectDescendantsOfType('n_CLASS_NAME');
     foreach ($classes as $node) {
       $name = $node->getConcreteString();
-      $version = idx($compat_info['interfaces'], $name);
+      $version = idx($compat_info['interfaces'], $name, array());
       $version = idx($compat_info['classes'], $name, $version);
-      if ($version && version_compare($version['min'], $this->version, '>')) {
+      $min = idx($version, 'min');
+      $max = idx($version, 'max');
         // Check if whitelisted.
         $whitelisted = false;
         foreach (idx($whitelist['class'], $name, array()) as $range) {
@@ -526,11 +554,26 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           continue;
         }
 
+      if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_COMPATIBILITY,
-          "This codebase targets PHP {$this->version}, but `{$name}` was not ".
-          "introduced until PHP {$version['min']}.");
+          pht(
+            'This codebase targets PHP %s, but `%s` was not '.
+            'introduced until PHP %s.',
+            $this->version,
+            $name,
+            $min));
+      } else if ($max && version_compare($max, $this->version, '<')) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_COMPATIBILITY,
+          pht(
+            'This codebase targets PHP %s, but `%s` was '.
+            'removed in PHP %s.',
+            $this->version,
+            $name,
+            $max));
       }
     }
 
@@ -540,13 +583,30 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $constants = $root->selectDescendantsOfType('n_SYMBOL_NAME');
     foreach ($constants as $node) {
       $name = $node->getConcreteString();
-      $version = idx($compat_info['constants'], $name);
-      if ($version && version_compare($version['min'], $this->version, '>')) {
+      $version = idx($compat_info['constants'], $name, array());
+      $min = idx($version, 'min');
+      $max = idx($version, 'max');
+
+      if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
           $node,
           self::LINT_PHP_COMPATIBILITY,
-          "This codebase targets PHP {$this->version}, but `{$name}` was not ".
-          "introduced until PHP {$version['min']}.");
+          pht(
+            'This codebase targets PHP %s, but `%s` was not '.
+            'introduced until PHP %s.',
+            $this->version,
+            $name,
+            $min));
+      } else if ($max && version_compare($max, $this->version, '<')) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_PHP_COMPATIBILITY,
+          pht(
+            'This codebase targets PHP %s, but `%s` was '.
+            'removed in PHP %s.',
+            $this->version,
+            $name,
+            $max));
       }
     }
 
