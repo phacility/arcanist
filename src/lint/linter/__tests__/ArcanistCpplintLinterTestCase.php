@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistCpplintLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testCpplintLint() {
+  public function testLinter() {
     return $this->executeTestsInDirectory(dirname(__FILE__).'/cpplint/');
   }
 

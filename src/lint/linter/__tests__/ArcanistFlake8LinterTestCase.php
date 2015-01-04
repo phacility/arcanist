@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistFlake8LinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testFlake8Lint() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/flake8/');
   }
 

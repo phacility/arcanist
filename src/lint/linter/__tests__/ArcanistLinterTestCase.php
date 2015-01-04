@@ -6,6 +6,30 @@
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
   /**
+   * Returns an instance of the linter being tested.
+   *
+   * @return ArcanistLinter
+   */
+  protected final function getLinter() {
+    $matches = array();
+
+    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches)) {
+      throw new Exception(pht('Unable to infer linter class name.'));
+    }
+
+    $linter = id(new ReflectionClass($matches[1]))
+      ->newInstanceWithoutConstructor();
+
+    if (!$linter instanceof ArcanistLinter) {
+      throw new Exception(pht('Unable to infer linter class name.'));
+    }
+
+    return $linter;
+  }
+
+  public abstract function testLinter();
+
+  /**
    * Executes all tests from the specified subdirectory. If a linter is not
    * explicitly specified, it will be inferred from the name of the test class.
    */
@@ -14,22 +38,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     ArcanistLinter $linter = null) {
 
     if (!$linter) {
-      // Infer the linter from the class name. This is a little magical, but
-      // reduces the amount of boiler plate code.
-      $count = 0;
-      $linter_name = preg_replace(
-        '/^(\w+Linter)TestCase$/',
-        '$1',
-        get_class($this),
-        1,
-        $count);
-
-      if (!$count) {
-        throw new Exception(pht('Unable to infer linter class name.'));
-      }
-
-      $linter = id(new ReflectionClass($linter_name))
-        ->newInstanceWithoutConstructor();
+      $linter = $this->getLinter();
     }
 
     $files = id(new FileFinder($root))

@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistCSSLintLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testCSSLintLinter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/csslint/');
   }
 

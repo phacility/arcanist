@@ -3,7 +3,7 @@
 final class ArcanistPhutilXHPASTLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
-  public function testPhutilXHPASTLint() {
+  public function testLinter() {
     $linter = new ArcanistPhutilXHPASTLinter();
     $linter->setDeprecatedFunctions(array(
       'deprecated_function' => 'This function is most likely deprecated.',

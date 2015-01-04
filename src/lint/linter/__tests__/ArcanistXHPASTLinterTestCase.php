@@ -3,7 +3,7 @@
 final class ArcanistXHPASTLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
-  public function testXHPASTLint() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/xhpast/');
   }
 

@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistPyFlakesLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testPyflakesLinter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/pyflakes/');
   }
 

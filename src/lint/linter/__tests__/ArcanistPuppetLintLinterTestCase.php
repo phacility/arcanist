@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistPuppetLintLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testPuppetLintLinter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/puppet-lint/');
   }
 

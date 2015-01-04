@@ -1,8 +1,8 @@
 <?php
 
-final class ArcanistHLintLinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistHLintLinterTestCase extends ArcanistExternalLinterTestCase {
 
-  public function testHlintLinter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/hlint/');
   }
 

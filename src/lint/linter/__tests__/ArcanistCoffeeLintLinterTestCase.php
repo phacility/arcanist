@@ -1,9 +1,9 @@
 <?php
 
 final class ArcanistCoffeeLintLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testCoffeeLintLinter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/coffeelint/');
   }
 

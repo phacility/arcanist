@@ -3,7 +3,7 @@
 final class ArcanistCommitLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
-  public function testCommitLint() {
+  public function testLinter() {
     return $this->executeTestsInDirectory(dirname(__FILE__).'/commit/');
   }
 

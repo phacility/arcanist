@@ -1,8 +1,8 @@
 <?php
 
-final class ArcanistPEP8LinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistPEP8LinterTestCase extends ArcanistExternalLinterTestCase {
 
-  public function testPEP8Linter() {
+  public function testLinter() {
     $this->executeTestsInDirectory(dirname(__FILE__).'/pep8/');
   }
 
