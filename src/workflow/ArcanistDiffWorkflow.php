@@ -1333,14 +1333,7 @@ EOTEXT
 
       $this->testResults = array();
       foreach ($unit_workflow->getTestResults() as $test) {
-        $this->testResults[] = array(
-          'name'      => $test->getName(),
-          'link'      => $test->getLink(),
-          'result'    => $test->getResult(),
-          'userdata'  => $test->getUserData(),
-          'coverage'  => $test->getCoverage(),
-          'extra'     => $test->getExtraData(),
-        );
+        $this->testResults[] = $test->toDictionary();
       }
 
       return $unit_result;

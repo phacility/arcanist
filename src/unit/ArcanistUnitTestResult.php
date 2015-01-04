@@ -122,6 +122,7 @@ final class ArcanistUnitTestResult {
 
   public function toDictionary() {
     return array(
+      'namespace' => $this->getNamespace(),
       'name' => $this->getName(),
       'link' => $this->getLink(),
       'result' => $this->getResult(),
