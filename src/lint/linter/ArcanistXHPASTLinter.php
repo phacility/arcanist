@@ -50,7 +50,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_ARRAY_SEPARATOR           = 48;
   const LINT_CONSTRUCTOR_PARENTHESES   = 49;
   const LINT_DUPLICATE_SWITCH_CASE     = 50;
+  const LINT_BLACKLISTED_FUNCTION      = 50;
 
+  private $blacklistedFunctions = array();
   private $naminghook;
   private $switchhook;
   private $version;
@@ -111,6 +113,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_ARRAY_SEPARATOR           => 'Array Separator',
       self::LINT_CONSTRUCTOR_PARENTHESES   => 'Constructor Parentheses',
       self::LINT_DUPLICATE_SWITCH_CASE     => 'Duplicate Case Statements',
+      self::LINT_BLACKLISTED_FUNCTION      => 'Use of Blacklisted Function',
     );
   }
 
@@ -157,6 +160,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLinterConfigurationOptions() {
     return parent::getLinterConfigurationOptions() + array(
+      'xhpast.blacklisted.function' => array(
+        'type' => 'optional map<string, string>',
+        'help' => pht('Blacklisted functions which should not be used.'),
+      ),
       'xhpast.naminghook' => array(
         'type' => 'optional string',
         'help' => pht(
@@ -182,6 +189,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
+      case 'xhpast.blacklisted.function':
+        $this->blacklistedFunctions = $value;
+        return;
       case 'xhpast.naminghook':
         $this->naminghook = $value;
         return;
@@ -201,7 +211,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '12';
+    return '13';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -274,6 +284,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintArraySeparator' => self::LINT_ARRAY_SEPARATOR,
       'lintConstructorParentheses' => self::LINT_CONSTRUCTOR_PARENTHESES,
       'lintSwitchStatements' => self::LINT_DUPLICATE_SWITCH_CASE,
+      'lintBlacklistedFunction' => self::LINT_BLACKLISTED_FUNCTION,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2965,6 +2976,24 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $locations[] = $this->getOtherLocation($node->getOffset());
         }
         $message->setOtherLocations($locations);
+      }
+    }
+  }
+
+  private function lintBlacklistedFunction(XHPASTNode $root) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+
+    foreach ($calls as $call) {
+      $node = $call->getChildByIndex(0);
+      $name = $node->getConcreteString();
+
+      $reason = idx($this->blacklistedFunctions, $name);
+
+      if ($reason) {
+        $this->raiseLintAtNode(
+          $node,
+          self::LINT_BLACKLISTED_FUNCTION,
+          $reason);
       }
     }
   }
