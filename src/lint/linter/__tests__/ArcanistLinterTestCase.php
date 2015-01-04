@@ -110,7 +110,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $configuration_manager->setWorkingCopyIdentity($working_copy);
 
 
-      $engine = new UnitTestableArcanistLintEngine();
+      $engine = new ArcanistUnitTestableLintEngine();
       $engine->setWorkingCopy($working_copy);
       $engine->setConfigurationManager($configuration_manager);
       $engine->setPaths(array($path));
