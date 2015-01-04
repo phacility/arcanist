@@ -5,7 +5,33 @@
  */
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
-  public function executeTestsInDirectory($root, ArcanistLinter $linter) {
+  /**
+   * Executes all tests from the specified subdirectory. If a linter is not
+   * explicitly specified, it will be inferred from the name of the test class.
+   */
+  public function executeTestsInDirectory(
+    $root,
+    ArcanistLinter $linter = null) {
+
+    if (!$linter) {
+      // Infer the linter from the class name. This is a little magical, but
+      // reduces the amount of boiler plate code.
+      $count = 0;
+      $linter_name = preg_replace(
+        '/^(\w+Linter)TestCase$/',
+        '$1',
+        get_class($this),
+        1,
+        $count);
+
+      if (!$count) {
+        throw new Exception(pht('Unable to infer linter class name.'));
+      }
+
+      $linter = id(new ReflectionClass($linter_name))
+        ->newInstanceWithoutConstructor();
+    }
+
     $files = id(new FileFinder($root))
       ->withType('f')
       ->withSuffix('lint-test')

@@ -9,9 +9,7 @@ final class ArcanistPhutilXHPASTLinterTestCase
       'deprecated_function' => 'This function is most likely deprecated.',
     ));
 
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/phlxhp/',
-      $linter);
+    $this->executeTestsInDirectory(dirname(__FILE__).'/phlxhp/', $linter);
   }
 
 }
