@@ -50,7 +50,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_ARRAY_SEPARATOR           = 48;
   const LINT_CONSTRUCTOR_PARENTHESES   = 49;
   const LINT_DUPLICATE_SWITCH_CASE     = 50;
-  const LINT_BLACKLISTED_FUNCTION      = 50;
+  const LINT_BLACKLISTED_FUNCTION      = 51;
+  const LINT_IMPLICIT_VISIBILITY       = 52;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -114,6 +115,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CONSTRUCTOR_PARENTHESES   => 'Constructor Parentheses',
       self::LINT_DUPLICATE_SWITCH_CASE     => 'Duplicate Case Statements',
       self::LINT_BLACKLISTED_FUNCTION      => 'Use of Blacklisted Function',
+      self::LINT_IMPLICIT_VISIBILITY       => 'Implicit Method Visibility',
     );
   }
 
@@ -155,6 +157,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_EMPTY_STATEMENT           => $advice,
       self::LINT_ARRAY_SEPARATOR           => $advice,
       self::LINT_CONSTRUCTOR_PARENTHESES   => $advice,
+      self::LINT_IMPLICIT_VISIBILITY       => $advice,
     );
   }
 
@@ -211,7 +214,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '13';
+    return '14';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -285,6 +288,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintConstructorParentheses' => self::LINT_CONSTRUCTOR_PARENTHESES,
       'lintSwitchStatements' => self::LINT_DUPLICATE_SWITCH_CASE,
       'lintBlacklistedFunction' => self::LINT_BLACKLISTED_FUNCTION,
+      'lintMethodModifier' => self::LINT_IMPLICIT_VISIBILITY,
+      'lintPropertyModifier' => self::LINT_IMPLICIT_VISIBILITY,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -2997,6 +3002,63 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
+
+  private function lintMethodModifier(XHPASTNode $root) {
+    $methods = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
+
+    foreach ($methods as $method) {
+      $modifier_list = $method->getChildOfType(
+        0,
+        'n_METHOD_MODIFIER_LIST');
+
+      if (!$modifier_list->getChildren()) {
+        $this->raiseLintAtNode(
+          $method,
+          self::LINT_IMPLICIT_VISIBILITY,
+          pht('Methods should have their visibility declared explicitly.'),
+          'public '.$method->getConcreteString());
+      }
+    }
+  }
+
+  private function lintPropertyModifier(XHPASTNode $root) {
+    static $visibilities = array(
+      'public',
+      'protected',
+      'private',
+    );
+
+    $nodes = $root->selectDescendantsOfType('n_CLASS_MEMBER_MODIFIER_LIST');
+
+    foreach ($nodes as $node) {
+      $modifiers = $node->getChildren();
+
+      foreach ($modifiers as $modifier) {
+        if ($modifier->getConcreteString() == 'var') {
+          $this->raiseLintAtNode(
+            $modifier,
+            self::LINT_IMPLICIT_VISIBILITY,
+            pht(
+              'Use `%s` instead of `%s` to indicate public visibility.',
+              'public',
+              'var'),
+            'public');
+          continue 2;
+        }
+
+        if (in_array($modifier->getConcreteString(), $visibilities)) {
+          continue 2;
+        }
+      }
+
+      $this->raiseLintAtNode(
+        $node,
+        self::LINT_IMPLICIT_VISIBILITY,
+        pht('Properties should have their visibility declared explicitly.'),
+        'public '.$node->getConcreteString());
+    }
+  }
+
 
   public function getSuperGlobalNames() {
     return array(
