@@ -510,10 +510,14 @@ function sanity_check_environment() {
 }
 
 function die_with_bad_php($message) {
-  echo phutil_console_format(
-    "\n%s\n\n%s\n\n",
-    pht('PHP CONFIGURATION ERRORS'),
-    $message);
+  // NOTE: We're bailing because PHP is broken. We can't call any library
+  // functions because they won't be loaded yet.
+
+  echo "\n";
+  echo 'PHP CONFIGURATION ERRORS';
+  echo "\n\n";
+  echo $message;
+  echo "\n\n";
   exit(1);
 }
 
