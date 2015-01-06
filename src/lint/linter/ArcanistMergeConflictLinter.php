@@ -25,6 +25,12 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
     return 'merge-conflict';
   }
 
+  public function getLintNameMap() {
+    return array(
+      self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),
+    );
+  }
+
   public function lintPath($path) {
     $lines = phutil_split_lines($this->getData($path), false);
 
@@ -39,12 +45,6 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
           pht('This syntax indicates there is an unresolved merge conflict.'));
       }
     }
-  }
-
-  public function getLintNameMap() {
-    return array(
-      self::LINT_MERGECONFLICT => pht('Unresolved merge conflict'),
-    );
   }
 
 }

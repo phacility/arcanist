@@ -5,7 +5,42 @@
  */
 abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
-  public function executeTestsInDirectory($root, ArcanistLinter $linter) {
+  /**
+   * Returns an instance of the linter being tested.
+   *
+   * @return ArcanistLinter
+   */
+  protected final function getLinter() {
+    $matches = array();
+
+    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches)) {
+      throw new Exception(pht('Unable to infer linter class name.'));
+    }
+
+    $linter = id(new ReflectionClass($matches[1]))
+      ->newInstanceWithoutConstructor();
+
+    if (!$linter instanceof ArcanistLinter) {
+      throw new Exception(pht('Unable to infer linter class name.'));
+    }
+
+    return $linter;
+  }
+
+  public abstract function testLinter();
+
+  /**
+   * Executes all tests from the specified subdirectory. If a linter is not
+   * explicitly specified, it will be inferred from the name of the test class.
+   */
+  public function executeTestsInDirectory(
+    $root,
+    ArcanistLinter $linter = null) {
+
+    if (!$linter) {
+      $linter = $this->getLinter();
+    }
+
     $files = id(new FileFinder($root))
       ->withType('f')
       ->withSuffix('lint-test')
@@ -29,7 +64,9 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $contents = preg_split('/^~{4,}\n/m', $contents);
     if (count($contents) < 2) {
       throw new Exception(
-        "Expected '~~~~~~~~~~' separating test case and results.");
+        pht(
+          "Expected '%s' separating test case and results.",
+          '~~~~~~~~~~'));
     }
 
     list ($data, $expect, $xform, $config) = array_merge(
@@ -47,9 +84,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $config,
       array(
         'hook' => 'optional bool',
-        'config' => 'optional wild',
+        'config' => 'optional map<string, wild>',
         'path' => 'optional string',
-        'arcconfig' => 'optional map<string, string>',
       ));
 
     $exception = null;
@@ -65,21 +101,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       $dir = dirname($full_path);
       $path = basename($full_path);
-      $config_file = null;
-      $arcconfig = idx($config, 'arcconfig');
-      if ($arcconfig) {
-        $config_file = json_encode($arcconfig);
-      }
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
-        $config_file,
+        null,
         'Unit Test');
       $configuration_manager = new ArcanistConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
 
 
-      $engine = new UnitTestableArcanistLintEngine();
+      $engine = new ArcanistUnitTestableLintEngine();
       $engine->setWorkingCopy($working_copy);
       $engine->setConfigurationManager($configuration_manager);
       $engine->setPaths(array($path));
@@ -102,7 +133,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $this->assertEqual(
         1,
         count($results),
-        'Expect one result returned by linter.');
+        pht('Expect one result returned by linter.'));
 
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
@@ -146,7 +177,11 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $message_key = $sev.':'.$line.':'.$char;
       $message_map[$message_key] = $message;
       $seen[] = $message_key;
-      $raised[] = "  {$sev} at line {$line}, char {$char}: {$code} {$name}";
+      $raised[] = sprintf(
+        '  %s: %s %s',
+        pht('%s at line %d, char %d', $sev, $line, $char),
+        $code,
+        $name);
     }
     $expect = trim($expect);
     if ($expect) {
@@ -162,16 +197,25 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $seen   = array_fill_keys($seen, true);
 
     if (!$raised) {
-      $raised = array('No messages.');
+      $raised = array(pht('No messages.'));
     }
-    $raised = "Actually raised:\n".implode("\n", $raised);
+    $raised = sprintf(
+      "%s:\n%s",
+      pht('Actually raised'),
+      implode("\n", $raised));
 
     foreach (array_diff_key($expect, $seen) as $missing => $ignored) {
       list($sev, $line, $char) = explode(':', $missing);
       $this->assertFailure(
-        "In '{$file}', ".
-        "expected lint to raise {$sev} on line {$line} at char {$char}, ".
-        "but no {$sev} was raised. {$raised}");
+        pht(
+          "In '%s', expected lint to raise %s on line %d at char %d, ".
+          "but no %s was raised. %s",
+          $file,
+          $sev,
+          $line,
+          $char,
+          $sev,
+          $raised));
     }
 
     foreach (array_diff_key($seen, $expect) as $surprising => $ignored) {
@@ -180,9 +224,17 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
 
       list($sev, $line, $char) = explode(':', $surprising);
       $this->assertFailure(
-        "In '{$file}', ".
-        "lint raised {$sev} on line {$line} at char {$char}, ".
-        "but nothing was expected:\n\n{$message_info}\n\n{$raised}");
+        sprintf(
+          "%s:\n\n%s\n\n%s",
+          pht(
+            "In '%s', lint raised %s on line %d at char %d, ".
+            "but nothing was expected",
+            $file,
+            $sev,
+            $line,
+            $char),
+          $message_info,
+          $raised));
     }
   }
 
@@ -193,7 +245,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     $this->assertEqual(
       $expected,
       $actual,
-      'File as patched by lint did not match the expected patched file.');
+      pht('File as patched by lint did not match the expected patched file.'));
   }
 
 }

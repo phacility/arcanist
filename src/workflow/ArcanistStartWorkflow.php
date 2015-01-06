@@ -63,7 +63,7 @@ EOTEXT
       $started_phids[] = $conduit->callMethodSynchronous(
         'phrequent.push',
         array(
-          'objectPHID' => $object_phid
+          'objectPHID' => $object_phid,
         ));
     }
 

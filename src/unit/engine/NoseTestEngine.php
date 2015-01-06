@@ -59,7 +59,9 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
     }
 
     $results = array();
-    foreach (Futures($futures)->limit(4) as $test_path => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $test_path => $future) {
       try {
         list($stdout, $stderr) = $future->resolvex();
       } catch(CommandException $exc) {

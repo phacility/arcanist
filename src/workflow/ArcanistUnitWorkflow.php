@@ -52,7 +52,7 @@ EOTEXT
       'engine' => array(
         'param' => 'classname',
         'help' =>
-          'Override configured unit engine for this project.'
+          'Override configured unit engine for this project.',
       ),
       'coverage' => array(
         'help' => 'Always enable coverage information.',
@@ -80,7 +80,7 @@ EOTEXT
         'conflicts' => array(
           'json' => 'Only one output format allowed',
           'ugly' => 'Only one output format allowed',
-        )
+        ),
       ),
       'everything' => array(
         'help' => 'Run every test.',

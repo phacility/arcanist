@@ -277,7 +277,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
         dirname($test_assembly['project'])));
       $build_futures[$test_assembly['project']] = $build_future;
     }
-    $iterator = Futures($build_futures)->limit(1);
+    $iterator = id(new FutureIterator($build_futures))->limit(1);
     foreach ($iterator as $test_assembly => $future) {
       $result = new ArcanistUnitTestResult();
       $result->setName('(build) '.$test_assembly);
@@ -353,7 +353,9 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     }
 
     // Run all of the tests.
-    foreach (Futures($futures)->limit(8) as $test_assembly => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(8);
+    foreach ($futures as $test_assembly => $future) {
       list($err, $stdout, $stderr) = $future->resolve();
 
       if (file_exists($outputs[$test_assembly])) {

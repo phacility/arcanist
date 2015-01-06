@@ -13,7 +13,7 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
 
   final public function willLintPaths(array $paths) {
     $limit = $this->getFuturesLimit();
-    $this->futures = Futures(array())->limit($limit);
+    $this->futures = id(new FutureIterator(array()))->limit($limit);
     foreach ($this->buildFutures($paths) as $path => $future) {
       $this->futures->addFuture($future, $path);
     }

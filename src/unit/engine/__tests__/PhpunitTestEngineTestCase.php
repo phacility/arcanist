@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Tests for @{class:PHPUnitTestEngine}.
+ * Tests for @{class:PhpunitTestEngine}.
  */
-final class PHPUnitTestEngineTestCase extends ArcanistTestCase {
+final class PhpunitTestEngineTestCase extends ArcanistTestCase {
 
   public function testSearchLocations() {
     $path = '/path/to/some/file/X.php';

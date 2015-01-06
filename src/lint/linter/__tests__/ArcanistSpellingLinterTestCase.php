@@ -3,7 +3,7 @@
 final class ArcanistSpellingLinterTestCase
   extends ArcanistArcanistLinterTestCase {
 
-  public function testSpellingLint() {
+  public function testLinter() {
     $linter = new ArcanistSpellingLinter();
     $linter->addPartialWordRule('supermn', 'superman');
     $linter->addExactWordRule('batmn', 'batman');

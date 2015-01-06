@@ -609,7 +609,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // After the other commands exit, we can start the `diff-files` command.
     );
 
-    Futures($futures)->resolveAll();
+    id(new FutureIterator($futures))->resolveAll();
 
     // We're clear to start the `git diff-files` now.
     $unstaged_future->start();

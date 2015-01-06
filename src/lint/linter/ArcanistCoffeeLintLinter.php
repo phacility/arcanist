@@ -42,7 +42,9 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install CoffeeLint using `npm install -g coffeelint`.');
+    return pht(
+      'Install CoffeeLint using `%s`.',
+      'npm install -g coffeelint');
   }
 
   public function shouldExpectCommandErrors() {
@@ -60,8 +62,8 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   protected function getMandatoryFlags() {
     $options = array(
       '--reporter=checkstyle',
-      '--nocolor',
-      '--quiet',
+      '--color=never',
+      '--noconfig',
     );
 
     if ($this->config) {
@@ -102,20 +104,20 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
 
     $files = $report_dom->getElementsByTagName('file');
     $messages = array();
+
     foreach ($files as $file) {
       foreach ($file->getElementsByTagName('error') as $error) {
-
         // Column number is not provided in the output.
         // See https://github.com/clutchski/coffeelint/issues/87
 
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($error->getAttribute('line'));
-        $message->setCode($this->getLinterName());
-        $message->setDescription(preg_replace(
-          '/; context: .*$/',
-          '.',
-          $error->getAttribute('message')));
+        $message = id(new ArcanistLintMessage())
+          ->setPath($path)
+          ->setLine($error->getAttribute('line'))
+          ->setCode($this->getLinterName())
+          ->setDescription(preg_replace(
+            '/; context: .*$/',
+            '.',
+            $error->getAttribute('message')));
 
         switch ($error->getAttribute('severity')) {
           case 'warning':
@@ -139,10 +141,8 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-
     // NOTE: We can't figure out which rule generated each message, so we
     // can not customize severities.
-
     throw new Exception(
       pht(
         "CoffeeLint does not currently support custom severity levels, ".

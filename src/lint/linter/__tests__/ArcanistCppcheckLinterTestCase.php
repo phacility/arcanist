@@ -1,12 +1,10 @@
 <?php
 
 final class ArcanistCppcheckLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+  extends ArcanistExternalLinterTestCase {
 
-  public function testCppcheckLint() {
-    return $this->executeTestsInDirectory(
-      dirname(__FILE__).'/cppcheck/',
-      new ArcanistCppcheckLinter());
+  public function testLinter() {
+    return $this->executeTestsInDirectory(dirname(__FILE__).'/cppcheck/');
   }
 
 }

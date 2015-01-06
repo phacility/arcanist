@@ -406,7 +406,7 @@ EOTEXT
           'lintall'   => '--head suppresses lint.',
           'advice'    => '--head suppresses lint.',
         ),
-      )
+      ),
     );
 
     return $arguments;
@@ -1135,7 +1135,9 @@ EOTEXT
       $targets[] = array('command' => 'info', 'path' => $path);
     }
 
-    foreach (Futures($futures)->limit(8) as $key => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(8);
+    foreach ($futures as $key => $future) {
       $target = $targets[$key];
       if ($target['command'] == 'diff') {
         $repository_api->primeSVNDiffResult(
@@ -1331,14 +1333,7 @@ EOTEXT
 
       $this->testResults = array();
       foreach ($unit_workflow->getTestResults() as $test) {
-        $this->testResults[] = array(
-          'name'      => $test->getName(),
-          'link'      => $test->getLink(),
-          'result'    => $test->getResult(),
-          'userdata'  => $test->getUserData(),
-          'coverage'  => $test->getCoverage(),
-          'extra'     => $test->getExtraData(),
-        );
+        $this->testResults[] = $test->toDictionary();
       }
 
       return $unit_result;
@@ -1774,7 +1769,7 @@ EOTEXT
         ));
     }
 
-    foreach (Futures($futures) as $key => $future) {
+    foreach (new FutureIterator($futures) as $key => $future) {
       $result = $future->resolve();
       switch ($key) {
         case 'revision':
@@ -2393,7 +2388,8 @@ EOTEXT
    * @task diffprop
    */
   private function resolveDiffPropertyUpdates() {
-    Futures($this->diffPropertyFutures)->resolveAll();
+    id(new FutureIterator($this->diffPropertyFutures))
+      ->resolveAll();
     $this->diffPropertyFutures = array();
   }
 
@@ -2501,45 +2497,35 @@ EOTEXT
 
     echo pht('Uploading %d files...', count($need_upload))."\n";
 
-    // Now we're ready to upload the actual file data. If possible, we'll just
-    // transmit a hash of the file instead of the actual file data. If the data
-    // already exists, Phabricator can share storage. Check if we can use
-    // "file.uploadhash" yet (i.e., if the server is up to date enough).
-    // TODO: Drop this check once we bump the protocol version.
-    $conduit_methods = $this->getConduit()->callMethodSynchronous(
-      'conduit.query',
-      array());
-    $can_use_hash_upload = isset($conduit_methods['file.uploadhash']);
+    $hash_futures = array();
+    foreach ($need_upload as $key => $spec) {
+      $hash_futures[$key] = $this->getConduit()->callMethod(
+        'file.uploadhash',
+        array(
+          'name' => $spec['name'],
+          'hash' => sha1($spec['data']),
+        ));
+    }
 
-    if ($can_use_hash_upload) {
-      $hash_futures = array();
-      foreach ($need_upload as $key => $spec) {
-        $hash_futures[$key] = $this->getConduit()->callMethod(
-          'file.uploadhash',
-          array(
-            'name' => $spec['name'],
-            'hash' => sha1($spec['data']),
-          ));
+    $futures = id(new FutureIterator($hash_futures))
+      ->limit(8);
+    foreach ($futures as $key => $future) {
+      $type = $need_upload[$key]['type'];
+      $change = $need_upload[$key]['change'];
+      $name = $need_upload[$key]['name'];
+
+      $phid = null;
+      try {
+        $phid = $future->resolve();
+      } catch (Exception $e) {
+        // Just try uploading normally if the hash upload failed.
+        continue;
       }
 
-      foreach (Futures($hash_futures)->limit(8) as $key => $future) {
-        $type = $need_upload[$key]['type'];
-        $change = $need_upload[$key]['change'];
-        $name = $need_upload[$key]['name'];
-
-        $phid = null;
-        try {
-          $phid = $future->resolve();
-        } catch (Exception $e) {
-          // Just try uploading normally if the hash upload failed.
-          continue;
-        }
-
-        if ($phid) {
-          $change->setMetadata("{$type}:binary-phid", $phid);
-          unset($need_upload[$key]);
-          echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
-        }
+      if ($phid) {
+        $change->setMetadata("{$type}:binary-phid", $phid);
+        unset($need_upload[$key]);
+        echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
       }
     }
 
@@ -2553,7 +2539,9 @@ EOTEXT
         ));
     }
 
-    foreach (Futures($upload_futures)->limit(4) as $key => $future) {
+    $futures = id(new FutureIterator($upload_futures))
+      ->limit(4);
+    foreach ($futures as $key => $future) {
       $type = $need_upload[$key]['type'];
       $change = $need_upload[$key]['change'];
       $name = $need_upload[$key]['name'];
