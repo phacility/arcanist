@@ -108,7 +108,7 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
       list($err) = exec_manual('which %s', $pylint_bin);
       if ($err) {
-        throw new ArcanistUsageException(
+        throw new ArcanistMissingLinterException(
           "PyLint does not appear to be installed on this system. Install it ".
           "(e.g., with 'sudo easy_install pylint') or configure ".
           "'lint.pylint.prefix' in your .arcconfig to point to the directory ".

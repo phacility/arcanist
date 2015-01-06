@@ -265,7 +265,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
 
     if ($interpreter) {
       if (!Filesystem::binaryExists($interpreter)) {
-        throw new ArcanistUsageException(
+        throw new ArcanistMissingLinterException(
           pht(
             'Unable to locate interpreter "%s" to run linter %s. You may need '.
             'to install the interpreter, or adjust your linter configuration.',
@@ -273,7 +273,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
             get_class($this)));
       }
       if (!Filesystem::pathExists($binary)) {
-        throw new ArcanistUsageException(
+        throw new ArcanistMissingLinterException(
           sprintf(
             "%s\n%s",
             pht(
@@ -287,7 +287,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       }
     } else {
       if (!Filesystem::binaryExists($binary)) {
-        throw new ArcanistUsageException(
+        throw new ArcanistMissingLinterException(
           sprintf(
             "%s\n%s",
             pht(
