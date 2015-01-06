@@ -28,7 +28,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return 'flake8';
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.flake8.options', array());
   }
 

@@ -27,7 +27,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'pep8';
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.pep8.options', array());
   }
 

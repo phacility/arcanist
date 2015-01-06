@@ -54,7 +54,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     parent::setLinterConfigurationValue($key, $value);
   }
 
-  public function getLintCodeFromLinterConfigurationKey($code) {
+  protected function getLintCodeFromLinterConfigurationKey($code) {
     return $code;
   }
 

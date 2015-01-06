@@ -27,7 +27,7 @@ final class ArcanistChmodLinter extends ArcanistLinter {
     return 'chmod';
   }
 
-  public function shouldLintBinaryFiles() {
+  protected function shouldLintBinaryFiles() {
     return true;
   }
 

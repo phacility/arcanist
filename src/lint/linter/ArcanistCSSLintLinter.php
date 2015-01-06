@@ -25,14 +25,14 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
     return 'csslint';
   }
 
-  public function getMandatoryFlags() {
+  protected function getMandatoryFlags() {
     return array(
       '--format=lint-xml',
       '--quiet',
     );
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.csslint.options', array());
   }
 
