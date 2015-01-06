@@ -417,7 +417,7 @@ abstract class ArcanistLintEngine {
     return $this->stopped;
   }
 
-  abstract protected function buildLinters();
+  abstract public function buildLinters();
 
   final protected function didRunLinters(array $linters) {
     assert_instances_of($linters, 'ArcanistLinter');

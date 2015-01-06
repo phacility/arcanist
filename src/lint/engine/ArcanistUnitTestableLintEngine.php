@@ -25,7 +25,7 @@ final class ArcanistUnitTestableLintEngine extends ArcanistLintEngine {
     return parent::pathExists($path);
   }
 
-  protected function buildLinters() {
+  public function buildLinters() {
     return $this->linters;
   }
 
