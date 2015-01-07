@@ -39,15 +39,11 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
   }
 
   public function getVersion() {
-    list($stdout) = execx('%C --version', $this->getExecutableCommand());
-
-    $matches = array();
-    $regex = '/^PHP (?P<version>\d+\.\d+\.\d+)\b/';
-    if (preg_match($regex, $stdout, $matches)) {
-      return $matches['version'];
-    } else {
-      return false;
-    }
+    list($stdout) = execx(
+      '%C --run %s',
+      $this->getExecutableCommand(),
+      'echo phpversion();');
+    return $stdout;
   }
 
   public function shouldExpectCommandErrors() {
