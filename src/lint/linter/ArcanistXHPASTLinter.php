@@ -3004,20 +3004,36 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintMethodModifier(XHPASTNode $root) {
+    static $visibilities = array(
+      'public',
+      'protected',
+      'private',
+    );
+
     $methods = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
 
     foreach ($methods as $method) {
-      $modifier_list = $method->getChildOfType(
+      $modifiers_list = $method->getChildOfType(
         0,
         'n_METHOD_MODIFIER_LIST');
 
-      if (!$modifier_list->getChildren()) {
-        $this->raiseLintAtNode(
-          $method,
-          self::LINT_IMPLICIT_VISIBILITY,
-          pht('Methods should have their visibility declared explicitly.'),
-          'public '.$method->getConcreteString());
+      foreach ($modifiers_list->getChildren() as $modifier) {
+        if (in_array($modifier->getConcreteString(), $visibilities)) {
+          continue 2;
+        }
       }
+
+      if ($modifiers_list->getChildren()) {
+        $node = $modifiers_list;
+      } else {
+        $node = $method;
+      }
+
+      $this->raiseLintAtNode(
+        $node,
+        self::LINT_IMPLICIT_VISIBILITY,
+        pht('Methods should have their visibility declared explicitly.'),
+        'public '.$node->getConcreteString());
     }
   }
 
