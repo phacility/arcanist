@@ -5,10 +5,10 @@
  */
 final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
 
-  static $allTestsCounter = 0;
-  static $oneTestCounter = 0;
-  static $distinctWillRunTests = array();
-  static $distinctDidRunTests = array();
+  private static $allTestsCounter = 0;
+  private static $oneTestCounter = 0;
+  private static $distinctWillRunTests = array();
+  private static $distinctDidRunTests = array();
 
   protected function willRunTests() {
     self::$allTestsCounter++;
