@@ -222,6 +222,20 @@ final class ArcanistWorkingCopyIdentity {
     return $this->getProjectConfig('project_id');
   }
 
+  public function getProjectReviewers() {
+     $project_reviewers = $this->getProjectConfig('project.reviewers');
+     if($project_reviewers) {
+        return $project_reviewers;
+     }
+  }
+
+  public function getProjectCCs() {
+     $project_ccs = $this->getProjectConfig('project.ccs');
+     if($project_ccs) {
+        return $project_ccs;
+     }
+  }
+
   public function getProjectRoot() {
     return $this->projectRoot;
   }

@@ -56,6 +56,18 @@ final class ArcanistSettings {
           'This is primarily useful if you use SVN and have several different '.
           'projects in the same repository.'),
       ),
+      'project.reviewers' => array(
+        'type' => 'list',
+        'example' => '["user1", "user2"]',
+        'help' => pht(
+          'Associates this project with a default list of reviewers'),
+      ),
+      'project.ccs' => array(
+        'type' => 'list',
+        'example' => '["user1"]',
+        'help' => pht(
+          'Associates this project with a default list of ccs'),
+      ),
       'lint.engine' => array(
         'type' => 'string',
         'legacy' => 'lint_engine',

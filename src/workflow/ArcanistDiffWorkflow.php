@@ -1896,9 +1896,23 @@ EOTEXT
     $faux_message = array();
     if ($this->getArgument('reviewers')) {
       $faux_message[] = 'Reviewers: '.$this->getArgument('reviewers');
+    } else {
+       $proj_reviewers = $this->getWorkingCopy()->getProjectReviewers();
+       if($proj_reviewers) {
+          // Remove the current user from the list of reviewers
+          $reviewers = array_diff($proj_reviewers, array($this->getUserName()));
+          $faux_message[] = 'Reviewers: '.implode(",", $reviewers);
+       }
     }
     if ($this->getArgument('cc')) {
       $faux_message[] = 'CC: '.$this->getArgument('cc');
+    } else {
+       $proj_ccs = $this->getWorkingCopy()->getProjectCCs();
+       if($proj_ccs) {
+          // Remove the current user from the list of CCs
+          $pccs = array_diff($proj_ccs, array($this->getUserName()));
+          $faux_message[] = 'CC: '.implode(",", $pccs);
+       }
     }
 
     if ($faux_message) {
