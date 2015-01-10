@@ -23,6 +23,7 @@ if ($var()) {}
 error:5:3
 error:7:3
 error:12:7
+warning:16:3
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"config": {"xhpast.php-version": "5.3.0"}}

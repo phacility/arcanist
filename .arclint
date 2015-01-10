@@ -41,7 +41,19 @@
       "exclude": "(resources/spelling/.*\\.json$)"
     },
     "text": {
-      "type": "text"
+      "type": "text",
+      "exclude": [
+        "(^\\.arclint$)"
+      ]
+    },
+    "text-without-length": {
+      "type": "text",
+      "severity": {
+        "3": "disabled"
+      },
+      "include": [
+        "(^\\.arclint$)"
+      ]
     },
     "xhpast": {
       "type": "xhpast",
@@ -49,6 +61,9 @@
       "severity": {
         "16": "advice",
         "34": "error"
+      },
+      "xhpast.blacklisted.function": {
+        "eval": "The eval() function should be avoided. It is potentially unsafe and makes debugging more difficult."
       },
       "xhpast.php-version": "5.2.3",
       "xhpast.php-version.windows": "5.3.0"

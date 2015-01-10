@@ -73,12 +73,15 @@ abstract class ArcanistLinter {
     return 1.0;
   }
 
+  /**
+   * TODO: This should be `final`.
+   */
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
     return $this;
   }
 
-  public function setCustomSeverityRules(array $rules) {
+  final public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
   }
@@ -351,7 +354,7 @@ abstract class ArcanistLinter {
         'type' => 'optional map<string|int, string>',
         'help' => pht(
           'Provide a map from lint codes to adjusted severity levels: error, '.
-          'warning, advice, autofix or disabled.')
+          'warning, advice, autofix or disabled.'),
       ),
       'severity.rules' => array(
         'type' => 'optional map<string, string>',

@@ -324,6 +324,31 @@ abstract class ArcanistWorkflow extends Phobject {
           'authenticating conduit!');
       }
 
+      // If we have `token`, this server supports the simpler, new-style
+      // token-based authentication. Use that instead of all the certificate
+      // stuff.
+      if (isset($credentials['token'])) {
+        $conduit = $this->getConduit();
+
+        $conduit->setConduitToken($credentials['token']);
+
+        try {
+          $result = $this->getConduit()->callMethodSynchronous(
+            'user.whoami',
+            array());
+
+          $this->userName = $result['userName'];
+          $this->userPHID = $result['phid'];
+
+          $this->conduitAuthenticated = true;
+
+          return;
+        } catch (Exception $ex) {
+          $conduit->setConduitToken(null);
+          throw $ex;
+        }
+      }
+
       if (empty($credentials['user'])) {
         throw new ConduitClientException(
           'ERR-INVALID-USER',
@@ -351,7 +376,8 @@ abstract class ArcanistWorkflow extends Phobject {
         ));
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
-          $ex->getErrorCode() == 'ERR-INVALID-USER') {
+          $ex->getErrorCode() == 'ERR-INVALID-USER' ||
+          $ex->getErrorCode() == 'ERR-INVALID-AUTH') {
         $conduit_uri = $this->conduitURI;
         $message =
           "\n".

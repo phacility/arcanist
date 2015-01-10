@@ -36,7 +36,7 @@ EOTEXT
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 

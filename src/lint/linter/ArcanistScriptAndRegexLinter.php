@@ -187,7 +187,9 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       $futures[$path] = $future;
     }
 
-    foreach (Futures($futures)->limit(4) as $path => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $path => $future) {
       list($stdout) = $future->resolvex();
       $this->output[$path] = $stdout;
     }

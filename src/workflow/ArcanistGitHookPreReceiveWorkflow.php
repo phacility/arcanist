@@ -37,7 +37,7 @@ EOTEXT
     return true;
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 
@@ -113,7 +113,8 @@ EOTEXT
         ));
     }
 
-    Futures($futures)->resolveAll();
+    id(new FutureIterator($futures))
+      ->resolveAll();
 
     return 0;
   }

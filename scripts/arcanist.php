@@ -15,7 +15,7 @@ $base_args->parsePartial(
     array(
       'name'    => 'load-phutil-library',
       'param'   => 'path',
-      'help'    => 'Load a libphutil library.',
+      'help'    => pht('Load a libphutil library.'),
       'repeat'  => true,
     ),
     array(
@@ -28,25 +28,26 @@ $base_args->parsePartial(
     array(
       'name'    => 'conduit-uri',
       'param'   => 'uri',
-      'help'    => 'Connect to Phabricator install specified by __uri__.',
+      'help'    => pht('Connect to Phabricator install specified by __uri__.'),
     ),
     array(
       'name'    => 'conduit-version',
       'param'   => 'version',
-      'help'    => '(Developers) Mock client version in protocol handshake.',
+      'help'    => pht(
+        '(Developers) Mock client version in protocol handshake.'),
     ),
     array(
       'name'    => 'conduit-timeout',
       'param'   => 'timeout',
-      'help'    => 'Set Conduit timeout (in seconds).',
+      'help'    => pht('Set Conduit timeout (in seconds).'),
     ),
     array(
       'name'   => 'config',
       'param'  => 'key=value',
       'repeat' => true,
-      'help'   =>
+      'help'   => pht(
         'Specify a runtime configuration value. This will take precedence '.
-        'over static values, and only affect the current arcanist invocation.'
+        'over static values, and only affect the current arcanist invocation.'),
     ),
 ));
 
@@ -69,17 +70,22 @@ $workflow = null;
 try {
 
   $console->writeLog(
-    "libphutil loaded from '%s'.\n",
-    phutil_get_library_root('phutil'));
+    "%s\n",
+    pht(
+      "libphutil loaded from '%s'.",
+      phutil_get_library_root('phutil')));
   $console->writeLog(
-    "arcanist loaded from '%s'.\n",
-    phutil_get_library_root('arcanist'));
+    "%s\n",
+    pht(
+      "arcanist loaded from '%s'.",
+      phutil_get_library_root('arcanist')));
 
   if (!$args) {
     if ($help) {
       $args = array('help');
     } else {
-      throw new ArcanistUsageException("No command provided. Try 'arc help'.");
+      throw new ArcanistUsageException(
+        pht('No command provided. Try `%s`.', 'arc help'));
     }
   } else if ($help) {
     array_unshift($args, 'help');
@@ -116,14 +122,17 @@ try {
   // specific libraries to load regardless of the state of the world.
   if ($load) {
     $console->writeLog(
-      "Using '--load-phutil-library' flag, configuration will be ignored ".
-      "and configured libraries will not be loaded."."\n");
+      "%s\n",
+      pht(
+        'Using `%s` flag, configuration will be ignored and configured '.
+        'libraries will not be loaded.',
+        '--load-phutil-library'));
     // Load the flag libraries. These must load, since the user specified them
     // explicitly.
     arcanist_load_libraries(
       $load,
       $must_load = true,
-      $lib_source = 'a "--load-phutil-library" flag',
+      $lib_source = pht('a "%s" flag', '--load-phutil-library'),
       $working_copy);
   } else {
     // Load libraries in system 'load' config. In contrast to global config, we
@@ -132,7 +141,7 @@ try {
     arcanist_load_libraries(
       idx($system_config, 'load', array()),
       $must_load = true,
-      $lib_source = 'the "load" setting in system config',
+      $lib_source = pht('the "%s" setting in system config', 'load'),
       $working_copy);
 
     // Load libraries in global 'load' config, as per "arc set-config load". We
@@ -141,23 +150,22 @@ try {
     arcanist_load_libraries(
       idx($global_config, 'load', array()),
       $must_load = false,
-      $lib_source = 'the "load" setting in global config',
+      $lib_source = pht('the "%s" setting in global config', 'load'),
       $working_copy);
 
     // Load libraries in ".arcconfig". Libraries here must load.
     arcanist_load_libraries(
       $working_copy->getProjectConfig('load'),
       $must_load = true,
-      $lib_source = 'the "load" setting in ".arcconfig"',
+      $lib_source = pht('the "%s" setting in "%s"', 'load', '.arcconfig'),
       $working_copy);
 
     // Load libraries in ".arcconfig". Libraries here must load.
     arcanist_load_libraries(
       idx($runtime_config, 'load', array()),
       $must_load = true,
-      $lib_source = 'the --config "load=[...]" argument',
+      $lib_source = pht('the %s argument', '--config "load=[...]"'),
       $working_copy);
-
   }
 
   $user_config = $configuration_manager->readUserConfigurationFile();
@@ -211,8 +219,9 @@ try {
   if ($need_working_copy || $want_working_copy) {
     if ($need_working_copy && !$working_copy->getVCSType()) {
       throw new ArcanistUsageException(
-        'This command must be run in a Git, Mercurial or Subversion working '.
-        'copy.');
+        pht(
+          'This command must be run in a Git, Mercurial or Subversion '.
+          'working copy.'));
     }
     $configuration_manager->setWorkingCopyIdentity($working_copy);
   }
@@ -223,8 +232,7 @@ try {
     $conduit_uri = $configuration_manager->getConfigFromAnySource(
       'phabricator.uri');
     if ($conduit_uri === null) {
-      $conduit_uri = $configuration_manager->getConfigFromAnySource(
-        'default');
+      $conduit_uri = $configuration_manager->getConfigFromAnySource('default');
     }
   }
 
@@ -258,12 +266,21 @@ try {
     if (!$conduit_uri) {
 
       $message = phutil_console_format(
-        "This command requires arc to connect to a Phabricator install, but ".
-        "no Phabricator installation is configured. To configure a ".
-        "Phabricator URI:\n\n".
-        "  - set a default location with `arc set-config default <uri>`; or\n".
-        "  - specify '--conduit-uri=uri' explicitly; or\n".
-        "  - run 'arc' in a working copy with an '.arcconfig'.\n");
+        "%s\n\n  - %s\n  - %s\n  - %s\n",
+        pht(
+          'This command requires arc to connect to a Phabricator install, '.
+          'but no Phabricator installation is configured. To configure a '.
+          'Phabricator URI:'),
+        pht(
+          'set a default location with `%s`; or',
+          'arc set-config default <uri>'),
+        pht(
+          'specify `%s` explicitly; or',
+          '--conduit-uri=uri'),
+        pht(
+          "run `%s` in a working copy with an '%s'.",
+          'arc',
+          '.arcconfig'));
 
       $message = phutil_console_wrap($message);
       throw new ArcanistUsageException($message);
@@ -275,29 +292,36 @@ try {
   $host_config = idx($hosts_config, $conduit_uri, array());
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
+  $conduit_token = idx($host_config, 'token');
 
   $description = implode(' ', $original_argv);
   $credentials = array(
-    'user'        => $user_name,
+    'user' => $user_name,
     'certificate' => $certificate,
     'description' => $description,
+    'token' => $conduit_token,
   );
   $workflow->setConduitCredentials($credentials);
 
   if ($need_auth) {
-    if (!$user_name || !$certificate) {
+    if ((!$user_name || !$certificate) && (!$conduit_token)) {
       $arc = 'arc';
       if ($force_conduit) {
         $arc .= csprintf(' --conduit-uri=%s', $conduit_uri);
       }
 
+      $conduit_domain = id(new PhutilURI($conduit_uri))->getDomain();
+
       throw new ArcanistUsageException(
         phutil_console_format(
-          "YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR\n\n".
-          "You are trying to connect to '{$conduit_uri}' but do not have ".
-          "a certificate installed for this host. Run:\n\n".
-          "      $ **{$arc} install-certificate**\n\n".
-          "...to install one."));
+          "%s\n\n%s\n\n%s **%s:**\n\n      $ **{$arc} install-certificate**\n",
+          pht('YOU NEED TO AUTHENTICATE TO CONTINUE'),
+          pht(
+            'You are trying to connect to a server (%s) that you '.
+            'do not have any credentials stored for.',
+            $conduit_domain),
+          pht('To retrieve and store credentials for this server,'),
+          pht('run this command')));
     }
     $workflow->authenticateConduit();
   }
@@ -314,8 +338,8 @@ try {
   if ($listeners) {
     foreach ($listeners as $listener) {
       $console->writeLog(
-        "Registering event listener '%s'.\n",
-        $listener);
+        "%s\n",
+        pht("Registering event listener '%s'.", $listener));
       try {
         id(new $listener())->register();
       } catch (PhutilMissingSymbolException $ex) {
@@ -325,9 +349,11 @@ try {
         // it might not have been triggered by the listener itself (for example,
         // the listener might use a bad class in its register() method).
         $console->writeErr(
-          "ERROR: Failed to load event listener '%s': %s\n",
-          $listener,
-          $ex->getMessage());
+          "%s\n",
+          pht(
+            "ERROR: Failed to load event listener '%s': %s",
+            $listener,
+            $ex->getMessage()));
       }
     }
   }
@@ -351,7 +377,8 @@ try {
   $is_usage = ($ex instanceof ArcanistUsageException);
   if ($is_usage) {
     echo phutil_console_format(
-      "**Usage Exception:** %s\n",
+      "**%s** %s\n",
+      pht('Usage Exception:'),
       $ex->getMessage());
   }
 
@@ -365,7 +392,7 @@ try {
   }
 
   if (!$is_usage) {
-    echo phutil_console_format("**Exception**\n");
+    echo phutil_console_format("**%s**\n", pht('Exception'));
 
     while ($ex) {
       echo $ex->getMessage()."\n";
@@ -377,7 +404,9 @@ try {
       }
     }
 
-    echo "(Run with --trace for a full exception trace.)\n";
+    echo phutil_console_format(
+      "(%s)\n",
+      pht('Run with `%s` for a full exception trace.', '--trace'));
   }
 
   exit(1);
@@ -413,7 +442,7 @@ function sanity_check_environment() {
         'text',
         "You need to install the cURL PHP extension, maybe with ".
         "'apt-get install php5-curl' or 'yum install php53-curl' or ".
-        "something similar."),
+        "something similar.",),
       'json_decode'   => array('flag', '--without-json'),
     );
   }
@@ -481,12 +510,16 @@ function sanity_check_environment() {
 }
 
 function die_with_bad_php($message) {
-  echo "\nPHP CONFIGURATION ERRORS\n\n";
+  // NOTE: We're bailing because PHP is broken. We can't call any library
+  // functions because they won't be loaded yet.
+
+  echo "\n";
+  echo 'PHP CONFIGURATION ERRORS';
+  echo "\n\n";
   echo $message;
   echo "\n\n";
   exit(1);
 }
-
 
 function arcanist_load_libraries(
   $load,
@@ -499,10 +532,12 @@ function arcanist_load_libraries(
   }
 
   if (!is_array($load)) {
-    $error = "Libraries specified by {$lib_source} are invalid; expected ".
-             "a list. Check your configuration.";
+    $error = pht(
+      'Libraries specified by %s are invalid; expected a list. '.
+      'Check your configuration.',
+      $lib_source);
     $console = PhutilConsole::getConsole();
-    $console->writeErr("WARNING: %s\n", $error);
+    $console->writeErr("%s: %s\n", pht('WARNING'), $error);
     return;
   }
 
@@ -549,33 +584,40 @@ function arcanist_load_libraries(
 
     $console = PhutilConsole::getConsole();
     $console->writeLog(
-      "Loading phutil library from '%s'...\n",
-      $location);
+      "%s\n",
+      pht("Loading phutil library from '%s'...", $location));
 
     $error = null;
     try {
       phutil_load_library($location);
     } catch (PhutilBootloaderException $ex) {
-      $error = "Failed to load phutil library at location '{$location}'. ".
-               "This library is specified by {$lib_source}. Check that the ".
-               "setting is correct and the library is located in the right ".
-               "place.";
+      $error = pht(
+        "Failed to load phutil library at location '%s'. This library ".
+        "is specified by %s. Check that the setting is correct and the ".
+        "library is located in the right place.",
+        $location,
+        $lib_source);
       if ($must_load) {
         throw new ArcanistUsageException($error);
       } else {
-        fwrite(STDERR, phutil_console_wrap('WARNING: '.$error."\n\n"));
+        fwrite(STDERR, phutil_console_wrap(
+          "%s: %s\n\n",
+          pht('WARNING'),
+          $error));
       }
     } catch (PhutilLibraryConflictException $ex) {
       if ($ex->getLibrary() != 'arcanist') {
         throw $ex;
       }
       $arc_dir = dirname(dirname(__FILE__));
-      $error =
+      $error = pht(
         "You are trying to run one copy of Arcanist on another copy of ".
         "Arcanist. This operation is not supported. To execute Arcanist ".
-        "operations against this working copy, run './bin/arc' (from the ".
-        "current working copy) not some other copy of 'arc' (you ran one ".
-        "from '{$arc_dir}').";
+        "operations against this working copy, run `%s` (from the current ".
+        "working copy) not some other copy of '%s' (you ran one from '%s').",
+        './bin/arc',
+        'arc',
+        $arc_dir);
       throw new ArcanistUsageException($error);
     }
   }
@@ -626,12 +668,14 @@ function reenter_if_this_is_arcanist_or_libphutil(
 
   if ($project_id == 'libphutil') {
     $console->writeLog(
-      "This is libphutil! Forcing this copy to load...\n");
+      "%s\n",
+      pht('This is libphutil! Forcing this copy to load...'));
     $original_argv[0] = dirname(phutil_get_library_root('arcanist')).'/bin/arc';
     $libphutil_path = $project_root;
   } else {
     $console->writeLog(
-      "This is arcanist! Forcing this copy to run...\n");
+      "%s\n",
+      pht('This is arcanist! Forcing this copy to run...'));
     $original_argv[0] = $project_root.'/bin/arc';
     $libphutil_path = dirname(phutil_get_library_root('phutil'));
   }

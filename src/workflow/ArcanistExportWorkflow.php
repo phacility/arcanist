@@ -70,13 +70,13 @@ EOTEXT
         'param' => 'revision_id',
         'help' =>
           'Instead of exporting changes from the working copy, export them '.
-          'from a Differential revision.'
+          'from a Differential revision.',
       ),
       'diff' => array(
         'param' => 'diff_id',
         'help' =>
           'Instead of exporting changes from the working copy, export them '.
-          'from a Differential diff.'
+          'from a Differential diff.',
       ),
       '*' => 'paths',
     );

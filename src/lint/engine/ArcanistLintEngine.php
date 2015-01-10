@@ -2,15 +2,21 @@
 
 /**
  * Manages lint execution. When you run 'arc lint' or 'arc diff', Arcanist
- * checks your .arcconfig to see if you have specified a lint engine in the
- * key "lint.engine". The engine must extend this class. For example:
+ * attempts to run lint rules using a lint engine.
  *
- *   lang=js
- *   {
- *     // ...
- *     "lint.engine" : "ExampleLintEngine",
- *     // ...
- *   }
+ * Lint engines are high-level strategic classes which do not contain any
+ * actual linting rules. Linting rules live in `Linter` classes. The lint
+ * engine builds and configures linters.
+ *
+ * Most modern linters can be configured with an `.arclint` file, which is
+ * managed by the builtin @{class:ArcanistConfigurationDrivenLintEngine}.
+ * Consult the documentation for more information on these files.
+ *
+ * In the majority of cases, you do not need to write a custom lint engine.
+ * For example, to add new rules for a new language, write a linter instead.
+ * However, if you have a very advanced or specialized use case, you can write
+ * a custom lint engine by extending this class; custom lint engines are more
+ * powerful but much more complex than the builtin engines.
  *
  * The lint engine is given a list of paths (generally, the paths that you
  * modified in your change) and determines which linters to run on them. The
@@ -24,15 +30,9 @@
  * whitespace, or enforce tab vs space rules, or make sure there are enough
  * curse words in them.
  *
- * Because lint engines are pretty custom to the rules of a project, you will
- * generally need to build your own. Fortunately, it's pretty easy (and you
- * can use the prebuilt //linters//, you just need to write a little glue code
- * to tell Arcanist which linters to run). For a simple example of how to build
- * a lint engine, see @{class:ExampleLintEngine}.
- *
  * You can test an engine like this:
  *
- *   arc lint --engine ExampleLintEngine --lintall some_file.py
+ *   arc lint --engine YourLintEngineClassName --lintall some_file.py
  *
  * ...which will show you all the lint issues raised in the file.
  *
@@ -417,7 +417,7 @@ abstract class ArcanistLintEngine {
     return $this->stopped;
   }
 
-  abstract protected function buildLinters();
+  abstract public function buildLinters();
 
   final protected function didRunLinters(array $linters) {
     assert_instances_of($linters, 'ArcanistLinter');

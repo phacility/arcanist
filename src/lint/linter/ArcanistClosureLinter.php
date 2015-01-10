@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Uses gJSLint to detect errors and potential problems in JavaScript code.
+ * Uses `gjslint` to detect errors and potential problems in JavaScript code.
  */
 final class ArcanistClosureLinter extends ArcanistExternalLinter {
 
@@ -14,11 +14,11 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht("Uses Google's Closure Linter to check Javascript code.");
+    return pht("Uses Google's Closure Linter to check JavaScript code.");
   }
 
   public function getLinterName() {
-    return 'Closure Linter';
+    return 'GJSLINT';
   }
 
   public function getLinterConfigurationName() {
@@ -31,8 +31,10 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
 
   public function getInstallInstructions() {
     return pht(
-      'Install gJSLint using `sudo easy_install http://closure-linter'.
-      '.googlecode.com/files/closure_linter-latest.tar.gz`');
+      'Install %s using `%s`.',
+      'gjslint',
+      'sudo easy_install http://closure-linter.googlecode.com/'.
+      'files/closure_linter-latest.tar.gz');
   }
 
   public function shouldExpectCommandErrors() {
@@ -44,32 +46,21 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    // Each line looks like this:
-    // Line 46, E:0110: Line too long (87 characters).
-    $regex = '/^Line (\d+), (E:\d+): (.*)/';
-    $severity_code = ArcanistLintSeverity::SEVERITY_ERROR;
-
     $lines = phutil_split_lines($stdout, false);
-
     $messages = array();
+
     foreach ($lines as $line) {
-      $line = trim($line);
       $matches = null;
-      if (!preg_match($regex, $line, $matches)) {
+      if (!preg_match('/^Line (\d+), E:(\d+): (.*)/', $line, $matches)) {
         continue;
       }
-      foreach ($matches as $key => $match) {
-        $matches[$key] = trim($match);
-      }
 
-      $message = new ArcanistLintMessage();
-      $message->setPath($path);
-      $message->setLine($matches[1]);
-      $message->setName($matches[2]);
-      $message->setCode($this->getLinterName());
-      $message->setDescription($matches[3]);
-      $message->setSeverity($severity_code);
-
+      $message = id(new ArcanistLintMessage())
+        ->setPath($path)
+        ->setLine($matches[1])
+        ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
+        ->setCode($this->getLinterName().$matches[2])
+        ->setDescription($matches[3]);
       $messages[] = $message;
     }
 

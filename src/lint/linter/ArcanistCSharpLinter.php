@@ -54,7 +54,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     parent::setLinterConfigurationValue($key, $value);
   }
 
-  public function getLintCodeFromLinterConfigurationKey($code) {
+  protected function getLintCodeFromLinterConfigurationKey($code) {
     return $code;
   }
 
@@ -184,7 +184,9 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
 
   public function didRunLinters() {
     if ($this->futures) {
-      foreach (Futures($this->futures)->limit(8) as $future) {
+      $futures = id(new FutureIterator($this->futures))
+        ->limit(8);
+      foreach ($futures as $future) {
         $this->resolveFuture($future);
       }
     }

@@ -6,10 +6,8 @@
  */
 final class ArcanistXMLLinterTestCase extends ArcanistArcanistLinterTestCase {
 
-  public function testXMLLint() {
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/xml/',
-      new ArcanistXMLLinter());
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/xml/');
   }
 
 }

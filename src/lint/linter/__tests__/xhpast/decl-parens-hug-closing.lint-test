@@ -8,8 +8,8 @@ function &i($x ) {}
 
 final class X {
 
-  function a($x) {}
-  function b($x ) {}
+  public function a($x) {}
+  public function b($x ) {}
 
   final public static function &c($x) {}
   final public static function &d($x ) {}
@@ -26,7 +26,7 @@ f(function($x ) use ($z) {});
 warning:4:14
 warning:7:15
 error:9:13
-warning:12:16
+warning:12:23
 warning:15:37
 warning:18:33
 warning:23:14
@@ -42,8 +42,8 @@ function &i($x) {}
 
 final class X {
 
-  function a($x) {}
-  function b($x) {}
+  public function a($x) {}
+  public function b($x) {}
 
   final public static function &c($x) {}
   final public static function &d($x) {}

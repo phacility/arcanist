@@ -148,7 +148,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
 
     if (!is_array($errors)) {
       // Something went wrong and we can't decode the output. Exit abnormally.
-      throw new ArcanistUsageException(
+      throw new RuntimeException(
         "JSHint returned unparseable output.\n".
         "stdout:\n\n{$stdout}".
         "stderr:\n\n{$stderr}");

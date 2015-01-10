@@ -564,7 +564,7 @@ final class ArcanistDiffParser {
           'rename from (?P<old>.*)',
           '(?P<move>rename) to (?P<cur>.*)',
           'copy from (?P<old>.*)',
-          '(?P<copy>copy) to (?P<cur>.*)'
+          '(?P<copy>copy) to (?P<cur>.*)',
         );
 
         $ok = false;

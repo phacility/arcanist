@@ -63,7 +63,9 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
       '%{column}',
       '%{kind}',
       '%{check}',
-      '%{message}'))));
+      '%{message}',
+      ))),
+    );
   }
 
   public function getLinterConfigurationOptions() {

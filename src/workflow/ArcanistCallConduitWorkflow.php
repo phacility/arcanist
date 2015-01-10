@@ -40,7 +40,7 @@ EOTEXT
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 
@@ -61,7 +61,11 @@ EOTEXT
     $method = reset($method);
 
     $console = PhutilConsole::getConsole();
-    $console->writeErr("%s\n", pht('Waiting for JSON parameters on stdin...'));
+    if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
+      $console->writeErr(
+        "%s\n",
+        pht('Waiting for JSON parameters on stdin...'));
+    }
     $params = @file_get_contents('php://stdin');
     $params = json_decode($params, true);
     if (!is_array($params)) {

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Parser for JUnit, NUnit, etc results format - https://gist.github.com/959290
+ * Parser for JUnit, NUnit, etc results format
  */
 final class ArcanistXUnitTestResultParser {
 

@@ -1,15 +1,15 @@
 <?php
 
 /**
- * Test for @{class:GoTestResultParser}.
+ * Test for @{class:ArcanistGoTestResultParser}.
  */
-final class GoTestResultParserTestCase extends ArcanistTestCase {
+final class ArcanistGoTestResultParserTestCase extends ArcanistTestCase {
 
   public function testSingleTestCaseSuccessful() {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.single-test-case-successful');
 
-    $parsed_results = id(new GoTestResultParser())
+    $parsed_results = id(new ArcanistGoTestResultParser())
       ->parseTestResults('subpackage_test.go', $stubbed_results);
 
     $this->assertEqual(2, count($parsed_results));
@@ -27,7 +27,7 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.single-test-case-failure');
 
-    $parsed_results = id(new GoTestResultParser())
+    $parsed_results = id(new ArcanistGoTestResultParser())
       ->parseTestResults('subpackage_test.go', $stubbed_results);
 
     $this->assertEqual(2, count($parsed_results));
@@ -43,7 +43,7 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.multiple-test-cases-successful');
 
-    $parsed_results = id(new GoTestResultParser())
+    $parsed_results = id(new ArcanistGoTestResultParser())
       ->parseTestResults('package', $stubbed_results);
 
     $this->assertEqual(3, count($parsed_results));
@@ -64,7 +64,7 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.multiple-test-cases-failure');
 
-    $parsed_results = id(new GoTestResultParser())
+    $parsed_results = id(new ArcanistGoTestResultParser())
       ->parseTestResults('package', $stubbed_results);
 
     $this->assertEqual(3, count($parsed_results));
@@ -86,7 +86,7 @@ final class GoTestResultParserTestCase extends ArcanistTestCase {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.nonverbose');
 
-    $parsed_results = id(new GoTestResultParser())
+    $parsed_results = id(new ArcanistGoTestResultParser())
       ->parseTestResults('package', $stubbed_results);
 
     $this->assertEqual(2, count($parsed_results));

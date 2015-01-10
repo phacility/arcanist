@@ -121,7 +121,8 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
       '--lint',
       '--no-color',
       '--strict-math='.($this->strictMath ? 'on' : 'off'),
-      '--strict-units='.($this->strictUnits ? 'on' : 'off'));
+      '--strict-units='.($this->strictUnits ? 'on' : 'off'),
+    );
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
