@@ -152,7 +152,7 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
           $data = substr_replace(
             $data,
             phutil_console_format('##%s##', $text_line),
-            ($cursor == $line_num ? $start : 0),
+            ($cursor == $line_num ? ($start > 0 ? $start : null) : 0),
             strlen($text_line));
         }
 
