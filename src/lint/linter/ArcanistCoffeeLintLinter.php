@@ -62,7 +62,6 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   protected function getMandatoryFlags() {
     $options = array(
       '--reporter=checkstyle',
-      '--color=never',
     );
 
     if ($this->config) {
