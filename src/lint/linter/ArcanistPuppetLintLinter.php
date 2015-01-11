@@ -58,12 +58,14 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array(sprintf('--log-format=%s', implode('|', array(
-      '%{linenumber}',
-      '%{column}',
-      '%{kind}',
-      '%{check}',
-      '%{message}',
+    return array(
+      '--error-level=all',
+      sprintf('--log-format=%s', implode('|', array(
+        '%{linenumber}',
+        '%{column}',
+        '%{kind}',
+        '%{check}',
+        '%{message}',
       ))),
     );
   }
