@@ -58,10 +58,6 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
       'npm install -g csslint');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $report_dom = new DOMDocument();
     $ok = @$report_dom->loadXML($stdout);

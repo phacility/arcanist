@@ -52,10 +52,6 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
       'gem install puppet-lint');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function getMandatoryFlags() {
     return array(
       '--error-level=all',

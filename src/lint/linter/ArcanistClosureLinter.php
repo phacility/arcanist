@@ -37,10 +37,6 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
       'files/closure_linter-latest.tar.gz');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return false;
   }

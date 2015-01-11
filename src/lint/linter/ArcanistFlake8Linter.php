@@ -58,10 +58,6 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return pht('Install flake8 using `easy_install flake8`.');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stdout, false);
 

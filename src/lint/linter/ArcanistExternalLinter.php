@@ -56,7 +56,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   public function shouldExpectCommandErrors() {
-    return false;
+    return true;
   }
 
   /**

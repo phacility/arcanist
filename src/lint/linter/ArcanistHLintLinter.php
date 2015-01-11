@@ -41,10 +41,6 @@ final class ArcanistHLintLinter extends ArcanistExternalLinter {
     return '-';
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function getMandatoryFlags() {
     return array('--json');
   }

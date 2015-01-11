@@ -29,10 +29,6 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       'googlecode.com/svn/trunk/cpplint/cpplint.py`.');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return true;
   }

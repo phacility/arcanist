@@ -68,10 +68,6 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     }
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return true;
   }

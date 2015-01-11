@@ -47,10 +47,6 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
       'npm install -g coffeelint');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return true;
   }

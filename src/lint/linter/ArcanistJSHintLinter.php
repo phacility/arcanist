@@ -73,10 +73,6 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
     return pht('Install JSHint using `npm install -g jshint`.');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return true;
   }
