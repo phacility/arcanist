@@ -7,18 +7,19 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
   private $config;
 
-  public function getInfoURI() {
-    return 'http://puppet-lint.com/';
-  }
-
   public function getInfoName() {
     return 'puppet-lint';
   }
 
+  public function getInfoURI() {
+    return 'http://puppet-lint.com/';
+  }
+
   public function getInfoDescription() {
     return pht(
-      'Use `puppet-lint` to check that your Puppet manifests conform to '.
-      'the style guide.');
+      'Use `%s` to check that your Puppet manifests '.
+      'conform to the style guide.',
+      'puppet-lint');
   }
 
   public function getLinterName() {
@@ -46,7 +47,9 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install puppet-lint using `gem install puppet-lint`.');
+    return pht(
+      'Install puppet-lint using `%s`.',
+      'gem install puppet-lint');
   }
 
   public function shouldExpectCommandErrors() {
@@ -86,9 +89,10 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
       case 'puppet-lint.config':
         $this->config = $value;
         return;
-    }
 
-    return parent::setLinterConfigurationValue($key, $value);
+      default:
+        return parent::setLinterConfigurationValue($key, $value);
+    }
   }
 
   protected function getDefaultFlags() {
@@ -103,35 +107,38 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stdout, false);
-
     $messages = array();
+
     foreach ($lines as $line) {
       $matches = explode('|', $line, 5);
 
-      if (count($matches) === 5) {
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($matches[0]);
-        $message->setChar($matches[1]);
-        $message->setName(ucwords(str_replace('_', ' ', $matches[3])));
-        $message->setDescription(ucfirst($matches[4]));
-
-        switch ($matches[2]) {
-          case 'warning':
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-            break;
-
-          case 'error':
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-            break;
-
-          default:
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
-            break;
-        }
-
-        $messages[] = $message;
+      if (count($matches) < 5) {
+        continue;
       }
+
+      $message = id(new ArcanistLintMessage())
+        ->setPath($path)
+        ->setLine($matches[0])
+        ->setChar($matches[1])
+        ->setCode($this->getLinterName())
+        ->setName(ucwords(str_replace('_', ' ', $matches[3])))
+        ->setDescription(ucfirst($matches[4]));
+
+      switch ($matches[2]) {
+        case 'warning':
+          $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+          break;
+
+        case 'error':
+          $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+          break;
+
+        default:
+          $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
+          break;
+      }
+
+      $messages[] = $message;
     }
 
     if ($err && !$messages) {
