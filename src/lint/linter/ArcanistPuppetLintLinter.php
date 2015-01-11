@@ -56,10 +56,6 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
     return true;
   }
 
-  public function supportsReadDataFromStdin() {
-    return false;
-  }
-
   protected function getMandatoryFlags() {
     return array(
       '--error-level=all',
