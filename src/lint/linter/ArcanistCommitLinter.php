@@ -30,6 +30,10 @@ final class ArcanistCommitLinter extends ArcanistLinter {
     );
   }
 
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
+
   public function lintPath($path) {
     if ($this->getEngine()->getCommitHookMode()) {
       $this->lintNoCommit($path);
