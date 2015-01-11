@@ -125,7 +125,7 @@ phutil_register_library_map(array(
     'ArcanistMercurialParserTestCase' => 'repository/parser/__tests__/ArcanistMercurialParserTestCase.php',
     'ArcanistMergeConflictLinter' => 'lint/linter/ArcanistMergeConflictLinter.php',
     'ArcanistMergeConflictLinterTestCase' => 'lint/linter/__tests__/ArcanistMergeConflictLinterTestCase.php',
-    'ArcanistMissingLinterException' => 'lint/linter/ArcanistMissingLinterException.php',
+    'ArcanistMissingLinterException' => 'lint/linter/exception/ArcanistMissingLinterException.php',
     'ArcanistNoEffectException' => 'exception/usage/ArcanistNoEffectException.php',
     'ArcanistNoEngineException' => 'exception/usage/ArcanistNoEngineException.php',
     'ArcanistNoLintLinter' => 'lint/linter/ArcanistNoLintLinter.php',
