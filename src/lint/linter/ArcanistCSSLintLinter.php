@@ -28,7 +28,6 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   protected function getMandatoryFlags() {
     return array(
       '--format=lint-xml',
-      '--quiet',
     );
   }
 
