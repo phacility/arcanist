@@ -75,25 +75,29 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
     foreach ($files as $file) {
       foreach ($file->childNodes as $child) {
-        $data = $this->getData($path);
-        $lines = explode("\n", $data);
-        $name = $child->getAttribute('reason');
-        $severity = ($child->getAttribute('severity') == 'warning')
-          ? ArcanistLintSeverity::SEVERITY_WARNING
-          : ArcanistLintSeverity::SEVERITY_ERROR;
-
         $message = id(new ArcanistLintMessage())
           ->setPath($path)
           ->setLine($child->getAttribute('line'))
           ->setChar($child->getAttribute('char'))
-          ->setCode('CSSLint')
-          ->setSeverity($severity)
-          ->setDescription($child->getAttribute('reason'));
+          ->setCode($this->getLinterName())
+          ->setDescription($child->getAttribute('reason'))
+          ->setOriginalText(
+            substr(
+              $child->getAttribute('evidence'),
+              $child->getAttribute('char') - 1));
 
-        if ($child->hasAttribute('line') && $child->getAttribute('line') > 0) {
-          $line = $lines[$child->getAttribute('line') - 1];
-          $text = substr($line, $child->getAttribute('char') - 1);
-          $message->setOriginalText($text);
+        switch ($child->getAttribute('severity')) {
+          case 'error':
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+            break;
+
+          case 'warning':
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+            break;
+
+          default:
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+            break;
         }
 
         $messages[] = $message;
