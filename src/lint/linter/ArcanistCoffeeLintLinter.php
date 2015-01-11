@@ -57,7 +57,7 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
 
   protected function getMandatoryFlags() {
     $options = array(
-      '--reporter=checkstyle',
+      '--reporter=raw',
     );
 
     if ($this->config) {
@@ -89,32 +89,29 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $report_dom = new DOMDocument();
-    $ok = @$report_dom->loadXML($stdout);
+    $messages = array();
+    $output = phutil_json_decode($stdout);
 
-    if (!$ok) {
+    // We are only linting a single file.
+    if (count($output) != 1) {
       return false;
     }
 
-    $files = $report_dom->getElementsByTagName('file');
-    $messages = array();
-
-    foreach ($files as $file) {
-      foreach ($file->getElementsByTagName('error') as $error) {
+    foreach ($output as $reports) {
+      foreach ($reports as $report) {
         // Column number is not provided in the output.
         // See https://github.com/clutchski/coffeelint/issues/87
 
         $message = id(new ArcanistLintMessage())
           ->setPath($path)
-          ->setLine($error->getAttribute('line'))
+          ->setLine($report['lineNumber'])
           ->setCode($this->getLinterName())
-          ->setDescription(preg_replace(
-            '/; context: .*$/',
-            '.',
-            $error->getAttribute('message')));
+          ->setName(ucwords(str_replace('_', ' ', $report['name'])))
+          ->setDescription($report['message'])
+          ->setOriginalText(idx($report, 'line'));
 
-        switch ($error->getAttribute('severity')) {
-          case 'warning':
+        switch ($report['level']) {
+          case 'warn':
             $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
             break;
 
@@ -129,6 +126,10 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
 
         $messages[] = $message;
       }
+    }
+
+    if ($err && !$messages) {
+      return false;
     }
 
     return $messages;
