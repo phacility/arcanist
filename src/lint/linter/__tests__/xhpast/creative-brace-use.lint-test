@@ -34,6 +34,8 @@ do baz(); while ($x);
 if ($x) {}
 else if ($y) {}
 else {}
+
+declare(ticks = 1);
 ~~~~~~~~~~
 advice:3:14
 warning:7:13
@@ -74,3 +76,5 @@ else bar();
 do baz(); while ($x);
 
 if ($x) {} else if ($y) {} else {}
+
+declare(ticks = 1);

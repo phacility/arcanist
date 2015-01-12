@@ -974,7 +974,12 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     foreach ($nodes as $node) {
       $parent = $node->getParentNode();
 
-      if ($parent && $parent->getTypeName() != 'n_STATEMENT_LIST') {
+      if (!$parent) {
+        continue;
+      }
+
+      $type = $parent->getTypeName();
+      if ($type != 'n_STATEMENT_LIST' && $type != 'n_DECLARE') {
         $this->raiseLintAtNode(
             $node,
             self::LINT_BRACE_FORMATTING,
