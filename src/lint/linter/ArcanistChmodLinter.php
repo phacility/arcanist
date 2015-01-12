@@ -27,20 +27,18 @@ final class ArcanistChmodLinter extends ArcanistLinter {
     return 'chmod';
   }
 
-  protected function shouldLintBinaryFiles() {
-    return true;
-  }
-
   public function getLintNameMap() {
     return array(
       self::LINT_INVALID_EXECUTABLE => pht('Invalid Executable'),
     );
   }
 
-  public function getLintSeverityMap() {
-    return array(
-      self::LINT_INVALID_EXECUTABLE => ArcanistLintSeverity::SEVERITY_WARNING,
-    );
+  protected function getDefaultMessageSeverity($code) {
+    return ArcanistLintSeverity::SEVERITY_WARNING;
+  }
+
+  protected function shouldLintBinaryFiles() {
+    return true;
   }
 
   public function lintPath($path) {
@@ -97,10 +95,11 @@ final class ArcanistChmodLinter extends ArcanistLinter {
               self::LINT_INVALID_EXECUTABLE,
               pht("'%s' files should not be executable.", $mime));
             return;
-        }
 
-        // Path is a binary file, which makes it a valid executable.
-        return;
+          default:
+            // Path is a binary file, which makes it a valid executable.
+            return;
+        }
       } else if ($this->getShebang($path)) {
         // Path contains a shebang, which makes it a valid executable.
         return;
