@@ -207,15 +207,18 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       implode("\n", $raised));
 
     foreach (array_diff_key($expect, $seen) as $missing => $ignored) {
-      list($sev, $line, $char) = explode(':', $missing);
+      $missing = explode(':', $missing);
+      $sev = array_shift($missing);
+      $pos = $missing;
+
       $this->assertFailure(
         pht(
           "In '%s', expected lint to raise %s on line %d at char %d, ".
           "but no %s was raised. %s",
           $file,
           $sev,
-          $line,
-          $char,
+          idx($pos, 0),
+          idx($pos, 1),
           $sev,
           $raised));
     }
