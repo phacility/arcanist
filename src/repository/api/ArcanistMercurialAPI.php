@@ -109,7 +109,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->branch;
   }
 
-  public function didReloadCommitRange() {
+  protected function didReloadCommitRange() {
     $this->localCommitInfo = null;
   }
 
