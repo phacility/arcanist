@@ -596,7 +596,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     // TODO: Technically, this will include function names. This is unlikely to
     // cause any issues (unless, of course, there existed a function that had
     // the same name as some constant).
-    $constants = $root->selectDescendantsOfType('n_SYMBOL_NAME');
+    $constants = $root->selectDescendantsOfTypes(array(
+      'n_SYMBOL_NAME',
+      'n_MAGIC_SCALAR',
+    ));
     foreach ($constants as $node) {
       $name = $node->getConcreteString();
       $version = idx($compat_info['constants'], $name, array());
