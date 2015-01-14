@@ -86,6 +86,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         'hook' => 'optional bool',
         'config' => 'optional map<string, wild>',
         'path' => 'optional string',
+        'mode' => 'optional string',
       ));
 
     $exception = null;
@@ -98,6 +99,11 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $tmp = new TempFile($basename);
       Filesystem::writeFile($tmp, $data);
       $full_path = (string)$tmp;
+
+      $mode = idx($config, 'mode');
+      if ($mode) {
+        Filesystem::changePermissions($tmp, octdec($mode));
+      }
 
       $dir = dirname($full_path);
       $path = basename($full_path);

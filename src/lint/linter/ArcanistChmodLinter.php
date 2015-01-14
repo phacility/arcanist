@@ -42,9 +42,11 @@ final class ArcanistChmodLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    if (is_executable($path)) {
-      if ($this->getEngine()->isBinaryFile($path)) {
-        $mime = Filesystem::getMimeType($path);
+    $engine = $this->getEngine();
+
+    if (is_executable($engine->getFilePathOnDisk($path))) {
+      if ($engine->isBinaryFile($path)) {
+        $mime = Filesystem::getMimeType($engine->getFilePathOnDisk($path));
 
         switch ($mime) {
           // Archives
