@@ -87,6 +87,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         'config' => 'optional map<string, wild>',
         'path' => 'optional string',
         'mode' => 'optional string',
+        'stopped' => 'optional bool',
       ));
 
     $exception = null;
@@ -126,8 +127,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $path_name = idx($config, 'path', $path);
       $linter->addPath($path_name);
       $linter->addData($path_name, $data);
-      $config = idx($config, 'config', array());
-      foreach ($config as $key => $value) {
+
+      foreach (idx($config, 'config', array()) as $key => $value) {
         $linter->setLinterConfigurationValue($key, $value);
       }
 
@@ -140,6 +141,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         1,
         count($results),
         pht('Expect one result returned by linter.'));
+
+      $assert_stopped = idx($config, 'stopped');
+      if ($assert_stopped !== null) {
+        $this->assertEqual(
+          $assert_stopped,
+          $linter->didStopAllLinters(),
+          $assert_stopped
+            ? pht('Expect linter to be stopped.')
+            : pht('Expect linter to not be stopped.'));
+      }
 
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
