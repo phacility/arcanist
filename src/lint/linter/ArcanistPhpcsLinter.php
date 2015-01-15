@@ -29,7 +29,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return 'phpcs';
   }
 
-  public function getMandatoryFlags() {
+  protected function getMandatoryFlags() {
     return array('--report=xml');
   }
 
