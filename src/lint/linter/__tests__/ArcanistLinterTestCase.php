@@ -11,20 +11,13 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
    * @return ArcanistLinter
    */
   protected final function getLinter() {
-    $matches = array();
-
-    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches)) {
+    $matches = null;
+    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches) ||
+        !is_subclass_of($matches[1], 'ArcanistLinter')) {
       throw new Exception(pht('Unable to infer linter class name.'));
     }
 
-    $linter = id(new ReflectionClass($matches[1]))
-      ->newInstanceWithoutConstructor();
-
-    if (!$linter instanceof ArcanistLinter) {
-      throw new Exception(pht('Unable to infer linter class name.'));
-    }
-
-    return $linter;
+    return newv($matches[1], array());
   }
 
   public abstract function testLinter();
