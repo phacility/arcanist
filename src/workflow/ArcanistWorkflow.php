@@ -661,7 +661,8 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     $more = array();
-    for ($ii = 0; $ii < count($args); $ii++) {
+    $size = count($args);
+    for ($ii = 0; $ii < $size; $ii++) {
       $arg = $args[$ii];
       $arg_name = null;
       $arg_key = null;
@@ -672,6 +673,14 @@ abstract class ArcanistWorkflow extends Phobject {
         break;
       } else if (!strncmp($arg, '--', 2)) {
         $arg_key = substr($arg, 2);
+        $parts = explode('=', $arg_key, 2);
+        if (count($parts) == 2) {
+          list($arg_key, $val) = $parts;
+
+          array_splice($args, $ii, 1, array('--'.$arg_key, $val));
+          $size++;
+        }
+
         if (!array_key_exists($arg_key, $spec)) {
           $corrected = ArcanistConfiguration::correctArgumentSpelling(
             $arg_key,
@@ -706,7 +715,7 @@ abstract class ArcanistWorkflow extends Phobject {
       if (empty($options['param'])) {
         $dict[$arg_key] = true;
       } else {
-        if ($ii == count($args) - 1) {
+        if ($ii == $size - 1) {
           throw new ArcanistUsageException(pht(
             "Option '%s' requires a parameter.",
             $arg));
