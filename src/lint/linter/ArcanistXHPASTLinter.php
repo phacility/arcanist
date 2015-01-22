@@ -52,6 +52,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_DUPLICATE_SWITCH_CASE     = 50;
   const LINT_BLACKLISTED_FUNCTION      = 51;
   const LINT_IMPLICIT_VISIBILITY       = 52;
+  const LINT_CALL_TIME_PASS_BY_REF     = 53;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -116,6 +117,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_DUPLICATE_SWITCH_CASE     => 'Duplicate Case Statements',
       self::LINT_BLACKLISTED_FUNCTION      => 'Use of Blacklisted Function',
       self::LINT_IMPLICIT_VISIBILITY       => 'Implicit Method Visibility',
+      self::LINT_CALL_TIME_PASS_BY_REF     => 'Call-Time Pass-By-Reference',
     );
   }
 
@@ -214,7 +216,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '14';
+    return '15';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -290,6 +292,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintBlacklistedFunction' => self::LINT_BLACKLISTED_FUNCTION,
       'lintMethodModifier' => self::LINT_IMPLICIT_VISIBILITY,
       'lintPropertyModifier' => self::LINT_IMPLICIT_VISIBILITY,
+      'lintCallTimePassByReference' => self::LINT_CALL_TIME_PASS_BY_REF,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3083,6 +3086,20 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  private function lintCallTimePassByReference(XHPASTNode $root) {
+    $nodes = $root->selectDescendantsOfType('n_CALL_PARAMETER_LIST');
+
+    foreach ($nodes as $node) {
+      $parameters = $node->selectDescendantsOfType('n_VARIABLE_REFERENCE');
+
+      foreach ($parameters as $parameter) {
+        $this->raiseLintAtNode(
+          $parameter,
+          self::LINT_CALL_TIME_PASS_BY_REF,
+          pht('Call-time pass-by-reference calls are prohibited.'));
+      }
+    }
+  }
 
   public function getSuperGlobalNames() {
     return array(
