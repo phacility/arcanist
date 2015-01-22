@@ -130,7 +130,11 @@ EOTEXT
         'flag runs every test.');
     }
 
-    $paths = $this->selectPathsForWorkflow($paths, $rev);
+    if ($everything) {
+      $paths = iterator_to_array($this->getRepositoryApi()->getAllFiles());
+    } else {
+      $paths = $this->selectPathsForWorkflow($paths, $rev);
+    }
 
     if (!class_exists($engine_class) ||
         !is_subclass_of($engine_class, 'ArcanistUnitTestEngine')) {
