@@ -38,7 +38,7 @@
     },
     "spelling": {
       "type": "spelling",
-      "exclude": "(resources/spelling/.*\\.json$)"
+      "exclude": "(^resources/spelling/.*\\.json$)"
     },
     "text": {
       "type": "text",
