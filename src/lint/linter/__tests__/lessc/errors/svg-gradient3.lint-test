@@ -1,5 +1,0 @@
-.a {
-  a: svg-gradient(black, orange);
-}
-~~~~~~~~~~
-error:2:6

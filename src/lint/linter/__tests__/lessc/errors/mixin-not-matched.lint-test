@@ -1,8 +1,0 @@
-@saxofon:trumpete;
-
-.mixin(saxofon) {
-}
-
-.mixin(@saxofon);
-~~~~~~~~~~
-error:6:1
