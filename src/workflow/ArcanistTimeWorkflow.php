@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Show time being tracked in Phrequent
+ * Show time being tracked in Phrequent.
  */
 final class ArcanistTimeWorkflow extends ArcanistPhrequentWorkflow {
 
@@ -18,7 +18,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-Show what you're currently tracking in Phrequent.
+          Show what you're currently tracking in Phrequent.
 EOTEXT
       );
   }
@@ -27,17 +27,8 @@ EOTEXT
     return true;
   }
 
-  public function desiresWorkingCopy() {
-    return false;
-  }
-
   public function requiresAuthentication() {
     return true;
-  }
-
-  public function getArguments() {
-    return array(
-    );
   }
 
   public function run() {
