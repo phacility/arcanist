@@ -30,7 +30,7 @@ EOTEXT
   public function getArguments() {
     return array(
       'json' => array(
-        'help' => 'Output upload information in JSON format.',
+        'help' => pht('Output upload information in JSON format.'),
       ),
       '*' => 'paths',
     );
@@ -38,7 +38,8 @@ EOTEXT
 
   protected function didParseArguments() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException('Specify one or more files to upload.');
+      throw new ArcanistUsageException(
+        pht('Specify one or more files to upload.'));
     }
 
     $this->paths = $this->getArgument('paths');
@@ -49,27 +50,19 @@ EOTEXT
     return true;
   }
 
-  private function getPaths() {
-    return $this->paths;
-  }
-
-  private function getJSON() {
-    return $this->json;
-  }
-
   public function run() {
     $conduit = $this->getConduit();
-
     $results = array();
 
     foreach ($this->paths as $path) {
       $name = basename($path);
-      $this->writeStatusMessage("Uploading '{$name}'...\n");
+      $this->writeStatusMessage(pht("Uploading '%s'...", $name)."\n");
+
       try {
         $data = Filesystem::readFile($path);
       } catch (FilesystemException $ex) {
         $this->writeStatusMessage(
-          "Unable to upload file: ".$ex->getMessage()."\n");
+          pht('Unable to upload file: %s.', $ex->getMessage())."\n");
         $results[$path] = null;
         continue;
       }
@@ -78,26 +71,26 @@ EOTEXT
         'file.upload',
         array(
           'data_base64' => base64_encode($data),
-          'name'        => $name,
+          'name' => $name,
         ));
       $info = $conduit->callMethodSynchronous(
         'file.info',
         array(
-          'phid'        => $phid,
+          'phid' => $phid,
         ));
 
       $results[$path] = $info;
 
-      if (!$this->getJSON()) {
+      if (!$this->json) {
         $id = $info['id'];
         echo "  F{$id} {$name}: ".$info['uri']."\n\n";
       }
     }
 
-    if ($this->getJSON()) {
+    if ($this->json) {
       echo json_encode($results)."\n";
     } else {
-      $this->writeStatusMessage("Done.\n");
+      $this->writeStatusMessage(pht('Done.')."\n");
     }
 
     return 0;
