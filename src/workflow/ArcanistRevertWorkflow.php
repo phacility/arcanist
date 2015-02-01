@@ -29,9 +29,13 @@ EOTEXT
     );
   }
 
+  protected function getSupportedRevisionControlSystems() {
+    return array('git', 'hg');
+  }
+
   public function run() {
-    $console = PhutilConsole::getConsole();
-    $console->writeOut("Please use arc backout instead.\n");
+    echo pht('Please use `%s` instead.', 'arc backout')."\n";
+    return 1;
   }
 
 }
