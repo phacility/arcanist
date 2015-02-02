@@ -51,10 +51,6 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
-    if (!xhpast_is_available()) {
-      throw new Exception(xhpast_get_build_instructions());
-    }
-
     // NOTE: For now, we completely ignore paths and just lint every library in
     // its entirety. This is simpler and relatively fast because we don't do any
     // detailed checks and all the data we need for this comes out of module
