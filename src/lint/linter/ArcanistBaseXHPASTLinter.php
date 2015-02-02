@@ -14,9 +14,9 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
     $parts[] = $this->getVersion();
 
-    $path = xhpast_get_binary_path();
-    if (Filesystem::pathExists($path)) {
-      $parts[] = md5_file($path);
+    $version = PhutilXHPASTBinary::getVersion();
+    if ($version) {
+      $parts[] = $version;
     }
 
     return implode('-', $parts);
