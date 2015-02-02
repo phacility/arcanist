@@ -65,12 +65,6 @@ EOTEXT
   public function run() {
     $repository_api = $this->getRepositoryAPI();
 
-    if (!($repository_api instanceof ArcanistSubversionAPI)) {
-      throw new ArcanistUsageException(
-        "'arc commit' is only supported under svn.");
-    }
-
-
     $revision_id = $this->normalizeRevisionID($this->getArgument('revision'));
     if (!$revision_id) {
       $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
@@ -271,7 +265,7 @@ EOTEXT
     }
   }
 
-  protected function getSupportedRevisionControlSystems() {
+  public function getSupportedRevisionControlSystems() {
     return array('svn');
   }
 

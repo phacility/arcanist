@@ -188,7 +188,7 @@ EOTEXT
     return 0;
   }
 
-  protected function getSupportedRevisionControlSystems() {
+  public function getSupportedRevisionControlSystems() {
     return array('git', 'hg');
   }
 
