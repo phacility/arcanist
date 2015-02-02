@@ -1216,7 +1216,7 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   protected function getSupportedRevisionControlSystems() {
-    return array('any');
+    return array('git', 'hg', 'svn');
   }
 
   final protected function getPassthruArgumentsAsMap($command) {

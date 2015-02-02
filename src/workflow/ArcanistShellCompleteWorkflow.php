@@ -82,10 +82,7 @@ EOTEXT
           continue;
         }
 
-        $supported = $workflow->getSupportedRevisionControlSystems();
-
-        $ok = (in_array('any', $supported) || in_array($vcs, $supported));
-        if (!$ok) {
+        if (!in_array($vcs, $workflow->getSupportedRevisionControlSystems())) {
           continue;
         }
 
