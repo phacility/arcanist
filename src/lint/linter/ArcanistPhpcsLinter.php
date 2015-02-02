@@ -5,7 +5,7 @@
  */
 final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
-  private $reports;
+  private $standard;
 
   public function getInfoName() {
     return 'PHP_CodeSniffer';
@@ -29,12 +29,40 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return 'phpcs';
   }
 
-  protected function getMandatoryFlags() {
-    return array('--report=xml');
-  }
-
   public function getInstallInstructions() {
     return pht('Install PHPCS with `pear install PHP_CodeSniffer`.');
+  }
+
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'phpcs.standard' => array(
+        'type' => 'optional string',
+        'help' => pht('The name or path of the coding standard to use.'),
+      ),
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'phpcs.standard':
+        $this->standard = $value;
+        return;
+
+      default:
+        return parent::setLinterConfigurationValue($key, $value);
+    }
+  }
+
+  protected function getMandatoryFlags() {
+    $options = array('--report=xml');
+
+    if ($this->standard) {
+      $options[] = '--standard='.$this->standard;
+    }
+
+    return $options;
   }
 
   protected function getDefaultFlags() {
