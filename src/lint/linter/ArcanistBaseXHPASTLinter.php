@@ -103,7 +103,8 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   final protected function buildSharedFutures(array $paths) {
     foreach ($paths as $path) {
       if (!isset($this->futures[$path])) {
-        $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
+        $this->futures[$path] = PhutilXHPASTBinary::getParserFuture(
+          $this->getData($path));
       }
     }
     return array_select_keys($this->futures, $paths);
