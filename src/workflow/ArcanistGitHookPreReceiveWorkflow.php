@@ -41,6 +41,10 @@ EOTEXT
     return false;
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git');
+  }
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
     if (!$working_copy->getProjectID()) {
