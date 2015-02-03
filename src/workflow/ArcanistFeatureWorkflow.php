@@ -69,13 +69,12 @@ EOTEXT
     );
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git', 'hg');
+  }
+
   public function run() {
     $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI) &&
-        !($repository_api instanceof ArcanistMercurialAPI)) {
-      throw new ArcanistUsageException(
-        'arc feature is only supported under Git and Mercurial.');
-    }
 
     $names = $this->getArgument('branch');
     if ($names) {
