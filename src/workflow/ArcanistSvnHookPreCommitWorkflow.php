@@ -36,6 +36,10 @@ EOTEXT
     return false;
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('svn');
+  }
+
   public function run() {
     $svnargs = $this->getArgument('svnargs');
     $repository = $svnargs[0];
