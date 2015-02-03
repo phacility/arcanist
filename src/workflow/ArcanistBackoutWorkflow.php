@@ -22,7 +22,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Reverts/backouts on a previous commit. Supports: git
+          Reverts/backouts on a previous commit. Supports: git, hg
    Command is used like this: arc backout <commithash> | <diff revision>
    Entering a differential revision will only work if there is only one commit
    associated with the revision. This requires your working copy is up to date
@@ -125,6 +125,10 @@ EOTEXT
     return $template;
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git', 'hg');
+  }
+
   /**
    * Performs the backout/revert of a revision and creates a commit.
    */
@@ -138,13 +142,6 @@ EOTEXT
     $is_hg_svn = $repository_api instanceof ArcanistMercurialAPI &&
                  $repository_api->isHgSubversionRepo();
     $revision_id = null;
-
-    if (!($repository_api instanceof ArcanistGitAPI) &&
-        !($repository_api instanceof ArcanistMercurialAPI)) {
-      throw new ArcanistUsageException(
-        'Backout currently only supports Git and Mercurial'
-      );
-    }
 
     $console->writeOut("Starting backout\n");
     $input = $this->getArgument('input');
