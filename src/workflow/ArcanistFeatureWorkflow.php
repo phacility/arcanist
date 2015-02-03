@@ -124,10 +124,11 @@ EOTEXT
       if (preg_match('/^D(\d+)$/', $name, $match)) {
         try {
           $diff = $this->getConduit()->callMethodSynchronous(
-            'differential.getdiff',
+            'differential.querydiffs',
             array(
-              'revision_id' => $match[1],
+              'revisionIDs' => array($match[1]),
             ));
+          $diff = head($diff);
 
           if ($diff['branch'] != '') {
             $name = $diff['branch'];
