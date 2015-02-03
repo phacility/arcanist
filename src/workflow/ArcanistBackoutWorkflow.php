@@ -88,15 +88,16 @@ EOTEXT
    */
   private function getDiffusionCommit($commit_id) {
     $result = $this->getConduit()->callMethodSynchronous(
-      'diffusion.getcommits',
+      'diffusion.querycommits',
       array(
-        'commits' => array($commit_id),
+        'names' => array($commit_id),
       ));
-    $commit = $result[$commit_id];
+    $phid = idx($result['identifierMap'], $commit_id);
     // This commit was not found in Diffusion
-    if (array_key_exists('error', $commit)) {
+    if (!$phid) {
       return null;
     }
+    $commit = $result['data'][$phid];
     return $commit;
   }
 
@@ -157,7 +158,7 @@ EOTEXT
       $revision_id = $matches[1];
       $commit_id = $this->getCommitIDFromRevisionID($revision_id);
       $commit = $this->getDiffusionCommit($commit_id);
-      $commit_hash = $commit['commitIdentifier'];
+      $commit_hash = $commit['identifier'];
       // Convert commit hash from SVN to Git/HG (for FB case)
       if ($is_git_svn || $is_hg_svn) {
         $commit_hash = $repository_api->

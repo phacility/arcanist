@@ -1008,10 +1008,12 @@ abstract class ArcanistWorkflow extends Phobject {
     $repository = $this->loadProjectRepository();
     if ($repository) {
       $callsign = $repository['callsign'];
-      $known_commits = $this->getConduit()->callMethodSynchronous(
-        'diffusion.getcommits',
-        array('commits' => array('r'.$callsign.$commit['commit'])));
-      if (ifilter($known_commits, 'error', $negate = true)) {
+      $commit_name = 'r'.$callsign.$commit['commit'];
+      $result = $this->getConduit()->callMethodSynchronous(
+        'diffusion.querycommits',
+        array('names' => array($commit_name)));
+      $known_commit = idx($result['identifierMap'], $commit_name);
+      if (!$known_commit) {
         return false;
       }
     }
