@@ -202,17 +202,21 @@ try {
     $workflow->setConduitTimeout($conduit_timeout);
   }
 
+  $need_working_copy = $workflow->requiresWorkingCopy();
+
   $supported_vcs_types = $workflow->getSupportedRevisionControlSystems();
-  if (!in_array($working_copy->getVCSType(), $supported_vcs_types)) {
-    throw new ArcanistUsageException(
-      pht(
-        '`%s %s` is only supported under %s.',
-        'arc',
-        $workflow->getWorkflowName(),
-        implode(', ', $supported_vcs_types)));
+  $vcs_type = $working_copy->getVCSType();
+  if ($vcs_type || $need_working_copy) {
+    if (!in_array($vcs_type, $supported_vcs_types)) {
+      throw new ArcanistUsageException(
+        pht(
+          '`%s %s` is only supported under %s.',
+          'arc',
+          $workflow->getWorkflowName(),
+          implode(', ', $supported_vcs_types)));
+    }
   }
 
-  $need_working_copy    = $workflow->requiresWorkingCopy();
   $need_conduit         = $workflow->requiresConduit();
   $need_auth            = $workflow->requiresAuthentication();
   $need_repository_api  = $workflow->requiresRepositoryAPI();

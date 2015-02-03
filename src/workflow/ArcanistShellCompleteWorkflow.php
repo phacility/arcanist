@@ -82,8 +82,11 @@ EOTEXT
           continue;
         }
 
-        if (!in_array($vcs, $workflow->getSupportedRevisionControlSystems())) {
-          continue;
+        if ($vcs || $workflow->requiresWorkingCopy()) {
+          $supported_vcs = $workflow->getSupportedRevisionControlSystems();
+          if (!in_array($vcs, $supported_vcs)) {
+            continue;
+          }
         }
 
         $complete[] = $name;
