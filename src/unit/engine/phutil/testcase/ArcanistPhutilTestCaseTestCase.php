@@ -6,11 +6,11 @@
 final class ArcanistPhutilTestCaseTestCase extends ArcanistPhutilTestCase {
 
   public function testFail() {
-    $this->assertFailure('This test is expected to fail.');
+    $this->assertFailure(pht('This test is expected to fail.'));
   }
 
   public function testSkip() {
-    $this->assertSkipped('This test is expected to skip.');
+    $this->assertSkipped(pht('This test is expected to skip.'));
   }
 
 }
