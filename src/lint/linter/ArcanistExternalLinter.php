@@ -141,8 +141,8 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @return this
    * @task bin
    */
-  final public function setFlags($flags) {
-    $this->flags = (array)$flags;
+  final public function setFlags(array $flags) {
+    $this->flags = $flags;
     return $this;
   }
 
@@ -337,21 +337,9 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task exec
    */
   final protected function getCommandFlags() {
-    $mandatory_flags = $this->getMandatoryFlags();
-    if (!is_array($mandatory_flags)) {
-      phutil_deprecated(
-        'String support for flags.', 'You should use list<string> instead.');
-      $mandatory_flags = (array) $mandatory_flags;
-    }
-
-    $flags = nonempty($this->flags, $this->getDefaultFlags());
-    if (!is_array($flags)) {
-      phutil_deprecated(
-        'String support for flags.', 'You should use list<string> instead.');
-      $flags = (array) $flags;
-    }
-
-    return array_merge($mandatory_flags, $flags);
+    return array_merge(
+      $this->getMandatoryFlags(),
+      nonempty($this->flags, $this->getDefaultFlags()));
   }
 
   public function getCacheVersion() {
@@ -508,12 +496,6 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         throw new Exception(
           pht('None of the configured binaries can be located.'));
       case 'flags':
-        if (!is_array($value)) {
-          phutil_deprecated(
-            'String support for flags.',
-            'You should use list<string> instead.');
-          $value = (array) $value;
-        }
         $this->setFlags($value);
         return;
     }
