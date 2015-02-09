@@ -270,7 +270,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintPregQuote' => self::LINT_PREG_QUOTE_MISUSE,
       'lintExitExpressions' => self::LINT_EXIT_EXPRESSION,
       'lintArrayIndexWhitespace' => self::LINT_ARRAY_INDEX_SPACING,
-      'lintTODOComments' => self::LINT_TODO_COMMENT,
+      'lintTodoComments' => self::LINT_TODO_COMMENT,
       'lintPrimaryDeclarationFilenameMatch' =>
         self::LINT_CLASS_FILENAME_MISMATCH,
       'lintPlusOperatorOnStrings' => self::LINT_PLUS_OPERATOR_ON_STRINGS,
@@ -2461,9 +2461,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintTODOComments(XHPASTNode $root) {
-    $comments = $root->selectTokensOfType('T_COMMENT') +
-                $root->selectTokensOfType('T_DOC_COMMENT');
+  private function lintTodoComments(XHPASTNode $root) {
+    $comments = $root->selectTokensOfTypes(array(
+      'T_COMMENT',
+      'T_DOC_COMMENT',
+    ));
 
     foreach ($comments as $token) {
       $value = $token->getValue();
