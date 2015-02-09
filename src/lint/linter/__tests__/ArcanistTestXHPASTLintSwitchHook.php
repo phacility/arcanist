@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistXHPASTLintTestSwitchHook
+final class ArcanistTestXHPASTLintSwitchHook
   extends ArcanistXHPASTLintSwitchHook {
 
   public function checkSwitchToken(XHPASTToken $token) {
