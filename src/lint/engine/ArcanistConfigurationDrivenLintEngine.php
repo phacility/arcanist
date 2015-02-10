@@ -40,7 +40,7 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         ));
     } catch (PhutilTypeCheckException $ex) {
       throw new PhutilProxyException(
-        pht("Error in parsing '%s' file."),
+        pht("Error in parsing '%s' file.", $config_path),
         $ex);
     }
 

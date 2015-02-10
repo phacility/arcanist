@@ -1049,12 +1049,12 @@ abstract class ArcanistWorkflow extends Phobject {
   private function getAskForAddPrompt(array $files) {
     if ($this->getShouldAmend()) {
       $prompt = pht(
-        'Do you want to amend these files to the commit?',
-        count($files));
+        'Do you want to amend these %s file(s) to the commit?',
+        new PhutilNumber(count($files)));
     } else {
       $prompt = pht(
-        'Do you want to add these files to the commit?',
-        count($files));
+        'Do you want to add these %s file(s) to the commit?',
+        new PhutilNumber(count($files)));
     }
     return $prompt;
   }
