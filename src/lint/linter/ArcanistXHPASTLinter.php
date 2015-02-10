@@ -53,9 +53,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_BLACKLISTED_FUNCTION      = 51;
   const LINT_IMPLICIT_VISIBILITY       = 52;
   const LINT_CALL_TIME_PASS_BY_REF     = 53;
+  const LINT_FORMATTED_STRING          = 54;
 
   private $blacklistedFunctions = array();
   private $naminghook;
+  private $printfFunctions = array();
   private $switchhook;
   private $version;
   private $windowsVersion;
@@ -118,6 +120,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_BLACKLISTED_FUNCTION      => 'Use of Blacklisted Function',
       self::LINT_IMPLICIT_VISIBILITY       => 'Implicit Method Visibility',
       self::LINT_CALL_TIME_PASS_BY_REF     => 'Call-Time Pass-By-Reference',
+      self::LINT_FORMATTED_STRING          => 'Formatted String',
     );
   }
 
@@ -175,6 +178,14 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           'Name of a concrete subclass of ArcanistXHPASTLintNamingHook which '.
           'enforces more granular naming convention rules for symbols.'),
       ),
+      'xhpast.printf-functions' => array(
+        'type' => 'optional map<string, int>',
+        'help' => pht(
+          '%s-style functions which take a format string and list of values '.
+          'as arguments. The value for the mapping is the start index of the '.
+          'function parameters (the index of the format string parameter).',
+          'printf()'),
+      ),
       'xhpast.switchhook' => array(
         'type' => 'optional string',
         'help' => pht(
@@ -200,6 +211,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       case 'xhpast.naminghook':
         $this->naminghook = $value;
         return;
+      case 'xhpast.printf-functions':
+        $this->printfFunctions = $value;
+        return;
       case 'xhpast.switchhook':
         $this->switchhook = $value;
         return;
@@ -216,7 +230,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '15';
+    return '16';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -293,6 +307,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintMethodModifier' => self::LINT_IMPLICIT_VISIBILITY,
       'lintPropertyModifier' => self::LINT_IMPLICIT_VISIBILITY,
       'lintCallTimePassByReference' => self::LINT_CALL_TIME_PASS_BY_REF,
+      'lintFormattedString' => self::LINT_FORMATTED_STRING,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3102,6 +3117,83 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
+
+  private function lintFormattedString(XHPASTNode $root) {
+    static $functions = array(
+      // Core PHP
+      'fprintf' => 1,
+      'printf' => 0,
+      'sprintf' => 0,
+      'vfprintf' => 1,
+
+      // libphutil
+      'csprintf' => 0,
+      'execx' => 0,
+      'exec_manual' => 0,
+      'hgsprintf' => 0,
+      'hsprintf' => 0,
+      'jsprintf' => 0,
+      'pht' => 0,
+      'phutil_passthru' => 0,
+      'qsprintf' => 1,
+      'queryfx' => 1,
+      'queryfx_all' => 1,
+      'queryfx_one' => 1,
+      'vcsprintf' => 0,
+      'vqsprintf' => 1,
+      'vqueryfx' => 1,
+      'vqueryfx_all' => 1,
+    );
+
+    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+
+    foreach ($function_calls as $call) {
+      $name = $call->getChildByIndex(0)->getConcreteString();
+
+      $name = strtolower($name);
+      $start = idx($functions + $this->printfFunctions, $name);
+
+      if ($start === null) {
+        continue;
+      }
+
+      $parameters = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+      $argc = count($parameters->getChildren()) - $start;
+
+      if ($argc < 1) {
+        $this->raiseLintAtNode(
+          $call,
+          self::LINT_FORMATTED_STRING,
+          pht('This function is expected to have a format string.'));
+          continue;
+      }
+
+      $format = $parameters->getChildByIndex($start);
+      if ($format->getTypeName() != 'n_STRING_SCALAR') {
+        continue;
+      }
+
+      $argv = array($format->evalStatic()) + array_fill(0, $argc, null);
+
+      try {
+        xsprintf(array($this, 'xsprintfCallback'), null, $argv);
+      } catch (BadFunctionCallException $ex) {
+        $this->raiseLintAtNode(
+          $call,
+          self::LINT_FORMATTED_STRING,
+          $ex->getMessage());
+      } catch (InvalidArgumentException $ex) {
+        // Ignore.
+      }
+    }
+  }
+
+  /**
+   * A stub function to be used as an @{function:xsprintf} callback.
+   *
+   * @return void
+   */
+  public function xsprintfCallback() {}
 
   public function getSuperGlobalNames() {
     return array(
