@@ -3176,7 +3176,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $argv = array($format->evalStatic()) + array_fill(0, $argc, null);
 
       try {
-        xsprintf(array($this, 'xsprintfCallback'), null, $argv);
+        xsprintf(null, null, $argv);
       } catch (BadFunctionCallException $ex) {
         $this->raiseLintAtNode(
           $call,
@@ -3187,13 +3187,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
-
-  /**
-   * A stub function to be used as an @{function:xsprintf} callback.
-   *
-   * @return void
-   */
-  public function xsprintfCallback() {}
 
   public function getSuperGlobalNames() {
     return array(
