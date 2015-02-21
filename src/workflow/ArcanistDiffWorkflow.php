@@ -1923,9 +1923,6 @@ EOTEXT
     $messages = array();
     foreach ($local as $hash => $info) {
       $text = $info['message'];
-      if (trim($text) == self::AUTO_COMMIT_TITLE) {
-        continue;
-      }
       $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
       $messages[$hash] = $obj;
     }
@@ -2162,9 +2159,6 @@ EOTEXT
     foreach ($usable as $message) {
       // Pick the first line out of each message.
       $text = trim($message);
-      if ($text == self::AUTO_COMMIT_TITLE) {
-        continue;
-      }
       $text = head(explode("\n", $text));
       $default[] = '  - '.$text."\n";
     }

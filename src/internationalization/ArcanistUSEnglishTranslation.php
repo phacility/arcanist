@@ -40,14 +40,30 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'Do you want to mark these files as binary and continue?',
       ),
 
-      'Do you want to amend these %s file(s) to the commit?' => array(
-        'Do you want to amend this file to the commit?',
-        'Do you want to amend these files to the commit?',
+      'Do you want to amend these %s change(s) to the current commit?' => array(
+        'Do you want to amend this change to the current commit?',
+        'Do you want to amend these changes to the current commit?',
       ),
 
-      'Do you want to add these %s file(s) to the commit?' => array(
-        'Do you want to add this file to the commit?',
-        'Do you want to add these files to the commit?',
+      'Do you want to create a new commit with these %s change(s)?' => array(
+        'Do you want to create a new commit with this change?',
+        'Do you want to create a new commit with these changes?',
+      ),
+
+      '(To ignore these %s change(s), add them to ".git/info/exclude".)' =>
+      array(
+        '(To ignore this change, add it to ".git/info/exclude".)',
+        '(To ignore these changes, add themto ".git/info/exclude".)',
+      ),
+
+      '(To ignore these %s change(s), add them to "svn:ignore".)' => array(
+        '(To ignore this change, add it to "svn:ignore".)',
+        '(To ignore these changes, add them to "svn:ignore".)',
+      ),
+
+      '(To ignore these %s change(s), add them to ".hgignore".)' => array(
+        '(To ignore this change, add it to ".hgignore".)',
+        '(To ignore these changes, add them to ".hgignore".)',
       ),
 
       '%s line(s)' => array('line', 'lines'),

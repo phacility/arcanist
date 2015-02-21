@@ -41,8 +41,6 @@ abstract class ArcanistWorkflow extends Phobject {
   const COMMIT_ALLOW = 1;
   const COMMIT_ENABLE = 2;
 
-  const AUTO_COMMIT_TITLE = 'Automatic commit by arc';
-
   private $commitMode = self::COMMIT_DISABLE;
 
   private $conduit;
@@ -837,45 +835,6 @@ abstract class ArcanistWorkflow extends Phobject {
       "  Working copy: __%s__\n\n",
       $api->getPath());
 
-    $untracked = $api->getUntrackedChanges();
-    if ($this->shouldRequireCleanUntrackedFiles()) {
-
-      if (!empty($untracked)) {
-        echo "You have untracked files in this working copy.\n\n".
-             $working_copy_desc.
-             "  Untracked files in working copy:\n".
-             "    ".implode("\n    ", $untracked)."\n\n";
-
-        if ($api instanceof ArcanistGitAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have '.gitignore' rules for these files and have ".
-            "not listed them in '.git/info/exclude', you may have forgotten ".
-            "to 'git add' them to your commit.\n");
-        } else if ($api instanceof ArcanistSubversionAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have 'svn:ignore' rules for these files, you may ".
-            "have forgotten to 'svn add' them.\n");
-        } else if ($api instanceof ArcanistMercurialAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have '.hgignore' rules for these files, you ".
-            "may have forgotten to 'hg add' them to your commit.\n");
-        }
-
-        if ($this->askForAdd($untracked)) {
-          $api->addToCommit($untracked);
-          $must_commit += array_flip($untracked);
-        } else if ($this->commitMode == self::COMMIT_DISABLE) {
-          $prompt = $this->getAskForAddPrompt($untracked);
-          if (phutil_console_confirm($prompt)) {
-            throw new ArcanistUsageException(pht(
-              "Add these files and then run 'arc %s' again.",
-              $this->getWorkflowName()));
-          }
-        }
-
-      }
-    }
-
     // NOTE: this is a subversion-only concept.
     $incomplete = $api->getIncompleteChanges();
     if ($incomplete) {
@@ -910,15 +869,75 @@ abstract class ArcanistWorkflow extends Phobject {
           "    ".implode("\n    ", $missing)));
     }
 
+    $uncommitted = $api->getUncommittedChanges();
     $unstaged = $api->getUnstagedChanges();
-    if ($unstaged) {
-      echo "You have unstaged changes in this working copy.\n\n".
-        $working_copy_desc.
-        "  Unstaged changes in working copy:\n".
-        "    ".implode("\n    ", $unstaged)."\n";
-      if ($this->askForAdd($unstaged)) {
-        $api->addToCommit($unstaged);
-        $must_commit += array_flip($unstaged);
+
+    // We only want files which are purely uncommitted.
+    $uncommitted = array_diff($uncommitted, $unstaged);
+
+    $untracked = $api->getUntrackedChanges();
+    if (!$this->shouldRequireCleanUntrackedFiles()) {
+      $untracked = array();
+    }
+
+    $should_commit = false;
+    if ($unstaged || $uncommitted) {
+
+      // NOTE: We're running this because it builds a cache and can take a
+      // perceptible amount of time to arrive at an answer, but we don't want
+      // to pause in the middle of printing the output below.
+      $this->getShouldAmend();
+
+      echo pht(
+        "You have uncommitted changes in this working copy.\n\n%s",
+        $working_copy_desc);
+
+      $lists = array();
+
+      if ($untracked) {
+        if ($api instanceof ArcanistGitAPI) {
+          $hint = pht(
+            '(To ignore these %s change(s), add them to ".git/info/exclude".)',
+            new PhutilNumber(count($untracked)));
+        } else if ($api instanceof ArcanistSubversionAPI) {
+          $hint = pht(
+            '(To ignore these %s change(s), add them to "svn:ignore".)',
+            new PhutilNumber(count($untracked)));
+        } else if ($api instanceof ArcanistMercurialAPI) {
+          $hint = pht(
+            '(To ignore these %s change(s), add them to ".hgignore".)',
+            new PhutilNumber(count($untracked)));
+        }
+
+        $untracked_list = "    ".implode("\n    ", $untracked);
+        $lists[] = pht(
+          "  Untracked changes in working copy:\n  %s\n%s",
+          $hint,
+          $untracked_list);
+      }
+
+      if ($unstaged) {
+        $unstaged_list = "    ".implode("\n    ", $unstaged);
+        $lists[] = pht(
+          "  Unstaged changes in working copy:\n%s",
+          $unstaged_list);
+      }
+
+      if ($uncommitted) {
+        $uncommitted_list = "    ".implode("\n    ", $uncommitted);
+        $lists[] = pht(
+          "  Uncommitted changes in working copy:\n%s",
+          $uncommitted_list);
+      }
+
+      echo implode("\n\n", $lists);
+
+      $all_uncommitted = array_merge($unstaged, $uncommitted);
+      if ($this->askForAdd($all_uncommitted)) {
+        if ($unstaged) {
+          $api->addToCommit($unstaged);
+        }
+        $should_commit = true;
       } else {
         $permit_autostash = $this->getConfigFromAnySource(
           'arc.autostash',
@@ -929,40 +948,59 @@ abstract class ArcanistWorkflow extends Phobject {
           $api->stashChanges();
           $this->stashed = true;
         } else {
-          throw new ArcanistUsageException(
-            'Stage and commit (or revert) them before proceeding.');
+          if ($untracked && !$unstaged && !$uncommitted) {
+            // Give a tailored message if there are only untracked files,
+            // because the advice to commit files does not make sense in
+            // Subversion.
+            throw new ArcanistUsageException(
+              pht(
+                'You can not continue with untracked changes. Add them, '.
+                'discard them, or mark them as ignored before proceeding.'));
+          } else {
+            throw new ArcanistUsageException(
+              pht(
+                'You can not continue with uncommitted changes. Commit '.
+                'or discard them before proceeding.'));
+          }
         }
       }
     }
 
-    $uncommitted = $api->getUncommittedChanges();
-    foreach ($uncommitted as $key => $path) {
-      if (array_key_exists($path, $must_commit)) {
-        unset($uncommitted[$key]);
-      }
-    }
-    if ($uncommitted) {
-      echo "You have uncommitted changes in this working copy.\n\n".
-        $working_copy_desc.
-        "  Uncommitted changes in working copy:\n".
-        "    ".implode("\n    ", $uncommitted)."\n";
-      if ($this->askForAdd($uncommitted)) {
-        $must_commit += array_flip($uncommitted);
-      } else {
-        throw new ArcanistUncommittedChangesException(
-          'Commit (or revert) them before proceeding.');
-      }
-    }
-
-    if ($must_commit) {
+    if ($should_commit) {
       if ($this->getShouldAmend()) {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
-        $commit_message = phutil_console_prompt('Enter commit message:');
-        if ($commit_message == '') {
-          $commit_message = self::AUTO_COMMIT_TITLE;
+        $template =
+          "\n\n".
+          "# ".pht('Enter a commit message.')."\n#\n".
+          "# ".pht('Changes:')."\n#\n";
+
+        $paths = array_merge($uncommitted, $unstaged);
+        $paths = array_unique($paths);
+        sort($paths);
+
+        foreach ($paths as $path) {
+          $template .= "#     ".$path."\n";
         }
+
+        $commit_message = $this->newInteractiveEditor($template)
+          ->setName(pht('commit-message'))
+          ->editInteractively();
+
+        if ($commit_message === $template) {
+          throw new ArcanistUsageException(
+            pht('You must provide a commit message.'));
+        }
+
+        $commit_message = ArcanistCommentRemover::removeComments(
+          $commit_message);
+
+        if (!strlen($commit_message)) {
+          throw new ArcanistUsageException(
+            pht('You must provide a nonempty commit message.'));
+        }
+
         $api->doCommit($commit_message);
       }
     }
@@ -1005,6 +1043,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
     // TODO: Check commits since tracking branch. If empty then return false.
 
+    // Don't amend the current commit if it has already been published.
     $repository = $this->loadProjectRepository();
     if ($repository) {
       $callsign = $repository['callsign'];
@@ -1013,7 +1052,7 @@ abstract class ArcanistWorkflow extends Phobject {
         'diffusion.querycommits',
         array('names' => array($commit_name)));
       $known_commit = idx($result['identifierMap'], $commit_name);
-      if (!$known_commit) {
+      if ($known_commit) {
         return false;
       }
     }
@@ -1049,11 +1088,11 @@ abstract class ArcanistWorkflow extends Phobject {
   private function getAskForAddPrompt(array $files) {
     if ($this->getShouldAmend()) {
       $prompt = pht(
-        'Do you want to amend these %s file(s) to the commit?',
+        'Do you want to amend these %s change(s) to the current commit?',
         new PhutilNumber(count($files)));
     } else {
       $prompt = pht(
-        'Do you want to add these %s file(s) to the commit?',
+        'Do you want to create a new commit with these %s change(s)?',
         new PhutilNumber(count($files)));
     }
     return $prompt;
