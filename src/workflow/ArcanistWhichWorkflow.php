@@ -75,8 +75,10 @@ EOTEXT
   public function run() {
     $console = PhutilConsole::getConsole();
 
-    $this->printRepositorySection();
-    $console->writeOut("\n");
+    if (!$this->getArgument('show-base')) {
+      $this->printRepositorySection();
+      $console->writeOut("\n");
+    }
 
     $repository_api = $this->getRepositoryAPI();
 
