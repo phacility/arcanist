@@ -930,7 +930,7 @@ abstract class ArcanistWorkflow extends Phobject {
           $uncommitted_list);
       }
 
-      echo implode("\n\n", $lists);
+      echo implode("\n\n", $lists)."\n";
 
       $all_uncommitted = array_merge($unstaged, $uncommitted);
       if ($this->askForAdd($all_uncommitted)) {
