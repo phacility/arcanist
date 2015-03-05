@@ -881,7 +881,7 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     $should_commit = false;
-    if ($unstaged || $uncommitted) {
+    if ($untracked || $unstaged || $uncommitted) {
 
       // NOTE: We're running this because it builds a cache and can take a
       // perceptible amount of time to arrive at an answer, but we don't want
