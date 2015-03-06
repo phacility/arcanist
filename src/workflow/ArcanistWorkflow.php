@@ -932,8 +932,12 @@ abstract class ArcanistWorkflow extends Phobject {
 
       echo implode("\n\n", $lists)."\n";
 
-      $all_uncommitted = array_merge($unstaged, $uncommitted);
+      $all_uncommitted = array_merge($untracked, $unstaged, $uncommitted);
       if ($this->askForAdd($all_uncommitted)) {
+        if ($untracked) {
+          $api->addToCommit($untracked);
+        }
+
         if ($unstaged) {
           $api->addToCommit($unstaged);
         }
@@ -975,6 +979,10 @@ abstract class ArcanistWorkflow extends Phobject {
           "\n\n".
           "# ".pht('Enter a commit message.')."\n#\n".
           "# ".pht('Changes:')."\n#\n";
+
+        foreach ($untracked as $untracked_path) {
+          $template .= "#     ".$untracked_path." (".pht('Added').")\n";
+        }
 
         $paths = array_merge($uncommitted, $unstaged);
         $paths = array_unique($paths);
