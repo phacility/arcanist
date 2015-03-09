@@ -114,21 +114,8 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
         ->setChar($matches[1])
         ->setCode($this->getLinterName())
         ->setName(ucwords(str_replace('_', ' ', $matches[3])))
-        ->setDescription(ucfirst($matches[4]));
-
-      switch ($matches[2]) {
-        case 'warning':
-          $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-          break;
-
-        case 'error':
-          $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-          break;
-
-        default:
-          $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
-          break;
-      }
+        ->setDescription(ucfirst($matches[4]))
+        ->setSeverity($this->getLintMessageSeverity($matches[3], $matches[2]));
 
       $messages[] = $message;
     }
@@ -138,6 +125,22 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
     }
 
     return $messages;
+  }
+
+  protected function getDefaultMessageSeverity($code) {
+    switch ($code) {
+    case 'warning':
+      return ArcanistLintSeverity::SEVERITY_WARNING;
+      break;
+
+    case 'error':
+      return ArcanistLintSeverity::SEVERITY_ERROR;
+      break;
+
+    default:
+      return ArcanistLintSeverity::SEVERITY_ADVICE;
+      break;
+    }
   }
 
 }
