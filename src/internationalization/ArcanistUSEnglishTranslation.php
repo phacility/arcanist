@@ -53,7 +53,7 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
       '(To ignore these %s change(s), add them to ".git/info/exclude".)' =>
       array(
         '(To ignore this change, add it to ".git/info/exclude".)',
-        '(To ignore these changes, add themto ".git/info/exclude".)',
+        '(To ignore these changes, add them to ".git/info/exclude".)',
       ),
 
       '(To ignore these %s change(s), add them to "svn:ignore".)' => array(
