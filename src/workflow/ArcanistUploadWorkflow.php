@@ -74,10 +74,6 @@ EOTEXT
             'name' => $name,
             'contentLength' => $length,
             'contentHash' => $hash,
-
-            // TODO: Remove this once this feature is good to go. For now,
-            // this is helpful for testing.
-            // 'forceChunking' => true,
           ));
 
         $phid = $result['filePHID'];
