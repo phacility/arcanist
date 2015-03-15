@@ -190,6 +190,8 @@ EOTEXT
       $progress->update(1);
     }
 
+    $progress->draw();
+
     // TODO: We could do these in parallel to improve upload performance.
     foreach ($remaining as $chunk) {
       $offset = $chunk['byteStart'];
