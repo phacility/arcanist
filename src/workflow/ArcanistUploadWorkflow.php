@@ -66,6 +66,8 @@ EOTEXT
       }
       $length = filesize($path);
 
+      $do_chunk_upload = false;
+
       $phid = null;
       try {
         $result = $conduit->callMethodSynchronous(
@@ -90,7 +92,7 @@ EOTEXT
           // file data.
         } else {
           if ($phid) {
-            $this->uploadChunks($phid, $path);
+            $do_chunk_upload = true;
           } else {
             // This is a small file that doesn't need to be uploaded in
             // chunks, so continue normally.
@@ -99,6 +101,10 @@ EOTEXT
       } catch (Exception $ex) {
         $this->writeStatus(
           pht('Unable to use allocate method, trying older upload method.'));
+      }
+
+      if ($do_chunk_upload) {
+        $this->uploadChunks($phid, $path);
       }
 
       if (!$phid) {
