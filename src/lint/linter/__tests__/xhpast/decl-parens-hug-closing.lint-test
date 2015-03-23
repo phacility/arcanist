@@ -11,8 +11,8 @@ final class X {
   public function a($x) {}
   public function b($x ) {}
 
-  final public static function &c($x) {}
-  final public static function &d($x ) {}
+  public static function &c($x) {}
+  public static function &d($x ) {}
 
   abstract private function e($x);
   abstract private function f($x );
@@ -27,7 +27,7 @@ warning:4:14
 warning:7:15
 error:9:13
 warning:12:23
-warning:15:37
+warning:15:31
 warning:18:33
 warning:23:14
 warning:24:14
@@ -45,8 +45,8 @@ final class X {
   public function a($x) {}
   public function b($x) {}
 
-  final public static function &c($x) {}
-  final public static function &d($x) {}
+  public static function &c($x) {}
+  public static function &d($x) {}
 
   abstract private function e($x);
   abstract private function f($x);

@@ -5,55 +5,56 @@
  */
 final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
-  const LINT_PHP_SYNTAX_ERROR          = 1;
-  const LINT_UNABLE_TO_PARSE           = 2;
-  const LINT_VARIABLE_VARIABLE         = 3;
-  const LINT_EXTRACT_USE               = 4;
-  const LINT_UNDECLARED_VARIABLE       = 5;
-  const LINT_PHP_SHORT_TAG             = 6;
-  const LINT_PHP_ECHO_TAG              = 7;
-  const LINT_PHP_CLOSE_TAG             = 8;
-  const LINT_NAMING_CONVENTIONS        = 9;
-  const LINT_IMPLICIT_CONSTRUCTOR      = 10;
-  const LINT_DYNAMIC_DEFINE            = 12;
-  const LINT_STATIC_THIS               = 13;
-  const LINT_PREG_QUOTE_MISUSE         = 14;
-  const LINT_PHP_OPEN_TAG              = 15;
-  const LINT_TODO_COMMENT              = 16;
-  const LINT_EXIT_EXPRESSION           = 17;
-  const LINT_COMMENT_STYLE             = 18;
-  const LINT_CLASS_FILENAME_MISMATCH   = 19;
-  const LINT_TAUTOLOGICAL_EXPRESSION   = 20;
-  const LINT_PLUS_OPERATOR_ON_STRINGS  = 21;
-  const LINT_DUPLICATE_KEYS_IN_ARRAY   = 22;
-  const LINT_REUSED_ITERATORS          = 23;
-  const LINT_BRACE_FORMATTING          = 24;
-  const LINT_PARENTHESES_SPACING       = 25;
-  const LINT_CONTROL_STATEMENT_SPACING = 26;
-  const LINT_BINARY_EXPRESSION_SPACING = 27;
-  const LINT_ARRAY_INDEX_SPACING       = 28;
-  const LINT_IMPLICIT_FALLTHROUGH      = 30;
-  const LINT_REUSED_AS_ITERATOR        = 32;
-  const LINT_COMMENT_SPACING           = 34;
-  const LINT_SLOWNESS                  = 36;
-  const LINT_CLOSING_CALL_PAREN        = 37;
-  const LINT_CLOSING_DECL_PAREN        = 38;
-  const LINT_REUSED_ITERATOR_REFERENCE = 39;
-  const LINT_KEYWORD_CASING            = 40;
-  const LINT_DOUBLE_QUOTE              = 41;
-  const LINT_ELSEIF_USAGE              = 42;
-  const LINT_SEMICOLON_SPACING         = 43;
-  const LINT_CONCATENATION_OPERATOR    = 44;
-  const LINT_PHP_COMPATIBILITY         = 45;
-  const LINT_LANGUAGE_CONSTRUCT_PAREN  = 46;
-  const LINT_EMPTY_STATEMENT           = 47;
-  const LINT_ARRAY_SEPARATOR           = 48;
-  const LINT_CONSTRUCTOR_PARENTHESES   = 49;
-  const LINT_DUPLICATE_SWITCH_CASE     = 50;
-  const LINT_BLACKLISTED_FUNCTION      = 51;
-  const LINT_IMPLICIT_VISIBILITY       = 52;
-  const LINT_CALL_TIME_PASS_BY_REF     = 53;
-  const LINT_FORMATTED_STRING          = 54;
+  const LINT_PHP_SYNTAX_ERROR           = 1;
+  const LINT_UNABLE_TO_PARSE            = 2;
+  const LINT_VARIABLE_VARIABLE          = 3;
+  const LINT_EXTRACT_USE                = 4;
+  const LINT_UNDECLARED_VARIABLE        = 5;
+  const LINT_PHP_SHORT_TAG              = 6;
+  const LINT_PHP_ECHO_TAG               = 7;
+  const LINT_PHP_CLOSE_TAG              = 8;
+  const LINT_NAMING_CONVENTIONS         = 9;
+  const LINT_IMPLICIT_CONSTRUCTOR       = 10;
+  const LINT_DYNAMIC_DEFINE             = 12;
+  const LINT_STATIC_THIS                = 13;
+  const LINT_PREG_QUOTE_MISUSE          = 14;
+  const LINT_PHP_OPEN_TAG               = 15;
+  const LINT_TODO_COMMENT               = 16;
+  const LINT_EXIT_EXPRESSION            = 17;
+  const LINT_COMMENT_STYLE              = 18;
+  const LINT_CLASS_FILENAME_MISMATCH    = 19;
+  const LINT_TAUTOLOGICAL_EXPRESSION    = 20;
+  const LINT_PLUS_OPERATOR_ON_STRINGS   = 21;
+  const LINT_DUPLICATE_KEYS_IN_ARRAY    = 22;
+  const LINT_REUSED_ITERATORS           = 23;
+  const LINT_BRACE_FORMATTING           = 24;
+  const LINT_PARENTHESES_SPACING        = 25;
+  const LINT_CONTROL_STATEMENT_SPACING  = 26;
+  const LINT_BINARY_EXPRESSION_SPACING  = 27;
+  const LINT_ARRAY_INDEX_SPACING        = 28;
+  const LINT_IMPLICIT_FALLTHROUGH       = 30;
+  const LINT_REUSED_AS_ITERATOR         = 32;
+  const LINT_COMMENT_SPACING            = 34;
+  const LINT_SLOWNESS                   = 36;
+  const LINT_CLOSING_CALL_PAREN         = 37;
+  const LINT_CLOSING_DECL_PAREN         = 38;
+  const LINT_REUSED_ITERATOR_REFERENCE  = 39;
+  const LINT_KEYWORD_CASING             = 40;
+  const LINT_DOUBLE_QUOTE               = 41;
+  const LINT_ELSEIF_USAGE               = 42;
+  const LINT_SEMICOLON_SPACING          = 43;
+  const LINT_CONCATENATION_OPERATOR     = 44;
+  const LINT_PHP_COMPATIBILITY          = 45;
+  const LINT_LANGUAGE_CONSTRUCT_PAREN   = 46;
+  const LINT_EMPTY_STATEMENT            = 47;
+  const LINT_ARRAY_SEPARATOR            = 48;
+  const LINT_CONSTRUCTOR_PARENTHESES    = 49;
+  const LINT_DUPLICATE_SWITCH_CASE      = 50;
+  const LINT_BLACKLISTED_FUNCTION       = 51;
+  const LINT_IMPLICIT_VISIBILITY        = 52;
+  const LINT_CALL_TIME_PASS_BY_REF      = 53;
+  const LINT_FORMATTED_STRING           = 54;
+  const LINT_UNNECESSARY_FINAL_MODIFIER = 55;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -72,55 +73,56 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_PHP_SYNTAX_ERROR          => 'PHP Syntax Error!',
-      self::LINT_UNABLE_TO_PARSE           => 'Unable to Parse',
-      self::LINT_VARIABLE_VARIABLE         => 'Use of Variable Variable',
-      self::LINT_EXTRACT_USE               => 'Use of extract()',
-      self::LINT_UNDECLARED_VARIABLE       => 'Use of Undeclared Variable',
-      self::LINT_PHP_SHORT_TAG             => 'Use of Short Tag "<?"',
-      self::LINT_PHP_ECHO_TAG              => 'Use of Echo Tag "<?="',
-      self::LINT_PHP_CLOSE_TAG             => 'Use of Close Tag "?>"',
-      self::LINT_NAMING_CONVENTIONS        => 'Naming Conventions',
-      self::LINT_IMPLICIT_CONSTRUCTOR      => 'Implicit Constructor',
-      self::LINT_DYNAMIC_DEFINE            => 'Dynamic define()',
-      self::LINT_STATIC_THIS               => 'Use of $this in Static Context',
-      self::LINT_PREG_QUOTE_MISUSE         => 'Misuse of preg_quote()',
-      self::LINT_PHP_OPEN_TAG              => 'Expected Open Tag',
-      self::LINT_TODO_COMMENT              => 'TODO Comment',
-      self::LINT_EXIT_EXPRESSION           => 'Exit Used as Expression',
-      self::LINT_COMMENT_STYLE             => 'Comment Style',
-      self::LINT_CLASS_FILENAME_MISMATCH   => 'Class-Filename Mismatch',
-      self::LINT_TAUTOLOGICAL_EXPRESSION   => 'Tautological Expression',
-      self::LINT_PLUS_OPERATOR_ON_STRINGS  => 'Not String Concatenation',
-      self::LINT_DUPLICATE_KEYS_IN_ARRAY   => 'Duplicate Keys in Array',
-      self::LINT_REUSED_ITERATORS          => 'Reuse of Iterator Variable',
-      self::LINT_BRACE_FORMATTING          => 'Brace placement',
-      self::LINT_PARENTHESES_SPACING       => 'Spaces Inside Parentheses',
-      self::LINT_CONTROL_STATEMENT_SPACING => 'Space After Control Statement',
-      self::LINT_BINARY_EXPRESSION_SPACING => 'Space Around Binary Operator',
-      self::LINT_ARRAY_INDEX_SPACING       => 'Spacing Before Array Index',
-      self::LINT_IMPLICIT_FALLTHROUGH      => 'Implicit Fallthrough',
-      self::LINT_REUSED_AS_ITERATOR        => 'Variable Reused As Iterator',
-      self::LINT_COMMENT_SPACING           => 'Comment Spaces',
-      self::LINT_SLOWNESS                  => 'Slow Construct',
-      self::LINT_CLOSING_CALL_PAREN        => 'Call Formatting',
-      self::LINT_CLOSING_DECL_PAREN        => 'Declaration Formatting',
-      self::LINT_REUSED_ITERATOR_REFERENCE => 'Reuse of Iterator References',
-      self::LINT_KEYWORD_CASING            => 'Keyword Conventions',
-      self::LINT_DOUBLE_QUOTE              => 'Unnecessary Double Quotes',
-      self::LINT_ELSEIF_USAGE              => 'ElseIf Usage',
-      self::LINT_SEMICOLON_SPACING         => 'Semicolon Spacing',
-      self::LINT_CONCATENATION_OPERATOR    => 'Concatenation Spacing',
-      self::LINT_PHP_COMPATIBILITY         => 'PHP Compatibility',
-      self::LINT_LANGUAGE_CONSTRUCT_PAREN  => 'Language Construct Parentheses',
-      self::LINT_EMPTY_STATEMENT           => 'Empty Block Statement',
-      self::LINT_ARRAY_SEPARATOR           => 'Array Separator',
-      self::LINT_CONSTRUCTOR_PARENTHESES   => 'Constructor Parentheses',
-      self::LINT_DUPLICATE_SWITCH_CASE     => 'Duplicate Case Statements',
-      self::LINT_BLACKLISTED_FUNCTION      => 'Use of Blacklisted Function',
-      self::LINT_IMPLICIT_VISIBILITY       => 'Implicit Method Visibility',
-      self::LINT_CALL_TIME_PASS_BY_REF     => 'Call-Time Pass-By-Reference',
-      self::LINT_FORMATTED_STRING          => 'Formatted String',
+      self::LINT_PHP_SYNTAX_ERROR           => 'PHP Syntax Error!',
+      self::LINT_UNABLE_TO_PARSE            => 'Unable to Parse',
+      self::LINT_VARIABLE_VARIABLE          => 'Use of Variable Variable',
+      self::LINT_EXTRACT_USE                => 'Use of extract()',
+      self::LINT_UNDECLARED_VARIABLE        => 'Use of Undeclared Variable',
+      self::LINT_PHP_SHORT_TAG              => 'Use of Short Tag "<?"',
+      self::LINT_PHP_ECHO_TAG               => 'Use of Echo Tag "<?="',
+      self::LINT_PHP_CLOSE_TAG              => 'Use of Close Tag "?>"',
+      self::LINT_NAMING_CONVENTIONS         => 'Naming Conventions',
+      self::LINT_IMPLICIT_CONSTRUCTOR       => 'Implicit Constructor',
+      self::LINT_DYNAMIC_DEFINE             => 'Dynamic define()',
+      self::LINT_STATIC_THIS                => 'Use of $this in Static Context',
+      self::LINT_PREG_QUOTE_MISUSE          => 'Misuse of preg_quote()',
+      self::LINT_PHP_OPEN_TAG               => 'Expected Open Tag',
+      self::LINT_TODO_COMMENT               => 'TODO Comment',
+      self::LINT_EXIT_EXPRESSION            => 'Exit Used as Expression',
+      self::LINT_COMMENT_STYLE              => 'Comment Style',
+      self::LINT_CLASS_FILENAME_MISMATCH    => 'Class-Filename Mismatch',
+      self::LINT_TAUTOLOGICAL_EXPRESSION    => 'Tautological Expression',
+      self::LINT_PLUS_OPERATOR_ON_STRINGS   => 'Not String Concatenation',
+      self::LINT_DUPLICATE_KEYS_IN_ARRAY    => 'Duplicate Keys in Array',
+      self::LINT_REUSED_ITERATORS           => 'Reuse of Iterator Variable',
+      self::LINT_BRACE_FORMATTING           => 'Brace placement',
+      self::LINT_PARENTHESES_SPACING        => 'Spaces Inside Parentheses',
+      self::LINT_CONTROL_STATEMENT_SPACING  => 'Space After Control Statement',
+      self::LINT_BINARY_EXPRESSION_SPACING  => 'Space Around Binary Operator',
+      self::LINT_ARRAY_INDEX_SPACING        => 'Spacing Before Array Index',
+      self::LINT_IMPLICIT_FALLTHROUGH       => 'Implicit Fallthrough',
+      self::LINT_REUSED_AS_ITERATOR         => 'Variable Reused As Iterator',
+      self::LINT_COMMENT_SPACING            => 'Comment Spaces',
+      self::LINT_SLOWNESS                   => 'Slow Construct',
+      self::LINT_CLOSING_CALL_PAREN         => 'Call Formatting',
+      self::LINT_CLOSING_DECL_PAREN         => 'Declaration Formatting',
+      self::LINT_REUSED_ITERATOR_REFERENCE  => 'Reuse of Iterator References',
+      self::LINT_KEYWORD_CASING             => 'Keyword Conventions',
+      self::LINT_DOUBLE_QUOTE               => 'Unnecessary Double Quotes',
+      self::LINT_ELSEIF_USAGE               => 'ElseIf Usage',
+      self::LINT_SEMICOLON_SPACING          => 'Semicolon Spacing',
+      self::LINT_CONCATENATION_OPERATOR     => 'Concatenation Spacing',
+      self::LINT_PHP_COMPATIBILITY          => 'PHP Compatibility',
+      self::LINT_LANGUAGE_CONSTRUCT_PAREN   => 'Language Construct Parentheses',
+      self::LINT_EMPTY_STATEMENT            => 'Empty Block Statement',
+      self::LINT_ARRAY_SEPARATOR            => 'Array Separator',
+      self::LINT_CONSTRUCTOR_PARENTHESES    => 'Constructor Parentheses',
+      self::LINT_DUPLICATE_SWITCH_CASE      => 'Duplicate Case Statements',
+      self::LINT_BLACKLISTED_FUNCTION       => 'Use of Blacklisted Function',
+      self::LINT_IMPLICIT_VISIBILITY        => 'Implicit Method Visibility',
+      self::LINT_CALL_TIME_PASS_BY_REF      => 'Call-Time Pass-By-Reference',
+      self::LINT_FORMATTED_STRING           => 'Formatted String',
+      self::LINT_UNNECESSARY_FINAL_MODIFIER => 'Unnecessary Final Modifier',
     );
   }
 
@@ -138,31 +140,32 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $warning  = ArcanistLintSeverity::SEVERITY_WARNING;
 
     return array(
-      self::LINT_TODO_COMMENT              => $disabled,
-      self::LINT_UNABLE_TO_PARSE           => $warning,
-      self::LINT_NAMING_CONVENTIONS        => $warning,
-      self::LINT_PREG_QUOTE_MISUSE         => $advice,
-      self::LINT_BRACE_FORMATTING          => $warning,
-      self::LINT_PARENTHESES_SPACING       => $warning,
-      self::LINT_CONTROL_STATEMENT_SPACING => $warning,
-      self::LINT_BINARY_EXPRESSION_SPACING => $warning,
-      self::LINT_ARRAY_INDEX_SPACING       => $warning,
-      self::LINT_IMPLICIT_FALLTHROUGH      => $warning,
-      self::LINT_SLOWNESS                  => $warning,
-      self::LINT_COMMENT_SPACING           => $advice,
-      self::LINT_CLOSING_CALL_PAREN        => $warning,
-      self::LINT_CLOSING_DECL_PAREN        => $warning,
-      self::LINT_REUSED_ITERATOR_REFERENCE => $warning,
-      self::LINT_KEYWORD_CASING            => $warning,
-      self::LINT_DOUBLE_QUOTE              => $advice,
-      self::LINT_ELSEIF_USAGE              => $advice,
-      self::LINT_SEMICOLON_SPACING         => $advice,
-      self::LINT_CONCATENATION_OPERATOR    => $warning,
-      self::LINT_LANGUAGE_CONSTRUCT_PAREN  => $warning,
-      self::LINT_EMPTY_STATEMENT           => $advice,
-      self::LINT_ARRAY_SEPARATOR           => $advice,
-      self::LINT_CONSTRUCTOR_PARENTHESES   => $advice,
-      self::LINT_IMPLICIT_VISIBILITY       => $advice,
+      self::LINT_TODO_COMMENT               => $disabled,
+      self::LINT_UNABLE_TO_PARSE            => $warning,
+      self::LINT_NAMING_CONVENTIONS         => $warning,
+      self::LINT_PREG_QUOTE_MISUSE          => $advice,
+      self::LINT_BRACE_FORMATTING           => $warning,
+      self::LINT_PARENTHESES_SPACING        => $warning,
+      self::LINT_CONTROL_STATEMENT_SPACING  => $warning,
+      self::LINT_BINARY_EXPRESSION_SPACING  => $warning,
+      self::LINT_ARRAY_INDEX_SPACING        => $warning,
+      self::LINT_IMPLICIT_FALLTHROUGH       => $warning,
+      self::LINT_SLOWNESS                   => $warning,
+      self::LINT_COMMENT_SPACING            => $advice,
+      self::LINT_CLOSING_CALL_PAREN         => $warning,
+      self::LINT_CLOSING_DECL_PAREN         => $warning,
+      self::LINT_REUSED_ITERATOR_REFERENCE  => $warning,
+      self::LINT_KEYWORD_CASING             => $warning,
+      self::LINT_DOUBLE_QUOTE               => $advice,
+      self::LINT_ELSEIF_USAGE               => $advice,
+      self::LINT_SEMICOLON_SPACING          => $advice,
+      self::LINT_CONCATENATION_OPERATOR     => $warning,
+      self::LINT_LANGUAGE_CONSTRUCT_PAREN   => $warning,
+      self::LINT_EMPTY_STATEMENT            => $advice,
+      self::LINT_ARRAY_SEPARATOR            => $advice,
+      self::LINT_CONSTRUCTOR_PARENTHESES    => $advice,
+      self::LINT_IMPLICIT_VISIBILITY        => $advice,
+      self::LINT_UNNECESSARY_FINAL_MODIFIER => $advice,
     );
   }
 
@@ -230,7 +233,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '16';
+    return '17';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -308,6 +311,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintPropertyModifier' => self::LINT_IMPLICIT_VISIBILITY,
       'lintCallTimePassByReference' => self::LINT_CALL_TIME_PASS_BY_REF,
       'lintFormattedString' => self::LINT_FORMATTED_STRING,
+      'lintUnnecessaryFinalModifier' => self::LINT_UNNECESSARY_FINAL_MODIFIER,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3184,6 +3188,43 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $ex->getMessage());
       } catch (InvalidArgumentException $ex) {
         // Ignore.
+      }
+    }
+  }
+
+  private function lintUnnecessaryFinalModifier(XHPASTNode $root) {
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+
+    foreach ($classes as $class) {
+      $attributes = $class->getChildOfType(0, 'n_CLASS_ATTRIBUTES');
+      $is_final = false;
+
+      foreach ($attributes->getChildren() as $attribute) {
+        if ($attribute->getConcreteString() == 'final') {
+          $is_final = true;
+          break;
+        }
+      }
+
+      if (!$is_final) {
+        continue;
+      }
+
+      $methods = $class->selectDescendantsOfType('n_METHOD_DECLARATION');
+      foreach ($methods as $method) {
+        $attributes = $method->getChildOfType(0, 'n_METHOD_MODIFIER_LIST');
+
+        foreach ($attributes->getChildren() as $attribute) {
+          if ($attribute->getConcreteString() == 'final') {
+            $this->raiseLintAtNode(
+              $attribute,
+              self::LINT_UNNECESSARY_FINAL_MODIFIER,
+              pht(
+                'Unnecessary %s modifier in %s class.',
+                'final',
+                'final'));
+          }
+        }
       }
     }
   }

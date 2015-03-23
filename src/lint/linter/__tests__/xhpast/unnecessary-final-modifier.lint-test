@@ -1,0 +1,8 @@
+<?php
+final class Foo {
+  public function bar() {}
+  public final function baz() {}
+}
+~~~~~~~~~~
+error:2:13 XHP19
+advice:4:10
