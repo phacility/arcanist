@@ -3107,7 +3107,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $nodes = $root->selectDescendantsOfType('n_CALL_PARAMETER_LIST');
 
     foreach ($nodes as $node) {
-      $parameters = $node->selectDescendantsOfType('n_VARIABLE_REFERENCE');
+      $parameters = $node->getChildrenOfType('n_VARIABLE_REFERENCE');
 
       foreach ($parameters as $parameter) {
         $this->raiseLintAtNode(
