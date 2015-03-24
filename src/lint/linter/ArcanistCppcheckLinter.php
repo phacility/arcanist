@@ -67,6 +67,10 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
       array('-j2', '--enable=performance,style,portability,information'));
   }
 
+  public function shouldExpectCommandErrors() {
+    return false;
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $dom = new DOMDocument();
     $ok = @$dom->loadXML($stderr);

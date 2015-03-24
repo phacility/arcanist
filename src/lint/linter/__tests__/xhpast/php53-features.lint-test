@@ -10,6 +10,7 @@ static::m();
 1 ?: 2;
 $a = 'stdClass';
 $a::m();
+echo __DIR__;
 ~~~~~~~~~~
 error:3:1
 error:4:5
@@ -18,6 +19,7 @@ error:6:3
 error:7:3
 error:8:1
 error:10:1
+error:13:6
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"config": {"xhpast.php-version": "5.2.3"}}

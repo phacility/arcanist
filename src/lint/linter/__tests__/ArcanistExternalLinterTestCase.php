@@ -8,7 +8,7 @@ abstract class ArcanistExternalLinterTestCase extends ArcanistLinterTestCase {
       $this->assertTrue(
         $version !== false,
         pht('Failed to parse version from command.'));
-    } catch (ArcanistUsageException $ex) {
+    } catch (ArcanistMissingLinterException $ex) {
       $this->assertSkipped($ex->getMessage());
     }
   }

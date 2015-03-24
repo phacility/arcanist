@@ -118,7 +118,9 @@ EOTEXT
           "**%s**\n",
           $author);
         foreach ($files as $file => $info) {
-          $line_noun = pht('line(s)', count($info['lines']));
+          $line_noun = pht(
+            '%s line(s)',
+            new PhutilNumber(count($info['lines'])));
           $lines = $this->readableSequenceFromLineNumbers($info['lines']);
           echo "  {$file}: {$line_noun} {$lines}\n";
         }

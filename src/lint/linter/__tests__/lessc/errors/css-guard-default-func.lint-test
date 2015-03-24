@@ -1,6 +1,0 @@
-
-selector when (default()) {
-    color: red;
-}
-~~~~~~~~~~
-error:2:16

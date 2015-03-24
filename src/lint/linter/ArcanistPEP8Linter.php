@@ -27,7 +27,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'pep8';
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.pep8.options', array());
   }
 
@@ -59,7 +59,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+    if (preg_match('/^(?P<version>\d+\.\d+(?:\.\d+)?)\b/', $stdout, $matches)) {
       return $matches['version'];
     } else {
       return false;
@@ -68,10 +68,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
   public function getInstallInstructions() {
     return pht('Install PEP8 using `easy_install pep8`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

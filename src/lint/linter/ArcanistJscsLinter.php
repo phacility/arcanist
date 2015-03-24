@@ -45,10 +45,6 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
     return pht('Install JSCS using `npm install -g jscs`.');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function getMandatoryFlags() {
     $options = array();
 

@@ -239,13 +239,6 @@ EOTEXT
     $this->isGit = $repository_api instanceof ArcanistGitAPI;
     $this->isHg = $repository_api instanceof ArcanistMercurialAPI;
 
-    if (!$this->isGit && !$this->isHg) {
-      throw new ArcanistUsageException(
-        pht(
-          "'arc land' only supports Git and Mercurial. For Subversion, try ".
-          "'arc commit'."));
-    }
-
     if ($this->isGit) {
       $repository = $this->loadProjectRepository();
       $this->isGitSvn = (idx($repository, 'vcs') == 'svn');
@@ -1141,7 +1134,7 @@ EOTEXT
     }
   }
 
-  protected function getSupportedRevisionControlSystems() {
+  public function getSupportedRevisionControlSystems() {
     return array('git', 'hg');
   }
 

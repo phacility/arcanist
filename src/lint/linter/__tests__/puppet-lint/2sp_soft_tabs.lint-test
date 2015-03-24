@@ -1,9 +1,0 @@
-exec { 'test':
-   subscribe   => File['/etc/test'],
-   refreshonly => true,
-}
-~~~~~~~~~~
-warning:1:15
-error:2:1
-warning:2:37
-error:3:1

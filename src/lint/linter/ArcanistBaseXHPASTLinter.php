@@ -14,9 +14,9 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
     $parts[] = $this->getVersion();
 
-    $path = xhpast_get_binary_path();
-    if (Filesystem::pathExists($path)) {
-      $parts[] = md5_file($path);
+    $version = PhutilXHPASTBinary::getVersion();
+    if ($version) {
+      $parts[] = $version;
     }
 
     return implode('-', $parts);
@@ -103,7 +103,8 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   final protected function buildSharedFutures(array $paths) {
     foreach ($paths as $path) {
       if (!isset($this->futures[$path])) {
-        $this->futures[$path] = xhpast_get_parser_future($this->getData($path));
+        $this->futures[$path] = PhutilXHPASTBinary::getParserFuture(
+          $this->getData($path));
       }
     }
     return array_select_keys($this->futures, $paths);

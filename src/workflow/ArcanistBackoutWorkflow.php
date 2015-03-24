@@ -22,7 +22,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Reverts/backouts on a previous commit. Supports: git
+          Reverts/backouts on a previous commit. Supports: git, hg
    Command is used like this: arc backout <commithash> | <diff revision>
    Entering a differential revision will only work if there is only one commit
    associated with the revision. This requires your working copy is up to date
@@ -88,15 +88,16 @@ EOTEXT
    */
   private function getDiffusionCommit($commit_id) {
     $result = $this->getConduit()->callMethodSynchronous(
-      'diffusion.getcommits',
+      'diffusion.querycommits',
       array(
-        'commits' => array($commit_id),
+        'names' => array($commit_id),
       ));
-    $commit = $result[$commit_id];
+    $phid = idx($result['identifierMap'], $commit_id);
     // This commit was not found in Diffusion
-    if (array_key_exists('error', $commit)) {
+    if (!$phid) {
       return null;
     }
+    $commit = $result['data'][$phid];
     return $commit;
   }
 
@@ -125,6 +126,10 @@ EOTEXT
     return $template;
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git', 'hg');
+  }
+
   /**
    * Performs the backout/revert of a revision and creates a commit.
    */
@@ -138,13 +143,6 @@ EOTEXT
     $is_hg_svn = $repository_api instanceof ArcanistMercurialAPI &&
                  $repository_api->isHgSubversionRepo();
     $revision_id = null;
-
-    if (!($repository_api instanceof ArcanistGitAPI) &&
-        !($repository_api instanceof ArcanistMercurialAPI)) {
-      throw new ArcanistUsageException(
-        'Backout currently only supports Git and Mercurial'
-      );
-    }
 
     $console->writeOut("Starting backout\n");
     $input = $this->getArgument('input');
@@ -160,7 +158,7 @@ EOTEXT
       $revision_id = $matches[1];
       $commit_id = $this->getCommitIDFromRevisionID($revision_id);
       $commit = $this->getDiffusionCommit($commit_id);
-      $commit_hash = $commit['commitIdentifier'];
+      $commit_hash = $commit['identifier'];
       // Convert commit hash from SVN to Git/HG (for FB case)
       if ($is_git_svn || $is_hg_svn) {
         $commit_hash = $repository_api->

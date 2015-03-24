@@ -437,7 +437,7 @@ EOTEXT
         $renderer = new ArcanistNoneLintRenderer();
         break;
       case 'compiler':
-        $renderer = new ArcanistCompilerLikeLintRenderer();
+        $renderer = new ArcanistCompilerLintRenderer();
         $prompt_patches = false;
         $apply_patches = $this->getArgument('apply-patches');
         break;

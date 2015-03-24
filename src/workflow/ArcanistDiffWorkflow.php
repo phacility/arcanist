@@ -1042,19 +1042,20 @@ EOTEXT
     if ($utf8_problems) {
       $utf8_warning =
         pht(
-          'This diff includes file(s) which are not valid UTF-8 (they contain '.
-            'invalid byte sequences). You can either stop this workflow and '.
-            'fix these files, or continue. If you continue, these files will '.
-            'be marked as binary.',
-          count($utf8_problems))."\n\n".
+          'This diff includes %s file(s) which are not valid UTF-8 (they '.
+          'contain invalid byte sequences). You can either stop this workflow '.
+          'and fix these files, or continue. If you continue, these files '.
+          'will be marked as binary.',
+          new PhutilNumber(count($utf8_problems))).
+        "\n\n".
         "You can learn more about how Phabricator handles character encodings ".
         "(and how to configure encoding settings and detect and correct ".
         "encoding problems) by reading 'User Guide: UTF-8 and Character ".
         "Encoding' in the Phabricator documentation.\n\n".
-        "    ".pht('AFFECTED FILE(S)', count($utf8_problems))."\n";
+        "    ".pht('%d AFFECTED FILE(S)', count($utf8_problems))."\n";
       $confirm = pht(
-        'Do you want to mark these files as binary and continue?',
-        count($utf8_problems));
+        'Do you want to mark these %s file(s) as binary and continue?',
+        new PhutilNumber(count($utf8_problems)));
 
       echo phutil_console_format("**Invalid Content Encoding (Non-UTF8)**\n");
       echo phutil_console_wrap($utf8_warning);
@@ -1922,9 +1923,6 @@ EOTEXT
     $messages = array();
     foreach ($local as $hash => $info) {
       $text = $info['message'];
-      if (trim($text) == self::AUTO_COMMIT_TITLE) {
-        continue;
-      }
       $obj = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
       $messages[$hash] = $obj;
     }
@@ -2161,9 +2159,6 @@ EOTEXT
     foreach ($usable as $message) {
       // Pick the first line out of each message.
       $text = trim($message);
-      if ($text == self::AUTO_COMMIT_TITLE) {
-        continue;
-      }
       $text = head(explode("\n", $text));
       $default[] = '  - '.$text."\n";
     }
@@ -2173,10 +2168,11 @@ EOTEXT
 
   private function loadActiveLocalCommitInfo() {
     $current_diff = $this->getConduit()->callMethodSynchronous(
-      'differential.getdiff',
+      'differential.querydiffs',
       array(
-        'revision_id' => $this->revisionID,
+        'revisionIDs' => array($this->revisionID),
       ));
+    $current_diff = head($current_diff);
 
     $properties = idx($current_diff, 'properties', array());
     return idx($properties, 'local:commits', array());

@@ -25,12 +25,11 @@ EOTEXT
       );
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git');
+  }
+
   public function run() {
-    $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI)) {
-      throw new ArcanistUsageException(
-        'arc branch is only supported under Git.');
-    }
     return parent::run();
   }
 

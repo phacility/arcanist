@@ -47,10 +47,6 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
     return pht('Install jsonlint using `npm install -g jsonlint`.');
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   public function supportsReadDataFromStdin() {
     return true;
   }

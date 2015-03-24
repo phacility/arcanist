@@ -19,13 +19,13 @@ final class ArcanistUnitTestableLintEngine extends ArcanistLintEngine {
   }
 
   public function pathExists($path) {
-    if (idx($this->fileData, $path)) {
+    if (idx($this->fileData, $path) !== null) {
       return true;
     }
     return parent::pathExists($path);
   }
 
-  protected function buildLinters() {
+  public function buildLinters() {
     return $this->linters;
   }
 

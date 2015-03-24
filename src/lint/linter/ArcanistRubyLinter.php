@@ -54,10 +54,6 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     return true;
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
   protected function getMandatoryFlags() {
     // -w: turn on warnings
     // -c: check syntax

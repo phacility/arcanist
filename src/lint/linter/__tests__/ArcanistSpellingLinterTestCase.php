@@ -1,7 +1,6 @@
 <?php
 
-final class ArcanistSpellingLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
 
   public function testLinter() {
     $linter = new ArcanistSpellingLinter();

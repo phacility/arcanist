@@ -11,20 +11,13 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
    * @return ArcanistLinter
    */
   protected final function getLinter() {
-    $matches = array();
-
-    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches)) {
+    $matches = null;
+    if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches) ||
+        !is_subclass_of($matches[1], 'ArcanistLinter')) {
       throw new Exception(pht('Unable to infer linter class name.'));
     }
 
-    $linter = id(new ReflectionClass($matches[1]))
-      ->newInstanceWithoutConstructor();
-
-    if (!$linter instanceof ArcanistLinter) {
-      throw new Exception(pht('Unable to infer linter class name.'));
-    }
-
-    return $linter;
+    return newv($matches[1], array());
   }
 
   public abstract function testLinter();
@@ -86,6 +79,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         'hook' => 'optional bool',
         'config' => 'optional map<string, wild>',
         'path' => 'optional string',
+        'mode' => 'optional string',
+        'stopped' => 'optional bool',
       ));
 
     $exception = null;
@@ -98,6 +93,11 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $tmp = new TempFile($basename);
       Filesystem::writeFile($tmp, $data);
       $full_path = (string)$tmp;
+
+      $mode = idx($config, 'mode');
+      if ($mode) {
+        Filesystem::changePermissions($tmp, octdec($mode));
+      }
 
       $dir = dirname($full_path);
       $path = basename($full_path);
@@ -120,8 +120,8 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $path_name = idx($config, 'path', $path);
       $linter->addPath($path_name);
       $linter->addData($path_name, $data);
-      $config = idx($config, 'config', array());
-      foreach ($config as $key => $value) {
+
+      foreach (idx($config, 'config', array()) as $key => $value) {
         $linter->setLinterConfigurationValue($key, $value);
       }
 
@@ -135,6 +135,16 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
         count($results),
         pht('Expect one result returned by linter.'));
 
+      $assert_stopped = idx($config, 'stopped');
+      if ($assert_stopped !== null) {
+        $this->assertEqual(
+          $assert_stopped,
+          $linter->didStopAllLinters(),
+          $assert_stopped
+            ? pht('Expect linter to be stopped.')
+            : pht('Expect linter to not be stopped.'));
+      }
+
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
       $after_lint = $patcher->getModifiedFileContent();
@@ -145,13 +155,15 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       if ($exception instanceof PhutilAggregateException) {
         $caught_exception = false;
         foreach ($exception->getExceptions() as $ex) {
-          if ($ex instanceof ArcanistUsageException) {
+          if ($ex instanceof ArcanistUsageException ||
+              $ex instanceof ArcanistMissingLinterException) {
             $this->assertSkipped($ex->getMessage());
           } else {
             $caught_exception = true;
           }
         }
-      } else if ($exception instanceof ArcanistUsageException) {
+      } else if ($exception instanceof ArcanistUsageException ||
+                 $exception instanceof ArcanistMissingLinterException) {
         $this->assertSkipped($exception->getMessage());
       }
       $exception_message = $exception->getMessage()."\n\n".
@@ -205,15 +217,18 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       implode("\n", $raised));
 
     foreach (array_diff_key($expect, $seen) as $missing => $ignored) {
-      list($sev, $line, $char) = explode(':', $missing);
+      $missing = explode(':', $missing);
+      $sev = array_shift($missing);
+      $pos = $missing;
+
       $this->assertFailure(
         pht(
           "In '%s', expected lint to raise %s on line %d at char %d, ".
           "but no %s was raised. %s",
           $file,
           $sev,
-          $line,
-          $char,
+          idx($pos, 0),
+          idx($pos, 1),
           $sev,
           $raised));
     }

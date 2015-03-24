@@ -25,7 +25,7 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     return 'filename';
   }
 
-  public function shouldLintBinaryFiles() {
+  protected function shouldLintBinaryFiles() {
     return true;
   }
 
@@ -45,11 +45,11 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     }
   }
 
-  public function shouldLintDirectories() {
+  protected function shouldLintDirectories() {
     return true;
   }
 
-  public function shouldLintSymbolicLinks() {
+  protected function shouldLintSymbolicLinks() {
     return true;
   }
 

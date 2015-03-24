@@ -24,43 +24,48 @@ EOTEXT
       );
   }
 
-  public function getArguments() {
-    return array();
-  }
-
   public function run() {
-    $roots = array();
-    $roots['libphutil'] = dirname(phutil_get_library_root('phutil'));
-    $roots['arcanist'] = dirname(phutil_get_library_root('arcanist'));
+    $roots = array(
+      'libphutil' => dirname(phutil_get_library_root('phutil')),
+      'arcanist' => dirname(phutil_get_library_root('arcanist')),
+    );
 
     foreach ($roots as $lib => $root) {
-      echo "Upgrading {$lib}...\n";
-
-      if (!Filesystem::pathExists($root.'/.git')) {
-        throw new ArcanistUsageException(
-          "{$lib} must be in its git working copy to be automatically ".
-          "upgraded. This copy of {$lib} (in '{$root}') is not in a git ".
-          "working copy.");
-      }
+      echo pht('Upgrading %s...', $lib)."\n";
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
-
       $configuration_manager = clone $this->getConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
-      $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+      $repository = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
         $configuration_manager);
 
-      $this->setRepositoryAPI($repository_api);
+      if (!Filesystem::pathExists($repository->getMetadataPath())) {
+        throw new ArcanistUsageException(
+          pht(
+            "%s must be in its git working copy to be automatically upgraded. ".
+            "This copy of %s (in '%s') is not in a git working copy.",
+            $lib,
+            $lib,
+            $root));
+      }
+
+      $this->setRepositoryAPI($repository);
 
       // Require no local changes.
       $this->requireCleanWorkingCopy();
 
       // Require the library be on master.
-      $branch_name = $repository_api->getBranchName();
+      $branch_name = $repository->getBranchName();
       if ($branch_name != 'master') {
         throw new ArcanistUsageException(
-          "{$lib} must be on branch 'master' to be automatically upgraded. ".
-          "This copy of {$lib} (in '{$root}') is on branch '{$branch_name}'.");
+          pht(
+            "%s must be on branch '%s' to be automatically upgraded. ".
+            "This copy of %s (in '%s') is on branch '%s'.",
+            $lib,
+            'master',
+            $lib,
+            $root,
+            $branch_name));
       }
 
       chdir($root);
@@ -72,10 +77,10 @@ EOTEXT
       }
     }
 
-    echo phutil_console_wrap(
-      phutil_console_format(
-        "**Updated!** Your copy of arc is now up to date.\n"));
-
+    echo phutil_console_format(
+      "**%s** %s\n",
+      pht('Updated!'),
+      pht('Your copy of arc is now up to date.'));
     return 0;
   }
 

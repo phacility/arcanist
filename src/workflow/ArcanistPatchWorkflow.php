@@ -834,7 +834,7 @@ EOTEXT
     return $commit_message;
   }
 
-  public function getShellCompletions(array $argv) {
+  protected function getShellCompletions(array $argv) {
     // TODO: Pull open diffs from 'arc list'?
     return array('ARGUMENT');
   }

@@ -37,8 +37,12 @@ EOTEXT
     return true;
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
+  }
+
+  public function getSupportedRevisionControlSystems() {
+    return array('git');
   }
 
   public function run() {

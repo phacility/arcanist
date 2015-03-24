@@ -32,8 +32,12 @@ EOTEXT
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
+  }
+
+  public function getSupportedRevisionControlSystems() {
+    return array('svn');
   }
 
   public function run() {

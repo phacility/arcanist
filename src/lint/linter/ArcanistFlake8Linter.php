@@ -28,7 +28,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return 'flake8';
   }
 
-  public function getDefaultFlags() {
+  protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.flake8.options', array());
   }
 
@@ -56,10 +56,6 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
   public function getInstallInstructions() {
     return pht('Install flake8 using `easy_install flake8`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
