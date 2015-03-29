@@ -52,7 +52,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * this method and return true so execution continues when it exits with
    * a nonzero status.
    *
-   * @param bool  Return true to continue on nonzero error code.
+   * @return bool  Return true to continue on nonzero error code.
    * @task bin
    */
   public function shouldExpectCommandErrors() {
