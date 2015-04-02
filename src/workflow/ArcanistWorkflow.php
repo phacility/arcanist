@@ -880,8 +880,43 @@ abstract class ArcanistWorkflow extends Phobject {
       $untracked = array();
     }
 
+    if ($untracked) {
+      echo pht(
+        "You have untracked files in this working copy.\n\n%s",
+        $working_copy_desc);
+
+      if ($api instanceof ArcanistGitAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to ".git/info/exclude".)',
+          new PhutilNumber(count($untracked)));
+      } else if ($api instanceof ArcanistSubversionAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to "svn:ignore".)',
+          new PhutilNumber(count($untracked)));
+      } else if ($api instanceof ArcanistMercurialAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to ".hgignore".)',
+          new PhutilNumber(count($untracked)));
+      }
+
+      $untracked_list = "    ".implode("\n    ", $untracked);
+      echo pht(
+        "  Untracked changes in working copy:\n  %s\n%s",
+        $hint,
+        $untracked_list);
+
+      $prompt = pht(
+        'Ignore these %s untracked file(s) and continue?',
+        new PhutilNumber(count($untracked)));
+
+      if (!phutil_console_confirm($prompt)) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+
     $should_commit = false;
-    if ($untracked || $unstaged || $uncommitted) {
+    if ($unstaged || $uncommitted) {
 
       // NOTE: We're running this because it builds a cache and can take a
       // perceptible amount of time to arrive at an answer, but we don't want
@@ -893,28 +928,6 @@ abstract class ArcanistWorkflow extends Phobject {
         $working_copy_desc);
 
       $lists = array();
-
-      if ($untracked) {
-        if ($api instanceof ArcanistGitAPI) {
-          $hint = pht(
-            '(To ignore these %s change(s), add them to ".git/info/exclude".)',
-            new PhutilNumber(count($untracked)));
-        } else if ($api instanceof ArcanistSubversionAPI) {
-          $hint = pht(
-            '(To ignore these %s change(s), add them to "svn:ignore".)',
-            new PhutilNumber(count($untracked)));
-        } else if ($api instanceof ArcanistMercurialAPI) {
-          $hint = pht(
-            '(To ignore these %s change(s), add them to ".hgignore".)',
-            new PhutilNumber(count($untracked)));
-        }
-
-        $untracked_list = "    ".implode("\n    ", $untracked);
-        $lists[] = pht(
-          "  Untracked changes in working copy:\n  %s\n%s",
-          $hint,
-          $untracked_list);
-      }
 
       if ($unstaged) {
         $unstaged_list = "    ".implode("\n    ", $unstaged);
@@ -932,12 +945,8 @@ abstract class ArcanistWorkflow extends Phobject {
 
       echo implode("\n\n", $lists)."\n";
 
-      $all_uncommitted = array_merge($untracked, $unstaged, $uncommitted);
+      $all_uncommitted = array_merge($unstaged, $uncommitted);
       if ($this->askForAdd($all_uncommitted)) {
-        if ($untracked) {
-          $api->addToCommit($untracked);
-        }
-
         if ($unstaged) {
           $api->addToCommit($unstaged);
         }
@@ -952,20 +961,10 @@ abstract class ArcanistWorkflow extends Phobject {
           $api->stashChanges();
           $this->stashed = true;
         } else {
-          if ($untracked && !$unstaged && !$uncommitted) {
-            // Give a tailored message if there are only untracked files,
-            // because the advice to commit files does not make sense in
-            // Subversion.
-            throw new ArcanistUsageException(
-              pht(
-                'You can not continue with untracked changes. Add them, '.
-                'discard them, or mark them as ignored before proceeding.'));
-          } else {
-            throw new ArcanistUsageException(
-              pht(
-                'You can not continue with uncommitted changes. Commit '.
-                'or discard them before proceeding.'));
-          }
+          throw new ArcanistUsageException(
+            pht(
+              'You can not continue with uncommitted changes. Commit '.
+              'or discard them before proceeding.'));
         }
       }
     }
@@ -979,10 +978,6 @@ abstract class ArcanistWorkflow extends Phobject {
           "\n\n".
           "# ".pht('Enter a commit message.')."\n#\n".
           "# ".pht('Changes:')."\n#\n";
-
-        foreach ($untracked as $untracked_path) {
-          $template .= "#     ".$untracked_path." (".pht('Added').")\n";
-        }
 
         $paths = array_merge($uncommitted, $unstaged);
         $paths = array_unique($paths);

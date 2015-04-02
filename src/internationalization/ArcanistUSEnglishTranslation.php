@@ -74,6 +74,11 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         '%d assertion passed.',
         '%d assertions passed.',
       ),
+
+      'Ignore these %s untracked file(s) and continue?' => array(
+        'Ignore this untracked file and continue?',
+        'Ignore these untracked files and continue?',
+      ),
     );
   }
 
