@@ -456,7 +456,8 @@ function sanity_check_environment() {
         'text',
         "You need to install the cURL PHP extension, maybe with ".
         "'apt-get install php5-curl' or 'yum install php53-curl' or ".
-        "something similar.",),
+        "something similar.",
+      ),
       'json_decode'   => array('flag', '--without-json'),
     );
   }
