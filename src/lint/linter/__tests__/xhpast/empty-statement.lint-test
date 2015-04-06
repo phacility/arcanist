@@ -1,0 +1,11 @@
+<?php
+final class Foo {};
+$x = null;;
+~~~~~~~~~~
+error:2:13 XHP19
+advice:2:19
+advice:3:11
+~~~~~~~~~~
+<?php
+final class Foo {}
+$x = null;
