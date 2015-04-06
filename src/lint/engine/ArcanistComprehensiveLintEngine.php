@@ -2,10 +2,8 @@
 
 /**
  * Basic lint engine which just applies several linters based on the file types.
- *
- * @todo Should be final but isn't because of @{class:ComprehensiveLintEngine}.
  */
-class ArcanistComprehensiveLintEngine extends ArcanistLintEngine {
+final class ArcanistComprehensiveLintEngine extends ArcanistLintEngine {
 
   public function buildLinters() {
     $linters = array();
