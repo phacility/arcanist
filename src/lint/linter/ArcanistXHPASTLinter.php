@@ -2951,11 +2951,23 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           continue;
         }
 
-        $this->raiseLintAtNode(
-          $value,
+        list($before, $after) = $value->getSurroundingNonsemanticTokens();
+        $after = implode('', mpull($after, 'getValue'));
+
+        $original = $value->getConcreteString();
+        $replacement = $value->getConcreteString().',';
+
+        if (strpos($after, "\n") === false) {
+          $original    .= $after;
+          $replacement .= rtrim($after)."\n".$array->getIndentation();
+        }
+
+        $this->raiseLintAtOffset(
+          $value->getOffset(),
           self::LINT_ARRAY_SEPARATOR,
           pht('Multi-lined arrays should have trailing commas.'),
-          $value->getConcreteString().',');
+          $original,
+          $replacement);
       } else if (!$multiline && $after && $after->getValue() == ',') {
         $this->raiseLintAtToken(
           $after,
