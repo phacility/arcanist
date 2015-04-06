@@ -495,8 +495,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = $node->getConcreteString();
 
       $version = idx($compat_info['functions'], $name, array());
-      $min = idx($version, 'min');
-      $max = idx($version, 'max');
+      $min = idx($version, 'php.min');
+      $max = idx($version, 'php.max');
 
       // Check if whitelisted.
       $whitelisted = false;
@@ -581,8 +581,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $name = $node->getConcreteString();
       $version = idx($compat_info['interfaces'], $name, array());
       $version = idx($compat_info['classes'], $name, $version);
-      $min = idx($version, 'min');
-      $max = idx($version, 'max');
+      $min = idx($version, 'php.min');
+      $max = idx($version, 'php.max');
         // Check if whitelisted.
         $whitelisted = false;
         foreach (idx($whitelist['class'], $name, array()) as $range) {
@@ -629,8 +629,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     foreach ($constants as $node) {
       $name = $node->getConcreteString();
       $version = idx($compat_info['constants'], $name, array());
-      $min = idx($version, 'min');
-      $max = idx($version, 'max');
+      $min = idx($version, 'php.min');
+      $max = idx($version, 'php.max');
 
       if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
