@@ -1,7 +1,6 @@
 {
   "exclude": [
-    "(^externals/)",
-    "(\\.lint-test$)"
+    "(^externals/)"
   ],
   "linters": {
     "chmod": {
@@ -41,19 +40,7 @@
       "exclude": "(^resources/spelling/.*\\.json$)"
     },
     "text": {
-      "type": "text",
-      "exclude": [
-        "(^\\.arclint$)"
-      ]
-    },
-    "text-without-length": {
-      "type": "text",
-      "severity": {
-        "3": "disabled"
-      },
-      "include": [
-        "(^\\.arclint$)"
-      ]
+      "type": "text"
     },
     "xhpast": {
       "type": "xhpast",

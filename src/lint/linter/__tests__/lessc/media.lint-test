@@ -1,4 +1,3 @@
-
 // For now, variables can't be declared inside @media blocks.
 
 @var: 42;

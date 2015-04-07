@@ -5,4 +5,9 @@ chroot('/tmp');
 error:3:1
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config": {"xhpast.php-version": "5.2.3", "xhpast.php-version.windows": "5.3.0"}}
+{
+  "config": {
+    "xhpast.php-version": "5.2.3",
+    "xhpast.php-version.windows": "5.3.0"
+  }
+}
