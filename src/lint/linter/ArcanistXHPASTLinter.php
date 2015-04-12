@@ -2696,62 +2696,114 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintKeywordCasing(XHPASTNode $root) {
-    $keywords = array();
-
-    $symbols = $root->selectDescendantsOfType('n_SYMBOL_NAME');
-    foreach ($symbols as $symbol) {
-      $keywords[] = head($symbol->getTokens());
-    }
-
-    $arrays = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
-    foreach ($arrays as $array) {
-      $keywords[] = head($array->getTokens());
-    }
-
-    $typehints = $root->selectDescendantsOfType('n_TYPE_NAME');
-    foreach ($typehints as $typehint) {
-      $keywords[] = head($typehint->getTokens());
-    }
-
-    $new_invocations = $root->selectDescendantsOfType('n_NEW');
-    foreach ($new_invocations as $invocation) {
-      $keywords[] = head($invocation->getTokens());
-    }
-
-    $class_declarations = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
-    foreach ($class_declarations as $declaration) {
-      $keywords[] = head($declaration->getTokens());
-    }
-
-    // NOTE: Although PHP generally allows arbitrary casing for all language
-    // keywords, it's exceedingly rare for anyone to type, e.g., "CLASS" or
-    // "cLaSs" in the wild. This list just attempts to cover unconventional
-    // spellings which see some level of use, not all keywords exhaustively.
-    // There is no token or node type which spans all keywords, so this is
-    // significantly simpler.
-
-    static $keyword_map = array(
-      'true'  => 'true',
-      'false' => 'false',
-      'null'  => 'null',
-      'array' => 'array',
-      'new'   => 'new',
-      'class' => 'class',
-    );
-
+    $keywords = $root->selectTokensOfTypes(array(
+      'T_REQUIRE_ONCE',
+      'T_REQUIRE',
+      'T_EVAL',
+      'T_INCLUDE_ONCE',
+      'T_INCLUDE',
+      'T_LOGICAL_OR',
+      'T_LOGICAL_XOR',
+      'T_LOGICAL_AND',
+      'T_PRINT',
+      'T_INSTANCEOF',
+      'T_CLONE',
+      'T_NEW',
+      'T_EXIT',
+      'T_IF',
+      'T_ELSEIF',
+      'T_ELSE',
+      'T_ENDIF',
+      'T_ECHO',
+      'T_DO',
+      'T_WHILE',
+      'T_ENDWHILE',
+      'T_FOR',
+      'T_ENDFOR',
+      'T_FOREACH',
+      'T_ENDFOREACH',
+      'T_DECLARE',
+      'T_ENDDECLARE',
+      'T_AS',
+      'T_SWITCH',
+      'T_ENDSWITCH',
+      'T_CASE',
+      'T_DEFAULT',
+      'T_BREAK',
+      'T_CONTINUE',
+      'T_GOTO',
+      'T_FUNCTION',
+      'T_CONST',
+      'T_RETURN',
+      'T_TRY',
+      'T_CATCH',
+      'T_THROW',
+      'T_USE',
+      'T_GLOBAL',
+      'T_PUBLIC',
+      'T_PROTECTED',
+      'T_PRIVATE',
+      'T_FINAL',
+      'T_ABSTRACT',
+      'T_STATIC',
+      'T_VAR',
+      'T_UNSET',
+      'T_ISSET',
+      'T_EMPTY',
+      'T_HALT_COMPILER',
+      'T_CLASS',
+      'T_INTERFACE',
+      'T_EXTENDS',
+      'T_IMPLEMENTS',
+      'T_LIST',
+      'T_ARRAY',
+      'T_NAMESPACE',
+      'T_INSTEADOF',
+      'T_CALLABLE',
+      'T_TRAIT',
+      'T_YIELD',
+      'T_FINALLY',
+    ));
     foreach ($keywords as $keyword) {
       $value = $keyword->getValue();
-      $value_key = strtolower($value);
-      if (!isset($keyword_map[$value_key])) {
-        continue;
-      }
-      $expected_spelling = $keyword_map[$value_key];
-      if ($value !== $expected_spelling) {
+
+      if ($value != strtolower($value)) {
         $this->raiseLintAtToken(
           $keyword,
           self::LINT_KEYWORD_CASING,
-          "Convention: spell keyword '{$value}' as '{$expected_spelling}'.",
-          $expected_spelling);
+          pht(
+            "Convention: spell keyword '%s' as '%s'.",
+            $value,
+            strtolower($value)),
+          strtolower($value));
+      }
+    }
+
+    $symbols = $root->selectDescendantsOfType('n_SYMBOL_NAME');
+    foreach ($symbols as $symbol) {
+      static $interesting_symbols = array(
+        'false' => true,
+        'null'  => true,
+        'true'  => true,
+      );
+
+      $symbol_name = $symbol->getConcreteString();
+
+      if ($symbol->getParentNode()->getTypeName() == 'n_FUNCTION_CALL') {
+        continue;
+      }
+
+      if (idx($interesting_symbols, strtolower($symbol_name))) {
+        if ($symbol_name != strtolower($symbol_name)) {
+          $this->raiseLintAtNode(
+            $symbol,
+            self::LINT_KEYWORD_CASING,
+            pht(
+              "Convention: spell keyword '%s' as '%s'.",
+              $symbol_name,
+              strtolower($symbol_name)),
+            strtolower($symbol_name));
+        }
       }
     }
   }
