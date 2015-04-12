@@ -236,7 +236,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '18';
+    return '19';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -316,6 +316,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintFormattedString' => self::LINT_FORMATTED_STRING,
       'lintUnnecessaryFinalModifier' => self::LINT_UNNECESSARY_FINAL_MODIFIER,
       'lintUnnecessarySemicolons' => self::LINT_UNNECESSARY_SEMICOLON,
+      'lintConstantDefinitions' => self::LINT_NAMING_CONVENTIONS,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3261,6 +3262,83 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           '');
       }
     }
+  }
+
+  private function lintConstantDefinitions(XHPASTNode $root) {
+    $defines = $this
+      ->getFunctionCalls($root, array('define'))
+      ->add($root->selectDescendantsOfTypes(array(
+        'n_CLASS_CONSTANT_DECLARATION',
+        'n_CONSTANT_DECLARATION',
+      )));
+
+    foreach ($defines as $define) {
+      switch ($define->getTypeName()) {
+        case 'n_CLASS_CONSTANT_DECLARATION':
+        case 'n_CONSTANT_DECLARATION':
+          $constant = $define->getChildByIndex(0);
+
+          if ($constant->getTypeName() !== 'n_STRING') {
+            $constant = null;
+          }
+
+          break;
+
+        case 'n_FUNCTION_CALL':
+          $constant = $define
+            ->getChildOfType(1, 'n_CALL_PARAMETER_LIST')
+            ->getChildByIndex(0);
+
+          if ($constant->getTypeName() !== 'n_STRING_SCALAR') {
+            $constant = null;
+          }
+
+          break;
+
+        default:
+          $constant = null;
+          break;
+      }
+
+      if (!$constant) {
+        continue;
+      }
+      $constant_name = $constant->getConcreteString();
+
+      if ($constant_name !== strtoupper($constant_name)) {
+        $this->raiseLintAtNode(
+          $constant,
+          self::LINT_NAMING_CONVENTIONS,
+          pht('Constants should be uppercase.'));
+      }
+    }
+  }
+
+
+  /**
+   * Retrieve all calls to some specified function(s).
+   *
+   * Returns all descendant nodes which represent a function call to one of the
+   * specified functions.
+   *
+   * @param  XHPASTNode    Root node.
+   * @param  list<string>  Function names.
+   * @return AASTNodeList
+   */
+  protected function getFunctionCalls(XHPASTNode $root, array $function_names) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $nodes = array();
+
+    foreach ($calls as $call) {
+      $node = $call->getChildByIndex(0);
+      $name = strtolower($node->getConcreteString());
+
+      if (in_array($name, $function_names)) {
+        $nodes[] = $call;
+      }
+    }
+
+    return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
   }
 
   public function getSuperGlobalNames() {
