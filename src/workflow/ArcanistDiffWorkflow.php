@@ -1605,7 +1605,7 @@ EOTEXT
     while (!$done) {
       $template = rtrim($template, "\r\n")."\n\n";
       foreach ($issues as $issue) {
-        $template .= '# '.$issue."\n";
+        $template .= rtrim('# '.$issue)."\n";
       }
       $template .= "\n";
 
