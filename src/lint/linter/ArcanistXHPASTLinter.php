@@ -2806,6 +2806,29 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         }
       }
     }
+
+    $magic_constants = $root->selectTokensOfTypes(array(
+      'T_CLASS_C',
+      'T_METHOD_C',
+      'T_FUNC_C',
+      'T_LINE',
+      'T_FILE',
+      'T_NS_C',
+      'T_DIR',
+      'T_TRAIT_C',
+    ));
+
+    foreach ($magic_constants as $magic_constant) {
+      $value = $magic_constant->getValue();
+
+      if ($value != strtoupper($value)) {
+        $this->raiseLintAtToken(
+          $magic_constant,
+          self::LINT_KEYWORD_CASING,
+          pht('Magic constants should be uppercase.'),
+          strtoupper($value));
+      }
+    }
   }
 
   private function lintStrings(XHPASTNode $root) {
