@@ -56,6 +56,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_FORMATTED_STRING           = 54;
   const LINT_UNNECESSARY_FINAL_MODIFIER = 55;
   const LINT_UNNECESSARY_SEMICOLON      = 56;
+  const LINT_SELF_MEMBER_REFERENCE      = 57;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -125,6 +126,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_FORMATTED_STRING           => 'Formatted String',
       self::LINT_UNNECESSARY_FINAL_MODIFIER => 'Unnecessary Final Modifier',
       self::LINT_UNNECESSARY_SEMICOLON      => 'Unnecessary Semicolon',
+      self::LINT_SELF_MEMBER_REFERENCE      => 'Self Member Reference',
     );
   }
 
@@ -169,6 +171,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_IMPLICIT_VISIBILITY        => $advice,
       self::LINT_UNNECESSARY_FINAL_MODIFIER => $advice,
       self::LINT_UNNECESSARY_SEMICOLON      => $advice,
+      self::LINT_SELF_MEMBER_REFERENCE      => $advice,
     );
   }
 
@@ -236,7 +239,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '19';
+    return '20';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -317,6 +320,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintUnnecessaryFinalModifier' => self::LINT_UNNECESSARY_FINAL_MODIFIER,
       'lintUnnecessarySemicolons' => self::LINT_UNNECESSARY_SEMICOLON,
       'lintConstantDefinitions' => self::LINT_NAMING_CONVENTIONS,
+      'lintSelfMemberReference' => self::LINT_SELF_MEMBER_REFERENCE,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -1202,7 +1206,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     foreach ($foreach_loops as $foreach_loop) {
       $var_map = array();
 
-      $foreach_expr = $foreach_loop->getChildOftype(0, 'n_FOREACH_EXPRESSION');
+      $foreach_expr = $foreach_loop->getChildOfType(0, 'n_FOREACH_EXPRESSION');
 
       // We might use one or two vars, i.e. "foreach ($x as $y => $z)" or
       // "foreach ($x as $y)".
@@ -3389,6 +3393,68 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  private function lintSelfMemberReference(XHPASTNode $root) {
+    $class_declarations = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+
+    foreach ($class_declarations as $class_declaration) {
+      $class_name = $class_declaration
+        ->getChildOfType(1, 'n_CLASS_NAME')
+        ->getConcreteString();
+
+      $class_static_accesses = $class_declaration
+        ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+      $self_member_references = array();
+
+      foreach ($class_static_accesses as $class_static_access) {
+        $double_colons     = $class_static_access
+          ->selectTokensOfType('T_PAAMAYIM_NEKUDOTAYIM');
+        $class_ref         = $class_static_access
+          ->getChildOfType(0, 'n_CLASS_NAME');
+        $class_ref_name    = $class_ref->getConcreteString();
+
+        if (strtolower($class_name) == strtolower($class_ref_name)) {
+          $this->raiseLintAtNode(
+            $class_ref,
+            self::LINT_SELF_MEMBER_REFERENCE,
+            pht('Use `%s` for local static member references.', 'self::'),
+            'self');
+        }
+
+        static $self_refs = array(
+          'parent',
+          'self',
+          'static',
+        );
+
+        if (!in_array(strtolower($class_ref_name), $self_refs)) {
+          continue;
+        }
+
+        if ($class_ref_name != strtolower($class_ref_name)) {
+          $this->raiseLintAtNode(
+            $class_ref,
+            self::LINT_SELF_MEMBER_REFERENCE,
+            pht('PHP keywords should be lowercase.'),
+            strtolower($class_ref_name));
+        }
+
+        foreach ($double_colons as $double_colon) {
+          $tokens = $double_colon->getNonsemanticTokensBefore() +
+            $double_colon->getNonsemanticTokensAfter();
+
+          foreach ($tokens as $token) {
+            if ($token->isAnyWhitespace()) {
+              $this->raiseLintAtToken(
+                $token,
+                self::LINT_SELF_MEMBER_REFERENCE,
+                pht('Unnecessary whitespace around double colon operator.'),
+                '');
+            }
+          }
+        }
+      }
+    }
+  }
 
   /**
    * Retrieve all calls to some specified function(s).
