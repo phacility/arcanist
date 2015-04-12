@@ -57,6 +57,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_UNNECESSARY_FINAL_MODIFIER = 55;
   const LINT_UNNECESSARY_SEMICOLON      = 56;
   const LINT_SELF_MEMBER_REFERENCE      = 57;
+  const LINT_LOGICAL_OPERATORS          = 58;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -127,6 +128,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_UNNECESSARY_FINAL_MODIFIER => 'Unnecessary Final Modifier',
       self::LINT_UNNECESSARY_SEMICOLON      => 'Unnecessary Semicolon',
       self::LINT_SELF_MEMBER_REFERENCE      => 'Self Member Reference',
+      self::LINT_LOGICAL_OPERATORS          => 'Logical Operators',
     );
   }
 
@@ -172,6 +174,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_UNNECESSARY_FINAL_MODIFIER => $advice,
       self::LINT_UNNECESSARY_SEMICOLON      => $advice,
       self::LINT_SELF_MEMBER_REFERENCE      => $advice,
+      self::LINT_LOGICAL_OPERATORS          => $advice,
     );
   }
 
@@ -239,7 +242,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '20';
+    return '21';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -321,6 +324,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintUnnecessarySemicolons' => self::LINT_UNNECESSARY_SEMICOLON,
       'lintConstantDefinitions' => self::LINT_NAMING_CONVENTIONS,
       'lintSelfMemberReference' => self::LINT_SELF_MEMBER_REFERENCE,
+      'lintLogicalOperators' => self::LINT_LOGICAL_OPERATORS,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3453,6 +3457,27 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           }
         }
       }
+    }
+  }
+
+  private function lintLogicalOperators(XHPASTNode $root) {
+    $logical_ands = $root->selectTokensOfType('T_LOGICAL_AND');
+    $logical_ors  = $root->selectTokensOfType('T_LOGICAL_OR');
+
+    foreach ($logical_ands as $logical_and) {
+      $this->raiseLintAtToken(
+        $logical_and,
+        self::LINT_LOGICAL_OPERATORS,
+        pht('Use `%s` instead of `%s`.', '&&', 'and'),
+        '&&');
+    }
+
+    foreach ($logical_ors as $logical_or) {
+      $this->raiseLintAtToken(
+        $logical_or,
+        self::LINT_LOGICAL_OPERATORS,
+        pht('Use `%s` instead of `%s`.', '||', 'or'),
+        '||');
     }
   }
 
