@@ -3407,14 +3407,16 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
       $class_static_accesses = $class_declaration
         ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
-      $self_member_references = array();
 
       foreach ($class_static_accesses as $class_static_access) {
-        $double_colons     = $class_static_access
+        $double_colons = $class_static_access
           ->selectTokensOfType('T_PAAMAYIM_NEKUDOTAYIM');
-        $class_ref         = $class_static_access
-          ->getChildOfType(0, 'n_CLASS_NAME');
-        $class_ref_name    = $class_ref->getConcreteString();
+        $class_ref = $class_static_access->getChildByIndex(0);
+
+        if ($class_ref->getTypeName() != 'n_CLASS_NAME') {
+          continue;
+        }
+        $class_ref_name = $class_ref->getConcreteString();
 
         if (strtolower($class_name) == strtolower($class_ref_name)) {
           $this->raiseLintAtNode(
@@ -3441,20 +3443,23 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
             pht('PHP keywords should be lowercase.'),
             strtolower($class_ref_name));
         }
+      }
+    }
 
-        foreach ($double_colons as $double_colon) {
-          $tokens = $double_colon->getNonsemanticTokensBefore() +
-            $double_colon->getNonsemanticTokensAfter();
+    $double_colons = $root
+      ->selectTokensOfType('T_PAAMAYIM_NEKUDOTAYIM');
 
-          foreach ($tokens as $token) {
-            if ($token->isAnyWhitespace()) {
-              $this->raiseLintAtToken(
-                $token,
-                self::LINT_SELF_MEMBER_REFERENCE,
-                pht('Unnecessary whitespace around double colon operator.'),
-                '');
-            }
-          }
+    foreach ($double_colons as $double_colon) {
+      $tokens = $double_colon->getNonsemanticTokensBefore() +
+        $double_colon->getNonsemanticTokensAfter();
+
+      foreach ($tokens as $token) {
+        if ($token->isAnyWhitespace()) {
+          $this->raiseLintAtToken(
+            $token,
+            self::LINT_SELF_MEMBER_REFERENCE,
+            pht('Unnecessary whitespace around double colon operator.'),
+            '');
         }
       }
     }

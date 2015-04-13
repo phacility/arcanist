@@ -12,11 +12,15 @@ class Foo extends Bar {
     echo Self :: FOOBAR;
   }
 
-  public function baz() {
+  public function baz(Foo $x) {
     echo static::FOOBAR;
     echo Foo::FOOBAR;
+
+    $x::bar();
   }
 }
+
+MyClass :: myMethod();
 ~~~~~~~~~~
 error:3:7
 advice:7:5
@@ -24,6 +28,8 @@ advice:12:10
 advice:12:14
 advice:12:17
 advice:17:10
+advice:23:8
+advice:23:11
 ~~~~~~~~~~
 <?php
 
@@ -39,8 +45,12 @@ class Foo extends Bar {
     echo self::FOOBAR;
   }
 
-  public function baz() {
+  public function baz(Foo $x) {
     echo static::FOOBAR;
     echo self::FOOBAR;
+
+    $x::bar();
   }
 }
+
+MyClass::myMethod();
