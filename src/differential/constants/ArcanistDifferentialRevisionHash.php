@@ -10,9 +10,9 @@ final class ArcanistDifferentialRevisionHash {
 
   public static function getTypes() {
     return array(
-      ArcanistDifferentialRevisionHash::HASH_GIT_COMMIT,
-      ArcanistDifferentialRevisionHash::HASH_GIT_TREE,
-      ArcanistDifferentialRevisionHash::HASH_MERCURIAL_COMMIT,
+      self::HASH_GIT_COMMIT,
+      self::HASH_GIT_TREE,
+      self::HASH_MERCURIAL_COMMIT,
     );
   }
 

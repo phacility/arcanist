@@ -202,7 +202,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   protected function buildBaseCommit($symbolic_commit) {
     if ($symbolic_commit !== null) {
-      if ($symbolic_commit == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      if ($symbolic_commit == self::GIT_MAGIC_ROOT_COMMIT) {
         $this->setBaseCommitExplanation(
           'you explicitly specified the empty tree.');
         return $symbolic_commit;
@@ -368,7 +368,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->resolvedHeadCommit;
   }
 
-  final public function setHeadCommit($symbolic_commit) {
+  public function setHeadCommit($symbolic_commit) {
     $this->symbolicHeadCommit = $symbolic_commit;
     $this->reloadCommitRange();
     return $this;
