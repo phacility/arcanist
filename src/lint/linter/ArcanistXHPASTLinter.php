@@ -58,6 +58,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_UNNECESSARY_SEMICOLON      = 56;
   const LINT_SELF_MEMBER_REFERENCE      = 57;
   const LINT_LOGICAL_OPERATORS          = 58;
+  const LINT_INNER_FUNCTION             = 59;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -129,6 +130,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_UNNECESSARY_SEMICOLON      => 'Unnecessary Semicolon',
       self::LINT_SELF_MEMBER_REFERENCE      => 'Self Member Reference',
       self::LINT_LOGICAL_OPERATORS          => 'Logical Operators',
+      self::LINT_INNER_FUNCTION             => 'Inner Functions',
     );
   }
 
@@ -175,6 +177,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_UNNECESSARY_SEMICOLON      => $advice,
       self::LINT_SELF_MEMBER_REFERENCE      => $advice,
       self::LINT_LOGICAL_OPERATORS          => $advice,
+      self::LINT_INNER_FUNCTION             => $warning,
     );
   }
 
@@ -242,7 +245,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '21';
+    return '22';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -325,6 +328,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintConstantDefinitions' => self::LINT_NAMING_CONVENTIONS,
       'lintSelfMemberReference' => self::LINT_SELF_MEMBER_REFERENCE,
       'lintLogicalOperators' => self::LINT_LOGICAL_OPERATORS,
+      'lintInnerFunctions' => self::LINT_INNER_FUNCTION,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3483,6 +3487,27 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_LOGICAL_OPERATORS,
         pht('Use `%s` instead of `%s`.', '||', 'or'),
         '||');
+    }
+  }
+
+  private function lintInnerFunctions(XHPASTNode $root) {
+    $function_decls = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+
+    foreach ($function_decls as $function_declaration) {
+      $inner_functions = $function_declaration
+        ->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+
+      foreach ($inner_functions as $inner_function) {
+        if ($inner_function->getChildByIndex(2)->getTypeName() == 'n_EMPTY') {
+          // Anonymous closure.
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $inner_function,
+          self::LINT_INNER_FUNCTION,
+          pht('Avoid the use of inner functions.'));
+      }
     }
   }
 
