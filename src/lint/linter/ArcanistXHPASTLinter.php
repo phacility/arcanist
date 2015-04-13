@@ -3459,6 +3459,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
       foreach ($tokens as $token) {
         if ($token->isAnyWhitespace()) {
+          if (strpos($token->getValue(), "\n") !== false) {
+            continue;
+          }
+
           $this->raiseLintAtToken(
             $token,
             self::LINT_SELF_MEMBER_REFERENCE,
