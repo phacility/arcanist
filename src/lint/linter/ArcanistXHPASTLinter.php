@@ -922,11 +922,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       foreach ($blocks as $key => $block) {
         // Collect all the tokens in this block which aren't at top level.
         // We want to ignore "break", and "continue" in these blocks.
-        $lower_level = $block->selectDescendantsOfType('n_WHILE');
-        $lower_level->add($block->selectDescendantsOfType('n_DO_WHILE'));
-        $lower_level->add($block->selectDescendantsOfType('n_FOR'));
-        $lower_level->add($block->selectDescendantsOfType('n_FOREACH'));
-        $lower_level->add($block->selectDescendantsOfType('n_SWITCH'));
+        $lower_level = $block->selectDescendantsOfTypes(array(
+          'n_WHILE',
+          'n_DO_WHILE',
+          'n_FOR',
+          'n_FOREACH',
+          'n_SWITCH',
+        ));
         $lower_level_tokens = array();
         foreach ($lower_level as $lower_level_block) {
           $lower_level_tokens += $lower_level_block->getTokens();
@@ -935,10 +937,14 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         // Collect all the tokens in this block which aren't in this scope
         // (because they're inside class, function or interface declarations).
         // We want to ignore all of these tokens.
-        $decls = $block->selectDescendantsOfType('n_FUNCTION_DECLARATION');
-        $decls->add($block->selectDescendantsOfType('n_CLASS_DECLARATION'));
-        // For completeness; these can't actually have anything.
-        $decls->add($block->selectDescendantsOfType('n_INTERFACE_DECLARATION'));
+        $decls = $block->selectDescendantsOfTypes(array(
+          'n_FUNCTION_DECLARATION',
+          'n_CLASS_DECLARATION',
+
+          // For completeness; these can't actually have anything.
+          'n_INTERFACE_DECLARATION',
+        ));
+
         $different_scope_tokens = array();
         foreach ($decls as $decl) {
           $different_scope_tokens += $decl->getTokens();
@@ -1323,9 +1329,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
     $all_loops = $for_loops->add($foreach_loops);
     foreach ($all_loops as $loop) {
-      $child_for_loops = $loop->selectDescendantsOfType('n_FOR');
-      $child_foreach_loops = $loop->selectDescendantsOfType('n_FOREACH');
-      $child_loops = $child_for_loops->add($child_foreach_loops);
+      $child_loops = $loop->selectDescendantsOfTypes(array(
+        'n_FOR',
+        'n_FOREACH',
+      ));
 
       $outer_vars = $used_vars[$loop->getID()];
       foreach ($child_loops as $inner_loop) {
@@ -1366,10 +1373,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    *
    */
   protected function lintReusedIteratorReferences(XHPASTNode $root) {
-
-    $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
-    $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
-    $defs = $fdefs->add($mdefs);
+    $defs = $root->selectDescendantsOfTypes(array(
+      'n_FUNCTION_DECLARATION',
+      'n_METHOD_DECLARATION',
+    ));
 
     foreach ($defs as $def) {
 
@@ -1576,9 +1583,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     // TODO: Support functions defined inside other functions which is commonly
     // used with anonymous functions.
 
-    $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
-    $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
-    $defs = $fdefs->add($mdefs);
+    $defs = $root->selectDescendantsOfTypes(array(
+      'n_FUNCTION_DECLARATION',
+      'n_METHOD_DECLARATION',
+    ));
 
     foreach ($defs as $def) {
 
@@ -2103,9 +2111,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       true);
 
 
-    $fdefs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
-    $mdefs = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
-    $defs = $fdefs->add($mdefs);
+    $defs = $root->selectDescendantsOfTypes(array(
+      'n_FUNCTION_DECLARATION',
+      'n_METHOD_DECLARATION',
+    ));
 
     foreach ($defs as $def) {
       $globals = $def->selectDescendantsOfType('n_GLOBAL_DECLARATION_LIST');
@@ -2235,17 +2244,14 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintParenthesesShouldHugExpressions(XHPASTNode $root) {
-    $calls = $root->selectDescendantsOfType('n_CALL_PARAMETER_LIST');
-    $controls = $root->selectDescendantsOfType('n_CONTROL_CONDITION');
-    $fors = $root->selectDescendantsOfType('n_FOR_EXPRESSION');
-    $foreach = $root->selectDescendantsOfType('n_FOREACH_EXPRESSION');
-    $decl = $root->selectDescendantsOfType('n_DECLARATION_PARAMETER_LIST');
+    $all_paren_groups = $root->selectDescendantsOfTypes(array(
+      'n_CALL_PARAMETER_LIST',
+      'n_CONTROL_CONDITION',
+      'n_FOR_EXPRESSION',
+      'n_FOREACH_EXPRESSION',
+      'n_DECLARATION_PARAMETER_LIST',
+    ));
 
-    $all_paren_groups = $calls
-      ->add($controls)
-      ->add($fors)
-      ->add($foreach)
-      ->add($decl);
     foreach ($all_paren_groups as $group) {
       $tokens = $group->getTokens();
 
@@ -2477,20 +2483,18 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintDynamicDefines(XHPASTNode $root) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $calls = $this->getFunctionCalls($root, array('define'));
+
     foreach ($calls as $call) {
-      $name = $call->getChildByIndex(0)->getConcreteString();
-      if (strtolower($name) === 'define') {
-        $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-        $defined = $parameter_list->getChildByIndex(0);
-        if (!$defined->isStaticScalar()) {
-          $this->raiseLintAtNode(
-            $defined,
-            self::LINT_DYNAMIC_DEFINE,
-            pht(
-              'First argument to %s must be a string literal.',
-              'define()'));
-        }
+      $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+      $defined = $parameter_list->getChildByIndex(0);
+      if (!$defined->isStaticScalar()) {
+        $this->raiseLintAtNode(
+          $defined,
+          self::LINT_DYNAMIC_DEFINE,
+          pht(
+            'First argument to %s must be a string literal.',
+            'define()'));
       }
     }
   }
@@ -2549,24 +2553,22 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
    * wrong.
    */
   private function lintPregQuote(XHPASTNode $root) {
-    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $function_calls = $this->getFunctionCalls($root, array('preg_quote'));
+
     foreach ($function_calls as $call) {
-      $name = $call->getChildByIndex(0)->getConcreteString();
-      if (strtolower($name) === 'preg_quote') {
-        $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
-        if (count($parameter_list->getChildren()) !== 2) {
-          $this->raiseLintAtNode(
-            $call,
-            self::LINT_PREG_QUOTE_MISUSE,
-            pht(
-              'If you use pattern delimiters that require escaping '.
-              '(such as `%s`, but not `%s`) then you should pass two '.
-              'arguments to %s, so that %s knows which delimiter to escape.',
-              '//',
-              '()',
-              'preg_quote()',
-              'preg_quote()'));
-        }
+      $parameter_list = $call->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
+      if (count($parameter_list->getChildren()) !== 2) {
+        $this->raiseLintAtNode(
+          $call,
+          self::LINT_PREG_QUOTE_MISUSE,
+          pht(
+            'If you use pattern delimiters that require escaping '.
+            '(such as `%s`, but not `%s`) then you should pass two '.
+            'arguments to %s, so that %s knows which delimiter to escape.',
+            '//',
+            '()',
+            'preg_quote()',
+            'preg_quote()'));
       }
     }
   }
@@ -2780,8 +2782,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintClosingCallParen(XHPASTNode $root) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    $calls = $calls->add($root->selectDescendantsOfType('n_METHOD_CALL'));
+    $calls = $root->selectDescendantsOfTypes(array(
+      'n_FUNCTION_CALL',
+      'n_METHOD_CALL',
+    ));
 
     foreach ($calls as $call) {
       // If the last parameter of a call is a HEREDOC, don't apply this rule.
@@ -2813,8 +2817,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintClosingDeclarationParen(XHPASTNode $root) {
-    $decs = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
-    $decs = $decs->add($root->selectDescendantsOfType('n_METHOD_DECLARATION'));
+    $decs = $root->selectDescendantsOfTypes(array(
+      'n_FUNCTION_DECLARATION',
+      'n_METHOD_DECLARATION',
+    ));
 
     foreach ($decs as $dec) {
       $params = $dec->getChildOfType(3, 'n_DECLARATION_PARAMETER_LIST');
