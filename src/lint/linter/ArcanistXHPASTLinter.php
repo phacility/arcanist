@@ -59,6 +59,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_SELF_MEMBER_REFERENCE      = 57;
   const LINT_LOGICAL_OPERATORS          = 58;
   const LINT_INNER_FUNCTION             = 59;
+  const LINT_DEFAULT_PARAMETERS         = 60;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -185,6 +186,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Logical Operators'),
       self::LINT_INNER_FUNCTION
         => pht('Inner Functions'),
+      self::LINT_DEFAULT_PARAMETERS
+        => pht('Default Parameters'),
     );
   }
 
@@ -232,6 +235,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_SELF_MEMBER_REFERENCE      => $advice,
       self::LINT_LOGICAL_OPERATORS          => $advice,
       self::LINT_INNER_FUNCTION             => $warning,
+      self::LINT_DEFAULT_PARAMETERS         => $warning,
     );
   }
 
@@ -299,7 +303,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '22';
+    return '23';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -385,6 +389,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintSelfMemberReference' => self::LINT_SELF_MEMBER_REFERENCE,
       'lintLogicalOperators' => self::LINT_LOGICAL_OPERATORS,
       'lintInnerFunctions' => self::LINT_INNER_FUNCTION,
+      'lintDefaultParameters' => self::LINT_DEFAULT_PARAMETERS,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3646,6 +3651,32 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $inner_function,
           self::LINT_INNER_FUNCTION,
           pht('Avoid the use of inner functions.'));
+      }
+    }
+  }
+
+  private function lintDefaultParameters(XHPASTNode $root) {
+    $parameter_lists = $root->selectDescendantsOfType(
+      'n_DECLARATION_PARAMETER_LIST');
+
+    foreach ($parameter_lists as $parameter_list) {
+      $default_found = false;
+      $parameters    = $parameter_list->selectDescendantsOfType(
+        'n_DECLARATION_PARAMETER');
+
+      foreach ($parameters as $parameter) {
+        $default_value = $parameter->getChildByIndex(2);
+
+        if ($default_value->getTypeName() != 'n_EMPTY') {
+          $default_found = true;
+        } else if ($default_found) {
+          $this->raiseLintAtNode(
+            $parameter_list,
+            self::LINT_DEFAULT_PARAMETERS,
+            pht(
+              'Arguments with default values must be at the end '.
+              'of the argument list.'));
+        }
       }
     }
   }
