@@ -31,7 +31,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
         // We have a passing test
         $meta = array();
         preg_match(
-          '/^--- PASS: (?P<test_name>.+) \((?P<time>.+) seconds\).*/',
+          '/^--- PASS: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds)?\).*/',
           $line,
           $meta);
 
@@ -51,7 +51,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
         $reason = trim($test_results[$i + 1]);
         $meta = array();
         preg_match(
-          '/^--- FAIL: (?P<test_name>.+) \((?P<time>.+) seconds\).*/',
+          '/^--- FAIL: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds)?\).*/',
           $line,
           $meta);
 
