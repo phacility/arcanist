@@ -60,6 +60,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_LOGICAL_OPERATORS          = 58;
   const LINT_INNER_FUNCTION             = 59;
   const LINT_DEFAULT_PARAMETERS         = 60;
+  const LINT_LOWERCASE_FUNCTIONS        = 61;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -188,6 +189,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Inner Functions'),
       self::LINT_DEFAULT_PARAMETERS
         => pht('Default Parameters'),
+      self::LINT_LOWERCASE_FUNCTIONS
+        => pht('Lowercase Functions'),
     );
   }
 
@@ -236,6 +239,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_LOGICAL_OPERATORS          => $advice,
       self::LINT_INNER_FUNCTION             => $warning,
       self::LINT_DEFAULT_PARAMETERS         => $warning,
+      self::LINT_LOWERCASE_FUNCTIONS        => $advice,
     );
   }
 
@@ -303,7 +307,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '23';
+    return '24';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -390,6 +394,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintLogicalOperators' => self::LINT_LOGICAL_OPERATORS,
       'lintInnerFunctions' => self::LINT_INNER_FUNCTION,
       'lintDefaultParameters' => self::LINT_DEFAULT_PARAMETERS,
+      'lintLowercaseFunctions' => self::LINT_LOWERCASE_FUNCTIONS,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3677,6 +3682,39 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
               'Arguments with default values must be at the end '.
               'of the argument list.'));
         }
+      }
+    }
+  }
+
+  private function lintLowercaseFunctions(XHPASTNode $root) {
+    static $builtin_functions = null;
+
+    if ($builtin_functions === null) {
+      $builtin_functions = array_fuse(
+        idx(get_defined_functions(), 'internal', array()));
+    }
+
+    $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+
+    foreach ($function_calls as $function_call) {
+      $function = $function_call->getChildByIndex(0);
+
+      if ($function->getTypeName() != 'n_SYMBOL_NAME') {
+        continue;
+      }
+
+      $function_name = $function->getConcreteString();
+
+      if (!idx($builtin_functions, strtolower($function_name))) {
+        continue;
+      }
+
+      if ($function_name != strtolower($function_name)) {
+        $this->raiseLintAtNode(
+          $function,
+          self::LINT_LOWERCASE_FUNCTIONS,
+          pht('Calls to built-in PHP functions should be lowercase.'),
+          strtolower($function_name));
       }
     }
   }
