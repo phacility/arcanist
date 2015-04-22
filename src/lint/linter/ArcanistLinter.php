@@ -4,6 +4,8 @@
  * Implements lint rules, like syntax checks for a specific language.
  *
  * @task info Human Readable Information
+ * @task state Runtime State
+ * @task exec Executing Linters
  * @stable
  */
 abstract class ArcanistLinter {
@@ -13,6 +15,7 @@ abstract class ArcanistLinter {
   const GRANULARITY_REPOSITORY = 3;
   const GRANULARITY_GLOBAL = 4;
 
+  private $id;
   protected $paths  = array();
   protected $data   = array();
   protected $engine;
@@ -26,6 +29,7 @@ abstract class ArcanistLinter {
 
 
 /*  -(  Human Readable Information  )---------------------------------------- */
+
 
   /**
    * Return an optional informative URI where humans can learn more about this
@@ -69,6 +73,163 @@ abstract class ArcanistLinter {
       get_class($this));
   }
 
+
+/* -(  Runtime State  )------------------------------------------------------ */
+
+
+  /**
+   * @task state
+   */
+  final public function getActivePath() {
+    return $this->activePath;
+  }
+
+
+  /**
+   * @task state
+   */
+  final public function setActivePath($path) {
+    $this->stopAllLinters = false;
+    $this->activePath = $path;
+    return $this;
+  }
+
+
+  /**
+   * @task state
+   */
+  final public function setEngine(ArcanistLintEngine $engine) {
+    $this->engine = $engine;
+    return $this;
+  }
+
+
+  /**
+   * @task state
+   */
+  final protected function getEngine() {
+    return $this->engine;
+  }
+
+
+  /**
+   * Set the internal ID for this linter.
+   *
+   * This ID is assigned automatically by the @{class:ArcanistLintEngine}.
+   *
+   * @param string Unique linter ID.
+   * @return this
+   * @task state
+   */
+  final public function setLinterID($id) {
+    $this->id = $id;
+    return $this;
+  }
+
+
+  /**
+   * Get the internal ID for this linter.
+   *
+   * Retrieves an internal linter ID managed by the @{class:ArcanistLintEngine}.
+   * This ID is a unique scalar which distinguishes linters in a list.
+   *
+   * @return string Unique linter ID.
+   * @task state
+   */
+  final public function getLinterID() {
+    return $this->id;
+  }
+
+
+/* -(  Executing Linters  )-------------------------------------------------- */
+
+
+  /**
+   * Hook called before a list of paths are linted.
+   *
+   * Parallelizable linters can start multiple requests in parallel here,
+   * to improve performance. They can implement @{method:didLintPaths} to
+   * collect results.
+   *
+   * Linters which are not parallelizable should normally ignore this callback
+   * and implement @{method:lintPath} instead.
+   *
+   * @param list<string> A list of paths to be linted
+   * @return void
+   * @task exec
+   */
+  public function willLintPaths(array $paths) {
+    return;
+  }
+
+
+  /**
+   * Hook called for each path to be linted.
+   *
+   * Linters which are not parallelizable can do work here.
+   *
+   * Linters which are parallelizable may want to ignore this callback and
+   * implement @{method:willLintPaths} and @{method:didLintPaths} instead.
+   *
+   * @param string Path to lint.
+   * @return void
+   * @task exec
+   */
+  public function lintPath($path) {
+    return;
+  }
+
+
+  /**
+   * Hook called after a list of paths are linted.
+   *
+   * Parallelizable linters can collect results here.
+   *
+   * Linters which are not paralleizable should normally ignore this callback
+   * and implement @{method:lintPath} instead.
+   *
+   * @param list<string> A list of paths which were linted.
+   * @return void
+   * @task exec
+   */
+  public function didLintPaths(array $paths) {
+    return;
+  }
+
+
+  /**
+   * Obsolete hook which was invoked before a path was linted.
+   *
+   * WARNING: This is an obsolete hook which is not called. If you maintain
+   * a linter which relies on it, update to use @{method:lintPath} instead.
+   *
+   * @task exec
+   */
+  final public function willLintPath($path) {
+    // TODO: Remove this method after some time. In the meantime, the "final"
+    // will fatal subclasses which implement this hook and point at the API
+    // change so maintainers get fewer surprises.
+    throw new PhutilMethodNotImplementedException();
+  }
+
+
+  /**
+   * Obsolete hook which was invoked after linters ran.
+   *
+   * WARNING: This is an obsolete hook which is not called. If you maintain
+   * a linter which relies on it, update to use @{method:didLintPaths} instead.
+   *
+   * @return void
+   * @task exec
+   */
+  final public function didRunLinters() {
+    // TODO: Remove this method after some time. In the meantime, the "final"
+    // will fatal subclasses which implement this hook and point at the API
+    // change so maintainers get fewer surprises.
+    throw new PhutilMethodNotImplementedException();
+  }
+
+
   public function getLinterPriority() {
     return 1.0;
   }
@@ -84,10 +245,6 @@ abstract class ArcanistLinter {
   final public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
-  }
-
-  final public function getActivePath() {
-    return $this->activePath;
   }
 
   final public function getOtherLocation($offset, $path = null) {
@@ -172,18 +329,10 @@ abstract class ArcanistLinter {
     return $this->data[$path];
   }
 
-  final public function setEngine(ArcanistLintEngine $engine) {
-    $this->engine = $engine;
-    return $this;
-  }
-
-  final protected function getEngine() {
-    return $this->engine;
-  }
-
   public function getCacheVersion() {
     return 0;
   }
+
 
   final public function getLintMessageFullCode($short_code) {
     return $this->getLinterName().$short_code;
@@ -291,28 +440,14 @@ abstract class ArcanistLinter {
       $replacement);
   }
 
-  public function willLintPath($path) {
-    $this->stopAllLinters = false;
-    $this->activePath = $path;
-  }
-
   public function canRun() {
     return true;
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
-  abstract public function lintPath($path);
   abstract public function getLinterName();
 
   public function getVersion() {
     return null;
-  }
-
-  public function didRunLinters() {
-    // This is a hook.
   }
 
   final protected function isCodeEnabled($code) {

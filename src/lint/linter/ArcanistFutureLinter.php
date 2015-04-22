@@ -19,15 +19,38 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
     }
   }
 
-  final public function lintPath($path) {}
+  final public function lintPath($path) {
+    return;
+  }
 
-  final public function didRunLinters() {
-    if ($this->futures) {
-      foreach ($this->futures as $path => $future) {
-        $this->willLintPath($path);
-        $this->resolveFuture($path, $future);
-      }
+  final public function didLintPaths(array $paths) {
+    if (!$this->futures) {
+      return;
     }
+
+    $map = array();
+    foreach ($this->futures as $path => $future) {
+      $this->setActivePath($path);
+      $this->resolveFuture($path, $future);
+      $map[$path] = $future;
+    }
+    $this->futures = array();
+
+    $this->didResolveLinterFutures($map);
+  }
+
+
+  /**
+   * Hook for cleaning up resources.
+   *
+   * This is invoked after a block of futures resolve, and allows linters to
+   * discard or clean up any shared resources they no longer need.
+   *
+   * @param map<string, Future> Map of paths to resolved futures.
+   * @return void
+   */
+  protected function didResolveLinterFutures(array $futures) {
+    return;
   }
 
 }

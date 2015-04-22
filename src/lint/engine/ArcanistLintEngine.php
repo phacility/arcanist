@@ -212,6 +212,10 @@ abstract class ArcanistLintEngine {
       throw new ArcanistNoEffectException('No linters to run.');
     }
 
+    foreach ($linters as $key => $linter) {
+      $linter->setLinterID($key);
+    }
+
     $linters = msort($linters, 'getLinterPriority');
     foreach ($linters as $linter) {
       $linter->setEngine($this);
@@ -249,75 +253,13 @@ abstract class ArcanistLintEngine {
 
     $this->cacheVersion = crc32(implode("\n", $versions));
 
+    $runnable = $this->getRunnableLinters($linters);
+
     $this->stopped = array();
-    $exceptions = array();
-    foreach ($linters as $linter_name => $linter) {
-      if (!is_string($linter_name)) {
-        $linter_name = get_class($linter);
-      }
-      try {
-        if (!$linter->canRun()) {
-          continue;
-        }
-        $paths = $linter->getPaths();
 
-        foreach ($paths as $key => $path) {
-          // Make sure each path has a result generated, even if it is empty
-          // (i.e., the file has no lint messages).
-          $result = $this->getResultForPath($path);
-          if (isset($this->stopped[$path])) {
-            unset($paths[$key]);
-          }
-          if (isset($this->cachedResults[$path][$this->cacheVersion])) {
-            $cached_result = $this->cachedResults[$path][$this->cacheVersion];
+    $exceptions = $this->executeLinters($runnable);
 
-            $use_cache = $this->shouldUseCache(
-              $linter->getCacheGranularity(),
-              idx($cached_result, 'repository_version'));
-
-            if ($use_cache) {
-              unset($paths[$key]);
-
-              if (idx($cached_result, 'stopped') == $linter_name) {
-                $this->stopped[$path] = $linter_name;
-              }
-            }
-          }
-        }
-        $paths = array_values($paths);
-
-        if ($paths) {
-          $profiler = PhutilServiceProfiler::getInstance();
-          $call_id = $profiler->beginServiceCall(array(
-            'type' => 'lint',
-            'linter' => $linter_name,
-            'paths' => $paths,
-          ));
-
-          try {
-            $linter->willLintPaths($paths);
-            foreach ($paths as $path) {
-              $linter->willLintPath($path);
-              $linter->lintPath($path);
-              if ($linter->didStopAllLinters()) {
-                $this->stopped[$path] = $linter_name;
-              }
-            }
-          } catch (Exception $ex) {
-            $profiler->endServiceCall($call_id, array());
-            throw $ex;
-          }
-          $profiler->endServiceCall($call_id, array());
-        }
-
-      } catch (Exception $ex) {
-        $exceptions[$linter_name] = $ex;
-      }
-    }
-
-    $exceptions += $this->didRunLinters($linters);
-
-    foreach ($linters as $linter) {
+    foreach ($runnable as $linter) {
       foreach ($linter->getLintMessages() as $message) {
         if (!$this->isSeverityEnabled($message->getSeverity())) {
           continue;
@@ -418,33 +360,6 @@ abstract class ArcanistLintEngine {
   }
 
   abstract public function buildLinters();
-
-  final protected function didRunLinters(array $linters) {
-    assert_instances_of($linters, 'ArcanistLinter');
-
-    $exceptions = array();
-    $profiler = PhutilServiceProfiler::getInstance();
-
-    foreach ($linters as $linter_name => $linter) {
-      if (!is_string($linter_name)) {
-        $linter_name = get_class($linter);
-      }
-
-      $call_id = $profiler->beginServiceCall(array(
-        'type' => 'lint',
-        'linter' => $linter_name,
-      ));
-
-      try {
-        $linter->didRunLinters();
-      } catch (Exception $ex) {
-        $exceptions[$linter_name] = $ex;
-      }
-      $profiler->endServiceCall($call_id, array());
-    }
-
-    return $exceptions;
-  }
 
   final public function setRepositoryVersion($version) {
     $this->repositoryVersion = $version;
@@ -578,5 +493,162 @@ abstract class ArcanistLintEngine {
     $this->linterResources[$key] = $value;
     return $this;
   }
+
+
+  private function getRunnableLinters(array $linters) {
+    assert_instances_of($linters, 'ArcanistLinter');
+
+    // TODO: The canRun() mechanism is only used by one linter, and just
+    // silently disables the linter. Almost every other linter handles this
+    // by throwing `ArcanistMissingLinterException`. Both mechanisms are not
+    // ideal; linters which can not run should emit a message, get marked as
+    // "skipped", and allow execution to continue. See T7045.
+
+    $runnable = array();
+    foreach ($linters as $key => $linter) {
+      if ($linter->canRun()) {
+        $runnable[$key] = $linter;
+      }
+    }
+
+    return $runnable;
+  }
+
+  private function executeLinters(array $runnable) {
+    $all_paths = $this->getPaths();
+    $path_chunks = array_chunk($all_paths, 32, $preserve_keys = true);
+
+    $exception_lists = array();
+    foreach ($path_chunks as $chunk) {
+      $exception_lists[] = $this->executeLintersOnChunk($runnable, $chunk);
+    }
+
+    return array_mergev($exception_lists);
+  }
+
+
+  private function executeLintersOnChunk(array $runnable, array $path_list) {
+    assert_instances_of($runnable, 'ArcanistLinter');
+
+    $path_map = array_fuse($path_list);
+
+    $exceptions = array();
+    $did_lint = array();
+    foreach ($runnable as $linter) {
+      $linter_id = $linter->getLinterID();
+      $paths = $linter->getPaths();
+
+      foreach ($paths as $key => $path) {
+        // If we aren't running this path in the current chunk of paths,
+        // skip it completely.
+        if (empty($path_map[$path])) {
+          unset($paths[$key]);
+          continue;
+        }
+
+        // Make sure each path has a result generated, even if it is empty
+        // (i.e., the file has no lint messages).
+        $result = $this->getResultForPath($path);
+
+        // If a linter has stopped all other linters for this path, don't
+        // actually run the linter.
+        if (isset($this->stopped[$path])) {
+          unset($paths[$key]);
+          continue;
+        }
+
+        // If we have a cached result for this path, don't actually run the
+        // linter.
+        if (isset($this->cachedResults[$path][$this->cacheVersion])) {
+          $cached_result = $this->cachedResults[$path][$this->cacheVersion];
+
+          $use_cache = $this->shouldUseCache(
+            $linter->getCacheGranularity(),
+            idx($cached_result, 'repository_version'));
+
+          if ($use_cache) {
+            unset($paths[$key]);
+            if (idx($cached_result, 'stopped') == $linter_id) {
+              $this->stopped[$path] = $linter_id;
+            }
+          }
+        }
+      }
+
+      $paths = array_values($paths);
+
+      if (!$paths) {
+        continue;
+      }
+
+      try {
+        $this->executeLinterOnPaths($linter, $paths);
+        $did_lint[] = array($linter, $paths);
+      } catch (Exception $ex) {
+        $exceptions[] = $ex;
+      }
+    }
+
+    foreach ($did_lint as $info) {
+      list($linter, $paths) = $info;
+      try {
+        $this->executeDidLintOnPaths($linter, $paths);
+      } catch (Exception $ex) {
+        $exceptions[] = $ex;
+      }
+    }
+
+    return $exceptions;
+  }
+
+  private function beginLintServiceCall(ArcanistLinter $linter, array $paths) {
+    $profiler = PhutilServiceProfiler::getInstance();
+
+    return $profiler->beginServiceCall(
+      array(
+        'type' => 'lint',
+        'linter' => $linter->getInfoName(),
+        'paths' => $paths,
+      ));
+  }
+
+  private function endLintServiceCall($call_id) {
+    $profiler = PhutilServiceProfiler::getInstance();
+    $profiler->endServiceCall($call_id, array());
+  }
+
+  private function executeLinterOnPaths(ArcanistLinter $linter, array $paths) {
+    $call_id = $this->beginLintServiceCall($linter, $paths);
+
+    try {
+      $linter->willLintPaths($paths);
+      foreach ($paths as $path) {
+        $linter->setActivePath($path);
+        $linter->lintPath($path);
+        if ($linter->didStopAllLinters()) {
+          $this->stopped[$path] = $linter->getLinterID();
+        }
+      }
+    } catch (Exception $ex) {
+      $this->endLintServiceCall($call_id);
+      throw $ex;
+    }
+
+    $this->endLintServiceCall($call_id);
+  }
+
+  private function executeDidLintOnPaths(ArcanistLinter $linter, array $paths) {
+    $call_id = $this->beginLintServiceCall($linter, $paths);
+
+    try {
+      $linter->didLintPaths($paths);
+    } catch (Exception $ex) {
+      $this->endLintServiceCall($call_id);
+      throw $ex;
+    }
+
+    $this->endLintServiceCall($call_id);
+  }
+
 
 }
