@@ -3490,7 +3490,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         continue;
       }
 
-      if ($statement->getSemanticString() == ';') {
+      if (count($statement->getChildren()) > 1) {
+        continue;
+      } else if ($statement->getChildByIndex(0)->getTypeName() != 'n_EMPTY') {
+        continue;
+      }
+
+      if ($statement->getConcreteString() == ';') {
         $this->raiseLintAtNode(
           $statement,
           self::LINT_UNNECESSARY_SEMICOLON,
