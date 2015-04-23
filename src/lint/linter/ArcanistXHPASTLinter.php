@@ -500,13 +500,17 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   private function lintPHPCompatibility(XHPASTNode $root) {
+    static $compat_info;
+
     if (!$this->version) {
       return;
     }
 
-    $target = phutil_get_library_root('phutil').
-      '/../resources/php_compat_info.json';
-    $compat_info = phutil_json_decode(Filesystem::readFile($target));
+    if ($compat_info === null) {
+      $target = phutil_get_library_root('phutil').
+        '/../resources/php_compat_info.json';
+      $compat_info = phutil_json_decode(Filesystem::readFile($target));
+    }
 
     // Create a whitelist for symbols which are being used conditionally.
     $whitelist = array(
