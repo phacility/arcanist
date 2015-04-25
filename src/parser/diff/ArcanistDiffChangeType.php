@@ -53,42 +53,42 @@ final class ArcanistDiffChangeType {
 
   public static function isOldLocationChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_MOVE_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_COPY_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_MULTICOPY  => true,
+      self::TYPE_MOVE_AWAY  => true,
+      self::TYPE_COPY_AWAY  => true,
+      self::TYPE_MULTICOPY  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isNewLocationChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_MOVE_HERE  => true,
-      ArcanistDiffChangeType::TYPE_COPY_HERE  => true,
+      self::TYPE_MOVE_HERE  => true,
+      self::TYPE_COPY_HERE  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isDeleteChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_DELETE     => true,
-      ArcanistDiffChangeType::TYPE_MOVE_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_MULTICOPY  => true,
+      self::TYPE_DELETE     => true,
+      self::TYPE_MOVE_AWAY  => true,
+      self::TYPE_MULTICOPY  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isCreateChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_ADD        => true,
-      ArcanistDiffChangeType::TYPE_COPY_HERE  => true,
-      ArcanistDiffChangeType::TYPE_MOVE_HERE  => true,
+      self::TYPE_ADD        => true,
+      self::TYPE_COPY_HERE  => true,
+      self::TYPE_MOVE_HERE  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isModifyChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_CHANGE     => true,
+      self::TYPE_CHANGE     => true,
     );
     return isset($types[$type]);
   }

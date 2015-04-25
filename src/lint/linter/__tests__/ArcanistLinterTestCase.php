@@ -113,11 +113,12 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $engine = new ArcanistUnitTestableLintEngine();
       $engine->setWorkingCopy($working_copy);
       $engine->setConfigurationManager($configuration_manager);
-      $engine->setPaths(array($path));
 
       $engine->setCommitHookMode(idx($config, 'hook', false));
 
       $path_name = idx($config, 'path', $path);
+      $engine->setPaths(array($path_name));
+
       $linter->addPath($path_name);
       $linter->addData($path_name, $data);
 
@@ -129,7 +130,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $engine->addFileData($path_name, $data);
 
       $results = $engine->run();
-
       $this->assertEqual(
         1,
         count($results),

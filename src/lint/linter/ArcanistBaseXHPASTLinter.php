@@ -8,6 +8,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   private $futures = array();
   private $trees = array();
   private $exceptions = array();
+  private $refcount = array();
 
   final public function getCacheVersion() {
     $parts = array();
@@ -50,6 +51,10 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
 
   final protected function buildFutures(array $paths) {
     return $this->getXHPASTLinter()->buildSharedFutures($paths);
+  }
+
+  protected function didResolveLinterFutures(array $futures) {
+    $this->getXHPASTLinter()->releaseSharedFutures(array_keys($futures));
   }
 
 
@@ -105,10 +110,43 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
       if (!isset($this->futures[$path])) {
         $this->futures[$path] = PhutilXHPASTBinary::getParserFuture(
           $this->getData($path));
+        $this->refcount[$path] = 1;
+      } else {
+        $this->refcount[$path]++;
       }
     }
     return array_select_keys($this->futures, $paths);
   }
+
+
+  /**
+   * Release futures on this linter which are no longer in use elsewhere.
+   *
+   * @param list<string> Paths to release futures for.
+   * @return void
+   * @task sharing
+   */
+  final protected function releaseSharedFutures(array $paths) {
+    foreach ($paths as $path) {
+      if (empty($this->refcount[$path])) {
+        throw new Exception(
+          pht(
+            'Imbalanced calls to shared futures: each call to '.
+            'buildSharedFutures() for a path must be paired with a call to '.
+            'releaseSharedFutures().'));
+      }
+
+      $this->refcount[$path]--;
+
+      if (!$this->refcount[$path]) {
+        unset($this->refcount[$path]);
+        unset($this->futures[$path]);
+        unset($this->trees[$path]);
+        unset($this->exceptions[$path]);
+      }
+    }
+  }
+
 
   /**
    * Get a path's tree from the responsible linter.

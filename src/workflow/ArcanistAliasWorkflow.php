@@ -142,7 +142,7 @@ EOTEXT
     array $argv,
     ArcanistConfigurationManager $configuration_manager) {
 
-    $aliases = ArcanistAliasWorkflow::getAliases($configuration_manager);
+    $aliases = self::getAliases($configuration_manager);
     if (!isset($aliases[$command])) {
       return array(null, $argv);
     }

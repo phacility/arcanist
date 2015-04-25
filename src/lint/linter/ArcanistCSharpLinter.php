@@ -182,13 +182,14 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     $this->futures = $futures;
   }
 
-  public function didRunLinters() {
+  public function didLintPaths(array $paths) {
     if ($this->futures) {
       $futures = id(new FutureIterator($this->futures))
         ->limit(8);
       foreach ($futures as $future) {
         $this->resolveFuture($future);
       }
+      $this->futures = array();
     }
   }
 

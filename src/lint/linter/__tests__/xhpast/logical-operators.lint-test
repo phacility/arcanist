@@ -1,0 +1,22 @@
+<?php
+
+$x = false;
+$y = true;
+
+$x and $y;
+$x && $y;
+$x or $y;
+$x || $y;
+~~~~~~~~~~
+advice:6:4
+advice:8:4
+~~~~~~~~~~
+<?php
+
+$x = false;
+$y = true;
+
+$x && $y;
+$x && $y;
+$x || $y;
+$x || $y;

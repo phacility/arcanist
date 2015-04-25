@@ -294,8 +294,7 @@ EOTEXT
       'add-all' => array(
         'short' => 'a',
         'help' =>
-          'Automatically add all untracked, unstaged and uncommitted files to '.
-          'the commit.',
+          'Automatically add all unstaged and uncommitted files to the commit.',
       ),
       'json' => array(
         'help' =>
@@ -1606,7 +1605,7 @@ EOTEXT
     while (!$done) {
       $template = rtrim($template, "\r\n")."\n\n";
       foreach ($issues as $issue) {
-        $template .= '# '.$issue."\n";
+        $template .= rtrim('# '.$issue)."\n";
       }
       $template .= "\n";
 
