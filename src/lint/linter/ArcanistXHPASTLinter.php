@@ -3398,8 +3398,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'queryfx_one' => 1,
       'vcsprintf' => 0,
       'vqsprintf' => 1,
-      'vqueryfx' => 1,
-      'vqueryfx_all' => 1,
     );
 
     $function_calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
