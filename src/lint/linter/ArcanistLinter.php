@@ -16,8 +16,9 @@ abstract class ArcanistLinter {
   const GRANULARITY_GLOBAL = 4;
 
   private $id;
-  protected $paths  = array();
-  protected $data   = array();
+  protected $paths = array();
+  private $filteredPaths = null;
+  protected $data = array();
   protected $engine;
   protected $activePath;
   protected $messages = array();
@@ -274,19 +275,24 @@ abstract class ArcanistLinter {
 
   final public function addPath($path) {
     $this->paths[$path] = $path;
+    $this->filteredPaths = null;
     return $this;
   }
 
   final public function setPaths(array $paths) {
     $this->paths = $paths;
+    $this->filteredPaths = null;
     return $this;
   }
 
   /**
    * Filter out paths which this linter doesn't act on (for example, because
    * they are binaries and the linter doesn't apply to binaries).
+   *
+   * @param  list<string>
+   * @return list<string>
    */
-  final private function filterPaths($paths) {
+  final private function filterPaths(array $paths) {
     $engine = $this->getEngine();
 
     $keep = array();
@@ -314,7 +320,11 @@ abstract class ArcanistLinter {
   }
 
   final public function getPaths() {
-    return $this->filterPaths(array_values($this->paths));
+    if ($this->filteredPaths === null) {
+      $this->filteredPaths = $this->filterPaths(array_values($this->paths));
+    }
+
+    return $this->filteredPaths;
   }
 
   final public function addData($path, $data) {

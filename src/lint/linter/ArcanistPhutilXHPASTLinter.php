@@ -158,9 +158,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'qsprintf' => 1,
       'vqsprintf' => 1,
       'queryfx' => 1,
-      'vqueryfx' => 1,
       'queryfx_all' => 1,
-      'vqueryfx_all' => 1,
       'queryfx_one' => 1,
     );
 
