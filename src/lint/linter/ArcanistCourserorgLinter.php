@@ -60,12 +60,13 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
           pht(
             'Bundle names must be lowercase.'));
 
-      if (!file_exists('static/nls/'.$bundleName.'.js'))
+      $nlsPath = 'static/nls/'.$bundleName.'.js';
+      if (!file_exists($nlsPath))
         $this->raiseLintAtPath(
           self::MISSING_BUNDLE_NLS,
           pht(
-            'Every bundle with components must have '.
-            'an NLS file.'));
+            'Every bundle with components must have an NLS file. To solve:'."\n".
+            '$ echo "define({});" > '.$nlsPath));
 
     } else if (preg_match('/^static\/(.+)\/components/', $path)) {
       $this->raiseLintAtPath(
