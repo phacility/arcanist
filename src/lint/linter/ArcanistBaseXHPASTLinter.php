@@ -195,4 +195,18 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     return idx($this->exceptions, $path);
   }
 
+  public function getSuperGlobalNames() {
+    return array(
+      '$GLOBALS',
+      '$_SERVER',
+      '$_GET',
+      '$_POST',
+      '$_FILES',
+      '$_COOKIE',
+      '$_SESSION',
+      '$_REQUEST',
+      '$_ENV',
+    );
+  }
+
 }
