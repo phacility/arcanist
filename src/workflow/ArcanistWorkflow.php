@@ -1405,7 +1405,7 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$file) {
       return array();
     }
-    return json_decode($file, true);
+    return phutil_json_decode($file);
   }
 
 

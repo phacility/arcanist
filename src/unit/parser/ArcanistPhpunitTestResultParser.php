@@ -172,12 +172,7 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
 
     $json = preg_replace('/}{\s*"/', '},{"', $json);
     $json = '['.$json.']';
-    $json = json_decode($json);
-    if (!is_array($json)) {
-      throw new Exception('JSON could not be decoded');
-    }
-
-    return $json;
+    return phutil_json_decode($json);
   }
 
 }
