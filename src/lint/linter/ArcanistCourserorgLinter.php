@@ -42,7 +42,9 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    if (preg_match('/([^_]*)__styles__\/(.+).styl/', $path, $matches)) {
+    if (strstr($path, '/test/')) {
+      return; // test files aren't path linted yet
+    } else if (preg_match('/([^_]*)__styles__\/(.+).styl/', $path, $matches)) {
       $jsxFilename = $matches[1].$matches[2].'.jsx';
 
       if (!file_exists($jsxFilename))
@@ -51,7 +53,7 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
           pht(
             'Stylus files in __styles__ must correspond to a React component in the parent directory.'));
 
-    } else if (preg_match('/^static\/bundles\/(.+)\/components/', $path, $matches)) {
+    } else if (preg_match('/^static\/bundles\/([^\/]+)\/components/', $path, $matches)) {
       $bundleName = $matches[1];
 
       if ($bundleName != strtolower($bundleName))
