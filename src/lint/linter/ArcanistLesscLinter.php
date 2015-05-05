@@ -101,17 +101,6 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
     return pht('Install lessc using `npm install -g less`.');
   }
 
-  public function supportsReadDataFromStdin() {
-    // Technically `lessc` can read data from standard input however, when doing
-    // so, relative imports cannot be resolved. Therefore, this functionality is
-    // disabled.
-    return false;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '-';
-  }
-
   protected function getMandatoryFlags() {
     return array(
       '--lint',

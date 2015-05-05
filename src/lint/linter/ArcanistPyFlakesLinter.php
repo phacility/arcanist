@@ -53,10 +53,6 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
     return pht('Install pyflakes with `pip install pyflakes`.');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stdout, false);
 

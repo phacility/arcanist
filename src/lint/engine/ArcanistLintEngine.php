@@ -144,8 +144,8 @@ abstract class ArcanistLintEngine {
         $this->fileData[$path] = $this->getHookAPI()
           ->getCurrentFileData($path);
       } else {
-        $disk_path = $this->getFilePathOnDisk($path);
-        $this->fileData[$path] = Filesystem::readFile($disk_path);
+      $disk_path = $this->getFilePathOnDisk($path);
+      $this->fileData[$path] = Filesystem::readFile($disk_path);
       }
     }
     return $this->fileData[$path];

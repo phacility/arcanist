@@ -50,10 +50,6 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     return pht('Install `ruby` from <http://www.ruby-lang.org/>.');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
   protected function getMandatoryFlags() {
     // -w: turn on warnings
     // -c: check syntax

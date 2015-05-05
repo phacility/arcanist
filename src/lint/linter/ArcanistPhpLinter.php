@@ -55,10 +55,6 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
     return $stdout;
   }
 
-  public function supportsReadDataFromStdin() {
-    return false;
-  }
-
   protected function canCustomizeLintSeverities() {
     return false;
   }
