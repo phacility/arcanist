@@ -18,8 +18,3 @@ warning:7:12
 warning:9:15
 warning:10:11
 warning:11:12
-~~~~~~~~~~
-~~~~~~~~~~
-{
-  "hook" : true
-}

@@ -76,7 +76,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
     PhutilTypeSpec::checkMap(
       $config,
       array(
-        'hook' => 'optional bool',
         'config' => 'optional map<string, wild>',
         'path' => 'optional string',
         'mode' => 'optional string',
@@ -113,8 +112,6 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $engine = new ArcanistUnitTestableLintEngine();
       $engine->setWorkingCopy($working_copy);
       $engine->setConfigurationManager($configuration_manager);
-
-      $engine->setCommitHookMode(idx($config, 'hook', false));
 
       $path_name = idx($config, 'path', $path);
       $engine->setPaths(array($path_name));

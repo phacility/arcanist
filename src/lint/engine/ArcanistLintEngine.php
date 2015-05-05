@@ -57,8 +57,6 @@ abstract class ArcanistLintEngine {
   private $minimumSeverity = ArcanistLintSeverity::SEVERITY_DISABLED;
 
   private $changedLines = array();
-  private $commitHookMode = false;
-  private $hookAPI;
 
   private $enableAsyncLint = false;
   private $postponedLinters = array();
@@ -115,20 +113,6 @@ abstract class ArcanistLintEngine {
     return $this;
   }
 
-  final public function setCommitHookMode($mode) {
-    $this->commitHookMode = $mode;
-    return $this;
-  }
-
-  final public function setHookAPI(ArcanistHookAPI $hook_api) {
-    $this->hookAPI  = $hook_api;
-    return $this;
-  }
-
-  final public function getHookAPI() {
-    return $this->hookAPI;
-  }
-
   final public function setEnableAsyncLint($enable_async_lint) {
     $this->enableAsyncLint = $enable_async_lint;
     return $this;
@@ -140,41 +124,20 @@ abstract class ArcanistLintEngine {
 
   final public function loadData($path) {
     if (!isset($this->fileData[$path])) {
-      if ($this->getCommitHookMode()) {
-        $this->fileData[$path] = $this->getHookAPI()
-          ->getCurrentFileData($path);
-      } else {
       $disk_path = $this->getFilePathOnDisk($path);
       $this->fileData[$path] = Filesystem::readFile($disk_path);
-      }
     }
     return $this->fileData[$path];
   }
 
   public function pathExists($path) {
-    if ($this->getCommitHookMode()) {
-      $file_data = $this->loadData($path);
-      return ($file_data !== null);
-    } else {
-      $disk_path = $this->getFilePathOnDisk($path);
-      return Filesystem::pathExists($disk_path);
-    }
+    $disk_path = $this->getFilePathOnDisk($path);
+    return Filesystem::pathExists($disk_path);
   }
 
   final public function isDirectory($path) {
-    if ($this->getCommitHookMode()) {
-      // TODO: This won't get the right result in every case (we need more
-      // metadata) but should almost always be correct.
-      try {
-        $this->loadData($path);
-        return false;
-      } catch (Exception $ex) {
-        return true;
-      }
-    } else {
-      $disk_path = $this->getFilePathOnDisk($path);
-      return is_dir($disk_path);
-    }
+    $disk_path = $this->getFilePathOnDisk($path);
+    return is_dir($disk_path);
   }
 
   final public function isBinaryFile($path) {
@@ -200,10 +163,6 @@ abstract class ArcanistLintEngine {
   final public function setMinimumSeverity($severity) {
     $this->minimumSeverity = $severity;
     return $this;
-  }
-
-  final public function getCommitHookMode() {
-    return $this->commitHookMode;
   }
 
   final public function run() {
@@ -328,9 +287,6 @@ abstract class ArcanistLintEngine {
     $cache_granularity,
     $repository_version) {
 
-    if ($this->commitHookMode) {
-      return false;
-    }
     switch ($cache_granularity) {
       case ArcanistLinter::GRANULARITY_FILE:
         return true;

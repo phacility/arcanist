@@ -386,11 +386,10 @@ abstract class ArcanistLinter {
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {
-    if (!$this->getEngine()->getCommitHookMode()) {
-      $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
-      $path = Filesystem::resolvePath($message->getPath(), $root);
-      $message->setPath(Filesystem::readablePath($path, $root));
-    }
+    $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $path = Filesystem::resolvePath($message->getPath(), $root);
+    $message->setPath(Filesystem::readablePath($path, $root));
+
     $this->messages[] = $message;
     return $message;
   }
