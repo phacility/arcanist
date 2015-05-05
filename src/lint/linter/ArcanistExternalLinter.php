@@ -299,6 +299,12 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   }
 
   public function getCacheVersion() {
+    try {
+      $this->checkBinaryConfiguration();
+    } catch (ArcanistMissingLinterException $e) {
+      return null;
+    }
+
     $version = $this->getVersion();
 
     if ($version) {
