@@ -204,9 +204,6 @@ try {
   if ($force_conduit_version) {
     $workflow->forceConduitVersion($force_conduit_version);
   }
-  if ($force_token) {
-    $workflow->forceConduitToken($force_token);
-  }
   if ($conduit_timeout) {
     $workflow->setConduitTimeout($conduit_timeout);
   }
@@ -316,6 +313,9 @@ try {
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
   $conduit_token = idx($host_config, 'token');
+  if ($force_token) {
+    $conduit_token = $force_token;
+  }
 
   $description = implode(' ', $original_argv);
   $credentials = array(

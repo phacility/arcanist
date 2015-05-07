@@ -48,7 +48,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $conduitCredentials;
   private $conduitAuthenticated;
   private $forcedConduitVersion;
-  private $forcedConduitToken;
   private $conduitTimeout;
 
   private $userPHID;
@@ -253,21 +252,6 @@ abstract class ArcanistWorkflow extends Phobject {
 
 
   /**
-   * Force use of a specific API token.
-   *
-   * Controlled by the --conduit-token flag.
-   *
-   * @param string API token to use.
-   * @return this
-   * @task conduit
-   */
-  final public function forceConduitToken($token) {
-    $this->forcedConduitToken = $token;
-    return $this;
-  }
-
-
-  /**
    * Get the protocol version the client should identify with.
    *
    * @return int Version the client should claim to be.
@@ -341,13 +325,7 @@ abstract class ArcanistWorkflow extends Phobject {
       // If we have `token`, this server supports the simpler, new-style
       // token-based authentication. Use that instead of all the certificate
       // stuff.
-      $token = null;
-      if (isset($credentials['token'])) {
-        $token = $credentials['token'];
-      }
-      if ($this->forcedConduitToken) {
-        $token = $this->forcedConduitToken;
-      }
+      $token = idx($credentials, 'token');
       if (strlen($token)) {
         $conduit = $this->getConduit();
 
