@@ -67,8 +67,9 @@ EOTEXT
         pht('Waiting for JSON parameters on stdin...'));
     }
     $params = @file_get_contents('php://stdin');
-    $params = json_decode($params, true);
-    if (!is_array($params)) {
+    try {
+      $params = phutil_json_decode($params);
+    } catch (PhutilJSONParserException $ex) {
       throw new ArcanistUsageException(
         pht('Provide method parameters on stdin as a JSON blob.'));
     }

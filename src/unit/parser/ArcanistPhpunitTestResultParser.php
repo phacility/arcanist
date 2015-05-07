@@ -35,7 +35,7 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
 
     $results = array();
     foreach ($report as $event) {
-      switch ($event->event) {
+      switch (idx($event, 'event')) {
       case 'test':
         break;
       case 'testStart':
@@ -48,34 +48,42 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
       $status = ArcanistUnitTestResult::RESULT_PASS;
       $user_data = '';
 
-      if ('fail' == $event->status) {
+      if ('fail' == idx($event, 'status')) {
         $status = ArcanistUnitTestResult::RESULT_FAIL;
-        $user_data  .= $event->message."\n";
-        foreach ($event->trace as $trace) {
-          $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
+        $user_data  .= idx($event, 'message')."\n";
+        foreach (idx($event, 'trace') as $trace) {
+          $user_data .= sprintf(
+              "\n%s:%s",
+              idx($trace, 'file'),
+              idx($trace, 'line'));
         }
-      } else if ('error' == $event->status) {
-        if (strpos($event->message, 'Skipped Test') !== false) {
+      } else if ('error' == idx($event, 'status')) {
+        if (strpos(idx($event, 'message'), 'Skipped Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
-          $user_data .= $event->message;
-        } else if (strpos($event->message, 'Incomplete Test') !== false) {
+          $user_data .= idx($event, 'message');
+        } else if (strpos(
+                idx($event, 'message'),
+                'Incomplete Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
-          $user_data .= $event->message;
+          $user_data .= idx($event, 'message');
         } else {
           $status = ArcanistUnitTestResult::RESULT_BROKEN;
-          $user_data  .= $event->message;
-          foreach ($event->trace as $trace) {
-            $user_data .= sprintf("\n%s:%s", $trace->file, $trace->line);
+          $user_data  .= idx($event, 'message');
+          foreach (idx($event, 'trace') as $trace) {
+            $user_data .= sprintf(
+                "\n%s:%s",
+                idx($trace, 'file'),
+                idx($trace, 'line'));
           }
         }
       }
 
-      $name = preg_replace('/ \(.*\)/s', '', $event->test);
+      $name = preg_replace('/ \(.*\)/s', '', idx($event, 'test'));
 
       $result = new ArcanistUnitTestResult();
       $result->setName($name);
       $result->setResult($status);
-      $result->setDuration($event->time);
+      $result->setDuration(idx($event, 'time'));
       $result->setCoverage($coverage);
       $result->setUserData($user_data);
 
@@ -85,7 +93,7 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
 
     if (!$last_test_finished) {
       $results[] = id(new ArcanistUnitTestResult())
-        ->setName($event->test) // use last event
+        ->setName(idx($event, 'test')) // use last event
         ->setUserData($this->stderr)
         ->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
     }
@@ -172,12 +180,7 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
 
     $json = preg_replace('/}{\s*"/', '},{"', $json);
     $json = '['.$json.']';
-    $json = json_decode($json);
-    if (!is_array($json)) {
-      throw new Exception('JSON could not be decoded');
-    }
-
-    return $json;
+    return phutil_json_decode($json);
   }
 
 }

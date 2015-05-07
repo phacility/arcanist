@@ -60,50 +60,6 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   }
 
   /**
-   * Return true to indicate that the external linter can read input from
-   * stdin, rather than requiring a file. If this mode is supported, it is
-   * slightly more flexible and may perform better, and is thus preferable.
-   *
-   * To send data over stdin instead of via a command line parameter, override
-   * this method and return true. If the linter also needs a command line
-   * flag (like `--stdin` or `-`), override
-   * @{method:getReadDataFromStdinFilename} to provide it.
-   *
-   * For example, linters are normally invoked something like this:
-   *
-   *   $ linter file.js
-   *
-   * If you override this method, invocation will be more similar to this:
-   *
-   *   $ linter < file.js
-   *
-   * If you additionally override @{method:getReadDataFromStdinFilename} to
-   * return `"-"`, invocation will be similar to this:
-   *
-   *   $ linter - < file.js
-   *
-   * @return bool True to send data over stdin.
-   * @task bin
-   */
-  public function supportsReadDataFromStdin() {
-    return false;
-  }
-
-  /**
-   * If the linter can read data over stdin, override
-   * @{method:supportsReadDataFromStdin} and then optionally override this
-   * method to provide any required arguments (like `-` or `--stdin`). See
-   * that method for discussion.
-   *
-   * @return string|null  Additional arguments required by the linter when
-   *                      operating in stdin mode.
-   * @task bin
-   */
-  public function getReadDataFromStdinFilename() {
-    return null;
-  }
-
-  /**
    * Provide mandatory, non-overridable flags to the linter. Generally these
    * are format flags, like `--format=xml`, which must always be given for
    * the output to be usable.
@@ -343,6 +299,12 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   }
 
   public function getCacheVersion() {
+    try {
+      $this->checkBinaryConfiguration();
+    } catch (ArcanistMissingLinterException $e) {
+      return null;
+    }
+
     $version = $this->getVersion();
 
     if ($version) {
@@ -373,18 +335,9 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
 
     $futures = array();
     foreach ($paths as $path) {
-      if ($this->supportsReadDataFromStdin()) {
-        $future = new ExecFuture(
-          '%C %C',
-          $bin,
-          $this->getReadDataFromStdinFilename());
-        $future->write($this->getEngine()->loadData($path));
-      } else {
-        // TODO: In commit hook mode, we need to do more handling here.
-        $disk_path = $this->getEngine()->getFilePathOnDisk($path);
-        $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
-        $future = new ExecFuture('%C %C', $bin, $path_argument);
-      }
+      $disk_path = $this->getEngine()->getFilePathOnDisk($path);
+      $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
+      $future = new ExecFuture('%C %C', $bin, $path_argument);
 
       $future->setCWD($this->getEngine()->getWorkingCopy()->getProjectRoot());
       $futures[$path] = $future;

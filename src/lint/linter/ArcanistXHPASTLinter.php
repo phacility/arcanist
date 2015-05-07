@@ -3753,18 +3753,4 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
   }
 
-  public function getSuperGlobalNames() {
-    return array(
-      '$GLOBALS',
-      '$_SERVER',
-      '$_GET',
-      '$_POST',
-      '$_FILES',
-      '$_COOKIE',
-      '$_SESSION',
-      '$_REQUEST',
-      '$_ENV',
-    );
-  }
-
 }

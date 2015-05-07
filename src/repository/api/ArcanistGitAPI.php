@@ -17,10 +17,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   private $symbolicHeadCommit;
   private $resolvedHeadCommit;
 
-  public static function newHookAPI($root) {
-    return new ArcanistGitAPI($root);
-  }
-
   protected function buildLocalFuture(array $argv) {
     $argv[0] = 'git '.$argv[0];
 
@@ -702,15 +698,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     $this->reloadWorkingCopy();
     return $this;
-  }
-
-  public function getPreReceiveHookStatus($old_ref, $new_ref) {
-    $options = $this->getDiffBaseOptions();
-    list($stdout) = $this->execxLocal(
-      "diff {$options} --raw %s %s --",
-      $old_ref,
-      $new_ref);
-    return $this->parseGitStatus($stdout, $full = true);
   }
 
   private function parseGitStatus($status, $full = false) {

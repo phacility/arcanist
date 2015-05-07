@@ -47,14 +47,6 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
       'npm install -g coffeelint');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '--stdin';
-  }
-
   protected function getMandatoryFlags() {
     $options = array(
       '--reporter=raw',

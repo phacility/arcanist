@@ -37,10 +37,6 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
       'files/closure_linter-latest.tar.gz');
   }
 
-  public function supportsReadDataFromStdin() {
-    return false;
-  }
-
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stdout, false);
     $messages = array();

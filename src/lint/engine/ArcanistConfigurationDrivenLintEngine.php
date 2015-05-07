@@ -129,10 +129,8 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
         "%s\n",
         pht("Found %d matching paths for linter '%s'.", count($paths), $name));
 
-      if ($paths) {
-        $linter->setPaths($paths);
-        $built_linters[] = $linter;
-      }
+      $linter->setPaths($paths);
+      $built_linters[] = $linter;
     }
 
     return $built_linters;

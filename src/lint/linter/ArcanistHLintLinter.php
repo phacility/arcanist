@@ -33,14 +33,6 @@ final class ArcanistHLintLinter extends ArcanistExternalLinter {
     return pht('Install hlint with `cabal install hlint`.');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '-';
-  }
-
   protected function getMandatoryFlags() {
     return array('--json');
   }

@@ -29,14 +29,6 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       'googlecode.com/svn/trunk/cpplint/cpplint.py`.');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '-';
-  }
-
   protected function getDefaultFlags() {
     return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
   }

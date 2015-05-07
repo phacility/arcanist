@@ -189,6 +189,9 @@ EOTEXT
           Ignore configured Conduit URI and use an explicit one instead. Mostly
           useful for Arcanist development.
 
+      __--conduit-token__ __token__
+          Ignore configured credentials and use an explicit API token instead.
+
       __--conduit-version__ __version__
           Ignore software version and claim to be running some other version
           instead. Mostly useful for Arcanist development. May cause bad things
