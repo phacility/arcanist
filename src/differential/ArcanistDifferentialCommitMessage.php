@@ -16,26 +16,10 @@ final class ArcanistDifferentialCommitMessage {
   public static function newFromRawCorpus($corpus) {
     $obj = new ArcanistDifferentialCommitMessage();
     $obj->rawCorpus = $corpus;
-
-    $match = null;
-    if (preg_match('/^Differential Revision:\s*(.*)/im', $corpus, $match)) {
-      $revision_id = trim($match[1]);
-      if (strlen($revision_id)) {
-        $uri = new PhutilURI($revision_id);
-        $path = $uri->getPath();
-        $path = trim($path, '/');
-        if (preg_match('/^D\d+$/', $path)) {
-          $obj->revisionID = (int)trim($path, 'D');
-        } else {
-          throw new ArcanistUsageException(
-            "Invalid 'Differential Revision' field. The field should have a ".
-            "Phabricator URI like 'http://phabricator.example.com/D123', ".
-            "but has '{$match[1]}'.");
-        }
-      }
-    }
+    $obj->revisionID = $obj->parseRevisionIDFromRawCorpus($corpus);
 
     $pattern = '/^git-svn-id:\s*([^@]+)@(\d+)\s+(.*)$/m';
+    $match = null;
     if (preg_match($pattern, $corpus, $match)) {
       $obj->gitSVNBaseRevision = $match[1].'@'.$match[2];
       $obj->gitSVNBasePath     = $match[1];
@@ -107,6 +91,44 @@ final class ArcanistDifferentialCommitMessage {
     ksort($fields);
     $fields = json_encode($fields);
     return md5($fields);
+  }
+
+  /**
+   * Extract the revision ID from a commit message.
+   *
+   * @param string Raw commit message.
+   * @return int|null Revision ID, if the commit message contains one.
+   */
+  private function parseRevisionIDFromRawCorpus($corpus) {
+    $match = null;
+    if (!preg_match('/^Differential Revision:\s*(.+)/im', $corpus, $match)) {
+      return null;
+    }
+
+    $revision_value = trim($match[1]);
+    $revision_pattern = '/^[dD]([1-9]\d*)\z/';
+
+    // Accept a bare revision ID like "D123".
+    if (preg_match($revision_pattern, $revision_value, $match)) {
+      return (int)$match[1];
+    }
+
+    // Otherwise, try to find a full URI.
+    $uri = new PhutilURI($revision_value);
+    $path = $uri->getPath();
+    $path = trim($path, '/');
+    if (preg_match($revision_pattern, $path, $match)) {
+      return (int)$match[1];
+    }
+
+    throw new ArcanistUsageException(
+      pht(
+        'Invalid "Differential Revision" field in commit message. This field '.
+        'should have a revision identifier like "%s" or a Phabricator URI '.
+        'like "%s", but has "%s".',
+        'D123',
+        'https://phabricator.example.com/D123',
+        $revision_value));
   }
 
 }
