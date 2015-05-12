@@ -1,0 +1,29 @@
+<?php
+class MyClass {
+  public function someMethod() {
+    return 'MyClass';
+  }
+
+  public function someOtherMethod() {
+    $x = 'MyClass is awesome';
+    $y = 'MyClassIsAwesome';
+    return __CLASS__;
+  }
+}
+~~~~~~~~~~
+error:2:7
+advice:4:12
+advice:8:10
+~~~~~~~~~~
+<?php
+class MyClass {
+  public function someMethod() {
+    return __CLASS__;
+  }
+
+  public function someOtherMethod() {
+    $x = 'MyClass is awesome';
+    $y = 'MyClassIsAwesome';
+    return __CLASS__;
+  }
+}

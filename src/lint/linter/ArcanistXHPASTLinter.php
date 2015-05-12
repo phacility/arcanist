@@ -61,6 +61,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_INNER_FUNCTION             = 59;
   const LINT_DEFAULT_PARAMETERS         = 60;
   const LINT_LOWERCASE_FUNCTIONS        = 61;
+  const LINT_CLASS_NAME_LITERAL         = 62;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -191,6 +192,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Default Parameters'),
       self::LINT_LOWERCASE_FUNCTIONS
         => pht('Lowercase Functions'),
+      self::LINT_CLASS_NAME_LITERAL
+        => pht('Class Name Literal'),
     );
   }
 
@@ -240,6 +243,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_INNER_FUNCTION             => $warning,
       self::LINT_DEFAULT_PARAMETERS         => $warning,
       self::LINT_LOWERCASE_FUNCTIONS        => $advice,
+      self::LINT_CLASS_NAME_LITERAL         => $advice,
     );
   }
 
@@ -307,7 +311,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '24';
+    return '25';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -395,6 +399,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintInnerFunctions' => self::LINT_INNER_FUNCTION,
       'lintDefaultParameters' => self::LINT_DEFAULT_PARAMETERS,
       'lintLowercaseFunctions' => self::LINT_LOWERCASE_FUNCTIONS,
+      'lintClassNameLiteral' => self::LINT_CLASS_NAME_LITERAL,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3723,6 +3728,40 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_LOWERCASE_FUNCTIONS,
           pht('Calls to built-in PHP functions should be lowercase.'),
           strtolower($function_name));
+      }
+    }
+  }
+
+  private function lintClassNameLiteral(XHPASTNode $root) {
+    $class_declarations = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+
+    foreach ($class_declarations as $class_declaration) {
+      $class_name = $class_declaration
+        ->getChildOfType(1, 'n_CLASS_NAME')
+        ->getConcreteString();
+
+      $strings = $class_declaration->selectDescendantsOfType('n_STRING_SCALAR');
+
+      foreach ($strings as $string) {
+        $contents = substr($string->getSemanticString(), 1, -1);
+        $replacement = null;
+
+        if ($contents == $class_name) {
+          $replacement = '__CLASS__';
+        }
+
+        $regex = '/\b'.preg_quote($class_name, '/').'\b/';
+        if (!preg_match($regex, $contents)) {
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $string,
+          self::LINT_CLASS_NAME_LITERAL,
+          pht(
+            "Don't hard-code class names, use %s instead.",
+            '__CLASS__'),
+          $replacement);
       }
     }
   }
