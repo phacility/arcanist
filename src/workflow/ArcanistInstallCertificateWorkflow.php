@@ -89,17 +89,17 @@ EOTEXT
       // Ignore.
     }
 
-    echo phutil_console_format("**LOGIN TO PHABRICATOR**\n");
-    echo "Open this page in your browser and login to Phabricator if ".
-         "necessary:\n";
-    echo "\n";
-    echo "    {$token_uri}\n";
-    echo "\n";
-    echo 'Then paste the API Token on that page below.';
-
+    echo phutil_console_format("**%s**\n", pht('LOGIN TO PHABRICATOR'));
+    echo phutil_console_format(
+      "%s\n\n%s\n\n%s",
+      pht(
+        'Open this page in your browser and login to '.
+        'Phabricator if necessary:'),
+      $token_uri,
+      pht('Then paste the API Token on that page below.'));
 
     do {
-      $token = phutil_console_prompt('Paste API Token from that page:');
+      $token = phutil_console_prompt(pht('Paste API Token from that page:'));
       $token = trim($token);
       if (strlen($token)) {
         break;
@@ -142,7 +142,7 @@ EOTEXT
       );
     } else {
       echo "\n";
-      echo "Downloading authentication certificate...\n";
+      echo pht('Downloading authentication certificate...')."\n";
       $info = $conduit->callMethodSynchronous(
         'conduit.getcertificate',
         array(
@@ -151,22 +151,26 @@ EOTEXT
         ));
 
       $user = $info['username'];
-      echo "Installing certificate for '{$user}'...\n";
+      echo pht("Installing certificate for '%s'...", $user)."\n";
       $config['hosts'][$uri] = array(
         'user' => $user,
         'cert' => $info['certificate'],
       );
     }
 
-    echo "Writing ~/.arcrc...\n";
+    echo pht('Writing %s...', '~/.arcrc')."\n";
     $configuration_manager->writeUserConfigurationFile($config);
 
     if ($is_token_auth) {
       echo phutil_console_format(
-        "<bg:green>** SUCCESS! **</bg> API Token installed.\n");
+        "<bg:green>** %s **</bg> %s\n",
+        pht('SUCCESS!'),
+        pht('API Token installed.'));
     } else {
       echo phutil_console_format(
-        "<bg:green>** SUCCESS! **</bg> Certificate installed.\n");
+        "<bg:green>** %s **</bg> %s\n",
+        pht('SUCCESS!'),
+        pht('Certificate installed.'));
     }
 
     return 0;
@@ -175,15 +179,17 @@ EOTEXT
   private function determineConduitURI() {
     $uri = $this->getArgument('uri');
     if (count($uri) > 1) {
-      throw new ArcanistUsageException('Specify at most one URI.');
+      throw new ArcanistUsageException(pht('Specify at most one URI.'));
     } else if (count($uri) == 1) {
       $uri = reset($uri);
     } else {
       $conduit_uri = $this->getConduitURI();
       if (!$conduit_uri) {
         throw new ArcanistUsageException(
-          'Specify an explicit URI or run this command from within a project '.
-          'which is configured with a .arcconfig.');
+          pht(
+            'Specify an explicit URI or run this command from within a '.
+            'project which is configured with a %s.',
+            '.arcconfig'));
       }
       $uri = $conduit_uri;
     }

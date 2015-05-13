@@ -83,7 +83,7 @@ final class ArcanistDiffHunk {
       case 'cover':
         return $cover_map;
       default:
-        throw new Exception("Unknown line change type '{$type}'.");
+        throw new Exception(pht("Unknown line change type '%s'.", $type));
     }
   }
 

@@ -34,7 +34,10 @@ final class ArcanistMercurialParser {
     foreach ($lines as $line) {
       $flags = 0;
       if ($line[1] !== ' ') {
-        throw new Exception("Unparsable Mercurial status line '{$line}'.");
+        throw new Exception(
+          pht(
+            "Unparsable Mercurial status line '%s'.",
+            $line));
       }
       $code = $line[0];
       $path = substr($line, 2);
@@ -66,12 +69,15 @@ final class ArcanistMercurialParser {
           // parsed to set its source.
           if ($last_path === null) {
             throw new Exception(
-              "Unexpected copy source in hg status, '{$line}'.");
+              pht(
+                "Unexpected copy source in %s, '%s'.",
+                'hg status',
+                $line));
           }
           $result[$last_path]['from'] = $path;
           continue 2;
         default:
-          throw new Exception("Unknown Mercurial status '{$code}'.");
+          throw new Exception(pht("Unknown Mercurial status '%s'.", $code));
       }
 
       $result[$path] = array(
@@ -169,7 +175,8 @@ final class ArcanistMercurialParser {
             $commit['bookmark'] = $value;
             break;
           default:
-            throw new Exception("Unknown Mercurial log field '{$name}'!");
+            throw new Exception(
+              pht("Unknown Mercurial log field '%s'!", $name));
         }
       }
       $result[] = $commit;
@@ -211,7 +218,11 @@ final class ArcanistMercurialParser {
       $regexp = '/^(\S+(?:\s+\S+)*)\s+(\d+):([a-f0-9]+)(\s+\\(inactive\\))?$/';
 
       if (!preg_match($regexp, $line, $matches)) {
-        throw new Exception("Failed to parse 'hg branches' output: {$line}");
+        throw new Exception(
+          pht(
+            "Failed to parse '%s' output: %s",
+            'hg branches',
+            $line));
       }
       $branches[$matches[1]] = array(
         'local'   => $matches[2],

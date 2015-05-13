@@ -39,16 +39,13 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   public function getLintNameMap() {
     return array(
       self::LINT_ARRAY_COMBINE          => pht(
-        '%s Unreliable',
-        'array_combine()'),
+        '%s Unreliable', 'array_combine()'),
       self::LINT_DEPRECATED_FUNCTION    => pht(
         'Use of Deprecated Function'),
       self::LINT_UNSAFE_DYNAMIC_STRING  => pht(
         'Unsafe Usage of Dynamic String'),
       self::LINT_RAGGED_CLASSTREE_EDGE  => pht(
-        'Class Not %s Or %s',
-        'abstract',
-        'final'),
+        'Class Not %s Or %s', 'abstract', 'final'),
     );
   }
 

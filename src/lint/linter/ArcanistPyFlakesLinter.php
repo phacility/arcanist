@@ -50,7 +50,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install pyflakes with `pip install pyflakes`.');
+    return pht('Install pyflakes with `%s`.', 'pip install pyflakes');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

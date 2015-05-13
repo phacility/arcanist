@@ -55,7 +55,7 @@ EOTEXT
       ));
 
     if (!$revisions) {
-      echo "You have no open Differential revisions.\n";
+      echo pht('You have no open Differential revisions.')."\n";
       return 0;
     }
 
@@ -93,9 +93,12 @@ EOTEXT
       $table->addRow(array(
         'exists' => $spec['exists'] ? phutil_console_format('**%s**', '*') : '',
         'status' => phutil_console_format(
-          "<fg:{$spec['color']}>%s</fg>", $spec['statusName']),
+          "<fg:{$spec['color']}>%s</fg>",
+          $spec['statusName']),
         'title'  => phutil_console_format(
-          '**D%d:** %s', $revision['id'], $revision['title']),
+          '**D%d:** %s',
+          $revision['id'],
+          $revision['title']),
       ));
     }
 

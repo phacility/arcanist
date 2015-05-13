@@ -2395,9 +2395,12 @@ EOTEXT
     $title = $revision['title'];
 
     throw new ArcanistUsageException(
-      "You don't own revision D{$id} '{$title}'. You can only update ".
-      "revisions you own. You can 'Commandeer' this revision from the web ".
-      "interface if you want to become the owner.");
+      pht(
+        "You don't own revision %s '%s'. You can only update revisions ".
+        "you own. You can 'Commandeer' this revision from the web ".
+        "interface if you want to become the owner.",
+        "D{$id}",
+        $title));
   }
 
 
@@ -2524,12 +2527,14 @@ EOTEXT
         $change->setMetadata("{$type}:binary-phid", $phid);
         echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
       } catch (Exception $e) {
-        echo "Failed to upload {$type} binary '{$name}'.\n\n";
+        echo pht("Failed to upload %s binary '%s'.", $type, $name)."\n\n";
         echo $e->getMessage()."\n";
-        if (!phutil_console_confirm('Continue?', $default_no = false)) {
+        if (!phutil_console_confirm(pht('Continue?'), $default_no = false)) {
           throw new ArcanistUsageException(
-            'Aborted due to file upload failure. You can use --skip-binaries '.
-            'to skip binary uploads.');
+            pht(
+              'Aborted due to file upload failure. You can use %s '.
+              'to skip binary uploads.',
+              '--skip-binaries'));
         }
       }
     }

@@ -63,10 +63,13 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
 
     if (!$error_regexp && !$warning_regexp && !$advice_regexp) {
       throw new ArcanistUsageException(
-        "You are invoking the PyLint linter but have not configured any of ".
-        "'lint.pylint.codes.error', 'lint.pylint.codes.warning', or ".
-        "'lint.pylint.codes.advice'. Consult the documentation for ".
-        "ArcanistPyLintLinter.");
+        pht(
+          "You are invoking the PyLint linter but have not configured any of ".
+          "'%s', '%s', or '%s'. Consult the documentation for %s.",
+          'lint.pylint.codes.error',
+          'lint.pylint.codes.warning',
+          'lint.pylint.codes.advice',
+          __CLASS__));
     }
 
     $code_map = array(
@@ -109,10 +112,13 @@ final class ArcanistPyLintLinter extends ArcanistLinter {
       list($err) = exec_manual('which %s', $pylint_bin);
       if ($err) {
         throw new ArcanistMissingLinterException(
-          "PyLint does not appear to be installed on this system. Install it ".
-          "(e.g., with 'sudo easy_install pylint') or configure ".
-          "'lint.pylint.prefix' in your .arcconfig to point to the directory ".
-          "where it resides.");
+          pht(
+            "PyLint does not appear to be installed on this system. Install ".
+            "it (e.g., with '%s') or configure '%s' in your %s to point to ".
+            "the directory where it resides.",
+            'sudo easy_install pylint',
+            'lint.pylint.prefix',
+            '.arcconfig'));
       }
     }
 

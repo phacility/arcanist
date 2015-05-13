@@ -14,7 +14,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jsonlint` to detect syntax errors in JSON files.');
+    return pht('Use `%s` to detect syntax errors in JSON files.', 'jsonlint');
   }
 
   public function getLinterName() {
@@ -44,7 +44,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install jsonlint using `npm install -g jsonlint`.');
+    return pht('Install jsonlint using `%s`.', 'npm install -g jsonlint');
   }
 
   protected function getMandatoryFlags() {

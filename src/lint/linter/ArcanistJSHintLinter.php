@@ -17,7 +17,9 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jshint` to detect issues with JavaScript source files.');
+    return pht(
+      'Use `%s` to detect issues with JavaScript source files.',
+      'jshint');
   }
 
   public function getLinterName() {
@@ -70,7 +72,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install JSHint using `npm install -g jshint`.');
+    return pht('Install JSHint using `%s`.', 'npm install -g jshint');
   }
 
   protected function getMandatoryFlags() {

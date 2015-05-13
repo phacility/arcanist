@@ -40,56 +40,61 @@ EOTEXT
     return array(
       'rev' => array(
         'param' => 'revision',
-        'help' => 'Run unit tests covering changes since a specific revision.',
+        'help' => pht(
+          'Run unit tests covering changes since a specific revision.'),
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => 'Arc unit does not currently support --rev in SVN.',
+          'svn' => pht(
+            'Arc unit does not currently support %s in SVN.',
+            '--rev'),
         ),
       ),
       'engine' => array(
         'param' => 'classname',
-        'help' =>
-          'Override configured unit engine for this project.',
+        'help' => pht('Override configured unit engine for this project.'),
       ),
       'coverage' => array(
-        'help' => 'Always enable coverage information.',
+        'help' => pht('Always enable coverage information.'),
         'conflicts' => array(
           'no-coverage' => null,
         ),
       ),
       'no-coverage' => array(
-        'help' => 'Always disable coverage information.',
+        'help' => pht('Always disable coverage information.'),
       ),
       'detailed-coverage' => array(
-        'help' => 'Show a detailed coverage report on the CLI. Implies '.
-                  '--coverage.',
+        'help' => pht(
+          'Show a detailed coverage report on the CLI. Implies %s.',
+          '--coverage'),
       ),
       'json' => array(
-        'help' => 'Report results in JSON format.',
+        'help' => pht('Report results in JSON format.'),
       ),
       'output' => array(
         'param' => 'format',
-        'help' =>
+        'help' => pht(
           "With 'full', show full pretty report (Default). ".
           "With 'json', report results in JSON format. ".
           "With 'ugly', use uglier (but more efficient) JSON formatting. ".
-          "With 'none', don't print results. ",
+          "With 'none', don't print results."),
         'conflicts' => array(
-          'json' => 'Only one output format allowed',
-          'ugly' => 'Only one output format allowed',
+          'json' => pht('Only one output format allowed'),
+          'ugly' => pht('Only one output format allowed'),
         ),
       ),
       'everything' => array(
-        'help' => 'Run every test.',
+        'help' => pht('Run every test.'),
         'conflicts' => array(
-          'rev' => '--everything runs all tests.',
+          'rev' => pht('%s runs all tests.', '--everything'),
         ),
       ),
       'ugly' => array(
-        'help' => 'With --json, use uglier (but more efficient) formatting.',
+        'help' => pht(
+          'With %s, use uglier (but more efficient) formatting.',
+          '--json'),
       ),
       '*' => 'paths',
     );
@@ -117,8 +122,10 @@ EOTEXT
 
     if (!$engine_class) {
       throw new ArcanistNoEngineException(
-        'No unit test engine is configured for this project. Edit .arcconfig '.
-        'to specify a unit test engine.');
+        pht(
+          'No unit test engine is configured for this project. Edit %s '.
+          'to specify a unit test engine.',
+          '.arcconfig'));
     }
 
     $paths = $this->getArgument('paths');
@@ -126,8 +133,10 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        'You can not specify paths with --everything. The --everything '.
-        'flag runs every test.');
+        pht(
+          'You can not specify paths with %s. The %s flag runs every test.',
+          '--everything',
+          '--everything'));
     }
 
     if ($everything) {
@@ -139,8 +148,10 @@ EOTEXT
     if (!class_exists($engine_class) ||
         !is_subclass_of($engine_class, 'ArcanistUnitTestEngine')) {
       throw new ArcanistUsageException(
-        "Configured unit test engine '{$engine_class}' is not a subclass of ".
-        "'ArcanistUnitTestEngine'.");
+        pht(
+          "Configured unit test engine '%s' is not a subclass of '%s'.",
+          $engine_class,
+          'ArcanistUnitTestEngine'));
     }
 
     $this->engine = newv($engine_class, array());
@@ -228,7 +239,7 @@ EOTEXT
         $file_coverage[$file] = $coverage;
         $file_reports[$file] = $report;
       }
-      $console->writeOut("\n__COVERAGE REPORT__\n");
+      $console->writeOut("\n__%s__\n", pht('COVERAGE REPORT'));
 
       asort($file_coverage);
       foreach ($file_coverage as $file => $coverage) {

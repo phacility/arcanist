@@ -48,9 +48,7 @@ EOTEXT
 
       if (!Filesystem::pathExists($repository->getMetadataPath())) {
         throw new ArcanistUsageException(
-          pht(
-            '%s is not a git working copy.',
-            $lib));
+          pht('%s is not a git working copy.', $lib));
       }
 
       list($stdout) = $repository->execxLocal('log -1 --format=%s', '%H %ct');

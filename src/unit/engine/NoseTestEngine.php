@@ -75,17 +75,19 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
       $cover_tmp = $tmpfiles[$test_path]['cover'];
 
       $this->parser = new ArcanistXUnitTestResultParser();
-      $results[] = $this->parseTestResults($source_path,
-                                           $xunit_tmp,
-                                           $cover_tmp);
+      $results[] = $this->parseTestResults(
+        $source_path,
+        $xunit_tmp,
+        $cover_tmp);
     }
 
     return array_mergev($results);
   }
 
   public function buildTestFuture($path, $xunit_tmp, $cover_tmp) {
-    $cmd_line = csprintf('nosetests --with-xunit --xunit-file=%s',
-                         $xunit_tmp);
+    $cmd_line = csprintf(
+      'nosetests --with-xunit --xunit-file=%s',
+      $xunit_tmp);
 
     if ($this->getEnableCoverage() !== false) {
       $cmd_line .= csprintf(

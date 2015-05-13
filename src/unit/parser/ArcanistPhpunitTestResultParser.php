@@ -170,12 +170,13 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
   private function getJsonReport($json) {
 
     if (empty($json)) {
-      throw new Exception('JSON report file is empty, '.
-        'it probably means that phpunit failed to run tests. '.
-        'Try running arc unit with --trace option and then run '.
-        'generated phpunit command yourself, you might get the '.
-        'answer.'
-      );
+      throw new Exception(
+        pht(
+          'JSON report file is empty, it probably means that phpunit '.
+          'failed to run tests. Try running %s with %s option and then run '.
+          'generated phpunit command yourself, you might get the answer.',
+          'arc unit',
+          '--trace'));
     }
 
     $json = preg_replace('/}{\s*"/', '},{"', $json);

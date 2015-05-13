@@ -111,14 +111,14 @@ abstract class ArcanistPhutilTestCase {
     $output .= "\n";
 
     if (strpos($expect, "\n") === false && strpos($result, "\n") === false) {
-      $output .= "Expected: {$expect}\n";
-      $output .= "  Actual: {$result}";
+      $output .= pht("Expected: %s\n  Actual: %s", $expect, $result);
     } else {
-      $output .= "Expected vs Actual Output Diff\n";
-      $output .= ArcanistDiffUtils::renderDifferences(
-        $expect,
-        $result,
-        $lines = 0xFFFF);
+      $output .= pht(
+        "Expected vs Actual Output Diff\n%s",
+        ArcanistDiffUtils::renderDifferences(
+          $expect,
+          $result,
+          $lines = 0xFFFF));
     }
 
     $this->failTest($output);
@@ -216,7 +216,7 @@ abstract class ArcanistPhutilTestCase {
 
     if (count($inputs) !== count($expect)) {
       $this->assertFailure(
-        'Input and expectations must have the same number of values.');
+        pht('Input and expectations must have the same number of values.'));
     }
 
     $labels = array_keys($inputs);
@@ -243,18 +243,23 @@ abstract class ArcanistPhutilTestCase {
 
       if ($expect === $actual) {
         if ($expect) {
-          $message = "Test case '{$label}' did not throw, as expected.";
+          $message = pht("Test case '%s' did not throw, as expected.", $label);
         } else {
-          $message = "Test case '{$label}' threw, as expected.";
+          $message = pht("Test case '%s' threw, as expected.", $label);
         }
       } else {
         if ($expect) {
-          $message = "Test case '{$label}' was expected to succeed, but it ".
-                     "raised an exception of class ".get_class($ex)." with ".
-                     "message: ".$ex->getMessage();
+          $message = pht(
+            "Test case '%s' was expected to succeed, but it ".
+            "raised an exception of class %s with message: %s",
+            $label,
+            get_class($ex),
+            $ex->getMessage());
         } else {
-          $message = "Test case '{$label}' was expected to raise an ".
-                     "exception, but it did not throw anything.";
+          $message = pht(
+            "Test case '%s' was expected to raise an ".
+            "exception, but it did not throw anything.",
+            $label);
         }
       }
 
@@ -498,7 +503,7 @@ abstract class ArcanistPhutilTestCase {
               throw head($exceptions);
             } else {
               throw new PhutilAggregateException(
-                'Multiple exceptions were raised during test execution.',
+                pht('Multiple exceptions were raised during test execution.'),
                 $exceptions);
             }
           }
@@ -518,7 +523,12 @@ abstract class ArcanistPhutilTestCase {
           $ex_class = get_class($ex);
           $ex_message = $ex->getMessage();
           $ex_trace = $ex->getTraceAsString();
-          $message = "EXCEPTION ({$ex_class}): {$ex_message}\n{$ex_trace}";
+          $message = sprintf(
+            "%s (%s): %s\n%s",
+            pht('EXCEPTION'),
+            $ex_class,
+            $ex_message,
+            $ex_trace);
           $this->failTest($message);
         }
       }
@@ -599,7 +609,7 @@ abstract class ArcanistPhutilTestCase {
   final private function assertCoverageAvailable() {
     if (!function_exists('xdebug_start_code_coverage')) {
       throw new Exception(
-        "You've enabled code coverage but XDebug is not installed.");
+        pht("You've enabled code coverage but XDebug is not installed."));
     }
   }
 

@@ -37,7 +37,8 @@ EOTEXT
       'branch' => array(
         'param' => 'branch_name',
         'help' => pht(
-          'Default branch name to view on server. Defaults to "master".'),
+          'Default branch name to view on server. Defaults to "%s".',
+          'master'),
       ),
       'force' => array(
         'help' => pht(
@@ -74,7 +75,8 @@ EOTEXT
       throw new ArcanistUsageException(
         pht(
           'Specify one or more paths or objects to browse. Use the command '.
-          '"arc browse ." if you want to browse this directory.'));
+          '"%s" if you want to browse this directory.',
+          'arc browse .'));
     }
     $things = array_fuse($things);
 
@@ -182,21 +184,25 @@ EOTEXT
     } else {
       if ($things) {
         $console->writeOut(
+          "%s\n",
           pht(
             "The current working directory is not a repository working ".
             "copy, so remaining arguments can not be resolved as paths or ".
             "commits. To browse paths or symbolic commits in Diffusion, run ".
-            "'arc browse' from inside a working copy.")."\n");
+            "'%s' from inside a working copy.",
+            'arc browse'));
       }
     }
 
     foreach ($things as $thing) {
       $console->writeOut(
+        "%s\n",
         pht(
           'Unable to find an object named **%s**, no such commit exists in '.
           'the remote, and no such path exists in the working copy. Use '.
-          '__--force__ to treat this as a path anyway.',
-          $thing)."\n");
+          '__%s__ to treat this as a path anyway.',
+          $thing,
+          '--force'));
     }
 
     if ($uris) {
@@ -212,8 +218,10 @@ EOTEXT
       throw new ArcanistUsageException(
         pht(
           'arc is unable to determine which repository in Diffusion '.
-          'this working copy belongs to. Use "arc which" to understand how '.
-          'arc looks for a repository.'));
+          'this working copy belongs to. Use "%s" to understand how '.
+          '%s looks for a repository.',
+          'arc which',
+          'arc'));
     }
 
     $branch = $this->getArgument('branch', 'master');

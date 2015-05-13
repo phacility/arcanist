@@ -17,9 +17,11 @@ abstract class ArcanistUnitTestEngine {
 
   public function setRunAllTests($run_all_tests) {
     if (!$this->supportsRunAllTests() && $run_all_tests) {
-      $class = get_class($this);
       throw new Exception(
-        "Engine '{$class}' does not support --everything.");
+        pht(
+          "Engine '%s' does not support %s.",
+          get_class($this),
+          '--everything'));
     }
 
     $this->runAllTests = $run_all_tests;
@@ -53,7 +55,7 @@ abstract class ArcanistUnitTestEngine {
     if ($this instanceof ArcanistBaseUnitTestEngine) {
       phutil_deprecated(
         'ArcanistBaseUnitTestEngine',
-        'You should extend from `ArcanistUnitTestEngine` instead.');
+        pht('You should extend from `%s` instead.', __CLASS__));
     }
 
     $this->workingCopy = $working_copy;

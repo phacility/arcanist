@@ -25,8 +25,10 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install cpplint.py using `wget http://google-styleguide.'.
-      'googlecode.com/svn/trunk/cpplint/cpplint.py`.');
+    return pht(
+      'Install cpplint.py using `%s`.',
+      'wget http://google-styleguide.googlecode.com'.
+      '/svn/trunk/cpplint/cpplint.py');
   }
 
   protected function getDefaultFlags() {

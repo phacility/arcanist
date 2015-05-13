@@ -44,39 +44,44 @@ EOTEXT
   public function getArguments() {
     return array(
       'git' => array(
-        'help' =>
+        'help' => pht(
           "Export change as a git patch. This format is more complete than ".
           "unified, but less complete than arc bundles. These patches can be ".
-          "applied with 'git apply' or 'arc patch'.",
+          "applied with '%s' or '%s'.",
+          'git apply',
+          'arc patch'),
       ),
       'unified' => array(
-        'help' =>
+        'help' => pht(
           "Export change as a unified patch. This format is less complete ".
           "than git patches or arc bundles. These patches can be applied with ".
-          "'patch' or 'arc patch'.",
+          "'%s' or '%s'.",
+          'patch',
+          'arc patch'),
       ),
       'arcbundle' => array(
         'param' => 'file',
-        'help' =>
+        'help' => pht(
           "Export change as an arc bundle. This format can represent all ".
-          "changes. These bundles can be applied with 'arc patch'.",
+          "changes. These bundles can be applied with '%s'.",
+          'arc patch'),
       ),
       'encoding' => array(
         'param' => 'encoding',
-        'help' =>
-          'Attempt to convert non UTF-8 patch into specified encoding.',
+        'help' => pht(
+          'Attempt to convert non UTF-8 patch into specified encoding.'),
       ),
       'revision' => array(
         'param' => 'revision_id',
-        'help' =>
+        'help' => pht(
           'Instead of exporting changes from the working copy, export them '.
-          'from a Differential revision.',
+          'from a Differential revision.'),
       ),
       'diff' => array(
         'param' => 'diff_id',
-        'help' =>
+        'help' => pht(
           'Instead of exporting changes from the working copy, export them '.
-          'from a Differential diff.',
+          'from a Differential diff.'),
       ),
       '*' => 'paths',
     );
@@ -102,8 +107,11 @@ EOTEXT
 
     if ($requested > 1) {
       throw new ArcanistUsageException(
-        "Options '--revision' and '--diff' are not compatible. Choose exactly ".
-        "one change source.");
+        pht(
+          "Options '%s' and '%s' are not compatible. Choose exactly ".
+          "one change source.",
+          '--revision',
+          '--diff'));
     }
 
     $format = null;
@@ -123,12 +131,19 @@ EOTEXT
 
     if ($requested === 0) {
       throw new ArcanistUsageException(
-        "Specify one of '--git', '--unified' or '--arcbundle <path>' to ".
-        "choose an export format.");
+        pht(
+          "Specify one of '%s', '%s' or '%s' to choose an export format.",
+          '--git',
+          '--unified',
+          '--arcbundle <path>'));
     } else if ($requested > 1) {
       throw new ArcanistUsageException(
-        "Options '--git', '--unified' and '--arcbundle' are not compatible. ".
-        "Choose exactly one export format.");
+        pht(
+          "Options '%s', '%s' and '%s' are not compatible. ".
+          "Choose exactly one export format.",
+          '--git',
+          '--unified',
+          '--arcbundle'));
     }
 
     $this->format = $format;
@@ -260,9 +275,9 @@ EOTEXT
         break;
       case self::FORMAT_BUNDLE:
         $path = $this->getArgument('arcbundle');
-        echo "Writing bundle to '{$path}'...\n";
+        echo pht("Writing bundle to '%s'...", $path)."\n";
         $bundle->writeToDisk($path);
-        echo "done.\n";
+        echo pht('Done.')."\n";
         break;
     }
 

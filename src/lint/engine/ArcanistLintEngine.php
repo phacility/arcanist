@@ -168,7 +168,7 @@ abstract class ArcanistLintEngine {
   final public function run() {
     $linters = $this->buildLinters();
     if (!$linters) {
-      throw new ArcanistNoEffectException('No linters to run.');
+      throw new ArcanistNoEffectException(pht('No linters to run.'));
     }
 
     foreach ($linters as $key => $linter) {
@@ -189,7 +189,7 @@ abstract class ArcanistLintEngine {
     }
 
     if (!$have_paths) {
-      throw new ArcanistNoEffectException('No paths are lintable.');
+      throw new ArcanistNoEffectException(pht('No paths are lintable.'));
     }
 
     $versions = array($this->getCacheVersion());
@@ -272,7 +272,9 @@ abstract class ArcanistLintEngine {
     }
 
     if ($exceptions) {
-      throw new PhutilAggregateException('Some linters failed:', $exceptions);
+      throw new PhutilAggregateException(
+        pht('Some linters failed:'),
+        $exceptions);
     }
 
     return $this->results;

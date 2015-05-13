@@ -18,13 +18,13 @@ final class ArcanistCloseWorkflow extends ArcanistWorkflow {
 
   private function getStatusOptions() {
     if ($this->statusData === null) {
-      throw new Exception('loadStatusData first!');
+      throw new Exception(pht('Call %s first!', 'loadStatusData()'));
     }
     return idx($this->statusData, 'statusMap');
   }
   private function getDefaultClosedStatus() {
     if ($this->statusData === null) {
-      throw new Exception('loadStatusData first!');
+      throw new Exception(pht('Call %s first!', 'loadStatusData()'));
     }
     return idx($this->statusData, 'defaultClosedStatus');
   }
@@ -73,10 +73,11 @@ EOTEXT
         'short' => 's',
         'help'  => pht(
           'Specify a new status. Valid status options can be '.
-          'seen with the `list-statuses` argument.'),
+          'seen with the `%s` argument.',
+          'list-statuses'),
       ),
       'list-statuses' => array(
-        'help' => 'Show available status options and exit.',
+        'help' => pht('Show available status options and exit.'),
       ),
     );
   }
@@ -85,9 +86,11 @@ EOTEXT
     $this->loadStatusData();
     $list_statuses = $this->getArgument('list-statuses');
     if ($list_statuses) {
-      echo phutil_console_format(pht(
-        "Valid status options are:\n".
-        "\t%s\n", implode($this->getStatusOptions(), ', ')));
+      echo phutil_console_format(
+        "%s\n",
+        pht(
+          "Valid status options are:\n\t%s",
+          implode($this->getStatusOptions(), ', ')));
       return 0;
     }
     $ids = $this->getArgument('task_id');
@@ -102,23 +105,33 @@ EOTEXT
     if (!isset($status_options[$status])) {
       $options = array_keys($status_options);
       $last = array_pop($options);
-      echo "Invalid status {$status}, valid options are ".
-        implode(', ', $options).", or {$last}.\n";
+      echo pht(
+        "Invalid status %s, valid options are %s, or %s.\n",
+        $status,
+        implode(', ', $options),
+        $last);
+
       return;
     }
 
     foreach ($ids as $id) {
       if (!preg_match('/^T?\d+$/', $id)) {
-        echo "Invalid Task ID: {$id}.\n";
+        echo pht('Invalid Task ID: %s.', $id)."\n";
         return 1;
       }
       $id = ltrim($id, 'T');
       $result = $this->closeTask($id, $status, $message);
       $current_status = $status_options[$status];
       if ($result) {
-        echo "T{$id}'s status is now set to {$current_status}.\n";
+        echo pht(
+          "%s's status is now set to %s.\n",
+          "T{$id}",
+          $current_status);
       } else {
-        echo "T{$id} is already set to {$current_status}.\n";
+        echo pht(
+          "%s is already set to %s.\n",
+          "T{$id}",
+          $current_status);
       }
     }
     return 0;

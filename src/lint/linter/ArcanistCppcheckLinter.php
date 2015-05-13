@@ -14,7 +14,9 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `cppcheck` to perform static analysis on C/C++ code.');
+    return pht(
+      'Use `%s` to perform static analysis on C/C++ code.',
+      'cppcheck');
   }
 
   public function getLinterName() {
@@ -49,7 +51,9 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install Cppcheck using `apt-get install cppcheck` or similar.');
+    return pht(
+      'Install Cppcheck using `%s` or similar.',
+      'apt-get install cppcheck');
   }
 
   protected function getMandatoryFlags() {

@@ -82,7 +82,8 @@ final class ArcanistMercurialParserTestCase extends ArcanistTestCase {
           idx($output, 'copy_source'));
         break;
       default:
-        throw new Exception("No test information for test data '{$name}'!");
+        throw new Exception(
+          pht("No test information for test data '%s'!", $name));
     }
   }
 

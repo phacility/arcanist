@@ -11,8 +11,8 @@ final class ArcanistGeneratedLinter extends ArcanistLinter {
 
   public function getInfoDescription() {
     return pht(
-      'Disables lint for files that are marked as "%s", indicating that they '.
-      'contain generated code.',
+      'Disables lint for files that are marked as "%s", '.
+      'indicating that they contain generated code.',
       '@'.'generated');
   }
 

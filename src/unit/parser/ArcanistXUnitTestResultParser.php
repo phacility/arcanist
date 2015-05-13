@@ -16,7 +16,10 @@ final class ArcanistXUnitTestResultParser {
   public function parseTestResults($test_results) {
     if (!strlen($test_results)) {
       throw new Exception(
-        'test_results argument to parseTestResults must not be empty');
+        pht(
+          '%s argument to %s must not be empty',
+          'test_results',
+          'parseTestResults()'));
     }
 
     // xunit xsd: https://gist.github.com/959290
@@ -28,7 +31,10 @@ final class ArcanistXUnitTestResultParser {
         ->setMaximumGlyphs(150)
         ->truncateString($test_results);
       throw new Exception(
-        "Failed to load XUnit report; Input starts with:\n\n {$input_start}");
+        sprintf(
+          "%s\n\n%s",
+          pht('Failed to load XUnit report; Input starts with:'),
+          $input_start));
     }
 
     $results = array();

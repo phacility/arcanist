@@ -256,7 +256,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
         'code'        => idx($match, 'code', $this->getLinterName()),
         'severity'    => $this->getMatchSeverity($match),
         'name'        => idx($match, 'name', 'Lint'),
-        'description' => idx($match, 'message', 'Undefined Lint Message'),
+        'description' => idx($match, 'message', pht('Undefined Lint Message')),
       );
 
       $original = idx($match, 'original');

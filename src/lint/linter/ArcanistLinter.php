@@ -382,7 +382,7 @@ abstract class ArcanistLinter {
     if (isset($map[$code])) {
       return $map[$code];
     }
-    return 'Unknown lint message!';
+    return pht('Unknown lint message!');
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {
@@ -511,10 +511,10 @@ abstract class ArcanistLinter {
 
   public function setLinterConfigurationValue($key, $value) {
     $sev_map = array(
-      'error' => ArcanistLintSeverity::SEVERITY_ERROR,
-      'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
-      'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-      'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
+      'error'    => ArcanistLintSeverity::SEVERITY_ERROR,
+      'warning'  => ArcanistLintSeverity::SEVERITY_WARNING,
+      'autofix'  => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      'advice'   => ArcanistLintSeverity::SEVERITY_ADVICE,
       'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
 
@@ -566,7 +566,7 @@ abstract class ArcanistLinter {
         return;
     }
 
-    throw new Exception("Incomplete implementation: {$key}!");
+    throw new Exception(pht('Incomplete implementation: %s!', $key));
   }
 
   protected function canCustomizeLintSeverities() {
@@ -637,9 +637,10 @@ abstract class ArcanistLinter {
         pht('Deprecation Warning'),
         pht(
           'Configuration option "%s" is deprecated. Generally, linters should '.
-          'now be configured using an `.arclint` file. See "Arcanist User '.
+          'now be configured using an `%s` file. See "Arcanist User '.
           'Guide: Lint" in the documentation for more information.',
-          $key));
+          $key,
+          '.arclint'));
       return $result;
     }
 

@@ -37,7 +37,6 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   protected function buildLocalFuture(array $argv) {
-
     $argv[0] = 'svn '.$argv[0];
 
     $future = newv('ExecFuture', $argv);
@@ -106,7 +105,9 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
               $mask |= self::FLAG_MODIFIED;
               break;
             default:
-              throw new Exception("Unrecognized property status '{$props}'.");
+              throw new Exception(pht(
+                "Unrecognized property status '%s'.",
+                $props));
           }
 
           $mask |= $this->parseSVNStatus($item);
@@ -177,7 +178,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       case 'incomplete':
         return self::FLAG_INCOMPLETE;
       default:
-        throw new Exception("Unrecognized item status '{$item}'.");
+        throw new Exception(pht("Unrecognized item status '%s'.", $item));
     }
   }
 
@@ -332,7 +333,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       list($err, $stdout) = $this->svnInfoRaw[$path];
       if ($err) {
         throw new Exception(
-          "Error #{$err} executing svn info against '{$path}'.");
+          pht("Error #%d executing svn info against '%s'.", $err, $path));
       }
 
       // TODO: Hack for Windows.
@@ -364,7 +365,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
       }
 
       if (empty($result)) {
-        throw new Exception('Unable to parse SVN info.');
+        throw new Exception(pht('Unable to parse SVN info.'));
       }
 
       $this->svnInfo[$path] = $result;
@@ -431,9 +432,12 @@ EODIFF;
     // happy about it. SVN will exit with code 1 and return the string below.
     if ($err != 0 && $stderr !== "svn: 'diff' returned 2\n") {
       throw new Exception(
-        "svn diff returned unexpected error code: $err\n".
-        "stdout: $stdout\n".
-        "stderr: $stderr");
+        pht(
+          "%s returned unexpected error code: %d\nstdout: %s\nstderr: %s",
+          'svn diff',
+          $err,
+          $stdout,
+          $stderr));
     }
 
     if ($err == 0 && empty($stdout)) {
@@ -568,7 +572,7 @@ EODIFF;
     foreach (explode("\n", $stdout) as $line) {
       $m = array();
       if (!preg_match('/^\s*(\d+)\s+(\S+)/', $line, $m)) {
-        throw new Exception("Bad blame? `{$line}'");
+        throw new Exception(pht("Bad blame? `%s'", $line));
       }
       $revision = $m[1];
       $author = $m[2];
@@ -665,8 +669,8 @@ EODIFF;
     }
 
     foreach ($results as $key => $result) {
-      $results[$key]['why'] =
-        'Matching arcanist project name and working copy directory path.';
+      $results[$key]['why'] = pht(
+        'Matching arcanist project name and working copy directory path.');
     }
 
     return $results;

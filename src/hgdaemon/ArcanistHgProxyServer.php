@@ -168,7 +168,7 @@ final class ArcanistHgProxyServer {
     $hg = $this->startMercurialProcess();
     $clients = array();
 
-    $this->log(null, 'Listening');
+    $this->log(null, pht('Listening'));
     $this->idleSince = time();
     while (true) {
       // Wait for activity on any active clients, the Mercurial process, or
@@ -181,7 +181,7 @@ final class ArcanistHgProxyServer {
         ));
 
       if (!$hg->update()) {
-        throw new Exception('Server exited unexpectedly!');
+        throw new Exception(pht('Server exited unexpectedly!'));
       }
 
       // Accept any new clients.
@@ -190,7 +190,7 @@ final class ArcanistHgProxyServer {
         $key = last_key($clients);
         $client->setName($key);
 
-        $this->log($client, 'Connected');
+        $this->log($client, pht('Connected'));
         $this->idleSince = time();
 
         // Check if we've hit the client limit. If there's a configured
@@ -216,7 +216,7 @@ final class ArcanistHgProxyServer {
           continue;
         }
 
-        $this->log($client, 'Disconnected');
+        $this->log($client, pht('Disconnected'));
         unset($clients[$key]);
 
         // If we have a client limit and we've served that many clients, exit.
@@ -224,7 +224,7 @@ final class ArcanistHgProxyServer {
         if ($this->clientLimit) {
           if ($this->lifetimeClientCount >= $this->clientLimit) {
             if (!$clients) {
-              $this->log(null, 'Exiting (Client Limit)');
+              $this->log(null, pht('Exiting (Client Limit)'));
               return;
             }
           }
@@ -236,11 +236,11 @@ final class ArcanistHgProxyServer {
       if ($this->idleLimit) {
         $remaining = $this->idleLimit - (time() - $this->idleSince);
         if ($remaining <= 0) {
-          $this->log(null, 'Exiting (Idle Limit)');
+          $this->log(null, pht('Exiting (Idle Limit)'));
           return;
         }
         if ($remaining <= 5) {
-          $this->log(null, 'Exiting in '.$remaining.' seconds');
+          $this->log(null, pht('Exiting in %d seconds', $remaining));
         }
       }
     }
@@ -312,7 +312,7 @@ final class ArcanistHgProxyServer {
     // Log the elapsed time.
     $t_end = microtime(true);
     $t = 1000000 * ($t_end - $t_start);
-    $this->log($client, '< '.number_format($t, 0).'us');
+    $this->log($client, pht('< %sus', number_format($t, 0)));
 
     $this->idleSince = time();
 
@@ -349,12 +349,15 @@ final class ArcanistHgProxyServer {
 
     if ($errno || !$socket) {
       throw new Exception(
-        "Unable to start socket! Error #{$errno}: {$errstr}");
+        pht(
+          'Unable to start socket! Error #%d: %s',
+          $errno,
+          $errstr));
     }
 
     $ok = stream_set_blocking($socket, 0);
     if ($ok === false) {
-      throw new Exception('Unable to set socket nonblocking!');
+      throw new Exception(pht('Unable to set socket nonblocking!'));
     }
 
     return $socket;
@@ -438,9 +441,15 @@ final class ArcanistHgProxyServer {
     }
 
     if ($client) {
-      $message = '[Client '.$client->getName().'] '.$message;
+      $message = sprintf(
+        '[%s] %s',
+        pht('Client %s', $client->getName()),
+        $message);
     } else {
-      $message = '[Server] '.$message;
+      $message = sprintf(
+        '[%s] %s',
+        pht('Server'),
+        $message);
     }
 
     echo $message."\n";
@@ -461,7 +470,7 @@ final class ArcanistHgProxyServer {
 
     $pid = pcntl_fork();
     if ($pid === -1) {
-      throw new Exception('Unable to fork!');
+      throw new Exception(pht('Unable to fork!'));
     } else if ($pid) {
       // We're the parent; exit. First, drop our reference to the socket so
       // our __destruct() doesn't tear it down; the child will tear it down

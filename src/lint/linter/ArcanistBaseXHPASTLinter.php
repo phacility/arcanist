@@ -132,8 +132,9 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
         throw new Exception(
           pht(
             'Imbalanced calls to shared futures: each call to '.
-            'buildSharedFutures() for a path must be paired with a call to '.
-            'releaseSharedFutures().'));
+            '%s for a path must be paired with a call to %s.',
+            'buildSharedFutures()',
+            'releaseSharedFutures()'));
       }
 
       $this->refcount[$path]--;

@@ -21,7 +21,7 @@ final class ArcanistDifferentialRevisionStatus {
       self::IN_PREPARATION    => pht('In Preparation'),
     );
 
-    return idx($map, coalesce($status, '?'), 'Unknown');
+    return idx($map, coalesce($status, '?'), pht('Unknown'));
   }
 
 }

@@ -63,7 +63,8 @@ abstract class ArcanistRepositoryAPI {
     if (!$working_copy) {
       throw new Exception(
         pht(
-          'Trying to create a RepositoryAPI without a working copy!'));
+          'Trying to create a %s without a working copy!',
+          __CLASS__));
     }
 
     $root = $working_copy->getProjectRoot();

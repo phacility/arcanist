@@ -61,16 +61,16 @@ EOTEXT
       ));
     if (!$revisions) {
       throw new ArcanistUsageException(
-        'The revision you provided does not exist!');
+        pht('The revision you provided does not exist!'));
     }
     $revision = $revisions[0];
     $commits = $revision['commits'];
     if (!$commits) {
       throw new ArcanistUsageException(
-        'This revision has not been committed yet!');
+        pht('This revision has not been committed yet!'));
     } else if (count($commits) > 1) {
       throw new ArcanistUsageException(
-        'The revision you provided has multiple commits!');
+        pht('The revision you provided has multiple commits!'));
     }
     $commit_phid = $commits[0];
     $commit = $conduit->callMethodSynchronous(
@@ -144,11 +144,11 @@ EOTEXT
                  $repository_api->isHgSubversionRepo();
     $revision_id = null;
 
-    $console->writeOut("Starting backout\n");
+    $console->writeOut(pht('Starting backout.')."\n");
     $input = $this->getArgument('input');
     if (!$input || count($input) != 1) {
       throw new ArcanistUsageException(
-        'You must specify one commit to backout!');
+        pht('You must specify one commit to backout!'));
     }
 
     // Input looks like a Differential revision, so
@@ -175,14 +175,15 @@ EOTEXT
 
     // Run 'backout'.
     $subject = $repository_api->getCommitSummary($commit_hash);
-    $console->writeOut("Backing out commit {$commit_hash} {$subject} \n");
+    $console->writeOut(
+      pht('Backing out commit %s %s', $commit_hash, $subject)."\n");
 
     $repository_api->backoutCommit($commit_hash);
 
     // Create commit message and execute the commit
     $message = $this->buildCommitMessage($commit_hash);
     $repository_api->doCommit($message);
-    $console->writeOut("Double-check the commit and push when ready\n");
+    $console->writeOut(pht('Double-check the commit and push when ready.')."\n");
   }
 
 }

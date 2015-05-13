@@ -50,7 +50,9 @@ EOTEXT
 
     if ($pos > $argc) {
       throw new ArcanistUsageException(
-        'Specified position is greater than the number of arguments provided.');
+        pht(
+          'Specified position is greater than the number of '.
+          'arguments provided.'));
     }
 
     // Determine which revision control system the working copy uses, so we

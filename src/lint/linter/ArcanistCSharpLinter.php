@@ -62,12 +62,14 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     foreach ($map as $code => $severity) {
       if (substr($code, 0, 2) === 'SA' && $severity == 'disabled') {
         throw new Exception(
-          "In order to keep StyleCop integration with IDEs and other tools ".
-          "consistent with Arcanist results, you aren't permitted to ".
-          "disable StyleCop rules within '.arclint'. ".
-          "Instead configure the severity using the StyleCop settings dialog ".
-          "(usually accessible from within your IDE). StyleCop settings ".
-          "for your project will be used when linting for Arcanist.");
+          pht(
+            "In order to keep StyleCop integration with IDEs and other tools ".
+            "consistent with Arcanist results, you aren't permitted to ".
+            "disable StyleCop rules within '%s'. Instead configure the ".
+            "severity using the StyleCop settings dialog (usually accessible ".
+            "from within your IDE). StyleCop settings for your project will ".
+            "be used when linting for Arcanist.",
+            '.arclint'));
       }
     }
     return parent::setCustomSeverityMap($map);
@@ -92,7 +94,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     } else if (Filesystem::binaryExists('mono')) {
       $this->runtimeEngine = 'mono ';
     } else {
-      throw new Exception('Unable to find Mono and you are not on Windows!');
+      throw new Exception(
+        pht('Unable to find Mono and you are not on Windows!'));
     }
 
     // Determine cslint path.
@@ -102,7 +105,7 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     } else if (Filesystem::binaryExists('cslint.exe')) {
       $this->cslintEngine = 'cslint.exe';
     } else {
-      throw new Exception('Unable to locate cslint.');
+      throw new Exception(pht('Unable to locate %s.', 'cslint'));
     }
 
     // Determine cslint version.
@@ -112,18 +115,27 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     list($err, $stdout, $stderr) = $ver_future->resolve();
     if ($err !== 0) {
       throw new Exception(
-        'You are running an old version of cslint. Please '.
-        'upgrade to version '.self::SUPPORTED_VERSION.'.');
+        pht(
+          'You are running an old version of %s. Please '.
+          'upgrade to version %s.',
+          'cslint',
+          self::SUPPORTED_VERSION));
     }
     $ver = (int)$stdout;
     if ($ver < self::SUPPORTED_VERSION) {
       throw new Exception(
-        'You are running an old version of cslint. Please '.
-        'upgrade to version '.self::SUPPORTED_VERSION.'.');
+        pht(
+          'You are running an old version of %s. Please '.
+          'upgrade to version %s.',
+          'cslint',
+          self::SUPPORTED_VERSION));
     } else if ($ver > self::SUPPORTED_VERSION) {
       throw new Exception(
-        'Arcanist does not support this version of cslint (it is '.
-        'newer). You can try upgrading Arcanist with `arc upgrade`.');
+        pht(
+          'Arcanist does not support this version of %s (it is newer). '.
+          'You can try upgrading Arcanist with `%s`.',
+          'cslint',
+          'arc upgrade'));
     }
 
     $this->loaded = true;

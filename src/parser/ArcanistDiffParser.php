@@ -165,7 +165,7 @@ final class ArcanistDiffParser {
           $origin->setType(ArcanistDiffChangeType::TYPE_COPY_AWAY);
           break;
         default:
-          throw new Exception("Bad origin state {$type}.");
+          throw new Exception(pht('Bad origin state %s.', $type));
       }
 
       $type = $origin->getType();
@@ -179,7 +179,7 @@ final class ArcanistDiffParser {
           $change->setType(ArcanistDiffChangeType::TYPE_COPY_HERE);
           break;
         default:
-          throw new Exception("Bad origin state {$type}.");
+          throw new Exception(pht('Bad origin state %s.', $type));
       }
     }
 
@@ -188,7 +188,7 @@ final class ArcanistDiffParser {
 
   public function parseDiff($diff) {
     if (!strlen(trim($diff))) {
-      throw new Exception("Can't parse an empty diff!");
+      throw new Exception(pht("Can't parse an empty diff!"));
     }
 
     // Detect `git-format-patch`, by looking for a "---" line somewhere in
@@ -274,11 +274,16 @@ final class ArcanistDiffParser {
 
       if ($failed_parse) {
         $this->didFailParse(
-          "Expected a hunk header, like 'Index: /path/to/file.ext' (svn), ".
-          "'Property changes on: /path/to/file.ext' (svn properties), ".
-          "'commit 59bcc3ad6775562f845953cf01624225' (git show), ".
-          "'diff --git' (git diff), '--- filename' (unified diff), or ".
-          "'diff -r' (hg diff or patch).");
+          pht(
+            "Expected a hunk header, like '%s' (svn), '%s' (svn properties), ".
+            "'%s' (git show), '%s' (git diff), '%s' (unified diff), or ".
+            "'%s' (hg diff or patch).",
+            'Index: /path/to/file.ext',
+            'Property changes on: /path/to/file.ext',
+            'commit 59bcc3ad6775562f845953cf01624225',
+            'diff --git',
+            '--- filename',
+            'diff -r'));
       }
 
       if (isset($match['type'])) {
@@ -332,7 +337,9 @@ final class ArcanistDiffParser {
             $line,
             $match);
           if (!$ok) {
-            $this->didFailParse("Expected '+++ filename' in unified diff.");
+            $this->didFailParse(pht(
+              "Expected '%s' in unified diff.",
+              '+++ filename'));
           }
           $change->setCurrentPath($match[1]);
           $line = $this->nextLine();
@@ -347,7 +354,7 @@ final class ArcanistDiffParser {
           $this->parseIndexHunk($change);
           break;
         default:
-          $this->didFailParse('Unknown diff type.');
+          $this->didFailParse(pht('Unknown diff type.'));
           break;
       }
     } while ($this->getLine() !== null);
@@ -380,12 +387,12 @@ final class ArcanistDiffParser {
 
     $line = $this->getLine();
     if (!preg_match('/^Author: /', $line)) {
-      $this->didFailParse("Expected 'Author:'.");
+      $this->didFailParse(pht("Expected 'Author:'."));
     }
 
     $line = $this->nextLine();
     if (!preg_match('/^Date: /', $line)) {
-      $this->didFailParse("Expected 'Date:'.");
+      $this->didFailParse(pht("Expected 'Date:'."));
     }
 
     while (($line = $this->nextLineTrimmed()) !== null) {
@@ -410,7 +417,7 @@ final class ArcanistDiffParser {
   protected function parsePropertyHunk(ArcanistDiffChange $change) {
     $line = $this->getLineTrimmed();
     if (!preg_match('/^_+$/', $line)) {
-      $this->didFailParse("Expected '______________________'.");
+      $this->didFailParse(pht("Expected '%s'.", '______________________'));
     }
 
     $line = $this->nextLine();
@@ -430,7 +437,7 @@ final class ArcanistDiffParser {
         $matches);
       if (!$ok) {
         $this->didFailParse(
-          "Expected 'Name', 'Added', 'Deleted', or 'Modified'.");
+          pht("Expected 'Name', 'Added', 'Deleted', or 'Modified'."));
       }
 
       $op = $matches[1];
@@ -476,13 +483,17 @@ final class ArcanistDiffParser {
       }
       if ($trimline && $trimline[0] == '+') {
         if ($op == 'Deleted') {
-          $this->didFailParse('Unexpected "+" section in property deletion.');
+          $this->didFailParse(pht(
+            'Unexpected "%s" section in property deletion.',
+            '+'));
         }
         $target = 'new';
         $line = substr($trimline, $prop_index);
       } else if ($trimline && $trimline[0] == '-') {
         if ($op == 'Added') {
-          $this->didFailParse('Unexpected "-" section in property addition.');
+          $this->didFailParse(pht(
+            'Unexpected "%s" section in property addition.',
+            '-'));
         }
         $target = 'old';
         $line = substr($trimline, $prop_index);
@@ -523,7 +534,7 @@ final class ArcanistDiffParser {
 
   protected function setIsGit($git) {
     if ($this->isGit !== null && $this->isGit != $git) {
-      throw new Exception('Git status has changed!');
+      throw new Exception(pht('Git status has changed!'));
     }
     $this->isGit = $git;
     return $this;
@@ -682,7 +693,9 @@ final class ArcanistDiffParser {
     if ($is_svn) {
       $ok = preg_match('/^=+\s*$/', $line);
       if (!$ok) {
-        $this->didFailParse("Expected '=======================' divider line.");
+        $this->didFailParse(pht(
+          "Expected '%s' divider line.",
+          '======================='));
       } else {
         // Adding an empty file in SVN can produce an empty line here.
         $line = $this->nextNonemptyLine();
@@ -803,7 +816,8 @@ final class ArcanistDiffParser {
 
     $line = $this->getLine();
     if (!preg_match('/^literal /', $line)) {
-      $this->didFailParse("Expected 'literal NNNN' to start git binary patch.");
+      $this->didFailParse(
+        pht("Expected '%s' to start git binary patch.", 'literal NNNN'));
     }
     do {
       $line = $this->nextLineTrimmed();
@@ -814,7 +828,8 @@ final class ArcanistDiffParser {
         $this->nextNonemptyLine();
         return;
       } else if (!preg_match('/^[a-zA-Z]/', $line)) {
-        $this->didFailParse('Expected base85 line length character (a-zA-Z).');
+        $this->didFailParse(
+          pht('Expected base85 line length character (a-zA-Z).'));
       }
     } while (true);
   }
@@ -843,7 +858,9 @@ final class ArcanistDiffParser {
 
     if (!$ok) {
       $this->didFailParse(
-        "Expected hunk target '+++ path/to/file.ext (revision N)'.");
+        pht(
+          "Expected hunk target '%s'.",
+          '+++ path/to/file.ext (revision N)'));
     }
 
     $this->nextLine();
@@ -887,12 +904,14 @@ final class ArcanistDiffParser {
           $line = $this->nextNonemptyLine();
           $ok = preg_match('/^Property changes on:/', $line);
           if (!$ok) {
-            $this->didFailParse('Confused by empty line');
+            $this->didFailParse(pht('Confused by empty line'));
           }
           $line = $this->nextLine();
           return $this->parsePropertyHunk($change);
         }
-        $this->didFailParse("Expected hunk header '@@ -NN,NN +NN,NN @@'.");
+        $this->didFailParse(pht(
+          "Expected hunk header '%s'.",
+          '@@ -NN,NN +NN,NN @@'));
       }
 
       $hunk->setOldOffset($matches[1]);
@@ -930,7 +949,7 @@ final class ArcanistDiffParser {
           case '\\':
             if (!preg_match('@\\ No newline at end of file@', $line)) {
               $this->didFailParse(
-                "Expected '\ No newline at end of file'.");
+                pht("Expected '\ No newline at end of file'."));
             }
             if ($new_len) {
               $real[] = $line;
@@ -975,7 +994,7 @@ final class ArcanistDiffParser {
       }
 
       if ($old_len || $new_len) {
-        $this->didFailParse('Found the wrong number of hunk lines.');
+        $this->didFailParse(pht('Found the wrong number of hunk lines.'));
       }
 
       $corpus = implode('', $real);
@@ -991,8 +1010,10 @@ final class ArcanistDiffParser {
             $corpus = phutil_utf8_convert($corpus, 'UTF-8', $try_encoding);
             if (!phutil_is_utf8($corpus)) {
               throw new Exception(
-                "Failed to convert a hunk from '{$try_encoding}' to UTF-8. ".
-                "Check that the specified encoding is correct.");
+                pht(
+                  "Failed to convert a hunk from '%s' to UTF-8. ".
+                  "Check that the specified encoding is correct.",
+                  $try_encoding));
             }
           }
         }
@@ -1362,11 +1383,13 @@ final class ArcanistDiffParser {
 
     if (!$matches) {
       throw new Exception(
-        "Input diff contains ambiguous line 'diff --git {$paths}'. This line ".
-        "is ambiguous because there are spaces in the file names, so the ".
-        "parser can not determine where the file names begin and end. To ".
-        "resolve this ambiguity, use standard prefixes ('a/' and 'b/') when ".
-        "generating diffs.");
+        pht(
+          "Input diff contains ambiguous line '%s'. This line is ambiguous ".
+          "because there are spaces in the file names, so the parser can not ".
+          "determine where the file names begin and end. To resolve this ".
+          "ambiguity, use standard prefixes ('a/' and 'b/') when ".
+          "generating diffs.",
+          "diff --git {$paths}"));
     }
 
     $old = $matches['old'];

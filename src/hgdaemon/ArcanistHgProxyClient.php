@@ -163,7 +163,10 @@ final class ArcanistHgProxyClient {
 
     if ($errno || !$socket) {
       throw new Exception(
-        "Unable to connect socket! Error #{$errno}: {$errstr}");
+        pht(
+          'Unable to connect socket! Error #%d: %s',
+          $errno,
+          $errstr));
     }
 
     $channel = new PhutilSocketChannel($socket);

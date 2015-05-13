@@ -46,8 +46,11 @@ class ArcanistConfiguration {
       if (isset($workflows_by_name[$name])) {
         $other = get_class($workflows_by_name[$name]);
         throw new Exception(
-          "Workflows {$class} and {$other} both implement workflows named ".
-          "{$name}.");
+          pht(
+            'Workflows %s and %s both implement workflows named %s.',
+            $class,
+            $other,
+            $name));
       }
 
       $workflows_by_name[$name] = $workflow;
@@ -109,7 +112,8 @@ class ArcanistConfiguration {
       $shell_cmd = substr($full_alias, 1);
 
       $console->writeLog(
-        "[alias: 'arc %s' -> $ %s]",
+        "[%s: 'arc %s' -> $ %s]",
+        pht('alias'),
         $command,
         $shell_cmd);
 
@@ -127,7 +131,8 @@ class ArcanistConfiguration {
       $workflow = $this->buildWorkflow($new_command);
       if ($workflow) {
         $console->writeLog(
-          "[alias: 'arc %s' -> 'arc %s']\n",
+          "[%s: 'arc %s' -> 'arc %s']\n",
+          pht('alias'),
           $command,
           $full_alias);
         $command = $new_command;
@@ -168,7 +173,7 @@ class ArcanistConfiguration {
   }
 
   private function raiseUnknownCommand($command, array $maybe = array()) {
-    $message = pht("Unknown command '%s'. Try 'arc help'.", $command);
+    $message = pht("Unknown command '%s'. Try '%s'.", $command, 'arc help');
     if ($maybe) {
       $message .= "\n\n".pht('Did you mean:')."\n";
       sort($maybe);

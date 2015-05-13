@@ -31,7 +31,9 @@ EOTEXT
     );
 
     foreach ($roots as $lib => $root) {
-      echo pht('Upgrading %s...', $lib)."\n";
+      echo phutil_console_format(
+        "%s\n",
+        pht('Upgrading %s...', $lib));
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
       $configuration_manager = clone $this->getConfigurationManager();

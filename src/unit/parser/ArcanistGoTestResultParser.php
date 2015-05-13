@@ -122,7 +122,6 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
   }
 
   private function fixNames($test_case_results, $test_case_name) {
-
     foreach ($test_case_results as &$result) {
       $test_name = $result->getName();
       $result->setName('Go::Test::'.$test_case_name.'::'.$test_name);

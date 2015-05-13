@@ -94,7 +94,7 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
         return self::LINT_FATAL_ERROR;
 
       default:
-        throw new Exception(pht('Unrecognized lint message code "%s"', $code));
+        throw new Exception(pht('Unrecognized lint message code: "%s"', $code));
     }
   }
 

@@ -16,8 +16,9 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
   public function getInfoDescription() {
     return pht(
-      'Uses `flake8` to run several linters (PyFlakes, pep8, and a McCabe '.
-      'complexity checker) on Python source files.');
+      'Uses `%s` to run several linters (PyFlakes, pep8, and a McCabe '.
+      'complexity checker) on Python source files.',
+      'flake8');
   }
 
   public function getLinterName() {
@@ -55,7 +56,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install flake8 using `easy_install flake8`.');
+    return pht('Install flake8 using `%s`.', 'easy_install flake8');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

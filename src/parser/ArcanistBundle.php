@@ -124,7 +124,7 @@ final class ArcanistBundle {
         return phutil_is_windows() ? "\r\n" : "\n";
       default:
         throw new Exception(
-          "Unknown patch type '{$patch_type}'!");
+          pht("Unknown patch type '%s'!", $patch_type));
     }
   }
 
@@ -373,7 +373,9 @@ final class ArcanistBundle {
 
       if (!$decompose_okay) {
         throw new Exception(
-          'Failed to decompose multicopy changeset in order to generate diff.');
+          pht(
+            'Failed to decompose multicopy changeset in '.
+            'order to generate diff.'));
       }
     }
 
@@ -687,9 +689,11 @@ final class ArcanistBundle {
 
     if ($this->conduit) {
       if ($name) {
-        $console->writeErr("Downloading binary data for '%s'...\n", $name);
+        $console->writeErr(
+          "%s\n",
+          pht("Downloading binary data for '%s'...", $name));
       } else {
-        $console->writeErr("Downloading binary data...\n");
+        $console->writeErr("%s\n", pht('Downloading binary data...'));
       }
       $data_base64 = $this->conduit->callMethodSynchronous(
         'file.download',
@@ -699,7 +703,7 @@ final class ArcanistBundle {
       return base64_decode($data_base64);
     }
 
-    throw new Exception("Nowhere to load blob '{$phid}' from!");
+    throw new Exception(pht("Nowhere to load blob '%s' from!", $phid));
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change, $old_binary) {
@@ -773,9 +777,10 @@ final class ArcanistBundle {
 
     if (!function_exists('gzcompress')) {
       throw new Exception(
-        'This patch has binary data. The PHP zlib extension is required to '.
-        'apply patches with binary data to git. Install the PHP zlib '.
-        'extension to continue.');
+        pht(
+          'This patch has binary data. The PHP zlib extension is required to '.
+          'apply patches with binary data to git. Install the PHP zlib '.
+          'extension to continue.'));
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.

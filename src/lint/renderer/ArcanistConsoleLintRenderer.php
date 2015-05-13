@@ -44,7 +44,9 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
             idx($location, 'path', $path).
             (!empty($location['line']) ? ":{$location['line']}" : '');
         }
-        $description .= "\nOther locations: ".implode(', ', $locations);
+        $description .= "\n".pht(
+          'Other locations: %s',
+          implode(', ', $locations));
       }
 
       $text[] = phutil_console_format(
@@ -60,7 +62,11 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
     }
 
     if ($text) {
-      $prefix = phutil_console_format("**>>>** Lint for __%s__:\n\n\n", $path);
+      $prefix = phutil_console_format(
+        "**>>>** %s\n\n\n",
+        pht(
+          'Lint for %s:',
+          phutil_console_format('__%s__', $path)));
       return $prefix.implode("\n", $text);
     } else {
       return null;
@@ -234,7 +240,9 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
   public function renderOkayResult() {
     return phutil_console_format(
-      "<bg:green>** OKAY **</bg> No lint warnings.\n");
+      "<bg:green>** %s **</bg> %s\n",
+      pht('OKAY'),
+      pht('No lint warnings.'));
   }
 
 }

@@ -99,9 +99,9 @@ final class ArcanistRuboCopLinter extends ArcanistExternalLinter {
     return $messages;
   }
 
-  /*
-    Take the string from RuboCop's severity terminology and return an
-    ArcanistLintSeverity
+  /**
+   * Take the string from RuboCop's severity terminology and return an
+   * @{class:ArcanistLintSeverity}.
    */
   protected function getDefaultMessageSeverity($code) {
     switch ($code) {

@@ -53,17 +53,19 @@ EOTEXT
   public function getArguments() {
     return array(
       'view-all' => array(
-        'help' => 'Include closed and abandoned revisions.',
+        'help' => pht('Include closed and abandoned revisions.'),
       ),
       'by-status' => array(
-        'help' => 'Sort branches by status instead of time.',
+        'help' => pht('Sort branches by status instead of time.'),
       ),
       'output' => array(
         'param' => 'format',
         'support' => array(
           'json',
         ),
-        'help' => "With 'json', show features in machine-readable JSON format.",
+        'help' => pht(
+          "With '%s', show features in machine-readable JSON format.",
+          'json'),
       ),
       '*' => 'branch',
     );
@@ -79,14 +81,15 @@ EOTEXT
     $names = $this->getArgument('branch');
     if ($names) {
       if (count($names) > 2) {
-        throw new ArcanistUsageException('Specify only one branch.');
+        throw new ArcanistUsageException(pht('Specify only one branch.'));
       }
       return $this->checkoutBranch($names);
     }
 
     $branches = $repository_api->getAllBranches();
     if (!$branches) {
-      throw new ArcanistUsageException('No branches in this working copy.');
+      throw new ArcanistUsageException(
+        pht('No branches in this working copy.'));
     }
 
     $branches = $this->loadCommitInfo($branches);
@@ -302,7 +305,7 @@ EOTEXT
         $status = $revision['statusName'];
       } else {
         $desc = $branch['desc'];
-        $status = 'No Revision';
+        $status = pht('No Revision');
       }
 
       if (!$this->getArgument('view-all') && !$branch['current']) {

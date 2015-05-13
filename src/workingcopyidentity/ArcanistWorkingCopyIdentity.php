@@ -123,7 +123,10 @@ final class ArcanistWorkingCopyIdentity {
         if ($config === null) {
           $console->writeLog(
             "%s\n",
-            pht('Working Copy: Reading .arcconfig from "%s".', $config_file));
+            pht(
+              'Working Copy: Reading %s from "%s".',
+              '.arcconfig',
+              $config_file));
           $config_data = Filesystem::readFile($config_file);
           $config = self::parseRawConfigFile($config_data, $config_file);
         }
@@ -136,15 +139,16 @@ final class ArcanistWorkingCopyIdentity {
         $console->writeLog(
           "%s\n",
           pht(
-            'Working Copy: Unable to find .arcconfig in any of these '.
-            'locations: %s.',
+            'Working Copy: Unable to find %s in any of these locations: %s.',
+            '.arcconfig',
             implode(', ', $looked_in)));
       } else {
         $console->writeLog(
           "%s\n",
           pht(
-            'Working Copy: No candidate locations for .arcconfig from '.
-            'this working directory.'));
+            'Working Copy: No candidate locations for %s from '.
+            'this working directory.',
+            '.arcconfig'));
       }
       $config = array();
     }
@@ -202,7 +206,7 @@ final class ArcanistWorkingCopyIdentity {
       return phutil_json_decode($raw_config);
     } catch (PhutilJSONParserException $ex) {
       throw new PhutilProxyException(
-        pht("Unable to parse '.arcconfig' file '%s'.", $from_where),
+        pht("Unable to parse '%s' file '%s'.", '.arcconfig', $from_where),
         $ex);
     }
   }

@@ -204,12 +204,18 @@ EOTEXT
 
       $ok = fseek($f, $offset);
       if ($ok !== 0) {
-        throw new Exception(pht('Failed to fseek()!'));
+        throw new Exception(
+          pht(
+            'Failed to %s!',
+            'fseek()'));
       }
 
       $data = fread($f, $chunk['byteEnd'] - $chunk['byteStart']);
       if ($data === false) {
-        throw new Exception(pht('Failed to fread()!'));
+        throw new Exception(
+          pht(
+            'Failed to %s!',
+            'fread()'));
       }
 
       $conduit->callMethodSynchronous(

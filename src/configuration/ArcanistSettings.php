@@ -86,7 +86,7 @@ final class ArcanistSettings {
         'help' => pht(
           'The name of the default branch to land changes onto when '.
           '`%s` is run.',
-            'arc land'),
+          'arc land'),
         'example' => '"develop"',
       ),
       'arc.land.update.default' => array(

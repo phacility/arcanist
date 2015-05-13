@@ -91,22 +91,24 @@ EOTEXT
             implode(' ' , $binding));
         }
       } else {
-        echo "You haven't defined any aliases yet.\n";
+        echo pht("You haven't defined any aliases yet.")."\n";
       }
     } else if (count($argv) == 1) {
       if (empty($aliases[$argv[0]])) {
-        echo "No alias '{$argv[0]}' to remove.\n";
+        echo pht("No alias '%s' to remove.", $argv[0])."\n";
       } else {
-        echo phutil_console_format(
-          "'**arc %s**' is currently aliased to '**arc %s**'.",
-          $argv[0],
-          implode(' ', $aliases[$argv[0]]));
-        $ok = phutil_console_confirm('Delete this alias?');
+        echo pht(
+          "'%s' is currently aliased to '%s'.",
+          phutil_console_format('**arc %s**', $argv[0]),
+          phutil_console_format(
+            '**arc %s**',
+            implode(' ', $aliases[$argv[0]])));
+        $ok = phutil_console_confirm(pht('Delete this alias?'));
         if ($ok) {
           $was = implode(' ', $aliases[$argv[0]]);
           unset($aliases[$argv[0]]);
           $this->writeAliases($aliases);
-          echo "Unaliased '{$argv[0]}' (was '{$was}').\n";
+          echo pht("Unaliased '%s' (was '%s').", $argv[0], $was)."\n";
         } else {
           throw new ArcanistUserAbortException();
         }
@@ -116,15 +118,18 @@ EOTEXT
 
       if ($arc_config->buildWorkflow($argv[0])) {
         throw new ArcanistUsageException(
-          "You can not create an alias for '{$argv[0]}' because it is a ".
-          "builtin command. 'arc alias' can only create new commands.");
+          pht(
+            "You can not create an alias for '%s' because it is a ".
+            "builtin command. '%s' can only create new commands.",
+            $argv[0],
+            'arc alias'));
       }
 
       $aliases[$argv[0]] = array_slice($argv, 1);
-      echo phutil_console_format(
-        "Aliased '**arc %s**' to '**arc %s**'.\n",
-        $argv[0],
-        implode(' ', $aliases[$argv[0]]));
+      echo pht(
+        "Aliased '%s' to '%s'.\n",
+        phutil_console_format('**arc %s**', $argv[0]),
+        phutil_console_format('**arc %s**', implode(' ', $aliases[$argv[0]])));
 
       $this->writeAliases($aliases);
     }

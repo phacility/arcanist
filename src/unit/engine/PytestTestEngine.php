@@ -17,7 +17,7 @@ final class PytestTestEngine extends ArcanistUnitTestEngine {
 
     if (!Filesystem::pathExists($junit_tmp)) {
       throw new CommandException(
-        "Command failed with error #{$err}!",
+        pht('Command failed with error #%s!', $err),
         $future->getCommand(),
         $err,
         $stdout,

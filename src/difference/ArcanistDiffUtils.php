@@ -26,7 +26,7 @@ final class ArcanistDiffUtils {
     $diff_options  = "-L 'Old Value' -L 'New Value'") {
 
     if ((string)$old === (string)$new) {
-      $new .= "\n(Old and new values are identical.)";
+      $new .= "\n".pht('(Old and new values are identical.)');
     }
 
     $file_old = new TempFile();

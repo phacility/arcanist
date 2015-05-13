@@ -36,16 +36,32 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
   }
 
   private function getFormattedResult($result) {
-    static $status_codes = array(
-      ArcanistUnitTestResult::RESULT_PASS => '<bg:green>** PASS **</bg>',
-      ArcanistUnitTestResult::RESULT_FAIL => '<bg:red>** FAIL **</bg>',
-      ArcanistUnitTestResult::RESULT_SKIP => '<bg:yellow>** SKIP **</bg>',
-      ArcanistUnitTestResult::RESULT_BROKEN => '<bg:red>** BROKEN **</bg>',
-      ArcanistUnitTestResult::RESULT_UNSOUND => '<bg:yellow>** UNSOUND **</bg>',
-      ArcanistUnitTestResult::RESULT_POSTPONED =>
-        '<bg:yellow>** POSTPONED **</bg>',
-    );
-    return phutil_console_format($status_codes[$result]);
+    switch ($result) {
+      case ArcanistUnitTestResult::RESULT_PASS:
+        return phutil_console_format('<bg:green>** %s **</bg>', pht('PASS'));
+
+      case ArcanistUnitTestResult::RESULT_FAIL:
+        return phutil_console_format('<bg:red>** %s **</bg>', pht('FAIL'));
+
+      case ArcanistUnitTestResult::RESULT_SKIP:
+        return phutil_console_format('<bg:yellow>** %s **</bg>', pht('SKIP'));
+
+      case ArcanistUnitTestResult::RESULT_BROKEN:
+        return phutil_console_format('<bg:red>** %s **</bg>', pht('BROKEN'));
+
+      case ArcanistUnitTestResult::RESULT_UNSOUND:
+        return phutil_console_format(
+          '<bg:yellow>** %s **</bg>',
+          pht('UNSOUND'));
+
+      case ArcanistUnitTestResult::RESULT_POSTPONED:
+        return phutil_console_format(
+          '<bg:yellow>** %s **</bg>',
+          pht('POSTPONED'));
+
+      default:
+        return null;
+    }
   }
 
   private function formatTestDuration($seconds) {

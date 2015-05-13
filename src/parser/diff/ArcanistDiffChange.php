@@ -292,14 +292,14 @@ final class ArcanistDiffChange {
 
   public function getSymlinkTarget() {
     if ($this->getFileType() != ArcanistDiffChangeType::FILE_SYMLINK) {
-      throw new Exception('Not a symlink!');
+      throw new Exception(pht('Not a symlink!'));
     }
     $hunks = $this->getHunks();
     $hunk = reset($hunks);
     $corpus = $hunk->getCorpus();
     $match = null;
     if (!preg_match('/^\+(?:link )?(.*)$/m', $corpus, $match)) {
-      throw new Exception('Failed to extract link target!');
+      throw new Exception(pht('Failed to extract link target!'));
     }
     return trim($match[1]);
   }

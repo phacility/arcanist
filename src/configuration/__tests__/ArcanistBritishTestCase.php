@@ -53,7 +53,7 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
     $this->assertEqual(
       $expect,
       $result,
-      "Correction of {$input} against: {$commands}");
+      pht('Correction of %s against: %s', $input, $commands));
   }
 
   public function testArgumentCompletion() {
@@ -91,7 +91,7 @@ final class ArcanistBritishTestCase extends ArcanistTestCase {
     $this->assertEqual(
       $expect,
       $result,
-      "Correction of {$input} against: {$arguments}");
+      pht('Correction of %s against: %s', $input, $arguments));
   }
 
 }

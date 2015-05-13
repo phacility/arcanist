@@ -25,8 +25,11 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
       if (!function_exists('xdebug_start_code_coverage')) {
         if ($enable_coverage === true) {
           throw new ArcanistUsageException(
-            'You specified --coverage but xdebug is not available, so '.
-            'coverage can not be enabled for PhutilUnitTestEngine.');
+            pht(
+              'You specified %s but xdebug is not available, so '.
+              'coverage can not be enabled for %s.',
+              '--coverage',
+              __CLASS__));
         }
       } else {
         $enable_coverage = true;
@@ -114,14 +117,20 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
 
       if (!$library_name) {
         throw new Exception(
-          "Attempting to run unit tests on a libphutil library which has not ".
-          "been loaded, at:\n\n".
-          "    {$library_root}\n\n".
-          "This probably means one of two things:\n\n".
-          "    - You may need to add this library to .arcconfig.\n".
-          "    - You may be running tests on a copy of libphutil or arcanist\n".
-          "      using a different copy of libphutil or arcanist. This\n".
-          "      operation is not supported.");
+          sprintf(
+            "%s\n\n    %s\n\n%s\n\n    - %s\n    - %s\n",
+            pht(
+              'Attempting to run unit tests on a libphutil library '.
+              'which has not been loaded, at:'),
+            $library_root,
+            pht('This probably means one of two things:'),
+            pht(
+              'You may need to add this library to %s.',
+              '.arcconfig.'),
+            pht(
+              'You may be running tests on a copy of libphutil or '.
+              'arcanist using a different copy of libphutil or arcanist. '.
+              'This operation is not supported.')));
       }
 
       $path = Filesystem::resolvePath($path, $project_root);

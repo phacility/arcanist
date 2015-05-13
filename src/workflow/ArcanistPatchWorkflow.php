@@ -42,37 +42,42 @@ EOTEXT
       'revision' => array(
         'param' => 'revision_id',
         'paramtype' => 'complete',
-        'help' =>
+        'help' => pht(
           "Apply changes from a Differential revision, using the most recent ".
-          "diff that has been attached to it. You can run 'arc patch D12345' ".
-          "as a shorthand.",
+          "diff that has been attached to it. You can run '%s' as a shorthand.",
+          'arc patch D12345'),
       ),
       'diff' => array(
         'param' => 'diff_id',
-        'help' =>
+        'help' => pht(
           'Apply changes from a Differential diff. Normally you want to use '.
-          '--revision to get the most recent changes, but you can '.
-          'specifically apply an out-of-date diff or a diff which was never '.
-          'attached to a revision by using this flag.',
+          '%s to get the most recent changes, but you can specifically apply '.
+          'an out-of-date diff or a diff which was never attached to a '.
+          'revision by using this flag.',
+          '--revision'),
       ),
       'arcbundle' => array(
         'param' => 'bundlefile',
         'paramtype' => 'file',
-        'help' =>
-          "Apply changes from an arc bundle generated with 'arc export'.",
+        'help' => pht(
+          "Apply changes from an arc bundle generated with '%s'.",
+          'arc export'),
       ),
       'patch' => array(
         'param' => 'patchfile',
         'paramtype' => 'file',
-        'help' => 'Apply changes from a git patchfile or unified patchfile.',
+        'help' => pht(
+          'Apply changes from a git patchfile or unified patchfile.'),
       ),
       'encoding' => array(
         'param' => 'encoding',
-        'help' => 'Attempt to convert non UTF-8 patch into specified encoding.',
+        'help' => pht(
+          'Attempt to convert non UTF-8 patch into specified encoding.'),
       ),
       'update' => array(
         'supports' => array('git', 'svn', 'hg'),
-        'help' => 'Update the local working copy before applying the patch.',
+        'help' => pht(
+          'Update the local working copy before applying the patch.'),
         'conflicts' => array(
           'nobranch' => true,
           'bookmark' => true,
@@ -80,30 +85,30 @@ EOTEXT
       ),
       'nocommit' => array(
         'supports' => array('git', 'hg'),
-        'help' =>
+        'help' => pht(
           'Normally under git/hg, if the patch is successful, the changes '.
-          'are committed to the working copy. This flag prevents the commit.',
+          'are committed to the working copy. This flag prevents the commit.'),
       ),
       'skip-dependencies' => array(
         'supports' => array('git', 'hg'),
-        'help' =>
+        'help' => pht(
           'Normally, if a patch has dependencies that are not present in the '.
           'working copy, arc tries to apply them as well. This flag prevents '.
-          'such work.',
+          'such work.'),
       ),
       'nobranch' => array(
         'supports' => array('git', 'hg'),
-        'help' =>
+        'help' => pht(
           'Normally, a new branch (git) or bookmark (hg) is created and then '.
           'the patch is applied and committed in the new branch/bookmark. '.
           'This flag cherry-picks the resultant commit onto the original '.
-          'branch and deletes the temporary branch.',
+          'branch and deletes the temporary branch.'),
         'conflicts' => array(
           'update' => true,
         ),
       ),
       'force' => array(
-        'help' => 'Do not run any sanity checks.',
+        'help' => pht('Do not run any sanity checks.'),
       ),
       '*' => 'name',
     );
@@ -133,7 +138,8 @@ EOTEXT
     if ($this->getArgument('name')) {
       $namev = $this->getArgument('name');
       if (count($namev) > 1) {
-        throw new ArcanistUsageException('Specify at most one revision name.');
+        throw new ArcanistUsageException(
+          pht('Specify at most one revision name.'));
       }
       $source = self::SOURCE_REVISION;
       $requested++;
@@ -143,15 +149,26 @@ EOTEXT
 
     if ($requested === 0) {
       throw new ArcanistUsageException(
-        "Specify one of 'D12345', '--revision <revision_id>' (to select the ".
-        "current changes attached to a Differential revision), ".
-        "'--diff <diff_id>' (to select a specific, out-of-date diff or a ".
-        "diff which is not attached to a revision), '--arcbundle <file>' ".
-        "or '--patch <file>' to choose a patch source.");
+        pht(
+          "Specify one of '%s', '%s' (to select the current changes attached ".
+          "to a Differential revision), '%s' (to select a specific, ".
+          "out-of-date diff or a diff which is not attached to a revision), ".
+          "'%s' or '%s' to choose a patch source.",
+          'D12345',
+          '--revision <revision_id>',
+          '--diff <diff_id>',
+          '--arcbundle <file>',
+          '--patch <file>'));
     } else if ($requested > 1) {
       throw new ArcanistUsageException(
-        "Options 'D12345', '--revision', '--diff', '--arcbundle' and ".
-        "'--patch' are not compatible. Choose exactly one patch source.");
+        pht(
+          "Options '%s', '%s', '%s', '%s' and '%s' are not compatible. ".
+          "Choose exactly one patch source.",
+          'D12345',
+          '--revision',
+          '--diff',
+          '--arcbundle',
+          '--patch'));
     }
 
     $this->source = $source;
@@ -218,7 +235,10 @@ EOTEXT
       // no error means git rev-parse found a branch
       if (!$err) {
         echo phutil_console_format(
-          "Branch name {$proposed_name} already exists; trying a new name.\n");
+          "%s\n",
+          pht(
+            'Branch name %s already exists; trying a new name.',
+            $proposed_name));
         continue;
       } else {
         $branch_name = $proposed_name;
@@ -228,9 +248,9 @@ EOTEXT
 
     if (!$branch_name) {
       throw new Exception(
-        'Arc was unable to automagically make a name for this patch. '.
-        'Please clean up your working copy and try again.'
-      );
+        pht(
+          'Arc was unable to automagically make a name for this patch. '.
+          'Please clean up your working copy and try again.'));
     }
 
     return $branch_name;
@@ -256,8 +276,10 @@ EOTEXT
       // no error means hg log found a bookmark
       if (!$err) {
         echo phutil_console_format(
-          "Bookmark name %s already exists; trying a new name.\n",
-          $proposed_name);
+          "%s\n",
+          pht(
+            'Bookmark name %s already exists; trying a new name.',
+            $proposed_name));
         continue;
       } else {
         $bookmark_name = $proposed_name;
@@ -267,9 +289,9 @@ EOTEXT
 
     if (!$bookmark_name) {
       throw new Exception(
-        'Arc was unable to automagically make a name for this patch. '.
-        'Please clean up your working copy and try again.'
-      );
+        pht(
+          'Arc was unable to automagically make a name for this patch. '.
+          'Please clean up your working copy and try again.'));
     }
 
     return $bookmark_name;
@@ -289,14 +311,14 @@ EOTEXT
           $branch_name,
           $base_revision);
       } else {
-        $repository_api->execxLocal(
-          'checkout -b %s',
-          $branch_name);
+        $repository_api->execxLocal('checkout -b %s', $branch_name);
       }
 
       echo phutil_console_format(
-        "Created and checked out branch %s.\n",
-        $branch_name);
+        "%s\n",
+        pht(
+          'Created and checked out branch %s.',
+          $branch_name));
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $branch_name = $this->getBookmarkName($bundle);
       $base_revision = $bundle->getBaseRevision();
@@ -305,17 +327,17 @@ EOTEXT
         $base_revision = $repository_api->getCanonicalRevisionName(
           $base_revision);
 
-        echo "Updating to the revision's base commit\n";
-        $repository_api->execPassthru(
-          'update %s',
-          $base_revision);
+        echo pht("Updating to the revision's base commit")."\n";
+        $repository_api->execPassthru('update %s', $base_revision);
       }
 
       $repository_api->execxLocal('bookmark %s', $branch_name);
 
       echo phutil_console_format(
-        "Created and checked out bookmark %s.\n",
-        $branch_name);
+        "%s\n",
+        pht(
+          'Created and checked out bookmark %s.',
+          $branch_name));
     }
 
     return $branch_name;
@@ -330,9 +352,9 @@ EOTEXT
   }
 
   private function updateWorkingCopy() {
-    echo "Updating working copy...\n";
+    echo pht('Updating working copy...')."\n";
     $this->getRepositoryAPI()->updateWorkingCopy();
-    echo "Done.\n";
+    echo pht('Done.')."\n";
   }
 
   public function run() {
@@ -345,7 +367,7 @@ EOTEXT
             $patch = @file_get_contents('php://stdin');
             if (!strlen($patch)) {
               throw new ArcanistUsageException(
-                'Failed to read patch from stdin!');
+                pht('Failed to read patch from stdin!'));
             }
           } else {
             $patch = Filesystem::readFile($param);
@@ -469,8 +491,10 @@ EOTEXT
             $fpath = $repository_api->getPath($path);
             if (!@file_exists($fpath)) {
               $ok = phutil_console_confirm(
-                "Patch deletes file '{$path}', but the file does not exist in ".
-                "the working copy. Continue anyway?");
+                pht(
+                  "Patch deletes file '%s', but the file does not exist in ".
+                  "the working copy. Continue anyway?",
+                  $path));
               if (!$ok) {
                 throw new ArcanistUserAbortException();
               }
@@ -486,13 +510,17 @@ EOTEXT
             if (!@file_exists($fpath)) {
               $cpath = $change->getCurrentPath();
               if ($type == ArcanistDiffChangeType::TYPE_COPY_HERE) {
-                $verbs = 'copies';
+                $verbs = pht('copies');
               } else {
-                $verbs = 'moves';
+                $verbs = pht('moves');
               }
               $ok = phutil_console_confirm(
-                "Patch {$verbs} '{$path}' to '{$cpath}', but source path ".
-                "does not exist in the working copy. Continue anyway?");
+                pht(
+                  "Patch %s '%s' to '%s', but source path does not exist ".
+                  "in the working copy. Continue anyway?",
+                  $verbs,
+                  $path,
+                  $cpath));
               if (!$ok) {
                 throw new ArcanistUserAbortException();
               }
@@ -634,18 +662,26 @@ EOTEXT
 
       if ($patch_err == 0) {
         echo phutil_console_format(
-          "<bg:green>** OKAY **</bg> Successfully applied patch ".
-          "to the working copy.\n");
+          "<bg:green>** %s **</bg> %s\n",
+          pht('OKAY'),
+          pht('Successfully applied patch to the working copy.'));
       } else {
         echo phutil_console_format(
-          "\n\n<bg:yellow>** WARNING **</bg> Some hunks could not be applied ".
-          "cleanly by the unix 'patch' utility. Your working copy may be ".
-          "different from the revision's base, or you may be in the wrong ".
-          "subdirectory. You can export the raw patch file using ".
-          "'arc export --unified', and then try to apply it by fiddling with ".
-          "options to 'patch' (particularly, -p), or manually. The output ".
-          "above, from 'patch', may be helpful in figuring out what went ".
-          "wrong.\n");
+          "\n\n<bg:yellow>** %s **</bg> %s\n",
+          pht('WARNING'),
+          pht(
+            "Some hunks could not be applied cleanly by the unix '%s' ".
+            "utility. Your working copy may be different from the revision's ".
+            "base, or you may be in the wrong subdirectory. You can export ".
+            "the raw patch file using '%s', and then try to apply it by ".
+            "fiddling with options to '%s' (particularly, %s), or manually. ".
+            "The output above, from '%s', may be helpful in ".
+            "figuring out what went wrong.",
+            'patch',
+            'arc export --unified',
+            'patch',
+            '-p',
+            'patch'));
       }
 
       return $patch_err;
@@ -662,19 +698,19 @@ EOTEXT
 
       if ($err) {
         echo phutil_console_format(
-          "\n<bg:red>** Patch Failed! **</bg>\n");
+          "\n<bg:red>** %s **</bg>\n",
+          pht('Patch Failed!'));
 
         // NOTE: Git patches may fail if they change the case of a filename
         // (for instance, from 'example.c' to 'Example.c'). As of now, Git
         // can not apply these patches on case-insensitive filesystems and
         // there is no way to build a patch which works.
 
-        throw new ArcanistUsageException('Unable to apply patch!');
+        throw new ArcanistUsageException(pht('Unable to apply patch!'));
       }
 
       // in case there were any submodule changes involved
-      $repository_api->execpassthru(
-        'submodule update --init --recursive');
+      $repository_api->execpassthru('submodule update --init --recursive');
 
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
@@ -689,9 +725,9 @@ EOTEXT
           $author_cmd);
         $future->write($commit_message);
         $future->resolvex();
-        $verb = 'committed';
+        $verb = pht('committed');
       } else {
-        $verb = 'applied';
+        $verb = pht('applied');
       }
 
       if ($this->canBranch() &&
@@ -707,33 +743,39 @@ EOTEXT
         $repository_api->execxLocal('branch -D %s', $new_branch);
         if ($ex) {
           echo phutil_console_format(
-            "\n<bg:red>** Cherry Pick Failed!**</bg>\n");
+            "\n<bg:red>** %s**</bg>\n",
+            pht('Cherry Pick Failed!'));
           throw $ex;
         }
       }
 
       echo phutil_console_format(
-        "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
+        "<bg:green>** %s **</bg> %s\n",
+        pht('OKAY'),
+        pht('Successfully %s patch.', $verb));
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
-
-      $future = $repository_api->execFutureLocal(
-        'import --no-commit -');
+      $future = $repository_api->execFutureLocal('import --no-commit -');
       $future->write($bundle->toGitPatch());
 
       try {
         $future->resolvex();
       } catch (CommandException $ex) {
         echo phutil_console_format(
-          "\n<bg:red>** Patch Failed! **</bg>\n");
+          "\n<bg:red>** %s **</bg>\n",
+          pht('Patch Failed!'));
         $stderr = $ex->getStdErr();
         if (preg_match('/case-folding collision/', $stderr)) {
           echo phutil_console_wrap(
             phutil_console_format(
-              "\n<bg:yellow>** WARNING **</bg> This patch may have failed ".
-              "because it attempts to change the case of a filename (for ".
-              "instance, from 'example.c' to 'Example.c'). Mercurial cannot ".
-              "apply patches like this on case-insensitive filesystems. You ".
-              "must apply this patch manually.\n"));
+              "\n<bg:yellow>** %s **</bg> %s\n",
+              pht('WARNING'),
+              pht(
+                "This patch may have failed because it attempts to change ".
+                "the case of a filename (for instance, from '%s' to '%s'). ".
+                "Mercurial cannot apply patches like this on case-insensitive ".
+                "filesystems. You must apply this patch manually.",
+                'example.c',
+                'Example.c')));
         }
         throw $ex;
       }
@@ -770,21 +812,24 @@ EOTEXT
           $repository_api->execxLocal('bookmark --delete %s', $new_branch);
           if ($err) {
             $repository_api->execManualLocal('rebase --abort');
-            throw new ArcanistUsageException(phutil_console_format(
-              "\n<bg:red>** Rebase onto $original_branch failed!**</bg>\n"));
+            throw new ArcanistUsageException(
+              phutil_console_format(
+                "\n<bg:red>** %s**</bg>\n",
+                pht('Rebase onto %s failed!', $original_branch)));
           }
         }
 
-        $verb = 'committed';
+        $verb = pht('committed');
       } else {
-        $verb = 'applied';
+        $verb = pht('applied');
       }
 
       echo phutil_console_format(
-        "<bg:green>** OKAY **</bg> Successfully {$verb} patch.\n");
-
+        "<bg:green>** %s **</bg> %s\n",
+        pht('OKAY'),
+        pht('Successfully %s patch.', $verb));
     } else {
-      throw new Exception('Unknown version control system.');
+      throw new Exception(pht('Unknown version control system.'));
     }
 
     return 0;
@@ -806,20 +851,23 @@ EOTEXT
         array(
           'revision_id' => $revision_id,
         ));
-      $prompt_message = "  Note arcanist failed to load the commit message ".
-                        "from differential for revision D{$revision_id}.";
+      $prompt_message = pht(
+        '  Note arcanist failed to load the commit message '.
+        'from differential for revision %s.',
+        "D{$revision_id}");
     }
 
     // no revision id or failed to fetch commit message so get it from the
     // user on the command line
     if (!$commit_message) {
-      $template =
-        "\n\n".
-        "# Enter a commit message for this patch. If you just want to apply ".
-        "the patch to the working copy without committing, re-run arc patch ".
-        "with the --nocommit flag.".
-        $prompt_message.
-        "\n";
+      $template = sprintf(
+        "\n\n# %s%s\n",
+        pht(
+          'Enter a commit message for this patch. If you just want to apply '.
+          'the patch to the working copy without committing, re-run arc patch '.
+          'with the %s flag.',
+          '--nocommit'),
+        $prompt_message);
 
       $commit_message = $this->newInteractiveEditor($template)
         ->setName('arcanist-patch-commit-message')
@@ -848,8 +896,9 @@ EOTEXT
       $cycle_phids = $graph->detectCycles($start_phid);
       if ($cycle_phids) {
         $phids = array_keys($graph->getNodes());
-        $issue = 'The dependencies for this patch have a cycle. Applying them '.
-                 'is not guaranteed to work. Continue anyway?';
+        $issue = pht(
+          'The dependencies for this patch have a cycle. Applying them '.
+          'is not guaranteed to work. Continue anyway?');
         $okay = phutil_console_confirm($issue, true);
       } else {
         $phids = $graph->getTopographicallySortedNodes();
@@ -915,17 +964,20 @@ EOTEXT
       // they don't come with a project id so just do nothing
     } else if ($bundle_project_id != $working_copy_project_id) {
       if ($working_copy_project_id) {
-        $issue =
-          "This patch is for the '{$bundle_project_id}' project, but the ".
-          "working copy belongs to the '{$working_copy_project_id}' project.";
+        $issue = pht(
+          "This patch is for the '%s' project, but the working copy ".
+          "belongs to the '%s' project.",
+          $bundle_project_id,
+          $working_copy_project_id);
       } else {
-        $issue =
-          "This patch is for the '{$bundle_project_id}' project, but the ".
-          "working copy does not have an '.arcconfig' file to identify which ".
-          "project it belongs to.";
+        $issue = pht(
+          "This patch is for the '%s' project, but the working copy does ".
+          "not have an '%s' file to identify which project it belongs to.",
+          $bundle_project_id,
+          '.arcconfig');
       }
       $ok = phutil_console_confirm(
-        "{$issue} Still try to apply the patch?",
+        pht('%s Still try to apply the patch?', $issue),
         $default_no = false);
       if (!$ok) {
         throw new ArcanistUserAbortException();
@@ -985,9 +1037,12 @@ EOTEXT
           $source_base_rev);
 
         $ok = phutil_console_confirm(
-          "This diff is against commit {$bundle_base_rev_str}, but the ".
-          "commit is nowhere in the working copy. Try to apply it against ".
-          "the current working copy state? ({$source_base_rev_str})",
+          pht(
+            'This diff is against commit %s, but the commit is nowhere '.
+            'in the working copy. Try to apply it against the current '.
+            'working copy state? (%s)',
+            $bundle_base_rev_str,
+            $source_base_rev_str),
           $default_no = false);
         if (!$ok) {
           throw new ArcanistUserAbortException();

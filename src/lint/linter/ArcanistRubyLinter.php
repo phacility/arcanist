@@ -14,7 +14,9 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `ruby` to check for syntax errors in Ruby source files.');
+    return pht(
+      'Use `%s` to check for syntax errors in Ruby source files.',
+      'ruby');
   }
 
   public function getLinterName() {
@@ -47,7 +49,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install `ruby` from <http://www.ruby-lang.org/>.');
+    return pht('Install `%s` from <%s>.', 'ruby', 'http://www.ruby-lang.org/');
   }
 
   protected function getMandatoryFlags() {

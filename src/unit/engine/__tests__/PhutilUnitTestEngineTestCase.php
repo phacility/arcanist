@@ -18,7 +18,9 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
     $this->assertEqual(
       1,
       self::$allTestsCounter,
-      'Expect willRunTests() has been called once.');
+      pht(
+        'Expect %s has been called once.',
+        'willRunTests()'));
 
     self::$allTestsCounter--;
 
@@ -27,21 +29,27 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
     $this->assertEqual(
       $actual_test_count,
       count(self::$distinctWillRunTests),
-      'Expect willRunOneTest() was called once for each test.');
+      pht(
+        'Expect %s was called once for each test.',
+        'willRunOneTest()'));
     $this->assertEqual(
       $actual_test_count,
       count(self::$distinctDidRunTests),
-      'Expect didRunOneTest() was called once for each test.');
+      pht(
+        'Expect %s was called once for each test.',
+        'didRunOneTest()'));
     $this->assertEqual(
       self::$distinctWillRunTests,
       self::$distinctDidRunTests,
-      'Expect same tests had pre- and post-run callbacks invoked.');
+      pht('Expect same tests had pre-run and post-run callbacks invoked.'));
   }
 
   public function __destruct() {
     if (self::$allTestsCounter !== 0) {
       throw new Exception(
-        'didRunTests() was not called correctly after tests completed!');
+        pht(
+          '%s was not called correctly after tests completed!',
+          'didRunTests()'));
     }
   }
 
@@ -54,14 +62,14 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
     $this->assertEqual(
       1,
       self::$oneTestCounter,
-      'Expect willRunOneTest depth to be one.');
+      pht('Expect %s depth to be one.', 'willRunOneTest()'));
 
     self::$distinctDidRunTests[$test] = true;
     self::$oneTestCounter--;
   }
 
   public function testPass() {
-    $this->assertEqual(1, 1, 'This test is expected to pass.');
+    $this->assertEqual(1, 1, pht('This test is expected to pass.'));
   }
 
   public function testFailSkip() {
@@ -74,11 +82,11 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
       } else if ($result->getResult() == ArcanistUnitTestResult::RESULT_SKIP) {
         $skipped++;
       } else {
-        $this->assertFailure('These tests should either fail or skip.');
+        $this->assertFailure(pht('These tests should either fail or skip.'));
       }
     }
-    $this->assertEqual(1, $failed, 'One test was expected to fail.');
-    $this->assertEqual(1, $skipped, 'One test was expected to skip.');
+    $this->assertEqual(1, $failed, pht('One test was expected to fail.'));
+    $this->assertEqual(1, $skipped, pht('One test was expected to skip.'));
   }
 
   public function testTryTestCases() {
@@ -105,7 +113,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
 
   protected function throwIfFalsey($input) {
     if (!$input) {
-      throw new Exception('This is a negative test case!');
+      throw new Exception(pht('This is a negative test case!'));
     }
   }
 
