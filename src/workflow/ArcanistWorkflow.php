@@ -1019,7 +1019,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
         $template = sprintf(
-          "\n\n# %s\n#\n# %s\n#\n".
+          "\n\n# %s\n#\n# %s\n#\n",
           pht('Enter a commit message.'),
           pht('Changes:'));
 
