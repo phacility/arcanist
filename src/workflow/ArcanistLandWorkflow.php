@@ -25,6 +25,9 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $revision;
   private $messageFile;
 
+  const REFTYPE_BRANCH = 'branch';
+  const REFTYPE_BOOKMARK = 'bookmark';
+
   public function getRevisionDict() {
     return $this->revision;
   }
@@ -401,12 +404,21 @@ EOTEXT
       $repository_api->execxLocal('checkout %s', $this->branch);
     }
 
-    echo phutil_console_format(
-      "%s\n",
-      pht(
-        'Switched to %s **%s**. Identifying and merging...',
-        $this->branchType,
-        $this->branch));
+    switch ($this->branchType) {
+      case self::REFTYPE_BOOKMARK:
+        $message = pht(
+          'Switched to bookmark **%s**. Identifying and merging...',
+          $this->branch);
+        break;
+      case self::REFTYPE_BRANCH:
+      default:
+        $message = pht(
+          'Switched to branch **%s**. Identifying and merging...',
+          $this->branch);
+        break;
+    }
+
+    echo phutil_console_format($message."\n");
   }
 
   private function printPendingCommits() {
