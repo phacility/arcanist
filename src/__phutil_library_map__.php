@@ -333,7 +333,7 @@ phutil_register_library_map(array(
     'ArcanistPuppetLintLinterTestCase' => 'ArcanistExternalLinterTestCase',
     'ArcanistPyFlakesLinter' => 'ArcanistExternalLinter',
     'ArcanistPyFlakesLinterTestCase' => 'ArcanistExternalLinterTestCase',
-    'ArcanistPyLintLinter' => 'ArcanistLinter',
+    'ArcanistPyLintLinter' => 'ArcanistExternalLinter',
     'ArcanistPyLintLinterTestCase' => 'ArcanistExternalLinterTestCase',
     'ArcanistRepositoryAPIMiscTestCase' => 'ArcanistTestCase',
     'ArcanistRepositoryAPIStateTestCase' => 'ArcanistTestCase',
