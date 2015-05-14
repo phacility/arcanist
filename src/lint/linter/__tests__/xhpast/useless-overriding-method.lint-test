@@ -12,8 +12,13 @@ final class MyClass extends SomeOtherClass {
   public function usefulMethod($x, array $y) {
     return parent::usefulMethod($x, null);
   }
+
+  public function anotherMethod($x, &$y) {
+    return parent::anotherMethod($x, $y);
+  }
 }
 ~~~~~~~~~~
 error:3:13
 advice:4:3
 advice:8:3
+advice:16:3

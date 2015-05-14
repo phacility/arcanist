@@ -3788,9 +3788,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $parameters = array();
 
       foreach ($parameter_list->getChildren() as $parameter) {
-        $parameters[] = $parameter
-          ->getChildOfType(1, 'n_VARIABLE')
-          ->getConcreteString();
+        $parameter = $parameter->getChildByIndex(1);
+
+        if ($parameter->getTypeName() == 'n_VARIABLE_REFERENCE') {
+          $parameter = $parameter->getChildOfType(0, 'n_VARIABLE');
+        }
+
+        $parameters[] = $parameter->getConcreteString();
       }
 
       $statements = $method->getChildByIndex(5);
