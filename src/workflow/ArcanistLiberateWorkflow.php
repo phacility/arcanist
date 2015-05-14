@@ -223,8 +223,10 @@ EOTEXT
       if (preg_match('/^[a-z-]+$/', $name)) {
         break;
       } else {
-        echo pht(
-          'Library name should contain only lowercase letters and hyphens.')."\n";
+        echo phutil_console_format(
+          "%s\n",
+          pht(
+          'Library name should contain only lowercase letters and hyphens.'));
       }
     } while (true);
 

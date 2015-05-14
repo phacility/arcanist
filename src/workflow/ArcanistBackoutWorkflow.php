@@ -183,7 +183,8 @@ EOTEXT
     // Create commit message and execute the commit
     $message = $this->buildCommitMessage($commit_hash);
     $repository_api->doCommit($message);
-    $console->writeOut(pht('Double-check the commit and push when ready.')."\n");
+    $console->writeOut("%s\n",
+      pht('Double-check the commit and push when ready.'));
   }
 
 }

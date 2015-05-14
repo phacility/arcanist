@@ -29,8 +29,4 @@ EOTEXT
     return array('hg');
   }
 
-  public function run() {
-    return parent::run();
-  }
-
 }
