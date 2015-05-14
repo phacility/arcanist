@@ -1,0 +1,15 @@
+<?php
+
+final class MyValidClass extends SomeOtherClass {
+  public function __construct() {
+    parent::__construct(null);
+  }
+}
+
+final class MyInvalidClass {
+  public function __construct() {
+    parent::__construct(null);
+  }
+}
+~~~~~~~~~~
+error:11:5

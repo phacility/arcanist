@@ -63,6 +63,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_LOWERCASE_FUNCTIONS        = 61;
   const LINT_CLASS_NAME_LITERAL         = 62;
   const LINT_USELESS_OVERRIDING_METHOD  = 63;
+  const LINT_NO_PARENT_SCOPE            = 64;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -197,6 +198,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Class Name Literal'),
       self::LINT_USELESS_OVERRIDING_METHOD
         => pht('Useless Overriding Method'),
+      self::LINT_NO_PARENT_SCOPE
+        => pht('No Parent Scope'),
     );
   }
 
@@ -405,6 +408,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintLowercaseFunctions' => self::LINT_LOWERCASE_FUNCTIONS,
       'lintClassNameLiteral' => self::LINT_CLASS_NAME_LITERAL,
       'lintUselessOverridingMethods' => self::LINT_USELESS_OVERRIDING_METHOD,
+      'lintNoParentScope' => self::LINT_NO_PARENT_SCOPE,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3846,6 +3850,36 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $method,
         self::LINT_USELESS_OVERRIDING_METHOD,
         pht('Useless overriding method.'));
+    }
+  }
+
+  private function lintNoParentScope(XHPASTNode $root) {
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+
+    foreach ($classes as $class) {
+      $methods = $class->selectDescendantsOfType('n_METHOD_DECLARATION');
+
+      if ($class->getChildByIndex(2)->getTypeName() == 'n_EXTENDS_LIST') {
+        continue;
+      }
+
+      foreach ($methods as $method) {
+        $static_accesses = $method
+          ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+
+        foreach ($static_accesses as $static_access) {
+          $called_class = $static_access->getChildOfType(0, 'n_CLASS_NAME');
+
+          if ($called_class->getConcreteString() == 'parent') {
+            $this->raiseLintAtNode(
+              $static_access,
+              self::LINT_NO_PARENT_SCOPE,
+              pht(
+                'Cannot access %s when current class scope has no parent.',
+                'parent::'));
+          }
+        }
+      }
     }
   }
 
