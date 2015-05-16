@@ -51,13 +51,6 @@ abstract class ArcanistUnitTestEngine {
   final public function setWorkingCopy(
     ArcanistWorkingCopyIdentity $working_copy) {
 
-    // TODO: Remove this once ArcanistBaseUnitTestEngine is gone.
-    if ($this instanceof ArcanistBaseUnitTestEngine) {
-      phutil_deprecated(
-        'ArcanistBaseUnitTestEngine',
-        pht('You should extend from `%s` instead.', __CLASS__));
-    }
-
     $this->workingCopy = $working_copy;
     return $this;
   }

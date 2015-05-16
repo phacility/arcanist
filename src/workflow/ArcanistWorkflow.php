@@ -84,15 +84,6 @@ abstract class ArcanistWorkflow extends Phobject {
    * whether the command succeeded or failed.
    */
   public function finalize() {
-    // TODO: Remove this once ArcanistBaseWorkflow is gone.
-    if ($this instanceof ArcanistBaseWorkflow) {
-      phutil_deprecated(
-        'ArcanistBaseWorkflow',
-        pht(
-          'You should extend from `%s` instead.',
-          __CLASS__));
-    }
-
     $this->finalizeWorkingCopy();
   }
 
