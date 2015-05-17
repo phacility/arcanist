@@ -160,13 +160,14 @@ EOTEXT
       }
 
       echo phutil_console_wrap(
-        "%s\n\n%s\n\n    $ %s\n\n%s\n\n",
-        $will_be_sent,
-        pht(
-          'You can see the exact changes that will be sent by running '.
-          'this command:'),
-        $command,
-        pht('These commits will be included in the diff:'));
+        phutil_console_format(
+          "%s\n\n%s\n\n    $ %s\n\n%s\n\n",
+          $will_be_sent,
+          pht(
+            'You can see the exact changes that will be sent by running '.
+            'this command:'),
+          $command,
+          pht('These commits will be included in the diff:')));
 
       echo $commits."\n\n\n";
     }
