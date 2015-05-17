@@ -3872,7 +3872,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
 
         foreach ($static_accesses as $static_access) {
-          $called_class = $static_access->getChildOfType(0, 'n_CLASS_NAME');
+          $called_class = $static_access->getChildByIndex(0);
+
+          if ($called_class->getTypeName() != 'n_CLASS_NAME') {
+            continue;
+          }
 
           if ($called_class->getConcreteString() == 'parent') {
             $this->raiseLintAtNode(
