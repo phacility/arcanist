@@ -1,0 +1,14 @@
+<?php
+
+$x = array();
+sizeof($x);
+die();
+~~~~~~~~~~
+advice:4:1
+advice:5:1
+~~~~~~~~~~
+<?php
+
+$x = array();
+count($x);
+exit();
