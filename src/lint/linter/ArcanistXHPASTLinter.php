@@ -66,6 +66,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_NO_PARENT_SCOPE            = 64;
   const LINT_ALIAS_FUNCTION             = 65;
   const LINT_CAST_SPACING               = 66;
+  const LINT_TOSTRING_EXCEPTION         = 67;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -206,6 +207,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Alias Functions'),
       self::LINT_CAST_SPACING
         => pht('Cast Spacing'),
+      self::LINT_TOSTRING_EXCEPTION
+        => pht('Throwing Exception in %s Method', '__toString'),
     );
   }
 
@@ -326,7 +329,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '28';
+    return '29';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -419,6 +422,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintNoParentScope' => self::LINT_NO_PARENT_SCOPE,
       'lintAliasFunctions' => self::LINT_ALIAS_FUNCTION,
       'lintCastSpacing' => self::LINT_CAST_SPACING,
+      'lintThrowExceptionInToStringMethod' => self::LINT_TOSTRING_EXCEPTION,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -4120,6 +4124,34 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           self::LINT_CAST_SPACING,
           pht('A cast statement must not be followed by a space.'),
           '');
+      }
+    }
+  }
+
+  private function lintThrowExceptionInToStringMethod(XHPASTNode $root) {
+    $methods = $root->selectDescendantsOfType('n_METHOD_DECLARATION');
+
+    foreach ($methods as $method) {
+      $name = $method
+        ->getChildOfType(2, 'n_STRING')
+        ->getConcreteString();
+
+      if ($name != '__toString') {
+        continue;
+      }
+
+      $throws = $method
+        ->getChildOfType(5, 'n_STATEMENT_LIST')
+        ->selectDescendantsOfType('n_THROW');
+
+      foreach ($throws as $throw) {
+        $this->raiseLintAtNode(
+          $throw,
+          self::LINT_TOSTRING_EXCEPTION,
+          pht(
+            'It is not possible to throw an %s from within the %s method.',
+            'Exception',
+            '__toString'));
       }
     }
   }

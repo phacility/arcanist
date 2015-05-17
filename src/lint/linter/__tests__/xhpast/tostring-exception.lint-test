@@ -1,0 +1,18 @@
+<?php
+class MyClass {
+  public function __toString() {
+    if (some_function()) {
+      throw new Exception('Oops');
+    }
+
+    return __CLASS__;
+  }
+}
+
+class MyOtherClass {
+  public function __toString() {
+    return 'Success';
+  }
+}
+~~~~~~~~~~
+error:5:7
