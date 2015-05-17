@@ -3450,7 +3450,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $this->raiseLintAtNode(
           $call,
           self::LINT_FORMATTED_STRING,
-          $ex->getMessage());
+          str_replace('xsprintf', $name, $ex->getMessage()));
       } catch (InvalidArgumentException $ex) {
         // Ignore.
       }
