@@ -67,6 +67,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_ALIAS_FUNCTION             = 65;
   const LINT_CAST_SPACING               = 66;
   const LINT_TOSTRING_EXCEPTION         = 67;
+  const LINT_LAMBDA_FUNC_FUNCTION       = 68;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -209,6 +210,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Cast Spacing'),
       self::LINT_TOSTRING_EXCEPTION
         => pht('Throwing Exception in %s Method', '__toString'),
+      self::LINT_LAMBDA_FUNC_FUNCTION
+        => pht('%s Function', '__lambda_func'),
     );
   }
 
@@ -329,7 +332,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '29';
+    return '30';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -423,6 +426,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintAliasFunctions' => self::LINT_ALIAS_FUNCTION,
       'lintCastSpacing' => self::LINT_CAST_SPACING,
       'lintThrowExceptionInToStringMethod' => self::LINT_TOSTRING_EXCEPTION,
+      'lintLambdaFuncFunction' => self::LINT_LAMBDA_FUNC_FUNCTION,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -4153,6 +4157,38 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
             'Exception',
             '__toString'));
       }
+    }
+  }
+
+  private function lintLambdaFuncFunction(XHPASTNode $root) {
+    $function_declarations = $root
+      ->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+
+    foreach ($function_declarations as $function_declaration) {
+      $function_name = $function_declaration->getChildByIndex(2);
+
+      if ($function_name->getTypeName() == 'n_EMPTY') {
+        // Anonymous closure.
+        continue;
+      }
+
+      if ($function_name->getConcreteString() != '__lambda_func') {
+        continue;
+      }
+
+      $this->raiseLintAtNode(
+        $function_declaration,
+        self::LINT_LAMBDA_FUNC_FUNCTION,
+        pht(
+          'Declaring a function named %s causes any call to %s to fail. '.
+          'This is because %s eval-declares the function %s, then '.
+          'modifies the symbol table so that the function is instead '.
+          'named %s, and returns that name.',
+          '__lambda_func',
+          'create_function',
+          'create_function',
+          '__lambda_func',
+          '"\0lambda_".(++$i)'));
     }
   }
 
