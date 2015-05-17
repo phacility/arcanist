@@ -14,5 +14,13 @@ class MyOtherClass {
     return 'Success';
   }
 }
+
+interface SomeInterface {
+  public function __toString();
+}
+
+abstract class SomeAbstractClass {
+  abstract public function __toString();
+}
 ~~~~~~~~~~
 error:5:7

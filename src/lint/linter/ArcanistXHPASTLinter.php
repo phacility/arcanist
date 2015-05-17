@@ -4144,9 +4144,13 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         continue;
       }
 
-      $throws = $method
-        ->getChildOfType(5, 'n_STATEMENT_LIST')
-        ->selectDescendantsOfType('n_THROW');
+      $statements = $method->getChildByIndex(5);
+
+      if ($statements->getTypeName() != 'n_STATEMENT_LIST') {
+        continue;
+      }
+
+      $throws = $statements->selectDescendantsOfType('n_THROW');
 
       foreach ($throws as $throw) {
         $this->raiseLintAtNode(
