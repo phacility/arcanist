@@ -65,6 +65,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_USELESS_OVERRIDING_METHOD  = 63;
   const LINT_NO_PARENT_SCOPE            = 64;
   const LINT_ALIAS_FUNCTION             = 65;
+  const LINT_CAST_SPACING               = 66;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -203,6 +204,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('No Parent Scope'),
       self::LINT_ALIAS_FUNCTION
         => pht('Alias Functions'),
+      self::LINT_CAST_SPACING
+        => pht('Cast Spacing'),
     );
   }
 
@@ -255,6 +258,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_CLASS_NAME_LITERAL         => $advice,
       self::LINT_USELESS_OVERRIDING_METHOD  => $advice,
       self::LINT_ALIAS_FUNCTION             => $advice,
+      self::LINT_CAST_SPACING               => $advice,
     );
   }
 
@@ -322,7 +326,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '27';
+    return '28';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -414,6 +418,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintUselessOverridingMethods' => self::LINT_USELESS_OVERRIDING_METHOD,
       'lintNoParentScope' => self::LINT_NO_PARENT_SCOPE,
       'lintAliasFunctions' => self::LINT_ALIAS_FUNCTION,
+      'lintCastSpacing' => self::LINT_CAST_SPACING,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -4097,6 +4102,25 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         self::LINT_ALIAS_FUNCTION,
         pht('Alias functions should be avoided.'),
         $aliases[$function_name->getConcreteString()]);
+    }
+  }
+
+  private function lintCastSpacing(XHPASTNode $root) {
+    $cast_expressions = $root->selectDescendantsOfType('n_CAST_EXPRESSION');
+
+    foreach ($cast_expressions as $cast_expression) {
+      $cast = $cast_expression->getChildOfType(0, 'n_CAST');
+
+      list($before, $after) = $cast->getSurroundingNonsemanticTokens();
+      $after = head($after);
+
+      if ($after) {
+        $this->raiseLintAtToken(
+          $after,
+          self::LINT_CAST_SPACING,
+          pht('A cast statement must not be followed by a space.'),
+          '');
+      }
     }
   }
 
