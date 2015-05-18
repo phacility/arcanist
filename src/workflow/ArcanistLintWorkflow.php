@@ -319,7 +319,7 @@ EOTEXT
       }
 
       $lint_future = $conduit->callMethod('diffusion.getlintmessages', array(
-        'arcanistProject' => $this->getWorkingCopy()->getProjectID(),
+        'repositoryPHID' => idx($this->loadProjectRepository(), 'phid'),
         'branch' => '', // TODO: Tracking branch.
         'commit' => $api->getBaseCommit(),
         'files' => array_keys($all_paths),
