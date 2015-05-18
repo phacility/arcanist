@@ -68,6 +68,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_CAST_SPACING               = 66;
   const LINT_TOSTRING_EXCEPTION         = 67;
   const LINT_LAMBDA_FUNC_FUNCTION       = 68;
+  const LINT_INSTANCEOF_OPERATOR        = 69;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -212,6 +213,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Throwing Exception in %s Method', '__toString'),
       self::LINT_LAMBDA_FUNC_FUNCTION
         => pht('%s Function', '__lambda_func'),
+      self::LINT_INSTANCEOF_OPERATOR
+        => pht('%s Operator', 'instanceof'),
     );
   }
 
@@ -332,7 +335,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '30';
+    return '31';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -427,6 +430,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintCastSpacing' => self::LINT_CAST_SPACING,
       'lintThrowExceptionInToStringMethod' => self::LINT_TOSTRING_EXCEPTION,
       'lintLambdaFuncFunction' => self::LINT_LAMBDA_FUNC_FUNCTION,
+      'lintInstanceOfOperator' => self::LINT_INSTANCEOF_OPERATOR,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -4193,6 +4197,30 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           'create_function',
           '__lambda_func',
           '"\0lambda_".(++$i)'));
+    }
+  }
+
+  private function lintInstanceOfOperator(XHPASTNode $root) {
+    $expressions = $root->selectDescendantsOfType('n_BINARY_EXPRESSION');
+
+    foreach ($expressions as $expression) {
+      $operator = $expression->getChildOfType(1, 'n_OPERATOR');
+
+      if (strtolower($operator->getConcreteString()) != 'instanceof') {
+        continue;
+      }
+
+      $object = $expression->getChildByIndex(0);
+
+      if ($object->isStaticScalar() ||
+          $object->getTypeName() == 'n_SYMBOL_NAME') {
+        $this->raiseLintAtNode(
+          $object,
+          self::LINT_INSTANCEOF_OPERATOR,
+          pht(
+            '%s expects an object instance, constant given.',
+            'instanceof'));
+      }
     }
   }
 

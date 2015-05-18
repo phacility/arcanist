@@ -1,0 +1,9 @@
+<?php
+var_dump('foobar' instanceof stdClass);
+var_dump(123 instanceof stdClass);
+var_dump(null instanceof stdClass);
+var_dump($x instanceof stdClass);
+~~~~~~~~~~
+error:2:10
+error:3:10
+error:4:10
