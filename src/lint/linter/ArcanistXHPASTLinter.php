@@ -70,6 +70,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_LAMBDA_FUNC_FUNCTION       = 68;
   const LINT_INSTANCEOF_OPERATOR        = 69;
   const LINT_INVALID_DEFAULT_PARAMETER  = 70;
+  const LINT_MODIFIER_ORDERING          = 71;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -218,6 +219,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('%s Operator', 'instanceof'),
       self::LINT_INVALID_DEFAULT_PARAMETER
         => pht('Invalid Default Parameter'),
+      self::LINT_MODIFIER_ORDERING
+        => pht('Modifier Ordering'),
     );
   }
 
@@ -271,6 +274,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_USELESS_OVERRIDING_METHOD  => $advice,
       self::LINT_ALIAS_FUNCTION             => $advice,
       self::LINT_CAST_SPACING               => $advice,
+      self::LINT_MODIFIER_ORDERING          => $advice,
     );
   }
 
@@ -338,7 +342,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '32';
+    return '33';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -414,8 +418,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintConstructorParentheses' => self::LINT_CONSTRUCTOR_PARENTHESES,
       'lintSwitchStatements' => self::LINT_DUPLICATE_SWITCH_CASE,
       'lintBlacklistedFunction' => self::LINT_BLACKLISTED_FUNCTION,
-      'lintMethodModifier' => self::LINT_IMPLICIT_VISIBILITY,
-      'lintPropertyModifier' => self::LINT_IMPLICIT_VISIBILITY,
+      'lintMethodVisibility' => self::LINT_IMPLICIT_VISIBILITY,
+      'lintPropertyVisibility' => self::LINT_IMPLICIT_VISIBILITY,
       'lintCallTimePassByReference' => self::LINT_CALL_TIME_PASS_BY_REF,
       'lintFormattedString' => self::LINT_FORMATTED_STRING,
       'lintUnnecessaryFinalModifier' => self::LINT_UNNECESSARY_FINAL_MODIFIER,
@@ -435,6 +439,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintLambdaFuncFunction' => self::LINT_LAMBDA_FUNC_FUNCTION,
       'lintInstanceOfOperator' => self::LINT_INSTANCEOF_OPERATOR,
       'lintInvalidDefaultParameters' => self::LINT_INVALID_DEFAULT_PARAMETER,
+      'lintMethodModifierOrdering' => self::LINT_MODIFIER_ORDERING,
+      'lintPropertyModifierOrdering' => self::LINT_MODIFIER_ORDERING,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -3225,27 +3231,27 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
       if ($multiline) {
         if (!$after || $after->getValue() != ',') {
-          if ($value->getChildByIndex(1)->getTypeName() == 'n_HEREDOC') {
-            continue;
-          }
+        if ($value->getChildByIndex(1)->getTypeName() == 'n_HEREDOC') {
+          continue;
+        }
 
-          list($before, $after) = $value->getSurroundingNonsemanticTokens();
-          $after = implode('', mpull($after, 'getValue'));
+        list($before, $after) = $value->getSurroundingNonsemanticTokens();
+        $after = implode('', mpull($after, 'getValue'));
 
-          $original = $value->getConcreteString();
-          $replacement = $value->getConcreteString().',';
+        $original = $value->getConcreteString();
+        $replacement = $value->getConcreteString().',';
 
-          if (strpos($after, "\n") === false) {
-            $original    .= $after;
+        if (strpos($after, "\n") === false) {
+          $original    .= $after;
             $replacement .= $after."\n".$array->getIndentation();
-          }
+        }
 
-          $this->raiseLintAtOffset(
-            $value->getOffset(),
-            self::LINT_ARRAY_SEPARATOR,
-            pht('Multi-lined arrays should have trailing commas.'),
-            $original,
-            $replacement);
+        $this->raiseLintAtOffset(
+          $value->getOffset(),
+          self::LINT_ARRAY_SEPARATOR,
+          pht('Multi-lined arrays should have trailing commas.'),
+          $original,
+          $replacement);
         } else if ($value->getLineNumber() == $array->getEndLineNumber()) {
           $close = last($array->getTokens());
 
@@ -3338,7 +3344,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintMethodModifier(XHPASTNode $root) {
+  private function lintMethodVisibility(XHPASTNode $root) {
     static $visibilities = array(
       'public',
       'protected',
@@ -3372,7 +3378,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-  private function lintPropertyModifier(XHPASTNode $root) {
+  private function lintPropertyVisibility(XHPASTNode $root) {
     static $visibilities = array(
       'public',
       'protected',
@@ -4308,4 +4314,62 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  private function lintMethodModifierOrdering(XHPASTNode $root) {
+    static $modifiers = array(
+      'abstract',
+      'final',
+      'public',
+      'protected',
+      'private',
+      'static',
+    );
+
+    $methods = $root->selectDescendantsOfType('n_METHOD_MODIFIER_LIST');
+
+    foreach ($methods as $method) {
+      $modifier_ordering = array_values(
+        mpull($method->getChildren(), 'getConcreteString'));
+      $expected_modifier_ordering = array_values(
+        array_intersect(
+          $modifiers,
+          $modifier_ordering));
+
+      if ($modifier_ordering != $expected_modifier_ordering) {
+        $this->raiseLintAtNode(
+          $method,
+          self::LINT_MODIFIER_ORDERING,
+          pht('Non-conventional modifier ordering.'),
+          implode(' ', $expected_modifier_ordering));
+      }
+    }
+  }
+
+  private function lintPropertyModifierOrdering(XHPASTNode $root) {
+    static $modifiers = array(
+      'public',
+      'protected',
+      'private',
+      'static',
+    );
+
+    $properties = $root->selectDescendantsOfType(
+      'n_CLASS_MEMBER_MODIFIER_LIST');
+
+    foreach ($properties as $property) {
+      $modifier_ordering = array_values(
+        mpull($property->getChildren(), 'getConcreteString'));
+      $expected_modifier_ordering = array_values(
+        array_intersect(
+          $modifiers,
+          $modifier_ordering));
+
+      if ($modifier_ordering != $expected_modifier_ordering) {
+        $this->raiseLintAtNode(
+          $property,
+          self::LINT_MODIFIER_ORDERING,
+          pht('Non-conventional modifier ordering.'),
+          implode(' ', $expected_modifier_ordering));
+      }
+    }
+  }
 }

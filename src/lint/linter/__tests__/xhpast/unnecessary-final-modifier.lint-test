@@ -1,8 +1,8 @@
 <?php
 final class Foo {
   public function bar() {}
-  public final function baz() {}
+  final public function baz() {}
 }
 ~~~~~~~~~~
 error:2:13 XHP19
-advice:4:10
+advice:4:3
