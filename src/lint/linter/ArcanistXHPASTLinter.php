@@ -3223,29 +3223,39 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       $value = last($values);
       $after = last($value->getTokens())->getNextToken();
 
-      if ($multiline && (!$after || $after->getValue() != ',')) {
-        if ($value->getChildByIndex(1)->getTypeName() == 'n_HEREDOC') {
-          continue;
+      if ($multiline) {
+        if (!$after || $after->getValue() != ',') {
+          if ($value->getChildByIndex(1)->getTypeName() == 'n_HEREDOC') {
+            continue;
+          }
+
+          list($before, $after) = $value->getSurroundingNonsemanticTokens();
+          $after = implode('', mpull($after, 'getValue'));
+
+          $original = $value->getConcreteString();
+          $replacement = $value->getConcreteString().',';
+
+          if (strpos($after, "\n") === false) {
+            $original    .= $after;
+            $replacement .= $after."\n".$array->getIndentation();
+          }
+
+          $this->raiseLintAtOffset(
+            $value->getOffset(),
+            self::LINT_ARRAY_SEPARATOR,
+            pht('Multi-lined arrays should have trailing commas.'),
+            $original,
+            $replacement);
+        } else if ($value->getLineNumber() == $array->getEndLineNumber()) {
+          $close = last($array->getTokens());
+
+          $this->raiseLintAtToken(
+            $close,
+            self::LINT_ARRAY_SEPARATOR,
+            pht('Closing parenthesis should be on a new line.'),
+            "\n".$array->getIndentation().$close->getValue());
         }
-
-        list($before, $after) = $value->getSurroundingNonsemanticTokens();
-        $after = implode('', mpull($after, 'getValue'));
-
-        $original = $value->getConcreteString();
-        $replacement = $value->getConcreteString().',';
-
-        if (strpos($after, "\n") === false) {
-          $original    .= $after;
-          $replacement .= rtrim($after)."\n".$array->getIndentation();
-        }
-
-        $this->raiseLintAtOffset(
-          $value->getOffset(),
-          self::LINT_ARRAY_SEPARATOR,
-          pht('Multi-lined arrays should have trailing commas.'),
-          $original,
-          $replacement);
-      } else if (!$multiline && $after && $after->getValue() == ',') {
+      } else if ($after && $after->getValue() == ',') {
         $this->raiseLintAtToken(
           $after,
           self::LINT_ARRAY_SEPARATOR,
