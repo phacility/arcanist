@@ -42,7 +42,8 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
     foreach ($run_tests as $test_class) {
       $test_case = newv($test_class, array());
       $test_case->setEnableCoverage($enable_coverage);
-      $test_case->setProjectRoot($project_root);
+      $test_case->setWorkingCopy($this->getWorkingCopy());
+
       if ($this->getPaths()) {
         $test_case->setPaths($this->getPaths());
       }

@@ -16,7 +16,7 @@ abstract class ArcanistPhutilTestCase {
   private $results = array();
   private $enableCoverage;
   private $coverage = array();
-  private $projectRoot;
+  private $workingCopy;
   private $paths;
   private $renderer;
 
@@ -570,7 +570,9 @@ abstract class ArcanistPhutilTestCase {
     $coverage = array();
 
     foreach ($result as $file => $report) {
-      if (strncmp($file, $this->projectRoot, strlen($this->projectRoot))) {
+      $project_root = $this->getProjectRoot();
+
+      if (strncmp($file, $project_root, strlen($project_root))) {
         continue;
       }
 
@@ -593,7 +595,7 @@ abstract class ArcanistPhutilTestCase {
           $str .= 'N'; // Not executable.
         }
       }
-      $coverage[substr($file, strlen($this->projectRoot) + 1)] = $str;
+      $coverage[substr($file, strlen($project_root) + 1)] = $str;
     }
 
     // Only keep coverage information for files modified by the change. In
@@ -613,9 +615,25 @@ abstract class ArcanistPhutilTestCase {
     }
   }
 
-  final public function setProjectRoot($project_root) {
-    $this->projectRoot = $project_root;
+  final public function getWorkingCopy() {
+    return $this->workingCopy;
+  }
+
+  final public function setWorkingCopy(
+    ArcanistWorkingCopyIdentity $working_copy) {
+
+    $this->workingCopy = $working_copy;
     return $this;
+  }
+
+  final public function getProjectRoot() {
+    $working_copy = $this->getWorkingCopy();
+
+    if (!$working_copy) {
+      throw new PhutilInvalidStateException('setWorkingCopy');
+    }
+
+    return $working_copy->getProjectRoot();
   }
 
   final public function setPaths(array $paths) {
@@ -623,8 +641,18 @@ abstract class ArcanistPhutilTestCase {
     return $this;
   }
 
-  protected function getLink($method) {
-    return null;
+  final protected function getLink($method) {
+    $base_uri = $this
+      ->getWorkingCopy()
+      ->getProjectConfig('phabricator.uri');
+
+    $uri = id(new PhutilURI($base_uri))
+      ->setPath("/diffusion/symbol/{$method}/")
+      ->setQueryParam('context', get_class($this))
+      ->setQueryParam('jump', 'true')
+      ->setQueryParam('lang', 'php');
+
+    return (string)$uri;
   }
 
   public function setRenderer(ArcanistUnitRenderer $renderer) {

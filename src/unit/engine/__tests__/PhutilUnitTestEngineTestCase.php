@@ -75,7 +75,10 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
   public function testFailSkip() {
     $failed = 0;
     $skipped = 0;
-    $test_case = new ArcanistPhutilTestCaseTestCase();
+
+    $test_case = id(new ArcanistPhutilTestCaseTestCase())
+      ->setWorkingCopy($this->getWorkingCopy());
+
     foreach ($test_case->run() as $result) {
       if ($result->getResult() == ArcanistUnitTestResult::RESULT_FAIL) {
         $failed++;

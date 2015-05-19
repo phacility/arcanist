@@ -101,7 +101,6 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
    * @return array   Array of test results.
    */
   public function run() {
-
     $this->loadEnvironment();
 
     if ($this->getRunAllTests()) {
