@@ -4133,7 +4133,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         $function_name,
         self::LINT_ALIAS_FUNCTION,
         pht('Alias functions should be avoided.'),
-        $aliases[$function_name->getConcreteString()]);
+        $aliases[phutil_utf8_strtolower($function_name->getConcreteString())]);
     }
   }
 

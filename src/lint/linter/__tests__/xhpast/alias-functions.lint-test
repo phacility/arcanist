@@ -3,12 +3,15 @@
 $x = array();
 sizeof($x);
 die();
+sizeOf($x);
 ~~~~~~~~~~
 advice:4:1
 advice:5:1
+advice:6:1
 ~~~~~~~~~~
 <?php
 
 $x = array();
 count($x);
 exit();
+count($x);
