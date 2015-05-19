@@ -35,6 +35,10 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
     return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
   }
 
+  protected function getDefaultMessageSeverity($code) {
+    return ArcanistLintSeverity::SEVERITY_WARNING;
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = explode("\n", $stderr);
 
@@ -49,13 +53,16 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
+
+      $severity = $this->getLintMessageSeverity($matches[3]);
+
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[1]);
       $message->setCode($matches[3]);
       $message->setName($matches[3]);
       $message->setDescription($matches[2]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $message->setSeverity($severity);
 
       $messages[] = $message;
     }
