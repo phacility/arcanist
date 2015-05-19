@@ -4298,31 +4298,4 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
-
-  /**
-   * Retrieve all calls to some specified function(s).
-   *
-   * Returns all descendant nodes which represent a function call to one of the
-   * specified functions.
-   *
-   * @param  XHPASTNode    Root node.
-   * @param  list<string>  Function names.
-   * @return AASTNodeList
-   */
-  protected function getFunctionCalls(XHPASTNode $root, array $function_names) {
-    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
-    $nodes = array();
-
-    foreach ($calls as $call) {
-      $node = $call->getChildByIndex(0);
-      $name = strtolower($node->getConcreteString());
-
-      if (in_array($name, $function_names)) {
-        $nodes[] = $call;
-      }
-    }
-
-    return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
-  }
-
 }
