@@ -71,6 +71,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_INSTANCEOF_OPERATOR        = 69;
   const LINT_INVALID_DEFAULT_PARAMETER  = 70;
   const LINT_MODIFIER_ORDERING          = 71;
+  const LINT_INVALID_MODIFIERS          = 72;
 
   private $blacklistedFunctions = array();
   private $naminghook;
@@ -221,6 +222,8 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
         => pht('Invalid Default Parameter'),
       self::LINT_MODIFIER_ORDERING
         => pht('Modifier Ordering'),
+      self::LINT_INVALID_MODIFIERS
+        => pht('Invalid Modifiers'),
     );
   }
 
@@ -342,7 +345,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getVersion() {
     // The version number should be incremented whenever a new rule is added.
-    return '33';
+    return '34';
   }
 
   protected function resolveFuture($path, Future $future) {
@@ -441,6 +444,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintInvalidDefaultParameters' => self::LINT_INVALID_DEFAULT_PARAMETER,
       'lintMethodModifierOrdering' => self::LINT_MODIFIER_ORDERING,
       'lintPropertyModifierOrdering' => self::LINT_MODIFIER_ORDERING,
+      'lintInvalidModifiers' => self::LINT_INVALID_MODIFIERS,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -4334,6 +4338,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $modifiers,
           $modifier_ordering));
 
+      if (count($modifier_ordering) != count($expected_modifier_ordering)) {
+        continue;
+      }
+
       if ($modifier_ordering != $expected_modifier_ordering) {
         $this->raiseLintAtNode(
           $method,
@@ -4363,6 +4371,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
           $modifiers,
           $modifier_ordering));
 
+      if (count($modifier_ordering) != count($expected_modifier_ordering)) {
+        continue;
+      }
+
       if ($modifier_ordering != $expected_modifier_ordering) {
         $this->raiseLintAtNode(
           $property,
@@ -4372,4 +4384,103 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
   }
+
+  private function lintInvalidModifiers(XHPASTNode $root) {
+    $methods = $root->selectDescendantsOfTypes(array(
+      'n_CLASS_MEMBER_MODIFIER_LIST',
+      'n_METHOD_MODIFIER_LIST',
+    ));
+
+    foreach ($methods as $method) {
+      $modifiers = $method->getChildren();
+
+      $is_abstract = false;
+      $is_final    = false;
+      $is_static   = false;
+      $visibility  = null;
+
+      foreach ($modifiers as $modifier) {
+        switch ($modifier->getConcreteString()) {
+          case 'abstract':
+            if ($method->getTypeName() == 'n_CLASS_MEMBER_MODIFIER_LIST') {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                  'Properties cannot be declared %s.',
+                  'abstract'));
+            }
+
+            if ($is_abstract) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                  'Multiple %s modifiers are not allowed.',
+                  'abstract'));
+            }
+
+            if ($is_final) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                'Cannot use the %s modifier on an %s class member',
+                'final',
+                'abstract'));
+            }
+
+            $is_abstract = true;
+            break;
+
+          case 'final':
+            if ($is_abstract) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                'Cannot use the %s modifier on an %s class member',
+                'final',
+                'abstract'));
+            }
+
+            if ($is_final) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                  'Multiple %s modifiers are not allowed.',
+                  'final'));
+            }
+
+            $is_final = true;
+            break;
+          case 'public':
+          case 'protected':
+          case 'private':
+            if ($visibility) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht('Multiple access type modifiers are not allowed.'));
+            }
+
+            $visibility = $modifier->getConcreteString();
+            break;
+
+          case 'static':
+            if ($is_static) {
+              $this->raiseLintAtNode(
+                $modifier,
+                self::LINT_INVALID_MODIFIERS,
+                pht(
+                  'Multiple %s modifiers are not allowed.',
+                  'static'));
+            }
+            break;
+        }
+      }
+    }
+  }
+
 }
