@@ -8,7 +8,7 @@
  * @task hook         Hooks for Setup and Teardown
  * @task internal     Internals
  */
-abstract class ArcanistPhutilTestCase {
+abstract class PhutilTestCase {
 
   private $assertions = 0;
   private $runningTest;
@@ -122,7 +122,7 @@ abstract class ArcanistPhutilTestCase {
     }
 
     $this->failTest($output);
-    throw new ArcanistPhutilTestTerminatedException($output);
+    throw new PhutilTestTerminatedException($output);
   }
 
 
@@ -137,7 +137,7 @@ abstract class ArcanistPhutilTestCase {
    */
   final protected function assertFailure($message) {
     $this->failTest($message);
-    throw new ArcanistPhutilTestTerminatedException($message);
+    throw new PhutilTestTerminatedException($message);
   }
 
   /**
@@ -150,7 +150,7 @@ abstract class ArcanistPhutilTestCase {
    */
   final protected function assertSkipped($message) {
     $this->skipTest($message);
-    throw new ArcanistPhutilTestSkippedException($message);
+    throw new PhutilTestSkippedException($message);
   }
 
 
@@ -230,7 +230,7 @@ abstract class ArcanistPhutilTestCase {
       try {
         call_user_func($callable, $input);
       } catch (Exception $ex) {
-        if ($ex instanceof ArcanistPhutilTestTerminatedException) {
+        if ($ex instanceof PhutilTestTerminatedException) {
           throw $ex;
         }
         if (!($ex instanceof $exception_class)) {
@@ -363,7 +363,7 @@ abstract class ArcanistPhutilTestCase {
    * This hook is invoked once, before any test cases execute. It gives you
    * an opportunity to perform setup steps for the entire suite of test cases.
    *
-   * @param list<ArcanistPhutilTestCase> List of test cases to be run.
+   * @param list<PhutilTestCase> List of test cases to be run.
    * @return void
    * @task hook
    */
@@ -375,7 +375,7 @@ abstract class ArcanistPhutilTestCase {
   /**
    * This hook is invoked once, after all test cases execute.
    *
-   * @param list<ArcanistPhutilTestCase> List of test cases that ran.
+   * @param list<PhutilTestCase> List of test cases that ran.
    * @return void
    * @task hook
    */
@@ -515,9 +515,9 @@ abstract class ArcanistPhutilTestCase {
                 'least one assertion.'));
           }
 
-        } catch (ArcanistPhutilTestTerminatedException $ex) {
+        } catch (PhutilTestTerminatedException $ex) {
           // Continue with the next test.
-        } catch (ArcanistPhutilTestSkippedException $ex) {
+        } catch (PhutilTestSkippedException $ex) {
           // Continue with the next test.
         } catch (Exception $ex) {
           $ex_class = get_class($ex);
@@ -736,7 +736,7 @@ abstract class ArcanistPhutilTestCase {
     $output = $description."\n\n".$header."\n".$actual_result;
 
     $this->failTest($output);
-    throw new ArcanistPhutilTestTerminatedException($output);
+    throw new PhutilTestTerminatedException($output);
   }
 
 }

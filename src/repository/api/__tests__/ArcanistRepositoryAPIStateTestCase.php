@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
+final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
 
   public function testGitStateParsing() {
     if (Filesystem::binaryExists('git')) {

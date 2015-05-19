@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
+final class ArcanistBaseCommitParserTestCase extends PhutilTestCase {
 
   public function testBasics() {
     // Verify that the very basics of base commit resolution work.

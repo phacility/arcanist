@@ -3,7 +3,7 @@
 /**
  * Test cases for @{class:ArcanistDiffParser}.
  */
-final class ArcanistDiffParserTestCase extends ArcanistTestCase {
+final class ArcanistDiffParserTestCase extends PhutilTestCase {
 
   public function testParser() {
     $root = dirname(__FILE__).'/diff/';

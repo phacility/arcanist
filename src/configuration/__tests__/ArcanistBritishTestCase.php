@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBritishTestCase extends ArcanistTestCase {
+final class ArcanistBritishTestCase extends PhutilTestCase {
 
   public function testCommandCompletion() {
     $this->assertCommandCompletion(

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistMercurialParserTestCase extends ArcanistTestCase {
+final class ArcanistMercurialParserTestCase extends PhutilTestCase {
 
   public function testParseAll() {
     $root = dirname(__FILE__).'/mercurial/';

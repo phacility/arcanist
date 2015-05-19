@@ -75,7 +75,7 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
 
     $symbols = id(new PhutilSymbolLoader())
       ->setType('class')
-      ->setAncestorClass('ArcanistPhutilTestCase')
+      ->setAncestorClass('PhutilTestCase')
       ->setConcreteOnly(true)
       ->selectSymbolsWithoutLoading();
 
@@ -163,8 +163,8 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
       }
     }
 
-    // Look for any class that extends ArcanistPhutilTestCase inside a
-    // __tests__ directory in any parent directory of every affected file.
+    // Look for any class that extends PhutilTestCase inside a `__tests__`
+    // directory in any parent directory of every affected file.
     //
     // The idea is that "infrastructure/__tests__/" tests defines general tests
     // for all of "infrastructure/", and those tests run for any change in
@@ -181,7 +181,7 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
         ->setType('class')
         ->setLibrary($library)
         ->setPathPrefix(($path ? $path.'/' : '').'__tests__/')
-        ->setAncestorClass('ArcanistPhutilTestCase')
+        ->setAncestorClass('PhutilTestCase')
         ->setConcreteOnly(true)
         ->selectAndLoadSymbols();
 

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBundleTestCase extends ArcanistTestCase {
+final class ArcanistBundleTestCase extends PhutilTestCase {
 
   private function loadResource($name) {
     return Filesystem::readFile($this->getResourcePath($name));

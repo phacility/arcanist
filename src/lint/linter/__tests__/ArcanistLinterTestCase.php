@@ -3,7 +3,7 @@
 /**
  * Facilitates implementation of test cases for @{class:ArcanistLinter}s.
  */
-abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
+abstract class ArcanistLinterTestCase extends PhutilTestCase {
 
   /**
    * Returns an instance of the linter being tested.
@@ -148,7 +148,7 @@ abstract class ArcanistLinterTestCase extends ArcanistPhutilTestCase {
       $result = reset($results);
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
       $after_lint = $patcher->getModifiedFileContent();
-    } catch (ArcanistPhutilTestTerminatedException $ex) {
+    } catch (PhutilTestTerminatedException $ex) {
       throw $ex;
     } catch (Exception $exception) {
       $caught_exception = true;

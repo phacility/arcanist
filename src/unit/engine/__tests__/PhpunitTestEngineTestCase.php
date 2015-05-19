@@ -3,7 +3,7 @@
 /**
  * Tests for @{class:PhpunitTestEngine}.
  */
-final class PhpunitTestEngineTestCase extends ArcanistTestCase {
+final class PhpunitTestEngineTestCase extends PhutilTestCase {
 
   public function testSearchLocations() {
     $path = '/path/to/some/file/X.php';

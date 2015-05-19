@@ -3,7 +3,8 @@
 /**
  * Test cases for @{class:ArcanistXHPASTLintNamingHook}.
  */
-final class ArcanistXHPASTLintNamingHookTestCase extends ArcanistTestCase {
+final class ArcanistXHPASTLintNamingHookTestCase
+  extends PhutilTestCase {
 
   public function testCaseUtilities() {
     $tests = array(

@@ -3,7 +3,7 @@
 /**
  * Very meta test for @{class:PhutilUnitTestEngine}.
  */
-final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
+final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
 
   private static $allTestsCounter = 0;
   private static $oneTestCounter = 0;
@@ -76,7 +76,7 @@ final class PhutilUnitTestEngineTestCase extends ArcanistTestCase {
     $failed = 0;
     $skipped = 0;
 
-    $test_case = id(new ArcanistPhutilTestCaseTestCase())
+    $test_case = id(new PhutilTestCaseTestCase())
       ->setWorkingCopy($this->getWorkingCopy());
 
     foreach ($test_case->run() as $result) {

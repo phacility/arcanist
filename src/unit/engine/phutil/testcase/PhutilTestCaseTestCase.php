@@ -3,7 +3,7 @@
 /**
  * Test for @{class:PhutilUnitTestEngineTestCase}.
  */
-final class ArcanistPhutilTestCaseTestCase extends ArcanistPhutilTestCase {
+final class PhutilTestCaseTestCase extends PhutilTestCase {
 
   public function testFail() {
     $this->assertFailure(pht('This test is expected to fail.'));

@@ -3,7 +3,7 @@
 /**
  * Test cases for @{class:ArcanistDiffUtils}.
  */
-final class ArcanistDiffUtilsTestCase extends ArcanistTestCase {
+final class ArcanistDiffUtilsTestCase extends PhutilTestCase {
 
   public function testLevenshtein() {
     $tests = array(
