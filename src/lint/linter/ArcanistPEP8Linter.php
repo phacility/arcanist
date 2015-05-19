@@ -31,14 +31,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return $this->getDeprecatedConfiguration('lint.pep8.options', array());
   }
 
-  public function shouldUseInterpreter() {
-    return ($this->getDefaultBinary() !== 'pep8');
-  }
-
-  public function getDefaultInterpreter() {
-    return 'python2.6';
-  }
-
   public function getDefaultBinary() {
     $prefix = $this->getDeprecatedConfiguration('lint.pep8.prefix');
     $bin = $this->getDeprecatedConfiguration('lint.pep8.bin', 'pep8');
