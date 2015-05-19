@@ -339,7 +339,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
       $future = new ExecFuture('%C %C', $bin, $path_argument);
 
-      $future->setCWD($this->getEngine()->getWorkingCopy()->getProjectRoot());
+      $future->setCWD($this->getProjectRoot());
       $futures[$path] = $future;
     }
 
@@ -407,8 +407,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
       case 'interpreter':
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (Filesystem::binaryExists($path)) {
@@ -429,8 +428,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       case 'bin':
         $is_script = $this->shouldUseInterpreter();
 
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (!$is_script && Filesystem::binaryExists($path)) {

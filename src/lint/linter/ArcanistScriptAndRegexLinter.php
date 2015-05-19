@@ -180,7 +180,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    */
   public function willLintPaths(array $paths) {
     $script = $this->getConfiguredScript();
-    $root   = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $root   = $this->getProjectRoot();
 
     $futures = array();
     foreach ($paths as $path) {

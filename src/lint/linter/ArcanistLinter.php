@@ -248,6 +248,24 @@ abstract class ArcanistLinter {
     return $this;
   }
 
+  final public function getProjectRoot() {
+    $engine = $this->getEngine();
+    if (!$engine) {
+      throw new Exception(
+        pht(
+          'You must call %s before you can call %s.',
+          'setEngine()',
+          __FUNCTION__.'()'));
+    }
+
+    $working_copy = $engine->getWorkingCopy();
+    if (!$working_copy) {
+      return null;
+    }
+
+    return $working_copy->getProjectRoot();
+  }
+
   final public function getOtherLocation($offset, $path = null) {
     if ($path === null) {
       $path = $this->getActivePath();
@@ -386,7 +404,7 @@ abstract class ArcanistLinter {
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {
-    $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $root = $this->getProjectRoot();
     $path = Filesystem::resolvePath($message->getPath(), $root);
     $message->setPath(Filesystem::readablePath($path, $root));
 
