@@ -40,19 +40,14 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    if (Filesystem::binaryExists('pep8')) {
-      return 'pep8';
-    }
+    $prefix = $this->getDeprecatedConfiguration('lint.pep8.prefix');
+    $bin = $this->getDeprecatedConfiguration('lint.pep8.bin', 'pep8');
 
-    $old_prefix = $this->getDeprecatedConfiguration('lint.pep8.prefix');
-    $old_bin = $this->getDeprecatedConfiguration('lint.pep8.bin');
-    if ($old_prefix || $old_bin) {
-      $old_bin = nonempty($old_bin, 'pep8');
-      return $old_prefix.'/'.$old_bin;
+    if ($prefix) {
+      return $prefix.'/'.$bin;
+    } else {
+      return $bin;
     }
-
-    $arc_root = dirname(phutil_get_library_root('arcanist'));
-    return $arc_root.'/externals/pep8/pep8.py';
   }
 
   public function getVersion() {
