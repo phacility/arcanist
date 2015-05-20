@@ -2254,7 +2254,6 @@ EOTEXT
       'sourceControlPath'         => $base_path,
       'sourceControlBaseRevision' => $base_revision,
       'creationMethod'            => 'arc',
-      'arcanistProject'           => $project_id,
     );
 
     if (!$this->isRawDiffSource()) {

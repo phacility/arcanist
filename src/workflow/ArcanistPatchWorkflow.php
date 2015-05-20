@@ -914,7 +914,6 @@ EOTEXT
         'differential.query',
         array(
           'phids' => $phids,
-          'arcanistProjects' => array($bundle->getProjectID()),
         ));
       $revs = array();
       foreach ($dep_on_revs as $dep_on_rev) {

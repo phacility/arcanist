@@ -658,9 +658,7 @@ EODIFF;
 
     $results = $conduit->callMethodSynchronous(
       'differential.query',
-      $query + array(
-        'arcanistProjects' => array($project),
-      ));
+      $query);
 
     foreach ($results as $key => $result) {
       if ($result['sourcePath'] != $this->getPath()) {
