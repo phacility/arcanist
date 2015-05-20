@@ -28,14 +28,7 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.cppcheck.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.cppcheck.bin', 'cppcheck');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'cppcheck';
   }
 
   public function getVersion() {
@@ -56,6 +49,13 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
       'apt-get install cppcheck');
   }
 
+  protected function getDefaultFlags() {
+    return array(
+      '-j2',
+      '--enable=performance,style,portability,information',
+    );
+  }
+
   protected function getMandatoryFlags() {
     return array(
       '--quiet',
@@ -63,12 +63,6 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
       '--xml',
       '--xml-version=2',
     );
-  }
-
-  protected function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration(
-      'lint.cppcheck.options',
-      array('-j2', '--enable=performance,style,portability,information'));
   }
 
   public function shouldExpectCommandErrors() {

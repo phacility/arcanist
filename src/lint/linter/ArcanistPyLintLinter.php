@@ -31,14 +31,7 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.pylint.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.pylint.bin', 'pylint');
-
-    if ($prefix) {
-      return $prefix.'/bin/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'pylint';
   }
 
   public function getVersion() {
@@ -95,10 +88,6 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
     // Stupidly, the command line args above are overridden by rcfile, so be
     // careful.
     $config = $this->config;
-    if (!$config) {
-      $config = $this->getDeprecatedConfiguration('lint.pylint.rcfile');
-    }
-
     if ($config !== null) {
       $options[] = '--rcfile='.$config;
     }
@@ -108,12 +97,6 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
 
   protected function getDefaultFlags() {
     $options = array();
-
-    // Add any options defined in the config file for PyLint.
-    $config_options = $this->getDeprecatedConfiguration(
-      'lint.pylint.options',
-      array());
-    $options = array_merge($options, $config_options);
 
     $installed_version = $this->getVersion();
     $minimum_version = '1.0.0';

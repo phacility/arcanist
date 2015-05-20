@@ -959,9 +959,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     $hook_obj = null;
     $working_copy = $this->getEngine()->getWorkingCopy();
     if ($working_copy) {
-      $hook_class = $this->switchhook
-        ? $this->switchhook
-        : $this->getDeprecatedConfiguration('lint.xhpast.switchhook');
+      $hook_class = $this->switchhook;
       if ($hook_class) {
         $hook_obj = newv($hook_class, array());
         assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
@@ -2261,9 +2259,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     if ($working_copy) {
       // If a naming hook is configured, give it a chance to override the
       // default results for all the symbol names.
-      $hook_class = $this->naminghook
-        ? $this->naminghook
-        : $working_copy->getProjectConfig('lint.xhpast.naminghook');
+      $hook_class = $this->naminghook;
       if ($hook_class) {
         $hook_obj = newv($hook_class, array());
         foreach ($names as $k => $name_attrs) {

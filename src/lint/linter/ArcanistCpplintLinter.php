@@ -14,14 +14,7 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.cpplint.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.cpplint.bin', 'cpplint.py');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'cpplint';
   }
 
   public function getInstallInstructions() {
@@ -29,10 +22,6 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       'Install cpplint.py using `%s`.',
       'wget http://google-styleguide.googlecode.com'.
       '/svn/trunk/cpplint/cpplint.py');
-  }
-
-  protected function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
   }
 
   protected function getDefaultMessageSeverity($code) {

@@ -65,23 +65,8 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return $options;
   }
 
-  protected function getDefaultFlags() {
-    $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
-    $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
-
-    if (!empty($standard)) {
-      if (is_array($options)) {
-        $options[] = '--standard='.$standard;
-      } else {
-        $options .= ' --standard='.$standard;
-      }
-    }
-
-    return $options;
-  }
-
   public function getDefaultBinary() {
-    return $this->getDeprecatedConfiguration('lint.phpcs.bin', 'phpcs');
+    return 'phpcs';
   }
 
   public function getVersion() {

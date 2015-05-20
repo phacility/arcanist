@@ -28,11 +28,6 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.ruby.prefix');
-    if ($prefix !== null) {
-      $ruby_bin = $prefix.'ruby';
-    }
-
     return 'ruby';
   }
 

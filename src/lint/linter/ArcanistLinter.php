@@ -621,48 +621,4 @@ abstract class ArcanistLinter {
     return $code;
   }
 
-  /**
-   * Retrieve an old lint configuration value from `.arcconfig` or a similar
-   * source.
-   *
-   * Modern linters should use @{method:getConfig} to read configuration from
-   * `.arclint`.
-   *
-   * @param   string  Configuration key to retrieve.
-   * @param   wild    Default value to return if key is not present in config.
-   * @return  wild    Configured value, or default if no configuration exists.
-   */
-  final protected function getDeprecatedConfiguration($key, $default = null) {
-    // If we're being called in a context without an engine (probably from
-    // `arc linters`), just return the default value.
-    if (!$this->engine) {
-      return $default;
-    }
-
-    $config = $this->getEngine()->getConfigurationManager();
-
-    // Construct a sentinel object so we can tell if we're reading config
-    // or not.
-    $sentinel = (object)array();
-    $result = $config->getConfigFromAnySource($key, $sentinel);
-
-    // If we read config, warn the user that this mechanism is deprecated and
-    // discouraged.
-    if ($result !== $sentinel) {
-      $console = PhutilConsole::getConsole();
-      $console->writeErr(
-        "**%s**: %s\n",
-        pht('Deprecation Warning'),
-        pht(
-          'Configuration option "%s" is deprecated. Generally, linters should '.
-          'now be configured using an `%s` file. See "Arcanist User '.
-          'Guide: Lint" in the documentation for more information.',
-          $key,
-          '.arclint'));
-      return $result;
-    }
-
-    return $default;
-  }
-
 }
