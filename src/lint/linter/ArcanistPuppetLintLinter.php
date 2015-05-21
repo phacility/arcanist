@@ -133,10 +133,6 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
       $messages[] = $message;
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 
