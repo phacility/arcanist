@@ -3,7 +3,7 @@
 /**
  * Uses LintTrap to detect errors and potential problems in JavaScript code.
  */
-final class ArcanistLintTrapLinter extends ArcanistExternalLinter {
+final class LintTrapLinter extends ArcanistExternalLinter {
 
   private $lintignore;
   private $lintrc;
