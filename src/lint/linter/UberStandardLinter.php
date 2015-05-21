@@ -3,7 +3,7 @@
 /**
  * Uses UberStandard to detect errors and potential problems in JavaScript code.
  */
-final class ArcanistUberStandardLinter extends ArcanistExternalLinter {
+final class UberStandardLinter extends ArcanistExternalLinter {
 
   private $eslintrc;
 
