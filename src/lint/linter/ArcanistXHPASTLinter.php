@@ -957,13 +957,11 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   private function lintImplicitFallthrough(XHPASTNode $root) {
     $hook_obj = null;
-    $working_copy = $this->getEngine()->getWorkingCopy();
-    if ($working_copy) {
-      $hook_class = $this->switchhook;
-      if ($hook_class) {
-        $hook_obj = newv($hook_class, array());
-        assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
-      }
+
+    $hook_class = $this->switchhook;
+    if ($hook_class) {
+      $hook_obj = newv($hook_class, array());
+      assert_instances_of(array($hook_obj), 'ArcanistXHPASTLintSwitchHook');
     }
 
     $switches = $root->selectDescendantsOfType('n_SWITCH');
@@ -2253,20 +2251,15 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
     }
 
-    $engine = $this->getEngine();
-    $working_copy = $engine->getWorkingCopy();
-
-    if ($working_copy) {
-      // If a naming hook is configured, give it a chance to override the
-      // default results for all the symbol names.
-      $hook_class = $this->naminghook;
-      if ($hook_class) {
-        $hook_obj = newv($hook_class, array());
-        foreach ($names as $k => $name_attrs) {
-          list($type, $name, $token, $default) = $name_attrs;
-          $result = $hook_obj->lintSymbolName($type, $name, $default);
-          $names[$k][3] = $result;
-        }
+    // If a naming hook is configured, give it a chance to override the
+    // default results for all the symbol names.
+    $hook_class = $this->naminghook;
+    if ($hook_class) {
+      $hook_obj = newv($hook_class, array());
+      foreach ($names as $k => $name_attrs) {
+        list($type, $name, $token, $default) = $name_attrs;
+        $result = $hook_obj->lintSymbolName($type, $name, $default);
+        $names[$k][3] = $result;
       }
     }
 
