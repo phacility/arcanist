@@ -1,6 +1,6 @@
 <?php
 
-final class GolangTestEngine extends ArcanistUnitTestEngine {
+final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
 
   public function run() {
     $working_copy = $this->getWorkingCopy();
