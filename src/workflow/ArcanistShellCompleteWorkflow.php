@@ -30,7 +30,7 @@ EOTEXT
       'current' => array(
         'param' => 'cursor_position',
         'paramtype' => 'int',
-        'help' => 'Current term in the argument list being completed.',
+        'help' => pht('Current term in the argument list being completed.'),
       ),
       '*' => 'argv',
     );

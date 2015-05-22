@@ -17,7 +17,7 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
     }
 
     if (!$run_tests) {
-      throw new ArcanistNoEffectException('No tests to run.');
+      throw new ArcanistNoEffectException(pht('No tests to run.'));
     }
 
     $enable_coverage = $this->getEnableCoverage();

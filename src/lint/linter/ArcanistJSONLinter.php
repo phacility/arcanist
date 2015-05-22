@@ -8,7 +8,7 @@ final class ArcanistJSONLinter extends ArcanistLinter {
   const LINT_PARSE_ERROR = 1;
 
   public function getInfoName() {
-    return 'JSON Lint';
+    return pht('JSON Lint');
   }
 
   public function getInfoDescription() {

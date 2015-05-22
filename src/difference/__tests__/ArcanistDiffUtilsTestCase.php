@@ -94,7 +94,7 @@ final class ArcanistDiffUtilsTestCase extends PhutilTestCase {
         ArcanistDiffUtils::generateEditString(
           str_split($test[0]),
           str_split($test[1])),
-        "'{$test[0]}' vs '{$test[1]}'");
+        pht("'%s' vs '%s'", $test[0], $test[1]));
     }
 
     $utf8_tests = array(
@@ -111,7 +111,7 @@ final class ArcanistDiffUtilsTestCase extends PhutilTestCase {
         ArcanistDiffUtils::generateEditString(
           phutil_utf8v_combined($test[0]),
           phutil_utf8v_combined($test[1])),
-        "'{$test[0]}' vs '{$test[1]}' (utf8)");
+        pht("'%s' vs '%s' (utf8)", $test[0], $test[1]));
     }
   }
 

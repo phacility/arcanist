@@ -81,7 +81,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private $windowsVersion;
 
   public function getInfoName() {
-    return 'XHPAST Lint';
+    return pht('XHPAST Lint');
   }
 
   public function getInfoDescription() {
@@ -1893,9 +1893,10 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
               $message = $this->raiseLintAtNode(
                 $var,
                 self::LINT_REUSED_AS_ITERATOR,
-                'This iterator variable is a previously declared local '.
-                'variable. To avoid overwriting locals, do not reuse them '.
-                'as iterator variables.');
+                pht(
+                  'This iterator variable is a previously declared local '.
+                  'variable. To avoid overwriting locals, do not reuse them '.
+                  'as iterator variables.'));
               $message->setOtherLocations(array(
                 $this->getOtherLocation($declarations[$concrete]),
                 $this->getOtherLocation(max($uses[$concrete])),

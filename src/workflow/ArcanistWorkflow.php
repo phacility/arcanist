@@ -1228,7 +1228,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $parser = $this->newDiffParser();
         $changes = $parser->parseDiff($diff);
         if (count($changes) != 1) {
-          throw new Exception('Expected exactly one change.');
+          throw new Exception(pht('Expected exactly one change.'));
         }
         $this->changeCache[$path] = reset($changes);
       }
@@ -1240,7 +1240,7 @@ abstract class ArcanistWorkflow extends Phobject {
         }
       }
     } else {
-      throw new Exception('Missing VCS support.');
+      throw new Exception(pht('Missing VCS support.'));
     }
 
     if (empty($this->changeCache[$path])) {
@@ -1253,7 +1253,9 @@ abstract class ArcanistWorkflow extends Phobject {
         return $change;
       } else {
         throw new Exception(
-          "Trying to get change for unchanged path '{$path}'!");
+          pht(
+            "Trying to get change for unchanged path '%s'!",
+            $path));
       }
     }
 
@@ -1275,7 +1277,10 @@ abstract class ArcanistWorkflow extends Phobject {
             $extended_info = ' '.$options['nosupport'][$system_name];
           }
           throw new ArcanistUsageException(
-            "Option '--{$arg}' is not supported under {$system_name}.".
+            pht(
+              "Option '%s' is not supported under %s.",
+              "--{$arg}",
+              $system_name).
             $extended_info);
         }
       }
@@ -1375,7 +1380,10 @@ abstract class ArcanistWorkflow extends Phobject {
       foreach ($paths as $key => $path) {
         $full_path = Filesystem::resolvePath($path);
         if (!Filesystem::pathExists($full_path)) {
-          throw new ArcanistUsageException("Path '{$path}' does not exist!");
+          throw new ArcanistUsageException(
+            pht(
+              "Path '%s' does not exist!",
+              $path));
         }
         $relative_path = Filesystem::readablePath(
           $full_path,
@@ -1600,10 +1608,12 @@ abstract class ArcanistWorkflow extends Phobject {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         echo phutil_console_wrap(
-          "This feature requires a newer version of Phabricator. Please ".
-          "update it using these instructions: ".
-          "http://www.phabricator.com/docs/phabricator/article/".
-          "Installation_Guide.html#updating-phabricator\n\n");
+          "%s\n\n",
+          pht(
+            'This feature requires a newer version of Phabricator. Please '.
+            'update it using these instructions: %s',
+            'http://www.phabricator.com/docs/phabricator/article/'.
+            'Installation_Guide.html#updating-phabricator'));
       }
       throw $ex;
     }
@@ -1628,13 +1638,14 @@ abstract class ArcanistWorkflow extends Phobject {
     $api = $this->getRepositoryAPI();
     if (!$api->supportsCommitRanges()) {
       throw new ArcanistUsageException(
-        'This version control system does not support commit ranges.');
+        pht('This version control system does not support commit ranges.'));
     }
 
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
-        'Specify exactly one base commit. The end of the commit range is '.
-        'always the working copy state.');
+        pht(
+          'Specify exactly one base commit. The end of the commit range is '.
+          'always the working copy state.'));
     }
 
     $api->setBaseCommit(head($argv));

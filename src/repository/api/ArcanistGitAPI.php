@@ -314,7 +314,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // TODO: Remove the history lesson soon.
 
       echo phutil_console_format(
-        "<bg:green>** Select a Default Commit Range **</bg>\n\n");
+        "<bg:green>** %s **</bg>\n\n",
+        pht('Select a Default Commit Range'));
       echo phutil_console_wrap(
         pht(
           "You're running a command which operates on a range of revisions ".
@@ -973,7 +974,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $branch);
 
     if ($err) {
-      throw new ArcanistUsageException('Merge failed!');
+      throw new ArcanistUsageException(pht('Merge failed!'));
     }
   }
 

@@ -170,7 +170,7 @@ EOTEXT
     }
     if (!$repository_api->hasLocalCommit($commit_hash)) {
       throw new ArcanistUsageException(
-        'Invalid commit provided or does not exist in the working copy!');
+        pht('Invalid commit provided or does not exist in the working copy!'));
     }
 
     // Run 'backout'.

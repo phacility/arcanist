@@ -53,17 +53,17 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
         $user_data  .= idx($event, 'message')."\n";
         foreach (idx($event, 'trace') as $trace) {
           $user_data .= sprintf(
-              "\n%s:%s",
-              idx($trace, 'file'),
-              idx($trace, 'line'));
+            "\n%s:%s",
+            idx($trace, 'file'),
+            idx($trace, 'line'));
         }
       } else if ('error' == idx($event, 'status')) {
         if (strpos(idx($event, 'message'), 'Skipped Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= idx($event, 'message');
         } else if (strpos(
-                idx($event, 'message'),
-                'Incomplete Test') !== false) {
+            idx($event, 'message'),
+            'Incomplete Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= idx($event, 'message');
         } else {
@@ -71,9 +71,9 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
           $user_data  .= idx($event, 'message');
           foreach (idx($event, 'trace') as $trace) {
             $user_data .= sprintf(
-                "\n%s:%s",
-                idx($trace, 'file'),
-                idx($trace, 'line'));
+              "\n%s:%s",
+              idx($trace, 'file'),
+              idx($trace, 'line'));
           }
         }
       }

@@ -107,7 +107,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
         null,
-        'Unit Test');
+        pht('Unit Test'));
       $configuration_manager = new ArcanistConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
 

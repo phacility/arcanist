@@ -15,7 +15,7 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   const LINT_ONE_CLASS_PER_FILE  = 3;
 
   public function getInfoName() {
-    return 'Phutil Library Linter';
+    return pht('Phutil Library Linter');
   }
 
   public function getInfoDescription() {

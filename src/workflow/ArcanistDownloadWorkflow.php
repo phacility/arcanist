@@ -87,7 +87,7 @@ EOTEXT
       ));
 
     $bytes = number_format($info['byteSize']);
-    $desc = '('.$bytes.' bytes)';
+    $desc = pht('(%d bytes)', $bytes);
     if ($info['name']) {
       $desc = "'".$info['name']."' ".$desc;
     }

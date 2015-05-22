@@ -29,7 +29,7 @@ EOTEXT
   public function getArguments() {
     return array(
       'full' => array(
-        'help' => 'Print detailed information about each command.',
+        'help' => pht('Print detailed information about each command.'),
       ),
       '*' => 'command',
     );
