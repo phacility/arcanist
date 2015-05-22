@@ -2240,11 +2240,6 @@ EOTEXT
       }
     }
 
-    $project_id = null;
-    if ($this->requiresWorkingCopy()) {
-      $project_id = $this->getWorkingCopy()->getProjectID();
-    }
-
     $data = array(
       'sourceMachine'             => php_uname('n'),
       'sourcePath'                => $source_path,
