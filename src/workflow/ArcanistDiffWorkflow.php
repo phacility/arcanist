@@ -946,17 +946,15 @@ EOTEXT
     }
 
     if (count($changes) > 250) {
-      $count = number_format(count($changes));
-      $link =
-        'http://www.phabricator.com/docs/phabricator/article/'.
-        'Differential_User_Guide_Large_Changes.html';
       $message = pht(
-        'This diff has a very large number of changes (%d). Differential '.
+        'This diff has a very large number of changes (%s). Differential '.
         'works best for changes which will receive detailed human review, '.
         'and not as well for large automated changes or bulk checkins. '.
         'See %s for information about reviewing big checkins. Continue anyway?',
-        $count,
-        $link);
+        new PhutilNumber(count($changes)),
+        'http://www.phabricator.com/docs/phabricator/article/'.
+        'Differential_User_Guide_Large_Changes.html');
+
       if (!phutil_console_confirm($message)) {
         throw new ArcanistUsageException(
           pht('Aborted generation of gigantic diff.'));
@@ -970,13 +968,11 @@ EOTEXT
         $size += strlen($hunk->getCorpus());
       }
       if ($size > $limit) {
-        $file_name = $change->getCurrentPath();
-        $change_size = number_format($size);
         $byte_warning = pht(
-          "Diff for '%s' with context is %d bytes in length. ".
+          "Diff for '%s' with context is %s bytes in length. ".
           "Generally, source changes should not be this large.",
-          $file_name,
-          $change_size);
+          $change->getCurrentPath(),
+          new PhutilNumber($size));
         if (!$this->getArgument('less-context')) {
           $byte_warning .= ' '.pht(
             "If this file is a huge text file, try using the '%s' flag.",

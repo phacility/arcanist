@@ -86,8 +86,7 @@ EOTEXT
         'id' => $this->id,
       ));
 
-    $bytes = number_format($info['byteSize']);
-    $desc = pht('(%d bytes)', $bytes);
+    $desc = pht('(%s bytes)', new PhutilNumber($info['byteSize']));
     if ($info['name']) {
       $desc = "'".$info['name']."' ".$desc;
     }
