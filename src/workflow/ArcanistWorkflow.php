@@ -1173,7 +1173,6 @@ abstract class ArcanistWorkflow extends Phobject {
     $bundle->setConduit($conduit);
     // since the conduit method has changes, assume that these fields
     // could be unset
-    $bundle->setProjectID(idx($diff, 'projectName'));
     $bundle->setBaseRevision(idx($diff, 'sourceControlBaseRevision'));
     $bundle->setRevisionID(idx($diff, 'revisionID'));
     $bundle->setAuthorName(idx($diff, 'authorName'));

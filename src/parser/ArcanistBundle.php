@@ -9,7 +9,6 @@ final class ArcanistBundle {
   private $conduit;
   private $blobs = array();
   private $diskPath;
-  private $projectID;
   private $baseRevision;
   private $revisionID;
   private $encoding;
@@ -61,15 +60,6 @@ final class ArcanistBundle {
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
     return $this;
-  }
-
-  public function setProjectID($project_id) {
-    $this->projectID = $project_id;
-    return $this;
-  }
-
-  public function getProjectID() {
-    return $this->projectID;
   }
 
   public function setBaseRevision($base_revision) {
@@ -178,7 +168,6 @@ final class ArcanistBundle {
     $obj = new ArcanistBundle();
     $obj->changes = $changes;
     $obj->diskPath = $path;
-    $obj->setProjectID($project_name);
     $obj->setBaseRevision($base_revision);
     $obj->setRevisionID($revision_id);
     $obj->setEncoding($encoding);
@@ -228,7 +217,6 @@ final class ArcanistBundle {
 
     $meta_info = array(
       'version'      => 5,
-      'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
       'revisionID'   => $this->getRevisionID(),
       'encoding'     => $this->getEncoding(),
