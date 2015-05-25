@@ -1527,58 +1527,14 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function getRepositoryEncoding() {
-    $default = 'UTF-8';
-    return nonempty(idx($this->getProjectInfo(), 'encoding'), $default);
-  }
-
-  final protected function getProjectInfo() {
-    if ($this->projectInfo === null) {
-      $project_id = $this->getWorkingCopy()->getProjectID();
-      if (!$project_id) {
-        $this->projectInfo = array();
-      } else {
-        try {
-          $this->projectInfo = $this->getConduit()->callMethodSynchronous(
-            'arcanist.projectinfo',
-            array(
-              'name' => $project_id,
-            ));
-        } catch (ConduitClientException $ex) {
-          if ($ex->getErrorCode() != 'ERR-BAD-ARCANIST-PROJECT') {
-            throw $ex;
-          }
-
-          // TODO: Implement a proper query method that doesn't throw on
-          // project not found. We just swallow this because some pathways,
-          // like Git with uncommitted changes in a repository with a new
-          // project ID, may attempt to access project information before
-          // the project is created. See T2153.
-          return array();
-        }
-      }
-    }
-
-    return $this->projectInfo;
+    return nonempty(
+      idx($this->loadProjectRepository(), 'encoding'),
+      'UTF-8');
   }
 
   final protected function loadProjectRepository() {
-    $project = $this->getProjectInfo();
-    if (isset($project['repository'])) {
-      return $project['repository'];
-    }
-    // NOTE: The rest of the code is here for backwards compatibility.
-
-    $repository_phid = idx($project, 'repositoryPHID');
-    if (!$repository_phid) {
-      return array();
-    }
-
-    $repositories = $this->getConduit()->callMethodSynchronous(
-      'repository.query',
-      array());
-    $repositories = ipull($repositories, null, 'phid');
-
-    return idx($repositories, $repository_phid, array());
+    list($info, $reasons) = $this->loadRepositoryInformation();
+    return $info;
   }
 
   final protected function newInteractiveEditor($text) {
@@ -1810,40 +1766,6 @@ abstract class ArcanistWorkflow extends Phobject {
       $reasons[] = pht(
         'Configuration value "%s" is empty.',
         'repository.callsign');
-    }
-
-    $project_info = $this->getProjectInfo();
-    $project_name = $this->getWorkingCopy()->getProjectID();
-    if ($this->getProjectInfo()) {
-      if (!empty($project_info['repository']['callsign'])) {
-        $callsign = $project_info['repository']['callsign'];
-        $query = array(
-          'callsigns' => array($callsign),
-        );
-        $reasons[] = pht(
-          'Configuration value "%s" is set to "%s"; this project '.
-          'is associated with the "%s" repository.',
-          'project.name',
-          $project_name,
-          $callsign);
-        return array($query, $reasons);
-      } else {
-        $reasons[] = pht(
-          'Configuration value "%s" is set to "%s", but this '.
-          'project is not associated with a repository.',
-          'project.name',
-          $project_name);
-      }
-    } else if (strlen($project_name)) {
-      $reasons[] = pht(
-        'Configuration value "%s" is set to "%s", but that '.
-        'project does not exist.',
-        'project.name',
-        $project_name);
-    } else {
-      $reasons[] = pht(
-        'Configuration value "%s" is empty.',
-        'project.name');
     }
 
     $uuid = $this->getRepositoryAPI()->getRepositoryUUID();
