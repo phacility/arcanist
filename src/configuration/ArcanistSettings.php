@@ -49,15 +49,6 @@ final class ArcanistSettings {
           'Associates this working copy with a specific installation of '.
           'Phabricator.'),
       ),
-      'project.name' => array(
-        'type' => 'string',
-        'legacy' => 'project_id',
-        'example' => '"arcanist"',
-        'help' => pht(
-          'Associates this working copy with a named Arcanist Project. '.
-          'This is primarily useful if you use SVN and have several different '.
-          'projects in the same repository.'),
-      ),
       'lint.engine' => array(
         'type' => 'string',
         'legacy' => 'lint_engine',

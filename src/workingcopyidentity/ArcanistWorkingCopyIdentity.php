@@ -216,16 +216,6 @@ final class ArcanistWorkingCopyIdentity {
     $this->projectConfig = $config;
   }
 
-  public function getProjectID() {
-    $project_id = $this->getProjectConfig('project.name');
-    if ($project_id) {
-      return $project_id;
-    }
-
-    // This is an older name for the setting.
-    return $this->getProjectConfig('project_id');
-  }
-
   public function getProjectRoot() {
     return $this->projectRoot;
   }

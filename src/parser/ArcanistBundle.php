@@ -133,7 +133,6 @@ final class ArcanistBundle {
         $path);
       $meta_info = $future->resolveJSON();
       $version       = idx($meta_info, 'version', 0);
-      $project_name  = idx($meta_info, 'projectName');
       $base_revision = idx($meta_info, 'baseRevision');
       $revision_id   = idx($meta_info, 'revisionID');
       $encoding      = idx($meta_info, 'encoding');
@@ -142,7 +141,6 @@ final class ArcanistBundle {
     } else {
       // this arc bundle was probably made before we started storing meta info
       $version       = 0;
-      $project_name  = null;
       $base_revision = null;
       $revision_id   = null;
       $encoding      = null;
