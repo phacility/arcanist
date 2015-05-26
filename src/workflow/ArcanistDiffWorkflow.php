@@ -1724,11 +1724,7 @@ EOTEXT
         }
       } catch (Exception $ex) {
         if ($wrote) {
-          echo phutil_console_wrap(
-            "%s\n",
-            pht(
-              '(Message saved to %s.)',
-              $where));
+          echo phutil_console_wrap(pht('(Message saved to %s.)', $where)."\n");
         }
         throw $ex;
       }
