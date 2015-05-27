@@ -370,6 +370,9 @@ EOTEXT
       'skip-binaries' => array(
         'help'  => pht('Do not upload binaries (like images).'),
       ),
+      'skip-staging' => array(
+        'help' => pht('Do not copy changes to the staging area.'),
+      ),
       'ignore-unsound-tests' => array(
         'help'  => pht('Ignore unsound test failures without prompting.'),
       ),
@@ -516,6 +519,8 @@ EOTEXT
         'lintResult' => $lint_result,
         'unitResult' => $unit_result,
       ));
+
+    $this->pushChangesToStagingArea($this->diffID);
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -2602,6 +2607,87 @@ EOTEXT
 
   private function shouldOpenCreatedObjectsInBrowser() {
     return $this->getArgument('browse');
+  }
+
+  private function pushChangesToStagingArea($id) {
+    if ($this->getArgument('skip-staging')) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Flag --skip-staging was specified.'));
+      return;
+    }
+
+    if ($this->isRawDiffSource()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Raw changes can not be pushed to a staging area.'));
+      return;
+    }
+
+    if (!$this->getRepositoryPHID()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Unable to determine repository for this change.'));
+      return;
+    }
+
+    $staging = $this->getRepositoryStagingConfiguration();
+    if ($staging === null) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('The server does not support staging areas.'));
+      return;
+    }
+
+    $supported = idx($staging, 'supported');
+    if (!$supported) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Phabricator does not support staging areas for this repository.'));
+      return;
+    }
+
+    $staging_uri = idx($staging, 'uri');
+    if (!$staging_uri) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('No staging area is configured for this repository.'));
+      return;
+    }
+
+    $api = $this->getRepositoryAPI();
+    if (!($api instanceof ArcanistGitAPI)) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('This client version does not support staging this repository.'));
+      return;
+    }
+
+    $commit = $api->getHeadCommit();
+    $prefix = idx($staging, 'prefix', 'phabricator');
+    $tag = $prefix.'/diff/'.$id;
+
+    $this->writeOkay(
+      pht('PUSH STAGING'),
+      pht('Pushing changes to staging area...'));
+
+    $err = phutil_passthru(
+      'git push --no-verify -- %s %s:refs/tags/%s',
+      $staging_uri,
+      $commit,
+      $tag);
+
+    if ($err) {
+      $this->writeWarn(
+        pht('STAGING FAILED'),
+        pht('Unable to push changes to the staging area.'));
+    } else {
+      $this->writeOkay(
+        pht('STAGING PUSHED'),
+        pht(
+          'Pushed a copy of the changes to tag "%s" in the staging area.',
+          $tag));
+    }
   }
 
 }

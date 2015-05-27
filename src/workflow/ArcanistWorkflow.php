@@ -1338,6 +1338,30 @@ abstract class ArcanistWorkflow extends Phobject {
     fwrite(STDERR, $msg);
   }
 
+  final protected function writeInfo($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:blue>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeWarn($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:yellow>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeOkay($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:green>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
   final protected function isHistoryImmutable() {
     $repository_api = $this->getRepositoryAPI();
 
@@ -1666,6 +1690,11 @@ abstract class ArcanistWorkflow extends Phobject {
    */
   final protected function getRepositoryURI() {
     return idx($this->getRepositoryInformation(), 'uri');
+  }
+
+
+  final protected function getRepositoryStagingConfiguration() {
+    return idx($this->getRepositoryInformation(), 'staging');
   }
 
 
