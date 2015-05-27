@@ -394,10 +394,10 @@ try {
 } catch (Exception $ex) {
   $is_usage = ($ex instanceof ArcanistUsageException);
   if ($is_usage) {
-    echo phutil_console_format(
+    fwrite(STDERR, phutil_console_format(
       "**%s** %s\n",
       pht('Usage Exception:'),
-      $ex->getMessage());
+      $ex->getMessage()));
   }
 
   if ($config) {
@@ -405,15 +405,15 @@ try {
   }
 
   if ($config_trace_mode) {
-    echo "\n";
+    fwrite(STDERR, "\n");
     throw $ex;
   }
 
   if (!$is_usage) {
-    echo phutil_console_format("**%s**\n", pht('Exception'));
+    fwrite(STDERR, phutil_console_format("**%s**\n", pht('Exception')));
 
     while ($ex) {
-      echo $ex->getMessage()."\n";
+      fwrite(STDERR, $ex->getMessage()."\n");
 
       if ($ex instanceof PhutilProxyException) {
         $ex = $ex->getPreviousException();
@@ -422,9 +422,9 @@ try {
       }
     }
 
-    echo phutil_console_format(
+    echo fwrite(STDERR, phutil_console_format(
       "(%s)\n",
-      pht('Run with `%s` for a full exception trace.', '--trace'));
+      pht('Run with `%s` for a full exception trace.', '--trace')));
   }
 
   exit(1);
