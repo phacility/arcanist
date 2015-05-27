@@ -45,10 +45,27 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   *
+   * @param ArcanistFileDataRef File data to upload.
+   * @param null|string Optional key to use to identify this file.
+   * @return this
    * @task add
    */
-  public function addFile(ArcanistFileDataRef $file) {
-    $this->files[] = $file;
+  public function addFile(ArcanistFileDataRef $file, $key = null) {
+
+    if ($key === null) {
+      $this->files[] = $file;
+    } else {
+      if (isset($this->files[$key])) {
+        throw new Exception(
+          pht(
+            'Two files were added with identical explicit keys ("%s"); each '.
+            'explicit key must be unique.',
+            $key));
+      }
+      $this->files[$key] = $file;
+    }
+
     return $this;
   }
 
@@ -57,6 +74,11 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * This method returns a map of all file data references. If references were
+   * added with an explicit key when @{method:addFile} was called, the key is
+   * retained in the result map.
+   *
+   * @return map<string, ArcanistFileDataRef> Files with results populated.
    * @task upload
    */
   public function uploadFiles() {

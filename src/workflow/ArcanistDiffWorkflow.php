@@ -2544,72 +2544,51 @@ EOTEXT
       $change->setMetadata("{$type}:file:mime-type", $mime);
     }
 
-    echo pht('Uploading %d files...', count($need_upload))."\n";
+    $uploader = id(new ArcanistFileUploader())
+      ->setConduitClient($this->getConduit());
 
-    $hash_futures = array();
     foreach ($need_upload as $key => $spec) {
-      $hash_futures[$key] = $this->getConduit()->callMethod(
-        'file.uploadhash',
-        array(
-          'name' => $spec['name'],
-          'hash' => sha1($spec['data']),
-        ));
+      $ref = id(new ArcanistFileDataRef())
+        ->setName($spec['name'])
+        ->setData($spec['data']);
+
+      $uploader->addFile($ref, $key);
     }
 
-    $futures = id(new FutureIterator($hash_futures))
-      ->limit(8);
-    foreach ($futures as $key => $future) {
-      $type = $need_upload[$key]['type'];
-      $change = $need_upload[$key]['change'];
-      $name = $need_upload[$key]['name'];
+    $files = $uploader->uploadFiles();
 
-      $phid = null;
-      try {
-        $phid = $future->resolve();
-      } catch (Exception $e) {
-        // Just try uploading normally if the hash upload failed.
-        continue;
-      }
-
-      if ($phid) {
-        $change->setMetadata("{$type}:binary-phid", $phid);
-        unset($need_upload[$key]);
-        echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
+    $errors = false;
+    foreach ($files as $key => $file) {
+      if ($file->getErrors()) {
+        unset($files[$key]);
+        $errors = true;
+        echo pht(
+          'Failed to upload binary "%s".',
+          $file->getName());
       }
     }
 
-    $upload_futures = array();
-    foreach ($need_upload as $key => $spec) {
-      $upload_futures[$key] = $this->getConduit()->callMethod(
-        'file.upload',
-        array(
-          'name' => $spec['name'],
-          'data_base64' => base64_encode($spec['data']),
-        ));
+    if ($errors) {
+      $prompt = pht('Continue?');
+      $ok = phutil_console_confirm($prompt, $default_no = false);
+      if (!$ok) {
+        throw new ArcanistUsageException(
+          pht(
+            'Aborted due to file upload failure. You can use %s '.
+            'to skip binary uploads.',
+            '--skip-binaries'));
+      }
     }
 
-    $futures = id(new FutureIterator($upload_futures))
-      ->limit(4);
-    foreach ($futures as $key => $future) {
-      $type = $need_upload[$key]['type'];
-      $change = $need_upload[$key]['change'];
-      $name = $need_upload[$key]['name'];
+    foreach ($files as $key => $file) {
+      $spec = $need_upload[$key];
+      $phid = $file->getPHID();
 
-      try {
-        $phid = $future->resolve();
-        $change->setMetadata("{$type}:binary-phid", $phid);
-        echo pht("Uploaded '%s' (%s).", $name, $type)."\n";
-      } catch (Exception $e) {
-        echo pht("Failed to upload %s binary '%s'.", $type, $name)."\n\n";
-        echo $e->getMessage()."\n";
-        if (!phutil_console_confirm(pht('Continue?'), $default_no = false)) {
-          throw new ArcanistUsageException(
-            pht(
-              'Aborted due to file upload failure. You can use %s '.
-              'to skip binary uploads.',
-              '--skip-binaries'));
-        }
-      }
+      $change = $spec['change'];
+      $type = $spec['type'];
+      $change->setMetadata("{$type}:binary-phid", $phid);
+
+      echo pht('Uploaded binary data for "%s".', $file->getName())."\n";
     }
 
     echo pht('Upload complete.')."\n";
