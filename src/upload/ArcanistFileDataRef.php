@@ -33,6 +33,13 @@ final class ArcanistFileDataRef extends Phobject {
 
 
   /**
+   * Set a human-readable display filename, like "file.jpg".
+   *
+   * This name does not correspond to a path on disk, and is purely for
+   * human consumption.
+   *
+   * @param string Filename.
+   * @return this
    * @task config
    */
   public function setName($name) {
@@ -50,6 +57,13 @@ final class ArcanistFileDataRef extends Phobject {
 
 
   /**
+   * Set the data to upload as a single raw blob.
+   *
+   * You can specify file data by calling this method with a single blob of
+   * data, or by calling @{method:setPath} and providing a path to a file on
+   * disk.
+   *
+   * @param bytes Blob of file data.
    * @task config
    */
   public function setData($data) {
@@ -67,6 +81,16 @@ final class ArcanistFileDataRef extends Phobject {
 
 
   /**
+   * Set the data to upload by pointing to a file on disk.
+   *
+   * You can specify file data by calling this method with a path, or by
+   * providing a blob of raw data to @{method:setData}.
+   *
+   * The path itself only provides data. If you want to name the file, you
+   * should also call @{method:setName}.
+   *
+   * @param string Path on disk to a file containing data to upload.
+   * @return this
    * @task config
    */
   public function setPath($path) {

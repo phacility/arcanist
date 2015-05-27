@@ -33,6 +33,10 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Provide a Conduit client to choose which server to upload files to.
+   *
+   * @param ConduitClient Configured client.
+   * @return this
    * @task config
    */
   public function setConduitClient(ConduitClient $conduit) {
@@ -45,6 +49,10 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Add a file to the list of files to be uploaded.
+   *
+   * You can optionally provide an explicit key which will be used to identify
+   * the file. After adding files, upload them with @{method:uploadFiles}.
    *
    * @param ArcanistFileDataRef File data to upload.
    * @param null|string Optional key to use to identify this file.
@@ -74,9 +82,18 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Upload files to the server.
+   *
+   * This transfers all files which have been queued with @{method:addFiles}
+   * over the Conduit link configured with @{method:setConduitClient}.
+   *
    * This method returns a map of all file data references. If references were
    * added with an explicit key when @{method:addFile} was called, the key is
    * retained in the result map.
+   *
+   * On return, files are either populated with a PHID (indicating a successful
+   * upload) or a list of errors. See @{class:ArcanistFileDataRef} for
+   * details.
    *
    * @return map<string, ArcanistFileDataRef> Files with results populated.
    * @task upload
@@ -192,6 +209,9 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Upload missing chunks of a large file by calling `file.uploadchunk` over
+   * Conduit.
+   *
    * @task internal
    */
   private function uploadChunks(ArcanistFileDataRef $file, $file_phid) {
@@ -253,6 +273,8 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Upload an entire file by calling `file.upload` over Conduit.
+   *
    * @task internal
    */
   private function uploadData(ArcanistFileDataRef $file) {
@@ -270,10 +292,12 @@ final class ArcanistFileUploader extends Phobject {
 
 
   /**
+   * Write a status message.
+   *
    * @task internal
    */
   private function writeStatus($message) {
-    echo $message."\n";
+    fwrite(STDERR, $message."\n");
   }
 
 }
