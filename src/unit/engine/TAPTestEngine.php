@@ -15,7 +15,7 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
     $build_start = microtime(true);
     $config_manager = $this->getConfigurationManager();
 
-    if ($this->getEnableCoverage() !== true) {
+    if ($this->getEnableCoverage() !== false) {
         $command = $config_manager
             ->getConfigFromAnySource('unit.engine.tap.cover');
     } else {
@@ -39,7 +39,7 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
     try {
         list($stdout, $stderr) = $future->resolvex();
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-        if ($this->getEnableCoverage() !== true) {
+        if ($this->getEnableCoverage() !== false) {
             $coverage = $this->readCoverage('coverage/cobertura-coverage.xml');
             $result->setCoverage($coverage);
         }
