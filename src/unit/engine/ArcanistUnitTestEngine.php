@@ -8,14 +8,14 @@ abstract class ArcanistUnitTestEngine {
   private $workingCopy;
   private $paths;
   private $arguments = array();
-  protected $diffID;
   private $enableAsyncTests;
   private $enableCoverage;
   private $runAllTests;
   protected $renderer;
 
+  final public function __construct() {}
 
-  public function setRunAllTests($run_all_tests) {
+  final public function setRunAllTests($run_all_tests) {
     if (!$this->supportsRunAllTests() && $run_all_tests) {
       throw new Exception(
         pht(
@@ -28,7 +28,7 @@ abstract class ArcanistUnitTestEngine {
     return $this;
   }
 
-  public function getRunAllTests() {
+  final public function getRunAllTests() {
     return $this->runAllTests;
   }
 
@@ -36,15 +36,13 @@ abstract class ArcanistUnitTestEngine {
     return false;
   }
 
-  final public function __construct() {}
-
-  public function setConfigurationManager(
+  final public function setConfigurationManager(
     ArcanistConfigurationManager $configuration_manager) {
     $this->configurationManager = $configuration_manager;
     return $this;
   }
 
-  public function getConfigurationManager() {
+  final public function getConfigurationManager() {
     return $this->configurationManager;
   }
 
@@ -95,7 +93,7 @@ abstract class ArcanistUnitTestEngine {
     return $this->enableCoverage;
   }
 
-  public function setRenderer(ArcanistUnitRenderer $renderer) {
+  final public function setRenderer(ArcanistUnitRenderer $renderer) {
     $this->renderer = $renderer;
     return $this;
   }

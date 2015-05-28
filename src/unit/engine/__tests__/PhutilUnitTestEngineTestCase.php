@@ -24,7 +24,7 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
 
     self::$allTestsCounter--;
 
-    $actual_test_count = 4;
+    $actual_test_count = 5;
 
     $this->assertEqual(
       $actual_test_count,
@@ -117,6 +117,49 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
   protected function throwIfFalsey($input) {
     if (!$input) {
       throw new Exception(pht('This is a negative test case!'));
+    }
+  }
+
+  public function testGetTestPaths() {
+    $tests = array(
+      array(
+        array(),
+        array(),
+      ),
+
+      array(
+        array(__FILE__),
+        array(__FILE__),
+      ),
+
+      array(
+        array(dirname(__FILE__)),
+        array(
+          dirname(dirname(__FILE__)).'/__tests__/',
+          dirname(dirname(dirname(__FILE__))).'/__tests__/',
+        ),
+      ),
+    );
+
+    $test_engine = id(new PhutilUnitTestEngine())
+      ->setWorkingCopy($this->getWorkingCopy());
+
+    foreach ($tests as $test) {
+      list($paths, $tests) = $test;
+      $expected = array();
+
+      foreach ($tests as $path) {
+        $library_root = phutil_get_library_root_for_path($path);
+        $library = phutil_get_library_name_for_root($library_root);
+
+        $expected[] = array(
+          'library' => $library,
+          'path' => Filesystem::readablePath($path, $library_root),
+        );
+      }
+
+      $test_engine->setPaths($paths);
+      $this->assertEqual($expected, array_values($test_engine->getTestPaths()));
     }
   }
 

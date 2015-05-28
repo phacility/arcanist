@@ -166,8 +166,10 @@ abstract class PhutilTestCase {
    * @return void
    * @task exceptions
    */
-  final protected function assertException($expected_exception_class,
-                                           $callable) {
+  final protected function assertException(
+    $expected_exception_class,
+    $callable) {
+
     $this->tryTestCases(
       array('assertException' => array()),
       array(false),
@@ -300,6 +302,7 @@ abstract class PhutilTestCase {
     array $map,
     $callable,
     $exception_class = 'Exception') {
+
     return $this->tryTestCases(
       array_fuse(array_keys($map)),
       array_values($map),
@@ -655,7 +658,7 @@ abstract class PhutilTestCase {
     return (string)$uri;
   }
 
-  public function setRenderer(ArcanistUnitRenderer $renderer) {
+  final public function setRenderer(ArcanistUnitRenderer $renderer) {
     $this->renderer = $renderer;
     return $this;
   }
