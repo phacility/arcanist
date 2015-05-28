@@ -1558,7 +1558,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final protected function loadProjectRepository() {
     list($info, $reasons) = $this->loadRepositoryInformation();
-    return $info;
+    return coalesce($info, array());
   }
 
   final protected function newInteractiveEditor($text) {
