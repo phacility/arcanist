@@ -9,6 +9,7 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
   const MISSING_BUNDLE_NLS = 2;
   const MISPLACED_COMPONENT = 3;
   const MISPLACED_COMPONENT_STYL = 4;
+  const WEB_REPO = '/base/coursera/web/';
 
   public function getInfoName() {
     return pht('Couserorg');
@@ -42,9 +43,19 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
   }
 
   public function lintPath($path) {
-    if (strstr($path, '/test/')) {
+    $absolutePath = realpath($path);
+    $webPath = $_SERVER['HOME'].self::WEB_REPO;
+    $escapedWebPath = preg_quote($webPath, '/');
+
+    if (!preg_match('/'.$escapedWebPath.'(.*)/', $absolutePath, $matches)) {
+      return;
+    }
+
+    $relPath = $matches[1];
+
+    if (strstr($relPath, '/test/')) {
       return; // test files aren't path linted yet
-    } else if (preg_match('/([^_]*)__styles__\/(.+).styl/', $path, $matches)) {
+    } else if (preg_match('/([^_]*)__styles__\/(.+).styl/', $relPath, $matches)) {
       $jsxFilename = $matches[1].$matches[2].'.jsx';
 
       if (!file_exists($jsxFilename))
@@ -53,7 +64,7 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
           pht(
             'Stylus files in __styles__ must correspond to a React component in the parent directory.'));
 
-    } else if (preg_match('/^static\/bundles\/([^\/]+)\/components/', $path, $matches)) {
+    } else if (preg_match('/^static\/bundles\/([^\/]+)\/components/', $relPath, $matches)) {
       $bundleName = $matches[1];
 
       if ($bundleName != strtolower($bundleName))
@@ -70,7 +81,7 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
             'Every bundle with components must have an NLS file. To solve:'."\n".
             '$ echo "define({});" > '.$nlsPath));
 
-    } else if (preg_match('/^static\/(.+)\/components/', $path)) {
+    } else if (preg_match('/^static\/(.+)\/components/', $relPath)) {
       $this->raiseLintAtPath(
         self::MISPLACED_COMPONENT,
         pht(
