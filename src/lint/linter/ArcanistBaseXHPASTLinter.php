@@ -201,7 +201,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   }
 
 
-/* -(  Utility  )------------------------------------------------------------ */
+/* -(  Deprecated  )--------------------------------------------------------- */
 
   /**
    * Retrieve all calls to some specified function(s).

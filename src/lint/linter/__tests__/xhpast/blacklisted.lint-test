@@ -4,4 +4,10 @@ eval('evil code');
 error:2:1
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config": {"xhpast.blacklisted.function": {"eval": "Evil function"}}}
+{
+  "config": {
+    "xhpast.blacklisted.function": {
+      "eval": "Evil function"
+    }
+  }
+}
