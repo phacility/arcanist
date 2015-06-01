@@ -51,8 +51,8 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
       ),
 
       '(To ignore these %s change(s), add them to "%s".)' => array(
-        '(To ignore this change, add it to "%s".)',
-        '(To ignore these changes, add them to "%s".)',
+        '(To ignore this change, add it to "%2$s".)',
+        '(To ignore these changes, add them to "%2$s".)',
       ),
 
       '%s line(s)' => array('line', 'lines'),
