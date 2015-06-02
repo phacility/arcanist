@@ -2,7 +2,7 @@
 
 abstract class ArcanistExternalLinterTestCase extends ArcanistLinterTestCase {
 
-  public final function testVersion() {
+  final public function testVersion() {
     try {
       $version = $this->getLinter()->getVersion();
       $this->assertTrue(

@@ -138,9 +138,9 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
         if ($line->getAttribute('type') != 'stmt') {
           $coverage .= 'N';
         } else {
-          if ((int) $line->getAttribute('count') == 0) {
+          if ((int)$line->getAttribute('count') == 0) {
             $coverage .= 'U';
-          } else if ((int) $line->getAttribute('count') > 0) {
+          } else if ((int)$line->getAttribute('count') > 0) {
             $coverage .= 'C';
           }
         }

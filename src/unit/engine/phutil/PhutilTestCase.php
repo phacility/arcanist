@@ -668,7 +668,7 @@ abstract class PhutilTestCase {
    *
    * @return map
    */
-  private static final function getCallerInfo() {
+  final private static function getCallerInfo() {
     $callee = array();
     $caller = array();
     $seen = false;
