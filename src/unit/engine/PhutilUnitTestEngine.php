@@ -197,12 +197,20 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
         continue;
       }
 
-      while (($library_path = dirname($library_path)) != '.') {
+      if ($path == $library_root) {
+        $paths[$library_name.':.'] = array(
+          'library' => $library_name,
+          'path'    => '__tests__/',
+        );
+        continue;
+      }
+
+      do {
         $paths[$library_name.':'.$library_path] = array(
           'library' => $library_name,
           'path'    => $library_path.'/__tests__/',
         );
-      }
+      } while (($library_path = dirname($library_path)) != '.');
     }
 
     return $paths;

@@ -122,29 +122,47 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
 
   public function testGetTestPaths() {
     $tests = array(
-      array(
+      'empty' => array(
         array(),
         array(),
       ),
 
-      array(
+      'test file' => array(
         array(__FILE__),
         array(__FILE__),
       ),
 
-      array(
-        array(dirname(__FILE__)),
+      'test directory' => array(
+        array(
+          dirname(__FILE__),
+        ),
+        array(
+          // This is odd, but harmless.
+          dirname(dirname(__FILE__)).'/__tests__/__tests__/',
+
+          dirname(dirname(__FILE__)).'/__tests__/',
+          dirname(dirname(dirname(__FILE__))).'/__tests__/',
+        ),
+      ),
+      'normal directory' => array(
+        array(
+          dirname(dirname(__FILE__)),
+        ),
         array(
           dirname(dirname(__FILE__)).'/__tests__/',
           dirname(dirname(dirname(__FILE__))).'/__tests__/',
         ),
+      ),
+      'library root' => array(
+        array(phutil_get_library_root()),
+        array(phutil_get_library_root().'/__tests__/'),
       ),
     );
 
     $test_engine = id(new PhutilUnitTestEngine())
       ->setWorkingCopy($this->getWorkingCopy());
 
-    foreach ($tests as $test) {
+    foreach ($tests as $name => $test) {
       list($paths, $tests) = $test;
       $expected = array();
 
@@ -159,7 +177,10 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
       }
 
       $test_engine->setPaths($paths);
-      $this->assertEqual($expected, array_values($test_engine->getTestPaths()));
+      $this->assertEqual(
+        $expected,
+        array_values($test_engine->getTestPaths()),
+        pht('Test paths for: "%s"', $name));
     }
   }
 
