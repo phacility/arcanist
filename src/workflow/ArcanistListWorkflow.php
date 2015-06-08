@@ -83,8 +83,8 @@ EOTEXT
     $table = id(new PhutilConsoleTable())
       ->setShowHeader(false)
       ->addColumn('exists', array('title' => ''))
-      ->addColumn('status', array('title' => 'Status'))
-      ->addColumn('title',  array('title' => 'Title'));
+      ->addColumn('status', array('title' => pht('Status')))
+      ->addColumn('title',  array('title' => pht('Title')));
 
     $info = isort($info, 'sort');
     foreach ($info as $key => $spec) {
