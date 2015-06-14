@@ -6,7 +6,6 @@
  * @task info Human Readable Information
  * @task state Runtime State
  * @task exec Executing Linters
- * @stable
  */
 abstract class ArcanistLinter {
 

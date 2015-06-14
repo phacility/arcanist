@@ -32,8 +32,6 @@
  * @task  conduit   Conduit
  * @task  scratch   Scratch Files
  * @task  phabrep   Phabricator Repositories
- *
- * @stable
  */
 abstract class ArcanistWorkflow extends Phobject {
 
