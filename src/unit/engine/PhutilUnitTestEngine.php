@@ -197,20 +197,21 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
         continue;
       }
 
-      if ($path == $library_root) {
-        $paths[$library_name.':.'] = array(
-          'library' => $library_name,
-          'path'    => '__tests__/',
-        );
-        continue;
-      }
+      foreach (Filesystem::walkToRoot($path, $library_root) as $subpath) {
+        if ($subpath == $library_root) {
+          $paths[$library_name.':.'] = array(
+            'library' => $library_name,
+            'path'    => '__tests__/',
+          );
+        } else {
+          $library_subpath = Filesystem::readablePath($subpath, $library_root);
 
-      do {
-        $paths[$library_name.':'.$library_path] = array(
-          'library' => $library_name,
-          'path'    => $library_path.'/__tests__/',
-        );
-      } while (($library_path = dirname($library_path)) != '.');
+          $paths[$library_name.':'.$library_subpath] = array(
+            'library' => $library_name,
+            'path'    => $library_subpath.'/__tests__/',
+          );
+        }
+      }
     }
 
     return $paths;

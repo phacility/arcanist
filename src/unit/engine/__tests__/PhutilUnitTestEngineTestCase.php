@@ -142,6 +142,7 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
 
           dirname(dirname(__FILE__)).'/__tests__/',
           dirname(dirname(dirname(__FILE__))).'/__tests__/',
+          phutil_get_library_root('arcanist').'/__tests__/',
         ),
       ),
       'normal directory' => array(
@@ -151,25 +152,26 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
         array(
           dirname(dirname(__FILE__)).'/__tests__/',
           dirname(dirname(dirname(__FILE__))).'/__tests__/',
+          phutil_get_library_root('arcanist').'/__tests__/',
         ),
       ),
       'library root' => array(
-        array(phutil_get_library_root()),
-        array(phutil_get_library_root().'/__tests__/'),
+        array(phutil_get_library_root('arcanist')),
+        array(phutil_get_library_root('arcanist').'/__tests__/'),
       ),
     );
 
     $test_engine = id(new PhutilUnitTestEngine())
       ->setWorkingCopy($this->getWorkingCopy());
 
+    $library = phutil_get_current_library_name();
+    $library_root = phutil_get_library_root($library);
+
     foreach ($tests as $name => $test) {
-      list($paths, $tests) = $test;
+      list($paths, $test_paths) = $test;
       $expected = array();
 
-      foreach ($tests as $path) {
-        $library_root = phutil_get_library_root_for_path($path);
-        $library = phutil_get_library_name_for_root($library_root);
-
+      foreach ($test_paths as $path) {
         $expected[] = array(
           'library' => $library,
           'path' => Filesystem::readablePath($path, $library_root),
