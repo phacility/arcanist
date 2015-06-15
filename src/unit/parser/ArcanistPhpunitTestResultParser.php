@@ -8,8 +8,6 @@
  */
 final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
 
-  private $affectedTests;
-
   /**
    * Parse test results from phpunit json report
    *

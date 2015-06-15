@@ -9,6 +9,7 @@ abstract class ArcanistTestResultParser extends Phobject {
   protected $projectRoot;
   protected $coverageFile;
   protected $stderr;
+  protected $affectedTests;
 
   public function setEnableCoverage($enable_coverage) {
     $this->enableCoverage = $enable_coverage;
