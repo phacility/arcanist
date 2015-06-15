@@ -4,6 +4,32 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
 
   private $linter = null;
 
+  final public static function loadAllRules() {
+    $rules = array();
+
+    $symbols = id(new PhutilSymbolLoader())
+      ->setAncestorClass(__CLASS__)
+      ->loadObjects();
+
+    foreach ($symbols as $class => $rule) {
+      $id = $rule->getLintID();
+
+      if (isset($rules[$id])) {
+        throw new Exception(
+          pht(
+            'Two linter rules (`%s`, `%s`) share the same lint ID (%d). '.
+            'Each linter rule must have a unique ID.',
+            $class,
+            get_class($rules[$id]),
+            $id));
+      }
+
+      $rules[$id] = $rule;
+    }
+
+    return $rules;
+  }
+
   final public function getLintID() {
     $class = new ReflectionClass($this);
 

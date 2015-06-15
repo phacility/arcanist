@@ -8,7 +8,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private $rules = array();
 
   public function __construct() {
-    $this->rules = $this->getLinterRules();
+    $this->rules = ArcanistXHPASTLinterRule::loadAllRules();
   }
 
   public function __clone() {
@@ -64,32 +64,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   public function getVersion() {
     // TODO: Improve this.
     return count($this->rules);
-  }
-
-  public function getLinterRules() {
-    $rules = array();
-
-    $symbols = id(new PhutilSymbolLoader())
-      ->setAncestorClass('ArcanistXHPASTLinterRule')
-      ->loadObjects();
-
-    foreach ($symbols as $class => $rule) {
-      $id = $rule->getLintID();
-
-      if (isset($rules[$id])) {
-        throw new Exception(
-          pht(
-            'Two linter rules (`%s`, `%s`) share the same lint ID (%d). '.
-            'Each linter rule must have a unique ID.',
-            $class,
-            get_class($rules[$id]),
-            $id));
-      }
-
-      $rules[$id] = $rule;
-    }
-
-    return $rules;
   }
 
   protected function resolveFuture($path, Future $future) {
