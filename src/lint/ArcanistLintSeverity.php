@@ -3,7 +3,7 @@
 /**
  * Describes the severity of an @{class:ArcanistLintMessage}.
  */
-final class ArcanistLintSeverity {
+final class ArcanistLintSeverity extends Phobject {
 
   const SEVERITY_ADVICE       = 'advice';
   const SEVERITY_AUTOFIX      = 'autofix';

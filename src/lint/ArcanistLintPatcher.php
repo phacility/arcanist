@@ -3,7 +3,7 @@
 /**
  * Applies lint patches to the working copy.
  */
-final class ArcanistLintPatcher {
+final class ArcanistLintPatcher extends Phobject {
 
   private $dirtyUntil     = 0;
   private $characterDelta = 0;

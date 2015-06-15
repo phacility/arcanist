@@ -8,7 +8,7 @@
  * @task util       Name Utilities
  * @task internal   Internals
  */
-abstract class ArcanistXHPASTLintNamingHook {
+abstract class ArcanistXHPASTLintNamingHook extends Phobject {
 
 
 /* -(  Internals  )---------------------------------------------------------- */

@@ -5,7 +5,7 @@
  *
  * @task config
  */
-final class ArcanistWorkingCopyIdentity {
+final class ArcanistWorkingCopyIdentity extends Phobject {
 
   private $projectConfig;
   private $projectRoot;

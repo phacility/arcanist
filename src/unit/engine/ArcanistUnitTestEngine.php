@@ -3,7 +3,7 @@
 /**
  * Manages unit test execution.
  */
-abstract class ArcanistUnitTestEngine {
+abstract class ArcanistUnitTestEngine extends Phobject {
 
   private $workingCopy;
   private $paths;
@@ -11,6 +11,7 @@ abstract class ArcanistUnitTestEngine {
   private $enableAsyncTests;
   private $enableCoverage;
   private $runAllTests;
+  private $configurationManager;
   protected $renderer;
 
   final public function __construct() {}

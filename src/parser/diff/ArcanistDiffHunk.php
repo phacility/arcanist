@@ -3,7 +3,7 @@
 /**
  * Represents a contiguous set of added and removed lines in a diff.
  */
-final class ArcanistDiffHunk {
+final class ArcanistDiffHunk extends Phobject {
 
   protected $oldOffset;
   protected $oldLength;

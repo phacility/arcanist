@@ -3,7 +3,7 @@
 /**
  * Represents a change to an individual path.
  */
-final class ArcanistDiffChange {
+final class ArcanistDiffChange extends Phobject {
 
   protected $metadata = array();
 

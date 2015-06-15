@@ -3,7 +3,7 @@
 /**
  * Abstract base class for test result parsers.
  */
-abstract class ArcanistTestResultParser {
+abstract class ArcanistTestResultParser extends Phobject {
 
   protected $enableCoverage;
   protected $projectRoot;

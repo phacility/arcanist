@@ -6,7 +6,7 @@
  *
  * @task  parse Parsing "hg" Output
  */
-final class ArcanistMercurialParser {
+final class ArcanistMercurialParser extends Phobject {
 
 
 /* -(  Parsing "hg" Output  )------------------------------------------------ */

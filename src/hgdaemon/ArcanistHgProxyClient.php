@@ -26,7 +26,7 @@
  * @task exec       Executing Mercurial Commands
  * @task internal   Internals
  */
-final class ArcanistHgProxyClient {
+final class ArcanistHgProxyClient extends Phobject {
 
   private $workingCopy;
   private $server;

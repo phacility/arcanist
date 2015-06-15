@@ -1,6 +1,6 @@
 <?php
 
-abstract class ArcanistXHPASTLinterRule {
+abstract class ArcanistXHPASTLinterRule extends Phobject {
 
   private $linter = null;
 

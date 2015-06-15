@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistSettings {
+final class ArcanistSettings extends Phobject {
 
   private function getOptions() {
     return array(

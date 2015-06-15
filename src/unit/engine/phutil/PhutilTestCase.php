@@ -8,7 +8,7 @@
  * @task hook         Hooks for Setup and Teardown
  * @task internal     Internals
  */
-abstract class PhutilTestCase {
+abstract class PhutilTestCase extends Phobject {
 
   private $assertions = 0;
   private $runningTest;

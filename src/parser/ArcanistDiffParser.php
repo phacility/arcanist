@@ -3,7 +3,7 @@
 /**
  * Parses diffs from a working copy.
  */
-final class ArcanistDiffParser {
+final class ArcanistDiffParser extends Phobject {
 
   protected $repositoryAPI;
   protected $text;

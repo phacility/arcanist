@@ -26,7 +26,7 @@
  * @task hg         Managing Mercurial
  * @task internal   Internals
  */
-final class ArcanistHgProxyServer {
+final class ArcanistHgProxyServer extends Phobject {
 
   private $workingCopy;
   private $socket;

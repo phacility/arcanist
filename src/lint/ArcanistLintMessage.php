@@ -3,7 +3,7 @@
 /**
  * Message emitted by a linter, like an error or warning.
  */
-final class ArcanistLintMessage {
+final class ArcanistLintMessage extends Phobject {
 
   protected $path;
   protected $line;

@@ -3,7 +3,7 @@
 /**
  * Parser for JUnit, NUnit, etc results format
  */
-final class ArcanistXUnitTestResultParser {
+final class ArcanistXUnitTestResultParser extends Phobject {
 
   /**
    * Parse test results from provided input and return an array

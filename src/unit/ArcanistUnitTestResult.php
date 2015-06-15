@@ -3,7 +3,7 @@
 /**
  * Represents the outcome of running a unit test.
  */
-final class ArcanistUnitTestResult {
+final class ArcanistUnitTestResult extends Phobject {
 
   const RESULT_PASS         = 'pass';
   const RESULT_FAIL         = 'fail';

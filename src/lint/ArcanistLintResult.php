@@ -3,7 +3,7 @@
 /**
  * A group of @{class:ArcanistLintMessage}s that apply to a file.
  */
-final class ArcanistLintResult {
+final class ArcanistLintResult extends Phobject {
 
   protected $path;
   protected $data;

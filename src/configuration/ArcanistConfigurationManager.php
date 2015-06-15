@@ -3,7 +3,7 @@
 /**
  * This class holds everything related to configuration and configuration files.
  */
-final class ArcanistConfigurationManager {
+final class ArcanistConfigurationManager extends Phobject {
 
   private $runtimeConfig = array();
   private $workingCopy = null;

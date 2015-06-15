@@ -3,7 +3,7 @@
 /**
  * Converts changesets between different formats.
  */
-final class ArcanistBundle {
+final class ArcanistBundle extends Phobject {
 
   private $changes;
   private $conduit;
