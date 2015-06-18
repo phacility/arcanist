@@ -18,13 +18,13 @@ final class ArcanistCloseWorkflow extends ArcanistWorkflow {
 
   private function getStatusOptions() {
     if ($this->statusData === null) {
-      throw new Exception(pht('Call %s first!', 'loadStatusData()'));
+      throw new PhutilInvalidStateException('loadStatusData');
     }
     return idx($this->statusData, 'statusMap');
   }
   private function getDefaultClosedStatus() {
     if ($this->statusData === null) {
-      throw new Exception(pht('Call %s first!', 'loadStatusData()'));
+      throw new PhutilInvalidStateException('loadStatusData');
     }
     return idx($this->statusData, 'defaultClosedStatus');
   }
