@@ -319,6 +319,8 @@ EOTEXT
       $this->getUpstreamMatching($this->onto, '/^refs\/remotes\/(.+?)\//'),
       $remote_default);
     $this->remote = $this->getArgument('remote', $remote_default);
+	
+	$this->hold = $this->getArgument('hold') || $this->getConfigFromAnySource('arc.land.hold.default');
 
     if ($this->getArgument('merge')) {
       $this->useSquash = false;
@@ -1023,7 +1025,7 @@ EOTEXT
       throw $ex;
     }
 
-    if ($this->getArgument('hold')) {
+    if ($this->hold) {
       echo phutil_console_format(pht(
         'Holding change in **%s**: it has NOT been pushed yet.',
         $this->onto)."\n");
