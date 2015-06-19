@@ -53,8 +53,8 @@ abstract class ArcanistWorkflow extends Phobject {
   private $repositoryAPI;
   private $configurationManager;
   private $workingCopy;
-  private $arguments;
-  private $passedArguments;
+  private $arguments = array();
+  private $passedArguments = array();
   private $command;
 
   private $stashed;

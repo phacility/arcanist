@@ -84,6 +84,9 @@ EOTEXT
           continue;
         }
 
+        $workflow->setArcanistConfiguration($this->getArcanistConfiguration());
+        $workflow->setConfigurationManager($this->getConfigurationManager());
+
         if ($vcs || $workflow->requiresWorkingCopy()) {
           $supported_vcs = $workflow->getSupportedRevisionControlSystems();
           if (!in_array($vcs, $supported_vcs)) {
