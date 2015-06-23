@@ -21,6 +21,7 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
+  private $hitAutotargets;
 
   public function getWorkflowName() {
     return 'diff';
@@ -521,6 +522,13 @@ EOTEXT
       ));
 
     $this->pushChangesToStagingArea($this->diffID);
+
+    $phid = idx($diff_info, 'phid');
+    if ($phid) {
+      $this->hitAutotargets = $this->updateAutotargets(
+        $phid,
+        $unit_result);
+    }
 
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
@@ -2358,19 +2366,18 @@ EOTEXT
    */
   private function updateLintDiffProperty() {
     if (strlen($this->excuses['lint'])) {
-      $this->updateDiffProperty('arc:lint-excuse',
+      $this->updateDiffProperty(
+        'arc:lint-excuse',
         json_encode($this->excuses['lint']));
     }
 
-    if ($this->unresolvedLint) {
-      $this->updateDiffProperty('arc:lint', json_encode($this->unresolvedLint));
+    if (!$this->hitAutotargets) {
+      if ($this->unresolvedLint) {
+        $this->updateDiffProperty(
+          'arc:lint',
+          json_encode($this->unresolvedLint));
+      }
     }
-
-    $postponed = $this->postponedLinters;
-    if ($postponed) {
-      $this->updateDiffProperty('arc:lint-postponed', json_encode($postponed));
-    }
-
   }
 
 
@@ -2387,8 +2394,10 @@ EOTEXT
         json_encode($this->excuses['unit']));
     }
 
-    if ($this->testResults) {
-      $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
+    if (!$this->hitAutotargets) {
+      if ($this->testResults) {
+        $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
+      }
     }
   }
 
@@ -2688,6 +2697,105 @@ EOTEXT
           'Pushed a copy of the changes to tag "%s" in the staging area.',
           $tag));
     }
+  }
+
+
+  /**
+   * Try to upload lint and unit test results into modern Harbormaster build
+   * targets.
+   *
+   * @return bool True if everything was uploaded to build targets.
+   */
+  private function updateAutotargets($diff_phid, $unit_result) {
+    $lint_key = 'arcanist.lint';
+    $unit_key = 'arcanist.unit';
+
+    try {
+      $result = $this->getConduit()->callMethodSynchronous(
+        'harbormaster.queryautotargets',
+        array(
+          'objectPHID' => $diff_phid,
+          'targetKeys' => array(
+            $lint_key,
+            $unit_key,
+          ),
+        ));
+      $targets = idx($result, 'targetMap', array());
+    } catch (Exception $ex) {
+      return false;
+    }
+
+    $futures = array();
+
+    $lint_target = idx($targets, $lint_key);
+    if ($lint_target) {
+      $lint = nonempty($this->unresolvedLint, array());
+      foreach ($lint as $key => $message) {
+        $lint[$key] = $this->getModernLintDictionary($message);
+      }
+
+      $futures[] = $this->getConduit()->callMethod(
+        'harbormaster.sendmessage',
+        array(
+          'buildTargetPHID' => $lint_target,
+          'lint' => array_values($lint),
+          'type' => $lint ? 'fail' : 'pass',
+        ));
+    }
+
+    $unit_target = idx($targets, $unit_key);
+    if ($unit_target) {
+      $unit = nonempty($this->testResults, array());
+      foreach ($unit as $key => $message) {
+        $unit[$key] = $this->getModernUnitDictionary($message);
+      }
+
+      switch ($unit_result) {
+        case ArcanistUnitWorkflow::RESULT_OKAY:
+        case ArcanistUnitWorkflow::RESULT_SKIP:
+          $type = 'pass';
+          break;
+        default:
+          $type = 'fail';
+          break;
+      }
+
+      $futures[] = $this->getConduit()->callMethod(
+        'harbormaster.sendmessage',
+        array(
+          'buildTargetPHID' => $unit_target,
+          'unit' => array_values($unit),
+          'type' => $type,
+        ));
+    }
+
+    try {
+      foreach (new FutureIterator($futures) as $future) {
+        $future->resolve();
+      }
+      return true;
+    } catch (Exception $ex) {
+      return false;
+    }
+  }
+
+  private function getModernLintDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+    return $map;
+  }
+
+  private function getModernUnitDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+    return $map;
+  }
+
+  private function getModernCommonDictionary(array $map) {
+    foreach ($map as $key => $value) {
+      if ($value === null) {
+        unset($map[$key]);
+      }
+    }
+    return $map;
   }
 
 }
