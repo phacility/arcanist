@@ -23,6 +23,7 @@ final class ArcanistControlStatementSpacingXHPASTLinterRule
         case 'T_WHILE':
         case 'T_DO':
         case 'T_SWITCH':
+        case 'T_CATCH':
           $after = $token->getNonsemanticTokensAfter();
           if (empty($after)) {
             $this->raiseLintAtToken(
