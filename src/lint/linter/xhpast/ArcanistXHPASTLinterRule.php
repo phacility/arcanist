@@ -69,6 +69,7 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
 
   final public function setLinter(ArcanistXHPASTLinter $linter) {
     $this->linter = $linter;
+    return $this;
   }
 
   /**

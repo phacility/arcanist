@@ -13,6 +13,7 @@ final class ArcanistConfigurationManager extends Phobject {
   public function setWorkingCopyIdentity(
     ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
+    return $this;
   }
 
 /* -(  Get config  )--------------------------------------------------------- */
@@ -243,6 +244,7 @@ final class ArcanistConfigurationManager extends Phobject {
 
     $this->customArcrcFilename = $custom_arcrc;
     $this->userConfigCache = null;
+    return $this;
   }
 
   public function getUserConfigurationFileLocation() {
