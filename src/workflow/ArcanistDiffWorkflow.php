@@ -2734,12 +2734,24 @@ EOTEXT
         $lint[$key] = $this->getModernLintDictionary($message);
       }
 
+      // Consider this target to have failed if there are any unresolved
+      // errors or warnings.
+      $type = 'pass';
+      foreach ($lint as $message) {
+        switch (idx($message, 'severity')) {
+          case ArcanistLintSeverity::SEVERITY_WARNING:
+          case ArcanistLintSeverity::SEVERITY_ERROR:
+            $type = 'fail';
+            break;
+        }
+      }
+
       $futures[] = $this->getConduit()->callMethod(
         'harbormaster.sendmessage',
         array(
           'buildTargetPHID' => $lint_target,
           'lint' => array_values($lint),
-          'type' => $lint ? 'fail' : 'pass',
+          'type' => $type,
         ));
     }
 
@@ -2775,6 +2787,9 @@ EOTEXT
       }
       return true;
     } catch (Exception $ex) {
+      // TODO: Eventually, we should expect these to succeed if we get this
+      // far, but just log errors for now.
+      phlog($ex);
       return false;
     }
   }
