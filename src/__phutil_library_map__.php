@@ -215,10 +215,7 @@ phutil_register_library_map(array(
     'XUnitTestEngine' => 'unit/engine/XUnitTestEngine.php',
     'XUnitTestResultParserTestCase' => 'unit/parser/__tests__/XUnitTestResultParserTestCase.php',
   ),
-  'function' => array(
-    'unit_test_engine_get_lines' => 'unit/engine/TAPTestEngine.php',
-    'unit_test_engine_sort_lines' => 'unit/engine/TAPTestEngine.php',
-  ),
+  'function' => array(),
   'xmap' => array(
     'ArcanistAliasWorkflow' => 'ArcanistWorkflow',
     'ArcanistAmendWorkflow' => 'ArcanistWorkflow',

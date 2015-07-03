@@ -87,7 +87,7 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
 
       $coverage = "";
       $start_line = 1;
-      $lines = unit_test_engine_get_lines($class);
+      $lines = $this->unitTestEngineGetLines($class);
 
       for ($ii = 0; $ii < count($lines); $ii++) {
         $line = $lines[$ii];
@@ -118,33 +118,33 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
     return $reports;
   }
 
-}
+  private function unitTestEngineGetLines($class) {
+    $lines = $class->getElementsByTagName('line');
+    $result = array();
 
-function unit_test_engine_get_lines($class) {
-  $lines = $class->getElementsByTagName("line");
-  $result = array();
+    for ($i = 0; $i < $lines->length; $i++) {
+      $item = $lines->item($i);
+      $line_info = array(
+        'number' => intval($item->getAttribute('number')),
+        'hits' => intval($item->getAttribute('hits')),
+      );
 
-  for ($i = 0; $i < $lines->length; $i++) {
-    $item = $lines->item($i);
-    $line_info = array(
-      "number" => intval($item->getAttribute("number")),
-      "hits" => intval($item->getAttribute("hits"))
-    );
-
-    array_push($result, $line_info);
-  }
-
-  usort($result, "unit_test_engine_sort_lines");
-  return $result;
-}
-
-function unit_test_engine_sort_lines($a, $b) {
-    $a_number = $a["number"];
-    $b_number = $b["number"];
-
-    if ($a_number === $b_number) {
-        return 0;
+      array_push($result, $line_info);
     }
 
-    return ($a_number < $b_number) ? -1 : 1;
+    usort($result, array($this, 'unitTestEngineSortLines'));
+
+    return $result;
+  }
+
+  private function unitTestEngineSortLines($a, $b) {
+      $a_number = $a['number'];
+      $b_number = $b['number'];
+
+      if ($a_number === $b_number) {
+          return 0;
+      }
+
+      return ($a_number < $b_number) ? -1 : 1;
+  }
 }
