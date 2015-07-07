@@ -7,6 +7,9 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   private $rules = array();
 
+  private $lintNameMap;
+  private $lintSeverityMap;
+
   public function __construct() {
     $this->rules = ArcanistXHPASTLinterRule::loadAllRules();
   }
@@ -37,11 +40,25 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getLintNameMap() {
-    return mpull($this->rules, 'getLintName', 'getLintID');
+    if ($this->lintNameMap === null) {
+      $this->lintNameMap = mpull(
+        $this->rules,
+        'getLintName',
+        'getLintID');
+    }
+
+    return $this->lintNameMap;
   }
 
   public function getLintSeverityMap() {
-    return mpull($this->rules, 'getLintSeverity', 'getLintID');
+    if ($this->lintSeverityMap === null) {
+      $this->lintSeverityMap = mpull(
+        $this->rules,
+        'getLintSeverity',
+        'getLintID');
+    }
+
+    return $this->lintSeverityMap;
   }
 
   public function getLinterConfigurationOptions() {

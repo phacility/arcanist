@@ -3,6 +3,7 @@
 abstract class ArcanistXHPASTLinterRule extends Phobject {
 
   private $linter = null;
+  private $lintID = null;
 
   final public static function loadAllRules() {
     $rules = array();
@@ -31,26 +32,31 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
   }
 
   final public function getLintID() {
-    $class = new ReflectionClass($this);
+    if ($this->lintID === null) {
+      $class = new ReflectionClass($this);
 
-    $const = $class->getConstant('ID');
-    if ($const === false) {
-      throw new Exception(
-        pht(
-          '`%s` class `%s` must define an ID constant.',
-          __CLASS__,
-          get_class($this)));
+      $const = $class->getConstant('ID');
+      if ($const === false) {
+        throw new Exception(
+          pht(
+            '`%s` class `%s` must define an ID constant.',
+            __CLASS__,
+            get_class($this)));
+      }
+
+      if (!is_int($const)) {
+        throw new Exception(
+          pht(
+            '`%s` class `%s` has an invalid ID constant. '.
+            'ID must be an integer.',
+            __CLASS__,
+            get_class($this)));
+      }
+
+      $this->lintID = $const;
     }
 
-    if (!is_int($const)) {
-      throw new Exception(
-        pht(
-          '`%s` class `%s` has an invalid ID constant. ID must be an integer.',
-          __CLASS__,
-          get_class($this)));
-    }
-
-    return $const;
+    return $this->lintID;
   }
 
   abstract public function getLintName();
