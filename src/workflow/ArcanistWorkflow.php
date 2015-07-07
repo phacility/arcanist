@@ -1589,8 +1589,8 @@ abstract class ArcanistWorkflow extends Phobject {
           pht(
             'This feature requires a newer version of Phabricator. Please '.
             'update it using these instructions: %s',
-            'http://www.phabricator.com/docs/phabricator/article/'.
-            'Installation_Guide.html#updating-phabricator'));
+            'https://secure.phabricator.com/book/phabricator/article/'.
+              'upgrading/'));
       }
       throw $ex;
     }

@@ -965,8 +965,8 @@ EOTEXT
         'and not as well for large automated changes or bulk checkins. '.
         'See %s for information about reviewing big checkins. Continue anyway?',
         new PhutilNumber(count($changes)),
-        'http://www.phabricator.com/docs/phabricator/article/'.
-        'Differential_User_Guide_Large_Changes.html');
+        'https://secure.phabricator.com/book/phabricator/article/'.
+          'differential_large_changes/');
 
       if (!phutil_console_confirm($message)) {
         throw new ArcanistUsageException(
