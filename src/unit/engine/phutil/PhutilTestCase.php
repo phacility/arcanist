@@ -582,7 +582,10 @@ abstract class PhutilTestCase extends Phobject {
       $max = max(array_keys($report));
       $str = '';
       for ($ii = 1; $ii <= $max; $ii++) {
-        $c = idx($report, $ii);
+        $c = null;
+        if (isset($report[$ii])) {
+          $c = $report[$ii];
+        }
         if ($c === -1) {
           $str .= 'U'; // Un-covered.
         } else if ($c === -2) {
