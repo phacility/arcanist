@@ -97,6 +97,11 @@ EOTEXT
           "With 'compiler', show lint warnings in suitable for your editor. ".
           "With 'xml', show lint warnings in the Checkstyle XML format."),
       ),
+      'outfile' => array(
+        'param' => 'path',
+        'help' => pht(
+          'Output the linter results to a file. Defaults to stdout.'),
+      ),
       'only-new' => array(
         'param' => 'bool',
         'supports' => array('git', 'hg'), // TODO: svn
@@ -464,7 +469,19 @@ EOTEXT
     }
 
     $all_autofix = true;
-    $console->writeOut('%s', $renderer->renderPreamble());
+    $tmp = null;
+
+    if ($this->getArgument('outfile') !== null) {
+      $tmp = id(new TempFile())
+        ->setPreserveFile(true);
+    }
+
+    $preamble = $renderer->renderPreamble();
+    if ($tmp) {
+      Filesystem::appendFile($tmp, $preamble);
+    } else {
+      $console->writeOut('%s', $preamble);
+    }
 
     foreach ($results as $result) {
       $result_all_autofix = $result->isAllAutofix();
@@ -479,7 +496,11 @@ EOTEXT
 
       $lint_result = $renderer->renderLintResult($result);
       if ($lint_result) {
-        $console->writeOut('%s', $lint_result);
+        if ($tmp) {
+          Filesystem::appendFile($tmp, $lint_result);
+        } else {
+          $console->writeOut('%s', $lint_result);
+        }
       }
 
       if ($apply_patches && $result->isPatchable()) {
@@ -516,7 +537,13 @@ EOTEXT
       }
     }
 
-    $console->writeOut('%s', $renderer->renderPostamble());
+    $postamble = $renderer->renderPostamble();
+    if ($tmp) {
+      Filesystem::appendFile($tmp, $postamble);
+      Filesystem::rename($tmp, $this->getArgument('outfile'));
+    } else {
+      $console->writeOut('%s', $postamble);
+    }
 
     if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
