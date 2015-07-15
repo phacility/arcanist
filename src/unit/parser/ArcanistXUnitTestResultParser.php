@@ -89,7 +89,7 @@ final class ArcanistXUnitTestResultParser extends Phobject {
       $result = new ArcanistUnitTestResult();
       $result->setName($classname.'.'.$name);
       $result->setResult($status);
-      $result->setDuration($time);
+      $result->setDuration((float)$time);
       $result->setUserData($user_data);
 
       $results[] = $result;

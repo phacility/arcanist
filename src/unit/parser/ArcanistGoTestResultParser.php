@@ -31,7 +31,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
         // We have a passing test
         $meta = array();
         preg_match(
-          '/^--- PASS: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds)?\).*/',
+          '/^--- PASS: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds?)?\).*/',
           $line,
           $meta);
 
@@ -39,8 +39,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
         // For now set name without test case, we'll add it later
         $result->setName($meta['test_name']);
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-        $result->setDuration($meta['time']);
-
+        $result->setDuration((float)$meta['time']);
         $test_case_results[] = $result;
 
         continue;
@@ -51,14 +50,14 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
         $reason = trim($test_results[$i + 1]);
         $meta = array();
         preg_match(
-          '/^--- FAIL: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds)?\).*/',
+          '/^--- FAIL: (?P<test_name>.+) \((?P<time>.+)\s*s(?:econds?)?\).*/',
           $line,
           $meta);
 
         $result = new ArcanistUnitTestResult();
         $result->setName($meta['test_name']);
         $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-        $result->setDuration($meta['time']);
+        $result->setDuration((float)$meta['time']);
         $result->setUserData($reason."\n");
 
         $test_case_results[] = $result;
@@ -85,7 +84,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
           $result = new ArcanistUnitTestResult();
           $result->setName($test_name);
           $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-          $result->setDuration($meta['time']);
+          $result->setDuration((float)$meta['time']);
 
           $results[] = $result;
         } else {
