@@ -11,7 +11,6 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EOF_NEWLINE          = 4;
   const LINT_BAD_CHARSET          = 5;
   const LINT_TRAILING_WHITESPACE  = 6;
-  const LINT_NO_COMMIT            = 7;
   const LINT_BOF_WHITESPACE       = 8;
   const LINT_EOF_WHITESPACE       = 9;
 
@@ -84,7 +83,6 @@ final class ArcanistTextLinter extends ArcanistLinter {
       self::LINT_EOF_NEWLINE         => pht('File Does Not End in Newline'),
       self::LINT_BAD_CHARSET         => pht('Bad Charset'),
       self::LINT_TRAILING_WHITESPACE => pht('Trailing Whitespace'),
-      self::LINT_NO_COMMIT           => pht('Explicit %s', '@no'.'commit'),
       self::LINT_BOF_WHITESPACE      => pht('Leading Whitespace at BOF'),
       self::LINT_EOF_WHITESPACE      => pht('Trailing Whitespace at EOF'),
     );
@@ -116,10 +114,6 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
     $this->lintBOFWhitespace($path);
     $this->lintEOFWhitespace($path);
-
-    if ($this->getEngine()->getCommitHookMode()) {
-      $this->lintNoCommit($path);
-    }
   }
 
   protected function lintNewlines($path) {
@@ -291,23 +285,6 @@ final class ArcanistTextLinter extends ArcanistLinter {
         'This is unnecessary and should be avoided when possible.'),
       $string,
       '');
-  }
-
-  private function lintNoCommit($path) {
-    $data = $this->getData($path);
-
-    $deadly = '@no'.'commit';
-
-    $offset = strpos($data, $deadly);
-    if ($offset !== false) {
-      $this->raiseLintAtOffset(
-        $offset,
-        self::LINT_NO_COMMIT,
-        pht(
-          'This file is explicitly marked as "%s", which blocks commits.',
-          $deadly),
-        $deadly);
-    }
   }
 
 }

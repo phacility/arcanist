@@ -32,13 +32,14 @@ EOTEXT
   public function getArguments() {
     return array(
       'finalize' => array(
-        'help' =>
+        'help' => pht(
           "Close only if the repository is untracked and the revision is ".
           "accepted. Continue even if the close can't happen. This is a soft ".
-          "version of 'close-revision' used by other workflows.",
+          "version of '' used by other workflows.",
+          'close-revision'),
       ),
       'quiet' => array(
-        'help' =>  'Do not print a success message.',
+        'help' => pht('Do not print a success message.'),
       ),
       '*' => 'revision',
     );
@@ -68,11 +69,15 @@ EOTEXT
     $revision_list = $this->getArgument('revision', array());
     if (!$revision_list) {
       throw new ArcanistUsageException(
-        'close-revision requires a revision number.');
+        pht(
+          '%s requires a revision number.',
+          'close-revision'));
     }
     if (count($revision_list) != 1) {
       throw new ArcanistUsageException(
-        'close-revision requires exactly one revision.');
+        pht(
+          '%s requires exactly one revision.',
+          'close-revision'));
     }
     $revision_id = reset($revision_list);
     $revision_id = $this->normalizeRevisionID($revision_id);
@@ -86,8 +91,9 @@ EOTEXT
 
     if (!$revision && !$is_finalize) {
       throw new ArcanistUsageException(
-        "Revision D{$revision_id} does not exist."
-      );
+        pht(
+          'Revision %s does not exist.',
+          "D{$revision_id}"));
     }
 
     $status_accepted = ArcanistDifferentialRevisionStatus::ACCEPTED;
@@ -95,14 +101,18 @@ EOTEXT
 
     if (!$is_finalize && $revision['status'] != $status_accepted) {
       throw new ArcanistUsageException(
-        "Revision D{$revision_id} can not be closed. You can only close ".
-        "revisions which have been 'accepted'.");
+        pht(
+          "Revision %s can not be closed. You can only close ".
+          "revisions which have been 'accepted'.",
+          "D{$revision_id}"));
     }
 
     if ($revision) {
       if (!$is_finalize && $revision['authorPHID'] != $this->getUserPHID()) {
-        $prompt = "You are not the author of revision D{$revision_id}, ".
-          'are you sure you want to close it?';
+        $prompt = pht(
+          'You are not the author of revision %s, '.
+          'are you sure you want to close it?',
+          "D{$revision_id}");
         if (!phutil_console_confirm($prompt)) {
           throw new ArcanistUserAbortException();
         }
@@ -118,7 +128,10 @@ EOTEXT
       if ($actually_close) {
         $revision_name = $revision['title'];
 
-        echo "Closing revision D{$revision_id} '{$revision_name}'...\n";
+        echo pht(
+          "Closing revision %s '%s'...\n",
+          "D{$revision_id}",
+          $revision_name);
 
         $conduit->callMethodSynchronous(
           'differential.close',
@@ -143,7 +156,7 @@ EOTEXT
         $message = $this->getRepositoryAPI()->getFinalizedRevisionMessage();
         echo phutil_console_wrap($message)."\n";
       } else {
-        echo "Done.\n";
+        echo pht('Done.')."\n";
       }
     }
 

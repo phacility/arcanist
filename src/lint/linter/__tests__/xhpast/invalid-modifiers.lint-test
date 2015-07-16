@@ -1,0 +1,18 @@
+<?php
+class SomeClass {
+  public $a;
+  public public $b;
+  public protected $c;
+  private abstract $d;
+
+  public function foo() {}
+  public protected function bar() {}
+  abstract final public function baz() {}
+}
+~~~~~~~~~~
+error:2:7 XHP19
+error:4:10
+error:5:10
+error:6:11
+error:9:10
+error:10:12

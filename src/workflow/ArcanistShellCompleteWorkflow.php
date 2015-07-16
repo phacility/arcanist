@@ -30,13 +30,13 @@ EOTEXT
       'current' => array(
         'param' => 'cursor_position',
         'paramtype' => 'int',
-        'help' => 'Current term in the argument list being completed.',
+        'help' => pht('Current term in the argument list being completed.'),
       ),
       '*' => 'argv',
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 
@@ -50,7 +50,9 @@ EOTEXT
 
     if ($pos > $argc) {
       throw new ArcanistUsageException(
-        'Specified position is greater than the number of arguments provided.');
+        pht(
+          'Specified position is greater than the number of '.
+          'arguments provided.'));
     }
 
     // Determine which revision control system the working copy uses, so we
@@ -82,11 +84,14 @@ EOTEXT
           continue;
         }
 
-        $supported = $workflow->getSupportedRevisionControlSystems();
+        $workflow->setArcanistConfiguration($this->getArcanistConfiguration());
+        $workflow->setConfigurationManager($this->getConfigurationManager());
 
-        $ok = (in_array('any', $supported) || in_array($vcs, $supported));
-        if (!$ok) {
-          continue;
+        if ($vcs || $workflow->requiresWorkingCopy()) {
+          $supported_vcs = $workflow->getSupportedRevisionControlSystems();
+          if (!in_array($vcs, $supported_vcs)) {
+            continue;
+          }
         }
 
         $complete[] = $name;

@@ -14,7 +14,9 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jscs` to detect issues with Javascript source files.');
+    return pht(
+      'Use `%s` to detect issues with Javascript source files.',
+      'jscs');
   }
 
   public function getLinterName() {
@@ -42,11 +44,7 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install JSCS using `npm install -g jscs`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
+    return pht('Install JSCS using `%s`.', 'npm install -g jscs');
   }
 
   protected function getMandatoryFlags() {
@@ -70,7 +68,7 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
     $options = array(
       'jscs.config' => array(
         'type' => 'optional string',
-        'help' => pht('Pass in a custom jscsrc file path.'),
+        'help' => pht('Pass in a custom %s file path.', 'jscsrc'),
       ),
       'jscs.preset' => array(
         'type' => 'optional string',
@@ -129,10 +127,6 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
 
         $messages[] = $message;
       }
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

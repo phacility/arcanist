@@ -1,12 +1,9 @@
 <?php
 
-final class ArcanistMergeConflictLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+final class ArcanistMergeConflictLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testMergeConflictLint() {
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/mergeconflict/',
-      new ArcanistMergeConflictLinter());
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/mergeconflict/');
   }
 
 }

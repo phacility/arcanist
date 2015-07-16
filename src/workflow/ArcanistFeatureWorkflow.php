@@ -53,41 +53,43 @@ EOTEXT
   public function getArguments() {
     return array(
       'view-all' => array(
-        'help' => 'Include closed and abandoned revisions.',
+        'help' => pht('Include closed and abandoned revisions.'),
       ),
       'by-status' => array(
-        'help' => 'Sort branches by status instead of time.',
+        'help' => pht('Sort branches by status instead of time.'),
       ),
       'output' => array(
         'param' => 'format',
         'support' => array(
           'json',
         ),
-        'help' => "With 'json', show features in machine-readable JSON format.",
+        'help' => pht(
+          "With '%s', show features in machine-readable JSON format.",
+          'json'),
       ),
       '*' => 'branch',
     );
   }
 
+  public function getSupportedRevisionControlSystems() {
+    return array('git', 'hg');
+  }
+
   public function run() {
     $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistGitAPI) &&
-        !($repository_api instanceof ArcanistMercurialAPI)) {
-      throw new ArcanistUsageException(
-        'arc feature is only supported under Git and Mercurial.');
-    }
 
     $names = $this->getArgument('branch');
     if ($names) {
       if (count($names) > 2) {
-        throw new ArcanistUsageException('Specify only one branch.');
+        throw new ArcanistUsageException(pht('Specify only one branch.'));
       }
       return $this->checkoutBranch($names);
     }
 
     $branches = $repository_api->getAllBranches();
     if (!$branches) {
-      throw new ArcanistUsageException('No branches in this working copy.');
+      throw new ArcanistUsageException(
+        pht('No branches in this working copy.'));
     }
 
     $branches = $this->loadCommitInfo($branches);
@@ -125,10 +127,11 @@ EOTEXT
       if (preg_match('/^D(\d+)$/', $name, $match)) {
         try {
           $diff = $this->getConduit()->callMethodSynchronous(
-            'differential.getdiff',
+            'differential.querydiffs',
             array(
-              'revision_id' => $match[1],
+              'revisionIDs' => array($match[1]),
             ));
+          $diff = head($diff);
 
           if ($diff['branch'] != '') {
             $name = $diff['branch'];
@@ -191,7 +194,9 @@ EOTEXT
 
     $branches = ipull($branches, null, 'name');
 
-    foreach (Futures($futures)->limit(16) as $name => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(16);
+    foreach ($futures as $name => $future) {
       list($info) = $future->resolvex();
       list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
 
@@ -250,7 +255,7 @@ EOTEXT
     }
 
     $results = array();
-    foreach (Futures($calls) as $call) {
+    foreach (new FutureIterator($calls) as $call) {
       $results[] = $call->resolve();
     }
 
@@ -300,7 +305,7 @@ EOTEXT
         $status = $revision['statusName'];
       } else {
         $desc = $branch['desc'];
-        $status = 'No Revision';
+        $status = pht('No Revision');
       }
 
       if (!$this->getArgument('view-all') && !$branch['current']) {
@@ -344,9 +349,9 @@ EOTEXT
       $table = id(new PhutilConsoleTable())
         ->setShowHeader(false)
         ->addColumn('current', array('title' => ''))
-        ->addColumn('name',    array('title' => 'Name'))
-        ->addColumn('status',  array('title' => 'Status'))
-        ->addColumn('descr',   array('title' => 'Description'));
+        ->addColumn('name',    array('title' => pht('Name')))
+        ->addColumn('status',  array('title' => pht('Status')))
+        ->addColumn('descr',   array('title' => pht('Description')));
 
       foreach ($out as $line) {
         $table->addRow(array(

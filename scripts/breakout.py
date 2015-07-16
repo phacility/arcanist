@@ -166,7 +166,11 @@ def main(stdscr):
     h = height / 10
     for x in range(1, width / 7 - 1):
         for y in range(1, 7):
-            entities.append(Block(x * 7, y * h + x / 2 % 2, 7, h, colors[y - 1]))
+            entities.append(Block(x * 7,
+                                  y * h + x / 2 % 2,
+                                  7,
+                                  h,
+                                  colors[y - 1]))
 
     while True:
         while select.select([ sys.stdin ], [], [], 0)[0]:

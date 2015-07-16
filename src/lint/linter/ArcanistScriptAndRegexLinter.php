@@ -6,12 +6,12 @@
  * script and a regex to interpret the results of some real linter, it does
  * not itself lint both scripts and regexes).
  *
- * Configure this linter by setting these keys in your configuration:
+ * Configure this linter by setting these keys in your .arclint section:
  *
- *  - `linter.scriptandregex.script` Script command to run. This can be
+ *  - `script-and-regex.script` Script command to run. This can be
  *    the path to a linter script, but may also include flags or use shell
  *    features (see below for examples).
- *  - `linter.scriptandregex.regex` The regex to process output with. This
+ *  - `script-and-regex.regex` The regex to process output with. This
  *    regex uses named capturing groups (detailed below) to interpret output.
  *
  * The script will be invoked from the project root, so you can specify a
@@ -155,6 +155,8 @@
  */
 final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
 
+  private $script = null;
+  private $regex = null;
   private $output = array();
 
   public function getInfoName() {
@@ -177,17 +179,18 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    * @task lint
    */
   public function willLintPaths(array $paths) {
-    $script = $this->getConfiguredScript();
-    $root   = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $root = $this->getProjectRoot();
 
     $futures = array();
     foreach ($paths as $path) {
-      $future = new ExecFuture('%C %s', $script, $path);
+      $future = new ExecFuture('%C %s', $this->script, $path);
       $future->setCWD($root);
       $futures[$path] = $future;
     }
 
-    foreach (Futures($futures)->limit(4) as $path => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $path => $future) {
       list($stdout) = $future->resolvex();
       $this->output[$path] = $stdout;
     }
@@ -199,8 +202,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    * @task lint
    */
   public function lintPath($path) {
-    $regex = $this->getConfiguredRegex();
-
     $output = idx($this->output, $path);
     if (!strlen($output)) {
       // No output, but it exited 0, so just move on.
@@ -208,7 +209,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     }
 
     $matches = null;
-    if (!preg_match_all($regex, $output, $matches, PREG_SET_ORDER)) {
+    if (!preg_match_all($this->regex, $output, $matches, PREG_SET_ORDER)) {
       // Output with no matches. This might be a configuration error, but more
       // likely it's something like "No lint errors." and the user just hasn't
       // written a sufficiently powerful/ridiculous regexp to capture it into an
@@ -221,10 +222,13 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       if (!empty($match['throw'])) {
         $throw = $match['throw'];
         throw new ArcanistUsageException(
-          "ArcanistScriptAndRegexLinter: ".
-          "configuration captured a 'throw' named capturing group, ".
-          "'{$throw}'. Script output:\n".
-          $output);
+          pht(
+            "%s: configuration captured a '%s' named capturing group, ".
+            "'%s'. Script output:\n%s",
+            __CLASS__,
+            'throw',
+            $throw,
+            $output));
       }
 
       if (!empty($match['halt'])) {
@@ -249,7 +253,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
         'code'        => idx($match, 'code', $this->getLinterName()),
         'severity'    => $this->getMatchSeverity($match),
         'name'        => idx($match, 'name', 'Lint'),
-        'description' => idx($match, 'message', 'Undefined Lint Message'),
+        'description' => idx($match, 'message', pht('Undefined Lint Message')),
       );
 
       $original = idx($match, 'original');
@@ -285,6 +289,34 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     return 'script-and-regex';
   }
 
+  public function getLinterConfigurationOptions() {
+    // These fields are optional only to avoid breaking things.
+    $options = array(
+      'script-and-regex.script' => array(
+        'type' => 'string',
+        'help' => pht('Script to execute.'),
+      ),
+      'script-and-regex.regex' => array(
+        'type' => 'regex',
+        'help' => pht('The regex to process output with.'),
+      ),
+    );
+
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'script-and-regex.script':
+        $this->script = $value;
+        return;
+      case 'script-and-regex.regex':
+        $this->regex = $value;
+        return;
+    }
+
+    return parent::setLinterConfigurationValue($key, $value);
+  }
 
 /* -(  Parsing Output  )----------------------------------------------------- */
 
@@ -340,68 +372,6 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     }
 
     return ArcanistLintSeverity::SEVERITY_ERROR;
-  }
-
-
-/* -(  Validating Configuration  )------------------------------------------- */
-
-  /**
-   * Load, validate, and return the "script" configuration.
-   *
-   * @return string The shell command fragment to use to run the linter.
-   *
-   * @task config
-   */
-  private function getConfiguredScript() {
-    $key = 'linter.scriptandregex.script';
-    $config = $this->getEngine()
-      ->getConfigurationManager()
-      ->getConfigFromAnySource($key);
-
-    if (!$config) {
-      throw new ArcanistUsageException(
-        "ArcanistScriptAndRegexLinter: ".
-        "You must configure '{$key}' to point to a script to execute.");
-    }
-
-    // NOTE: No additional validation since the "script" can be some random
-    // shell command and/or include flags, so it does not need to point to some
-    // file on disk.
-
-    return $config;
-  }
-
-  /**
-   * Load, validate, and return the "regex" configuration.
-   *
-   * @return string A valid PHP PCRE regular expression.
-   *
-   * @task config
-   */
-  private function getConfiguredRegex() {
-    $key = 'linter.scriptandregex.regex';
-    $config = $this->getEngine()
-      ->getConfigurationManager()
-      ->getConfigFromAnySource($key);
-
-    if (!$config) {
-      throw new ArcanistUsageException(
-        "ArcanistScriptAndRegexLinter: ".
-        "You must configure '{$key}' with a valid PHP PCRE regex.");
-    }
-
-    // NOTE: preg_match() returns 0 for no matches and false for compile error;
-    // this won't match, but will validate the syntax of the regex.
-
-    $ok = preg_match($config, 'syntax-check');
-    if ($ok === false) {
-      throw new ArcanistUsageException(
-        "ArcanistScriptAndRegexLinter: ".
-        "Regex '{$config}' does not compile. You must configure '{$key}' with ".
-        "a valid PHP PCRE regex, including delimiters.");
-    }
-
-    return $config;
   }
 
 }

@@ -42,7 +42,7 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     }
 
     if (empty($this->affectedTests)) {
-      throw new ArcanistNoEffectException('No tests to run.');
+      throw new ArcanistNoEffectException(pht('No tests to run.'));
     }
 
     $this->prepareConfigFile();
@@ -73,7 +73,9 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     }
 
     $results = array();
-    foreach (Futures($futures)->limit(4) as $test => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $test => $future) {
 
       list($err, $stdout, $stderr) = $future->resolve();
 
@@ -99,7 +101,7 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
    */
   private function parseTestResults($path, $json_tmp, $clover_tmp, $stderr) {
     $test_results = Filesystem::readFile($json_tmp);
-    return id(new PhpunitResultParser())
+    return id(new ArcanistPhpunitTestResultParser())
       ->setEnableCoverage($this->getEnableCoverage())
       ->setProjectRoot($this->projectRoot)
       ->setCoverageFile($clover_tmp)
@@ -258,8 +260,10 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
       if (Filesystem::pathExists($project_root.$config)) {
         $this->configFile = $project_root.$config;
       } else {
-        throw new Exception('PHPUnit configuration file was not '.
-          'found in '.$project_root.$config);
+        throw new Exception(
+          pht(
+            'PHPUnit configuration file was not found in %s',
+            $project_root.$config));
       }
     }
     $bin = $this->getConfigurationManager()->getConfigFromAnySource(
@@ -267,8 +271,7 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     if ($bin) {
       if (Filesystem::binaryExists($bin)) {
         $this->phpunitBinary = $bin;
-      }
-      else {
+      } else {
         $this->phpunitBinary = Filesystem::resolvePath($bin, $project_root);
       }
     }

@@ -71,9 +71,9 @@ function declparse(
   Q &$c,
   Q $d = null,
   Q &$e = null,
-  $f,
+  $f = null,
   $g = null,
-  &$h,
+  &$h = null,
   &$i = null) {
   $a++;
   $b++;

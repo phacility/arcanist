@@ -3,7 +3,7 @@
 /**
  * Dumping ground for diff- and diff-algorithm-related miscellany.
  */
-final class ArcanistDiffUtils {
+final class ArcanistDiffUtils extends Phobject {
 
   /**
    * Make a best-effort attempt to determine if a file is definitely binary.
@@ -26,7 +26,7 @@ final class ArcanistDiffUtils {
     $diff_options  = "-L 'Old Value' -L 'New Value'") {
 
     if ((string)$old === (string)$new) {
-      $new .= "\n(Old and new values are identical.)";
+      $new .= "\n".pht('(Old and new values are identical.)');
     }
 
     $file_old = new TempFile();

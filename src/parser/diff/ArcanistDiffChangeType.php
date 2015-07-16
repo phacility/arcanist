@@ -3,7 +3,7 @@
 /**
  * Defines constants for file types and operations in changesets.
  */
-final class ArcanistDiffChangeType {
+final class ArcanistDiffChangeType extends Phobject {
 
   const TYPE_ADD        = 1;
   const TYPE_CHANGE     = 2;
@@ -53,60 +53,65 @@ final class ArcanistDiffChangeType {
 
   public static function isOldLocationChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_MOVE_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_COPY_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_MULTICOPY  => true,
+      self::TYPE_MOVE_AWAY  => true,
+      self::TYPE_COPY_AWAY  => true,
+      self::TYPE_MULTICOPY  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isNewLocationChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_MOVE_HERE  => true,
-      ArcanistDiffChangeType::TYPE_COPY_HERE  => true,
+      self::TYPE_MOVE_HERE  => true,
+      self::TYPE_COPY_HERE  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isDeleteChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_DELETE     => true,
-      ArcanistDiffChangeType::TYPE_MOVE_AWAY  => true,
-      ArcanistDiffChangeType::TYPE_MULTICOPY  => true,
+      self::TYPE_DELETE     => true,
+      self::TYPE_MOVE_AWAY  => true,
+      self::TYPE_MULTICOPY  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isCreateChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_ADD        => true,
-      ArcanistDiffChangeType::TYPE_COPY_HERE  => true,
-      ArcanistDiffChangeType::TYPE_MOVE_HERE  => true,
+      self::TYPE_ADD        => true,
+      self::TYPE_COPY_HERE  => true,
+      self::TYPE_MOVE_HERE  => true,
     );
     return isset($types[$type]);
   }
 
   public static function isModifyChangeType($type) {
     static $types = array(
-      ArcanistDiffChangeType::TYPE_CHANGE     => true,
+      self::TYPE_CHANGE     => true,
     );
     return isset($types[$type]);
   }
 
   public static function getFullNameForChangeType($type) {
-    static $types = array(
-      self::TYPE_ADD        => 'Added',
-      self::TYPE_CHANGE     => 'Modified',
-      self::TYPE_DELETE     => 'Deleted',
-      self::TYPE_MOVE_AWAY  => 'Moved Away',
-      self::TYPE_COPY_AWAY  => 'Copied Away',
-      self::TYPE_MOVE_HERE  => 'Moved Here',
-      self::TYPE_COPY_HERE  => 'Copied Here',
-      self::TYPE_MULTICOPY  => 'Deleted After Multiple Copy',
-      self::TYPE_MESSAGE    => 'Commit Message',
-      self::TYPE_CHILD      => 'Contents Modified',
-    );
-    return idx($types, coalesce($type, '?'), 'Unknown');
+    static $types = null;
+
+    if ($types === null) {
+      $types = array(
+        self::TYPE_ADD        => pht('Added'),
+        self::TYPE_CHANGE     => pht('Modified'),
+        self::TYPE_DELETE     => pht('Deleted'),
+        self::TYPE_MOVE_AWAY  => pht('Moved Away'),
+        self::TYPE_COPY_AWAY  => pht('Copied Away'),
+        self::TYPE_MOVE_HERE  => pht('Moved Here'),
+        self::TYPE_COPY_HERE  => pht('Copied Here'),
+        self::TYPE_MULTICOPY  => pht('Deleted After Multiple Copy'),
+        self::TYPE_MESSAGE    => pht('Commit Message'),
+        self::TYPE_CHILD      => pht('Contents Modified'),
+      );
+    }
+
+    return idx($types, coalesce($type, '?'), pht('Unknown'));
   }
 
 }

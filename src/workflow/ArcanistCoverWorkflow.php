@@ -31,13 +31,13 @@ EOTEXT
     return array(
       'rev' => array(
         'param'     => 'revision',
-        'help'      => 'Cover changes since a specific revision.',
+        'help'      => pht('Cover changes since a specific revision.'),
         'supports'  => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => 'cover does not currently support --rev in svn.',
+          'svn' => pht('cover does not currently support %s in svn.', '--rev'),
         ),
       ),
       '*' => 'paths',
@@ -78,7 +78,7 @@ EOTEXT
 
     if (!$paths) {
       throw new ArcanistNoEffectException(
-        "You're covered, you didn't change anything.");
+        pht("You're covered, you didn't change anything."));
     }
 
     $covers = array();
@@ -118,13 +118,16 @@ EOTEXT
           "**%s**\n",
           $author);
         foreach ($files as $file => $info) {
-          $line_noun = pht('line(s)', count($info['lines']));
+          $line_noun = pht(
+            '%s line(s)',
+            new PhutilNumber(count($info['lines'])));
           $lines = $this->readableSequenceFromLineNumbers($info['lines']);
           echo "  {$file}: {$line_noun} {$lines}\n";
         }
       }
     } else {
-      echo "You're covered, your changes didn't touch anyone else's code.\n";
+      echo pht(
+        "You're covered, your changes didn't touch anyone else's code.\n");
     }
 
     return 0;

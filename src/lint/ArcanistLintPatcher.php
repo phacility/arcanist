@@ -3,7 +3,7 @@
 /**
  * Applies lint patches to the working copy.
  */
-final class ArcanistLintPatcher {
+final class ArcanistLintPatcher extends Phobject {
 
   private $dirtyUntil     = 0;
   private $characterDelta = 0;
@@ -49,8 +49,10 @@ final class ArcanistLintPatcher {
     list($err) = exec_manual('mv -f %s %s', $lint, $path);
     if ($err) {
       throw new Exception(
-        "Unable to overwrite path `{$path}', patched version was left ".
-        "at `{$lint}'.");
+        pht(
+          "Unable to overwrite path '%s', patched version was left at '%s'.",
+          $path,
+          $lint));
     }
 
     foreach ($this->applyMessages as $message) {
@@ -114,7 +116,7 @@ final class ArcanistLintPatcher {
     }
 
     if ($line_num >= count($this->lineOffsets)) {
-      throw new Exception("Data has fewer than `{$line}' lines.");
+      throw new Exception(pht('Data has fewer than %d lines.', $line));
     }
 
     return idx($this->lineOffsets, $line_num);

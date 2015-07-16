@@ -27,7 +27,13 @@ final class ArcanistGoLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install Golint using `go get github.com/golang/lint/golint`.');
+    return pht(
+      'Install Golint using `%s`.',
+      'go get github.com/golang/lint/golint');
+  }
+
+  public function shouldExpectCommandErrors() {
+    return false;
   }
 
   protected function canCustomizeLintSeverities() {

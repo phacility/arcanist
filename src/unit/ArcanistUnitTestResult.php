@@ -3,7 +3,7 @@
 /**
  * Represents the outcome of running a unit test.
  */
-final class ArcanistUnitTestResult {
+final class ArcanistUnitTestResult extends Phobject {
 
   const RESULT_PASS         = 'pass';
   const RESULT_FAIL         = 'fail';
@@ -57,10 +57,29 @@ final class ArcanistUnitTestResult {
     return $this->result;
   }
 
+
+  /**
+   * Set the number of seconds spent executing this test.
+   *
+   * Reporting this information can help users identify slow tests and reduce
+   * the total cost of running a test suite.
+   *
+   * Callers should pass an integer or a float. For example, pass `3` for
+   * 3 seconds, or `0.125` for 125 milliseconds.
+   *
+   * @param int|float Duration, in seconds.
+   * @return this
+   */
   public function setDuration($duration) {
+    if (!is_int($duration) && !is_float($duration)) {
+      throw new Exception(
+        pht(
+          'Parameter passed to setDuration() must be an integer or a float.'));
+    }
     $this->duration = $duration;
     return $this;
   }
+
 
   public function getDuration() {
     return $this->duration;
@@ -122,6 +141,7 @@ final class ArcanistUnitTestResult {
 
   public function toDictionary() {
     return array(
+      'namespace' => $this->getNamespace(),
       'name' => $this->getName(),
       'link' => $this->getLink(),
       'result' => $this->getResult(),

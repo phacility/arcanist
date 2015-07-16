@@ -1,0 +1,33 @@
+<?php
+class MyClass {
+    public function myfunc($var) {
+        echo $var;
+    }
+}
+
+$myvar = true;
+myfunc(&$myvar);
+myfunc($myvar);
+
+$this->myfunc(&$myvar);
+$this->myfunc($myvar);
+
+MyClass::myfunc(&$myvar);
+MyClass::myfunc($myvar);
+
+while (testfunc($var1, &$var2, $var3, &$var4) === false) {}
+
+sprintf('0%o', 0777 & $p);
+
+$foo(&$myvar);
+
+array_walk(array(), function() use (&$x) {});
+MyClass::myfunc(array(&$x, &$y));
+~~~~~~~~~~
+error:2:7 XHP19
+error:9:8
+error:12:15
+error:15:17
+error:18:24
+error:18:39
+error:22:6

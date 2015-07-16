@@ -14,7 +14,9 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `cppcheck` to perform static analysis on C/C++ code.');
+    return pht(
+      'Use `%s` to perform static analysis on C/C++ code.',
+      'cppcheck');
   }
 
   public function getLinterName() {
@@ -26,14 +28,7 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.cppcheck.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.cppcheck.bin', 'cppcheck');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'cppcheck';
   }
 
   public function getVersion() {
@@ -49,7 +44,16 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install Cppcheck using `apt-get install cppcheck` or similar.');
+    return pht(
+      'Install Cppcheck using `%s` or similar.',
+      'apt-get install cppcheck');
+  }
+
+  protected function getDefaultFlags() {
+    return array(
+      '-j2',
+      '--enable=performance,style,portability,information',
+    );
   }
 
   protected function getMandatoryFlags() {
@@ -61,10 +65,8 @@ final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
     );
   }
 
-  protected function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration(
-      'lint.cppcheck.options',
-      array('-j2', '--enable=performance,style,portability,information'));
+  public function shouldExpectCommandErrors() {
+    return false;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

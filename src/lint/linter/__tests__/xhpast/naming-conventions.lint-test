@@ -48,6 +48,13 @@ function i() {
   Other::$Y_y[0];
   parent::$Z_z[0];
 }
+
+function j() {
+  // Test case for bug where any static access would shadow other variables.
+  Other::$y = 0;
+  $mIxEdCaSe = 1;
+}
+
 ~~~~~~~~~~
 warning:2:13
 warning:3:9
@@ -65,3 +72,4 @@ warning:29:3
 warning:30:3
 warning:31:3
 warning:33:3
+warning:55:3

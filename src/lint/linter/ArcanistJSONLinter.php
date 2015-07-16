@@ -5,8 +5,10 @@
  */
 final class ArcanistJSONLinter extends ArcanistLinter {
 
+  const LINT_PARSE_ERROR = 1;
+
   public function getInfoName() {
-    return 'JSON Lint';
+    return pht('JSON Lint');
   }
 
   public function getInfoDescription() {
@@ -21,17 +23,26 @@ final class ArcanistJSONLinter extends ArcanistLinter {
     return 'json';
   }
 
+  public function getLintNameMap() {
+    return array(
+      self::LINT_PARSE_ERROR => pht('Parse Error'),
+    );
+  }
+
+  protected function canCustomizeLintSeverities() {
+    return false;
+  }
+
   public function lintPath($path) {
     $data = $this->getData($path);
 
     try {
-      $parser = new PhutilJSONParser();
-      $parser->parse($data);
+      id(new PhutilJSONParser())->parse($data);
     } catch (PhutilJSONParserException $ex) {
       $this->raiseLintAtLine(
         $ex->getSourceLine(),
         $ex->getSourceChar(),
-        $this->getLinterName(),
+        self::LINT_PARSE_ERROR,
         $ex->getMessage());
     }
   }

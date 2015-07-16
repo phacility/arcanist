@@ -29,7 +29,9 @@ EOTEXT
 
     if (!Filesystem::binaryExists('git')) {
       throw new ArcanistUsageException(
-        'Cannot display current version without having `git` installed.');
+        pht(
+          'Cannot display current version without having `%s` installed.',
+          'git'));
     }
 
     $roots = array(
@@ -45,13 +47,15 @@ EOTEXT
         $configuration_manager);
 
       if (!Filesystem::pathExists($repository->getMetadataPath())) {
-        throw new ArcanistUsageException("{$lib} is not a git working copy.");
+        throw new ArcanistUsageException(
+          pht('%s is not a git working copy.', $lib));
       }
 
       list($stdout) = $repository->execxLocal('log -1 --format=%s', '%H %ct');
       list($commit, $timestamp) = explode(' ', $stdout);
 
-      $console->writeOut("%s %s (%s)\n",
+      $console->writeOut(
+        "%s %s (%s)\n",
         $lib,
         $commit,
         date('j M Y', (int)$timestamp));

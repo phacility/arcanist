@@ -32,16 +32,12 @@
  * @task  conduit   Conduit
  * @task  scratch   Scratch Files
  * @task  phabrep   Phabricator Repositories
- *
- * @stable
  */
 abstract class ArcanistWorkflow extends Phobject {
 
   const COMMIT_DISABLE = 0;
   const COMMIT_ALLOW = 1;
   const COMMIT_ENABLE = 2;
-
-  const AUTO_COMMIT_TITLE = 'Automatic commit by arc';
 
   private $commitMode = self::COMMIT_DISABLE;
 
@@ -57,8 +53,8 @@ abstract class ArcanistWorkflow extends Phobject {
   private $repositoryAPI;
   private $configurationManager;
   private $workingCopy;
-  private $arguments;
-  private $passedArguments;
+  private $arguments = array();
+  private $passedArguments = array();
   private $command;
 
   private $stashed;
@@ -86,13 +82,6 @@ abstract class ArcanistWorkflow extends Phobject {
    * whether the command succeeded or failed.
    */
   public function finalize() {
-    // TODO: Remove this once ArcanistBaseWorkflow is gone.
-    if ($this instanceof ArcanistBaseWorkflow) {
-      phutil_deprecated(
-        'ArcanistBaseWorkflow',
-        'You should extend from `ArcanistWorkflow` instead.');
-    }
-
     $this->finalizeWorkingCopy();
   }
 
@@ -144,7 +133,9 @@ abstract class ArcanistWorkflow extends Phobject {
   final public function setConduitURI($conduit_uri) {
     if ($this->conduit) {
       throw new Exception(
-        'You can not change the Conduit URI after a conduit is already open.');
+        pht(
+          'You can not change the Conduit URI after a '.
+          'conduit is already open.'));
     }
     $this->conduitURI = $conduit_uri;
     return $this;
@@ -181,8 +172,10 @@ abstract class ArcanistWorkflow extends Phobject {
 
     if (!$this->conduitURI) {
       throw new Exception(
-        'You must specify a Conduit URI with setConduitURI() before you can '.
-        'establish a conduit.');
+        pht(
+          'You must specify a Conduit URI with %s before you can '.
+          'establish a conduit.',
+          'setConduitURI()'));
     }
 
     $this->conduit = new ConduitClient($this->conduitURI);
@@ -227,7 +220,7 @@ abstract class ArcanistWorkflow extends Phobject {
   final public function setConduitCredentials(array $credentials) {
     if ($this->isConduitAuthenticated()) {
       throw new Exception(
-        'You may not set new credentials after authenticating conduit.');
+        pht('You may not set new credentials after authenticating conduit.'));
     }
 
     $this->conduitCredentials = $credentials;
@@ -320,19 +313,46 @@ abstract class ArcanistWorkflow extends Phobject {
     try {
       if (!$credentials) {
         throw new Exception(
-          'Set conduit credentials with setConduitCredentials() before '.
-          'authenticating conduit!');
+          pht(
+            'Set conduit credentials with %s before authenticating conduit!',
+            'setConduitCredentials()'));
+      }
+
+      // If we have `token`, this server supports the simpler, new-style
+      // token-based authentication. Use that instead of all the certificate
+      // stuff.
+      $token = idx($credentials, 'token');
+      if (strlen($token)) {
+        $conduit = $this->getConduit();
+
+        $conduit->setConduitToken($token);
+
+        try {
+          $result = $this->getConduit()->callMethodSynchronous(
+            'user.whoami',
+            array());
+
+          $this->userName = $result['userName'];
+          $this->userPHID = $result['phid'];
+
+          $this->conduitAuthenticated = true;
+
+          return;
+        } catch (Exception $ex) {
+          $conduit->setConduitToken(null);
+          throw $ex;
+        }
       }
 
       if (empty($credentials['user'])) {
         throw new ConduitClientException(
           'ERR-INVALID-USER',
-          'Empty user in credentials.');
+          pht('Empty user in credentials.'));
       }
       if (empty($credentials['certificate'])) {
         throw new ConduitClientException(
           'ERR-NO-CERTIFICATE',
-          'Empty certificate in credentials.');
+          pht('Empty certificate in credentials.'));
       }
 
       $description = idx($credentials, 'description', '');
@@ -351,31 +371,27 @@ abstract class ArcanistWorkflow extends Phobject {
         ));
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-NO-CERTIFICATE' ||
-          $ex->getErrorCode() == 'ERR-INVALID-USER') {
+          $ex->getErrorCode() == 'ERR-INVALID-USER' ||
+          $ex->getErrorCode() == 'ERR-INVALID-AUTH') {
         $conduit_uri = $this->conduitURI;
-        $message =
-          "\n".
-          phutil_console_format(
-            'YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR').
-          "\n\n".
-          phutil_console_format(
-            '    To do this, run: **arc install-certificate**').
-          "\n\n".
-          "The server '{$conduit_uri}' rejected your request:".
-          "\n".
-          $ex->getMessage();
+        $message = phutil_console_format(
+          "\n%s\n\n    %s\n\n%s\n%s",
+          pht('YOU NEED TO __INSTALL A CERTIFICATE__ TO LOGIN TO PHABRICATOR'),
+          pht('To do this, run: **%s**', 'arc install-certificate'),
+          pht("The server '%s' rejected your request:", $conduit_uri),
+          $ex->getMessage());
         throw new ArcanistUsageException($message);
       } else if ($ex->getErrorCode() == 'NEW-ARC-VERSION') {
 
         // Cleverly disguise this as being AWESOME!!!
 
-        echo phutil_console_format("**New Version Available!**\n\n");
+        echo phutil_console_format("**%s**\n\n", pht('New Version Available!'));
         echo phutil_console_wrap($ex->getMessage());
         echo "\n\n";
-        echo "In most cases, arc can be upgraded automatically.\n";
+        echo pht('In most cases, arc can be upgraded automatically.')."\n";
 
         $ok = phutil_console_confirm(
-          'Upgrade arc now?',
+          pht('Upgrade arc now?'),
           $default_no = false);
         if (!$ok) {
           throw $ex;
@@ -386,7 +402,7 @@ abstract class ArcanistWorkflow extends Phobject {
         chdir($root);
         $err = phutil_passthru('%s upgrade', $root.'/bin/arc');
         if (!$err) {
-          echo "\nTry running your arc command again.\n";
+          echo "\n".pht('Try running your arc command again.')."\n";
         }
         exit(1);
       } else {
@@ -450,8 +466,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$this->userPHID) {
       $workflow = get_class($this);
       throw new Exception(
-        "This workflow ('{$workflow}') requires authentication, override ".
-        "requiresAuthentication() to return true.");
+        pht(
+          "This workflow ('%s') requires authentication, override ".
+          "%s to return true.",
+          $workflow,
+          'requiresAuthentication()'));
     }
     return $this->userPHID;
   }
@@ -481,8 +500,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$this->conduit) {
       $workflow = get_class($this);
       throw new Exception(
-        "This workflow ('{$workflow}') requires a Conduit, override ".
-        "requiresConduit() to return true.");
+        pht(
+          "This workflow ('%s') requires a Conduit, override ".
+          "%s to return true.",
+          $workflow,
+          'requiresConduit()'));
     }
     return $this->conduit;
   }
@@ -635,7 +657,8 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     $more = array();
-    for ($ii = 0; $ii < count($args); $ii++) {
+    $size = count($args);
+    for ($ii = 0; $ii < $size; $ii++) {
       $arg = $args[$ii];
       $arg_name = null;
       $arg_key = null;
@@ -646,6 +669,14 @@ abstract class ArcanistWorkflow extends Phobject {
         break;
       } else if (!strncmp($arg, '--', 2)) {
         $arg_key = substr($arg, 2);
+        $parts = explode('=', $arg_key, 2);
+        if (count($parts) == 2) {
+          list($arg_key, $val) = $parts;
+
+          array_splice($args, $ii, 1, array('--'.$arg_key, $val));
+          $size++;
+        }
+
         if (!array_key_exists($arg_key, $spec)) {
           $corrected = ArcanistConfiguration::correctArgumentSpelling(
             $arg_key,
@@ -658,17 +689,21 @@ abstract class ArcanistWorkflow extends Phobject {
                 '--'.head($corrected))."\n");
             $arg_key = head($corrected);
           } else {
-            throw new ArcanistUsageException(pht(
-              "Unknown argument '%s'. Try 'arc help'.",
-              $arg_key));
+            throw new ArcanistUsageException(
+              pht(
+                "Unknown argument '%s'. Try '%s'.",
+                $arg_key,
+                'arc help'));
           }
         }
       } else if (!strncmp($arg, '-', 1)) {
         $arg_key = substr($arg, 1);
         if (empty($short_to_long_map[$arg_key])) {
-          throw new ArcanistUsageException(pht(
-            "Unknown argument '%s'. Try 'arc help'.",
-            $arg_key));
+          throw new ArcanistUsageException(
+            pht(
+              "Unknown argument '%s'. Try '%s'.",
+              $arg_key,
+              'arc help'));
         }
         $arg_key = $short_to_long_map[$arg_key];
       } else {
@@ -680,10 +715,11 @@ abstract class ArcanistWorkflow extends Phobject {
       if (empty($options['param'])) {
         $dict[$arg_key] = true;
       } else {
-        if ($ii == count($args) - 1) {
-          throw new ArcanistUsageException(pht(
-            "Option '%s' requires a parameter.",
-            $arg));
+        if ($ii == $size - 1) {
+          throw new ArcanistUsageException(
+            pht(
+              "Option '%s' requires a parameter.",
+              $arg));
         }
         if (!empty($options['repeat'])) {
           $dict[$arg_key][] = $args[$ii + 1];
@@ -699,9 +735,11 @@ abstract class ArcanistWorkflow extends Phobject {
         $dict[$more_key] = $more;
       } else {
         $example = reset($more);
-        throw new ArcanistUsageException(pht(
-          "Unrecognized argument '%s'. Try 'arc help'.",
-          $example));
+        throw new ArcanistUsageException(
+          pht(
+            "Unrecognized argument '%s'. Try '%s'.",
+            $example,
+            'arc help'));
       }
     }
 
@@ -719,8 +757,10 @@ abstract class ArcanistWorkflow extends Phobject {
           // TODO: We'll always display these as long-form, when the user might
           // have typed them as short form.
           throw new ArcanistUsageException(
-            "Arguments '--{$key}' and '--{$conflict}' are mutually exclusive".
-            $more);
+            pht(
+              "Arguments '%s' and '%s' are mutually exclusive",
+              "--{$key}",
+              "--{$conflict}").$more);
         }
       }
     }
@@ -741,8 +781,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$working_copy) {
       $workflow = get_class($this);
       throw new Exception(
-        "This workflow ('{$workflow}') requires a working copy, override ".
-        "requiresWorkingCopy() to return true.");
+        pht(
+          "This workflow ('%s') requires a working copy, override ".
+          "%s to return true.",
+          $workflow,
+          'requiresWorkingCopy()'));
     }
     return $working_copy;
   }
@@ -770,8 +813,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$this->repositoryAPI) {
       $workflow = get_class($this);
       throw new Exception(
-        "This workflow ('{$workflow}') requires a Repository API, override ".
-        "requiresRepositoryAPI() to return true.");
+        pht(
+          "This workflow ('%s') requires a Repository API, override ".
+          "%s to return true.",
+          $workflow,
+          'requiresRepositoryAPI()'));
     }
     return $this->repositoryAPI;
   }
@@ -799,135 +845,198 @@ abstract class ArcanistWorkflow extends Phobject {
     $must_commit = array();
 
     $working_copy_desc = phutil_console_format(
-      "  Working copy: __%s__\n\n",
+      "  %s: __%s__\n\n",
+      pht('Working copy'),
       $api->getPath());
-
-    $untracked = $api->getUntrackedChanges();
-    if ($this->shouldRequireCleanUntrackedFiles()) {
-
-      if (!empty($untracked)) {
-        echo "You have untracked files in this working copy.\n\n".
-             $working_copy_desc.
-             "  Untracked files in working copy:\n".
-             "    ".implode("\n    ", $untracked)."\n\n";
-
-        if ($api instanceof ArcanistGitAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have '.gitignore' rules for these files and have ".
-            "not listed them in '.git/info/exclude', you may have forgotten ".
-            "to 'git add' them to your commit.\n");
-        } else if ($api instanceof ArcanistSubversionAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have 'svn:ignore' rules for these files, you may ".
-            "have forgotten to 'svn add' them.\n");
-        } else if ($api instanceof ArcanistMercurialAPI) {
-          echo phutil_console_wrap(
-            "Since you don't have '.hgignore' rules for these files, you ".
-            "may have forgotten to 'hg add' them to your commit.\n");
-        }
-
-        if ($this->askForAdd($untracked)) {
-          $api->addToCommit($untracked);
-          $must_commit += array_flip($untracked);
-        } else if ($this->commitMode == self::COMMIT_DISABLE) {
-          $prompt = $this->getAskForAddPrompt($untracked);
-          if (phutil_console_confirm($prompt)) {
-            throw new ArcanistUsageException(pht(
-              "Add these files and then run 'arc %s' again.",
-              $this->getWorkflowName()));
-          }
-        }
-
-      }
-    }
 
     // NOTE: this is a subversion-only concept.
     $incomplete = $api->getIncompleteChanges();
     if ($incomplete) {
       throw new ArcanistUsageException(
-        "You have incompletely checked out directories in this working copy. ".
-        "Fix them before proceeding.\n\n".
-        $working_copy_desc.
-        "  Incomplete directories in working copy:\n".
-        "    ".implode("\n    ", $incomplete)."\n\n".
-        "You can fix these paths by running 'svn update' on them.");
+        sprintf(
+          "%s\n\n%s  %s\n    %s\n\n%s",
+          pht(
+            "You have incompletely checked out directories in this working ".
+            "copy. Fix them before proceeding.'"),
+          $working_copy_desc,
+          pht('Incomplete directories in working copy:'),
+          implode("\n    ", $incomplete),
+          pht(
+            "You can fix these paths by running '%s' on them.",
+            'svn update')));
     }
 
     $conflicts = $api->getMergeConflicts();
     if ($conflicts) {
       throw new ArcanistUsageException(
-        "You have merge conflicts in this working copy. Resolve merge ".
-        "conflicts before proceeding.\n\n".
-        $working_copy_desc.
-        "  Conflicts in working copy:\n".
-        "    ".implode("\n    ", $conflicts)."\n");
+        sprintf(
+          "%s\n\n%s  %s\n    %s",
+          pht(
+            'You have merge conflicts in this working copy. Resolve merge '.
+            'conflicts before proceeding.'),
+          $working_copy_desc,
+          pht('Conflicts in working copy:'),
+          implode("\n    ", $conflicts)));
     }
 
     $missing = $api->getMissingChanges();
     if ($missing) {
       throw new ArcanistUsageException(
-        pht(
-          "You have missing files in this working copy. Revert or formally ".
-          "remove them (with `svn rm`) before proceeding.\n\n".
-          "%s".
-          "  Missing files in working copy:\n%s\n",
+        sprintf(
+          "%s\n\n%s  %s\n    %s\n",
+          pht(
+            'You have missing files in this working copy. Revert or formally '.
+            'remove them (with `%s`) before proceeding.',
+            'svn rm'),
           $working_copy_desc,
-          "    ".implode("\n    ", $missing)));
+          pht('Missing files in working copy:'),
+          implode("\n    ", $missing)));
     }
 
+    $uncommitted = $api->getUncommittedChanges();
     $unstaged = $api->getUnstagedChanges();
-    if ($unstaged) {
-      echo "You have unstaged changes in this working copy.\n\n".
-        $working_copy_desc.
-        "  Unstaged changes in working copy:\n".
-        "    ".implode("\n    ", $unstaged)."\n";
-      if ($this->askForAdd($unstaged)) {
-        $api->addToCommit($unstaged);
-        $must_commit += array_flip($unstaged);
+
+    // We only want files which are purely uncommitted.
+    $uncommitted = array_diff($uncommitted, $unstaged);
+
+    $untracked = $api->getUntrackedChanges();
+    if (!$this->shouldRequireCleanUntrackedFiles()) {
+      $untracked = array();
+    }
+
+    if ($untracked) {
+      echo sprintf(
+        "%s\n\n%s",
+        pht('You have untracked files in this working copy.'),
+        $working_copy_desc);
+
+      if ($api instanceof ArcanistGitAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to "%s".)',
+          new PhutilNumber(count($untracked)),
+          '.git/info/exclude');
+      } else if ($api instanceof ArcanistSubversionAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to "%s".)',
+          new PhutilNumber(count($untracked)),
+          'svn:ignore');
+      } else if ($api instanceof ArcanistMercurialAPI) {
+        $hint = pht(
+          '(To ignore these %s change(s), add them to "%s".)',
+          new PhutilNumber(count($untracked)),
+          '.hgignore');
+      }
+
+      $untracked_list = "    ".implode("\n    ", $untracked);
+      echo sprintf(
+        "  %s\n  %s\n%s",
+        pht('Untracked changes in working copy:'),
+        $hint,
+        $untracked_list);
+
+      $prompt = pht(
+        'Ignore these %s untracked file(s) and continue?',
+        new PhutilNumber(count($untracked)));
+
+      if (!phutil_console_confirm($prompt)) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
+
+    $should_commit = false;
+    if ($unstaged || $uncommitted) {
+
+      // NOTE: We're running this because it builds a cache and can take a
+      // perceptible amount of time to arrive at an answer, but we don't want
+      // to pause in the middle of printing the output below.
+      $this->getShouldAmend();
+
+      echo sprintf(
+        "%s\n\n%s",
+        pht('You have uncommitted changes in this working copy.'),
+        $working_copy_desc);
+
+      $lists = array();
+
+      if ($unstaged) {
+        $unstaged_list = "    ".implode("\n    ", $unstaged);
+        $lists[] = sprintf(
+          "  %s\n%s",
+          pht('Unstaged changes in working copy:'),
+          $unstaged_list);
+      }
+
+      if ($uncommitted) {
+        $uncommitted_list = "    ".implode("\n    ", $uncommitted);
+        $lists[] = sprintf(
+          "%s\n%s",
+          pht('Uncommitted changes in working copy:'),
+          $uncommitted_list);
+      }
+
+      echo implode("\n\n", $lists)."\n";
+
+      $all_uncommitted = array_merge($unstaged, $uncommitted);
+      if ($this->askForAdd($all_uncommitted)) {
+        if ($unstaged) {
+          $api->addToCommit($unstaged);
+        }
+        $should_commit = true;
       } else {
         $permit_autostash = $this->getConfigFromAnySource(
           'arc.autostash',
           false);
         if ($permit_autostash && $api->canStashChanges()) {
-          echo "Stashing uncommitted changes. (You can restore them with ".
-               "`git stash pop`.)\n";
+           echo pht(
+            'Stashing uncommitted changes. (You can restore them with `%s`).',
+            'git stash pop')."\n";
           $api->stashChanges();
           $this->stashed = true;
         } else {
           throw new ArcanistUsageException(
-            'Stage and commit (or revert) them before proceeding.');
+            pht(
+              'You can not continue with uncommitted changes. '.
+              'Commit or discard them before proceeding.'));
         }
       }
     }
 
-    $uncommitted = $api->getUncommittedChanges();
-    foreach ($uncommitted as $key => $path) {
-      if (array_key_exists($path, $must_commit)) {
-        unset($uncommitted[$key]);
-      }
-    }
-    if ($uncommitted) {
-      echo "You have uncommitted changes in this working copy.\n\n".
-        $working_copy_desc.
-        "  Uncommitted changes in working copy:\n".
-        "    ".implode("\n    ", $uncommitted)."\n";
-      if ($this->askForAdd($uncommitted)) {
-        $must_commit += array_flip($uncommitted);
-      } else {
-        throw new ArcanistUncommittedChangesException(
-          'Commit (or revert) them before proceeding.');
-      }
-    }
-
-    if ($must_commit) {
+    if ($should_commit) {
       if ($this->getShouldAmend()) {
         $commit = head($api->getLocalCommitInformation());
         $api->amendCommit($commit['message']);
       } else if ($api->supportsLocalCommits()) {
-        $commit_message = phutil_console_prompt('Enter commit message:');
-        if ($commit_message == '') {
-          $commit_message = self::AUTO_COMMIT_TITLE;
+        $template = sprintf(
+          "\n\n# %s\n#\n# %s\n#\n",
+          pht('Enter a commit message.'),
+          pht('Changes:'));
+
+        $paths = array_merge($uncommitted, $unstaged);
+        $paths = array_unique($paths);
+        sort($paths);
+
+        foreach ($paths as $path) {
+          $template .= "#     ".$path."\n";
         }
+
+        $commit_message = $this->newInteractiveEditor($template)
+          ->setName(pht('commit-message'))
+          ->editInteractively();
+
+        if ($commit_message === $template) {
+          throw new ArcanistUsageException(
+            pht('You must provide a commit message.'));
+        }
+
+        $commit_message = ArcanistCommentRemover::removeComments(
+          $commit_message);
+
+        if (!strlen($commit_message)) {
+          throw new ArcanistUsageException(
+            pht('You must provide a nonempty commit message.'));
+        }
+
         $api->doCommit($commit_message);
       }
     }
@@ -970,13 +1079,16 @@ abstract class ArcanistWorkflow extends Phobject {
 
     // TODO: Check commits since tracking branch. If empty then return false.
 
+    // Don't amend the current commit if it has already been published.
     $repository = $this->loadProjectRepository();
     if ($repository) {
       $callsign = $repository['callsign'];
-      $known_commits = $this->getConduit()->callMethodSynchronous(
-        'diffusion.getcommits',
-        array('commits' => array('r'.$callsign.$commit['commit'])));
-      if (ifilter($known_commits, 'error', $negate = true)) {
+      $commit_name = 'r'.$callsign.$commit['commit'];
+      $result = $this->getConduit()->callMethodSynchronous(
+        'diffusion.querycommits',
+        array('names' => array($commit_name)));
+      $known_commit = idx($result['identifierMap'], $commit_name);
+      if ($known_commit) {
         return false;
       }
     }
@@ -1012,12 +1124,12 @@ abstract class ArcanistWorkflow extends Phobject {
   private function getAskForAddPrompt(array $files) {
     if ($this->getShouldAmend()) {
       $prompt = pht(
-        'Do you want to amend these files to the commit?',
-        count($files));
+        'Do you want to amend these %s change(s) to the current commit?',
+        new PhutilNumber(count($files)));
     } else {
       $prompt = pht(
-        'Do you want to add these files to the commit?',
-        count($files));
+        'Do you want to create a new commit with these %s change(s)?',
+        new PhutilNumber(count($files)));
     }
     return $prompt;
   }
@@ -1029,7 +1141,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->loadBundleFromConduit(
       $conduit,
       array(
-      'diff_id' => $diff_id,
+      'ids' => array($diff_id),
     ));
   }
 
@@ -1040,7 +1152,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->loadBundleFromConduit(
       $conduit,
       array(
-      'revision_id' => $revision_id,
+      'revisionIDs' => array($revision_id),
     ));
   }
 
@@ -1048,8 +1160,8 @@ abstract class ArcanistWorkflow extends Phobject {
     ConduitClient $conduit,
     $params) {
 
-    $future = $conduit->callMethod('differential.getdiff', $params);
-    $diff = $future->resolve();
+    $future = $conduit->callMethod('differential.querydiffs', $params);
+    $diff = head($future->resolve());
 
     $changes = array();
     foreach ($diff['changes'] as $changedict) {
@@ -1059,7 +1171,6 @@ abstract class ArcanistWorkflow extends Phobject {
     $bundle->setConduit($conduit);
     // since the conduit method has changes, assume that these fields
     // could be unset
-    $bundle->setProjectID(idx($diff, 'projectName'));
     $bundle->setBaseRevision(idx($diff, 'sourceControlBaseRevision'));
     $bundle->setRevisionID(idx($diff, 'revisionID'));
     $bundle->setAuthorName(idx($diff, 'authorName'));
@@ -1114,7 +1225,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $parser = $this->newDiffParser();
         $changes = $parser->parseDiff($diff);
         if (count($changes) != 1) {
-          throw new Exception('Expected exactly one change.');
+          throw new Exception(pht('Expected exactly one change.'));
         }
         $this->changeCache[$path] = reset($changes);
       }
@@ -1126,7 +1237,7 @@ abstract class ArcanistWorkflow extends Phobject {
         }
       }
     } else {
-      throw new Exception('Missing VCS support.');
+      throw new Exception(pht('Missing VCS support.'));
     }
 
     if (empty($this->changeCache[$path])) {
@@ -1139,7 +1250,9 @@ abstract class ArcanistWorkflow extends Phobject {
         return $change;
       } else {
         throw new Exception(
-          "Trying to get change for unchanged path '{$path}'!");
+          pht(
+            "Trying to get change for unchanged path '%s'!",
+            $path));
       }
     }
 
@@ -1161,7 +1274,10 @@ abstract class ArcanistWorkflow extends Phobject {
             $extended_info = ' '.$options['nosupport'][$system_name];
           }
           throw new ArcanistUsageException(
-            "Option '--{$arg}' is not supported under {$system_name}.".
+            pht(
+              "Option '%s' is not supported under %s.",
+              "--{$arg}",
+              $system_name).
             $extended_info);
         }
       }
@@ -1180,8 +1296,8 @@ abstract class ArcanistWorkflow extends Phobject {
     return array();
   }
 
-  protected function getSupportedRevisionControlSystems() {
-    return array('any');
+  public function getSupportedRevisionControlSystems() {
+    return array('git', 'hg', 'svn');
   }
 
   final protected function getPassthruArgumentsAsMap($command) {
@@ -1218,6 +1334,30 @@ abstract class ArcanistWorkflow extends Phobject {
    */
   final protected function writeStatusMessage($msg) {
     fwrite(STDERR, $msg);
+  }
+
+  final protected function writeInfo($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:blue>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeWarn($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:yellow>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeOkay($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:green>** %s **</bg> %s\n",
+        $title,
+        $message));
   }
 
   final protected function isHistoryImmutable() {
@@ -1261,7 +1401,10 @@ abstract class ArcanistWorkflow extends Phobject {
       foreach ($paths as $key => $path) {
         $full_path = Filesystem::resolvePath($path);
         if (!Filesystem::pathExists($full_path)) {
-          throw new ArcanistUsageException("Path '{$path}' does not exist!");
+          throw new ArcanistUsageException(
+            pht(
+              "Path '%s' does not exist!",
+              $path));
         }
         $relative_path = Filesystem::readablePath(
           $full_path,
@@ -1326,7 +1469,7 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$file) {
       return array();
     }
-    return json_decode($file, true);
+    return phutil_json_decode($file);
   }
 
 
@@ -1406,58 +1549,14 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function getRepositoryEncoding() {
-    $default = 'UTF-8';
-    return nonempty(idx($this->getProjectInfo(), 'encoding'), $default);
-  }
-
-  final protected function getProjectInfo() {
-    if ($this->projectInfo === null) {
-      $project_id = $this->getWorkingCopy()->getProjectID();
-      if (!$project_id) {
-        $this->projectInfo = array();
-      } else {
-        try {
-          $this->projectInfo = $this->getConduit()->callMethodSynchronous(
-            'arcanist.projectinfo',
-            array(
-              'name' => $project_id,
-            ));
-        } catch (ConduitClientException $ex) {
-          if ($ex->getErrorCode() != 'ERR-BAD-ARCANIST-PROJECT') {
-            throw $ex;
-          }
-
-          // TODO: Implement a proper query method that doesn't throw on
-          // project not found. We just swallow this because some pathways,
-          // like Git with uncommitted changes in a repository with a new
-          // project ID, may attempt to access project information before
-          // the project is created. See T2153.
-          return array();
-        }
-      }
-    }
-
-    return $this->projectInfo;
+    return nonempty(
+      idx($this->loadProjectRepository(), 'encoding'),
+      'UTF-8');
   }
 
   final protected function loadProjectRepository() {
-    $project = $this->getProjectInfo();
-    if (isset($project['repository'])) {
-      return $project['repository'];
-    }
-    // NOTE: The rest of the code is here for backwards compatibility.
-
-    $repository_phid = idx($project, 'repositoryPHID');
-    if (!$repository_phid) {
-      return array();
-    }
-
-    $repositories = $this->getConduit()->callMethodSynchronous(
-      'repository.query',
-      array());
-    $repositories = ipull($repositories, null, 'phid');
-
-    return idx($repositories, $repository_phid, array());
+    list($info, $reasons) = $this->loadRepositoryInformation();
+    return coalesce($info, array());
   }
 
   final protected function newInteractiveEditor($text) {
@@ -1486,10 +1585,12 @@ abstract class ArcanistWorkflow extends Phobject {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         echo phutil_console_wrap(
-          "This feature requires a newer version of Phabricator. Please ".
-          "update it using these instructions: ".
-          "http://www.phabricator.com/docs/phabricator/article/".
-          "Installation_Guide.html#updating-phabricator\n\n");
+          "%s\n\n",
+          pht(
+            'This feature requires a newer version of Phabricator. Please '.
+            'update it using these instructions: %s',
+            'https://secure.phabricator.com/book/phabricator/article/'.
+              'upgrading/'));
       }
       throw $ex;
     }
@@ -1514,13 +1615,14 @@ abstract class ArcanistWorkflow extends Phobject {
     $api = $this->getRepositoryAPI();
     if (!$api->supportsCommitRanges()) {
       throw new ArcanistUsageException(
-        'This version control system does not support commit ranges.');
+        pht('This version control system does not support commit ranges.'));
     }
 
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
-        'Specify exactly one base commit. The end of the commit range is '.
-        'always the working copy state.');
+        pht(
+          'Specify exactly one base commit. The end of the commit range is '.
+          'always the working copy state.'));
     }
 
     $api->setBaseCommit(head($argv));
@@ -1589,6 +1691,11 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
 
+  final protected function getRepositoryStagingConfiguration() {
+    return idx($this->getRepositoryInformation(), 'staging');
+  }
+
+
   /**
    * Get human-readable reasoning explaining how `arc` evaluated which
    * Phabricator repository corresponds to this working copy. Used by
@@ -1649,13 +1756,14 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$results) {
       $reasons[] = pht(
         'No repositories matched the query. Check that your configuration '.
-        'is correct, or use "repository.callsign" to select a repository '.
-        'explicitly.');
+        'is correct, or use "%s" to select a repository explicitly.',
+        'repository.callsign');
     } else if (count($results) > 1) {
       $reasons[] = pht(
         'Multiple repostories (%s) matched the query. You can use the '.
-        '"repository.callsign" configuration to select the one you want.',
-        implode(', ', ipull($results, 'callsign')));
+        '"%s" configuration to select the one you want.',
+        implode(', ', ipull($results, 'callsign')),
+        'repository.callsign');
     } else {
       $result = head($results);
       $reasons[] = pht('Found a unique matching repository.');
@@ -1677,42 +1785,14 @@ abstract class ArcanistWorkflow extends Phobject {
         'callsigns' => array($callsign),
       );
       $reasons[] = pht(
-        'Configuration value "repository.callsign" is set to "%s".',
+        'Configuration value "%s" is set to "%s".',
+        'repository.callsign',
         $callsign);
       return array($query, $reasons);
     } else {
       $reasons[] = pht(
-        'Configuration value "repository.callsign" is empty.');
-    }
-
-    $project_info = $this->getProjectInfo();
-    $project_name = $this->getWorkingCopy()->getProjectID();
-    if ($this->getProjectInfo()) {
-      if (!empty($project_info['repository']['callsign'])) {
-        $callsign = $project_info['repository']['callsign'];
-        $query = array(
-          'callsigns' => array($callsign),
-        );
-        $reasons[] = pht(
-          'Configuration value "project.name" is set to "%s"; this project '.
-          'is associated with the "%s" repository.',
-          $project_name,
-          $callsign);
-        return array($query, $reasons);
-      } else {
-        $reasons[] = pht(
-          'Configuration value "project.name" is set to "%s", but this '.
-          'project is not associated with a repository.',
-          $project_name);
-      }
-    } else if (strlen($project_name)) {
-      $reasons[] = pht(
-        'Configuration value "project.name" is set to "%s", but that '.
-        'project does not exist.',
-        $project_name);
-    } else {
-      $reasons[] = pht(
-        'Configuration value "project.name" is empty.');
+        'Configuration value "%s" is empty.',
+        'repository.callsign');
     }
 
     $uuid = $this->getRepositoryAPI()->getRepositoryUUID();
@@ -1774,9 +1854,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if (!$engine_class) {
       throw new ArcanistNoEngineException(
         pht(
-          "No lint engine is configured for this project. ".
-          "Create an '.arclint' file, or configure an advanced engine ".
-          "with 'lint.engine' in '.arcconfig'."));
+          "No lint engine is configured for this project. Create an '%s' ".
+          "file, or configure an advanced engine with '%s' in '%s'.",
+          '.arclint',
+          'lint.engine',
+          '.arcconfig'));
     }
 
     $base_class = 'ArcanistLintEngine';
@@ -1784,8 +1866,7 @@ abstract class ArcanistWorkflow extends Phobject {
         !is_subclass_of($engine_class, $base_class)) {
       throw new ArcanistUsageException(
         pht(
-          'Configured lint engine "%s" is not a subclass of "%s", but must '.
-          'be.',
+          'Configured lint engine "%s" is not a subclass of "%s", but must be.',
           $engine_class,
           $base_class));
     }
@@ -1837,8 +1918,9 @@ abstract class ArcanistWorkflow extends Phobject {
 
     throw new ArcanistUsageException(
       pht(
-        "Unable to find a browser command to run. Set 'browser' in your ".
-        "Arcanist config to specify a command to use."));
+        "Unable to find a browser command to run. Set '%s' in your ".
+        "Arcanist config to specify a command to use.",
+        'browser'));
   }
 
 

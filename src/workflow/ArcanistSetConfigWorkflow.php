@@ -36,7 +36,7 @@ EOTEXT
   public function getArguments() {
     return array(
       'local' => array(
-        'help' => 'Set a local config value instead of a user one',
+        'help' => pht('Set a local config value instead of a user one.'),
       ),
       '*' => 'argv',
     );
@@ -85,9 +85,16 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo "Deleted key '{$key}' from {$which} config.\n";
+        echo pht(
+          "Deleted key '%s' from %s config.\n",
+          $key,
+          $which);
       } else {
-        echo "Deleted key '{$key}' from {$which} config (was {$old}).\n";
+        echo pht(
+          "Deleted key '%s' from %s config (was %s).\n",
+          $key,
+          $which,
+          $old);
       }
     } else {
       $val = $settings->willWriteValue($key, $val);
@@ -103,9 +110,18 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo "Set key '{$key}' = {$val} in {$which} config.\n";
+        echo pht(
+          "Set key '%s' = %s in %s config.\n",
+          $key,
+          $val,
+          $which);
       } else {
-        echo "Set key '{$key}' = {$val} in {$which} config (was {$old}).\n";
+        echo pht(
+          "Set key '%s' = %s in %s config (was %s).\n",
+          $key,
+          $val,
+          $which,
+          $old);
       }
     }
 

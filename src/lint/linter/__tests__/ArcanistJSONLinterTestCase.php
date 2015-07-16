@@ -1,11 +1,9 @@
 <?php
 
-final class ArcanistJSONLinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistJSONLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testJSONLinter() {
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/jsonlint/',
-      new ArcanistJSONLinter());
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/jsonlint/');
   }
 
 }

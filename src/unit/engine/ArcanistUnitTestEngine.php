@@ -3,30 +3,33 @@
 /**
  * Manages unit test execution.
  */
-abstract class ArcanistUnitTestEngine {
+abstract class ArcanistUnitTestEngine extends Phobject {
 
   private $workingCopy;
   private $paths;
   private $arguments = array();
-  protected $diffID;
   private $enableAsyncTests;
   private $enableCoverage;
   private $runAllTests;
+  private $configurationManager;
   protected $renderer;
 
+  final public function __construct() {}
 
-  public function setRunAllTests($run_all_tests) {
+  final public function setRunAllTests($run_all_tests) {
     if (!$this->supportsRunAllTests() && $run_all_tests) {
-      $class = get_class($this);
       throw new Exception(
-        "Engine '{$class}' does not support --everything.");
+        pht(
+          "Engine '%s' does not support %s.",
+          get_class($this),
+          '--everything'));
     }
 
     $this->runAllTests = $run_all_tests;
     return $this;
   }
 
-  public function getRunAllTests() {
+  final public function getRunAllTests() {
     return $this->runAllTests;
   }
 
@@ -34,27 +37,18 @@ abstract class ArcanistUnitTestEngine {
     return false;
   }
 
-  final public function __construct() {}
-
-  public function setConfigurationManager(
+  final public function setConfigurationManager(
     ArcanistConfigurationManager $configuration_manager) {
     $this->configurationManager = $configuration_manager;
     return $this;
   }
 
-  public function getConfigurationManager() {
+  final public function getConfigurationManager() {
     return $this->configurationManager;
   }
 
   final public function setWorkingCopy(
     ArcanistWorkingCopyIdentity $working_copy) {
-
-    // TODO: Remove this once ArcanistBaseUnitTestEngine is gone.
-    if ($this instanceof ArcanistBaseUnitTestEngine) {
-      phutil_deprecated(
-        'ArcanistBaseUnitTestEngine',
-        'You should extend from `ArcanistUnitTestEngine` instead.');
-    }
 
     $this->workingCopy = $working_copy;
     return $this;
@@ -100,7 +94,7 @@ abstract class ArcanistUnitTestEngine {
     return $this->enableCoverage;
   }
 
-  public function setRenderer(ArcanistUnitRenderer $renderer) {
+  final public function setRenderer(ArcanistUnitRenderer $renderer) {
     $this->renderer = $renderer;
     return $this;
   }

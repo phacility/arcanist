@@ -3,7 +3,7 @@
 /**
  * Message emitted by a linter, like an error or warning.
  */
-final class ArcanistLintMessage {
+final class ArcanistLintMessage extends Phobject {
 
   protected $path;
   protected $line;
@@ -211,7 +211,7 @@ final class ArcanistLintMessage {
   }
 
   public function setDependentMessages(array $messages) {
-    assert_instances_of($messages, 'ArcanistLintMessage');
+    assert_instances_of($messages, __CLASS__);
     $this->dependentMessages = $messages;
     return $this;
   }

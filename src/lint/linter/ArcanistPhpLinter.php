@@ -5,6 +5,9 @@
  */
 final class ArcanistPhpLinter extends ArcanistExternalLinter {
 
+  const LINT_PARSE_ERROR  = 1;
+  const LINT_FATAL_ERROR  = 2;
+
   public function getInfoName() {
     return 'php -l';
   }
@@ -14,8 +17,7 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Checks for syntax errors in php files.');
+    return pht('Checks for syntax errors in PHP files.');
   }
 
   public function getLinterName() {
@@ -26,7 +28,14 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
     return 'php';
   }
 
-  public function getMandatoryFlags() {
+  public function getLintNameMap() {
+    return array(
+      self::LINT_PARSE_ERROR  => pht('Parse Error'),
+      self::LINT_FATAL_ERROR  => pht('Fatal Error'),
+    );
+  }
+
+  protected function getMandatoryFlags() {
     return array('-l');
   }
 
@@ -39,47 +48,54 @@ final class ArcanistPhpLinter extends ArcanistExternalLinter {
   }
 
   public function getVersion() {
-    list($stdout) = execx('%C --version', $this->getExecutableCommand());
-
-    $matches = array();
-    $regex = '/^PHP (?P<version>\d+\.\d+\.\d+)\b/';
-    if (preg_match($regex, $stdout, $matches)) {
-      return $matches['version'];
-    } else {
-      return false;
-    }
+    list($stdout) = execx(
+      '%C --run %s',
+      $this->getExecutableCommand(),
+      'echo phpversion();');
+    return $stdout;
   }
 
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function supportsReadDataFromStdin() {
+  protected function canCustomizeLintSeverities() {
     return false;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    // Older versions of php had both on $stdout, newer ones split it
-    // Combine $stdout and $stderr for consistency
+    // Older versions of PHP had both on stdout, newer ones split it.
+    // Combine stdout and stderr for consistency.
     $stdout = $stderr."\n".$stdout;
     $matches = array();
-    $regex = '/PHP (?<type>.+?) error:\s+(?<error>.*?)\s+in\s+(?<file>.*?)'.
-      '\s+on line\s+(?<line>\d*)/';
-    if (preg_match($regex, $stdout, $matches)) {
-      $type = strtolower($matches['type']);
-      $message = new ArcanistLintMessage();
-      $message->setPath($matches['file']);
-      $message->setLine($matches['line']);
-      $message->setCode('php.'.$type);
-      $message->setDescription('This file contains a '.$type.' error: '.
-        $matches['error'].' on line '.$matches['line']);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
 
-      // php -l only returns the first error
+    $regex = '/^(PHP )?(?<type>.+) error: +(?<error>.+) in (?<file>.+) '.
+      'on line (?<line>\d+)$/m';
+    if (preg_match($regex, $stdout, $matches)) {
+      $code = $this->getLintCodeFromLinterConfigurationKey($matches['type']);
+
+      $message = id(new ArcanistLintMessage())
+        ->setPath($path)
+        ->setLine($matches['line'])
+        ->setCode($this->getLinterName().$code)
+        ->setName($this->getLintMessageName($code))
+        ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
+        ->setDescription($matches['error']);
+
+      // `php -l` only returns the first error.
       return array($message);
     }
 
     return array();
+  }
+
+  protected function getLintCodeFromLinterConfigurationKey($code) {
+    switch (phutil_utf8_strtolower($code)) {
+      case 'parse':
+        return self::LINT_PARSE_ERROR;
+
+      case 'fatal':
+        return self::LINT_FATAL_ERROR;
+
+      default:
+        throw new Exception(pht('Unrecognized lint message code: "%s"', $code));
+    }
   }
 
 }

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBaseCommitParser {
+final class ArcanistBaseCommitParser extends Phobject {
 
   private $api;
   private $try;
@@ -22,8 +22,10 @@ final class ArcanistBaseCommitParser {
     foreach ($spec as $rule) {
       if (strpos($rule, ':') === false) {
         throw new ArcanistUsageException(
-          "Rule '{$rule}' is invalid, it must have a type and name like ".
-          "'arc:upstream'.");
+          pht(
+            "Rule '%s' is invalid, it must have a type and name like '%s'.",
+            $rule,
+            'arc:upstream'));
       }
     }
 
@@ -61,16 +63,16 @@ final class ArcanistBaseCommitParser {
       $source = head($this->try);
 
       if (!idx($specs, $source)) {
-        $this->log("No rules left from source '{$source}'.");
+        $this->log(pht("No rules left from source '%s'.", $source));
         array_shift($this->try);
         continue;
       }
 
-      $this->log("Trying rules from source '{$source}'.");
+      $this->log(pht("Trying rules from source '%s'.", $source));
 
       $rules = &$specs[$source];
       while ($rule = array_shift($rules)) {
-        $this->log("Trying rule '{$rule}'.");
+        $this->log(pht("Trying rule '%s'.", $rule));
 
         $commit = $this->resolveRule($rule, $source);
 
@@ -78,7 +80,10 @@ final class ArcanistBaseCommitParser {
           // If a rule returns false, it means to go to the next ruleset.
           break;
         } else if ($commit !== null) {
-          $this->log("Resolved commit '{$commit}' from rule '{$rule}'.");
+          $this->log(pht(
+            "Resolved commit '%s' from rule '%s'.",
+            $commit,
+            $rule));
           return $commit;
         }
       }
@@ -105,8 +110,11 @@ final class ArcanistBaseCommitParser {
         return $this->resolveArcRule($rule, $name, $source);
       default:
         throw new ArcanistUsageException(
-          "Base commit rule '{$rule}' (from source '{$source}') ".
-          "is not a recognized rule.");
+          pht(
+            "Base commit rule '%s' (from source '%s') ".
+            "is not a recognized rule.",
+            $rule,
+            $source));
     }
   }
 
@@ -120,12 +128,12 @@ final class ArcanistBaseCommitParser {
     switch ($name) {
       case 'verbose':
         $this->verbose = true;
-        $this->log('Enabled verbose mode.');
+        $this->log(pht('Enabled verbose mode.'));
         break;
       case 'prompt':
-        $reason = 'it is what you typed when prompted.';
+        $reason = pht('it is what you typed when prompted.');
         $this->api->setBaseCommitExplanation($reason);
-        return phutil_console_prompt('Against which commit?');
+        return phutil_console_prompt(pht('Against which commit?'));
       case 'local':
       case 'user':
       case 'project':
@@ -133,17 +141,17 @@ final class ArcanistBaseCommitParser {
       case 'system':
         // Push the other source on top of the list.
         array_unshift($this->try, $name);
-        $this->log("Switching to source '{$name}'.");
+        $this->log(pht("Switching to source '%s'.", $name));
         return false;
       case 'yield':
         // Cycle this source to the end of the list.
         $this->try[] = array_shift($this->try);
-        $this->log("Yielding processing of rules from '{$source}'.");
+        $this->log(pht("Yielding processing of rules from '%s'.", $source));
         return false;
       case 'halt':
         // Dump the whole stack.
         $this->try = array();
-        $this->log('Halting all rule processing.');
+        $this->log(pht('Halting all rule processing.'));
         return false;
       case 'skip':
         return null;
@@ -171,8 +179,11 @@ final class ArcanistBaseCommitParser {
         }
 
         throw new ArcanistUsageException(
-          "Base commit rule '{$rule}' (from source '{$source}') ".
-          "is not a recognized rule.");
+          pht(
+            "Base commit rule '%s' (from source '%s') ".
+            "is not a recognized rule.",
+            $rule,
+            $source));
     }
   }
 
@@ -183,7 +194,7 @@ final class ArcanistBaseCommitParser {
     );
     $new_name = idx($updated, $name);
     if ($new_name) {
-      $this->log("translating legacy name '$name' to '$new_name'");
+      $this->log(pht("Translating legacy name '%s' to '%s'", $name, $new_name));
       return $new_name;
     }
     return $name;

@@ -1,3 +1,0 @@
-#gaga /* Comment */ span { color: red }
-~~~~~~~~~~
-error:1:21

@@ -42,7 +42,12 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     } else if (Filesystem::binaryExists('xbuild')) {
       $this->buildEngine = 'xbuild';
     } else {
-      throw new Exception('Unable to find msbuild or xbuild in PATH!');
+      throw new Exception(
+        pht(
+          'Unable to find %s or %s in %s!',
+          'msbuild',
+          'xbuild',
+          'PATH'));
     }
 
     // Determine runtime engine (.NET or Mono).
@@ -51,7 +56,8 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     } else if (Filesystem::binaryExists('mono')) {
       $this->runtimeEngine = Filesystem::resolveBinary('mono');
     } else {
-      throw new Exception('Unable to find Mono and you are not on Windows!');
+      throw new Exception(
+        pht('Unable to find Mono and you are not on Windows!'));
     }
 
     // Read the discovery rules.
@@ -60,8 +66,11 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
         'unit.csharp.discovery');
     if ($this->discoveryRules === null) {
       throw new Exception(
-        'You must configure discovery rules to map C# files '.
-        'back to test projects (`unit.csharp.discovery` in .arcconfig).');
+        pht(
+          'You must configure discovery rules to map C# files '.
+          'back to test projects (`%s` in %s).',
+          'unit.csharp.discovery',
+          '.arcconfig'));
     }
 
     // Determine xUnit test runner path.
@@ -77,8 +86,11 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
       $this->testEngine = 'xunit.console.clr4.exe';
     } else {
       throw new Exception(
-        "Unable to locate xUnit console runner. Configure ".
-        "it with the `unit.csharp.xunit.binary' option in .arcconfig");
+        pht(
+          "Unable to locate xUnit console runner. Configure ".
+          "it with the `%s' option in %s.",
+          'unit.csharp.xunit.binary',
+          '.arcconfig'));
     }
   }
 
@@ -89,7 +101,6 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
    * @return array   Array of test results.
    */
   public function run() {
-
     $this->loadEnvironment();
 
     if ($this->getRunAllTests()) {
@@ -234,12 +245,12 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
       $this->projectRoot));
     $results = array();
     $result = new ArcanistUnitTestResult();
-    $result->setName("(regenerate projects for $platform)");
+    $result->setName(pht('(regenerate projects for %s)', $platform));
 
     try {
       $regenerate_future->resolvex();
       $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-    } catch(CommandException $exc) {
+    } catch (CommandException $exc) {
       if ($exc->getError() > 1) {
         throw $exc;
       }
@@ -277,7 +288,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
         dirname($test_assembly['project'])));
       $build_futures[$test_assembly['project']] = $build_future;
     }
-    $iterator = Futures($build_futures)->limit(1);
+    $iterator = id(new FutureIterator($build_futures))->limit(1);
     foreach ($iterator as $test_assembly => $future) {
       $result = new ArcanistUnitTestResult();
       $result->setName('(build) '.$test_assembly);
@@ -285,7 +296,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
       try {
         $future->resolvex();
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-      } catch(CommandException $exc) {
+      } catch (CommandException $exc) {
         if ($exc->getError() > 1) {
           throw $exc;
         }
@@ -353,7 +364,9 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     }
 
     // Run all of the tests.
-    foreach (Futures($futures)->limit(8) as $test_assembly => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(8);
+    foreach ($futures as $test_assembly => $future) {
       list($err, $stdout, $stderr) = $future->resolve();
 
       if (file_exists($outputs[$test_assembly])) {

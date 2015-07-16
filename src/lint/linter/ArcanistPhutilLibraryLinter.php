@@ -15,29 +15,35 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   const LINT_ONE_CLASS_PER_FILE  = 3;
 
   public function getInfoName() {
-    return 'Phutil Library Linter';
+    return pht('Phutil Library Linter');
   }
 
   public function getInfoDescription() {
     return pht(
-      'Make sure all the symbols use in a libphutil library are defined and '.
-      'known. This linter is specific to PHP source in libphutil libraries.');
+      'Make sure all the symbols used in a %s library are defined and known. '.
+      'This linter is specific to PHP source in %s libraries.',
+      'libphutil',
+      'libphutil');
+  }
+
+  public function getLinterName() {
+    return 'PHL';
   }
 
   public function getLinterConfigurationName() {
     return 'phutil-library';
   }
 
-  public function getLintNameMap() {
-    return array(
-      self::LINT_UNKNOWN_SYMBOL     => pht('Unknown Symbol'),
-      self::LINT_DUPLICATE_SYMBOL   => pht('Duplicate Symbol'),
-      self::LINT_ONE_CLASS_PER_FILE => pht('One Class Per File'),
-    );
+  public function getCacheGranularity() {
+    return self::GRANULARITY_GLOBAL;
   }
 
-  public function getLinterName() {
-    return 'PHL';
+  public function getLintNameMap() {
+    return array(
+      self::LINT_UNKNOWN_SYMBOL      => pht('Unknown Symbol'),
+      self::LINT_DUPLICATE_SYMBOL    => pht('Duplicate Symbol'),
+      self::LINT_ONE_CLASS_PER_FILE  => pht('One Class Per File'),
+    );
   }
 
   public function getLinterPriority() {
@@ -45,28 +51,25 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
-    if (!xhpast_is_available()) {
-      throw new Exception(xhpast_get_build_instructions());
-    }
-
     // NOTE: For now, we completely ignore paths and just lint every library in
     // its entirety. This is simpler and relatively fast because we don't do any
     // detailed checks and all the data we need for this comes out of module
     // caches.
 
     $bootloader = PhutilBootloader::getInstance();
-    $libs = $bootloader->getAllLibraries();
+    $libraries  = $bootloader->getAllLibraries();
 
     // Load the up-to-date map for each library, without loading the library
     // itself. This means lint results will accurately reflect the state of
     // the working copy.
 
     $symbols = array();
-    foreach ($libs as $lib) {
-      $root = phutil_get_library_root($lib);
+
+    foreach ($libraries as $library) {
+      $root = phutil_get_library_root($library);
 
       try {
-        $symbols[$lib] = id(new PhutilLibraryMapBuilder($root))
+        $symbols[$library] = id(new PhutilLibraryMapBuilder($root))
           ->buildFileSymbolMap();
       } catch (XHPASTSyntaxErrorException $ex) {
         // If the library contains a syntax error then there isn't much that we
@@ -97,10 +100,13 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
             $file,
             end($have_functions),
             self::LINT_ONE_CLASS_PER_FILE,
-            "File '{$file}' mixes function ({$function_list}) and ".
-            "class/interface ({$class_list}) definitions in the same file. ".
-            "A file which declares a class or an interface MUST ".
-            "declare nothing else.");
+            pht(
+              "File '%s' mixes function (%s) and class/interface (%s) ".
+              "definitions in the same file. A file which declares a class ".
+              "or an interface MUST declare nothing else.",
+              $file,
+              $function_list,
+              $class_list));
         } else if (count($have_classes) > 1) {
           $class_list = implode(', ', array_keys($have_classes));
           $this->raiseLintInLibrary(
@@ -108,9 +114,12 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
             $file,
             end($have_classes),
             self::LINT_ONE_CLASS_PER_FILE,
-            "File '{$file}' declares more than one class or interface ".
-            "({$class_list}). A file which declares a class or interface MUST ".
-            "declare nothing else.");
+            pht(
+              "File '%s' declares more than one class or interface (%s). ".
+              "A file which declares a class or interface MUST declare ".
+              "nothing else.",
+              $file,
+              $class_list));
         }
       }
 
@@ -138,9 +147,15 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               $file,
               $offset,
               self::LINT_DUPLICATE_SYMBOL,
-              "Definition of {$type} '{$symbol}' in '{$file}' in library ".
-              "'{$library}' duplicates prior definition in '{$osrc}' in ".
-              "library '{$olib}'.");
+              pht(
+                "Definition of %s '%s' in '%s' in library '%s' duplicates ".
+                "prior definition in '%s' in library '%s'.",
+                $type,
+                $symbol,
+                $file,
+                $library,
+                $osrc,
+                $olib));
           }
         }
       }
@@ -171,26 +186,29 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               $file,
               $offset,
               self::LINT_UNKNOWN_SYMBOL,
-              "Use of unknown {$type} '{$symbol}'. Common causes are:\n\n".
-              "  - Your libphutil/ is out of date.\n".
-              "    This is the most common cause.\n".
-              "    Update this copy of libphutil: {$libphutil_root}\n".
-              "\n".
-              "  - Some other library is out of date.\n".
-              "    Update the library this symbol appears in.\n".
-              "\n".
-              "  - This symbol is misspelled.\n".
-              "    Spell the symbol name correctly.\n".
-              "    Symbol name spelling is case-sensitive.\n".
-              "\n".
-              "  - This symbol was added recently.\n".
-              "    Run `arc liberate` on the library it was added to.\n".
-              "\n".
-              "  - This symbol is external. Use `@phutil-external-symbol`.\n".
-              "    Use `grep` to find usage examples of this directive.\n".
-              "\n".
-              "*** ALTHOUGH USUALLY EASY TO FIX, THIS IS A SERIOUS ERROR.\n".
-              "*** THIS ERROR IS YOUR FAULT. YOU MUST RESOLVE IT.");
+              pht(
+                "Use of unknown %s '%s'. Common causes are:\n\n".
+                "  - Your %s is out of date.\n".
+                "    This is the most common cause.\n".
+                "    Update this copy of libphutil: %s\n\n".
+                "  - Some other library is out of date.\n".
+                "    Update the library this symbol appears in.\n\n".
+                "  - This symbol is misspelled.\n".
+                "    Spell the symbol name correctly.\n".
+                "    Symbol name spelling is case-sensitive.\n\n".
+                "  - This symbol was added recently.\n".
+                "    Run `%s` on the library it was added to.\n\n".
+                "  - This symbol is external. Use `%s`.\n".
+                "    Use `%s` to find usage examples of this directive.\n\n".
+                "*** ALTHOUGH USUALLY EASY TO FIX, THIS IS A SERIOUS ERROR.\n".
+                "*** THIS ERROR IS YOUR FAULT. YOU MUST RESOLVE IT.",
+                $type,
+                $symbol,
+                'libphutil/',
+                $libphutil_root,
+                'arc liberate',
+                '@phutil-external-symbol',
+                'grep'));
           }
         }
       }
@@ -206,10 +224,6 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
   public function lintPath($path) {
     return;
-  }
-
-  public function getCacheGranularity() {
-    return self::GRANULARITY_GLOBAL;
   }
 
 }

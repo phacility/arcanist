@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBundleTestCase extends ArcanistTestCase {
+final class ArcanistBundleTestCase extends PhutilTestCase {
 
   private function loadResource($name) {
     return Filesystem::readFile($this->getResourcePath($name));
@@ -20,7 +20,11 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
     $this->assertEqual(
       1,
       $err,
-      "Expect `diff` to find changes between '{$old}' and '{$new}'.");
+      pht(
+        "Expect `%s` to find changes between '%s' and '%s'.",
+        'diff',
+        $old,
+        $new));
     return $stdout;
   }
 
@@ -36,7 +40,7 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
    */
   public function testGitRepository() {
     if (phutil_is_windows()) {
-      $this->assertSkipped('This test is not supported under Windows.');
+      $this->assertSkipped(pht('This test is not supported under Windows.'));
     }
 
     $archive = dirname(__FILE__).'/bundle.git.tgz';
@@ -111,8 +115,11 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       } else {
         Filesystem::writeFile($expect_path.'.real', $patch);
         throw new Exception(
-          "Expected patch and actual patch for {$commit_hash} differ. ".
-          "Wrote actual patch to '{$expect_path}.real'.");
+          pht(
+            "Expected patch and actual patch for %s differ. ".
+            "Wrote actual patch to '%s.real'.",
+            $commit_hash,
+            $expect_path));
       }
 
       try {
@@ -125,8 +132,8 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
         Filesystem::writeFile($temp, $patch);
 
         PhutilConsole::getConsole()->writeErr(
-          "Wrote failing patch to '%s'.\n",
-          $temp);
+          "%s\n",
+          pht("Wrote failing patch to '%s'.", $temp));
         throw $ex;
       }
 
@@ -137,7 +144,7 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       $this->assertEqual(
         $tree_hash,
         $result_hash,
-        "Commit {$commit_hash}: {$subject}");
+        pht('Commit %s: %s', $commit_hash, $subject));
     }
   }
 
@@ -569,11 +576,11 @@ final class ArcanistBundleTestCase extends ArcanistTestCase {
       case '228d7be4840313ed805c25c15bba0f7b188af3e6':
         // "Add a text file."
         // This commit is never reached because we skip the 0th commit junk.
-        $this->assertTrue(true, 'This is never reached.');
+        $this->assertTrue(true, pht('This is never reached.'));
         break;
       default:
         throw new Exception(
-          "Commit {$commit} has no change assertions!");
+          pht('Commit %s has no change assertions!', $commit));
     }
   }
 

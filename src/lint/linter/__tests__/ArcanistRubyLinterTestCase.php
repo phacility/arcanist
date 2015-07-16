@@ -1,11 +1,9 @@
 <?php
 
-final class ArcanistRubyLinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistRubyLinterTestCase extends ArcanistExternalLinterTestCase {
 
-  public function testRubyLint() {
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/ruby/',
-      new ArcanistRubyLinter());
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/ruby/');
   }
 
 }

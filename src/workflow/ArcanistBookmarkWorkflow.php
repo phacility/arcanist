@@ -25,13 +25,8 @@ EOTEXT
       );
   }
 
-  public function run() {
-    $repository_api = $this->getRepositoryAPI();
-    if (!($repository_api instanceof ArcanistMercurialAPI)) {
-      throw new ArcanistUsageException(
-        'arc bookmark is only supported under Mercurial.');
-    }
-    return parent::run();
+  public function getSupportedRevisionControlSystems() {
+    return array('hg');
   }
 
 }

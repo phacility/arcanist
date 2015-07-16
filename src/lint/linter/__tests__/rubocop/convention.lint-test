@@ -1,0 +1,4 @@
+def hello()
+end
+~~~~~~~~~~
+warning:1:10

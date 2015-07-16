@@ -3,7 +3,7 @@
 /**
  * Test cases for @{class:ArcanistDiffParser}.
  */
-final class ArcanistDiffParserTestCase extends ArcanistTestCase {
+final class ArcanistDiffParserTestCase extends PhutilTestCase {
 
   public function testParser() {
     $root = dirname(__FILE__).'/diff/';
@@ -602,7 +602,7 @@ EOTEXT
         $this->assertEqual('file with spaces.txt', $change->getOldPath());
         break;
       default:
-        throw new Exception("No test block for diff file {$diff_file}.");
+        throw new Exception(pht('No test block for diff file %s.', $diff_file));
         break;
     }
   }
@@ -625,7 +625,7 @@ EOTEXT
       $this->assertEqual(
         $expect,
         ArcanistDiffParser::stripGitPathPrefix($input),
-        "Strip git prefix from '{$input}'.");
+        pht("Strip git prefix from '%s'.", $input));
     }
   }
 
@@ -663,7 +663,7 @@ EOTEXT
       $this->assertEqual(
         $expect,
         $result,
-        "Split: {$input}");
+        pht('Split: %s', $input));
     }
 
 
@@ -680,7 +680,7 @@ EOTEXT
       }
       $this->assertTrue(
         ($caught instanceof Exception),
-        "Ambiguous: {$input}");
+        pht('Ambiguous: %s', $input));
     }
   }
 

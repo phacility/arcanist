@@ -3,13 +3,12 @@
 /**
  * Converts changesets between different formats.
  */
-final class ArcanistBundle {
+final class ArcanistBundle extends Phobject {
 
   private $changes;
   private $conduit;
   private $blobs = array();
   private $diskPath;
-  private $projectID;
   private $baseRevision;
   private $revisionID;
   private $encoding;
@@ -61,15 +60,6 @@ final class ArcanistBundle {
   public function setConduit(ConduitClient $conduit) {
     $this->conduit = $conduit;
     return $this;
-  }
-
-  public function setProjectID($project_id) {
-    $this->projectID = $project_id;
-    return $this;
-  }
-
-  public function getProjectID() {
-    return $this->projectID;
   }
 
   public function setBaseRevision($base_revision) {
@@ -124,7 +114,7 @@ final class ArcanistBundle {
         return phutil_is_windows() ? "\r\n" : "\n";
       default:
         throw new Exception(
-          "Unknown patch type '{$patch_type}'!");
+          pht("Unknown patch type '%s'!", $patch_type));
     }
   }
 
@@ -143,7 +133,6 @@ final class ArcanistBundle {
         $path);
       $meta_info = $future->resolveJSON();
       $version       = idx($meta_info, 'version', 0);
-      $project_name  = idx($meta_info, 'projectName');
       $base_revision = idx($meta_info, 'baseRevision');
       $revision_id   = idx($meta_info, 'revisionID');
       $encoding      = idx($meta_info, 'encoding');
@@ -152,7 +141,6 @@ final class ArcanistBundle {
     } else {
       // this arc bundle was probably made before we started storing meta info
       $version       = 0;
-      $project_name  = null;
       $base_revision = null;
       $revision_id   = null;
       $encoding      = null;
@@ -178,7 +166,6 @@ final class ArcanistBundle {
     $obj = new ArcanistBundle();
     $obj->changes = $changes;
     $obj->diskPath = $path;
-    $obj->setProjectID($project_name);
     $obj->setBaseRevision($base_revision);
     $obj->setRevisionID($revision_id);
     $obj->setEncoding($encoding);
@@ -228,7 +215,6 @@ final class ArcanistBundle {
 
     $meta_info = array(
       'version'      => 5,
-      'projectName'  => $this->getProjectID(),
       'baseRevision' => $this->getBaseRevision(),
       'revisionID'   => $this->getRevisionID(),
       'encoding'     => $this->getEncoding(),
@@ -373,7 +359,9 @@ final class ArcanistBundle {
 
       if (!$decompose_okay) {
         throw new Exception(
-          'Failed to decompose multicopy changeset in order to generate diff.');
+          pht(
+            'Failed to decompose multicopy changeset in '.
+            'order to generate diff.'));
       }
     }
 
@@ -687,9 +675,11 @@ final class ArcanistBundle {
 
     if ($this->conduit) {
       if ($name) {
-        $console->writeErr("Downloading binary data for '%s'...\n", $name);
+        $console->writeErr(
+          "%s\n",
+          pht("Downloading binary data for '%s'...", $name));
       } else {
-        $console->writeErr("Downloading binary data...\n");
+        $console->writeErr("%s\n", pht('Downloading binary data...'));
       }
       $data_base64 = $this->conduit->callMethodSynchronous(
         'file.download',
@@ -699,7 +689,7 @@ final class ArcanistBundle {
       return base64_decode($data_base64);
     }
 
-    throw new Exception("Nowhere to load blob '{$phid}' from!");
+    throw new Exception(pht("Nowhere to load blob '%s' from!", $phid));
   }
 
   private function buildBinaryChange(ArcanistDiffChange $change, $old_binary) {
@@ -773,9 +763,10 @@ final class ArcanistBundle {
 
     if (!function_exists('gzcompress')) {
       throw new Exception(
-        'This patch has binary data. The PHP zlib extension is required to '.
-        'apply patches with binary data to git. Install the PHP zlib '.
-        'extension to continue.');
+        pht(
+          'This patch has binary data. The PHP zlib extension is required to '.
+          'apply patches with binary data to git. Install the PHP zlib '.
+          'extension to continue.'));
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.

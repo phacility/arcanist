@@ -18,19 +18,28 @@ final class ArcanistSingleLintEngine extends ArcanistLintEngine {
 
     if (!$linter_name) {
       throw new ArcanistUsageException(
-        "You must configure '{$key}' with the name of a linter in order to ".
-        "use ArcanistSingleLintEngine.");
+        pht(
+          "You must configure '%s' with the name of a linter ".
+          "in order to use %s.",
+          $key,
+          __CLASS__));
     }
 
     if (!class_exists($linter_name)) {
       throw new ArcanistUsageException(
-        "Linter '{$linter_name}' configured in '{$key}' does not exist!");
+        pht(
+          "Linter '%s' configured in '%s' does not exist!",
+          $linter_name,
+          $key));
     }
 
     if (!is_subclass_of($linter_name, 'ArcanistLinter')) {
       throw new ArcanistUsageException(
-        "Linter '{$linter_name}' configured in '{$key}' MUST be a subclass of ".
-        "ArcanistLinter.");
+        pht(
+          "Linter `%s` configured in '%s' MUST be a subclass of `%s`.",
+          $linter_name,
+          $key,
+          'ArcanistLinter'));
     }
 
     // Filter the affected paths.

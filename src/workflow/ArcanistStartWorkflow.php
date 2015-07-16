@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Start time tracking on an object
+ * Start time tracking on an object.
  */
 final class ArcanistStartWorkflow extends ArcanistPhrequentWorkflow {
 
@@ -18,17 +18,13 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-Start tracking work in Phrequent.
+          Start tracking work in Phrequent.
 EOTEXT
       );
   }
 
   public function requiresConduit() {
     return true;
-  }
-
-  public function desiresWorkingCopy() {
-    return false;
   }
 
   public function requiresAuthentication() {
@@ -46,6 +42,7 @@ EOTEXT
 
     $started_phids = array();
     $short_name = $this->getArgument('name');
+
     foreach ($short_name as $object_name) {
       $object_lookup = $conduit->callMethodSynchronous(
         'phid.lookup',
@@ -54,7 +51,9 @@ EOTEXT
         ));
 
       if (!array_key_exists($object_name, $object_lookup)) {
-        echo "No such object '".$object_name."' found.\n";
+        echo phutil_console_format(
+          "%s\n",
+          pht("No such object '%s' found.", $object_name));
         return 1;
       }
 
@@ -73,19 +72,10 @@ EOTEXT
         'phids' => $started_phids,
       ));
 
-    $name = '';
-    foreach ($phid_query as $ref) {
-      if ($name === '') {
-        $name = $ref['fullName'];
-      } else {
-        $name .= ', '.$ref['fullName'];
-      }
-    }
-
     echo phutil_console_format(
-      "Started:  %s\n\n",
-      $name);
-
+      "%s:  %s\n\n",
+      pht('Started'),
+      implode(', ', ipull($phid_query, 'fullName')));
     $this->printCurrentTracking(true);
   }
 

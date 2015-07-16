@@ -1,0 +1,24 @@
+<?php
+class Foo {
+  public $x;
+  static protected $y;
+
+  public final function bar() {}
+  private function baz() {}
+  static final public function foobar() {}
+}
+~~~~~~~~~~
+error:2:7 XHP19
+advice:4:3
+advice:6:3
+advice:8:3
+~~~~~~~~~~
+<?php
+class Foo {
+  public $x;
+  protected static $y;
+
+  final public function bar() {}
+  private function baz() {}
+  final public static function foobar() {}
+}
