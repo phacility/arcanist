@@ -33,6 +33,8 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
       $coverage = $this->readCoverage();
     }
 
+    $last_test_finished = true;
+
     $results = array();
     foreach ($report as $event) {
       switch (idx($event, 'event')) {
