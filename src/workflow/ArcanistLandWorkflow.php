@@ -324,7 +324,8 @@ EOTEXT
     } else if ($this->getArgument('squash')) {
       $this->useSquash = true;
     } else {
-      $this->useSquash = false;
+      $immutable_default = $this->getConfigFromAnySource('history.immutable');
+      $this->useSquash = empty($immutable_default) ? true : !$immutable_default;
     }
 
     $this->ontoRemoteBranch = $this->onto;
