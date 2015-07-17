@@ -20,6 +20,7 @@ final class ArcanistBraceFormattingXHPASTLinterRule
         continue;
       }
       list($before, $after) = $list->getSurroundingNonsemanticTokens();
+
       if (!$before) {
         $first = head($tokens);
 
@@ -39,6 +40,7 @@ final class ArcanistBraceFormattingXHPASTLinterRule
           ' '.$first->getValue());
       } else if (count($before) === 1) {
         $before = reset($before);
+
         if ($before->getValue() !== ' ') {
           $this->raiseLintAtToken(
             $before,
@@ -78,7 +80,7 @@ final class ArcanistBraceFormattingXHPASTLinterRule
       }
       list($before, $after) = $list->getSurroundingNonsemanticTokens();
       if (!$before) {
-        $first = last($tokens);
+        $first = head($tokens);
 
         $this->raiseLintAtToken(
           $first,
