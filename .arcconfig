@@ -1,7 +1,5 @@
 {
-  "phabricator.uri": "https://secure.phabricator.com/",
-  "unit.engine": "PhutilUnitTestEngine",
-  "load": [
-    "src/"
-  ]
+  "project_id" : "index-arcanist",
+  "conduit_uri" : "https://cr.goindex.com/",
+  "history.immutable": false
 }

@@ -926,6 +926,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return false;
   }
 
+  public function alwaysDefaultSkipStaging() {
+    return true;
+  }
+
   public function supportsAmend() {
     return true;
   }

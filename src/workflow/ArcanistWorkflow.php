@@ -1371,6 +1371,17 @@ abstract class ArcanistWorkflow extends Phobject {
     return $repository_api->isHistoryDefaultImmutable();
   }
 
+  final protected function alwaysSkipStaging() {
+    $repository_api = $this->getRepositoryAPI();
+
+    $config = $this->getConfigFromAnySource('arc.diff.skip_staging');
+    if ($config !== null) {
+      return $config;
+    }
+
+    return $repository_api->alwaysDefaultSkipStaging();
+  }
+
   /**
    * Workflows like 'lint' and 'unit' operate on a list of working copy paths.
    * The user can either specify the paths explicitly ("a.js b.php"), or by
