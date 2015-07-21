@@ -41,7 +41,7 @@ EOTEXT
     return array(
       'status' => array(
         'param' => 'task_status',
-        'help' => pht('Show tasks that or open or closed, default is open.'),
+        'help' => pht('Show tasks that are open or closed, default is open.'),
       ),
       'owner' => array(
         'param' => 'username',
