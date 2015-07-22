@@ -31,7 +31,7 @@ final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
       $this->writer->writeAttribute('line', $message->getLine());
       $this->writer->writeAttribute('column', $message->getChar());
       $this->writer->writeAttribute('severity',
-        ArcanistLintSeverity::getStringForSeverity($message->getSeverity()));
+        $this->getStringForSeverity($message->getSeverity()));
       $this->writer->writeAttribute('message', $message->getDescription());
       $this->writer->writeAttribute('source', $message->getCode());
 
@@ -50,6 +50,21 @@ final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
     $this->writer->endElement();
     $this->writer->endDocument();
     return $this->writer->flush();
+  }
+
+  private function getStringForSeverity($severity) {
+    switch ($severity) {
+      case ArcanistLintSeverity::SEVERITY_ADVICE:
+        return 'info';
+      case ArcanistLintSeverity::SEVERITY_AUTOFIX:
+        return 'info';
+      case ArcanistLintSeverity::SEVERITY_WARNING:
+        return 'warning';
+      case ArcanistLintSeverity::SEVERITY_ERROR:
+        return 'error';
+      case ArcanistLintSeverity::SEVERITY_DISABLED:
+        return 'ignore';
+    }
   }
 
 }
