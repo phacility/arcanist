@@ -72,6 +72,23 @@ final class ArcanistLintMessage extends Phobject {
   }
 
   public function setLine($line) {
+    if ($line === null) {
+      // This just means that we don't have any line information.
+    } else {
+      // For compatibility, accept digit strings since a lot of linters pass
+      // line numbers that they have parsed from command output or XML, which
+      // won't be properly typed.
+      if (is_string($line) && preg_match('/^\d+\z/', $line)) {
+        $line = (int)$line;
+      }
+
+      if (!is_int($line)) {
+        throw new Exception(
+          pht(
+            'Parameter passed to setLine() must be an integer.'));
+      }
+    }
+
     $this->line = $line;
     return $this;
   }
