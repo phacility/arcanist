@@ -1585,12 +1585,11 @@ abstract class ArcanistWorkflow extends Phobject {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         echo phutil_console_wrap(
-          "%s\n\n",
           pht(
             'This feature requires a newer version of Phabricator. Please '.
             'update it using these instructions: %s',
             'https://secure.phabricator.com/book/phabricator/article/'.
-              'upgrading/'));
+              'upgrading/')."\n\n");
       }
       throw $ex;
     }
