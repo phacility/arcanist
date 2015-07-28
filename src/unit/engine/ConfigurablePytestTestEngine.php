@@ -2,9 +2,11 @@
 
 final class ConfigurablePytestTestEngine extends ArcanistUnitTestEngine {
 
+  private $projectRoot;
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
-    $this->project_root = $working_copy->getProjectRoot();
+    $this->projectRoot = $working_copy->getProjectRoot();
 
     $junit_tmp = new TempFile();
     $cover_tmp = new TempFile();
@@ -13,7 +15,7 @@ final class ConfigurablePytestTestEngine extends ArcanistUnitTestEngine {
     $future->resolvex();
 
     $future = new ExecFuture('coverage xml -o %s', $cover_tmp);
-    $future->setCWD($this->project_root);
+    $future->setCWD($this->projectRoot);
     $future->resolvex();
 
     return $this->parseTestResults($junit_tmp, $cover_tmp);
