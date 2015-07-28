@@ -3,7 +3,7 @@
 /**
  * Defines constants for file types and operations in changesets.
  */
-final class ArcanistDiffChangeType {
+final class ArcanistDiffChangeType extends Phobject {
 
   const TYPE_ADD        = 1;
   const TYPE_CHANGE     = 2;

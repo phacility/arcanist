@@ -3,7 +3,7 @@
 /**
  * Dumping ground for diff- and diff-algorithm-related miscellany.
  */
-final class ArcanistDiffUtils {
+final class ArcanistDiffUtils extends Phobject {
 
   /**
    * Make a best-effort attempt to determine if a file is definitely binary.

@@ -8,7 +8,7 @@
  * @task hook         Hooks for Setup and Teardown
  * @task internal     Internals
  */
-abstract class PhutilTestCase {
+abstract class PhutilTestCase extends Phobject {
 
   private $assertions = 0;
   private $runningTest;
@@ -166,8 +166,10 @@ abstract class PhutilTestCase {
    * @return void
    * @task exceptions
    */
-  final protected function assertException($expected_exception_class,
-                                           $callable) {
+  final protected function assertException(
+    $expected_exception_class,
+    $callable) {
+
     $this->tryTestCases(
       array('assertException' => array()),
       array(false),
@@ -300,6 +302,7 @@ abstract class PhutilTestCase {
     array $map,
     $callable,
     $exception_class = 'Exception') {
+
     return $this->tryTestCases(
       array_fuse(array_keys($map)),
       array_values($map),
@@ -579,7 +582,10 @@ abstract class PhutilTestCase {
       $max = max(array_keys($report));
       $str = '';
       for ($ii = 1; $ii <= $max; $ii++) {
-        $c = idx($report, $ii);
+        $c = null;
+        if (isset($report[$ii])) {
+          $c = $report[$ii];
+        }
         if ($c === -1) {
           $str .= 'U'; // Un-covered.
         } else if ($c === -2) {
@@ -655,7 +661,7 @@ abstract class PhutilTestCase {
     return (string)$uri;
   }
 
-  public function setRenderer(ArcanistUnitRenderer $renderer) {
+  final public function setRenderer(ArcanistUnitRenderer $renderer) {
     $this->renderer = $renderer;
     return $this;
   }
@@ -665,7 +671,7 @@ abstract class PhutilTestCase {
    *
    * @return map
    */
-  private static final function getCallerInfo() {
+  final private static function getCallerInfo() {
     $callee = array();
     $caller = array();
     $seen = false;

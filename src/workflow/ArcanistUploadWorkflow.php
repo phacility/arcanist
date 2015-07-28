@@ -54,76 +54,28 @@ EOTEXT
     $conduit = $this->getConduit();
     $results = array();
 
+    $uploader = id(new ArcanistFileUploader())
+      ->setConduitClient($conduit);
+
     foreach ($this->paths as $path) {
-      $path = Filesystem::resolvePath($path);
+      $file = id(new ArcanistFileDataRef())
+        ->setName(basename($path))
+        ->setPath($path);
 
-      $name = basename($path);
-      $this->writeStatus(pht("Uploading '%s'...", $name));
+      $uploader->addFile($file);
+    }
 
-      $hash = @sha1_file($path);
-      if (!$hash) {
-        throw new Exception(pht('Unable to read file "%s"!', $path));
+    $files = $uploader->uploadFiles();
+
+    $results = array();
+    foreach ($files as $file) {
+      // TODO: This could be handled more gracefully; just preserving behavior
+      // until we introduce `file.query` and modernize this.
+      if ($file->getErrors()) {
+        throw new Exception(implode("\n", $file->getErrors()));
       }
-      $length = filesize($path);
-
-      $do_chunk_upload = false;
-
-      $phid = null;
-      try {
-        $result = $conduit->callMethodSynchronous(
-          'file.allocate',
-          array(
-            'name' => $name,
-            'contentLength' => $length,
-            'contentHash' => $hash,
-          ));
-
-        $phid = $result['filePHID'];
-        if (!$result['upload']) {
-          if (!$phid) {
-            $this->writeStatus(
-              pht(
-                'Unable to upload file "%s": the server refused to accept '.
-                'it. This usually means it is too large.',
-                $name));
-            continue;
-          }
-          // Otherwise, the server completed the upload by referencing known
-          // file data.
-        } else {
-          if ($phid) {
-            $do_chunk_upload = true;
-          } else {
-            // This is a small file that doesn't need to be uploaded in
-            // chunks, so continue normally.
-          }
-        }
-      } catch (Exception $ex) {
-        $this->writeStatus(
-          pht('Unable to use allocate method, trying older upload method.'));
-      }
-
-      if ($do_chunk_upload) {
-        $this->uploadChunks($phid, $path);
-      }
-
-      if (!$phid) {
-        try {
-          $data = Filesystem::readFile($path);
-        } catch (FilesystemException $ex) {
-          $this->writeStatus(
-            pht('Unable to read file "%s".', $ex->getMessage()));
-          $results[$path] = null;
-          continue;
-        }
-
-        $phid = $conduit->callMethodSynchronous(
-          'file.upload',
-          array(
-            'data_base64' => base64_encode($data),
-            'name' => $name,
-          ));
-      }
+      $phid = $file->getPHID();
+      $name = $file->getName();
 
       $info = $conduit->callMethodSynchronous(
         'file.info',

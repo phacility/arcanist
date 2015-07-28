@@ -6,7 +6,7 @@
 final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'JSON Lint';
+    return pht('JSON Lint');
   }
 
   public function getInfoURI() {
@@ -77,10 +77,6 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
 
         $messages[] = $message;
       }
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

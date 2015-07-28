@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistDifferentialRevisionHash {
+final class ArcanistDifferentialRevisionHash extends Phobject {
 
   const TABLE_NAME = 'differential_revisionhash';
 

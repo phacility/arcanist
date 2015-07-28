@@ -3,7 +3,7 @@
 /**
  * Parses diffs from a working copy.
  */
-final class ArcanistDiffParser {
+final class ArcanistDiffParser extends Phobject {
 
   protected $repositoryAPI;
   protected $text;
@@ -1104,7 +1104,7 @@ final class ArcanistDiffParser {
 
   protected function getLine() {
     if ($this->text === null) {
-      throw new Exception('Not parsing!');
+      throw new Exception(pht('Not parsing!'));
     }
     if (isset($this->text[$this->line])) {
       return $this->text[$this->line];
@@ -1205,14 +1205,14 @@ final class ArcanistDiffParser {
     }
 
     $out = array();
-    $out[] = "Diff Parse Exception: {$message}";
+    $out[] = pht('Diff Parse Exception: %s', $message);
 
     if ($this->writeDiffOnFailure) {
       $temp = new TempFile();
       $temp->setPreserveFile(true);
 
       Filesystem::writeFile($temp, $this->rawDiff);
-      $out[] = 'Raw input file was written to: '.(string)$temp;
+      $out[] = pht('Raw input file was written to: %s', $temp);
     }
 
     $out[] = $context;

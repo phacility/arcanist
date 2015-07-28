@@ -7,4 +7,8 @@ error:3:1
 error:4:10
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config": {"xhpast.php-version": "5.4.0"}}
+{
+  "config": {
+    "xhpast.php-version": "5.4.0"
+  }
+}

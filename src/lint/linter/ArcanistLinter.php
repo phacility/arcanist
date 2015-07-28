@@ -6,9 +6,8 @@
  * @task info Human Readable Information
  * @task state Runtime State
  * @task exec Executing Linters
- * @stable
  */
-abstract class ArcanistLinter {
+abstract class ArcanistLinter extends Phobject {
 
   const GRANULARITY_FILE = 1;
   const GRANULARITY_DIRECTORY = 2;
@@ -416,7 +415,7 @@ abstract class ArcanistLinter {
     return $this->messages;
   }
 
-  final protected function raiseLintAtLine(
+  final public function raiseLintAtLine(
     $line,
     $char,
     $code,
@@ -438,11 +437,11 @@ abstract class ArcanistLinter {
     return $this->addLintMessage($message);
   }
 
-  final protected function raiseLintAtPath($code, $desc) {
+  final public function raiseLintAtPath($code, $desc) {
     return $this->raiseLintAtLine(null, null, $code, $desc, null, null);
   }
 
-  final protected function raiseLintAtOffset(
+  final public function raiseLintAtOffset(
     $offset,
     $code,
     $desc,

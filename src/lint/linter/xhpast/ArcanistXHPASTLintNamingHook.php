@@ -7,9 +7,8 @@
  * @task override   Overriding Symbol Name Lint Messages
  * @task util       Name Utilities
  * @task internal   Internals
- * @stable
  */
-abstract class ArcanistXHPASTLintNamingHook {
+abstract class ArcanistXHPASTLintNamingHook extends Phobject {
 
 
 /* -(  Internals  )---------------------------------------------------------- */

@@ -3,7 +3,7 @@
 /**
  * This class holds everything related to configuration and configuration files.
  */
-final class ArcanistConfigurationManager {
+final class ArcanistConfigurationManager extends Phobject {
 
   private $runtimeConfig = array();
   private $workingCopy = null;
@@ -13,6 +13,7 @@ final class ArcanistConfigurationManager {
   public function setWorkingCopyIdentity(
     ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
+    return $this;
   }
 
 /* -(  Get config  )--------------------------------------------------------- */
@@ -243,6 +244,7 @@ final class ArcanistConfigurationManager {
 
     $this->customArcrcFilename = $custom_arcrc;
     $this->userConfigCache = null;
+    return $this;
   }
 
   public function getUserConfigurationFileLocation() {

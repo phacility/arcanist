@@ -349,9 +349,9 @@ EOTEXT
       $table = id(new PhutilConsoleTable())
         ->setShowHeader(false)
         ->addColumn('current', array('title' => ''))
-        ->addColumn('name',    array('title' => 'Name'))
-        ->addColumn('status',  array('title' => 'Status'))
-        ->addColumn('descr',   array('title' => 'Description'));
+        ->addColumn('name',    array('title' => pht('Name')))
+        ->addColumn('status',  array('title' => pht('Status')))
+        ->addColumn('descr',   array('title' => pht('Description')));
 
       foreach ($out as $line) {
         $table->addRow(array(

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistDifferentialRevisionStatus {
+final class ArcanistDifferentialRevisionStatus extends Phobject {
 
   const NEEDS_REVIEW      = 0;
   const NEEDS_REVISION    = 1;

@@ -23,7 +23,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     return implode('-', $parts);
   }
 
-  final protected function raiseLintAtToken(
+  final public function raiseLintAtToken(
     XHPASTToken $token,
     $code,
     $desc,
@@ -36,7 +36,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
       $replace);
   }
 
-  final protected function raiseLintAtNode(
+  final public function raiseLintAtNode(
     XHPASTNode $node,
     $code,
     $desc,
@@ -201,7 +201,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
   }
 
 
-/* -(  Utility  )------------------------------------------------------------ */
+/* -(  Deprecated  )--------------------------------------------------------- */
 
   /**
    * Retrieve all calls to some specified function(s).

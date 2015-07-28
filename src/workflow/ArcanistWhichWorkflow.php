@@ -134,7 +134,7 @@ EOTEXT
           'hg diff --rev %R',
           hgsprintf('%s', $relative));
       } else {
-        throw new Exception('Unknown VCS!');
+        throw new Exception(pht('Unknown VCS!'));
       }
 
       echo phutil_console_wrap(
@@ -193,7 +193,7 @@ EOTEXT
           'copy:')));
 
     if (empty($revisions)) {
-      echo "    (No revisions match.)\n";
+      echo "    ".pht('(No revisions match.)')."\n";
       echo "\n";
       echo phutil_console_wrap(
         phutil_console_format(

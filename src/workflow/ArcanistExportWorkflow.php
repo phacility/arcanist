@@ -225,7 +225,6 @@ EOTEXT
         }
 
         $bundle = ArcanistBundle::newFromChanges($changes);
-        $bundle->setProjectID($this->getWorkingCopy()->getProjectID());
         $bundle->setBaseRevision(
           $repository_api->getSourceControlBaseRevision());
         // NOTE: we can't get a revision ID for SOURCE_LOCAL
@@ -247,18 +246,6 @@ EOTEXT
     }
 
     $try_encoding = nonempty($this->getArgument('encoding'), null);
-    if (!$try_encoding) {
-      try {
-        $project_info = $this->getConduit()->callMethodSynchronous(
-          'arcanist.projectinfo',
-          array(
-            'name' => $bundle->getProjectID(),
-          ));
-        $try_encoding = $project_info['encoding'];
-      } catch (ConduitClientException $e) {
-        $try_encoding = null;
-      }
-    }
 
     if ($try_encoding) {
       $bundle->setEncoding($try_encoding);

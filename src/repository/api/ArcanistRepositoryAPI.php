@@ -5,7 +5,7 @@
  *
  * @task  status      Path Status
  */
-abstract class ArcanistRepositoryAPI {
+abstract class ArcanistRepositoryAPI extends Phobject {
 
   const FLAG_MODIFIED     = 1;
   const FLAG_ADDED        = 2;

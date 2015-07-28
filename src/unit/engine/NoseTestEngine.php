@@ -64,7 +64,7 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
     foreach ($futures as $test_path => $future) {
       try {
         list($stdout, $stderr) = $future->resolvex();
-      } catch(CommandException $exc) {
+      } catch (CommandException $exc) {
         if ($exc->getError() > 1) {
           // 'nose' returns 1 when tests are failing/broken.
           throw $exc;

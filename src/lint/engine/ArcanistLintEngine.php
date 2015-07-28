@@ -38,10 +38,8 @@
  *
  * See @{article@phabricator:Arcanist User Guide: Customizing Lint, Unit Tests
  * and Workflows} for more information about configuring lint engines.
- *
- * @stable
  */
-abstract class ArcanistLintEngine {
+abstract class ArcanistLintEngine extends Phobject {
 
   protected $workingCopy;
   protected $paths = array();

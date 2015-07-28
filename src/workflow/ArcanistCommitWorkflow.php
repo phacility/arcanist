@@ -252,7 +252,7 @@ EOTEXT
       $prefix = pht(
         'Revision includes changes to %s path(s) that do not exist:',
         new PhutilNumber(count($do_not_exist)));
-      $prompt = 'Commit this revision anyway?';
+      $prompt = pht('Commit this revision anyway?');
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }
 

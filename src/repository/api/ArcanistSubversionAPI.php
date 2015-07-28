@@ -648,17 +648,7 @@ EODIFF;
     ConduitClient $conduit,
     array $query) {
 
-    // We don't have much to go on in SVN, look for revisions that came from
-    // this directory and belong to the same project.
-
-    $project = $this->getWorkingCopyIdentity()->getProjectID();
-    if (!$project) {
-      return array();
-    }
-
-    $results = $conduit->callMethodSynchronous(
-      'differential.query',
-      $query);
+    $results = $conduit->callMethodSynchronous('differential.query', $query);
 
     foreach ($results as $key => $result) {
       if ($result['sourcePath'] != $this->getPath()) {
@@ -667,8 +657,7 @@ EODIFF;
     }
 
     foreach ($results as $key => $result) {
-      $results[$key]['why'] = pht(
-        'Matching arcanist project name and working copy directory path.');
+      $results[$key]['why'] = pht('Matching working copy directory path.');
     }
 
     return $results;

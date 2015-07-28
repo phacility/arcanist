@@ -6,6 +6,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   const LINT_DEPRECATED_FUNCTION    = 3;
   const LINT_UNSAFE_DYNAMIC_STRING  = 4;
   const LINT_RAGGED_CLASSTREE_EDGE  = 5;
+  const LINT_EXTENDS_PHOBJECT       = 6;
 
   private $deprecatedFunctions    = array();
   private $dynamicStringFunctions = array();
@@ -23,14 +24,16 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
 
   public function getLintNameMap() {
     return array(
-      self::LINT_ARRAY_COMBINE          => pht(
-        '%s Unreliable', 'array_combine()'),
-      self::LINT_DEPRECATED_FUNCTION    => pht(
-        'Use of Deprecated Function'),
-      self::LINT_UNSAFE_DYNAMIC_STRING  => pht(
-        'Unsafe Usage of Dynamic String'),
-      self::LINT_RAGGED_CLASSTREE_EDGE  => pht(
-        'Class Not %s Or %s', 'abstract', 'final'),
+      self::LINT_ARRAY_COMBINE =>
+        pht('%s Unreliable', 'array_combine()'),
+      self::LINT_DEPRECATED_FUNCTION =>
+        pht('Use of Deprecated Function'),
+      self::LINT_UNSAFE_DYNAMIC_STRING =>
+        pht('Unsafe Usage of Dynamic String'),
+      self::LINT_RAGGED_CLASSTREE_EDGE =>
+        pht('Class Not %s Or %s', 'abstract', 'final'),
+      self::LINT_EXTENDS_PHOBJECT =>
+        pht('Class Not Extending %s', 'Phobject'),
     );
   }
 
@@ -43,6 +46,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function getLintSeverityMap() {
+    $advice  = ArcanistLintSeverity::SEVERITY_ADVICE;
     $warning = ArcanistLintSeverity::SEVERITY_WARNING;
 
     return array(
@@ -50,6 +54,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       self::LINT_DEPRECATED_FUNCTION    => $warning,
       self::LINT_UNSAFE_DYNAMIC_STRING  => $warning,
       self::LINT_RAGGED_CLASSTREE_EDGE  => $warning,
+      self::LINT_EXTENDS_PHOBJECT       => $advice,
     );
   }
 
@@ -112,6 +117,7 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
       'lintUnsafeDynamicString' => self::LINT_UNSAFE_DYNAMIC_STRING,
       'lintDeprecatedFunctions' => self::LINT_DEPRECATED_FUNCTION,
       'lintRaggedClasstreeEdges' => self::LINT_RAGGED_CLASSTREE_EDGE,
+      'lintClassExtendsPhobject' => self::LINT_EXTENDS_PHOBJECT,
     );
 
     foreach ($method_codes as $method => $codes) {
@@ -298,6 +304,31 @@ final class ArcanistPhutilXHPASTLinter extends ArcanistBaseXHPASTLinter {
             'final',
             'abstract',
             '@concrete-extensible'));
+      }
+    }
+  }
+
+  private function lintClassExtendsPhobject(XHPASTNode $root) {
+    $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
+
+    foreach ($classes as $class) {
+      // TODO: This doesn't quite work for namespaced classes (see T8534).
+      $name    = $class->getChildOfType(1, 'n_CLASS_NAME');
+      $extends = $class->getChildByIndex(2);
+
+      if ($name->getConcreteString() == 'Phobject') {
+        continue;
+      }
+
+      if ($extends->getTypeName() == 'n_EMPTY') {
+        $this->raiseLintAtNode(
+          $class,
+          self::LINT_EXTENDS_PHOBJECT,
+          pht(
+            'Classes should extend from %s or from some other class. '.
+            'All classes (except for %s itself) should have a base class.',
+            'Phobject',
+            'Phobject'));
       }
     }
   }

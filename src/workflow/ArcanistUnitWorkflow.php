@@ -184,6 +184,9 @@ EOTEXT
     }
 
     $results = $this->engine->run();
+
+    $this->validateUnitEngineResults($this->engine, $results);
+
     $this->testResults = $results;
 
     $console = PhutilConsole::getConsole();
@@ -366,6 +369,44 @@ EOTEXT
       'full' => 'full',
     );
     return idx($known_formats, $format, 'full');
+  }
+
+
+  /**
+   * Raise a tailored error when a unit test engine returns results in an
+   * invalid format.
+   *
+   * @param ArcanistUnitTestEngine The engine.
+   * @param wild Results from the engine.
+   */
+  private function validateUnitEngineResults(
+    ArcanistUnitTestEngine $engine,
+    $results) {
+
+    if (!is_array($results)) {
+      throw new Exception(
+        pht(
+          'Unit test engine (of class "%s") returned invalid results when '.
+          'run (with method "%s"). Expected a list of "%s" objects as results.',
+          get_class($engine),
+          'run()',
+          'ArcanistUnitTestResult'));
+    }
+
+    foreach ($results as $key => $result) {
+      if (!($result instanceof ArcanistUnitTestResult)) {
+        throw new Exception(
+          pht(
+            'Unit test engine (of class "%s") returned invalid results when '.
+            'run (with method "%s"). Expected a list of "%s" objects as '.
+            'results, but value with key "%s" is not valid.',
+            get_class($engine),
+            'run()',
+            'ArcanistUnitTestResult',
+            $key));
+      }
+    }
+
   }
 
 }

@@ -35,6 +35,8 @@ if ($x) {}
 else if ($y) {}
 else {}
 
+if ($x) {}else{}
+
 declare(ticks = 1);
 ~~~~~~~~~~
 advice:3:14
@@ -52,6 +54,7 @@ warning:31:6
 warning:32:4
 warning:34:11
 warning:35:16
+warning:38:11
 ~~~~~~~~~~
 <?php
 
@@ -76,5 +79,7 @@ else bar();
 do baz(); while ($x);
 
 if ($x) {} else if ($y) {} else {}
+
+if ($x) {} else{}
 
 declare(ticks = 1);

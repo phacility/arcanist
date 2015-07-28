@@ -10,7 +10,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
    *
    * @return ArcanistLinter
    */
-  protected final function getLinter() {
+  final protected function getLinter() {
     $matches = null;
     if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches) ||
         !is_subclass_of($matches[1], 'ArcanistLinter')) {
@@ -20,7 +20,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     return newv($matches[1], array());
   }
 
-  public abstract function testLinter();
+  abstract public function testLinter();
 
   /**
    * Executes all tests from the specified subdirectory. If a linter is not
@@ -112,7 +112,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
         null,
-        'Unit Test');
+        pht('Unit Test'));
       $configuration_manager = new ArcanistConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
 

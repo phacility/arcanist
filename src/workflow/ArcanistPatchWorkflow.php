@@ -954,35 +954,6 @@ EOTEXT
   private function sanityCheck(ArcanistBundle $bundle) {
     $repository_api = $this->getRepositoryAPI();
 
-    // Check to see if the bundle's project id matches the working copy
-    // project id
-    $bundle_project_id = $bundle->getProjectID();
-    $working_copy_project_id = $this->getWorkingCopy()->getProjectID();
-    if (empty($bundle_project_id)) {
-      // this means $source is SOURCE_PATCH || SOURCE_BUNDLE w/ $version = 0
-      // they don't come with a project id so just do nothing
-    } else if ($bundle_project_id != $working_copy_project_id) {
-      if ($working_copy_project_id) {
-        $issue = pht(
-          "This patch is for the '%s' project, but the working copy ".
-          "belongs to the '%s' project.",
-          $bundle_project_id,
-          $working_copy_project_id);
-      } else {
-        $issue = pht(
-          "This patch is for the '%s' project, but the working copy does ".
-          "not have an '%s' file to identify which project it belongs to.",
-          $bundle_project_id,
-          '.arcconfig');
-      }
-      $ok = phutil_console_confirm(
-        pht('%s Still try to apply the patch?', $issue),
-        $default_no = false);
-      if (!$ok) {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
     // Check to see if the bundle's base revision matches the working copy
     // base revision
     if ($repository_api->supportsLocalCommits()) {

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistBaseCommitParser {
+final class ArcanistBaseCommitParser extends Phobject {
 
   private $api;
   private $try;

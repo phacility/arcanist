@@ -3,7 +3,7 @@
 /**
  * Parser for JUnit, NUnit, etc results format
  */
-final class ArcanistXUnitTestResultParser {
+final class ArcanistXUnitTestResultParser extends Phobject {
 
   /**
    * Parse test results from provided input and return an array
@@ -89,7 +89,7 @@ final class ArcanistXUnitTestResultParser {
       $result = new ArcanistUnitTestResult();
       $result->setName($classname.'.'.$name);
       $result->setResult($status);
-      $result->setDuration($time);
+      $result->setDuration((float)$time);
       $result->setUserData($user_data);
 
       $results[] = $result;

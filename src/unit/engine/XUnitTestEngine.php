@@ -250,7 +250,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     try {
       $regenerate_future->resolvex();
       $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-    } catch(CommandException $exc) {
+    } catch (CommandException $exc) {
       if ($exc->getError() > 1) {
         throw $exc;
       }
@@ -296,7 +296,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
       try {
         $future->resolvex();
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-      } catch(CommandException $exc) {
+      } catch (CommandException $exc) {
         if ($exc->getError() > 1) {
           throw $exc;
         }

@@ -17,18 +17,20 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
     }
 
     if (!$run_tests) {
-      throw new ArcanistNoEffectException('No tests to run.');
+      throw new ArcanistNoEffectException(pht('No tests to run.'));
     }
 
     $enable_coverage = $this->getEnableCoverage();
+
     if ($enable_coverage !== false) {
       if (!function_exists('xdebug_start_code_coverage')) {
         if ($enable_coverage === true) {
           throw new ArcanistUsageException(
             pht(
-              'You specified %s but xdebug is not available, so '.
+              'You specified %s but %s is not available, so '.
               'coverage can not be enabled for %s.',
               '--coverage',
+              'XDebug',
               __CLASS__));
         }
       } else {
@@ -36,20 +38,21 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
       }
     }
 
-    $project_root = $this->getWorkingCopy()->getProjectRoot();
-
     $test_cases = array();
+
     foreach ($run_tests as $test_class) {
-      $test_case = newv($test_class, array());
-      $test_case->setEnableCoverage($enable_coverage);
-      $test_case->setWorkingCopy($this->getWorkingCopy());
+      $test_case = newv($test_class, array())
+        ->setEnableCoverage($enable_coverage)
+        ->setWorkingCopy($this->getWorkingCopy());
 
       if ($this->getPaths()) {
         $test_case->setPaths($this->getPaths());
       }
+
       if ($this->renderer) {
         $test_case->setRenderer($this->renderer);
       }
+
       $test_cases[] = $test_case;
     }
 
@@ -104,75 +107,24 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
     return $run_tests;
   }
 
+  /**
+   * Retrieve all relevant test cases.
+   *
+   * Looks for any class that extends @{class:PhutilTestCase} inside a
+   * `__tests__` directory in any parent directory of every affected file.
+   *
+   * The idea is that "infrastructure/__tests__/" tests defines general tests
+   * for all of "infrastructure/", and those tests run for any change in
+   * "infrastructure/". However, "infrastructure/concrete/rebar/__tests__/"
+   * defines more specific tests that run only when "rebar/" (or some
+   * subdirectory) changes.
+   *
+   * @return list<string>  The names of the test case classes to be executed.
+   */
   private function getTestsForPaths() {
-    $project_root = $this->getWorkingCopy()->getProjectRoot();
-
-    $look_here = array();
-
-    foreach ($this->getPaths() as $path) {
-      $library_root = phutil_get_library_root_for_path($path);
-      if (!$library_root) {
-        continue;
-      }
-      $library_name = phutil_get_library_name_for_root($library_root);
-
-      if (!$library_name) {
-        throw new Exception(
-          sprintf(
-            "%s\n\n    %s\n\n%s\n\n    - %s\n    - %s\n",
-            pht(
-              'Attempting to run unit tests on a libphutil library '.
-              'which has not been loaded, at:'),
-            $library_root,
-            pht('This probably means one of two things:'),
-            pht(
-              'You may need to add this library to %s.',
-              '.arcconfig.'),
-            pht(
-              'You may be running tests on a copy of libphutil or '.
-              'arcanist using a different copy of libphutil or arcanist. '.
-              'This operation is not supported.')));
-      }
-
-      $path = Filesystem::resolvePath($path, $project_root);
-
-      if (!is_dir($path)) {
-        $path = dirname($path);
-      }
-
-      if ($path == $library_root) {
-        $look_here[$library_name.':.'] = array(
-          'library' => $library_name,
-          'path'    => '',
-        );
-      } else if (!Filesystem::isDescendant($path, $library_root)) {
-        // We have encountered some kind of symlink maze -- for instance, $path
-        // is some symlink living outside the library that links into some file
-        // inside the library. Just ignore these cases, since the affected file
-        // does not actually lie within the library.
-        continue;
-      } else {
-        $library_path = Filesystem::readablePath($path, $library_root);
-        do {
-          $look_here[$library_name.':'.$library_path] = array(
-            'library' => $library_name,
-            'path'    => $library_path,
-          );
-          $library_path = dirname($library_path);
-        } while ($library_path != '.');
-      }
-    }
-
-    // Look for any class that extends PhutilTestCase inside a `__tests__`
-    // directory in any parent directory of every affected file.
-    //
-    // The idea is that "infrastructure/__tests__/" tests defines general tests
-    // for all of "infrastructure/", and those tests run for any change in
-    // "infrastructure/". However, "infrastructure/concrete/rebar/__tests__/"
-    // defines more specific tests that run only when rebar/ (or some
-    // subdirectory) changes.
-
+    $look_here = $this->getTestPaths();
     $run_tests = array();
+
     foreach ($look_here as $path_info) {
       $library = $path_info['library'];
       $path    = $path_info['path'];
@@ -180,7 +132,7 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
       $symbols = id(new PhutilSymbolLoader())
         ->setType('class')
         ->setLibrary($library)
-        ->setPathPrefix(($path ? $path.'/' : '').'__tests__/')
+        ->setPathPrefix($path)
         ->setAncestorClass('PhutilTestCase')
         ->setConcreteOnly(true)
         ->selectAndLoadSymbols();
@@ -189,9 +141,80 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
         $run_tests[$symbol['name']] = true;
       }
     }
-    $run_tests = array_keys($run_tests);
 
-    return $run_tests;
+    return array_keys($run_tests);
+  }
+
+  /**
+   * Returns the paths in which we should look for tests to execute.
+   *
+   * @return list<string>  A list of paths in which to search for test cases.
+   */
+  public function getTestPaths() {
+    $root  = $this->getWorkingCopy()->getProjectRoot();
+    $paths = array();
+
+    foreach ($this->getPaths() as $path) {
+      $library_root = phutil_get_library_root_for_path($path);
+
+      if (!$library_root) {
+        continue;
+      }
+
+      $library_name = phutil_get_library_name_for_root($library_root);
+
+      if (!$library_name) {
+        throw new Exception(
+          pht(
+            "Attempting to run unit tests on a libphutil library which has ".
+            "not been loaded, at:\n\n".
+            "    %s\n\n".
+            "This probably means one of two things:\n\n".
+            "    - You may need to add this library to %s.\n".
+            "    - You may be running tests on a copy of libphutil or ".
+            "arcanist using a different copy of libphutil or arcanist. ".
+            "This operation is not supported.\n",
+            $library_root,
+            '.arcconfig.'));
+      }
+
+      $path = Filesystem::resolvePath($path, $root);
+      $library_path = Filesystem::readablePath($path, $library_root);
+
+      if (!Filesystem::isDescendant($path, $library_root)) {
+        // We have encountered some kind of symlink maze -- for instance, $path
+        // is some symlink living outside the library that links into some file
+        // inside the library. Just ignore these cases, since the affected file
+        // does not actually lie within the library.
+        continue;
+      }
+
+      if (is_file($path) && preg_match('@(?:^|/)__tests__/@', $path)) {
+        $paths[$library_name.':'.$library_path] = array(
+          'library' => $library_name,
+          'path'    => $library_path,
+        );
+        continue;
+      }
+
+      foreach (Filesystem::walkToRoot($path, $library_root) as $subpath) {
+        if ($subpath == $library_root) {
+          $paths[$library_name.':.'] = array(
+            'library' => $library_name,
+            'path'    => '__tests__/',
+          );
+        } else {
+          $library_subpath = Filesystem::readablePath($subpath, $library_root);
+
+          $paths[$library_name.':'.$library_subpath] = array(
+            'library' => $library_name,
+            'path'    => $library_subpath.'/__tests__/',
+          );
+        }
+      }
+    }
+
+    return $paths;
   }
 
   public function shouldEchoTestResults() {

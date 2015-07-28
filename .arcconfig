@@ -1,8 +1,7 @@
 {
-  "project.name" : "arcanist",
-  "phabricator.uri" : "https://secure.phabricator.com/",
-  "unit.engine" : "PhutilUnitTestEngine",
-  "load" : [
+  "phabricator.uri": "https://secure.phabricator.com/",
+  "unit.engine": "PhutilUnitTestEngine",
+  "load": [
     "src/"
   ]
 }

@@ -46,8 +46,8 @@ if (getenv('ARC_PHUTIL_PATH')) {
 }
 if (!@constant('__LIBPHUTIL__')) {
   echo "ERROR: Unable to load libphutil. Put libphutil/ next to arcanist/, or ".
-       "update your PHP 'include_path' to include the parent directory of ".
-       "libphutil/, or symlink libphutil/ into arcanist/externals/includes/.\n";
+    "update your PHP 'include_path' to include the parent directory of ".
+    "libphutil/, or symlink libphutil/ into arcanist/externals/includes/.\n";
   exit(1);
 }
 

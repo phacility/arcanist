@@ -70,10 +70,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       $messages[] = $message;
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 

@@ -177,10 +177,6 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
       }
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 

@@ -5,7 +5,7 @@
  *
  * @task config
  */
-final class ArcanistWorkingCopyIdentity {
+final class ArcanistWorkingCopyIdentity extends Phobject {
 
   private $projectConfig;
   private $projectRoot;
@@ -214,16 +214,6 @@ final class ArcanistWorkingCopyIdentity {
   private function __construct($root, array $config) {
     $this->projectRoot = $root;
     $this->projectConfig = $config;
-  }
-
-  public function getProjectID() {
-    $project_id = $this->getProjectConfig('project.name');
-    if ($project_id) {
-      return $project_id;
-    }
-
-    // This is an older name for the setting.
-    return $this->getProjectConfig('project_id');
   }
 
   public function getProjectRoot() {

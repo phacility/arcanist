@@ -30,7 +30,7 @@ EOTEXT
       'current' => array(
         'param' => 'cursor_position',
         'paramtype' => 'int',
-        'help' => 'Current term in the argument list being completed.',
+        'help' => pht('Current term in the argument list being completed.'),
       ),
       '*' => 'argv',
     );
@@ -83,6 +83,9 @@ EOTEXT
         if (!$workflow->shouldShellComplete()) {
           continue;
         }
+
+        $workflow->setArcanistConfiguration($this->getArcanistConfiguration());
+        $workflow->setConfigurationManager($this->getConfigurationManager());
 
         if ($vcs || $workflow->requiresWorkingCopy()) {
           $supported_vcs = $workflow->getSupportedRevisionControlSystems();

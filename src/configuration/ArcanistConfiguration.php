@@ -19,7 +19,7 @@
  *
  * @concrete-extensible
  */
-class ArcanistConfiguration {
+class ArcanistConfiguration extends Phobject {
 
   public function buildWorkflow($command) {
     if ($command == '--help') {

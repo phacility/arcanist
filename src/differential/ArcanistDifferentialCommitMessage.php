@@ -3,7 +3,7 @@
 /**
  * Represents a parsed commit message.
  */
-final class ArcanistDifferentialCommitMessage {
+final class ArcanistDifferentialCommitMessage extends Phobject {
 
   private $rawCorpus;
   private $revisionID;

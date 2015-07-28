@@ -120,10 +120,6 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
       }
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 

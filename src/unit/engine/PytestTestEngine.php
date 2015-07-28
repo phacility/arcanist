@@ -5,9 +5,11 @@
  */
 final class PytestTestEngine extends ArcanistUnitTestEngine {
 
+  private $projectRoot;
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
-    $this->project_root = $working_copy->getProjectRoot();
+    $this->projectRoot = $working_copy->getProjectRoot();
 
     $junit_tmp = new TempFile();
     $cover_tmp = new TempFile();
@@ -25,7 +27,7 @@ final class PytestTestEngine extends ArcanistUnitTestEngine {
     }
 
     $future = new ExecFuture('coverage xml -o %s', $cover_tmp);
-    $future->setCWD($this->project_root);
+    $future->setCWD($this->projectRoot);
     $future->resolvex();
 
     return $this->parseTestResults($junit_tmp, $cover_tmp);
@@ -39,7 +41,7 @@ final class PytestTestEngine extends ArcanistUnitTestEngine {
     if ($this->getEnableCoverage() !== false) {
       $cmd_line = csprintf(
         'coverage run --source %s -m %C',
-        $this->project_root,
+        $this->projectRoot,
         $cmd_line);
     }
 

@@ -56,10 +56,6 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       $messages[] = $message;
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 

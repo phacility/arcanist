@@ -32,8 +32,6 @@
  * @task  conduit   Conduit
  * @task  scratch   Scratch Files
  * @task  phabrep   Phabricator Repositories
- *
- * @stable
  */
 abstract class ArcanistWorkflow extends Phobject {
 
@@ -55,8 +53,8 @@ abstract class ArcanistWorkflow extends Phobject {
   private $repositoryAPI;
   private $configurationManager;
   private $workingCopy;
-  private $arguments;
-  private $passedArguments;
+  private $arguments = array();
+  private $passedArguments = array();
   private $command;
 
   private $stashed;
@@ -1173,7 +1171,6 @@ abstract class ArcanistWorkflow extends Phobject {
     $bundle->setConduit($conduit);
     // since the conduit method has changes, assume that these fields
     // could be unset
-    $bundle->setProjectID(idx($diff, 'projectName'));
     $bundle->setBaseRevision(idx($diff, 'sourceControlBaseRevision'));
     $bundle->setRevisionID(idx($diff, 'revisionID'));
     $bundle->setAuthorName(idx($diff, 'authorName'));
@@ -1228,7 +1225,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $parser = $this->newDiffParser();
         $changes = $parser->parseDiff($diff);
         if (count($changes) != 1) {
-          throw new Exception('Expected exactly one change.');
+          throw new Exception(pht('Expected exactly one change.'));
         }
         $this->changeCache[$path] = reset($changes);
       }
@@ -1240,7 +1237,7 @@ abstract class ArcanistWorkflow extends Phobject {
         }
       }
     } else {
-      throw new Exception('Missing VCS support.');
+      throw new Exception(pht('Missing VCS support.'));
     }
 
     if (empty($this->changeCache[$path])) {
@@ -1253,7 +1250,9 @@ abstract class ArcanistWorkflow extends Phobject {
         return $change;
       } else {
         throw new Exception(
-          "Trying to get change for unchanged path '{$path}'!");
+          pht(
+            "Trying to get change for unchanged path '%s'!",
+            $path));
       }
     }
 
@@ -1275,7 +1274,10 @@ abstract class ArcanistWorkflow extends Phobject {
             $extended_info = ' '.$options['nosupport'][$system_name];
           }
           throw new ArcanistUsageException(
-            "Option '--{$arg}' is not supported under {$system_name}.".
+            pht(
+              "Option '%s' is not supported under %s.",
+              "--{$arg}",
+              $system_name).
             $extended_info);
         }
       }
@@ -1334,6 +1336,30 @@ abstract class ArcanistWorkflow extends Phobject {
     fwrite(STDERR, $msg);
   }
 
+  final protected function writeInfo($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:blue>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeWarn($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:yellow>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
+  final protected function writeOkay($title, $message) {
+    $this->writeStatusMessage(
+      phutil_console_format(
+        "<bg:green>** %s **</bg> %s\n",
+        $title,
+        $message));
+  }
+
   final protected function isHistoryImmutable() {
     $repository_api = $this->getRepositoryAPI();
 
@@ -1375,7 +1401,10 @@ abstract class ArcanistWorkflow extends Phobject {
       foreach ($paths as $key => $path) {
         $full_path = Filesystem::resolvePath($path);
         if (!Filesystem::pathExists($full_path)) {
-          throw new ArcanistUsageException("Path '{$path}' does not exist!");
+          throw new ArcanistUsageException(
+            pht(
+              "Path '%s' does not exist!",
+              $path));
         }
         $relative_path = Filesystem::readablePath(
           $full_path,
@@ -1520,58 +1549,14 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function getRepositoryEncoding() {
-    $default = 'UTF-8';
-    return nonempty(idx($this->getProjectInfo(), 'encoding'), $default);
-  }
-
-  final protected function getProjectInfo() {
-    if ($this->projectInfo === null) {
-      $project_id = $this->getWorkingCopy()->getProjectID();
-      if (!$project_id) {
-        $this->projectInfo = array();
-      } else {
-        try {
-          $this->projectInfo = $this->getConduit()->callMethodSynchronous(
-            'arcanist.projectinfo',
-            array(
-              'name' => $project_id,
-            ));
-        } catch (ConduitClientException $ex) {
-          if ($ex->getErrorCode() != 'ERR-BAD-ARCANIST-PROJECT') {
-            throw $ex;
-          }
-
-          // TODO: Implement a proper query method that doesn't throw on
-          // project not found. We just swallow this because some pathways,
-          // like Git with uncommitted changes in a repository with a new
-          // project ID, may attempt to access project information before
-          // the project is created. See T2153.
-          return array();
-        }
-      }
-    }
-
-    return $this->projectInfo;
+    return nonempty(
+      idx($this->loadProjectRepository(), 'encoding'),
+      'UTF-8');
   }
 
   final protected function loadProjectRepository() {
-    $project = $this->getProjectInfo();
-    if (isset($project['repository'])) {
-      return $project['repository'];
-    }
-    // NOTE: The rest of the code is here for backwards compatibility.
-
-    $repository_phid = idx($project, 'repositoryPHID');
-    if (!$repository_phid) {
-      return array();
-    }
-
-    $repositories = $this->getConduit()->callMethodSynchronous(
-      'repository.query',
-      array());
-    $repositories = ipull($repositories, null, 'phid');
-
-    return idx($repositories, $repository_phid, array());
+    list($info, $reasons) = $this->loadRepositoryInformation();
+    return coalesce($info, array());
   }
 
   final protected function newInteractiveEditor($text) {
@@ -1600,10 +1585,12 @@ abstract class ArcanistWorkflow extends Phobject {
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         echo phutil_console_wrap(
-          "This feature requires a newer version of Phabricator. Please ".
-          "update it using these instructions: ".
-          "http://www.phabricator.com/docs/phabricator/article/".
-          "Installation_Guide.html#updating-phabricator\n\n");
+          "%s\n\n",
+          pht(
+            'This feature requires a newer version of Phabricator. Please '.
+            'update it using these instructions: %s',
+            'https://secure.phabricator.com/book/phabricator/article/'.
+              'upgrading/'));
       }
       throw $ex;
     }
@@ -1628,13 +1615,14 @@ abstract class ArcanistWorkflow extends Phobject {
     $api = $this->getRepositoryAPI();
     if (!$api->supportsCommitRanges()) {
       throw new ArcanistUsageException(
-        'This version control system does not support commit ranges.');
+        pht('This version control system does not support commit ranges.'));
     }
 
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
-        'Specify exactly one base commit. The end of the commit range is '.
-        'always the working copy state.');
+        pht(
+          'Specify exactly one base commit. The end of the commit range is '.
+          'always the working copy state.'));
     }
 
     $api->setBaseCommit(head($argv));
@@ -1700,6 +1688,11 @@ abstract class ArcanistWorkflow extends Phobject {
    */
   final protected function getRepositoryURI() {
     return idx($this->getRepositoryInformation(), 'uri');
+  }
+
+
+  final protected function getRepositoryStagingConfiguration() {
+    return idx($this->getRepositoryInformation(), 'staging');
   }
 
 
@@ -1800,40 +1793,6 @@ abstract class ArcanistWorkflow extends Phobject {
       $reasons[] = pht(
         'Configuration value "%s" is empty.',
         'repository.callsign');
-    }
-
-    $project_info = $this->getProjectInfo();
-    $project_name = $this->getWorkingCopy()->getProjectID();
-    if ($this->getProjectInfo()) {
-      if (!empty($project_info['repository']['callsign'])) {
-        $callsign = $project_info['repository']['callsign'];
-        $query = array(
-          'callsigns' => array($callsign),
-        );
-        $reasons[] = pht(
-          'Configuration value "%s" is set to "%s"; this project '.
-          'is associated with the "%s" repository.',
-          'project.name',
-          $project_name,
-          $callsign);
-        return array($query, $reasons);
-      } else {
-        $reasons[] = pht(
-          'Configuration value "%s" is set to "%s", but this '.
-          'project is not associated with a repository.',
-          'project.name',
-          $project_name);
-      }
-    } else if (strlen($project_name)) {
-      $reasons[] = pht(
-        'Configuration value "%s" is set to "%s", but that '.
-        'project does not exist.',
-        'project.name',
-        $project_name);
-    } else {
-      $reasons[] = pht(
-        'Configuration value "%s" is empty.',
-        'project.name');
     }
 
     $uuid = $this->getRepositoryAPI()->getRepositoryUUID();

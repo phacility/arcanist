@@ -24,7 +24,7 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
 
     self::$allTestsCounter--;
 
-    $actual_test_count = 4;
+    $actual_test_count = 5;
 
     $this->assertEqual(
       $actual_test_count,
@@ -117,6 +117,72 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
   protected function throwIfFalsey($input) {
     if (!$input) {
       throw new Exception(pht('This is a negative test case!'));
+    }
+  }
+
+  public function testGetTestPaths() {
+    $tests = array(
+      'empty' => array(
+        array(),
+        array(),
+      ),
+
+      'test file' => array(
+        array(__FILE__),
+        array(__FILE__),
+      ),
+
+      'test directory' => array(
+        array(
+          dirname(__FILE__),
+        ),
+        array(
+          // This is odd, but harmless.
+          dirname(dirname(__FILE__)).'/__tests__/__tests__/',
+
+          dirname(dirname(__FILE__)).'/__tests__/',
+          dirname(dirname(dirname(__FILE__))).'/__tests__/',
+          phutil_get_library_root('arcanist').'/__tests__/',
+        ),
+      ),
+      'normal directory' => array(
+        array(
+          dirname(dirname(__FILE__)),
+        ),
+        array(
+          dirname(dirname(__FILE__)).'/__tests__/',
+          dirname(dirname(dirname(__FILE__))).'/__tests__/',
+          phutil_get_library_root('arcanist').'/__tests__/',
+        ),
+      ),
+      'library root' => array(
+        array(phutil_get_library_root('arcanist')),
+        array(phutil_get_library_root('arcanist').'/__tests__/'),
+      ),
+    );
+
+    $test_engine = id(new PhutilUnitTestEngine())
+      ->setWorkingCopy($this->getWorkingCopy());
+
+    $library = phutil_get_current_library_name();
+    $library_root = phutil_get_library_root($library);
+
+    foreach ($tests as $name => $test) {
+      list($paths, $test_paths) = $test;
+      $expected = array();
+
+      foreach ($test_paths as $path) {
+        $expected[] = array(
+          'library' => $library,
+          'path' => Filesystem::readablePath($path, $library_root),
+        );
+      }
+
+      $test_engine->setPaths($paths);
+      $this->assertEqual(
+        $expected,
+        array_values($test_engine->getTestPaths()),
+        pht('Test paths for: "%s"', $name));
     }
   }
 

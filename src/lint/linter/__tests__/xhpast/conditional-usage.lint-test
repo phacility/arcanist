@@ -26,4 +26,8 @@ error:12:7
 warning:16:3
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config": {"xhpast.php-version": "5.3.0"}}
+{
+  "config": {
+    "xhpast.php-version": "5.3.0"
+  }
+}
