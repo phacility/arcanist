@@ -2,9 +2,11 @@
 
 final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
 
+  private $projectRoot;
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
-    $this->project_root = $working_copy->getProjectRoot();
+    $this->projectRoot = $working_copy->getProjectRoot();
 
     $cover_tmp = new TempFile();
     $junit_tmp = new TempFile();
@@ -23,7 +25,7 @@ final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
     $cmd_line = csprintf($coverage_command, $junit_tmp, $cover_tmp);
 
     $future = new ExecFuture('%C', $cmd_line);
-    $future->setCWD($this->project_root);
+    $future->setCWD($this->projectRoot);
     return $future;
   }
 
@@ -57,7 +59,7 @@ final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
 
     foreach ($classes as $class) {
       $absolute_path = $class->getAttribute('filename');
-      $relative_path = str_replace($this->project_root.'/', '', $absolute_path);
+      $relative_path = str_replace($this->projectRoot.'/', '', $absolute_path);
 
       if (is_file($absolute_path.'.go')) {
         $relative_path .= '.go';
