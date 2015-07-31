@@ -1,0 +1,17 @@
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("%d", 1)
+}
+~~~~~~~~~~
+error:6:1
+~~~~~~~~~~
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("%d", 1)
+}
