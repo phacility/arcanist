@@ -1,0 +1,32 @@
+package main
+
+import ("fmt")
+type Animal struct{Type string
+	 			    	    			Color string}
+
+func main() {a := &Animal{Type: "Dog", Color: "Gold",}
+
+
+
+
+
+fmt.Printf("%#v", *a)}
+~~~~~~~~~~
+error:3:1
+~~~~~~~~~~
+package main
+
+import (
+	"fmt"
+)
+
+type Animal struct {
+	Type  string
+	Color string
+}
+
+func main() {
+	a := &Animal{Type: "Dog", Color: "Gold"}
+
+	fmt.Printf("%#v", *a)
+}
