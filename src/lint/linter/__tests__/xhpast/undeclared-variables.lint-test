@@ -1,6 +1,6 @@
 <?php
 
-function () use ($c) {
+function() use ($c) {
   $c++;
 };
 
