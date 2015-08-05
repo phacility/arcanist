@@ -336,12 +336,9 @@ phutil_register_library_map(array(
     'ArcanistConfigurationDrivenLintEngine' => 'ArcanistLintEngine',
     'ArcanistConfigurationManager' => 'Phobject',
     'ArcanistConsoleLintRenderer' => 'ArcanistLintRenderer',
-<<<<<<< HEAD
     'ArcanistCouserorgLinter' => 'ArcanistLinter',
-=======
     'ArcanistConstructorParenthesesXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
     'ArcanistControlStatementSpacingXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
->>>>>>> refs/heads/stable
     'ArcanistCoverWorkflow' => 'ArcanistWorkflow',
     'ArcanistCppcheckLinter' => 'ArcanistExternalLinter',
     'ArcanistCppcheckLinterTestCase' => 'ArcanistExternalLinterTestCase',
