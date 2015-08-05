@@ -16,9 +16,11 @@ The duck says, "Quack!"
 The robot says, "Beep beep boop boop!"
 EODOC
   );
+f (1);
 ~~~~~~~~~~
 warning:4:4
 warning:9:4
+warning:19:2
 ~~~~~~~~~~
 <?php
 
@@ -37,3 +39,4 @@ The duck says, "Quack!"
 The robot says, "Beep beep boop boop!"
 EODOC
   );
+f(1);
