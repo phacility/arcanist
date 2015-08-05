@@ -47,7 +47,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
     public function getMandatoryFlags() {
         $options = array();
 
-        $options[] = '--format=stylish';
+        $options[] = '--format='.dirname(realpath(__FILE__)).'/eslintJsonFormat.js';
 
         if ($this->eslintenv) {
             $options[] = '--env='.$this->eslintenv;
@@ -100,26 +100,32 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
     }
 
     protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-        $lines = phutil_split_lines($stdout, false);
-
+        try {
+            $json = phutil_json_decode($stdout);
+            // Since arc only lints one file at at time, we only need the first result
+            $results = idx(idx($json, 'results')[0], 'messages');
+        } catch (PhutilJSONParserException $ex) {
+            // Something went wrong and we can't decode the output. Exit abnormally.
+            throw new PhutilProxyException(
+                pht('ESLint returned unparseable output.'),
+                $ex);
+        }
         $messages = array();
-        foreach ($lines as $line) {
-            $clean_line = ltrim(preg_replace('!\s+!', ' ', $line));
-            list($lineNo, $severityStr) = array_pad(explode(' ', $clean_line), 2, null);
-            if ($severityStr === 'error' || $severityStr === 'warning') {
-                $severity = $severityStr === 'error' ?
-                    ArcanistLintSeverity::SEVERITY_ERROR :
-                    ArcanistLintSeverity::SEVERITY_WARNING;
+        foreach ($results as $result) {
+            $ruleId = idx($result, 'ruleId');
+            $description = idx($result, 'message')."\r\nhttp://eslint.org/docs/rules/".$ruleId;
 
-                $message = new ArcanistLintMessage();
-                $message->setPath($path);
-                $message->setLine($lineNo);
-                $message->setCode($this->getLinterName());
-                $message->setDescription($clean_line);
-                $message->setSeverity($severity);
+            $message = new ArcanistLintMessage();
+            $message->setChar(idx($result, 'column'));
+            $message->setCode($ruleId);
+            $message->setDescription($description);
+            $message->setLine(idx($result, 'line'));
+            $message->setName('ESLint.'.$ruleId);
+            $message->setOriginalText(idx($result, 'source'));
+            $message->setPath($path);
+            $message->setSeverity($this->getLintMessageSeverity(idx($result, 'severity')));
 
-                $messages[] = $message;
-            }
+            $messages[] = $message;
         }
 
         return $messages;
