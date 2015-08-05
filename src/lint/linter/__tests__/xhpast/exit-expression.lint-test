@@ -2,7 +2,14 @@
 exit(-1);
 exit -1;
 strtoupper(33 * exit - 6);
+echo '';
+print '';
+
+$x = new stdClass();
+$y = clone $x;
 ~~~~~~~~~~
 error:3:1
+warning:3:5
 warning:3:6
 error:4:17
+warning:4:21
