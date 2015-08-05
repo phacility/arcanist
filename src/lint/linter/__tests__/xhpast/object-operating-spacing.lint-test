@@ -1,0 +1,12 @@
+<?php
+$x -> doSomething();
+id(new Something())
+  ->doSomething();
+~~~~~~~~~~
+warning:2:3
+warning:2:6
+~~~~~~~~~~
+<?php
+$x->doSomething();
+id(new Something())
+  ->doSomething();
