@@ -14,6 +14,10 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         return 'https://www.eslint.org';
     }
 
+    public function getRuleDocumentationURI($ruleId) {
+        return $this->getInfoURI().'/docs/rules/'.$ruleId;
+    }
+
     public function getInfoDescription() {
         return pht('ESLint is a linter for JavaScript source files.');
     }
@@ -41,13 +45,13 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
     }
 
     public function getInstallInstructions() {
-        return pht('Install ESLint using `%s`.', 'npm install -g eslint');
+        return pht('Install ESLint using `%s`.', 'npm install -g eslint eslint-plugin-react');
     }
 
     public function getMandatoryFlags() {
         $options = array();
 
-        $options[] = '--format=stylish';
+        $options[] = '--format='.dirname(realpath(__FILE__)).'/eslintJsonFormat.js';
 
         if ($this->eslintenv) {
             $options[] = '--env='.$this->eslintenv;
@@ -82,6 +86,13 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         return $options + parent::getLinterConfigurationOptions();
     }
 
+    public function getLintSeverityMap() {
+        return array(
+            2 => ArcanistLintSeverity::SEVERITY_ERROR,
+            1 => ArcanistLintSeverity::SEVERITY_WARNING
+        );
+    }
+
     public function setLinterConfigurationValue($key, $value) {
 
         switch ($key) {
@@ -100,26 +111,31 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
     }
 
     protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-        $lines = phutil_split_lines($stdout, false);
-
+        try {
+            $json = phutil_json_decode($stdout);
+            // Since arc only lints one file at at time, we only need the first result
+            $results = idx(idx($json, 'results')[0], 'messages');
+        } catch (PhutilJSONParserException $ex) {
+            // Something went wrong and we can't decode the output. Exit abnormally.
+            throw new PhutilProxyException(
+                pht('ESLint returned unparseable output.'),
+                $ex);
+        }
         $messages = array();
-        foreach ($lines as $line) {
-            $clean_line = ltrim(preg_replace('!\s+!', ' ', $line));
-            list($lineNo, $severityStr) = array_pad(explode(' ', $clean_line), 2, null);
-            if ($severityStr === 'error' || $severityStr === 'warning') {
-                $severity = $severityStr === 'error' ?
-                    ArcanistLintSeverity::SEVERITY_ERROR :
-                    ArcanistLintSeverity::SEVERITY_WARNING;
+        foreach ($results as $result) {
+            $ruleId = idx($result, 'ruleId');
+            $description = idx($result, 'message')."\r\nSee documentation at ".$this->getRuleDocumentationURI($ruleId);
+            $message = new ArcanistLintMessage();
+            $message->setChar(idx($result, 'column'));
+            $message->setCode($ruleId);
+            $message->setDescription($description);
+            $message->setLine(idx($result, 'line'));
+            $message->setName('ESLint.'.$ruleId);
+            $message->setOriginalText(idx($result, 'source'));
+            $message->setPath($path);
+            $message->setSeverity($this->getLintMessageSeverity(idx($result, 'severity')));
 
-                $message = new ArcanistLintMessage();
-                $message->setPath($path);
-                $message->setLine($lineNo);
-                $message->setCode($this->getLinterName());
-                $message->setDescription($clean_line);
-                $message->setSeverity($severity);
-
-                $messages[] = $message;
-            }
+            $messages[] = $message;
         }
 
         return $messages;
