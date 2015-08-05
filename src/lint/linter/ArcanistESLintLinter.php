@@ -14,6 +14,10 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         return 'https://www.eslint.org';
     }
 
+    public function getRuleDocumentationURI($ruleId) {
+        return $this->getInfoURI().'/docs/rules/'.$ruleId;
+    }
+
     public function getInfoDescription() {
         return pht('ESLint is a linter for JavaScript source files.');
     }
@@ -82,6 +86,13 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         return $options + parent::getLinterConfigurationOptions();
     }
 
+    public function getLintSeverityMap() {
+        return array(
+            2 => ArcanistLintSeverity::SEVERITY_ERROR,
+            1 => ArcanistLintSeverity::SEVERITY_WARNING
+        );
+    }
+
     public function setLinterConfigurationValue($key, $value) {
 
         switch ($key) {
@@ -113,8 +124,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         $messages = array();
         foreach ($results as $result) {
             $ruleId = idx($result, 'ruleId');
-            $description = idx($result, 'message')."\r\nhttp://eslint.org/docs/rules/".$ruleId;
-
+            $description = idx($result, 'message')."\r\nSee documentation at ".$this->getRuleDocumentationURI($ruleId);
             $message = new ArcanistLintMessage();
             $message->setChar(idx($result, 'column'));
             $message->setCode($ruleId);
