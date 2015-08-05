@@ -104,20 +104,18 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
 
         $messages = array();
         foreach ($lines as $line) {
-            // Clean up nasty ESLint output
-            $clean_line = $output = preg_replace('!\s+!', ' ', $line);
-            $parts = explode(' ', ltrim($clean_line));
-
-            if (isset($parts[1]) && ($parts[1] === 'error' || $parts[1] === 'warning')) {
-                $severity = $parts[1] === 'error' ?
+            $clean_line = ltrim(preg_replace('!\s+!', ' ', $line));
+            list($lineNo, $severityStr) = array_pad(explode(' ', $clean_line), 2, null);
+            if ($severityStr === 'error' || $severityStr === 'warning') {
+                $severity = $severityStr === 'error' ?
                     ArcanistLintSeverity::SEVERITY_ERROR :
                     ArcanistLintSeverity::SEVERITY_WARNING;
 
                 $message = new ArcanistLintMessage();
                 $message->setPath($path);
-                $message->setLine($parts[0]);
+                $message->setLine($lineNo);
                 $message->setCode($this->getLinterName());
-                $message->setDescription(implode(' ', $parts));
+                $message->setDescription($clean_line);
                 $message->setSeverity($severity);
 
                 $messages[] = $message;
