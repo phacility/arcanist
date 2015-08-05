@@ -123,7 +123,7 @@ EOTEXT
     $conduit = $this->getConduit();
 
     if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
-      $this->writeStatusMessage("Reading paste from stdin...\n");
+      $this->writeStatusMessage(pht('Reading paste from stdin...')."\n");
     }
 
     $info = $conduit->callMethodSynchronous(

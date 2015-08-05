@@ -163,8 +163,8 @@ EOTEXT
 
     if (!$verbose) {
       $console->writeOut(
-        "%s\n",
-        pht('(Run with --verbose for more details.)'));
+        "(%s)\n",
+        pht('Run with %s for more details.', '--verbose'));
     }
 
     return 0;

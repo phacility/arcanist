@@ -339,7 +339,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
       $future = new ExecFuture('%C %C', $bin, $path_argument);
 
-      $future->setCWD($this->getEngine()->getWorkingCopy()->getProjectRoot());
+      $future->setCWD($this->getProjectRoot());
       $futures[$path] = $future;
     }
 
@@ -353,6 +353,13 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     }
 
     $messages = $this->parseLinterOutput($path, $err, $stdout, $stderr);
+
+    if ($err && $this->shouldExpectCommandErrors() && !$messages) {
+      // We assume that if the future exits with a non-zero status and we
+      // failed to parse any linter messages, then something must've gone wrong
+      // during parsing.
+      $messages = false;
+    }
 
     if ($messages === false) {
       if ($err) {
@@ -407,8 +414,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
       case 'interpreter':
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (Filesystem::binaryExists($path)) {
@@ -429,8 +435,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       case 'bin':
         $is_script = $this->shouldUseInterpreter();
 
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (!$is_script && Filesystem::binaryExists($path)) {

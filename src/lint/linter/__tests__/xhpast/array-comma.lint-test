@@ -28,12 +28,17 @@ array(
   1,
   2,
   3 /* comment */ );
+array(
+  1,
+  2,
+  3, /* comment */ );
 ~~~~~~~~~~
 advice:3:14
 advice:12:3
 advice:16:3
 advice:26:3
 advice:30:3
+advice:34:20
 ~~~~~~~~~~
 <?php
 array(1, 2, 3);
@@ -65,5 +70,10 @@ array(
 array(
   1,
   2,
-  3, /* comment */
+  3, /* comment */ 
+);
+array(
+  1,
+  2,
+  3, /* comment */ 
 );

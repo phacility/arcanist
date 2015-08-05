@@ -54,7 +54,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   }
 
   public function loadDictionary($path) {
-    $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $root = $this->getProjectRoot();
     $path = Filesystem::resolvePath($path, $root);
 
     $dict = phutil_json_decode(Filesystem::readFile($path));

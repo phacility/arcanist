@@ -27,32 +27,8 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
     return 'pep8';
   }
 
-  protected function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration('lint.pep8.options', array());
-  }
-
-  public function shouldUseInterpreter() {
-    return ($this->getDefaultBinary() !== 'pep8');
-  }
-
-  public function getDefaultInterpreter() {
-    return 'python2.6';
-  }
-
   public function getDefaultBinary() {
-    if (Filesystem::binaryExists('pep8')) {
-      return 'pep8';
-    }
-
-    $old_prefix = $this->getDeprecatedConfiguration('lint.pep8.prefix');
-    $old_bin = $this->getDeprecatedConfiguration('lint.pep8.bin');
-    if ($old_prefix || $old_bin) {
-      $old_bin = nonempty($old_bin, 'pep8');
-      return $old_prefix.'/'.$old_bin;
-    }
-
-    $arc_root = dirname(phutil_get_library_root('arcanist'));
-    return $arc_root.'/externals/pep8/pep8.py';
+    return 'pep8';
   }
 
   public function getVersion() {
@@ -67,7 +43,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install PEP8 using `easy_install pep8`.');
+    return pht('Install PEP8 using `%s`.', 'easy_install pep8');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -92,10 +68,6 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
       $message->setSeverity($this->getLintMessageSeverity($matches[4]));
 
       $messages[] = $message;
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

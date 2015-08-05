@@ -2,9 +2,10 @@
 
 function f($x) {}
 function g($x ) {}
+function h ($x) {}
 
-function &h($x) {}
-function &i($x ) {}
+function &i($x) {}
+function &j($x ) {}
 
 final class X {
 
@@ -24,21 +25,23 @@ f(function($x ) {});
 f(function($x ) use ($z) {});
 ~~~~~~~~~~
 warning:4:14
-warning:7:15
-error:9:13
-warning:12:23
-warning:15:31
-warning:18:33
-warning:23:14
+warning:5:11
+warning:8:15
+error:10:13
+warning:11:23
+warning:16:31
+warning:19:33
 warning:24:14
+warning:25:14
 ~~~~~~~~~~
 <?php
 
 function f($x) {}
 function g($x) {}
+function h($x) {}
 
-function &h($x) {}
 function &i($x) {}
+function &j($x) {}
 
 final class X {
 

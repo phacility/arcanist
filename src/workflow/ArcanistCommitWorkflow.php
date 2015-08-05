@@ -49,15 +49,15 @@ EOTEXT
   public function getArguments() {
     return array(
       'show' => array(
-        'help' =>
+        'help' => pht(
           'Show the command which would be issued, but do not actually '.
-          'commit anything.',
+          'commit anything.'),
       ),
       'revision' => array(
         'param' => 'revision_id',
-        'help' =>
+        'help' => pht(
           'Commit a specific revision. If you do not specify a revision, '.
-          'arc will look for committable revisions.',
+          'arc will look for committable revisions.'),
       ),
     );
   }
@@ -76,13 +76,17 @@ EOTEXT
 
       if (count($revisions) == 0) {
         throw new ArcanistUsageException(
-          "Unable to identify the revision in the working copy. Use ".
-          "'--revision <revision_id>' to select a revision.");
+          pht(
+            "Unable to identify the revision in the working copy. Use ".
+            "'%s' to select a revision.",
+            '--revision <revision_id>'));
       } else if (count($revisions) > 1) {
         throw new ArcanistUsageException(
-          "More than one revision exists in the working copy:\n\n".
-          $this->renderRevisionList($revisions)."\n".
-          "Use '--revision <revision_id>' to select a revision.");
+          pht(
+            "More than one revision exists in the working copy:\n\n%s\n".
+            "Use '%s' to select a revision.",
+            $this->renderRevisionList($revisions),
+            '--revision <revision_id>'));
       }
 
     } else {
@@ -94,7 +98,9 @@ EOTEXT
 
       if (count($revisions) == 0) {
         throw new ArcanistUsageException(
-          "Revision 'D{$revision_id}' does not exist.");
+          pht(
+            "Revision '%s' does not exist.",
+            "D{$revision_id}"));
       }
     }
 
@@ -129,7 +135,10 @@ EOTEXT
     }
 
     $revision_title = $revision['title'];
-    echo "Committing 'D{$revision_id}: {$revision_title}'...\n";
+    echo pht(
+      "Committing '%s: %s'...\n",
+      "D{$revision_id}",
+      $revision_title);
 
     $files = $this->getCommitFileList($revision);
 
@@ -151,7 +160,7 @@ EOTEXT
 
     $err = phutil_passthru('%C', $command);
     if ($err) {
-      throw new Exception("Executing 'svn commit' failed!");
+      throw new Exception(pht("Executing '%s' failed!", 'svn commit'));
     }
 
     $this->askForRepositoryUpdate();
@@ -199,12 +208,15 @@ EOTEXT
       foreach ($commit_paths as $will_commit => $ignored) {
         if (Filesystem::isDescendant($path, $will_commit)) {
           throw new ArcanistUsageException(
-            "This commit includes the directory '{$will_commit}', but ".
-            "it contains a modified path ('{$path}') which is NOT included ".
-            "in the commit. Subversion can not handle this operation and ".
-            "will commit the path anyway. You need to sort out the working ".
-            "copy changes to '{$path}' before you may proceed with the ".
-            "commit.");
+            pht(
+              "This commit includes the directory '%s', but it contains a ".
+              "modified path ('%s') which is NOT included in the commit. ".
+              "Subversion can not handle this operation and will commit the ".
+              "path anyway. You need to sort out the working copy changes to ".
+              "'%s' before you may proceed with the commit.",
+              $will_commit,
+              $path,
+              $path));
         }
       }
       $modified_but_not_included[] = $path;
@@ -240,7 +252,7 @@ EOTEXT
       $prefix = pht(
         'Revision includes changes to %s path(s) that do not exist:',
         new PhutilNumber(count($do_not_exist)));
-      $prompt = 'Commit this revision anyway?';
+      $prompt = pht('Commit this revision anyway?');
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }
 
@@ -249,7 +261,9 @@ EOTEXT
 
     if (empty($files)) {
       throw new ArcanistUsageException(
-        'There is nothing left to commit. None of the modified paths exist.');
+        pht(
+          'There is nothing left to commit. '.
+          'None of the modified paths exist.'));
     }
 
     return $files;
@@ -303,24 +317,29 @@ EOTEXT
     $confirm = array();
 
     if ($revision['status'] != ArcanistDifferentialRevisionStatus::ACCEPTED) {
-      $confirm[] =
-        "Revision 'D{$revision_id}: {$revision_title}' has not been accepted. ".
-        "Commit this revision anyway?";
+      $confirm[] = pht(
+        "Revision '%s: %s' has not been accepted. Commit this revision anyway?",
+        "D{$revision_id}",
+        $revision_title);
     }
 
     if ($revision['authorPHID'] != $this->getUserPHID()) {
-      $confirm[] =
-        "You are not the author of 'D{$revision_id}: {$revision_title}'. ".
-        "Commit this revision anyway?";
+      $confirm[] = pht(
+        "You are not the author of '%s: %s'. Commit this revision anyway?",
+        "D{$revision_id}",
+        $revision_title);
     }
 
     $revision_source = idx($revision, 'branch');
     $current_source = $repository_api->getBranchName();
     if ($revision_source != $current_source) {
-      $confirm[] =
-        "Revision 'D{$revision_id}: {$revision_title}' was generated from ".
-        "'{$revision_source}', but current working copy root is ".
-        "'{$current_source}'. Commit this revision anyway?";
+      $confirm[] = pht(
+        "Revision '%s: %s' was generated from '%s', but current working ".
+        "copy root is '%s'. Commit this revision anyway?",
+        "D{$revision_id}",
+        $revision_title,
+        $revision_source,
+        $current_source);
     }
 
     foreach ($confirm as $thing) {

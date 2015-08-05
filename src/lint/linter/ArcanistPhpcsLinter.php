@@ -30,7 +30,7 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install PHPCS with `pear install PHP_CodeSniffer`.');
+    return pht('Install PHPCS with `%s`.', 'pear install PHP_CodeSniffer');
   }
 
   public function getLinterConfigurationOptions() {
@@ -65,23 +65,8 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return $options;
   }
 
-  protected function getDefaultFlags() {
-    $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
-    $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
-
-    if (!empty($standard)) {
-      if (is_array($options)) {
-        $options[] = '--standard='.$standard;
-      } else {
-        $options .= ' --standard='.$standard;
-      }
-    }
-
-    return $options;
-  }
-
   public function getDefaultBinary() {
-    return $this->getDeprecatedConfiguration('lint.phpcs.bin', 'phpcs');
+    return 'phpcs';
   }
 
   public function getVersion() {
@@ -152,7 +137,10 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   protected function getLintCodeFromLinterConfigurationKey($code) {
     if (!preg_match('/^PHPCS\\.(E|W)\\./', $code)) {
       throw new Exception(
-        "Invalid severity code '{$code}', should begin with 'PHPCS.'.");
+        pht(
+          "Invalid severity code '%s', should begin with '%s.'.",
+          $code,
+          'PHPCS'));
     }
     return $code;
   }

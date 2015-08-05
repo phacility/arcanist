@@ -26,7 +26,7 @@
  * @task exec       Executing Mercurial Commands
  * @task internal   Internals
  */
-final class ArcanistHgProxyClient {
+final class ArcanistHgProxyClient extends Phobject {
 
   private $workingCopy;
   private $server;
@@ -163,7 +163,10 @@ final class ArcanistHgProxyClient {
 
     if ($errno || !$socket) {
       throw new Exception(
-        "Unable to connect socket! Error #{$errno}: {$errstr}");
+        pht(
+          'Unable to connect socket! Error #%d: %s',
+          $errno,
+          $errstr));
     }
 
     $channel = new PhutilSocketChannel($socket);

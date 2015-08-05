@@ -5,7 +5,7 @@
  *
  * @task  status      Path Status
  */
-abstract class ArcanistRepositoryAPI {
+abstract class ArcanistRepositoryAPI extends Phobject {
 
   const FLAG_MODIFIED     = 1;
   const FLAG_ADDED        = 2;
@@ -63,7 +63,8 @@ abstract class ArcanistRepositoryAPI {
     if (!$working_copy) {
       throw new Exception(
         pht(
-          'Trying to create a RepositoryAPI without a working copy!'));
+          'Trying to create a %s without a working copy!',
+          __CLASS__));
     }
 
     $root = $working_copy->getProjectRoot();

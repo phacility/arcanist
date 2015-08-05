@@ -23,7 +23,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     return implode('-', $parts);
   }
 
-  final protected function raiseLintAtToken(
+  final public function raiseLintAtToken(
     XHPASTToken $token,
     $code,
     $desc,
@@ -36,7 +36,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
       $replace);
   }
 
-  final protected function raiseLintAtNode(
+  final public function raiseLintAtNode(
     XHPASTNode $node,
     $code,
     $desc,
@@ -132,8 +132,9 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
         throw new Exception(
           pht(
             'Imbalanced calls to shared futures: each call to '.
-            'buildSharedFutures() for a path must be paired with a call to '.
-            'releaseSharedFutures().'));
+            '%s for a path must be paired with a call to %s.',
+            'buildSharedFutures()',
+            'releaseSharedFutures()'));
       }
 
       $this->refcount[$path]--;
@@ -156,7 +157,6 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * @task sharing
    */
   final protected function getXHPASTTreeForPath($path) {
-
     // If we aren't the linter responsible for actually building the parse
     // trees, go get the tree from that linter.
     if ($this->getXHPASTLinter() !== $this) {
@@ -164,7 +164,12 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     }
 
     if (!array_key_exists($path, $this->trees)) {
+      if (!array_key_exists($path, $this->futures)) {
+        return;
+      }
+
       $this->trees[$path] = null;
+
       try {
         $this->trees[$path] = XHPASTTree::newFromDataAndResolvedExecFuture(
           $this->getData($path),
@@ -193,6 +198,35 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
     }
 
     return idx($this->exceptions, $path);
+  }
+
+
+/* -(  Deprecated  )--------------------------------------------------------- */
+
+  /**
+   * Retrieve all calls to some specified function(s).
+   *
+   * Returns all descendant nodes which represent a function call to one of the
+   * specified functions.
+   *
+   * @param  XHPASTNode    Root node.
+   * @param  list<string>  Function names.
+   * @return AASTNodeList
+   */
+  protected function getFunctionCalls(XHPASTNode $root, array $function_names) {
+    $calls = $root->selectDescendantsOfType('n_FUNCTION_CALL');
+    $nodes = array();
+
+    foreach ($calls as $call) {
+      $node = $call->getChildByIndex(0);
+      $name = strtolower($node->getConcreteString());
+
+      if (in_array($name, $function_names)) {
+        $nodes[] = $call;
+      }
+    }
+
+    return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
   }
 
   public function getSuperGlobalNames() {

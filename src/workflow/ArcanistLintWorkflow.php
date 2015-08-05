@@ -60,99 +60,109 @@ EOTEXT
   public function getArguments() {
     return array(
       'lintall' => array(
-        'help' =>
-        'Show all lint warnings, not just those on changed lines. When '.
-        'paths are specified, this is the default behavior.',
+        'help' => pht(
+          'Show all lint warnings, not just those on changed lines. When '.
+          'paths are specified, this is the default behavior.'),
         'conflicts' => array(
           'only-changed' => true,
         ),
       ),
       'only-changed' => array(
-        'help' =>
-        'Show lint warnings just on changed lines. When no paths are '.
-        'specified, this is the default. This differs from only-new '.
-        'in cases where line modifications introduce lint on other '.
-        'unmodified lines.',
+        'help' => pht(
+          'Show lint warnings just on changed lines. When no paths are '.
+          'specified, this is the default. This differs from only-new '.
+          'in cases where line modifications introduce lint on other '.
+          'unmodified lines.'),
         'conflicts' => array(
           'lintall' => true,
         ),
       ),
       'rev' => array(
         'param' => 'revision',
-        'help' => 'Lint changes since a specific revision.',
+        'help' => pht('Lint changes since a specific revision.'),
         'supports' => array(
           'git',
           'hg',
         ),
         'nosupport' => array(
-          'svn' => 'Lint does not currently support --rev in SVN.',
+          'svn' => pht('Lint does not currently support %s in SVN.', '--rev'),
         ),
       ),
       'output' => array(
         'param' => 'format',
-        'help' =>
+        'help' => pht(
           "With 'summary', show lint warnings in a more compact format. ".
           "With 'json', show lint warnings in machine-readable JSON format. ".
           "With 'none', show no lint warnings. ".
           "With 'compiler', show lint warnings in suitable for your editor. ".
-          "With 'xml', show lint warnings in the Checkstyle XML format.",
+          "With 'xml', show lint warnings in the Checkstyle XML format."),
+      ),
+      'outfile' => array(
+        'param' => 'path',
+        'help' => pht(
+          'Output the linter results to a file. Defaults to stdout.'),
       ),
       'only-new' => array(
         'param' => 'bool',
         'supports' => array('git', 'hg'), // TODO: svn
-        'help' => 'Display only messages not present in the original code.',
+        'help' => pht(
+          'Display only messages not present in the original code.'),
       ),
       'engine' => array(
         'param' => 'classname',
-        'help' =>
-          'Override configured lint engine for this project.',
+        'help' => pht('Override configured lint engine for this project.'),
       ),
       'apply-patches' => array(
-        'help' =>
+        'help' => pht(
           'Apply patches suggested by lint to the working copy without '.
-          'prompting.',
+          'prompting.'),
         'conflicts' => array(
           'never-apply-patches' => true,
         ),
       ),
       'never-apply-patches' => array(
-        'help' => 'Never apply patches suggested by lint.',
+        'help' => pht('Never apply patches suggested by lint.'),
         'conflicts' => array(
           'apply-patches' => true,
         ),
       ),
       'amend-all' => array(
-        'help' =>
-        'When linting git repositories, amend HEAD with all patches '.
-        'suggested by lint without prompting.',
+        'help' => pht(
+          'When linting git repositories, amend HEAD with all patches '.
+          'suggested by lint without prompting.'),
       ),
       'amend-autofixes' => array(
-        'help' =>
+        'help' => pht(
           'When linting git repositories, amend HEAD with autofix '.
-          'patches suggested by lint without prompting.',
+          'patches suggested by lint without prompting.'),
       ),
       'everything' => array(
-        'help' => 'Lint all files in the project.',
+        'help' => pht('Lint all files in the project.'),
         'conflicts' => array(
-          'cache' => '--everything lints all files',
-          'rev' => '--everything lints all files',
+          'cache' => pht('%s lints all files', '--everything'),
+          'rev' => pht('%s lints all files', '--everything'),
         ),
       ),
       'severity' => array(
         'param' => 'string',
-        'help' =>
-          "Set minimum message severity. One of: '".
-          implode(
-            "', '",
-            array_keys(ArcanistLintSeverity::getLintSeverities())).
-          "'. Defaults to '".self::DEFAULT_SEVERITY."'.",
+        'help' => pht(
+          "Set minimum message severity. One of: %s. Defaults to '%s'.",
+          sprintf(
+            "'%s'",
+            implode(
+              "', '",
+              array_keys(ArcanistLintSeverity::getLintSeverities()))),
+          self::DEFAULT_SEVERITY),
       ),
       'cache' => array(
         'param' => 'bool',
-        'help' =>
-          "0 to disable cache, 1 to enable. The default value is ".
-          "determined by 'arc.lint.cache' in configuration, which defaults ".
-          "to off. See notes in 'arc.lint.cache'.",
+        'help' => pht(
+          "%d to disable cache, %d to enable. The default value is determined ".
+          "by '%s' in configuration, which defaults to off. See notes in '%s'.",
+          0,
+          1,
+          'arc.lint.cache',
+          'arc.lint.cache'),
       ),
       '*' => 'paths',
     );
@@ -191,8 +201,10 @@ EOTEXT
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
-        'You can not specify paths with --everything. The --everything '.
-        'flag lints every file.');
+        pht(
+          'You can not specify paths with %s. The %s flag lints every file.',
+          '--everything',
+          '--everything'));
     }
     if ($use_cache === null) {
       $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
@@ -201,7 +213,8 @@ EOTEXT
     }
 
     if ($rev && $paths) {
-      throw new ArcanistUsageException('Specify either --rev or paths.');
+      throw new ArcanistUsageException(
+        pht('Specify either %s or paths.', '--rev'));
     }
 
 
@@ -252,7 +265,10 @@ EOTEXT
 
       if ($cached) {
         $console->writeErr(
-          pht("Using lint cache, use '--cache 0' to disable it.")."\n");
+          "%s\n",
+          pht(
+            "Using lint cache, use '%s' to disable it.",
+            '--cache 0'));
       }
 
       $engine->setCachedResults($cached);
@@ -308,7 +324,7 @@ EOTEXT
       }
 
       $lint_future = $conduit->callMethod('diffusion.getlintmessages', array(
-        'arcanistProject' => $this->getWorkingCopy()->getProjectID(),
+        'repositoryPHID' => idx($this->loadProjectRepository(), 'phid'),
         'branch' => '', // TODO: Tracking branch.
         'commit' => $api->getBaseCommit(),
         'files' => array_keys($all_paths),
@@ -453,7 +469,19 @@ EOTEXT
     }
 
     $all_autofix = true;
-    $console->writeOut('%s', $renderer->renderPreamble());
+    $tmp = null;
+
+    if ($this->getArgument('outfile') !== null) {
+      $tmp = id(new TempFile())
+        ->setPreserveFile(true);
+    }
+
+    $preamble = $renderer->renderPreamble();
+    if ($tmp) {
+      Filesystem::appendFile($tmp, $preamble);
+    } else {
+      $console->writeOut('%s', $preamble);
+    }
 
     foreach ($results as $result) {
       $result_all_autofix = $result->isAllAutofix();
@@ -468,7 +496,11 @@ EOTEXT
 
       $lint_result = $renderer->renderLintResult($result);
       if ($lint_result) {
-        $console->writeOut('%s', $lint_result);
+        if ($tmp) {
+          Filesystem::appendFile($tmp, $lint_result);
+        } else {
+          $console->writeOut('%s', $lint_result);
+        }
       }
 
       if ($apply_patches && $result->isPatchable()) {
@@ -491,9 +523,9 @@ EOTEXT
           $console->writeOut('%s', $stdout);
           $console->writeErr('%s', $stderr);
 
-          $prompt = phutil_console_format(
-            'Apply this patch to __%s__?',
-            $result->getPath());
+          $prompt = pht(
+            'Apply this patch to %s?',
+            phutil_console_format('__%s__', $result->getPath()));
           if (!$console->confirm($prompt, $default_no = false)) {
             continue;
           }
@@ -505,17 +537,24 @@ EOTEXT
       }
     }
 
-    $console->writeOut('%s', $renderer->renderPostamble());
+    $postamble = $renderer->renderPostamble();
+    if ($tmp) {
+      Filesystem::appendFile($tmp, $postamble);
+      Filesystem::rename($tmp, $this->getArgument('outfile'));
+    } else {
+      $console->writeOut('%s', $postamble);
+    }
 
     if ($wrote_to_disk && $this->shouldAmendChanges) {
       if ($this->shouldAmendWithoutPrompt ||
           ($this->shouldAmendAutofixesWithoutPrompt && $all_autofix)) {
         $console->writeOut(
-          "<bg:yellow>** LINT NOTICE **</bg> Automatically amending HEAD ".
-          "with lint patches.\n");
+          "<bg:yellow>** %s **</bg> %s\n",
+          pht('LINT NOTICE'),
+          pht('Automatically amending HEAD with lint patches.'));
         $amend = true;
       } else {
-        $amend = $console->confirm('Amend HEAD with lint patches?');
+        $amend = $console->confirm(pht('Amend HEAD with lint patches?'));
       }
 
       if ($amend) {
@@ -527,8 +566,9 @@ EOTEXT
         $repository_api->amendCommit();
       } else {
         throw new ArcanistUsageException(
-          'Sort out the lint changes that were applied to the working '.
-          'copy and relint.');
+          pht(
+            'Sort out the lint changes that were applied to the working '.
+            'copy and relint.'));
       }
     }
 

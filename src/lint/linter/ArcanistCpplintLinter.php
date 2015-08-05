@@ -14,23 +14,18 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.cpplint.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.cpplint.bin', 'cpplint.py');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'cpplint';
   }
 
   public function getInstallInstructions() {
-    return pht('Install cpplint.py using `wget http://google-styleguide.'.
-      'googlecode.com/svn/trunk/cpplint/cpplint.py`.');
+    return pht(
+      'Install cpplint.py using `%s`.',
+      'wget http://google-styleguide.googlecode.com'.
+      '/svn/trunk/cpplint/cpplint.py');
   }
 
-  protected function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration('lint.cpplint.options', array());
+  protected function getDefaultMessageSeverity($code) {
+    return ArcanistLintSeverity::SEVERITY_WARNING;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -47,19 +42,18 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
       foreach ($matches as $key => $match) {
         $matches[$key] = trim($match);
       }
+
+      $severity = $this->getLintMessageSeverity($matches[3]);
+
       $message = new ArcanistLintMessage();
       $message->setPath($path);
       $message->setLine($matches[1]);
       $message->setCode($matches[3]);
       $message->setName($matches[3]);
       $message->setDescription($matches[2]);
-      $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+      $message->setSeverity($severity);
 
       $messages[] = $message;
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

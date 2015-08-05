@@ -42,7 +42,7 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
     }
 
     if (empty($this->affectedTests)) {
-      throw new ArcanistNoEffectException('No tests to run.');
+      throw new ArcanistNoEffectException(pht('No tests to run.'));
     }
 
     $this->prepareConfigFile();
@@ -260,8 +260,10 @@ final class PhpunitTestEngine extends ArcanistUnitTestEngine {
       if (Filesystem::pathExists($project_root.$config)) {
         $this->configFile = $project_root.$config;
       } else {
-        throw new Exception('PHPUnit configuration file was not '.
-          'found in '.$project_root.$config);
+        throw new Exception(
+          pht(
+            'PHPUnit configuration file was not found in %s',
+            $project_root.$config));
       }
     }
     $bin = $this->getConfigurationManager()->getConfigFromAnySource(

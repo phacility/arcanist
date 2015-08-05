@@ -57,7 +57,7 @@ final class ArcanistHgClientChannel extends PhutilProtocolChannel {
    */
   protected function encodeMessage($argv) {
     if (!is_array($argv) || count($argv) !== 2) {
-      throw new Exception('Message should be <channel, data>.');
+      throw new Exception(pht('Message should be %s.', '<channel, data>'));
     }
 
     $channel = head($argv);

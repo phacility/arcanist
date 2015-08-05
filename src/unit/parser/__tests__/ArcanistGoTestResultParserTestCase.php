@@ -3,7 +3,7 @@
 /**
  * Test for @{class:ArcanistGoTestResultParser}.
  */
-final class ArcanistGoTestResultParserTestCase extends ArcanistTestCase {
+final class ArcanistGoTestResultParserTestCase extends PhutilTestCase {
 
   public function testSingleTestCaseSuccessful() {
     $stubbed_results = Filesystem::readFile(

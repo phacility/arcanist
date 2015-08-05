@@ -3,7 +3,7 @@
 /**
  * Test for @{class:ArcanistXUnitTestResultParser}.
  */
-final class XUnitTestResultParserTestCase extends ArcanistTestCase {
+final class XUnitTestResultParserTestCase extends PhutilTestCase {
 
   public function testAcceptsNoTestsInput() {
     $stubbed_results = Filesystem::readFile(
@@ -28,7 +28,7 @@ final class XUnitTestResultParserTestCase extends ArcanistTestCase {
       $parsed_results = id(new ArcanistXUnitTestResultParser())
         ->parseTestResults('');
 
-      $this->failTest('Should throw on empty input');
+      $this->failTest(pht('Should throw on empty input'));
     } catch (Exception $e) {
       // OK
     }
@@ -43,7 +43,7 @@ final class XUnitTestResultParserTestCase extends ArcanistTestCase {
       $parsed_results = id(new ArcanistXUnitTestResultParser())
         ->parseTestResults($stubbed_results);
 
-      $this->failTest('Should throw on non-xml input');
+      $this->failTest(pht('Should throw on non-xml input'));
     } catch (Exception $e) {
       // OK
     }

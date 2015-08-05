@@ -42,20 +42,20 @@ EOTEXT
   public function getArguments() {
     return array(
       'any-status' => array(
-        'help' => 'Show committed and abandoned revisions.',
+        'help' => pht('Show committed and abandoned revisions.'),
       ),
       'base' => array(
         'param' => 'rules',
-        'help'  => 'Additional rules for determining base revision.',
+        'help'  => pht('Additional rules for determining base revision.'),
         'nosupport' => array(
-          'svn' => 'Subversion does not use base commits.',
+          'svn' => pht('Subversion does not use base commits.'),
         ),
         'supports' => array('git', 'hg'),
       ),
       'show-base' => array(
-        'help'  => 'Print base commit only and exit.',
+        'help'  => pht('Print base commit only and exit.'),
         'nosupport' => array(
-          'svn' => 'Subversion does not use base commits.',
+          'svn' => pht('Subversion does not use base commits.'),
         ),
         'supports' => array('git', 'hg'),
       ),
@@ -64,7 +64,7 @@ EOTEXT
         'help' => pht('Specify the end of the commit range to select.'),
         'nosupport' => array(
           'svn' => pht('Subversion does not support commit ranges.'),
-          'hg' => pht('Mercurial does not support --head yet.'),
+          'hg' => pht('Mercurial does not support %s yet.', '--head'),
         ),
         'supports' => array('git'),
       ),
@@ -118,7 +118,7 @@ EOTEXT
         }
         $commits = implode("\n", $commits);
       } else {
-        $commits = '    (No commits.)';
+        $commits = '    '.pht('(No commits.)');
       }
 
       $explanation = $repository_api->getBaseCommitExplanation();
@@ -134,15 +134,18 @@ EOTEXT
           'hg diff --rev %R',
           hgsprintf('%s', $relative));
       } else {
-        throw new Exception('Unknown VCS!');
+        throw new Exception(pht('Unknown VCS!'));
       }
 
       echo phutil_console_wrap(
         phutil_console_format(
-          "**COMMIT RANGE**\n".
-          "If you run 'arc diff{$arg}', changes between the commit:\n\n"));
-
-      echo  "    {$relative}  {$relative_summary}\n\n";
+          "**%s**\n%s\n\n    %s  %s\n\n",
+          pht('COMMIT RANGE'),
+          pht(
+            "If you run '%s', changes between the commit:",
+            "arc diff{$arg}"),
+          $relative,
+          $relative_summary));
 
       if ($head_commit === null) {
         $will_be_sent = pht(
@@ -157,11 +160,14 @@ EOTEXT
       }
 
       echo phutil_console_wrap(
-        "{$will_be_sent}\n\n".
-        "You can see the exact changes that will be sent by running ".
-        "this command:\n\n".
-        "    $ {$command}\n\n".
-        "These commits will be included in the diff:\n\n");
+        phutil_console_format(
+          "%s\n\n%s\n\n    $ %s\n\n%s\n\n",
+          $will_be_sent,
+          pht(
+            'You can see the exact changes that will be sent by running '.
+            'this command:'),
+          $command,
+          pht('These commits will be included in the diff:')));
 
       echo $commits."\n\n\n";
     }
@@ -180,18 +186,22 @@ EOTEXT
 
     echo phutil_console_wrap(
       phutil_console_format(
-        "**MATCHING REVISIONS**\n".
-        "These Differential revisions match the changes in this working ".
-        "copy:\n\n"));
+        "**%s**\n%s\n\n",
+        pht('MATCHING REVISIONS'),
+        pht(
+          'These Differential revisions match the changes in this working '.
+          'copy:')));
 
     if (empty($revisions)) {
-      echo "    (No revisions match.)\n";
+      echo "    ".pht('(No revisions match.)')."\n";
       echo "\n";
       echo phutil_console_wrap(
         phutil_console_format(
-          "Since there are no revisions in Differential which match this ".
-          "working copy, a new revision will be **created** if you run ".
-          "'arc diff{$arg}'.\n\n"));
+          pht(
+            "Since there are no revisions in Differential which match this ".
+            "working copy, a new revision will be **created** if you run ".
+            "'%s'.\n\n",
+            "arc diff{$arg}")));
     } else {
       $other_author_phids = array();
       foreach ($revisions as $revision) {
@@ -221,19 +231,23 @@ EOTEXT
           echo pht("    %s %s\n", $monogram, $title);
         }
 
-        echo '        Reason: '.$revision['why']."\n";
+        echo '        '.pht('Reason').': '.$revision['why']."\n";
         echo "\n";
       }
       if (count($revisions) == 1) {
         echo phutil_console_wrap(
           phutil_console_format(
-            "Since exactly one revision in Differential matches this working ".
-            "copy, it will be **updated** if you run 'arc diff{$arg}'."));
+            pht(
+              "Since exactly one revision in Differential matches this ".
+              "working copy, it will be **updated** if you run '%s'.",
+              "arc diff{$arg}")));
       } else {
         echo phutil_console_wrap(
-          "Since more than one revision in Differential matches this working ".
-          "copy, you will be asked which revision you want to update if ".
-          "you run 'arc diff {$arg}'.");
+          pht(
+            "Since more than one revision in Differential matches this ".
+            "working copy, you will be asked which revision you want to ".
+            "update if you run '%s'.",
+            "arc diff {$arg}"));
       }
       echo "\n\n";
     }

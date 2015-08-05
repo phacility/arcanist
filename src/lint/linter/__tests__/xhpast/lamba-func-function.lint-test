@@ -1,0 +1,4 @@
+<?php
+function __lambda_func() {}
+~~~~~~~~~~
+error:2:1

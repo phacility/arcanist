@@ -17,7 +17,9 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jshint` to detect issues with JavaScript source files.');
+    return pht(
+      'Use `%s` to detect issues with JavaScript source files.',
+      'jshint');
   }
 
   public function getLinterName() {
@@ -44,14 +46,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.jshint.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.jshint.bin', 'jshint');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'jshint';
   }
 
   public function getVersion() {
@@ -70,7 +65,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install JSHint using `npm install -g jshint`.');
+    return pht('Install JSHint using `%s`.', 'npm install -g jshint');
   }
 
   protected function getMandatoryFlags() {
@@ -116,19 +111,6 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
     }
 
     return parent::setLinterConfigurationValue($key, $value);
-  }
-
-  protected function getDefaultFlags() {
-    $options = $this->getDeprecatedConfiguration(
-      'lint.jshint.options',
-      array());
-
-    $config = $this->getDeprecatedConfiguration('lint.jshint.config');
-    if ($config) {
-      $options[] = '--config='.$config;
-    }
-
-    return $options;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

@@ -6,7 +6,7 @@
 final class ArcanistClosureLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'Closure Linter';
+    return pht('Closure Linter');
   }
 
   public function getInfoURI() {

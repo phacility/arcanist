@@ -93,4 +93,8 @@ warning:71:3
 warning:75:3
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config":{"xhpast.switchhook":"ArcanistTestXHPASTLintSwitchHook"}}
+{
+  "config":{
+    "xhpast.switchhook":"ArcanistTestXHPASTLintSwitchHook"
+  }
+}

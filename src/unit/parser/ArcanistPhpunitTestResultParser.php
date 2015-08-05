@@ -33,6 +33,8 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
       $coverage = $this->readCoverage();
     }
 
+    $last_test_finished = true;
+
     $results = array();
     foreach ($report as $event) {
       switch (idx($event, 'event')) {
@@ -53,17 +55,17 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
         $user_data  .= idx($event, 'message')."\n";
         foreach (idx($event, 'trace') as $trace) {
           $user_data .= sprintf(
-              "\n%s:%s",
-              idx($trace, 'file'),
-              idx($trace, 'line'));
+            "\n%s:%s",
+            idx($trace, 'file'),
+            idx($trace, 'line'));
         }
       } else if ('error' == idx($event, 'status')) {
         if (strpos(idx($event, 'message'), 'Skipped Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= idx($event, 'message');
         } else if (strpos(
-                idx($event, 'message'),
-                'Incomplete Test') !== false) {
+            idx($event, 'message'),
+            'Incomplete Test') !== false) {
           $status = ArcanistUnitTestResult::RESULT_SKIP;
           $user_data .= idx($event, 'message');
         } else {
@@ -71,9 +73,9 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
           $user_data  .= idx($event, 'message');
           foreach (idx($event, 'trace') as $trace) {
             $user_data .= sprintf(
-                "\n%s:%s",
-                idx($trace, 'file'),
-                idx($trace, 'line'));
+              "\n%s:%s",
+              idx($trace, 'file'),
+              idx($trace, 'line'));
           }
         }
       }
@@ -138,9 +140,9 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
         if ($line->getAttribute('type') != 'stmt') {
           $coverage .= 'N';
         } else {
-          if ((int) $line->getAttribute('count') == 0) {
+          if ((int)$line->getAttribute('count') == 0) {
             $coverage .= 'U';
-          } else if ((int) $line->getAttribute('count') > 0) {
+          } else if ((int)$line->getAttribute('count') > 0) {
             $coverage .= 'C';
           }
         }
@@ -170,12 +172,13 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
   private function getJsonReport($json) {
 
     if (empty($json)) {
-      throw new Exception('JSON report file is empty, '.
-        'it probably means that phpunit failed to run tests. '.
-        'Try running arc unit with --trace option and then run '.
-        'generated phpunit command yourself, you might get the '.
-        'answer.'
-      );
+      throw new Exception(
+        pht(
+          'JSON report file is empty, it probably means that phpunit '.
+          'failed to run tests. Try running %s with %s option and then run '.
+          'generated phpunit command yourself, you might get the answer.',
+          'arc unit',
+          '--trace'));
     }
 
     $json = preg_replace('/}{\s*"/', '},{"', $json);

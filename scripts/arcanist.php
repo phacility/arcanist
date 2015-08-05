@@ -114,11 +114,6 @@ try {
   }
   $configuration_manager->setWorkingCopyIdentity($working_copy);
 
-  reenter_if_this_is_arcanist_or_libphutil(
-    $console,
-    $working_copy,
-    $original_argv);
-
   // Load additional libraries, which can provide new classes like configuration
   // overrides, linters and lint engines, unit test engines, etc.
 
@@ -203,9 +198,6 @@ try {
 
   if ($force_conduit_version) {
     $workflow->forceConduitVersion($force_conduit_version);
-  }
-  if ($force_token) {
-    $workflow->forceConduitToken($force_token);
   }
   if ($conduit_timeout) {
     $workflow->setConduitTimeout($conduit_timeout);
@@ -316,6 +308,9 @@ try {
   $user_name = idx($host_config, 'user');
   $certificate = idx($host_config, 'cert');
   $conduit_token = idx($host_config, 'token');
+  if ($force_token) {
+    $conduit_token = $force_token;
+  }
 
   $description = implode(' ', $original_argv);
   $credentials = array(
@@ -399,10 +394,10 @@ try {
 } catch (Exception $ex) {
   $is_usage = ($ex instanceof ArcanistUsageException);
   if ($is_usage) {
-    echo phutil_console_format(
+    fwrite(STDERR, phutil_console_format(
       "**%s** %s\n",
       pht('Usage Exception:'),
-      $ex->getMessage());
+      $ex->getMessage()));
   }
 
   if ($config) {
@@ -410,15 +405,15 @@ try {
   }
 
   if ($config_trace_mode) {
-    echo "\n";
+    fwrite(STDERR, "\n");
     throw $ex;
   }
 
   if (!$is_usage) {
-    echo phutil_console_format("**%s**\n", pht('Exception'));
+    fwrite(STDERR, phutil_console_format("**%s**\n", pht('Exception')));
 
     while ($ex) {
-      echo $ex->getMessage()."\n";
+      fwrite(STDERR, $ex->getMessage()."\n");
 
       if ($ex instanceof PhutilProxyException) {
         $ex = $ex->getPreviousException();
@@ -427,9 +422,9 @@ try {
       }
     }
 
-    echo phutil_console_format(
+    echo fwrite(STDERR, phutil_console_format(
       "(%s)\n",
-      pht('Run with `%s` for a full exception trace.', '--trace'));
+      pht('Run with `%s` for a full exception trace.', '--trace')));
   }
 
   exit(1);
@@ -645,76 +640,4 @@ function arcanist_load_libraries(
       throw new ArcanistUsageException($error);
     }
   }
-}
-
-
-/**
- * NOTE: SPOOKY BLACK MAGIC
- *
- * When arc is run in a copy of arcanist other than itself, or a copy of
- * libphutil other than the one we loaded, reenter the script and force it
- * to use the current working directory instead of the default.
- *
- * In the case of execution inside arcanist/, we force execution of the local
- * arc binary.
- *
- * In the case of execution inside libphutil/, we force the local copy to load
- * instead of the one selected by default rules.
- *
- * @param PhutilConsole                 Console.
- * @param ArcanistWorkingCopyIdentity   The current working copy.
- * @param array                         Original arc arguments.
- * @return void
- */
-function reenter_if_this_is_arcanist_or_libphutil(
-  PhutilConsole $console,
-  ArcanistWorkingCopyIdentity $working_copy,
-  array $original_argv) {
-
-  $project_id = $working_copy->getProjectID();
-  if ($project_id != 'arcanist' && $project_id != 'libphutil') {
-    // We're not in a copy of arcanist or libphutil.
-    return;
-  }
-
-  $library_names = array(
-    'arcanist'  => 'arcanist',
-    'libphutil' => 'phutil',
-  );
-
-  $library_root = phutil_get_library_root($library_names[$project_id]);
-  $project_root = $working_copy->getProjectRoot();
-  if (Filesystem::isDescendant($library_root, $project_root)) {
-    // We're in a copy of arcanist or libphutil, but already loaded the correct
-    // copy. Continue execution normally.
-    return;
-  }
-
-  if ($project_id == 'libphutil') {
-    $console->writeLog(
-      "%s\n",
-      pht('This is libphutil! Forcing this copy to load...'));
-    $original_argv[0] = dirname(phutil_get_library_root('arcanist')).'/bin/arc';
-    $libphutil_path = $project_root;
-  } else {
-    $console->writeLog(
-      "%s\n",
-      pht('This is arcanist! Forcing this copy to run...'));
-    $original_argv[0] = $project_root.'/bin/arc';
-    $libphutil_path = dirname(phutil_get_library_root('phutil'));
-  }
-
-  if (phutil_is_windows()) {
-    $err = phutil_passthru(
-      'set ARC_PHUTIL_PATH=%s & %Ls',
-      $libphutil_path,
-      $original_argv);
-  } else {
-    $err = phutil_passthru(
-      'ARC_PHUTIL_PATH=%s %Ls',
-      $libphutil_path,
-      $original_argv);
-  }
-
-  exit($err);
 }

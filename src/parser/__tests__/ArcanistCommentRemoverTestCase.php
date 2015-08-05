@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistCommentRemoverTestCase extends ArcanistTestCase {
+final class ArcanistCommentRemoverTestCase extends PhutilTestCase {
 
   public function testRemover() {
     $test = <<<EOTEXT

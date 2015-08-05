@@ -3,7 +3,7 @@
 /**
  * Represents a contiguous set of added and removed lines in a diff.
  */
-final class ArcanistDiffHunk {
+final class ArcanistDiffHunk extends Phobject {
 
   protected $oldOffset;
   protected $oldLength;
@@ -83,7 +83,7 @@ final class ArcanistDiffHunk {
       case 'cover':
         return $cover_map;
       default:
-        throw new Exception("Unknown line change type '{$type}'.");
+        throw new Exception(pht("Unknown line change type '%s'.", $type));
     }
   }
 

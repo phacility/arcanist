@@ -1,12 +1,12 @@
 <?php
 
-final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
+final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
 
   public function testGitStateParsing() {
     if (Filesystem::binaryExists('git')) {
       $this->parseState('git_basic.git.tgz');
     } else {
-      $this->assertSkipped('Git is not installed');
+      $this->assertSkipped(pht('Git is not installed'));
     }
   }
 
@@ -14,7 +14,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
     if (Filesystem::binaryExists('hg')) {
       $this->parseState('hg_basic.hg.tgz');
     } else {
-      $this->assertSkipped('Mercurial is not installed');
+      $this->assertSkipped(pht('Mercurial is not installed'));
     }
   }
 
@@ -22,7 +22,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
     if (Filesystem::binaryExists('svn')) {
       $this->parseState('svn_basic.svn.tgz');
     } else {
-      $this->assertSkipped('Subversion is not installed');
+      $this->assertSkipped(pht('Subversion is not installed'));
     }
   }
 
@@ -116,7 +116,7 @@ final class ArcanistRepositoryAPIStateTestCase extends ArcanistTestCase {
         break;
       default:
         throw new Exception(
-          "No test cases for working copy '{$test}'!");
+          pht("No test cases for working copy '%s'!", $test));
     }
   }
 

@@ -63,7 +63,7 @@ EOTEXT
     $conduit = $this->getConduit();
 
     if (trim($summary) == '') {
-      echo "Please provide a summary.\n";
+      echo pht('Please provide a summary.')."\n";
       return;
     }
 
@@ -97,7 +97,7 @@ EOTEXT
         $project = idx($projects['slugMap'], $slug);
 
         if (!$project) {
-          throw new ArcanistUsageException('No such project: "'.$slug.'"');
+          throw new ArcanistUsageException(pht('No such project: "%s"', $slug));
         }
         $phids[] = $project;
       }
@@ -106,11 +106,11 @@ EOTEXT
     }
 
     $result = $conduit->callMethodSynchronous('maniphest.createtask', $args);
-    echo phutil_console_format(
-      "Created task T%s: '<fg:green>**%s**</fg>' at <fg:blue>**%s**</fg>\n",
-      $result['id'],
-      $result['title'],
-      $result['uri']);
+    echo pht(
+      "Created task %s: '%s' at %s\n",
+      'T'.$result['id'],
+      phutil_console_format('<fg:green>**%s**</fg>', $result['title']),
+      phutil_console_format('<fg:blue>**%s**</fg>', $result['uri']));
 
     if ($this->getArgument('browse')) {
       $this->openURIsInBrowser(array($result['uri']));

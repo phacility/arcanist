@@ -29,8 +29,4 @@ EOTEXT
     return array('git');
   }
 
-  public function run() {
-    return parent::run();
-  }
-
 }

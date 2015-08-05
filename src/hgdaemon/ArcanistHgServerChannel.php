@@ -86,7 +86,8 @@ final class ArcanistHgServerChannel extends PhutilProtocolChannel {
    */
   protected function encodeMessage($argv) {
     if (!is_array($argv)) {
-      throw new Exception('Message to Mercurial server should be an array.');
+      throw new Exception(
+        pht('Message to Mercurial server should be an array.'));
     }
 
     $command = head($argv);

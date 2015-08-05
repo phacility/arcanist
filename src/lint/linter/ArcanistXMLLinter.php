@@ -45,7 +45,7 @@ final class ArcanistXMLLinter extends ArcanistLinter {
         ->setLine($error->line)
         ->setChar($error->column ? $error->column : null)
         ->setCode($this->getLintMessageFullCode($error->code))
-        ->setName('LibXML Error')
+        ->setName(pht('LibXML Error'))
         ->setDescription(trim($error->message));
 
       switch ($error->level) {

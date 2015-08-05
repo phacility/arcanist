@@ -50,20 +50,9 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'Do you want to create a new commit with these changes?',
       ),
 
-      '(To ignore these %s change(s), add them to ".git/info/exclude".)' =>
-      array(
-        '(To ignore this change, add it to ".git/info/exclude".)',
-        '(To ignore these changes, add them to ".git/info/exclude".)',
-      ),
-
-      '(To ignore these %s change(s), add them to "svn:ignore".)' => array(
-        '(To ignore this change, add it to "svn:ignore".)',
-        '(To ignore these changes, add them to "svn:ignore".)',
-      ),
-
-      '(To ignore these %s change(s), add them to ".hgignore".)' => array(
-        '(To ignore this change, add it to ".hgignore".)',
-        '(To ignore these changes, add them to ".hgignore".)',
+      '(To ignore these %s change(s), add them to "%s".)' => array(
+        '(To ignore this change, add it to "%2$s".)',
+        '(To ignore these changes, add them to "%2$s".)',
       ),
 
       '%s line(s)' => array('line', 'lines'),

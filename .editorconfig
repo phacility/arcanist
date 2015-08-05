@@ -13,7 +13,7 @@ max_line_length = 80
 indent_style =
 end_of_line =
 max_line_length =
-trim_trailing_whitespace =
+trim_trailing_whitespace = false
 
 [src/parser/__tests__/bundle/*]
 insert_final_newline = false

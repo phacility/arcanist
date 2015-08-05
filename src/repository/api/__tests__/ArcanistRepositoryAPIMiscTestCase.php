@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistRepositoryAPIMiscTestCase extends ArcanistTestCase {
+final class ArcanistRepositoryAPIMiscTestCase extends PhutilTestCase {
 
   public function testSVNFileEscapes() {
     $input = array(

@@ -22,6 +22,8 @@ if ($x) {
 do {
   echo 1;
 } while(true);
+
+try {} catch(Exception $ex) {}
 ~~~~~~~~~~
 warning:2:1
 warning:2:10
@@ -37,6 +39,7 @@ warning:10:16
 warning:13:3
 warning:14:3
 warning:24:3
+warning:26:8
 ~~~~~~~~~~
 <?php
 if ($x) {} else {}
@@ -57,3 +60,5 @@ if ($x) {
 do {
   echo 1;
 } while (true);
+
+try {} catch (Exception $ex) {}

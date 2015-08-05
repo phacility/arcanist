@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistCommentRemover {
+final class ArcanistCommentRemover extends Phobject {
 
   /**
    * Remove comment lines from a commit message. Strips trailing lines only,

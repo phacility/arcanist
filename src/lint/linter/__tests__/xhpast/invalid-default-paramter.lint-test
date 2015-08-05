@@ -1,0 +1,17 @@
+<?php
+function func_one(array $x) {}
+function func_two(array $x = null) {}
+function func_three(array $x = array()) {}
+function func_four(array $x = false) {}
+
+function func_five(callable $x) {}
+function func_six(callable $x = null) {}
+function func_seven(callable $x = false) {}
+
+function func_eight(stdClass $x) {}
+function func_nine(stdClass $x = null) {}
+function func_ten(stdClass $x = array()) {}
+~~~~~~~~~~
+error:5:31
+error:9:35
+error:13:33

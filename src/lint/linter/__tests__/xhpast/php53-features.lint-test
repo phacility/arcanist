@@ -22,4 +22,8 @@ error:10:1
 error:13:6
 ~~~~~~~~~~
 ~~~~~~~~~~
-{"config": {"xhpast.php-version": "5.2.3"}}
+{
+  "config": {
+    "xhpast.php-version": "5.2.3"
+  }
+}

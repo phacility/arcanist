@@ -34,7 +34,9 @@ EOTEXT
   }
 
   public function run() {
-    echo pht('Please use `%s` instead.', 'arc backout')."\n";
+    echo pht(
+      'Please use `%s` instead.',
+      'arc backout')."\n";
     return 1;
   }
 
