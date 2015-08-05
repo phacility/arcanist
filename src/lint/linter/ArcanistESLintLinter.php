@@ -4,6 +4,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
 
     private $eslintenv;
     private $eslintconfig;
+    private $eslintignore;
 
     public function getInfoName() {
         return 'ESLint';
@@ -56,6 +57,10 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
             $options[] = '--config='.$this->eslintconfig;
         }
 
+        if ($this->eslintignore) {
+            $options[] = '--ignore-path='.$this->eslintignore;
+        }
+
         return $options;
     }
 
@@ -67,7 +72,11 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
             ),
             'eslint.eslintconfig' => array(
                 'type' => 'optional string',
-                'help' => pht('config file to use the default is .eslint.'),
+                'help' => pht('config file to use. the default is .eslint.'),
+            ),
+            'eslint.eslintignore' => array(
+                'type' => 'optional string',
+                'help' => pht('ignre file to use. the default is .eslintignore.'),
             ),
         );
         return $options + parent::getLinterConfigurationOptions();
@@ -81,6 +90,9 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
                 return;
             case 'eslint.eslintconfig':
                 $this->eslintconfig = $value;
+                return;
+            case 'eslint.eslintignore':
+                $this->eslintignore = $value;
                 return;
         }
 
