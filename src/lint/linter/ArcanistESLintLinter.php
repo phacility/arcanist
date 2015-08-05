@@ -131,7 +131,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
             $message->setDescription($description);
             $message->setLine(idx($result, 'line'));
             $message->setName('ESLint.'.$ruleId);
-            $message->setOriginalText(idx($result, 'source'));
+            $message->setOriginalText(ltrim(idx($result, 'source')));
             $message->setPath($path);
             $message->setSeverity($this->getLintMessageSeverity(idx($result, 'severity')));
 
