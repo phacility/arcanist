@@ -6,7 +6,7 @@ final class ArcanistUnaryPrefixExpressionSpacingXHPASTLinterRule
   const ID = 73;
 
   public function getLintName() {
-    return pht('Space After Unary Operator');
+    return pht('Space After Unary Prefix Operator');
   }
 
   public function getLintSeverity() {
@@ -31,7 +31,8 @@ final class ArcanistUnaryPrefixExpressionSpacingXHPASTLinterRule
           if (!empty($after)) {
             $this->raiseLintAtOffset(
               $operator->getOffset() + strlen($operator->getConcreteString()),
-              pht('Unary operators should not be followed by whitespace.'),
+              pht(
+                'Unary prefix operators should not be followed by whitespace.'),
               implode('', mpull($after, 'getValue')),
               '');
           }
