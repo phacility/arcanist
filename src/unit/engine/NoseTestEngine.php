@@ -7,6 +7,8 @@
  */
 final class NoseTestEngine extends ArcanistUnitTestEngine {
 
+  private $parser;
+
   public function run() {
     $paths = $this->getPaths();
 

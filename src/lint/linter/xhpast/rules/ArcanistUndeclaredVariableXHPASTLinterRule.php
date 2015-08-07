@@ -164,6 +164,17 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
         $scope_destroyed_at = min($scope_destroyed_at, $call->getOffset());
       }
 
+      $func_decls = $body->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+      foreach ($func_decls as $func_decl) {
+        if ($func_decl->getChildByIndex(2)->getTypeName() != 'n_EMPTY') {
+          continue;
+        }
+
+        foreach ($func_decl->selectDescendantsOfType('n_VARIABLE') as $var) {
+          $exclude_tokens[$var->getID()] = true;
+        }
+      }
+
       // Now we have every declaration except foreach(), handled below. Build
       // two maps, one which just keeps track of which tokens are part of
       // declarations ($declaration_tokens) and one which has the first offset
