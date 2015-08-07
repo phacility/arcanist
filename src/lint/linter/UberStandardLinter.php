@@ -76,7 +76,7 @@ final class UberStandardLinter extends ArcanistExternalLinter {
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
       case 'uber-standard.eslintrc':
-        $this->lintrc = $value;
+        $this->eslintrc = $value;
         return;
     }
 
