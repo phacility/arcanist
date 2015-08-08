@@ -1,6 +1,6 @@
 <?php
 
-function () use ($c) {
+function() use ($c) {
   $c++;
 };
 
@@ -172,6 +172,13 @@ function catchy() {
   }
 }
 
+function some_func($x, $y) {
+  $func = function($z) use ($x) {
+    echo $x;
+    echo $y;
+    echo $z;
+  };
+}
 ~~~~~~~~~~
 error:28:3
 error:30:3
@@ -191,3 +198,4 @@ error:144:8
 error:150:9
 error:164:9
 error:171:5
+error:178:10

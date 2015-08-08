@@ -152,4 +152,68 @@ final class ArcanistUnitTestResult extends Phobject {
     );
   }
 
+  public static function getAllResultCodes() {
+    return array(
+      self::RESULT_PASS,
+      self::RESULT_FAIL,
+      self::RESULT_SKIP,
+      self::RESULT_BROKEN,
+      self::RESULT_UNSOUND,
+    );
+  }
+
+  public static function getResultCodeName($result_code) {
+    $spec = self::getResultCodeSpec($result_code);
+    if (!$spec) {
+      return null;
+    }
+    return idx($spec, 'name');
+  }
+
+  public static function getResultCodeDescription($result_code) {
+    $spec = self::getResultCodeSpec($result_code);
+    if (!$spec) {
+      return null;
+    }
+    return idx($spec, 'description');
+  }
+
+  private static function getResultCodeSpec($result_code) {
+    $specs = self::getResultCodeSpecs();
+    return idx($specs, $result_code);
+  }
+
+  private static function getResultCodeSpecs() {
+    return array(
+      self::RESULT_PASS => array(
+        'name' => pht('Pass'),
+        'description' => pht(
+          'The test passed.'),
+      ),
+      self::RESULT_FAIL => array(
+        'name' => pht('Fail'),
+        'description' => pht(
+          'The test failed.'),
+      ),
+      self::RESULT_SKIP => array(
+        'name' => pht('Skip'),
+        'description' => pht(
+          'The test was not executed.'),
+      ),
+      self::RESULT_BROKEN => array(
+        'name' => pht('Broken'),
+        'description' => pht(
+          'The test failed in an abnormal or severe way. For example, the '.
+          'harness crashed instead of reporting a failure.'),
+      ),
+      self::RESULT_UNSOUND => array(
+        'name' => pht('Unsound'),
+        'description' => pht(
+          'The test failed, but this change is probably not what broke it. '.
+          'For example, it might have already been failing.'),
+      ),
+    );
+  }
+
+
 }

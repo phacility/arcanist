@@ -10,6 +10,12 @@ final class ArcanistPHPCloseTagXHPASTLinterRule
   }
 
   public function process(XHPASTNode $root) {
+    $inline_html = $root->selectDescendantsOfType('n_INLINE_HTML');
+
+    if ($inline_html) {
+      return;
+    }
+
     foreach ($root->selectTokensOfType('T_CLOSE_TAG') as $token) {
       $this->raiseLintAtToken(
         $token,
