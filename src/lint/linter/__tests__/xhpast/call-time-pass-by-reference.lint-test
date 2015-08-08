@@ -1,8 +1,8 @@
 <?php
 class MyClass {
-    public function myfunc($var) {
-        echo $var;
-    }
+  public function myfunc($var) {
+    echo $var;
+  }
 }
 
 $myvar = true;
@@ -21,7 +21,7 @@ sprintf('0%o', 0777 & $p);
 
 $foo(&$myvar);
 
-array_walk(array(), function() use (&$x) {});
+array_walk(array(), function () use (&$x) {});
 MyClass::myfunc(array(&$x, &$y));
 ~~~~~~~~~~
 error:2:7 XHP19

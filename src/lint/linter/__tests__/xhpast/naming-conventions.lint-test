@@ -21,7 +21,7 @@ final class Quack {
 
 
 
-function() use ($this_is_a_closure) {};
+function () use ($this_is_a_closure) {};
 
 function f(&$YY) {}
 
