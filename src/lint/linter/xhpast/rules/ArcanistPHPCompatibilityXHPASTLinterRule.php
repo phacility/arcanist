@@ -402,6 +402,52 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
           break;
       }
     }
+
+    $closures = $this->getAnonymousClosures($root);
+    foreach ($closures as $closure) {
+      $static_accesses = $closure
+        ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+
+      foreach ($static_accesses as $static_access) {
+        $class = $static_access->getChildByIndex(0);
+
+        if ($class->getTypeName() != 'n_CLASS_NAME') {
+          continue;
+        }
+
+        if (strtolower($class->getConcreteString()) != 'self') {
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $class,
+          pht(
+            'The use of `%s` in an anonymous closure is not '.
+            'available before PHP 5.4.',
+            'self'));
+      }
+
+      $property_accesses = $closure
+        ->selectDescendantsOfType('n_OBJECT_PROPERTY_ACCESS');
+      foreach ($property_accesses as $property_access) {
+        $variable = $property_access->getChildByIndex(0);
+
+        if ($variable->getTypeName() != 'n_VARIABLE') {
+          continue;
+        }
+
+        if ($variable->getConcreteString() != '$this') {
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $variable,
+          pht(
+            'The use of `%s` in an anonymous closure is not '.
+            'available before PHP 5.4.',
+            '$this'));
+      }
+    }
   }
 
   private function lintPHP54Incompatibilities(XHPASTNode $root) {
