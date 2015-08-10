@@ -113,20 +113,7 @@ EOTEXT
   }
 
   public function run() {
-
     $working_copy = $this->getWorkingCopy();
-
-    $engine_class = $this->getArgument(
-      'engine',
-      $this->getConfigurationManager()->getConfigFromAnySource('unit.engine'));
-
-    if (!$engine_class) {
-      throw new ArcanistNoEngineException(
-        pht(
-          'No unit test engine is configured for this project. Edit %s '.
-          'to specify a unit test engine.',
-          '.arcconfig'));
-    }
 
     $paths = $this->getArgument('paths');
     $rev = $this->getArgument('rev');
@@ -145,18 +132,7 @@ EOTEXT
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }
 
-    if (!class_exists($engine_class) ||
-        !is_subclass_of($engine_class, 'ArcanistUnitTestEngine')) {
-      throw new ArcanistUsageException(
-        pht(
-          "Configured unit test engine '%s' is not a subclass of '%s'.",
-          $engine_class,
-          'ArcanistUnitTestEngine'));
-    }
-
-    $this->engine = newv($engine_class, array());
-    $this->engine->setWorkingCopy($working_copy);
-    $this->engine->setConfigurationManager($this->getConfigurationManager());
+    $this->engine = $this->newUnitTestEngine($this->getArgument('engine'));
     if ($everything) {
       $this->engine->setRunAllTests(true);
     } else {
