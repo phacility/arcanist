@@ -137,36 +137,10 @@ final class ArcanistConfigurationDrivenLintEngine extends ArcanistLintEngine {
   }
 
   private function loadAvailableLinters() {
-    $linters = id(new PhutilSymbolLoader())
+    return id(new PhutilClassMapQuery())
       ->setAncestorClass('ArcanistLinter')
-      ->loadObjects();
-
-    $map = array();
-    foreach ($linters as $linter) {
-      $name = $linter->getLinterConfigurationName();
-
-      // This linter isn't selectable through configuration.
-      if ($name === null) {
-        continue;
-      }
-
-      if (empty($map[$name])) {
-        $map[$name] = $linter;
-        continue;
-      }
-
-      $orig_class = get_class($map[$name]);
-      $this_class = get_class($linter);
-      throw new Exception(
-        pht(
-          "Two linters (`%s`, `%s`) both have the same configuration ".
-          "name ('%s'). Linters must have unique configuration names.",
-          $orig_class,
-          $this_class,
-          $name));
-    }
-
-    return $map;
+      ->setUniqueMethod('getLinterConfigurationName', true)
+      ->execute();
   }
 
   private function matchPaths(

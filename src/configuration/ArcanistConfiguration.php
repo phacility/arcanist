@@ -35,28 +35,10 @@ class ArcanistConfiguration extends Phobject {
   }
 
   public function buildAllWorkflows() {
-    $workflows_by_name = array();
-
-    $workflows_by_class_name = id(new PhutilSymbolLoader())
+    return id(new PhutilClassMapQuery())
       ->setAncestorClass('ArcanistWorkflow')
-      ->loadObjects();
-    foreach ($workflows_by_class_name as $class => $workflow) {
-      $name = $workflow->getWorkflowName();
-
-      if (isset($workflows_by_name[$name])) {
-        $other = get_class($workflows_by_name[$name]);
-        throw new Exception(
-          pht(
-            'Workflows %s and %s both implement workflows named %s.',
-            $class,
-            $other,
-            $name));
-      }
-
-      $workflows_by_name[$name] = $workflow;
-    }
-
-    return $workflows_by_name;
+      ->setUniqueMethod('getWorkflowName')
+      ->execute();
   }
 
   final public function isValidWorkflow($workflow) {
