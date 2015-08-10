@@ -1,0 +1,48 @@
+<?php
+
+array(
+  1, 2, 3,
+);
+
+array(
+  'foo' => 'bar', 'bar' => 'baz',
+);
+
+array(
+  1, /* quack */ 2, /* quack */3,
+);
+
+array(
+  /* OPEN   */ 1,
+  /* CLOSED */ 2,
+);
+~~~~~~~~~~
+warning:4:5
+warning:4:8
+warning:8:18
+warning:12:17
+warning:12:32
+~~~~~~~~~~
+<?php
+
+array(
+  1,
+  2,
+  3,
+);
+
+array(
+  'foo' => 'bar',
+  'bar' => 'baz',
+);
+
+array(
+  1, /* quack */
+  2, /* quack */
+  3,
+);
+
+array(
+  /* OPEN   */ 1,
+  /* CLOSED */ 2,
+);
