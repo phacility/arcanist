@@ -36,7 +36,7 @@ final class ArcanistArrayValueXHPASTLinterRule
         list($before, $after) = $value->getSurroundingNonsemanticTokens();
 
         if (strpos(implode('', mpull($before, 'getValue')), "\n") === false) {
-          if (last($before)->isAnyWhitespace()) {
+          if (last($before) && last($before)->isAnyWhitespace()) {
             $token = last($before);
             $replacement = "\n".$value->getIndentation();
           } else {

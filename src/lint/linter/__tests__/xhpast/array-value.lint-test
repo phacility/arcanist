@@ -16,12 +16,16 @@ array(
   /* OPEN   */ 1,
   /* CLOSED */ 2,
 );
+
+array('quack',
+);
 ~~~~~~~~~~
 warning:4:5
 warning:4:8
 warning:8:18
 warning:12:17
 warning:12:32
+warning:20:7
 ~~~~~~~~~~
 <?php
 
@@ -45,4 +49,8 @@ array(
 array(
   /* OPEN   */ 1,
   /* CLOSED */ 2,
+);
+
+array(
+'quack',
 );
