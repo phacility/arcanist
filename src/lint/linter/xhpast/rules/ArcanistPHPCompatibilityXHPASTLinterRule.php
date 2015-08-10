@@ -5,39 +5,8 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
 
   const ID = 45;
 
-  private $version;
-  private $windowsVersion;
-
   public function getLintName() {
     return pht('PHP Compatibility');
-  }
-
-  public function getLinterConfigurationOptions() {
-    return parent::getLinterConfigurationOptions() + array(
-      'xhpast.php-version' => array(
-        'type' => 'optional string',
-        'help' => pht('PHP version to target.'),
-      ),
-      'xhpast.php-version.windows' => array(
-        'type' => 'optional string',
-        'help' => pht('PHP version to target on Windows.'),
-      ),
-    );
-  }
-
-  public function setLinterConfigurationValue($key, $value) {
-    switch ($key) {
-      case 'xhpast.php-version':
-        $this->version = $value;
-        return;
-
-      case 'xhpast.php-version.windows':
-        $this->windowsVersion = $value;
-        return;
-
-      default:
-        return parent::setLinterConfigurationValue($key, $value);
-    }
   }
 
   public function process(XHPASTNode $root) {

@@ -67,12 +67,19 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   }
 
   public function setLinterConfigurationValue($key, $value) {
+    $matched = false;
+
     foreach ($this->rules as $rule) {
       foreach ($rule->getLinterConfigurationOptions() as $k => $spec) {
         if ($k == $key) {
-          return $rule->setLinterConfigurationValue($key, $value);
+          $matched = true;
+          $rule->setLinterConfigurationValue($key, $value);
         }
       }
+    }
+
+    if ($matched) {
+      return;
     }
 
     return parent::setLinterConfigurationValue($key, $value);
