@@ -1,6 +1,6 @@
 {
   "phabricator.uri": "https://secure.phabricator.com/",
-  "unit.engine": "PhutilUnitTestEngine",
+  "unit.engine": "ArcanistConfigurationDrivenUnitTestEngine",
   "load": [
     "src/"
   ]

@@ -5,6 +5,10 @@
  */
 final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
 
+  public function getEngineConfigurationName() {
+    return 'phutil';
+  }
+
   protected function supportsRunAllTests() {
     return true;
   }
