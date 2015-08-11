@@ -526,7 +526,7 @@ EOTEXT
           $prompt = pht(
             'Apply this patch to %s?',
             phutil_console_format('__%s__', $result->getPath()));
-          if (!$console->confirm($prompt, $default_no = false)) {
+          if (!$console->confirm($prompt, $default = true)) {
             continue;
           }
         }
