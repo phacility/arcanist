@@ -65,7 +65,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
           '~~~~~~~~~~'));
     }
 
-    list ($data, $expect, $xform, $config) = array_merge(
+    list($data, $expect, $xform, $config) = array_merge(
       $contents,
       array(null, null));
 
