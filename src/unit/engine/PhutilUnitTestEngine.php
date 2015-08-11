@@ -80,9 +80,11 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
   private function getAllTests() {
     $project_root = $this->getWorkingCopy()->getProjectRoot();
 
-    $symbols = id(new PhutilClassMapQuery())
+    $symbols = id(new PhutilSymbolLoader())
+      ->setType('class')
       ->setAncestorClass('PhutilTestCase')
-      ->execute();
+      ->setConcreteOnly(true)
+      ->selectSymbolsWithoutLoading();
 
     $in_working_copy = array();
 
