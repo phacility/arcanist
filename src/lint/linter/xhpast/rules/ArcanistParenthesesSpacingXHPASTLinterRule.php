@@ -15,11 +15,13 @@ final class ArcanistParenthesesSpacingXHPASTLinterRule
 
   public function process(XHPASTNode $root) {
     $all_paren_groups = $root->selectDescendantsOfTypes(array(
+      'n_ARRAY_VALUE_LIST',
+      'n_ASSIGNMENT_LIST',
       'n_CALL_PARAMETER_LIST',
+      'n_DECLARATION_PARAMETER_LIST',
       'n_CONTROL_CONDITION',
       'n_FOR_EXPRESSION',
       'n_FOREACH_EXPRESSION',
-      'n_DECLARATION_PARAMETER_LIST',
     ));
 
     foreach ($all_paren_groups as $group) {

@@ -97,14 +97,17 @@ final class ArcanistConfigurationDrivenUnitTestEngine
           $ex);
       }
 
-      $include = (array)idx($spec, 'include', array());
-      $exclude = (array)idx($spec, 'exclude', array());
-      $paths = $this->matchPaths(
-        $all_paths,
-        $include,
-        $exclude);
+      if ($all_paths) {
+        $include = (array)idx($spec, 'include', array());
+        $exclude = (array)idx($spec, 'exclude', array());
+        $paths = $this->matchPaths(
+          $all_paths,
+          $include,
+          $exclude);
 
-      $test_engine->setPaths($paths);
+        $test_engine->setPaths($paths);
+      }
+
       $built_test_engines[] = $test_engine;
     }
 
