@@ -1029,17 +1029,12 @@ EOTEXT
         $this->onto)."\n");
     } else {
       $sirmixalot_enrolled = $this->getConfigFromAnySource(
-        'sirmixalot.enrolled',
+        'uber.sirmixalot.enrolled',
         false);
-      // check if repo is enrolled to sirmixalot
+      // check, if this repo is enrolled to sirmixalot service
       if ($sirmixalot_enrolled) {
         // if repo is enrolled, land change on a specific remote branch
-        $sirmixalot_remote_landed_branch_templ = $this->getConfigFromAnySource(
-          'sirmixalot.remote_landed_branch_template',
-          'landed/%s');
-        $remote_landed_branch = sprintf(
-          $sirmixalot_remote_landed_branch_templ,
-          date("YmdHis"));
+        $remote_landed_branch = sprintf('landed/%s', date("YmdHis"));
         $landed_branch = sprintf("HEAD:%s", $remote_landed_branch);
       } else {
         $remote_landed_branch = $landed_branch = $this->onto;

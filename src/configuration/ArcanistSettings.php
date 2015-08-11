@@ -169,6 +169,16 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.sirmixalot.enrolled' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, the setting will enable sirmixalot enrollment for this '.
+          'repo. This means that the merged commit produced while landing a '.
+          'diff will be put to `%s` branch instead of the master branch.',
+          'landed/TIMESTAMP'),
+        'default' => false,
+        'example' => 'true',
+      ),
     );
   }
 
