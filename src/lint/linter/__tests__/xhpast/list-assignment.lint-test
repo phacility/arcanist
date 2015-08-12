@@ -1,0 +1,11 @@
+<?php
+list($x, $y, , ,) = array();
+list($x, $y, , , $z) = array();
+~~~~~~~~~~
+warning:2:12
+warning:2:14
+warning:2:16
+~~~~~~~~~~
+<?php
+list($x, $y  ) = array();
+list($x, $y, , , $z) = array();
