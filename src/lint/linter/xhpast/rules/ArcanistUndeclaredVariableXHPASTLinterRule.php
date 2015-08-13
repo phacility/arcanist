@@ -48,6 +48,8 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
     //
     // TODO: Support functions defined inside other functions which is commonly
     // used with anonymous functions.
+    //
+    // TODO: parse_str() also makes lexical scope unknowable, see D13857.
 
     $defs = $root->selectDescendantsOfTypes(array(
       'n_FUNCTION_DECLARATION',
