@@ -9,3 +9,4 @@ function f() {
 ~~~~~~~~~~
 warning:3:8
 error:7:1
+error:9:

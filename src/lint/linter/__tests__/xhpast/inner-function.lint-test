@@ -8,7 +8,7 @@ function outer() {
 
 // Closures are allowed.
 function my_func($foo) {
-  function() {};
+  function () {};
 }
 ~~~~~~~~~~
 warning:5:5

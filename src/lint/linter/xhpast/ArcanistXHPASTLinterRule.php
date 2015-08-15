@@ -5,6 +5,9 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
   private $linter = null;
   private $lintID = null;
 
+  protected $version;
+  protected $windowsVersion;
+
   final public static function loadAllRules() {
     return id(new PhutilClassMapQuery())
       ->setAncestorClass(__CLASS__)
@@ -47,10 +50,29 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
   }
 
   public function getLinterConfigurationOptions() {
-    return array();
+    return array(
+      'xhpast.php-version' => array(
+        'type' => 'optional string',
+        'help' => pht('PHP version to target.'),
+      ),
+      'xhpast.php-version.windows' => array(
+        'type' => 'optional string',
+        'help' => pht('PHP version to target on Windows.'),
+      ),
+    );
   }
 
-  public function setLinterConfigurationValue($key, $value) {}
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'xhpast.php-version':
+        $this->version = $value;
+        return;
+
+      case 'xhpast.php-version.windows':
+        $this->windowsVersion = $value;
+        return;
+    }
+  }
 
   abstract public function process(XHPASTNode $root);
 
@@ -137,6 +159,28 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
   }
 
 /* -(  Utility  )------------------------------------------------------------ */
+
+  /**
+   * Retrieve all anonymous closure(s).
+   *
+   * Returns all descendant nodes which represent an anonymous function
+   * declaration.
+   *
+   * @param  XHPASTNode    Root node.
+   * @return AASTNodeList
+   */
+  protected function getAnonymousClosures(XHPASTNode $root) {
+    $func_decls = $root->selectDescendantsOfType('n_FUNCTION_DECLARATION');
+    $nodes      = array();
+
+    foreach ($func_decls as $func_decl) {
+      if ($func_decl->getChildByIndex(2)->getTypeName() == 'n_EMPTY') {
+        $nodes[] = $func_decl;
+      }
+    }
+
+    return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
+  }
 
   /**
    * Retrieve all calls to some specified function(s).

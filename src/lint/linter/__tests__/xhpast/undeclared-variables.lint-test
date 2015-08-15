@@ -1,6 +1,6 @@
 <?php
 
-function() use ($c) {
+function () use ($c) {
   $c++;
 };
 
@@ -173,13 +173,14 @@ function catchy() {
 }
 
 function some_func($x, $y) {
-  $func = function($z) use ($x) {
+  $func = function ($z) use ($x) {
     echo $x;
     echo $y;
     echo $z;
   };
 }
 ~~~~~~~~~~
+warning:9:3
 error:28:3
 error:30:3
 error:36:3
@@ -188,6 +189,7 @@ error:43:7
 error:44:5
 error:45:5
 error:46:10
+warning:51:3
 error:51:10 worst ever
 warning:61:3
 error:87:3 This stuff is basically testing the lexer/parser for function decls.

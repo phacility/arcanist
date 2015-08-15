@@ -23,6 +23,7 @@ final class ArcanistSelfMemberReferenceXHPASTLinterRule
 
       $class_static_accesses = $class_declaration
         ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+      $closures = $this->getAnonymousClosures($class_declaration);
 
       foreach ($class_static_accesses as $class_static_access) {
         $double_colons = $class_static_access
@@ -35,12 +36,23 @@ final class ArcanistSelfMemberReferenceXHPASTLinterRule
         $class_ref_name = $class_ref->getConcreteString();
 
         if (strtolower($class_name) == strtolower($class_ref_name)) {
-          $this->raiseLintAtNode(
-            $class_ref,
-            pht(
-              'Use `%s` for local static member references.',
-              'self::'),
-            'self');
+          $in_closure = false;
+
+          foreach ($closures as $closure) {
+            if ($class_ref->isDescendantOf($closure)) {
+              $in_closure = true;
+              break;
+            }
+          }
+
+          if (version_compare($this->version, '5.4.0', '>=') || !$in_closure) {
+            $this->raiseLintAtNode(
+              $class_ref,
+              pht(
+                'Use `%s` for local static member references.',
+                'self::'),
+              'self');
+          }
         }
 
         static $self_refs = array(

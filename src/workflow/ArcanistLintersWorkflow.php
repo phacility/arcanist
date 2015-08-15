@@ -36,9 +36,9 @@ EOTEXT
   public function run() {
     $console = PhutilConsole::getConsole();
 
-    $linters = id(new PhutilSymbolLoader())
+    $linters = id(new PhutilClassMapQuery())
       ->setAncestorClass('ArcanistLinter')
-      ->loadObjects();
+      ->execute();
 
     try {
       $built = $this->newLintEngine()->buildLinters();

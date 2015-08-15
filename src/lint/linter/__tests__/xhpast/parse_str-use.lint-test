@@ -1,0 +1,7 @@
+<?php
+
+$params = array();
+parse_str('foo=bar', $params);
+parse_str('foo=bar');
+~~~~~~~~~~
+error:5:1

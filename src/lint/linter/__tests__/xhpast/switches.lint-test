@@ -65,7 +65,7 @@ switch ($x) {
     }
   case 4:
     function f() { throw new Exception(); }
-    g(function() { return; });
+    g(function () { return; });
     final class C { public function m() { return; } }
     interface I {}
   case 5:

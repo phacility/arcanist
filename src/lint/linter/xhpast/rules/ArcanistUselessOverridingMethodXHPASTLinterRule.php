@@ -26,10 +26,15 @@ final class ArcanistUselessOverridingMethodXHPASTLinterRule
       $parameters = array();
 
       foreach ($parameter_list->getChildren() as $parameter) {
+        $default   = $parameter->getChildByIndex(2);
         $parameter = $parameter->getChildByIndex(1);
 
         if ($parameter->getTypeName() == 'n_VARIABLE_REFERENCE') {
           $parameter = $parameter->getChildOfType(0, 'n_VARIABLE');
+        }
+
+        if ($default->getTypeName() != 'n_EMPTY') {
+          continue 2;
         }
 
         $parameters[] = $parameter->getConcreteString();
