@@ -9,7 +9,9 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
   const MISSING_BUNDLE_NLS = 2;
   const MISPLACED_COMPONENT = 3;
   const MISPLACED_COMPONENT_STYL = 4;
+
   const WEB_REPO = '/base/coursera/web/';
+  const TRANSLATION_FUNCTION_STR = '_t(';
 
   public function getInfoName() {
     return pht('Couserorg');
@@ -82,10 +84,14 @@ final class ArcanistCouserorgLinter extends ArcanistLinter {
             '$ echo "define({});" > '.$nlsPath));
 
     } else if (preg_match('/^static\/(.+)\/components/', $relPath)) {
-      $this->raiseLintAtPath(
-        self::MISPLACED_COMPONENT,
-        pht(
-          'Component files must always be in a bundle.'));
+      $text = $this->getData($path);
+      $hasTranslations = strstr($text, self::TRANSLATION_FUNCTION_STR);
+      if ($hasTranslations) {
+        $this->raiseLintAtPath(
+          self::MISPLACED_COMPONENT,
+          pht(
+            'Component files with translations must be in a bundle directory.'));
+      }
     }
 
   }
