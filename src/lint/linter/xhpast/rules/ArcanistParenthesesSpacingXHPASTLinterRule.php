@@ -29,12 +29,6 @@ final class ArcanistParenthesesSpacingXHPASTLinterRule
 
       $token_o = array_shift($tokens);
       $token_c = array_pop($tokens);
-      if ($token_o->getTypeName() !== '(') {
-        throw new Exception(pht('Expected open parentheses.'));
-      }
-      if ($token_c->getTypeName() !== ')') {
-        throw new Exception(pht('Expected close parentheses.'));
-      }
 
       $nonsem_o = $token_o->getNonsemanticTokensAfter();
       $nonsem_c = $token_c->getNonsemanticTokensBefore();
