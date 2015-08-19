@@ -22,9 +22,14 @@ final class ArcanistInlineHTMLXHPASTLinterRule
         continue;
       }
 
+      if (preg_match('/^\s*$/', $html->getValue())) {
+        continue;
+      }
+
       $this->raiseLintAtToken(
         $html,
         pht('PHP files must only contain PHP code.'));
+      break;
     }
   }
 
