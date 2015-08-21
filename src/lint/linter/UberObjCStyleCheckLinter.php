@@ -95,7 +95,7 @@ final class UberObjCStyleCheckLinter extends ArcanistExternalLinter {
     $message->setName('Autoformatted Obj-C file.');
     $message->setDescription("'$path' has been autoformatted.");
     $message->setSeverity(ArcanistLintSeverity::SEVERITY_AUTOFIX);
-    return [$message];
+    return array($message);
   }
 
 }
