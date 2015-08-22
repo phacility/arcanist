@@ -179,6 +179,12 @@ function some_func($x, $y) {
     echo $z;
   };
 }
+
+function some_func($x, $y) {
+  $func = function ($z) use ($x) {
+    echo "$x/$y/$z";
+  };
+}
 ~~~~~~~~~~
 warning:9:3
 error:28:3
@@ -201,3 +207,4 @@ error:150:9
 error:164:9
 error:171:5
 error:178:10
+error:185:14

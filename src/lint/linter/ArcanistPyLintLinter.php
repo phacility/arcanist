@@ -82,7 +82,7 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
     $options = array();
 
     $options[] = '--reports=no';
-    $options[] = '--msg-template="{line}|{column}|{msg_id}|{symbol}|{msg}"';
+    $options[] = '--msg-template={line}|{column}|{msg_id}|{symbol}|{msg}';
 
     // Specify an `--rcfile`, either absolute or relative to the project root.
     // Stupidly, the command line args above are overridden by rcfile, so be

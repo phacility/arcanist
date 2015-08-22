@@ -24,6 +24,11 @@ final class ArcanistCallParenthesesXHPASTLinterRule
     foreach ($nodes as $node) {
       switch ($node->getTypeName()) {
         case 'n_ARRAY_LITERAL':
+          if (head($node->getTokens())->getTypeName() == '[') {
+            // Short array syntax.
+            continue 2;
+          }
+
           $params = $node->getChildOfType(0, 'n_ARRAY_VALUE_LIST');
           break;
 
@@ -43,6 +48,7 @@ final class ArcanistCallParenthesesXHPASTLinterRule
 
       $tokens = $params->getTokens();
       $first  = head($tokens);
+
 
       $leading = $first->getNonsemanticTokensBefore();
       $leading_text = implode('', mpull($leading, 'getValue'));

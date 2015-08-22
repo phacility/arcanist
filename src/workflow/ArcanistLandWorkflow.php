@@ -492,17 +492,34 @@ EOTEXT
         'arc amend',
         '--revision <id>'));
     } else if (count($revisions) > 1) {
-      $message = pht(
-        "There are multiple revisions on feature %s '%s' which are not ".
-        "present on '%s':\n\n".
-        "%s\n".
-        "Separate these revisions onto different %s, or use --revision <id>' ".
-        "to use the commit message from <id> and land them all.",
-        $this->branchType,
-        $this->branch,
-        $this->onto,
-        $this->renderRevisionList($revisions),
-        $this->branchType.'s');
+      switch ($this->branchType) {
+        case self::REFTYPE_BOOKMARK:
+          $message = pht(
+            "There are multiple revisions on feature bookmark '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different bookmarks, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+        case self::REFTYPE_BRANCH:
+        default:
+          $message = pht(
+            "There are multiple revisions on feature branch '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different branches, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+      }
+
       throw new ArcanistUsageException($message);
     }
 
