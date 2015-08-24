@@ -501,14 +501,14 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRemoteURI() {
-    list($stdout) = $this->execxLocal('remote show -n origin');
+    list($stdout) = $this->execxLocal('ls-remote --get-url origin');
 
-    $matches = null;
-    if (preg_match('/^\s*Fetch URL: (.*)$/m', $stdout, $matches)) {
-      return trim($matches[1]);
+    $uri = rtrim($stdout);
+    if ($uri === 'origin') {
+      return null;
     }
 
-    return null;
+    return $uri;
   }
 
   public function getSourceControlPath() {
