@@ -482,22 +482,37 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
-  public function getBranchName() {
-    // TODO: consider:
-    //
-    //    $ git rev-parse --abbrev-ref `git symbolic-ref HEAD`
-    //
-    // But that may fail if you're not on a branch.
-    list($stdout) = $this->execxLocal('branch --no-color');
-
-    // Assume that any branch beginning with '(' means 'no branch', or whatever
-    // 'no branch' is in the current locale.
-    $matches = null;
-    if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
-      return $matches[1];
+  private function getBranchNameFromRef($ref) {
+    $count = 0;
+    $branch = preg_replace('/^refs\/heads\//', '', $ref, 1, $count);
+    if ($count !== 1) {
+      return null;
     }
 
-    return null;
+    return $branch;
+  }
+
+  public function getBranchName() {
+    list($err, $stdout, $stderr) = $this->execManualLocal(
+      'symbolic-ref --quiet HEAD');
+
+    if ($err === 0) {
+      // We expect the branch name to come qualified with a refs/heads/ prefix.
+      // Verify this, and strip it.
+      $ref = rtrim($stdout);
+      $branch = $this->getBranchNameFromRef($ref);
+      if (!$branch) {
+        throw new Exception(
+          pht('Failed to parse %s output!', 'git symbolic-ref'));
+      }
+      return $branch;
+    } else if ($err === 1) {
+      // Exit status 1 with --quiet indicates that HEAD is detached.
+      return null;
+    } else {
+      throw new Exception(
+        pht('Command %s failed: %s', 'git symbolic-ref', $stderr));
+    }
   }
 
   public function getRemoteURI() {
@@ -886,24 +901,21 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($branch_info) = $this->execxLocal(
-      'branch --no-color');
-    $lines = explode("\n", rtrim($branch_info));
+    list($ref_list) = $this->execxLocal(
+      'for-each-ref --format=%s refs/heads',
+      '%(refname)');
+    $refs = explode("\n", rtrim($ref_list));
 
+    $current = $this->getBranchName();
     $result = array();
-    foreach ($lines as $line) {
-
-      if (preg_match('@^[* ]+\(no branch|detached from \w+/\w+\)@', $line)) {
-        // This is indicating that the working copy is in a detached state;
-        // just ignore it.
-        continue;
+    foreach ($refs as $ref) {
+      $branch = $this->getBranchNameFromRef($ref);
+      if ($branch) {
+        $result[] = array(
+          'current' => ($branch === $current),
+          'name'    => $branch,
+        );
       }
-
-      list($current, $name) = preg_split('/\s+/', $line, 2);
-      $result[] = array(
-        'current' => !empty($current),
-        'name'    => $name,
-      );
     }
 
     return $result;
@@ -1134,11 +1146,28 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
           $commits[] = $merge_base;
 
           $head_branch_count = null;
+          $all_branch_names = ipull($this->getAllBranches(), 'name');
           foreach ($commits as $commit) {
+            // Ideally, we would use something like "for-each-ref --contains"
+            // to get a filtered list of branches ready for script consumption.
+            // Instead, try to get predictable output from "branch --contains".
             list($branches) = $this->execxLocal(
-              'branch --contains %s',
+              '-c column.ui=never -c color.ui=never branch --contains %s',
               $commit);
             $branches = array_filter(explode("\n", $branches));
+
+            // Filter the list, removing the "current" marker (*) and ignoring
+            // anything other than known branch names (mainly, any possible
+            // "detached HEAD" or "no branch" line).
+            foreach ($branches as $key => $branch) {
+              $branch = trim($branch, ' *');
+              if (in_array($branch, $all_branch_names)) {
+                $branches[$key] = $branch;
+              } else {
+                unset($branches[$key]);
+              }
+            }
+
             if ($head_branch_count === null) {
               // If this is the first commit, it's HEAD. Count how many
               // branches it is on; we want to include commits on the same
@@ -1147,9 +1176,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               // for whatever reason.
               $head_branch_count = count($branches);
             } else if (count($branches) > $head_branch_count) {
-              foreach ($branches as $key => $branch) {
-                $branches[$key] = trim($branch, ' *');
-              }
               $branches = implode(', ', $branches);
               $this->setBaseCommitExplanation(
                 pht(
