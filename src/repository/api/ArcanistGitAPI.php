@@ -795,37 +795,42 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBlame($path) {
-    // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
-      'blame --date=iso -w -M %s -- %s',
+      'blame --porcelain -w -M %s -- %s',
       $this->getBaseCommit(),
       $path);
 
+    // the --porcelain format prints at least one header line per source line,
+    // then the source line prefixed by a tab character
+    $blame_info = preg_split('/^\t.*\n/m', rtrim($stdout));
+
+    // commit info is not repeated in these headers, so cache it
+    $revision_data = array();
+
     $blame = array();
-    foreach (explode("\n", trim($stdout)) as $line) {
-      if (!strlen($line)) {
-        continue;
+    foreach ($blame_info as $line_info) {
+      $revision = substr($line_info, 0, 40);
+      $data = idx($revision_data, $revision, array());
+
+      if (empty($data)) {
+        $matches = array();
+        if (!preg_match('/^author (.*)$/m', $line_info, $matches)) {
+          throw new Exception(
+            pht(
+              'Unexpected output from %s: no author for commit %s',
+              'git blame',
+              $revision));
+        }
+        $data['author'] = $matches[1];
+        $data['from_first_commit'] = preg_match('/^boundary$/m', $line_info);
+        $revision_data[$revision] = $data;
       }
 
-      // lines predating a git repo's history are blamed to the oldest revision,
-      // with the commit hash prepended by a ^. we shouldn't count these lines
-      // as blaming to the oldest diff's unfortunate author
-      if ($line[0] == '^') {
-        continue;
+      // Ignore lines predating the git repository (on a boundary commit)
+      // rather than blaming them on the oldest diff's unfortunate author
+      if (!$data['from_first_commit']) {
+        $blame[] = array($data['author'], $revision);
       }
-
-      $matches = null;
-      $ok = preg_match(
-        '/^([0-9a-f]+)[^(]+?[(](.*?) +\d\d\d\d-\d\d-\d\d/',
-        $line,
-        $matches);
-      if (!$ok) {
-        throw new Exception(pht("Bad blame? `%s'", $line));
-      }
-      $revision = $matches[1];
-      $author = $matches[2];
-
-      $blame[] = array($author, $revision);
     }
 
     return $blame;
