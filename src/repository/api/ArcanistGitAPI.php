@@ -51,6 +51,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return 'git';
   }
 
+  public function getGitVersion() {
+    list($stdout) = $this->execxLocal('--version');
+    return rtrim(str_replace('git version ', '', $stdout));
+  }
+
   public function getMetadataPath() {
     static $path = null;
     if ($path === null) {
@@ -516,10 +521,21 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRemoteURI() {
-    list($stdout) = $this->execxLocal('ls-remote --get-url origin');
+    // "git ls-remote --get-url" is the appropriate plumbing to get the remote
+    // URI. "git config remote.origin.url", on the other hand, may not be as
+    // accurate (for example, it does not take into account possible URL
+    // rewriting rules set by the user through "url.<base>.insteadOf"). However,
+    // the --get-url flag requires git 1.7.5.
+    $version = $this->getGitVersion();
+    if (version_compare($version, '1.7.5', '>=')) {
+      list($stdout) = $this->execxLocal('ls-remote --get-url origin');
+    } else {
+      list($stdout) = $this->execxLocal('config remote.origin.url');
+    }
 
     $uri = rtrim($stdout);
-    if ($uri === 'origin') {
+    // 'origin' is what ls-remote outputs if no origin remote URI exists
+    if (!$uri || $uri === 'origin') {
       return null;
     }
 
