@@ -89,12 +89,22 @@ final class UberObjCStyleCheckLinter extends ArcanistExternalLinter {
       return false;
     }
 
-    $message = new ArcanistLintMessage();
-    $message->setPath($path);
-    $message->setCode('uber-objc-format');
-    $message->setName('Autoformatted Obj-C file.');
-    $message->setDescription("'$path' has been autoformatted.");
-    $message->setSeverity(ArcanistLintSeverity::SEVERITY_AUTOFIX);
+    $orig = file_get_contents($path);
+    if ($orig == $stdout) {
+      return array();
+    }
+
+    $message = id(new ArcanistLintMessage())
+      ->setPath($path)
+      ->setLine(1)
+      ->setChar(1)
+      ->setGranularity(ArcanistLinter::GRANULARITY_FILE)
+      ->setCode('uber-objc-format')
+      ->setSeverity(ArcanistLintSeverity::SEVERITY_AUTOFIX)
+      ->setName('Autoformatted Obj-C file.')
+      ->setDescription("'$path' has been autoformatted.")
+      ->setOriginalText($orig)
+      ->setReplacementText($stdout);
     return array($message);
   }
 
