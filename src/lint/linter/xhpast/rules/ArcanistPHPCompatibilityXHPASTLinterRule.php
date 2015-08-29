@@ -327,7 +327,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
 
     $ternaries = $root->selectDescendantsOfType('n_TERNARY_EXPRESSION');
     foreach ($ternaries as $ternary) {
-      $yes = $ternary->getChildByIndex(1);
+      $yes = $ternary->getChildByIndex(2);
       if ($yes->getTypeName() === 'n_EMPTY') {
         $this->raiseLintAtNode(
           $ternary,
