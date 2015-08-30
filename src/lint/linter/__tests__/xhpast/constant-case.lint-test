@@ -1,4 +1,5 @@
 <?php
+
 define('foo', 'bar');
 const bar = 'baz';
 
@@ -6,7 +7,7 @@ class Foo {
   const bar = 'baz';
 }
 ~~~~~~~~~~
-warning:2:8
-warning:3:7
-error:5:7
-warning:6:9
+warning:3:8
+warning:4:7
+error:6:7
+warning:7:9

@@ -1,4 +1,5 @@
 <?php
+
 function w() {}
 function x() {
   // This is deliberately empty.
@@ -9,10 +10,11 @@ function z() {
 
 }
 ~~~~~~~~~~
-advice:6:14
 advice:7:14
+advice:8:14
 ~~~~~~~~~~
 <?php
+
 function w() {}
 function x() {
   // This is deliberately empty.

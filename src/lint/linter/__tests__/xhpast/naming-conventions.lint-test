@@ -1,4 +1,5 @@
 <?php
+
 final class a {
   const b = 1, c = d;
   protected $E, $H;
@@ -7,8 +8,6 @@ final class a {
 
 interface i {}
 
-
-
 function YY($ZZ) {}
 
 final class Quack {
@@ -16,10 +15,6 @@ final class Quack {
   protected $tX, $uY;
   public function vV($w_w) {}
 }
-
-
-
-
 
 function () use ($this_is_a_closure) {};
 
@@ -54,23 +49,24 @@ function j() {
   Other::$y = 0;
   $mIxEdCaSe = 1;
 }
-
 ~~~~~~~~~~
-warning:2:13
-warning:3:9
-warning:3:16
-warning:4:13
-warning:4:17
-warning:5:19
-warning:5:21
-warning:5:25
-warning:8:11
-warning:12:10
-warning:12:13
-warning:26:13
-warning:29:3
-warning:30:3
-warning:31:3
-warning:33:3
-warning:37:3
-warning:55:3
+warning:3:13
+warning:4:9
+warning:4:9
+warning:4:16
+warning:4:16
+warning:5:13
+warning:5:17
+warning:6:19
+warning:6:21
+warning:6:25
+warning:9:11
+warning:11:10
+warning:11:13
+warning:21:13
+warning:24:3
+warning:25:3
+warning:26:3
+warning:28:3
+warning:32:3
+warning:50:3

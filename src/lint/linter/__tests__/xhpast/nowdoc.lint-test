@@ -1,9 +1,10 @@
 <?php
+
 echo <<<'EOT'
 Hello World!
 EOT;
 ~~~~~~~~~~
-error:2:6
+error:3:6
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

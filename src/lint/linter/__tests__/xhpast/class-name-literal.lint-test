@@ -1,4 +1,5 @@
 <?php
+
 class MyClass {
   public function someMethod() {
     return 'MyClass';
@@ -11,11 +12,12 @@ class MyClass {
   }
 }
 ~~~~~~~~~~
-error:2:7
-advice:4:12
-advice:8:10
+error:3:7
+advice:5:12
+advice:9:10
 ~~~~~~~~~~
 <?php
+
 class MyClass {
   public function someMethod() {
     return __CLASS__;
