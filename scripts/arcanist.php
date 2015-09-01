@@ -422,7 +422,7 @@ try {
       }
     }
 
-    echo fwrite(STDERR, phutil_console_format(
+    fwrite(STDERR, phutil_console_format(
       "(%s)\n",
       pht('Run with `%s` for a full exception trace.', '--trace')));
   }
