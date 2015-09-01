@@ -146,6 +146,10 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
       $replace);
   }
 
+  final protected function raiseLintAtPath($desc) {
+    return $this->linter->raiseLintAtPath($this->getLintID(), $desc);
+  }
+
   final protected function raiseLintAtToken(
     XHPASTToken $token,
     $desc,
