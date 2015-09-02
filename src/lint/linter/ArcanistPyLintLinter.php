@@ -82,7 +82,7 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
     $options = array();
 
     $options[] = '--reports=no';
-    $options[] = '--msg-template="{line}|{column}|{msg_id}|{symbol}|{msg}"';
+    $options[] = '--msg-template={line}|{column}|{msg_id}|{symbol}|{msg}';
 
     // Specify an `--rcfile`, either absolute or relative to the project root.
     // Stupidly, the command line args above are overridden by rcfile, so be
@@ -130,10 +130,15 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
         continue;
       }
 
+      // NOTE: PyLint sometimes returns -1 as the character offset for a
+      // message. If it does, treat it as 0. See T9257.
+      $char = (int)$matches[1];
+      $char = max(0, $char);
+
       $message = id(new ArcanistLintMessage())
         ->setPath($path)
         ->setLine($matches[0])
-        ->setChar($matches[1])
+        ->setChar($char)
         ->setCode($matches[2])
         ->setSeverity($this->getLintMessageSeverity($matches[2]))
         ->setName(ucwords(str_replace('-', ' ', $matches[3])))

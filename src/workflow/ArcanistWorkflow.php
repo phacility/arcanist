@@ -1878,6 +1878,59 @@ abstract class ArcanistWorkflow extends Phobject {
     return $engine;
   }
 
+  /**
+   * Build a new unit test engine for the current working copy.
+   *
+   * Optionally, you can pass an explicit engine class name to build an engine
+   * of a particular class. Normally this is used to implement an `--engine`
+   * flag from the CLI.
+   *
+   * @param string Optional explicit engine class name.
+   * @return ArcanistUnitTestEngine Constructed engine.
+   */
+  protected function newUnitTestEngine($engine_class = null) {
+    $working_copy = $this->getWorkingCopy();
+    $config = $this->getConfigurationManager();
+
+    if (!$engine_class) {
+      $engine_class = $config->getConfigFromAnySource('unit.engine');
+    }
+
+    if (!$engine_class) {
+      if (Filesystem::pathExists($working_copy->getProjectPath('.arcunit'))) {
+        $engine_class = 'ArcanistConfigurationDrivenUnitTestEngine';
+      }
+    }
+
+    if (!$engine_class) {
+      throw new ArcanistNoEngineException(
+        pht(
+          "No unit test engine is configured for this project. Create an ".
+          "'%s' file, or configure an advanced engine with '%s' in '%s'.",
+          '.arcunit',
+          'unit.engine',
+          '.arcconfig'));
+    }
+
+    $base_class = 'ArcanistUnitTestEngine';
+    if (!class_exists($engine_class) ||
+        !is_subclass_of($engine_class, $base_class)) {
+      throw new ArcanistUsageException(
+        pht(
+          'Configured unit test engine "%s" is not a subclass of "%s", '.
+          'but must be.',
+          $engine_class,
+          $base_class));
+    }
+
+    $engine = newv($engine_class, array())
+      ->setWorkingCopy($working_copy)
+      ->setConfigurationManager($config);
+
+    return $engine;
+  }
+
+
   protected function openURIsInBrowser(array $uris) {
     $browser = $this->getBrowserCommand();
     foreach ($uris as $uri) {

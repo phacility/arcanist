@@ -48,6 +48,8 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
     //
     // TODO: Support functions defined inside other functions which is commonly
     // used with anonymous functions.
+    //
+    // TODO: parse_str() also makes lexical scope unknowable, see D13857.
 
     $defs = $root->selectDescendantsOfTypes(array(
       'n_FUNCTION_DECLARATION',
@@ -66,6 +68,7 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
       ) + array_fill_keys($this->getSuperGlobalNames(), 0);
       $declaration_tokens = array();
       $exclude_tokens = array();
+      $exclude_strings = array();
       $vars = array();
 
       // First up, find all the different kinds of declarations, as explained
@@ -172,6 +175,16 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
 
         foreach ($func_decl->selectDescendantsOfType('n_VARIABLE') as $var) {
           $exclude_tokens[$var->getID()] = true;
+        }
+
+        foreach (array('n_STRING_SCALAR', 'n_HEREDOC') as $type) {
+          foreach ($func_decl->selectDescendantsOfType($type) as $string) {
+            $exclude_strings[$string->getID()] = array();
+
+            foreach ($string->getStringVariables() as $offset => $var) {
+               $exclude_strings[$string->getID()][$var] = true;
+            }
+          }
         }
       }
 
@@ -314,6 +327,10 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
       foreach (array('n_STRING_SCALAR', 'n_HEREDOC') as $type) {
         foreach ($body->selectDescendantsOfType($type) as $string) {
           foreach ($string->getStringVariables() as $offset => $var) {
+            if (isset($exclude_strings[$string->getID()][$var])) {
+              continue;
+            }
+
             $all[$string->getOffset() + $offset - 1] = '$'.$var;
           }
         }

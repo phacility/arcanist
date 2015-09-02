@@ -51,6 +51,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return 'git';
   }
 
+  public function getGitVersion() {
+    list($stdout) = $this->execxLocal('--version');
+    return rtrim(str_replace('git version ', '', $stdout));
+  }
+
   public function getMetadataPath() {
     static $path = null;
     if ($path === null) {
@@ -482,33 +487,59 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
-  public function getBranchName() {
-    // TODO: consider:
-    //
-    //    $ git rev-parse --abbrev-ref `git symbolic-ref HEAD`
-    //
-    // But that may fail if you're not on a branch.
-    list($stdout) = $this->execxLocal('branch --no-color');
-
-    // Assume that any branch beginning with '(' means 'no branch', or whatever
-    // 'no branch' is in the current locale.
-    $matches = null;
-    if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
-      return $matches[1];
+  private function getBranchNameFromRef($ref) {
+    $count = 0;
+    $branch = preg_replace('/^refs\/heads\//', '', $ref, 1, $count);
+    if ($count !== 1) {
+      return null;
     }
 
-    return null;
+    return $branch;
+  }
+
+  public function getBranchName() {
+    list($err, $stdout, $stderr) = $this->execManualLocal(
+      'symbolic-ref --quiet HEAD');
+
+    if ($err === 0) {
+      // We expect the branch name to come qualified with a refs/heads/ prefix.
+      // Verify this, and strip it.
+      $ref = rtrim($stdout);
+      $branch = $this->getBranchNameFromRef($ref);
+      if (!$branch) {
+        throw new Exception(
+          pht('Failed to parse %s output!', 'git symbolic-ref'));
+      }
+      return $branch;
+    } else if ($err === 1) {
+      // Exit status 1 with --quiet indicates that HEAD is detached.
+      return null;
+    } else {
+      throw new Exception(
+        pht('Command %s failed: %s', 'git symbolic-ref', $stderr));
+    }
   }
 
   public function getRemoteURI() {
-    list($stdout) = $this->execxLocal('remote show -n origin');
-
-    $matches = null;
-    if (preg_match('/^\s*Fetch URL: (.*)$/m', $stdout, $matches)) {
-      return trim($matches[1]);
+    // "git ls-remote --get-url" is the appropriate plumbing to get the remote
+    // URI. "git config remote.origin.url", on the other hand, may not be as
+    // accurate (for example, it does not take into account possible URL
+    // rewriting rules set by the user through "url.<base>.insteadOf"). However,
+    // the --get-url flag requires git 1.7.5.
+    $version = $this->getGitVersion();
+    if (version_compare($version, '1.7.5', '>=')) {
+      list($stdout) = $this->execxLocal('ls-remote --get-url origin');
+    } else {
+      list($stdout) = $this->execxLocal('config remote.origin.url');
     }
 
-    return null;
+    $uri = rtrim($stdout);
+    // 'origin' is what ls-remote outputs if no origin remote URI exists
+    if (!$uri || $uri === 'origin') {
+      return null;
+    }
+
+    return $uri;
   }
 
   public function getSourceControlPath() {
@@ -780,37 +811,42 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBlame($path) {
-    // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
-      'blame --date=iso -w -M %s -- %s',
+      'blame --porcelain -w -M %s -- %s',
       $this->getBaseCommit(),
       $path);
 
+    // the --porcelain format prints at least one header line per source line,
+    // then the source line prefixed by a tab character
+    $blame_info = preg_split('/^\t.*\n/m', rtrim($stdout));
+
+    // commit info is not repeated in these headers, so cache it
+    $revision_data = array();
+
     $blame = array();
-    foreach (explode("\n", trim($stdout)) as $line) {
-      if (!strlen($line)) {
-        continue;
+    foreach ($blame_info as $line_info) {
+      $revision = substr($line_info, 0, 40);
+      $data = idx($revision_data, $revision, array());
+
+      if (empty($data)) {
+        $matches = array();
+        if (!preg_match('/^author (.*)$/m', $line_info, $matches)) {
+          throw new Exception(
+            pht(
+              'Unexpected output from %s: no author for commit %s',
+              'git blame',
+              $revision));
+        }
+        $data['author'] = $matches[1];
+        $data['from_first_commit'] = preg_match('/^boundary$/m', $line_info);
+        $revision_data[$revision] = $data;
       }
 
-      // lines predating a git repo's history are blamed to the oldest revision,
-      // with the commit hash prepended by a ^. we shouldn't count these lines
-      // as blaming to the oldest diff's unfortunate author
-      if ($line[0] == '^') {
-        continue;
+      // Ignore lines predating the git repository (on a boundary commit)
+      // rather than blaming them on the oldest diff's unfortunate author
+      if (!$data['from_first_commit']) {
+        $blame[] = array($data['author'], $revision);
       }
-
-      $matches = null;
-      $ok = preg_match(
-        '/^([0-9a-f]+)[^(]+?[(](.*?) +\d\d\d\d-\d\d-\d\d/',
-        $line,
-        $matches);
-      if (!$ok) {
-        throw new Exception(pht("Bad blame? `%s'", $line));
-      }
-      $revision = $matches[1];
-      $author = $matches[2];
-
-      $blame[] = array($author, $revision);
     }
 
     return $blame;
@@ -886,24 +922,21 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($branch_info) = $this->execxLocal(
-      'branch --no-color');
-    $lines = explode("\n", rtrim($branch_info));
+    list($ref_list) = $this->execxLocal(
+      'for-each-ref --format=%s refs/heads',
+      '%(refname)');
+    $refs = explode("\n", rtrim($ref_list));
 
+    $current = $this->getBranchName();
     $result = array();
-    foreach ($lines as $line) {
-
-      if (preg_match('@^[* ]+\(no branch|detached from \w+/\w+\)@', $line)) {
-        // This is indicating that the working copy is in a detached state;
-        // just ignore it.
-        continue;
+    foreach ($refs as $ref) {
+      $branch = $this->getBranchNameFromRef($ref);
+      if ($branch) {
+        $result[] = array(
+          'current' => ($branch === $current),
+          'name'    => $branch,
+        );
       }
-
-      list($current, $name) = preg_split('/\s+/', $line, 2);
-      $result[] = array(
-        'current' => !empty($current),
-        'name'    => $name,
-      );
     }
 
     return $result;
@@ -1134,11 +1167,28 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
           $commits[] = $merge_base;
 
           $head_branch_count = null;
+          $all_branch_names = ipull($this->getAllBranches(), 'name');
           foreach ($commits as $commit) {
+            // Ideally, we would use something like "for-each-ref --contains"
+            // to get a filtered list of branches ready for script consumption.
+            // Instead, try to get predictable output from "branch --contains".
             list($branches) = $this->execxLocal(
-              'branch --contains %s',
+              '-c column.ui=never -c color.ui=never branch --contains %s',
               $commit);
             $branches = array_filter(explode("\n", $branches));
+
+            // Filter the list, removing the "current" marker (*) and ignoring
+            // anything other than known branch names (mainly, any possible
+            // "detached HEAD" or "no branch" line).
+            foreach ($branches as $key => $branch) {
+              $branch = trim($branch, ' *');
+              if (in_array($branch, $all_branch_names)) {
+                $branches[$key] = $branch;
+              } else {
+                unset($branches[$key]);
+              }
+            }
+
             if ($head_branch_count === null) {
               // If this is the first commit, it's HEAD. Count how many
               // branches it is on; we want to include commits on the same
@@ -1147,9 +1197,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               // for whatever reason.
               $head_branch_count = count($branches);
             } else if (count($branches) > $head_branch_count) {
-              foreach ($branches as $key => $branch) {
-                $branches[$key] = trim($branch, ' *');
-              }
               $branches = implode(', ', $branches);
               $this->setBaseCommitExplanation(
                 pht(

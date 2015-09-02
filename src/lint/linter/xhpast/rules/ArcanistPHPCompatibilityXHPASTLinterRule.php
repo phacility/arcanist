@@ -5,39 +5,8 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
 
   const ID = 45;
 
-  private $version;
-  private $windowsVersion;
-
   public function getLintName() {
     return pht('PHP Compatibility');
-  }
-
-  public function getLinterConfigurationOptions() {
-    return parent::getLinterConfigurationOptions() + array(
-      'xhpast.php-version' => array(
-        'type' => 'optional string',
-        'help' => pht('PHP version to target.'),
-      ),
-      'xhpast.php-version.windows' => array(
-        'type' => 'optional string',
-        'help' => pht('PHP version to target on Windows.'),
-      ),
-    );
-  }
-
-  public function setLinterConfigurationValue($key, $value) {
-    switch ($key) {
-      case 'xhpast.php-version':
-        $this->version = $value;
-        return;
-
-      case 'xhpast.php-version.windows':
-        $this->windowsVersion = $value;
-        return;
-
-      default:
-        return parent::setLinterConfigurationValue($key, $value);
-    }
   }
 
   public function process(XHPASTNode $root) {
@@ -358,7 +327,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
 
     $ternaries = $root->selectDescendantsOfType('n_TERNARY_EXPRESSION');
     foreach ($ternaries as $ternary) {
-      $yes = $ternary->getChildByIndex(1);
+      $yes = $ternary->getChildByIndex(2);
       if ($yes->getTypeName() === 'n_EMPTY') {
         $this->raiseLintAtNode(
           $ternary,
@@ -400,6 +369,52 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
               'f()[...]',
               'idx()'));
           break;
+      }
+    }
+
+    $closures = $this->getAnonymousClosures($root);
+    foreach ($closures as $closure) {
+      $static_accesses = $closure
+        ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+
+      foreach ($static_accesses as $static_access) {
+        $class = $static_access->getChildByIndex(0);
+
+        if ($class->getTypeName() != 'n_CLASS_NAME') {
+          continue;
+        }
+
+        if (strtolower($class->getConcreteString()) != 'self') {
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $class,
+          pht(
+            'The use of `%s` in an anonymous closure is not '.
+            'available before PHP 5.4.',
+            'self'));
+      }
+
+      $property_accesses = $closure
+        ->selectDescendantsOfType('n_OBJECT_PROPERTY_ACCESS');
+      foreach ($property_accesses as $property_access) {
+        $variable = $property_access->getChildByIndex(0);
+
+        if ($variable->getTypeName() != 'n_VARIABLE') {
+          continue;
+        }
+
+        if ($variable->getConcreteString() != '$this') {
+          continue;
+        }
+
+        $this->raiseLintAtNode(
+          $variable,
+          pht(
+            'The use of `%s` in an anonymous closure is not '.
+            'available before PHP 5.4.',
+            '$this'));
       }
     }
   }

@@ -21,7 +21,7 @@ final class Quack {
 
 
 
-function() use ($this_is_a_closure) {};
+function () use ($this_is_a_closure) {};
 
 function f(&$YY) {}
 
@@ -72,4 +72,5 @@ warning:29:3
 warning:30:3
 warning:31:3
 warning:33:3
+warning:37:3
 warning:55:3

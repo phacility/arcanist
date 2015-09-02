@@ -16,6 +16,10 @@ abstract class ArcanistUnitTestEngine extends Phobject {
 
   final public function __construct() {}
 
+  public function getEngineConfigurationName() {
+    return null;
+  }
+
   final public function setRunAllTests($run_all_tests) {
     if (!$this->supportsRunAllTests() && $run_all_tests) {
       throw new Exception(

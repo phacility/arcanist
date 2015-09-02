@@ -2,9 +2,8 @@
 
 namespace a;
 use b, c;
-f(function() {});
-g(function() use ($c) {});
-h(function /* ! */ () use ($c) {});
+f(function () {});
+g(function () use ($c) {});
 static::m();
 1 ? 1 : 2;
 1 ?: 2;
@@ -16,10 +15,9 @@ error:3:1
 error:4:5
 error:5:3
 error:6:3
-error:7:3
-error:8:1
-error:10:1
-error:13:6
+error:7:1
+error:9:1
+error:12:6
 ~~~~~~~~~~
 ~~~~~~~~~~
 {
