@@ -2667,8 +2667,13 @@ EOTEXT
       pht('PUSH STAGING'),
       pht('Pushing changes to staging area...'));
 
+    $push_flags = array();
+    if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
+      $push_flags[] = '--no-verify';
+    }
     $err = phutil_passthru(
-      'git push --no-verify -- %s %s:refs/tags/%s',
+      'git push %Ls -- %s %s:refs/tags/%s',
+      $push_flags,
       $staging_uri,
       $commit,
       $tag);
