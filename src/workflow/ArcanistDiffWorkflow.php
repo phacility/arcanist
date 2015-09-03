@@ -1030,9 +1030,8 @@ EOTEXT
               } catch (ConduitClientException $e) {
                 if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
                   echo phutil_console_wrap(
-                    "%s\n",
-                    pht('Lookup of encoding in arcanist project failed'),
-                    $e->getMessage());
+                    pht('Lookup of encoding in arcanist project failed: %s',
+                        $e->getMessage())."\n");
                 } else {
                   throw $e;
                 }

@@ -620,9 +620,9 @@ function arcanist_load_libraries(
         throw new ArcanistUsageException($error);
       } else {
         fwrite(STDERR, phutil_console_wrap(
-          "%s: %s\n\n",
-          pht('WARNING'),
-          $error));
+          phutil_console_format("%s: %s\n",
+                                pht('WARNING'),
+                                $error)));
       }
     } catch (PhutilLibraryConflictException $ex) {
       if ($ex->getLibrary() != 'arcanist') {
