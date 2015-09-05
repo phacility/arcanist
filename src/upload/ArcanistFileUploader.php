@@ -27,6 +27,7 @@ final class ArcanistFileUploader extends Phobject {
 
   private $conduit;
   private $files;
+  private $config = array();
 
 
 /* -(  Configuring the Uploader  )------------------------------------------- */
@@ -78,6 +79,33 @@ final class ArcanistFileUploader extends Phobject {
   }
 
 
+  /**
+   * Configure a file to be temporary instead of permanent.
+   *
+   * By default, files are retained indefinitely until explicitly deleted. If
+   * you want to upload a temporary file instead, you can specify an epoch
+   * timestamp. The file will be deleted after this time.
+   *
+   * @param string Key identifying the file you want to make temporary, as
+   *   passed to @{method:addFile}.
+   * @param int Epoch timestamp to retain the file until.
+   * @return this
+   * @task add
+   */
+  public function setDeleteFileAfterEpoch($file_key, $epoch) {
+    if (empty($this->files[$file_key])) {
+      throw new Exception(
+        pht(
+          'No file with given key ("%s") has been added to this uploader.',
+          $file_key));
+    }
+
+    $this->config[$file_key]['deleteAfterEpoch'] = $epoch;
+
+    return $this;
+  }
+
+
 /* -(  Uploading Files  )---------------------------------------------------- */
 
 
@@ -116,13 +144,20 @@ final class ArcanistFileUploader extends Phobject {
     $conduit = $this->conduit;
     $futures = array();
     foreach ($files as $key => $file) {
-      $futures[$key] = $conduit->callMethod(
-        'file.allocate',
-        array(
-          'name' => $file->getName(),
-          'contentLength' => $file->getByteSize(),
-          'contentHash' => $file->getContentHash(),
-        ));
+      $config = idx($this->config, $key, array());
+
+      $params = array(
+        'name' => $file->getName(),
+        'contentLength' => $file->getByteSize(),
+        'contentHash' => $file->getContentHash(),
+      );
+
+      $delete_after = idx($config, 'deleteAfterEpoch');
+      if ($delete_after !== null) {
+        $params['deleteAfterEpoch'] = $delete_after;
+      }
+
+      $futures[$key] = $conduit->callMethod('file.allocate', $params);
     }
 
     $iterator = id(new FutureIterator($futures))->limit(4);

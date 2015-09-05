@@ -1,12 +1,14 @@
 <?php
+
 echo (double)0;
 echo (int) 1;
 echo (string)  2;
 ~~~~~~~~~~
-advice:3:11
-advice:4:14
+advice:4:11
+advice:5:14
 ~~~~~~~~~~
 <?php
+
 echo (double)0;
 echo (int)1;
 echo (string)2;

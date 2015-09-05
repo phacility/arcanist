@@ -1,4 +1,5 @@
 <?php
+
 $a.$b;
 $a . $b;
 $a. $b;
@@ -24,16 +25,17 @@ array(
   $x=>$y,
 );
 ~~~~~~~~~~
-warning:3:3
-warning:3:5
-warning:4:4
-warning:5:3
-warning:12:9
-warning:13:10
-warning:14:9
-warning:24:5
+warning:4:3
+warning:4:5
+warning:5:4
+warning:6:3
+warning:13:9
+warning:14:10
+warning:15:9
+warning:25:5
 ~~~~~~~~~~
 <?php
+
 $a.$b;
 $a.$b;
 $a.$b;

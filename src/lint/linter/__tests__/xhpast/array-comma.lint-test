@@ -1,4 +1,5 @@
 <?php
+
 array(1, 2, 3);
 array(1, 2, 3,);
 array(
@@ -33,14 +34,15 @@ array(
   2,
   3, /* comment */ );
 ~~~~~~~~~~
-advice:3:14
-advice:12:3
-advice:16:3
-advice:26:3
-advice:30:3
-advice:34:20
+advice:4:14
+advice:13:3
+advice:17:3
+advice:27:3
+advice:31:3
+advice:35:20
 ~~~~~~~~~~
 <?php
+
 array(1, 2, 3);
 array(1, 2, 3);
 array(

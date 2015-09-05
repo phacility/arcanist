@@ -10,7 +10,6 @@ final class ArcanistUnitTestResult extends Phobject {
   const RESULT_SKIP         = 'skip';
   const RESULT_BROKEN       = 'broken';
   const RESULT_UNSOUND      = 'unsound';
-  const RESULT_POSTPONED    = 'postponed';
 
   private $namespace;
   private $name;

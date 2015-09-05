@@ -1,4 +1,5 @@
 <?php
+
 $a = array(
   'a' => 'val1',
   $a => 'val2',
@@ -34,9 +35,9 @@ $f = array(
   $a => 'var2',
 );
 ~~~~~~~~~~
-error:5:3
-error:8:3
-error:15:3
-error:20:3
-error:25:3
-error:34:3
+error:6:3
+error:9:3
+error:16:3
+error:21:3
+error:26:3
+error:35:3

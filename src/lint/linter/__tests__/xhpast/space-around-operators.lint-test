@@ -1,4 +1,5 @@
 <?php
+
 $a + $b;
 $a+$b;
 $a +$b;
@@ -23,21 +24,22 @@ if ($x instanceof z &&$w) {}
 if ($x instanceof z && $w) {}
 f(1,2);
 ~~~~~~~~~~
-warning:3:3
-warning:4:4
-warning:5:3
-warning:7:3
+warning:4:3
+warning:5:4
+warning:6:3
 warning:8:3
-warning:9:4
-warning:10:3
+warning:9:3
+warning:10:4
 warning:11:3
-warning:13:14
-warning:20:52
-warning:21:54
-warning:22:21
-warning:24:4
+warning:12:3
+warning:14:14
+warning:21:52
+warning:22:54
+warning:23:21
+warning:25:4
 ~~~~~~~~~~
 <?php
+
 $a + $b;
 $a + $b;
 $a + $b;

@@ -119,7 +119,6 @@ function closure4() {
   };
   $a++; // Reuse of $a
 }
-
 ~~~~~~~~~~
 warning:6:3
 warning:12:8

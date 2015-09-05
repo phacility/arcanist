@@ -1,4 +1,5 @@
 <?php
+
 final class Foo {
   public function bar() {}
   function baz() {}
@@ -10,13 +11,14 @@ final class Foo {
   private $z;
 }
 ~~~~~~~~~~
-error:2:13 XHP19
-advice:4:3
+error:3:13 XHP19
 advice:5:3
-advice:8:3
+advice:6:3
 advice:9:3
+advice:10:3
 ~~~~~~~~~~
 <?php
+
 final class Foo {
   public function bar() {}
   public function baz() {}

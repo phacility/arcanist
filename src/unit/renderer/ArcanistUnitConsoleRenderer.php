@@ -28,13 +28,6 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
     return $return;
   }
 
-  public function renderPostponedResult($count) {
-    return sprintf(
-      "%s %s\n",
-      $this->getFormattedResult(ArcanistUnitTestResult::RESULT_POSTPONED),
-      pht('%d test(s)', $count));
-  }
-
   private function getFormattedResult($result) {
     switch ($result) {
       case ArcanistUnitTestResult::RESULT_PASS:
@@ -53,11 +46,6 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
         return phutil_console_format(
           '<bg:yellow>** %s **</bg>',
           pht('UNSOUND'));
-
-      case ArcanistUnitTestResult::RESULT_POSTPONED:
-        return phutil_console_format(
-          '<bg:yellow>** %s **</bg>',
-          pht('POSTPONED'));
 
       default:
         return null;

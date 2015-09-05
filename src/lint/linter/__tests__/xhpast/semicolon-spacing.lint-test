@@ -1,14 +1,16 @@
 <?php
+
 foo();
 bar() ;
 baz()
 
      ;
 ~~~~~~~~~~
-advice:3:6
 advice:4:6
+advice:5:6
 ~~~~~~~~~~
 <?php
+
 foo();
 bar();
 baz();

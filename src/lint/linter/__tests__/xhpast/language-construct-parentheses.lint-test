@@ -1,4 +1,5 @@
 <?php
+
 include 'foo.php';
 include_once 'foo.php';
 require 'foo.php';
@@ -17,18 +18,19 @@ require ('baz.php');
 require_once ('baz.php');
 echo ('baz');
 ~~~~~~~~~~
-warning:8:8
-warning:9:13
-warning:10:8
-warning:11:13
-warning:12:5
-warning:14:9
-warning:15:14
-warning:16:9
-warning:17:14
-warning:18:6
+warning:9:8
+warning:10:13
+warning:11:8
+warning:12:13
+warning:13:5
+warning:15:9
+warning:16:14
+warning:17:9
+warning:18:14
+warning:19:6
 ~~~~~~~~~~
 <?php
+
 include 'foo.php';
 include_once 'foo.php';
 require 'foo.php';

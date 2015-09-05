@@ -1,4 +1,5 @@
 <?php
+
 'foobar';
 "foo\"bar";
 "foobar\n";
@@ -12,9 +13,10 @@ pht(
   "This string also requires \123\345 double quotes, but ".
   "this string does not. Here, they are used for consistency.");
 ~~~~~~~~~~
-advice:3:1
+advice:4:1
 ~~~~~~~~~~
 <?php
+
 'foobar';
 'foo"bar';
 "foobar\n";

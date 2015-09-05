@@ -57,7 +57,6 @@ abstract class ArcanistLintEngine extends Phobject {
   private $changedLines = array();
 
   private $enableAsyncLint = false;
-  private $postponedLinters = array();
   private $configurationManager;
 
   private $linterResources = array();
@@ -401,15 +400,6 @@ abstract class ArcanistLintEngine extends Phobject {
     $char = $offset - $this->lineToFirstChar[$path][$line];
 
     return array($line, $char);
-  }
-
-  final public function getPostponedLinters() {
-    return $this->postponedLinters;
-  }
-
-  final public function setPostponedLinters(array $linters) {
-    $this->postponedLinters = $linters;
-    return $this;
   }
 
   protected function getCacheVersion() {
