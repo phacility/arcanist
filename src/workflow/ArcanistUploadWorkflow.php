@@ -69,13 +69,12 @@ EOTEXT
         ->setName(basename($path))
         ->setPath($path);
 
-      $uploader->addFile($file, $key);
-
       if ($is_temporary) {
-        $uploader->setDeleteFileAfterEpoch(
-          $key,
-          time() + phutil_units('24 hours in seconds'));
+        $expires_at = time() + phutil_units('24 hours in seconds');
+        $file->setDeleteAfterEpoch($expires_at);
       }
+
+      $uploader->addFile($file);
     }
 
     $files = $uploader->uploadFiles();
