@@ -1,4 +1,5 @@
 <?php
+
 if ( $x ) {}
 f( );
 q(                      );
@@ -20,25 +21,26 @@ some_call( /* respect authorial intent */ $b,
   $a // if comments are present
   );
 ~~~~~~~~~~
-warning:2:5
-warning:2:8
-warning:3:3
+warning:3:5
+warning:3:8
 warning:4:3
-warning:6:21
-warning:6:24
-warning:12:6
-warning:12:30
-warning:13:10
-warning:13:19
-warning:14:12
-warning:14:15
-error:15:13 XHP19 Class-Filename Mismatch
-warning:16:21
-warning:16:24
-warning:18:10
-warning:18:25
+warning:5:3
+warning:7:21
+warning:7:24
+warning:13:6
+warning:13:30
+warning:14:10
+warning:14:19
+warning:15:12
+warning:15:15
+error:16:13 XHP19 Class-Filename Mismatch
+warning:17:21
+warning:17:24
+warning:19:10
+warning:19:25
 ~~~~~~~~~~
 <?php
+
 if ($x) {}
 f();
 q();

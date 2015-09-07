@@ -1,4 +1,5 @@
 <?php
+
 function func_one(array $x) {}
 function func_two(array $x = null) {}
 function func_three(array $x = array()) {}
@@ -12,6 +13,6 @@ function func_eight(stdClass $x) {}
 function func_nine(stdClass $x = null) {}
 function func_ten(stdClass $x = array()) {}
 ~~~~~~~~~~
-error:5:31
-error:9:35
-error:13:33
+error:6:31
+error:10:35
+error:14:33

@@ -1,4 +1,5 @@
 <?php
+
 // This test is just verifying the parseability of files with a large number
 // (>500) of string concatenations. We emit n_CONCATENATION_LIST instead of
 // n_BINARY_EXPRESSION to avoid various call-depth traps in PHP, HPHP, and the
@@ -43,6 +44,7 @@
 ~~~~~~~~~~
 ~~~~~~~~~~
 <?php
+
 // This test is just verifying the parseability of files with a large number
 // (>500) of string concatenations. We emit n_CONCATENATION_LIST instead of
 // n_BINARY_EXPRESSION to avoid various call-depth traps in PHP, HPHP, and the

@@ -1,4 +1,5 @@
 <?php
+
 if (true) {
   echo 'foo';
 } elseif (false) {
@@ -7,9 +8,10 @@ if (true) {
   echo 'baz';
 }
 ~~~~~~~~~~
-advice:4:3
+advice:5:3
 ~~~~~~~~~~
 <?php
+
 if (true) {
   echo 'foo';
 } else if (false) {

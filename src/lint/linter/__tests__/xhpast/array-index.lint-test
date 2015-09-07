@@ -1,15 +1,17 @@
 <?php
+
 $a []= 1;
 $a[] = 1;
 $a[]=1;
 $a [] = 1;
 ~~~~~~~~~~
-warning:2:3
-warning:2:6
-warning:4:5
-warning:5:3
+warning:3:3
+warning:3:6
+warning:5:5
+warning:6:3
 ~~~~~~~~~~
 <?php
+
 $a[] = 1;
 $a[] = 1;
 $a[] = 1;

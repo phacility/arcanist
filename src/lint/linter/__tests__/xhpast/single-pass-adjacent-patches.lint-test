@@ -1,14 +1,16 @@
 <?php
+
 // This test is checking that the LintPatcher correctly applies adjacent patches
 // with large character delta effects.
 function f(                                                             ) {
   g( );
 }
 ~~~~~~~~~~
-warning:4:12
-warning:5:5
+warning:5:12
+warning:6:5
 ~~~~~~~~~~
 <?php
+
 // This test is checking that the LintPatcher correctly applies adjacent patches
 // with large character delta effects.
 function f() {

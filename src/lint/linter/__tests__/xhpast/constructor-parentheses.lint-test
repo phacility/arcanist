@@ -1,12 +1,14 @@
 <?php
+
 new Foo;
 new Bar();
 new Foo\Bar;
 ~~~~~~~~~~
-advice:2:5
-advice:4:5
+advice:3:5
+advice:5:5
 ~~~~~~~~~~
 <?php
+
 new Foo();
 new Bar();
 new Foo\Bar();

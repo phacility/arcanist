@@ -17,7 +17,6 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $postponedLinters;
   private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
@@ -476,7 +475,6 @@ EOTEXT
 
     $lint_result = $data['lintResult'];
     $this->unresolvedLint = $data['unresolvedLint'];
-    $this->postponedLinters = $data['postponedLinters'];
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
 
@@ -1032,9 +1030,8 @@ EOTEXT
               } catch (ConduitClientException $e) {
                 if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
                   echo phutil_console_wrap(
-                    "%s\n",
-                    pht('Lookup of encoding in arcanist project failed'),
-                    $e->getMessage());
+                    pht('Lookup of encoding in arcanist project failed: %s',
+                        $e->getMessage())."\n");
                 } else {
                   throw $e;
                 }
@@ -1222,7 +1219,6 @@ EOTEXT
     return array(
       'lintResult' => $lint_result,
       'unresolvedLint' => $this->unresolvedLint,
-      'postponedLinters' => $this->postponedLinters,
       'unitResult' => $unit_result,
       'testResults' => $this->testResults,
     );
@@ -1290,20 +1286,12 @@ EOTEXT
             pht('Lint issued unresolved errors!'),
             'lint-excuses');
           break;
-        case ArcanistLintWorkflow::RESULT_POSTPONED:
-          $this->console->writeOut(
-            "<bg:yellow>** %s **</bg> %s\n",
-            pht('LINT POSTPONED'),
-            pht('Lint results are postponed.'));
-          break;
       }
 
       $this->unresolvedLint = array();
       foreach ($lint_workflow->getUnresolvedMessages() as $message) {
         $this->unresolvedLint[] = $message->toDictionary();
       }
-
-      $this->postponedLinters = $lint_workflow->getPostponedLinters();
 
       return $lint_result;
     } catch (ArcanistNoEngineException $ex) {
@@ -2260,7 +2248,6 @@ EOTEXT
       ArcanistLintWorkflow::RESULT_ERRORS     => 'fail',
       ArcanistLintWorkflow::RESULT_WARNINGS   => 'warn',
       ArcanistLintWorkflow::RESULT_SKIP       => 'skip',
-      ArcanistLintWorkflow::RESULT_POSTPONED  => 'postponed',
     );
     return idx($map, $lint_result, 'none');
   }
@@ -2275,7 +2262,6 @@ EOTEXT
       ArcanistUnitWorkflow::RESULT_FAIL       => 'fail',
       ArcanistUnitWorkflow::RESULT_UNSOUND    => 'warn',
       ArcanistUnitWorkflow::RESULT_SKIP       => 'skip',
-      ArcanistUnitWorkflow::RESULT_POSTPONED  => 'postponed',
     );
     return idx($map, $unit_result, 'none');
   }
@@ -2680,8 +2666,13 @@ EOTEXT
       pht('PUSH STAGING'),
       pht('Pushing changes to staging area...'));
 
+    $push_flags = array();
+    if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
+      $push_flags[] = '--no-verify';
+    }
     $err = phutil_passthru(
-      'git push --no-verify -- %s %s:refs/tags/%s',
+      'git push %Ls -- %s %s:refs/tags/%s',
+      $push_flags,
       $staging_uri,
       $commit,
       $tag);

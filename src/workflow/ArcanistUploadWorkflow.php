@@ -32,6 +32,11 @@ EOTEXT
       'json' => array(
         'help' => pht('Output upload information in JSON format.'),
       ),
+      'temporary' => array(
+        'help' => pht(
+          'Mark the file as temporary. Temporary files will be deleted '.
+          'automatically after 24 hours.'),
+      ),
       '*' => 'paths',
     );
   }
@@ -51,18 +56,26 @@ EOTEXT
   }
 
   public function run() {
+    $is_temporary = $this->getArgument('temporary');
+
     $conduit = $this->getConduit();
     $results = array();
 
     $uploader = id(new ArcanistFileUploader())
       ->setConduitClient($conduit);
 
-    foreach ($this->paths as $path) {
+    foreach ($this->paths as $key => $path) {
       $file = id(new ArcanistFileDataRef())
         ->setName(basename($path))
         ->setPath($path);
 
-      $uploader->addFile($file);
+      $uploader->addFile($file, $key);
+
+      if ($is_temporary) {
+        $uploader->setDeleteFileAfterEpoch(
+          $key,
+          time() + phutil_units('24 hours in seconds'));
+      }
     }
 
     $files = $uploader->uploadFiles();

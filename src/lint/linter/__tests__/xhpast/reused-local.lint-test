@@ -62,7 +62,6 @@ function k($stuff, $thing) {
   $other = array();
   foreach ($other as $item) {}
 }
-
 ~~~~~~~~~~
 error:43:22
 error:53:22

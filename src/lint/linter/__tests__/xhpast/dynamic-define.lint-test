@@ -1,8 +1,9 @@
 <?php
+
 define('PONY', 'cute');
 define($pony, 'cute');
 define('PONY', $cute);
 define($pony, $cute);
 ~~~~~~~~~~
-error:3:8 dynamic define
-error:5:8 dynamic define
+error:4:8 dynamic define
+error:6:8 dynamic define

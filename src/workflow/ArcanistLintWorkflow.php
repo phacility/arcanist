@@ -9,7 +9,6 @@ final class ArcanistLintWorkflow extends ArcanistWorkflow {
   const RESULT_WARNINGS   = 1;
   const RESULT_ERRORS     = 2;
   const RESULT_SKIP       = 3;
-  const RESULT_POSTPONED  = 4;
 
   const DEFAULT_SEVERITY = ArcanistLintSeverity::SEVERITY_ADVICE;
 
@@ -19,7 +18,6 @@ final class ArcanistLintWorkflow extends ArcanistWorkflow {
   private $shouldAmendWithoutPrompt = false;
   private $shouldAmendAutofixesWithoutPrompt = false;
   private $engine;
-  private $postponedLinters;
 
   public function getWorkflowName() {
     return 'lint';
@@ -399,12 +397,6 @@ EOTEXT
       }
     }
 
-    // It'd be nice to just return a single result from the run method above
-    // which contains both the lint messages and the postponed linters.
-    // However, to maintain compatibility with existing lint subclasses, use
-    // a separate method call to grab the postponed linters.
-    $this->postponedLinters = $engine->getPostponedLinters();
-
     if ($this->getArgument('never-apply-patches')) {
       $apply_patches = false;
     } else {
@@ -650,8 +642,6 @@ EOTEXT
       $result_code = self::RESULT_ERRORS;
     } else if ($has_warnings) {
       $result_code = self::RESULT_WARNINGS;
-    } else if (!empty($this->postponedLinters)) {
-      $result_code = self::RESULT_POSTPONED;
     } else {
       $result_code = self::RESULT_OKAY;
     }
@@ -667,10 +657,6 @@ EOTEXT
 
   public function getUnresolvedMessages() {
     return $this->unresolvedMessages;
-  }
-
-  public function getPostponedLinters() {
-    return $this->postponedLinters;
   }
 
 }

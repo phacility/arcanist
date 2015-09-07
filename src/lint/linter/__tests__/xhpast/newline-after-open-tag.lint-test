@@ -1,0 +1,24 @@
+<?php phpinfo() ?>
+<?    phpinfo(); ?>
+
+<?php
+phpinfo();
+?>
+
+<?
+phpinfo();
+~~~~~~~~~~
+advice:4:6
+advice:8:3
+~~~~~~~~~~
+<?php phpinfo() ?>
+<?    phpinfo(); ?>
+
+<?php
+
+phpinfo();
+?>
+
+<?
+
+phpinfo();
