@@ -5,7 +5,7 @@ final class ArcanistRuboCopLinter extends ArcanistExternalLinter {
   private $config;
 
   public function getInfoName() {
-    return 'RuboCop';
+    return 'Ruby static code analyzer';
   }
 
   public function getInfoURI() {

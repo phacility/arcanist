@@ -6,7 +6,7 @@
 final class ArcanistCpplintLinter extends ArcanistExternalLinter {
 
   public function getLinterName() {
-    return 'CPPLINT';
+    return 'C++ Google\'s Styleguide';
   }
 
   public function getLinterConfigurationName() {

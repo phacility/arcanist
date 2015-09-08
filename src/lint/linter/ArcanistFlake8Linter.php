@@ -7,7 +7,7 @@
 final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'Flake8';
+    return 'Python Flake8 multi-linter';
   }
 
   public function getInfoURI() {
