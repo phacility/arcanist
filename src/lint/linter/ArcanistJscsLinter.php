@@ -6,7 +6,7 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
   private $preset;
 
   public function getInfoName() {
-    return 'JSCS';
+    return 'JavaScript Code Style';
   }
 
   public function getInfoURI() {

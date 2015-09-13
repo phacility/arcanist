@@ -10,7 +10,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoName() {
-    return pht('PyFlakes');
+    return pht('Python PyFlakes');
   }
 
   public function getInfoDescription() {

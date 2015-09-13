@@ -9,7 +9,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
   private $jshintrc;
 
   public function getInfoName() {
-    return 'JSHint';
+    return 'JavaScript error checking';
   }
 
   public function getInfoURI() {

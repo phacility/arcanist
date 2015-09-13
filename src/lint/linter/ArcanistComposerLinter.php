@@ -5,7 +5,7 @@ final class ArcanistComposerLinter extends ArcanistLinter {
   const LINT_OUT_OF_DATE = 1;
 
   public function getInfoName() {
-    return pht('Composer');
+    return pht('Composer Dependency Manager');
   }
 
   public function getInfoDescription() {

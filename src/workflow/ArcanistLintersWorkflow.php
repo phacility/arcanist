@@ -104,8 +104,8 @@ EOTEXT
       $console->writeOut(
         "<bg:".$color.">** %s **</bg> **%s** (%s)\n",
         $text,
-        nonempty($linter['short'], '-'),
-        $linter['name']);
+        nonempty($linter['name'], '-'),
+        $linter['short']);
 
       if ($linter['exception']) {
         $console->writeOut(
@@ -241,11 +241,11 @@ EOTEXT
       }
 
       $linter_info[$key] = array(
-        'short' => $linter->getLinterConfigurationName(),
+        'name' => $linter->getLinterConfigurationName(),
         'class' => get_class($linter),
         'status' => $status,
         'version' => $version,
-        'name' => $linter->getInfoName(),
+        'short' => $linter->getInfoName(),
         'uri' => $linter->getInfoURI(),
         'description' => $linter->getInfoDescription(),
         'exception' => $exception,

@@ -53,18 +53,18 @@ EOTEXT
 
       $this->setRepositoryAPI($repository);
 
-      // Require no local changes.
       $this->requireCleanWorkingCopy();
 
-      // Require the library be on master.
       $branch_name = $repository->getBranchName();
-      if ($branch_name != 'master') {
+      if ($branch_name != 'master' && $branch_name != 'stable') {
         throw new ArcanistUsageException(
           pht(
-            "%s must be on branch '%s' to be automatically upgraded. ".
+            "%s must be on either branch '%s' or '%s' to be automatically ".
+            "upgraded. ".
             "This copy of %s (in '%s') is on branch '%s'.",
             $lib,
             'master',
+            'stable',
             $lib,
             $root,
             $branch_name));
