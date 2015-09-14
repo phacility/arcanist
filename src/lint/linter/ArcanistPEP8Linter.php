@@ -6,7 +6,7 @@
 final class ArcanistPEP8Linter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'pep8';
+    return 'Python PEP 8';
   }
 
   public function getInfoURI() {
