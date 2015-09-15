@@ -31,7 +31,13 @@ class ArcanistConfiguration extends Phobject {
       $command = 'version';
     }
 
-    return clone idx($this->buildAllWorkflows(), $command);
+    $workflow = idx($this->buildAllWorkflows(), $command);
+
+    if (!$workflow) {
+      return null;
+    }
+
+    return clone $workflow;
   }
 
   public function buildAllWorkflows() {
