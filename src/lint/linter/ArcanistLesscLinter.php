@@ -20,11 +20,11 @@ final class ArcanistLesscLinter extends ArcanistExternalLinter {
   private $strictUnits = false;
 
   public function getInfoName() {
-    return 'Less';
+    return 'CSS pre-processor';
   }
 
   public function getInfoURI() {
-    return 'https://lesscss.org/';
+    return 'http://lesscss.org/';
   }
 
   public function getInfoDescription() {
