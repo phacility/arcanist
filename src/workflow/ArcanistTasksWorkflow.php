@@ -111,7 +111,7 @@ EOTEXT
 
       // Render the "T123" column.
       $task_id = 'T'.$task['id'];
-      $formatted_task_id = phutil_console_format('**%s**', $task_id);
+      $formatted_task_id = tsprintf('**%s**', $task_id);
       $output['id'] = $formatted_task_id;
 
       // Render the "Title" column.
@@ -145,7 +145,7 @@ EOTEXT
       } else {
         $color = 'white';
       }
-      $formatted_priority = phutil_console_format(
+      $formatted_priority = tsprintf(
         "<bg:{$color}> </bg> %s",
         $task['priority']);
       $output['priority'] = $formatted_priority;
@@ -159,7 +159,7 @@ EOTEXT
           $status_text = $task['statusName'];
           $status_color = 'green';
         }
-        $formatted_status = phutil_console_format(
+        $formatted_status = tsprintf(
           "<bg:{$status_color}> </bg> %s",
           $status_text);
         $output['status'] = $formatted_status;

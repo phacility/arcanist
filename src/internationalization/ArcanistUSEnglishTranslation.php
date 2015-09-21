@@ -68,6 +68,16 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'Ignore this untracked file and continue?',
         'Ignore these untracked files and continue?',
       ),
+
+      '%s submodule(s) have uncommitted or untracked changes:' => array(
+        'A submodule has uncommitted or untracked changes:',
+        'Submodules have uncommitted or untracked changes:',
+      ),
+
+      'Ignore the changes to these %s submodule(s) and continue?' => array(
+        'Ignore the changes to this submodule and continue?',
+        'Ignore the changes to these submodules and continue?',
+      ),
     );
   }
 

@@ -356,8 +356,8 @@ EOTEXT
       foreach ($out as $line) {
         $table->addRow(array(
           'current' => $line['current'] ? '*' : '',
-          'name'    => phutil_console_format('**%s**', $line['name']),
-          'status'  => phutil_console_format(
+          'name'    => tsprintf('**%s**', $line['name']),
+          'status'  => tsprintf(
             "<fg:{$line['color']}>%s</fg>", $line['status']),
           'descr'   => $line['desc'],
         ));

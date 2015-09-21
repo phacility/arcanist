@@ -15,6 +15,9 @@ abstract class ArcanistRepositoryAPI extends Phobject {
   const FLAG_MISSING      = 32;
   const FLAG_UNSTAGED     = 64;
   const FLAG_UNCOMMITTED  = 128;
+
+  // Occurs in SVN when you have uncommitted changes to a modified external,
+  // or in Git when you have uncommitted or untracked changes in a submodule.
   const FLAG_EXTERNALS    = 256;
 
   // Occurs in SVN when you replace a file with a directory without telling
@@ -189,6 +192,14 @@ abstract class ArcanistRepositoryAPI extends Phobject {
    */
   final public function getMissingChanges() {
     return $this->getUncommittedPathsWithMask(self::FLAG_MISSING);
+  }
+
+
+  /**
+   * @task status
+   */
+  final public function getDirtyExternalChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_EXTERNALS);
   }
 
 

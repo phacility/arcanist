@@ -672,7 +672,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = new PhutilArrayWithDefaultValue();
 
     list($stdout) = $uncommitted_future->resolvex();
-    $uncommitted_files = $this->parseGitStatus($stdout);
+    $uncommitted_files = $this->parseGitRawDiff($stdout);
     foreach ($uncommitted_files as $path => $mask) {
       $result[$path] |= ($mask | self::FLAG_UNCOMMITTED);
     }
@@ -704,7 +704,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $this->getDiffBaseOptions(),
       $this->getBaseCommit());
 
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getGitConfig($key, $default = null) {
@@ -759,7 +759,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
-  private function parseGitStatus($status, $full = false) {
+  private function parseGitRawDiff($status, $full = false) {
     static $flags = array(
       'A' => self::FLAG_ADDED,
       'M' => self::FLAG_MODIFIED,
@@ -777,17 +777,51 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $files = array();
     foreach ($lines as $line) {
       $mask = 0;
+
+      // "git diff --raw" lines begin with a ":" character.
+      $old_mode = ltrim($line[0], ':');
+      $new_mode = $line[1];
+
+      // The hashes may be padded with "." characters for alignment. Discard
+      // them.
+      $old_hash = rtrim($line[2], '.');
+      $new_hash = rtrim($line[3], '.');
+
       $flag = $line[4];
       $file = $line[5];
-      foreach ($flags as $key => $bits) {
-        if ($flag == $key) {
-          $mask |= $bits;
-        }
+
+      $new_value = intval($new_mode, 8);
+      $is_submodule = (($new_value & 0160000) === 0160000);
+
+      if (($is_submodule) &&
+          ($flag == 'M') &&
+          ($old_hash === $new_hash) &&
+          ($old_mode === $new_mode)) {
+        // See T9455. We see this submodule as "modified", but the old and new
+        // hashes are the same and the old and new modes are the same, so we
+        // don't directly see a modification.
+
+        // We can end up here if we have a submodule which has uncommitted
+        // changes inside of it (for example, the user has added untracked
+        // files or made uncommitted changes to files in the submodule). In
+        // this case, we set a different flag because we can't meaningfully
+        // give users the same prompt.
+
+        // Note that if the submodule has real changes from the parent
+        // perspective (the base commit has changed) and also has uncommitted
+        // changes, we'll only see the real changes and miss the uncommitted
+        // changes. At the time of writing, there is no reasonable porcelain
+        // for finding those changes, and the impact of this error seems small.
+
+        $mask |= self::FLAG_EXTERNALS;
+      } else if (isset($flags[$flag])) {
+        $mask |= $flags[$flag];
       }
+
       if ($full) {
         $files[$file] = array(
           'mask' => $mask,
-          'ref'  => rtrim($line[3], '.'),
+          'ref'  => $new_hash,
         );
       } else {
         $files[$file] = $mask;
@@ -807,7 +841,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'diff --raw %s',
       $since_commit);
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getBlame($path) {

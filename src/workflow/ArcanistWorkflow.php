@@ -893,11 +893,47 @@ abstract class ArcanistWorkflow extends Phobject {
           implode("\n    ", $missing)));
     }
 
+    $externals = $api->getDirtyExternalChanges();
+
+    // TODO: This state can exist in Subversion, but it is currently handled
+    // elsewhere. It should probably be handled here, eventually.
+    if ($api instanceof ArcanistSubversionAPI) {
+      $externals = array();
+    }
+
+    if ($externals) {
+      $message = pht(
+        '%s submodule(s) have uncommitted or untracked changes:',
+        new PhutilNumber(count($externals)));
+
+      $prompt = pht(
+        'Ignore the changes to these %s submodule(s) and continue?',
+        new PhutilNumber(count($externals)));
+
+      $list = id(new PhutilConsoleList())
+        ->setWrap(false)
+        ->addItems($externals);
+
+      id(new PhutilConsoleBlock())
+        ->addParagraph($message)
+        ->addList($list)
+        ->draw();
+
+      $ok = phutil_console_confirm($prompt, $default_no = false);
+      if (!$ok) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
     $uncommitted = $api->getUncommittedChanges();
     $unstaged = $api->getUnstagedChanges();
 
+    // We already dealt with externals.
+    $unstaged = array_diff($unstaged, $externals);
+
     // We only want files which are purely uncommitted.
     $uncommitted = array_diff($uncommitted, $unstaged);
+    $uncommitted = array_diff($uncommitted, $externals);
 
     $untracked = $api->getUntrackedChanges();
     if (!$this->shouldRequireCleanUntrackedFiles()) {
