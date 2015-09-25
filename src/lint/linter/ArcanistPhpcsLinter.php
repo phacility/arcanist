@@ -109,15 +109,17 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
           $prefix = 'W';
         }
 
-        $code = 'PHPCS.'.$prefix.'.'.$child->getAttribute('source');
+        $source = $child->getAttribute('source');
+        $code = 'PHPCS.'.$prefix.'.'.$source;
 
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($child->getAttribute('line'));
-        $message->setChar($child->getAttribute('column'));
-        $message->setCode($code);
-        $message->setDescription($child->nodeValue);
-        $message->setSeverity($this->getLintMessageSeverity($code));
+        $message = id(new ArcanistLintMessage())
+          ->setPath($path)
+          ->setName($source)
+          ->setLine($child->getAttribute('line'))
+          ->setChar($child->getAttribute('column'))
+          ->setCode($code)
+          ->setDescription($child->nodeValue)
+          ->setSeverity($this->getLintMessageSeverity($code));
 
         $messages[] = $message;
       }

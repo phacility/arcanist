@@ -90,6 +90,23 @@ final class ArcanistLintMessage extends Phobject {
   }
 
   public function setCode($code) {
+    $code = (string)$code;
+
+    $maximum_bytes = 128;
+    $actual_bytes = strlen($code);
+
+    if ($actual_bytes > $maximum_bytes) {
+      throw new Exception(
+        pht(
+          'Parameter ("%s") passed to "%s" when constructing a lint message '.
+          'must be a scalar with a maximum string length of %s bytes, but is '.
+          '%s bytes in length.',
+          $code,
+          'setCode()',
+          new PhutilNumber($maximum_bytes),
+          new PhutilNumber($actual_bytes)));
+    }
+
     $this->code = $code;
     return $this;
   }
