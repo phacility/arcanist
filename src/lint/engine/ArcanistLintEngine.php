@@ -217,6 +217,8 @@ abstract class ArcanistLintEngine extends Phobject {
 
     foreach ($runnable as $linter) {
       foreach ($linter->getLintMessages() as $message) {
+        $this->validateLintMessage($linter, $message);
+
         if (!$this->isSeverityEnabled($message->getSeverity())) {
           continue;
         }
@@ -598,5 +600,18 @@ abstract class ArcanistLintEngine extends Phobject {
     $this->endLintServiceCall($call_id);
   }
 
+  private function validateLintMessage(
+    ArcanistLinter $linter,
+    ArcanistLintMessage $message) {
+
+    $name = $message->getName();
+    if (!strlen($name)) {
+      throw new Exception(
+        pht(
+          'Linter "%s" generated a lint message that is invalid because it '.
+          'does not have a name. Lint messages must have a name.',
+          get_class($linter)));
+    }
+  }
 
 }

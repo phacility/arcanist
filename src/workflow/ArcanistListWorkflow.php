@@ -91,11 +91,11 @@ EOTEXT
       $revision = $revisions[$key];
 
       $table->addRow(array(
-        'exists' => $spec['exists'] ? phutil_console_format('**%s**', '*') : '',
-        'status' => phutil_console_format(
+        'exists' => $spec['exists'] ? tsprintf('**%s**', '*') : '',
+        'status' => tsprintf(
           "<fg:{$spec['color']}>%s</fg>",
           $spec['statusName']),
-        'title'  => phutil_console_format(
+        'title'  => tsprintf(
           '**D%d:** %s',
           $revision['id'],
           $revision['title']),

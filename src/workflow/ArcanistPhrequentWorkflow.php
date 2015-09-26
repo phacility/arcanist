@@ -56,7 +56,7 @@ abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
 
       $table->addRow(array(
         'type' => '('.$column_type.')',
-        'time' => phutil_format_relative_time($result['time']),
+        'time' => tsprintf($result['time']),
         'name' => $phid_map[$result['phid']],
       ));
 
