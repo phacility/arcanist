@@ -2040,5 +2040,24 @@ abstract class ArcanistWorkflow extends Phobject {
     }
   }
 
+  protected function getModernLintDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+    return $map;
+  }
+
+  protected function getModernUnitDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+    return $map;
+  }
+
+  private function getModernCommonDictionary(array $map) {
+    foreach ($map as $key => $value) {
+      if ($value === null) {
+        unset($map[$key]);
+      }
+    }
+    return $map;
+  }
+
 
 }

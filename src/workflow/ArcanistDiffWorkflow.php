@@ -2753,15 +2753,7 @@ EOTEXT
         $unit[$key] = $this->getModernUnitDictionary($message);
       }
 
-      switch ($unit_result) {
-        case ArcanistUnitWorkflow::RESULT_OKAY:
-        case ArcanistUnitWorkflow::RESULT_SKIP:
-          $type = 'pass';
-          break;
-        default:
-          $type = 'fail';
-          break;
-      }
+      $type = ArcanistUnitWorkflow::getHarbormasterTypeFromResult($unit_result);
 
       $futures[] = $this->getConduit()->callMethod(
         'harbormaster.sendmessage',
@@ -2783,25 +2775,6 @@ EOTEXT
       phlog($ex);
       return false;
     }
-  }
-
-  private function getModernLintDictionary(array $map) {
-    $map = $this->getModernCommonDictionary($map);
-    return $map;
-  }
-
-  private function getModernUnitDictionary(array $map) {
-    $map = $this->getModernCommonDictionary($map);
-    return $map;
-  }
-
-  private function getModernCommonDictionary(array $map) {
-    foreach ($map as $key => $value) {
-      if ($value === null) {
-        unset($map[$key]);
-      }
-    }
-    return $map;
   }
 
 }
