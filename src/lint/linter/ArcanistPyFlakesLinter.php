@@ -71,6 +71,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
       $message->setPath($path);
       $message->setLine($matches[2]);
       $message->setCode($this->getLinterName());
+      $message->setName($this->getLinterName());
       $message->setDescription($description);
       $message->setSeverity($severity);
 

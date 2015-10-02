@@ -72,6 +72,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
         $message->setLine($matches['line']);
         $message->setChar($matches['column']);
         $message->setCode($this->getLinterName());
+        $message->setName($this->getLinterName());
         $message->setDescription(ucfirst($matches['description']));
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
 
