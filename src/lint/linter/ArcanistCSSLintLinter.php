@@ -72,6 +72,7 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
           ->setLine($child->getAttribute('line'))
           ->setChar($child->getAttribute('char'))
           ->setCode($this->getLinterName())
+          ->setName($this->getLinterName())
           ->setDescription($child->getAttribute('reason'))
           ->setOriginalText(
             substr(

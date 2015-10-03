@@ -109,6 +109,7 @@ final class ArcanistJscsLinter extends ArcanistExternalLinter {
         $message->setLine($error->getAttribute('line'));
         $message->setChar($error->getAttribute('column'));
         $message->setCode('JSCS');
+        $message->setName('JSCS');
         $message->setDescription($error->getAttribute('message'));
 
         switch ($error->getAttribute('severity')) {

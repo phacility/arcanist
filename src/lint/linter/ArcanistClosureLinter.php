@@ -50,6 +50,7 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
       $message = id(new ArcanistLintMessage())
         ->setPath($path)
         ->setLine($matches[1])
+        ->setName('GJSLINT'.$matches[2])
         ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
         ->setCode($this->getLinterName().$matches[2])
         ->setDescription($matches[3]);
