@@ -137,7 +137,9 @@ final class ArcanistBundleTestCase extends PhutilTestCase {
         throw $ex;
       }
 
-      execx('git commit -m %s', $subject);
+      $author = 'unit-test <unit-test@phabricator.com>';
+
+      execx('git commit --author %s -m %s', $author, $subject);
       list($result_hash) = execx('git log -n1 --format=%s', '%T');
       $result_hash = trim($result_hash);
 
