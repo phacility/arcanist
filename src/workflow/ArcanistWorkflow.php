@@ -52,7 +52,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $userName;
   private $repositoryAPI;
   private $configurationManager;
-  private $workingCopy;
   private $arguments = array();
   private $passedArguments = array();
   private $command;
@@ -601,10 +600,6 @@ abstract class ArcanistWorkflow extends Phobject {
       $workflow->conduitAuthenticated = $this->conduitAuthenticated;
     }
 
-    if ($this->workingCopy) {
-      $workflow->setWorkingCopy($this->workingCopy);
-    }
-
     $workflow->setArcanistConfiguration($arc_config);
 
     $workflow->parseArguments(array_values($argv));
@@ -788,12 +783,6 @@ abstract class ArcanistWorkflow extends Phobject {
           'requiresWorkingCopy()'));
     }
     return $working_copy;
-  }
-
-  final public function setWorkingCopy(
-    ArcanistWorkingCopyIdentity $working_copy) {
-    $this->workingCopy = $working_copy;
-    return $this;
   }
 
   final public function setRepositoryAPI($api) {
