@@ -13,6 +13,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   private $bin;
   private $interpreter;
   private $flags;
+  private $versionRequirement;
 
 
 /* -(  Interpreters, Binaries and Flags  )----------------------------------- */
@@ -41,6 +42,16 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   abstract public function getInstallInstructions();
+
+  /**
+   * Return a human-readable string describing how to upgrade the linter.
+   *
+   * @return string Human readable upgrade instructions
+   * @task bin
+   */
+  public function getUpgradeInstructions() {
+      return null;
+  }
 
   /**
    * Return true to continue when the external linter exits with an error code.
@@ -99,6 +110,18 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    */
   final public function setFlags(array $flags) {
     $this->flags = $flags;
+    return $this;
+  }
+
+  /**
+   * Set the binary's version requirement.
+   *
+   * @param string Version requirement.
+   * @return this
+   * @task bin
+   */
+  final public function setVersionRequirement($version) {
+    $this->versionRequirement = trim($version);
     return $this;
   }
 
@@ -259,6 +282,64 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   }
 
   /**
+   * If a binary version requirement has been specified, compare the version
+   * of the configured binary to the required version, and if the binary's
+   * version is not supported, throw an exception.
+   *
+   * @param  string   Version string to check.
+   * @return void
+   */
+  final protected function checkBinaryVersion($version) {
+    if (!$this->versionRequirement) {
+      return;
+    }
+
+    if (!$version) {
+      $message = pht(
+        'Linter %s requires %s version %s. Unable to determine the version '.
+        'that you have installed.',
+         get_class($this),
+         $this->getBinary(),
+         $this->versionRequirement);
+
+      $instructions = $this->getUpgradeInstructions();
+      if ($instructions) {
+        $message .= "\n".pht('TO UPGRADE: %s', $instructions);
+      }
+
+      throw new ArcanistMissingLinterException($message);
+    }
+
+    $operator = '==';
+    $compare_to = $this->versionRequirement;
+
+    $matches = null;
+    if (preg_match('/^([<>]=?|=)\s*(.*)$/', $compare_to, $matches)) {
+      $operator = $matches[1];
+      $compare_to = $matches[2];
+      if ($operator === '=') {
+        $operator = '==';
+      }
+    }
+
+    if (!version_compare($version, $compare_to, $operator)) {
+      $message = pht(
+        'Linter %s requires %s version %s. You have version %s.',
+        get_class($this),
+        $this->getBinary(),
+        $this->versionRequirement,
+        $version);
+
+      $instructions = $this->getUpgradeInstructions();
+      if ($instructions) {
+        $message .= "\n".pht('TO UPGRADE: %s', $instructions);
+      }
+
+      throw new ArcanistMissingLinterException($message);
+    }
+  }
+
+  /**
    * Get the composed executable command, including the interpreter and binary
    * but without flags or paths. This can be used to execute `--version`
    * commands.
@@ -308,6 +389,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     $version = $this->getVersion();
 
     if ($version) {
+      $this->checkBinaryVersion($version);
       return $version.'-'.json_encode($this->getCommandFlags());
     } else {
       // Either we failed to parse the version number or the `getVersion`
@@ -395,6 +477,13 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
           'Provide a list of additional flags to pass to the linter on the '.
           'command line.'),
       ),
+      'version' => array(
+        'type' => 'optional string',
+        'help' => pht(
+          'Specify a version requirement for the binary. The version number '.
+          'may be prefixed with <, <=, >, >=, or = to specify the version '.
+          'comparison operator (default: =).'),
+      ),
     );
 
     if ($this->shouldUseInterpreter()) {
@@ -455,6 +544,9 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
           pht('None of the configured binaries can be located.'));
       case 'flags':
         $this->setFlags($value);
+        return;
+      case 'version':
+        $this->setVersionRequirement($value);
         return;
     }
 
