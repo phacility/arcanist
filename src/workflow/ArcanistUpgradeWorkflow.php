@@ -53,7 +53,27 @@ EOTEXT
 
       $this->setRepositoryAPI($repository);
 
-      $this->requireCleanWorkingCopy();
+      // NOTE: Don't use requireCleanWorkingCopy() here because it tries to
+      // amend changes and generally move the workflow forward. We just want to
+      // abort if there are local changes and make the user sort things out.
+      $uncommitted = $repository->getUncommittedStatus();
+      if ($uncommitted) {
+        $message = pht(
+          'You have uncommitted changes in the working copy for this '.
+          'library:');
+
+        $list = id(new PhutilConsoleList())
+          ->setWrap(false)
+          ->addItems(array_keys($uncommitted));
+
+        id(new PhutilConsoleBlock())
+          ->addParagraph($message)
+          ->addList($list)
+          ->draw();
+
+        throw new ArcanistUsageException(
+          pht('`arc upgrade` can only upgrade clean working copies.'));
+      }
 
       $branch_name = $repository->getBranchName();
       if ($branch_name != 'master' && $branch_name != 'stable') {
@@ -71,10 +91,13 @@ EOTEXT
       }
 
       chdir($root);
+
       try {
-        phutil_passthru('git pull --rebase');
+        execx('git pull --rebase');
       } catch (Exception $ex) {
-        phutil_passthru('git rebase --abort');
+        // If we failed, try to go back to the old state, then throw the
+        // original exception.
+        exec_manual('git rebase --abort');
         throw $ex;
       }
     }

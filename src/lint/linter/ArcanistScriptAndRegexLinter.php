@@ -324,7 +324,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    * Get the line and character of the message from the regex match.
    *
    * @param dict Captured groups from regex.
-   * @return pair<int,int> Line and character of the message.
+   * @return pair<int,int|null> Line and character of the message.
    *
    * @task parse
    */
@@ -336,8 +336,19 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       return array($line + 1, $char + 1);
     }
 
-    $line = idx($match, 'line', 1);
+    $line = idx($match, 'line');
+    if ($line) {
+      $line = (int)$line;
+    } else {
+      $line = 1;
+    }
+
     $char = idx($match, 'char');
+    if ($char) {
+      $char = (int)$char;
+    } else {
+      $char = null;
+    }
 
     return array($line, $char);
   }
