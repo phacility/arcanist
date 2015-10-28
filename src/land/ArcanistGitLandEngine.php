@@ -167,6 +167,8 @@ final class ArcanistGitLandEngine
       $original_date,
       $this->getCommitMessageFile());
 
+    $this->getWorkflow()->didCommitMerge();
+
     list($stdout) = $api->execxLocal(
       'rev-parse --verify %s',
       'HEAD');
