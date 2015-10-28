@@ -36,6 +36,9 @@ final class ArcanistGitLandEngine
         $this->pushChange();
         $this->reconcileLocalState();
 
+        $api = $this->getRepositoryAPI();
+        $api->execxLocal('submodule update --init --recursive');
+
         if ($this->getShouldKeep()) {
           echo tsprintf(
             "%s\n",
@@ -269,7 +272,6 @@ final class ArcanistGitLandEngine
 
       $api->execxLocal('checkout %s --', $this->getTargetOnto());
       $api->execxLocal('pull --');
-      $api->execxLocal('submodule update --init --recursive');
 
       return;
     }
@@ -284,7 +286,6 @@ final class ArcanistGitLandEngine
           $this->getTargetFullRef()));
 
       $api->execxLocal('checkout %s --', $this->getTargetOnto());
-      $api->execxLocal('submodule update --init --recursive');
 
       return;
     }
@@ -303,16 +304,19 @@ final class ArcanistGitLandEngine
 
     $api->execxLocal('checkout %s --', $this->getTargetOnto());
     $api->execxLocal('reset --hard %s --', $this->getTargetFullRef());
-    $api->execxLocal('submodule update --init --recursive');
   }
 
   private function destroyLocalBranch() {
     $api = $this->getRepositoryAPI();
 
-    if ($this->localRef == $this->getSourceRef()) {
-      // If we landed a branch onto itself, don't destroy it.
+    if ($this->getSourceRef() == $this->getTargetOnto()) {
+      // If we landed a branch into a branch with the same name, so don't
+      // destroy it. This prevents us from cleaning up "master" if you're
+      // landing master into itself.
       return;
     }
+
+    // TODO: Maybe this should also recover the proper upstream?
 
     $recovery_command = csprintf(
       'git checkout -b %R %R',
