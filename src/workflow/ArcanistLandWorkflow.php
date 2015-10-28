@@ -386,9 +386,9 @@ EOTEXT
     $api = $this->getRepositoryAPI();
     $path = $api->getPathToUpstream($this->branch);
 
-    if ($path) {
-      $last = last($path);
-      if (isset($last['cycle'])) {
+    if ($path->getLength()) {
+      $cycle = $path->getCycle();
+      if ($cycle) {
         $this->writeWarn(
           pht('LOCAL CYCLE'),
           pht(
@@ -397,11 +397,11 @@ EOTEXT
 
         echo tsprintf(
           "\n    %s\n\n",
-          $this->formatUpstreamPathCycle($path));
+          implode(' -> ', $cycle));
 
       } else {
-        if ($last['type'] == 'remote') {
-          $onto = $last['name'];
+        if ($path->isConnectedToRemote()) {
+          $onto = $path->getRemoteBranchName();
           $this->writeInfo(
             pht('TARGET'),
             pht(
@@ -454,18 +454,15 @@ EOTEXT
     $api = $this->getRepositoryAPI();
     $path = $api->getPathToUpstream($this->branch);
 
-    if ($path) {
-      $last = last($path);
-      if ($last['type'] == 'remote') {
-        $remote = $last['remote'];
-        $this->writeInfo(
-          pht('REMOTE'),
-          pht(
-            'Using remote "%s", selected by following tracking branches '.
-            'upstream to the closest remote.',
-            $remote));
-        return $remote;
-      }
+    $remote = $path->getRemoteRemoteName();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected by following tracking branches '.
+          'upstream to the closest remote.',
+          $remote));
+      return $remote;
     }
 
     $remote = 'origin';
@@ -475,17 +472,6 @@ EOTEXT
         'Using remote "%s", the default remote under git.',
         $remote));
     return $remote;
-  }
-
-  private function formatUpstreamPathCycle(array $cycle) {
-    $parts = array();
-    foreach ($cycle as $key => $value) {
-      $parts[] = $key;
-    }
-    $parts[] = idx(last($cycle), 'name');
-    $parts[] = pht('...');
-
-    return implode(' -> ', $parts);
   }
 
 

@@ -1342,7 +1342,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    */
   public function getPathToUpstream($start) {
     $cursor = $start;
-    $path = array();
+    $path = new ArcanistGitUpstreamPath();
     while (true) {
       list($err, $upstream) = $this->execManualLocal(
         'rev-parse --symbolic-full-name %s@{upstream}',
@@ -1358,13 +1358,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       if (preg_match('(^refs/heads/)', $upstream)) {
         $upstream = preg_replace('(^refs/heads/)', '', $upstream);
 
-        $is_cycle = isset($path[$upstream]);
+        $is_cycle = $path->getUpstream($upstream);
 
-        $path[$cursor] = array(
-          'type' => 'local',
-          'name' => $upstream,
-          'cycle' => $is_cycle,
-        );
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_LOCAL,
+            'name' => $upstream,
+            'cycle' => $is_cycle,
+          ));
 
         if ($is_cycle) {
           // We ran into a local cycle, so we're done.
@@ -1380,11 +1382,13 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $upstream = preg_replace('(^refs/remotes/)', '', $upstream);
         list($remote, $branch) = explode('/', $upstream, 2);
 
-        $path[$cursor] = array(
-          'type' => 'remote',
-          'name' => $branch,
-          'remote' => $remote,
-        );
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_REMOTE,
+            'name' => $branch,
+            'remote' => $remote,
+          ));
 
         // We found a remote, so we're done.
         break;
