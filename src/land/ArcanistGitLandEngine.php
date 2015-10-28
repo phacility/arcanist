@@ -158,10 +158,25 @@ final class ArcanistGitLandEngine
       }
     } catch (Exception $ex) {
       $api->execManualLocal('merge --abort');
+      $api->execManualLocal('reset --hard HEAD --');
 
-      // TODO: Maybe throw a better or more helpful exception here?
+      throw new Exception(
+        pht(
+          'Local "%s" does not merge cleanly into "%s". Merge or rebase '.
+          'local changes so they can merge cleanly.',
+          $this->getSourceRef(),
+          $this->getTargetFullRef()));
+    }
 
-      throw $ex;
+    list($changes) = $api->execxLocal('diff HEAD --');
+    $changes = trim($changes);
+    if (!strlen($changes)) {
+      throw new Exception(
+        pht(
+          'Merging local "%s" into "%s" produces an empty diff. '.
+          'This usually means these changes have already landed.',
+          $this->getSourceRef(),
+          $this->getTargetFullRef()));
     }
 
     $api->execxLocal(
@@ -210,100 +225,221 @@ final class ArcanistGitLandEngine
     if ($this->localRef != $this->getSourceRef()) {
       // The user ran `arc land X` but was on a different branch, so just put
       // them back wherever they were before.
-      echo tsprintf(
-        "%s\n",
+      $this->writeInfo(
+        pht('RESTORE'),
         pht('Switching back to "%s".', $this->localRef));
       $this->restoreLocalState();
       return;
     }
 
-    list($err) = $api->execManualLocal(
-      'rev-parse --verify %s',
-      $this->getTargetOnto());
-    if ($err) {
-      echo tsprintf(
-        "%s\n",
+    // We're going to try to find a path to the upstream target branch. We
+    // try in two different ways:
+    //
+    //   - follow the source branch directly along tracking branches until
+    //     we reach the upstream; or
+    //   - follow a local branch with the same name as the target branch until
+    //     we reach the upstream.
+
+    // First, get the path from whatever we landed to wherever it goes.
+    $local_branch = $this->getSourceRef();
+
+    $path = $api->getPathToUpstream($local_branch);
+    if ($path->getLength()) {
+      // We may want to discard the thing we landed from the path, if we're
+      // going to delete it. In this case, we don't want to update it or worry
+      // if it's dirty.
+      if ($this->getSourceRef() == $this->getTargetOnto()) {
+        // In this case, we've done something like land "master" onto itself,
+        // so we do want to update the actual branch. We're going to use the
+        // entire path.
+      } else {
+        // Otherwise, we're going to delete the branch at the end of the
+        // workflow, so throw it away the most-local branch that isn't long
+        // for this world.
+        $path->removeUpstream($local_branch);
+
+        if (!$path->getLength()) {
+          $this->writeInfo(
+            pht('UPDATE'),
+            pht(
+              'Local branch "%s" directly tracks remote, staying on '.
+              'detached HEAD.',
+              $local_branch));
+          return;
+        }
+
+        $local_branch = head($path->getLocalBranches());
+      }
+    } else {
+      // The source branch has no upstream, so look for a local branch with
+      // the same name as the target branch. This corresponds to the common
+      // case where you have "master" and checkout local branches from it
+      // with "git checkout -b feature", then land onto "master".
+
+      $local_branch = $this->getTargetOnto();
+
+      list($err) = $api->execManualLocal(
+        'rev-parse --verify %s',
+        $local_branch);
+      if ($err) {
+        $this->writeInfo(
+          pht('UPDATE'),
+          pht(
+            'Local branch "%s" does not exist, staying on detached HEAD.',
+            $local_branch));
+        return;
+      }
+
+      $path = $api->getPathToUpstream($local_branch);
+    }
+
+    if ($path->getCycle()) {
+      $this->writeWarn(
+        pht('LOCAL CYCLE'),
         pht(
-          'Local branch "%s" does not exist, staying on detached HEAD.',
-          $this->getTargetOnto()));
+          'Local branch "%s" tracks an upstream but following it leads to '.
+          'a local cycle, staying on detached HEAD.',
+          $local_branch));
       return;
     }
 
-    list($err, $upstream) = $api->execManualLocal(
-      'rev-parse --verify --symbolic-full-name %s',
-      $this->getTargetOnto().'@{upstream}');
-    if ($err) {
-      echo tsprintf(
-        "%s\n",
+    if (!$path->isConnectedToRemote()) {
+      $this->writeInfo(
+        pht('UPDATE'),
         pht(
-          'Local branch "%s" has no upstream, staying on detached HEAD.',
-          $this->getTargetOnto()));
+          'Local branch "%s" is not connected to a remote, staying on '.
+          'detached HEAD.',
+          $local_branch));
       return;
     }
 
-    $upstream = trim($upstream);
-    $expect_upstream = 'refs/remotes/'.$this->getTargetFullRef();
-    if ($upstream != $expect_upstream) {
-      echo tsprintf(
-        "%s\n",
+    $remote_remote = $path->getRemoteRemoteName();
+    $remote_branch = $path->getRemoteBranchName();
+
+    $remote_actual = $remote_remote.'/'.$remote_branch;
+    $remote_expect = $this->getTargetFullRef();
+    if ($remote_actual != $remote_expect) {
+      $this->writeInfo(
+        pht('UPDATE'),
         pht(
-          'Local branch "%s" tracks remote "%s" (not target remote "%s"), '.
-          'staying on detached HEAD.',
-          $this->getTargetOnto(),
-          $upstream,
-          $expect_upstream));
+          'Local branch "%s" is connected to a remote ("%s") other than '.
+          'the target remote ("%s"), staying on detached HEAD.',
+          $local_branch,
+          $remote_actual,
+          $remote_expect));
       return;
     }
 
-    list($stdout) = $api->execxLocal(
-      'log %s..%s --',
-      $this->mergedRef,
-      $this->getTargetOnto());
-    $stdout = trim($stdout);
+    // If we get this far, we have a sequence of branches which ultimately
+    // connect to the remote. We're going to try to update them all in reverse
+    // order, from most-upstream to most-local.
 
-    if (!strlen($stdout)) {
-      echo tsprintf(
-        "%s\n",
+    $cascade_branches = $path->getLocalBranches();
+    $cascade_branches = array_reverse($cascade_branches);
+
+    // First, check if any of them are ahead of the remote.
+
+    $ahead_of_remote = array();
+    foreach ($cascade_branches as $cascade_branch) {
+      list($stdout) = $api->execxLocal(
+        'log %s..%s --',
+        $this->mergedRef,
+        $cascade_branch);
+      $stdout = trim($stdout);
+
+      if (strlen($stdout)) {
+        $ahead_of_remote[$cascade_branch] = $cascade_branch;
+      }
+    }
+
+    // We're going to handle the last branch (the thing we ultimately intend
+    // to check out) differently. It's OK if it's ahead of the remote, as long
+    // as we just landed it.
+
+    $local_ahead = isset($ahead_of_remote[$local_branch]);
+    unset($ahead_of_remote[$local_branch]);
+    $land_self = ($this->getTargetOnto() === $this->getSourceRef());
+
+    // We aren't going to pull anything if anything upstream from us is ahead
+    // of the remote, or the local is ahead of the remote and we didn't land
+    // it onto itself.
+    $skip_pull = ($ahead_of_remote || ($local_ahead && !$land_self));
+
+    if ($skip_pull) {
+      $this->writeInfo(
+        pht('UPDATE'),
+        pht(
+          'Local "%s" is ahead of remote "%s". Checking out "%s" but '.
+          'not pulling changes.',
+          nonempty(head($ahead_of_remote), $local_branch),
+          $this->getTargetFullRef(),
+          $local_branch));
+
+      $this->writeInfo(
+        pht('CHECKOUT'),
+        pht(
+          'Checking out "%s".',
+          $local_branch));
+
+      $api->execxLocal('checkout %s --', $local_branch);
+
+      return;
+    }
+
+    // If nothing upstream from our nearest branch is ahead of the remote,
+    // pull it all.
+
+    $cascade_targets = array();
+    if (!$ahead_of_remote) {
+      foreach ($cascade_branches as $cascade_branch) {
+        if ($local_ahead && ($local_branch == $cascade_branch)) {
+          continue;
+        }
+        $cascade_targets[] = $cascade_branch;
+      }
+    }
+
+    if ($cascade_targets) {
+      $this->writeInfo(
+        pht('UPDATE'),
         pht(
           'Local "%s" tracks target remote "%s", checking out and '.
           'pulling changes.',
-          $this->getTargetOnto(),
+          $local_branch,
           $this->getTargetFullRef()));
 
-      $api->execxLocal('checkout %s --', $this->getTargetOnto());
-      $api->execxLocal('pull --');
+      foreach ($cascade_targets as $cascade_branch) {
+        $this->writeInfo(
+          pht('PULL'),
+          pht(
+            'Checking out and pulling "%s".',
+            $cascade_branch));
 
-      return;
-    }
+        $api->execxLocal('checkout %s --', $cascade_branch);
+        $api->execxLocal('pull --');
+      }
 
-    if ($this->getTargetOnto() !== $this->getSourceRef()) {
-      echo tsprintf(
-        "%s\n",
-        pht(
-          'Local "%s" is ahead of remote "%s". Checking out but '.
-          'not pulling changes.',
-          $this->getTargetOnto(),
-          $this->getTargetFullRef()));
-
-      $api->execxLocal('checkout %s --', $this->getTargetOnto());
-
-      return;
+      if (!$local_ahead) {
+        return;
+      }
     }
 
     // In this case, the user did something like land a branch onto itself,
     // and the branch is tracking the correct remote. We're going to discard
     // the local state and reset it to the state we just pushed.
 
-    echo tsprintf(
-      "%s\n",
+    $this->writeInfo(
+      pht('RESET'),
       pht(
         'Local "%s" landed into remote "%s", resetting local branch to '.
         'remote state.',
         $this->getTargetOnto(),
         $this->getTargetFullRef()));
 
-    $api->execxLocal('checkout %s --', $this->getTargetOnto());
+    $api->execxLocal('checkout %s --', $local_branch);
     $api->execxLocal('reset --hard %s --', $this->getTargetFullRef());
+
+    return;
   }
 
   private function destroyLocalBranch() {

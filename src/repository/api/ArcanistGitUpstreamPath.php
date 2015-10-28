@@ -13,6 +13,11 @@ final class ArcanistGitUpstreamPath extends Phobject {
     return $this;
   }
 
+  public function removeUpstream($key) {
+    unset($this->path[$key]);
+    return $this;
+  }
+
   public function getUpstream($key) {
     return idx($this->path, $key);
   }
@@ -36,6 +41,9 @@ final class ArcanistGitUpstreamPath extends Phobject {
     return ($last['type'] == self::TYPE_REMOTE);
   }
 
+  public function getLocalBranches() {
+    return array_keys($this->path);
+  }
 
   public function getRemoteBranchName() {
     if (!$this->isConnectedToRemote()) {
