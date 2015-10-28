@@ -148,8 +148,11 @@ final class ArcanistGitLandEngine
 
     try {
       if ($this->getShouldSquash()) {
+        // NOTE: We're explicitly specifying "--ff" to override the presence
+        // of "merge.ff" options in user configuration.
+
         $api->execxLocal(
-          'merge --no-stat --no-commit --squash -- %s',
+          'merge --no-stat --no-commit --ff --squash -- %s',
           $source);
       } else {
         $api->execxLocal(
@@ -200,7 +203,7 @@ final class ArcanistGitLandEngine
       pht('PUSHING'),
       pht('Pushing changes to "%s".', $this->getTargetFullRef()));
 
-    list($err) = $api->execPassthru(
+    $err = $api->execPassthru(
       'push -- %s %s:%s',
       $this->getTargetRemote(),
       $this->mergedRef,
