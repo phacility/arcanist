@@ -196,6 +196,53 @@ EOTEXT
 
   public function run() {
     $this->readArguments();
+
+    $engine = null;
+    if ($this->isGit && !$this->isGitSvn) {
+      $engine = new ArcanistGitLandEngine();
+    }
+
+    if ($engine) {
+      $obsolete = array(
+        'delete-remote',
+        'update-with-merge',
+        'update-with-rebase',
+      );
+
+      foreach ($obsolete as $flag) {
+        if ($this->getArgument($flag)) {
+          throw new ArcanistUsageException(
+            pht(
+              'Flag "%s" is no longer supported under Git.',
+              '--'.$flag));
+        }
+      }
+
+      $this->requireCleanWorkingCopy();
+
+      $should_hold = $this->getArgument('hold');
+
+      $engine
+        ->setWorkflow($this)
+        ->setRepositoryAPI($this->getRepositoryAPI())
+        ->setSourceRef($this->branch)
+        ->setTargetRemote($this->remote)
+        ->setTargetOnto($this->onto)
+        ->setShouldHold($should_hold)
+        ->setShouldKeep($this->keepBranch)
+        ->setShouldSquash($this->useSquash)
+        ->setShouldPreview($this->preview)
+        ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      $engine->execute();
+
+      if (!$should_hold) {
+        $this->didPush();
+      }
+
+      return 0;
+    }
+
     $this->validate();
 
     try {
@@ -1085,16 +1132,7 @@ EOTEXT
           $cmd));
       }
 
-      $this->askForRepositoryUpdate();
-
-      $mark_workflow = $this->buildChildWorkflow(
-        'close-revision',
-        array(
-          '--finalize',
-          '--quiet',
-          $this->revision['id'],
-        ));
-      $mark_workflow->run();
+      $this->didPush();
 
       echo "\n";
     }
@@ -1193,6 +1231,11 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     if ($this->isGit) {
       $branch = $repository_api->getBranchName();
+
+      // If we don't have a branch name, just use whatever's at HEAD.
+      if (!strlen($branch) && !$this->isGitSvn) {
+        $branch = $repository_api->getWorkingCopyRevision();
+      }
     } else if ($this->isHg) {
       $branch = $repository_api->getActiveBookmark();
       if (!$branch) {
@@ -1315,6 +1358,25 @@ EOTEXT
     if (!$console->confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
+  }
+
+  public function buildEngineMessage(ArcanistLandEngine $engine) {
+    // TODO: This is oh-so-gross.
+    $this->findRevision();
+    $engine->setCommitMessageFile($this->messageFile);
+  }
+
+  public function didPush() {
+    $this->askForRepositoryUpdate();
+
+    $mark_workflow = $this->buildChildWorkflow(
+      'close-revision',
+      array(
+        '--finalize',
+        '--quiet',
+        $this->revision['id'],
+      ));
+    $mark_workflow->run();
   }
 
 }
