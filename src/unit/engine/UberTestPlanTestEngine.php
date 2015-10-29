@@ -1,6 +1,6 @@
 <?php
 
-final class TestPlanTestEngine extends ArcanistUnitTestEngine {
+final class UberTestPlanTestEngine extends ArcanistUnitTestEngine {
 
     public function run() {
         return $this->checkNonEmptyTestPlan();

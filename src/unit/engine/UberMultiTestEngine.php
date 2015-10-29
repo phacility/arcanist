@@ -1,6 +1,6 @@
 <?php
 
-final class MultiTestEngine extends ArcanistUnitTestEngine {
+final class UberMultiTestEngine extends ArcanistUnitTestEngine {
 
     public function run() {
         $config = $this->getConfigurationManager();

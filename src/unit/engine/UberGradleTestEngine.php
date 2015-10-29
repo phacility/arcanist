@@ -1,6 +1,6 @@
 <?php
 
-final class GradleTestEngine extends ArcanistUnitTestEngine {
+final class UberGradleTestEngine extends ArcanistUnitTestEngine {
 
     public function run() {
         $config = $this->getConfigurationManager();
