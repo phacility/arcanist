@@ -1361,7 +1361,7 @@ abstract class ArcanistWorkflow extends Phobject {
     fwrite(STDERR, $msg);
   }
 
-  final protected function writeInfo($title, $message) {
+  final public function writeInfo($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:blue>** %s **</bg> %s\n",
@@ -1369,7 +1369,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $message));
   }
 
-  final protected function writeWarn($title, $message) {
+  final public function writeWarn($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:yellow>** %s **</bg> %s\n",
@@ -1377,7 +1377,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $message));
   }
 
-  final protected function writeOkay($title, $message) {
+  final public function writeOkay($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:green>** %s **</bg> %s\n",

@@ -1333,4 +1333,75 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $this->resolvedHeadCommit = null;
   }
 
+  /**
+   * Follow the chain of tracking branches upstream until we reach a remote
+   * or cycle locally.
+   *
+   * @param string Ref to start from.
+   * @return list<wild> Path to an upstream.
+   */
+  public function getPathToUpstream($start) {
+    $cursor = $start;
+    $path = new ArcanistGitUpstreamPath();
+    while (true) {
+      list($err, $upstream) = $this->execManualLocal(
+        'rev-parse --symbolic-full-name %s@{upstream}',
+        $cursor);
+
+      if ($err) {
+        // We ended up somewhere with no tracking branch, so we're done.
+        break;
+      }
+
+      $upstream = trim($upstream);
+
+      if (preg_match('(^refs/heads/)', $upstream)) {
+        $upstream = preg_replace('(^refs/heads/)', '', $upstream);
+
+        $is_cycle = $path->getUpstream($upstream);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_LOCAL,
+            'name' => $upstream,
+            'cycle' => $is_cycle,
+          ));
+
+        if ($is_cycle) {
+          // We ran into a local cycle, so we're done.
+          break;
+        }
+
+        // We found another local branch, so follow that one upriver.
+        $cursor = $upstream;
+        continue;
+      }
+
+      if (preg_match('(^refs/remotes/)', $upstream)) {
+        $upstream = preg_replace('(^refs/remotes/)', '', $upstream);
+        list($remote, $branch) = explode('/', $upstream, 2);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_REMOTE,
+            'name' => $branch,
+            'remote' => $remote,
+          ));
+
+        // We found a remote, so we're done.
+        break;
+      }
+
+      throw new Exception(
+        pht(
+          'Got unrecognized upstream format ("%s") from Git, expected '.
+          '"refs/heads/..." or "refs/remotes/...".',
+          $upstream));
+    }
+
+    return $path;
+  }
+
 }

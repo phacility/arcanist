@@ -6,7 +6,7 @@
 abstract class ArcanistUnitTestEngine extends Phobject {
 
   private $workingCopy;
-  private $paths;
+  private $paths = array();
   private $arguments = array();
   private $enableAsyncTests;
   private $enableCoverage;

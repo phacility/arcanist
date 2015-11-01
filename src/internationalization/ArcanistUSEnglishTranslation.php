@@ -78,6 +78,11 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'Ignore the changes to this submodule and continue?',
         'Ignore the changes to these submodules and continue?',
       ),
+
+      'These %s commit(s) will be landed:' => array(
+        'This commit will be landed:',
+        'These commits will be landed:',
+      ),
     );
   }
 
