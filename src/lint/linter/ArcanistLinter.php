@@ -197,39 +197,6 @@ abstract class ArcanistLinter extends Phobject {
   }
 
 
-  /**
-   * Obsolete hook which was invoked before a path was linted.
-   *
-   * WARNING: This is an obsolete hook which is not called. If you maintain
-   * a linter which relies on it, update to use @{method:lintPath} instead.
-   *
-   * @task exec
-   */
-  final public function willLintPath($path) {
-    // TODO: Remove this method after some time. In the meantime, the "final"
-    // will fatal subclasses which implement this hook and point at the API
-    // change so maintainers get fewer surprises.
-    throw new PhutilMethodNotImplementedException();
-  }
-
-
-  /**
-   * Obsolete hook which was invoked after linters ran.
-   *
-   * WARNING: This is an obsolete hook which is not called. If you maintain
-   * a linter which relies on it, update to use @{method:didLintPaths} instead.
-   *
-   * @return void
-   * @task exec
-   */
-  final public function didRunLinters() {
-    // TODO: Remove this method after some time. In the meantime, the "final"
-    // will fatal subclasses which implement this hook and point at the API
-    // change so maintainers get fewer surprises.
-    throw new PhutilMethodNotImplementedException();
-  }
-
-
   public function getLinterPriority() {
     return 1.0;
   }
