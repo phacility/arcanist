@@ -34,7 +34,7 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
           'these files, or continue. If you continue, these files will be '.
           'marked as binary.',
       ),
-      '%d AFFECTED FILE(S)' => array('AFFECTED FILE', 'AFFECTED FILES'),
+      '%s AFFECTED FILE(S)' => array('AFFECTED FILE', 'AFFECTED FILES'),
       'Do you want to mark these %s file(s) as binary and continue?' => array(
         'Do you want to mark this file as binary and continue?',
         'Do you want to mark these files as binary and continue?',
@@ -57,11 +57,9 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
 
       '%s line(s)' => array('line', 'lines'),
 
-      '%d test(s)' => array('%d test', '%d tests'),
-
-      '%d assertion(s) passed.' => array(
-        '%d assertion passed.',
-        '%d assertions passed.',
+      '%s assertion(s) passed.' => array(
+        '%s assertion passed.',
+        '%s assertions passed.',
       ),
 
       'Ignore these %s untracked file(s) and continue?' => array(

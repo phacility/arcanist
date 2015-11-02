@@ -962,7 +962,7 @@ EOTEXT
         'works best for changes which will receive detailed human review, '.
         'and not as well for large automated changes or bulk checkins. '.
         'See %s for information about reviewing big checkins. Continue anyway?',
-        new PhutilNumber(count($changes)),
+        phutil_count($changes),
         'https://secure.phabricator.com/book/phabricator/article/'.
           'differential_large_changes/');
 
@@ -1070,18 +1070,18 @@ EOTEXT
             'contain invalid byte sequences). You can either stop this '.
             'workflow and fix these files, or continue. If you continue, '.
             'these files will be marked as binary.',
-            new PhutilNumber(count($utf8_problems))),
+            phutil_count($utf8_problems)),
           pht(
             "You can learn more about how Phabricator handles character ".
             "encodings (and how to configure encoding settings and detect and ".
             "correct encoding problems) by reading 'User Guide: UTF-8 and ".
             "Character Encoding' in the Phabricator documentation."),
           pht(
-            '%d AFFECTED FILE(S)',
-            count($utf8_problems)));
+            '%s AFFECTED FILE(S)',
+            phutil_count($utf8_problems)));
       $confirm = pht(
         'Do you want to mark these %s file(s) as binary and continue?',
-        new PhutilNumber(count($utf8_problems)));
+        phutil_count($utf8_problems));
 
       echo phutil_console_format(
         "**%s**\n",

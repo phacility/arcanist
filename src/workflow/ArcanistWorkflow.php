@@ -938,17 +938,17 @@ abstract class ArcanistWorkflow extends Phobject {
       if ($api instanceof ArcanistGitAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           '.git/info/exclude');
       } else if ($api instanceof ArcanistSubversionAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           'svn:ignore');
       } else if ($api instanceof ArcanistMercurialAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           '.hgignore');
       }
 
@@ -961,7 +961,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
       $prompt = pht(
         'Ignore these %s untracked file(s) and continue?',
-        new PhutilNumber(count($untracked)));
+        phutil_count($untracked));
 
       if (!phutil_console_confirm($prompt)) {
         throw new ArcanistUserAbortException();
@@ -1150,11 +1150,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if ($this->getShouldAmend()) {
       $prompt = pht(
         'Do you want to amend these %s change(s) to the current commit?',
-        new PhutilNumber(count($files)));
+        phutil_count($files));
     } else {
       $prompt = pht(
         'Do you want to create a new commit with these %s change(s)?',
-        new PhutilNumber(count($files)));
+        phutil_count($files));
     }
     return $prompt;
   }
