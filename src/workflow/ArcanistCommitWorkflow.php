@@ -225,10 +225,10 @@ EOTEXT
     if ($modified_but_not_included) {
       $prefix = pht(
         '%s locally modified path(s) are not included in this revision:',
-        new PhutilNumber(count($modified_but_not_included)));
+        phutil_count($modified_but_not_included));
       $prompt = pht(
         'These %s path(s) will NOT be committed. Commit this revision anyway?',
-        new PhutilNumber(count($modified_but_not_included)));
+        phutil_count($modified_but_not_included));
       $this->promptFileWarning($prefix, $prompt, $modified_but_not_included);
     }
 
@@ -251,7 +251,7 @@ EOTEXT
     if ($do_not_exist) {
       $prefix = pht(
         'Revision includes changes to %s path(s) that do not exist:',
-        new PhutilNumber(count($do_not_exist)));
+        phutil_count($do_not_exist));
       $prompt = pht('Commit this revision anyway?');
       $this->promptFileWarning($prefix, $prompt, $do_not_exist);
     }

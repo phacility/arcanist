@@ -490,7 +490,10 @@ abstract class PhutilTestCase extends Phobject {
             call_user_func_array(
               array($this, $name),
               array());
-            $this->passTest(pht('%d assertion(s) passed.', $this->assertions));
+            $this->passTest(
+              pht(
+                '%s assertion(s) passed.',
+                new PhutilNumber($this->assertions)));
           } catch (Exception $ex) {
             $exceptions['Execution'] = $ex;
           }
