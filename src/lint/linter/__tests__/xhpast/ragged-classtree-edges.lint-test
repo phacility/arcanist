@@ -9,4 +9,4 @@ final class C extends Phobject {}
  */
 class D extends Phobject {}
 ~~~~~~~~~~
-warning:3:7
+disabled:3:7

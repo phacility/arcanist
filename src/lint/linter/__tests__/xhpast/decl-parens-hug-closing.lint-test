@@ -28,6 +28,7 @@ f(function ($x)use($z) {});
 warning:4:14
 warning:5:11
 warning:8:15
+disabled:10:1
 error:10:13
 warning:13:23
 warning:16:31

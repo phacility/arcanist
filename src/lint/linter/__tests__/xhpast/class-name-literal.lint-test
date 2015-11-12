@@ -12,6 +12,8 @@ class MyClass {
   }
 }
 ~~~~~~~~~~
+disabled:3:1
+disabled:3:7
 error:3:7
 advice:5:12
 advice:9:10

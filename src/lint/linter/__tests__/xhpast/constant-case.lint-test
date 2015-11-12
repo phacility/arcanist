@@ -9,5 +9,7 @@ class Foo {
 ~~~~~~~~~~
 warning:3:8
 warning:4:7
+disabled:6:1
 error:6:7
+disabled:6:7
 warning:7:9

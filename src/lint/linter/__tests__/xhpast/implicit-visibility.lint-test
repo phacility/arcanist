@@ -11,6 +11,7 @@ final class Foo {
   private $z;
 }
 ~~~~~~~~~~
+disabled:3:1
 error:3:13 XHP19
 advice:5:3
 advice:6:3

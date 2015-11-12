@@ -24,4 +24,9 @@ abstract class SomeAbstractClass {
   abstract public function __toString();
 }
 ~~~~~~~~~~
+disabled:3:1
+disabled:3:7
 error:6:7
+disabled:13:1
+disabled:13:7
+disabled:23:1

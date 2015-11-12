@@ -3,4 +3,4 @@
 array_combine($x, $x);
 array_combine($x, $y);
 ~~~~~~~~~~
-warning:3:1
+disabled:3:1

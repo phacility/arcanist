@@ -190,6 +190,7 @@ warning:9:3
 error:28:3
 error:30:3
 error:36:3
+disabled:40:1
 error:42:5
 error:43:7
 error:44:5
@@ -202,7 +203,9 @@ error:87:3 This stuff is basically testing the lexer/parser for function decls.
 error:104:15 Variables in instance derefs should be checked, static should not.
 error:118:3 isset() and empty() should not trigger errors.
 error:122:3 Should only warn once in this function.
+disabled:136:1
 error:144:8
+disabled:147:1
 error:150:9
 error:164:9
 error:171:5

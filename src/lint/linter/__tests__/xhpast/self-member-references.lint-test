@@ -25,6 +25,7 @@ MyClass :: myMethod();
 SomeReallyLongClassName
   ::someMethod();
 ~~~~~~~~~~
+disabled:3:7
 error:3:7
 advice:7:5
 advice:12:10

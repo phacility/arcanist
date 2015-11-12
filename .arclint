@@ -31,10 +31,6 @@
       "type": "phutil-library",
       "include": "(\\.php$)"
     },
-    "phutil-xhpast": {
-      "type": "phutil-xhpast",
-      "include": "(\\.php$)"
-    },
     "spelling": {
       "type": "spelling",
       "exclude": "(^resources/spelling/.*\\.json$)"

@@ -9,5 +9,6 @@ final class A {
   }
 }
 ~~~~~~~~~~
+disabled:3:1
 error:3:13 XHP19 Class-Filename Mismatch
 error:8:5 Use of $this in a static method.

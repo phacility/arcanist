@@ -6,5 +6,6 @@ final class Platypus {
   }
 }
 ~~~~~~~~~~
+disabled:3:1
 error:3:13 XHP19 Class-Filename Mismatch
 error:4:19

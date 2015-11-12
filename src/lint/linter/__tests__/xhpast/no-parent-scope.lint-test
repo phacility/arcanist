@@ -16,4 +16,5 @@ final class MyInvalidClass {
   }
 }
 ~~~~~~~~~~
+disabled:9:1
 error:11:5
