@@ -151,7 +151,6 @@ EOTEXT
     } else {
       $this->engine->setPaths($paths);
     }
-    $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
     $renderer = new ArcanistUnitConsoleRenderer();
     $this->engine->setRenderer($renderer);
@@ -164,13 +163,6 @@ EOTEXT
       $enable_coverage = false;
     }
     $this->engine->setEnableCoverage($enable_coverage);
-
-    // Enable possible async tests only for 'arc diff' not 'arc unit'
-    if ($this->getParentWorkflow()) {
-      $this->engine->setEnableAsyncTests(true);
-    } else {
-      $this->engine->setEnableAsyncTests(false);
-    }
 
     $results = $this->engine->run();
 

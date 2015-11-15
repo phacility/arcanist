@@ -115,6 +115,9 @@ final class ArcanistConfigurationDrivenUnitTestEngine
   }
 
   public function run() {
+    $renderer = $this->renderer;
+    $this->setRenderer(null);
+
     $paths = $this->getPaths();
 
     // If we are running with `--everything` then `$paths` will be `null`.
@@ -122,14 +125,15 @@ final class ArcanistConfigurationDrivenUnitTestEngine
       $paths = array();
     }
 
-    $engines    = $this->buildTestEngines();
-    $results    = array();
-    $exceptions = array();
+    $engines     = $this->buildTestEngines();
+    $all_results = array();
+    $exceptions  = array();
 
     foreach ($engines as $engine) {
       $engine
         ->setWorkingCopy($this->getWorkingCopy())
-        ->setEnableCoverage($this->getEnableCoverage());
+        ->setEnableCoverage($this->getEnableCoverage())
+        ->setRenderer($renderer);
 
       // TODO: At some point, maybe we should emit a warning here if an engine
       // doesn't support `--everything`, to reduce surprise when `--everything`
@@ -140,19 +144,30 @@ final class ArcanistConfigurationDrivenUnitTestEngine
 
       try {
         // TODO: Type check the results.
-        $results[] = $engine->run();
+        $results = $engine->run();
+        $all_results[] = $results;
+
+        foreach ($results as $result) {
+          if ($engine->shouldEchoTestResults()) {
+            echo $renderer->renderUnitResult($result);
+          }
+        }
       } catch (ArcanistNoEffectException $ex) {
         $exceptions[] = $ex;
       }
     }
 
-    if (!$results) {
+    if (!$all_results) {
       // If all engines throw an `ArcanistNoEffectException`, then we should
       // preserve this behavior.
       throw new ArcanistNoEffectException(pht('No tests to run.'));
     }
 
-    return array_mergev($results);
+    return array_mergev($all_results);
+  }
+
+  public function shouldEchoTestResults() {
+    return false;
   }
 
   private function loadAvailableTestEngines() {
