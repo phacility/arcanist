@@ -1,0 +1,9 @@
+h1 {
+  font-weight: bold;
+}
+h1 {
+  font-weight: bold;
+}
+~~~~~~~~~~
+warning::
+warning:4:1
