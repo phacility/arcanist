@@ -61,10 +61,17 @@ final class ArcanistBraceFormattingXHPASTLinterRule
       }
 
       $type = $parent->getTypeName();
-      if ($type != 'n_STATEMENT_LIST' && $type != 'n_DECLARE') {
-        $this->raiseLintAtNode(
-          $node,
-          pht('Use braces to surround a statement block.'));
+      switch ($type) {
+        case 'n_DECLARE':
+        case 'n_NAMESPACE':
+        case 'n_STATEMENT_LIST':
+          break;
+
+        default:
+          $this->raiseLintAtNode(
+            $node,
+            pht('Use braces to surround a statement block.'));
+          break;
       }
     }
 
