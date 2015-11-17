@@ -148,7 +148,9 @@ final class ArcanistConfigurationDrivenUnitTestEngine
         $all_results[] = $results;
 
         foreach ($results as $result) {
-          if ($engine->shouldEchoTestResults()) {
+          // If the proxied engine renders its own test results then there
+          // is no need to render them again here.
+          if (!$engine->shouldEchoTestResults()) {
             echo $renderer->renderUnitResult($result);
           }
         }
