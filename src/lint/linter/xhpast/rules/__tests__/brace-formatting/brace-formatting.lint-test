@@ -1,0 +1,87 @@
+<?php
+
+function f() {
+
+}
+
+function g()
+{
+
+}
+
+if (1)
+{}
+
+foreach (x() as $y)
+{}
+
+while (1)
+{}
+
+switch (1)
+{}
+
+try
+{}
+catch (Exception $x)
+{}
+
+function h(){}
+if ($x) foo();
+else bar();
+do baz(); while ($x);
+
+if ($x) {}
+else if ($y) {}
+else {}
+
+if ($x) {}else{}
+
+declare(ticks = 1);
+~~~~~~~~~~
+warning:7:13
+warning:12:7
+warning:15:20
+warning:18:10
+warning:21:11
+warning:24:4
+warning:26:21
+warning:29:13
+warning:30:9
+warning:31:6
+warning:32:4
+warning:34:11
+warning:35:16
+warning:38:11
+~~~~~~~~~~
+<?php
+
+function f() {
+
+}
+
+function g() {
+
+}
+
+if (1) {}
+
+foreach (x() as $y) {}
+
+while (1) {}
+
+switch (1) {}
+
+try {}
+catch (Exception $x) {}
+
+function h() {}
+if ($x) foo();
+else bar();
+do baz(); while ($x);
+
+if ($x) {} else if ($y) {} else {}
+
+if ($x) {} else{}
+
+declare(ticks = 1);

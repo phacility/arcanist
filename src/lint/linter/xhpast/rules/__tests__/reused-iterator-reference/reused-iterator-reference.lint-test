@@ -1,0 +1,130 @@
+<?php
+
+function assign() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  $a = 1; // Reuse of $a.
+}
+
+function expr() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  $b = $a; // Reuse of $a.
+}
+
+function func_call() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  $b = x($a); // Reuse of $a.
+}
+
+function x($b) {}
+
+function iterator_reuse() {
+  $ar1 = array();
+  $ar2 = array();
+  foreach ($ar1 as &$a) {}
+  foreach ($ar2 as $a) {} // Reuse of $a
+}
+
+function key_value() {
+  $ar = array();
+  foreach ($ar as $k => &$v) {}
+  $v++; // Reuse of $v
+}
+
+function key_value2() {
+  $ar = array();
+  foreach ($ar as $k => $v) {}
+  $v++;
+}
+
+function unset() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  unset($a);
+  $a++;
+}
+
+function unset2() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  $a++; // Reuse of $a
+  unset($a);
+}
+
+function twice_ref() {
+  $ar1 = array();
+  $ar2 = array();
+  foreach ($ar1 as &$b) {}
+  foreach ($ar2 as &$b) {}
+}
+
+function assign_ref(&$a) {
+  $ar = array();
+  foreach ($ar as &$b) {}
+  $b = &$a;
+}
+
+function assign_ref2(&$a) {
+  $ar = array();
+  foreach ($ar as &$b) {}
+  $b = &$a;
+  $c = $b;
+}
+
+function use_inside() {
+  $ar = array();
+  foreach ($ar as &$a) {
+    $a++;
+  }
+}
+
+function variable_variable() {
+  $ar = array();
+  foreach ($ar as &$$a) {}
+  $a++;
+  $$a++;
+}
+
+function closure1() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  function ($a) {
+    $a++;
+  };
+}
+
+function closure2() {
+  function () {
+    $ar = array();
+    foreach ($ar as &$a) {}
+  };
+  $a++;
+}
+
+function closure3() {
+  function () {
+    $ar = array();
+    foreach ($ar as &$a) {}
+    $a++; // Reuse of $a
+  };
+}
+
+function closure4() {
+  $ar = array();
+  foreach ($ar as &$a) {}
+  function ($a) {
+    unset($a);
+  };
+  $a++; // Reuse of $a
+}
+~~~~~~~~~~
+warning:6:3
+warning:12:8
+warning:18:10
+warning:27:20
+warning:33:3
+warning:52:3
+warning:110:5
+warning:120:3

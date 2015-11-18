@@ -1,0 +1,9 @@
+<?php
+
+final class Platypus {
+  public function platypus() {
+    // This method must be renamed to __construct().
+  }
+}
+~~~~~~~~~~
+error:4:19

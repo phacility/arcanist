@@ -1,0 +1,30 @@
+<?php
+
+final class Foo {
+  public function bar() {}
+  function baz() {}
+  abstract function a();
+  private static function b() {}
+
+  var $x;
+  static $y;
+  private $z;
+}
+~~~~~~~~~~
+advice:5:3
+advice:6:3
+advice:9:3
+advice:10:3
+~~~~~~~~~~
+<?php
+
+final class Foo {
+  public function bar() {}
+  public function baz() {}
+  public abstract function a();
+  private static function b() {}
+
+  public $x;
+  public static $y;
+  private $z;
+}

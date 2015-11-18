@@ -28,7 +28,7 @@ abstract class ArcanistLinter extends Phobject {
   private $customSeverityRules = array();
 
 
-/*  -(  Human Readable Information  )---------------------------------------- */
+/* -(  Human Readable Information  )----------------------------------------- */
 
 
   /**
@@ -390,7 +390,7 @@ abstract class ArcanistLinter extends Phobject {
     $line,
     $char,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -401,7 +401,7 @@ abstract class ArcanistLinter extends Phobject {
       ->setCode($this->getLintMessageFullCode($code))
       ->setSeverity($this->getLintMessageSeverity($code))
       ->setName($this->getLintMessageName($code))
-      ->setDescription($desc)
+      ->setDescription($description)
       ->setOriginalText($original)
       ->setReplacementText($replacement);
 
@@ -415,7 +415,7 @@ abstract class ArcanistLinter extends Phobject {
   final public function raiseLintAtOffset(
     $offset,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -432,7 +432,7 @@ abstract class ArcanistLinter extends Phobject {
       $line + 1,
       $char + 1,
       $code,
-      $desc,
+      $description,
       $original,
       $replacement);
   }

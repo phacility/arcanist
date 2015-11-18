@@ -11,7 +11,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private $lintSeverityMap;
 
   public function __construct() {
-    $this->rules = ArcanistXHPASTLinterRule::loadAllRules();
+    $this->setRules(ArcanistXHPASTLinterRule::loadAllRules());
   }
 
   public function __clone() {
@@ -21,6 +21,21 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     foreach ($rules as $rule) {
       $this->rules[] = clone $rule;
     }
+  }
+
+  /**
+   * Set the XHPAST linter rules which are enforced by this linter.
+   *
+   * This is primarily useful for unit tests in which it is desirable to test
+   * linter rules in isolation. By default, all linter rules will be enabled.
+   *
+   * @param  list<ArcanistXHPASTLinterRule>
+   * @return this
+   */
+  public function setRules(array $rules) {
+    assert_instances_of($rules, 'ArcanistXHPASTLinterRule');
+    $this->rules = $rules;
+    return $this;
   }
 
   public function getInfoName() {

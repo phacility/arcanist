@@ -1,0 +1,12 @@
+<?php
+
+define('foo', 'bar');
+const bar = 'baz';
+
+class Foo {
+  const bar = 'baz';
+}
+~~~~~~~~~~
+warning:3:8
+warning:4:7
+warning:7:9
