@@ -1282,10 +1282,16 @@ EOTEXT
         $err = $repository_api->execPassthru('push %s', $this->remote);
         $cmd = 'hg push';
       } else if ($this->isHg) {
-        $err = $repository_api->execPassthru(
-          'push -r %s %s',
-          $this->onto,
-          $this->remote);
+        if (strlen($this->remote)) {
+          $err = $repository_api->execPassthru(
+            'push -r %s %s',
+            $this->onto,
+            $this->remote);
+        } else {
+          $err = $repository_api->execPassthru(
+            'push -r %s',
+            $this->onto);
+        }
         $cmd = 'hg push';
       }
 
