@@ -35,7 +35,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)p\d+/';
+    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)+/';
     if (preg_match($regex, $stdout, $matches)) {
       return $matches['version'];
     } else {
