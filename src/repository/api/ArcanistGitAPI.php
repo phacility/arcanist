@@ -521,6 +521,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRemoteURI() {
+    // Determine which remote to examine; default to 'origin'
+    $remote = 'origin';
+    $branch = $this->getBranchName();
+    if ($branch) {
+      $path = $this->getPathToUpstream($branch);
+      if ($path->isConnectedToRemote()) {
+        $remote = $path->getRemoteRemoteName();
+      }
+    }
+
     // "git ls-remote --get-url" is the appropriate plumbing to get the remote
     // URI. "git config remote.origin.url", on the other hand, may not be as
     // accurate (for example, it does not take into account possible URL
@@ -528,9 +538,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // the --get-url flag requires git 1.7.5.
     $version = $this->getGitVersion();
     if (version_compare($version, '1.7.5', '>=')) {
-      list($stdout) = $this->execxLocal('ls-remote --get-url origin');
+      list($stdout) = $this->execxLocal('ls-remote --get-url %s', $remote);
     } else {
-      list($stdout) = $this->execxLocal('config remote.origin.url');
+      list($stdout) = $this->execxLocal('config %s', "remote.$remote.url");
     }
 
     $uri = rtrim($stdout);
