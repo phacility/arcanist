@@ -262,13 +262,26 @@ final class ArcanistGitLandEngine
         $path->removeUpstream($local_branch);
 
         if (!$path->getLength()) {
-          $this->writeInfo(
-            pht('UPDATE'),
-            pht(
-              'Local branch "%s" directly tracks remote, staying on '.
-              'detached HEAD.',
-              $local_branch));
-          return;
+          // The local branch tracked upstream directly; however, it
+          // may not be the only one to do so.  If there's a local
+          // branch of the same name that tracks the remote, try
+          // switching to that.
+          $local_branch = $this->getTargetOnto();
+          list($err) = $api->execManualLocal(
+            'rev-parse --verify %s',
+            $local_branch);
+          if (!$err) {
+            $path = $api->getPathToUpstream($local_branch);
+          }
+          if (!$path->isConnectedToRemote()) {
+            $this->writeInfo(
+              pht('UPDATE'),
+              pht(
+                'Local branch "%s" directly tracks remote, staying on '.
+                'detached HEAD.',
+                $local_branch));
+            return;
+          }
         }
 
         $local_branch = head($path->getLocalBranches());

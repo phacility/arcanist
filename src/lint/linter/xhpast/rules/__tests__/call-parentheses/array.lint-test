@@ -1,0 +1,15 @@
+<?php
+
+array ( 1, 2, 3 );
+list ( $x, $y ) = array();
+[ 1, 2 , 3 ];
+~~~~~~~~~~
+warning:3:6
+warning:4:5
+warning:4:14
+~~~~~~~~~~
+<?php
+
+array( 1, 2, 3 );
+list( $x, $y) = array();
+[ 1, 2 , 3 ];

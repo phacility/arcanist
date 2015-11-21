@@ -1,0 +1,15 @@
+<?php
+
+deprecated_function();
+modern_function();
+~~~~~~~~~~
+warning:3:1
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.deprecated.functions": {
+      "deprecated_function": "This function is deprecated."
+    }
+  }
+}

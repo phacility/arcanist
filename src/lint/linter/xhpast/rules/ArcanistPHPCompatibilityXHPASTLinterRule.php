@@ -295,9 +295,6 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
     // NOTE: This is only "use x;", in anonymous functions the node type is
     // n_LEXICAL_VARIABLE_LIST even though both tokens are T_USE.
 
-    // TODO: We parse n_USE in a slightly crazy way right now; that would be
-    // a better selector once it's fixed.
-
     $uses = $root->selectDescendantsOfType('n_USE_LIST');
     foreach ($uses as $use) {
       $this->raiseLintAtNode(

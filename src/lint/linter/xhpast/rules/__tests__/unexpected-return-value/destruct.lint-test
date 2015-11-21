@@ -1,0 +1,8 @@
+<?php
+class SomeClass {
+  public function __destruct() {
+    return null;
+  }
+}
+~~~~~~~~~~
+warning:4:5

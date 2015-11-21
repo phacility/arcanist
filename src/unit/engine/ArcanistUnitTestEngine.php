@@ -7,8 +7,6 @@ abstract class ArcanistUnitTestEngine extends Phobject {
 
   private $workingCopy;
   private $paths = array();
-  private $arguments = array();
-  private $enableAsyncTests;
   private $enableCoverage;
   private $runAllTests;
   private $configurationManager;
@@ -71,24 +69,6 @@ abstract class ArcanistUnitTestEngine extends Phobject {
     return $this->paths;
   }
 
-  final public function setArguments(array $arguments) {
-    $this->arguments = $arguments;
-    return $this;
-  }
-
-  final public function getArgument($key, $default = null) {
-    return idx($this->arguments, $key, $default);
-  }
-
-  final public function setEnableAsyncTests($enable_async_tests) {
-    $this->enableAsyncTests = $enable_async_tests;
-    return $this;
-  }
-
-  final public function getEnableAsyncTests() {
-    return $this->enableAsyncTests;
-  }
-
   final public function setEnableCoverage($enable_coverage) {
     $this->enableCoverage = $enable_coverage;
     return $this;
@@ -98,7 +78,7 @@ abstract class ArcanistUnitTestEngine extends Phobject {
     return $this->enableCoverage;
   }
 
-  final public function setRenderer(ArcanistUnitRenderer $renderer) {
+  final public function setRenderer(ArcanistUnitRenderer $renderer = null) {
     $this->renderer = $renderer;
     return $this;
   }

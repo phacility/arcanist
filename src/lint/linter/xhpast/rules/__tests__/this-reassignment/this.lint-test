@@ -1,0 +1,4 @@
+<?php
+$this = null;
+~~~~~~~~~~
+error:2:1

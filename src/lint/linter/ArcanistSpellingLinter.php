@@ -78,12 +78,14 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     $this->exactWordRules = array_merge(
       $this->exactWordRules,
       array($misspelling => $correction));
+    return $this;
   }
 
   public function addPartialWordRule($misspelling, $correction) {
     $this->partialWordRules = array_merge(
       $this->partialWordRules,
       array($misspelling => $correction));
+    return $this;
   }
 
   public function getLintSeverityMap() {

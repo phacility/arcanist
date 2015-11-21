@@ -221,8 +221,4 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
     return $paths;
   }
 
-  public function shouldEchoTestResults() {
-    return !$this->renderer;
-  }
-
 }

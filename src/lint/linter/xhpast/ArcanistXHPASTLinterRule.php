@@ -81,6 +81,64 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
     return $this;
   }
 
+
+/* -(  Proxied Methods  )---------------------------------------------------- */
+
+
+  final public function getActivePath() {
+    return $this->linter->getActivePath();
+  }
+
+  final public function getOtherLocation($offset, $path = null) {
+    return $this->linter->getOtherLocation($offset, $path);
+  }
+
+  final protected function raiseLintAtPath($desc) {
+    return $this->linter->raiseLintAtPath($this->getLintID(), $desc);
+  }
+
+  final public function raiseLintAtOffset(
+    $offset,
+    $description,
+    $original = null,
+    $replacement = null) {
+
+    $this->linter->raiseLintAtOffset(
+      $offset,
+      $this->getLintID(),
+      $description,
+      $original,
+      $replacement);
+  }
+
+  final protected function raiseLintAtToken(
+    XHPASTToken $token,
+    $description,
+    $replace = null) {
+
+    return $this->linter->raiseLintAtToken(
+      $token,
+      $this->getLintID(),
+      $description,
+      $replace);
+  }
+
+  final protected function raiseLintAtNode(
+    XHPASTNode $node,
+    $description,
+    $replace = null) {
+
+    return $this->linter->raiseLintAtNode(
+      $node,
+      $this->getLintID(),
+      $description,
+      $replace);
+  }
+
+
+/* -(  Utility  )------------------------------------------------------------ */
+
+
   /**
    * Statically evaluate a boolean value from an XHP tree.
    *
@@ -99,70 +157,10 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
       case '1':
       case 'true':
         return true;
+      default:
+        return null;
     }
-    return null;
   }
-
-  protected function getConcreteVariableString(XHPASTNode $var) {
-    $concrete = $var->getConcreteString();
-    // Strip off curly braces as in `$obj->{$property}`.
-    $concrete = trim($concrete, '{}');
-    return $concrete;
-  }
-
-  // These methods are proxied to the @{class:ArcanistLinter}.
-
-  final public function getActivePath() {
-    return $this->linter->getActivePath();
-  }
-
-  final public function getOtherLocation($offset, $path = null) {
-    return $this->linter->getOtherLocation($offset, $path);
-  }
-
-  final protected function raiseLintAtNode(
-    XHPASTNode $node,
-    $desc,
-    $replace = null) {
-
-    return $this->linter->raiseLintAtNode(
-      $node,
-      $this->getLintID(),
-      $desc,
-      $replace);
-  }
-
-  final public function raiseLintAtOffset(
-    $offset,
-    $desc,
-    $text = null,
-    $replace = null) {
-
-    return $this->linter->raiseLintAtOffset(
-      $offset,
-      $this->getLintID(),
-      $desc,
-      $text,
-      $replace);
-  }
-
-  final protected function raiseLintAtPath($desc) {
-    return $this->linter->raiseLintAtPath($this->getLintID(), $desc);
-  }
-
-  final protected function raiseLintAtToken(
-    XHPASTToken $token,
-    $desc,
-    $replace = null) {
-
-    return $this->linter->raiseLintAtToken(
-      $token,
-      $this->getLintID(),
-      $desc,
-      $replace);
-  }
-
-/* -(  Utility  )------------------------------------------------------------ */
 
   /**
    * Retrieve all anonymous closure(s).
@@ -184,6 +182,21 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
     }
 
     return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
+  }
+
+  /**
+   * TODO
+   *
+   * @param  XHPASTNode
+   * @return string
+   */
+  protected function getConcreteVariableString(XHPASTNode $variable) {
+    $concrete = $variable->getConcreteString();
+
+    // Strip off curly braces as in `$obj->{$property}`.
+    $concrete = trim($concrete, '{}');
+
+    return $concrete;
   }
 
   /**
@@ -212,6 +225,11 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
     return AASTNodeList::newFromTreeAndNodes($root->getTree(), $nodes);
   }
 
+  /**
+   * Get PHP superglobals.
+   *
+   * @return list<string>
+   */
   public function getSuperGlobalNames() {
     return array(
       '$GLOBALS',

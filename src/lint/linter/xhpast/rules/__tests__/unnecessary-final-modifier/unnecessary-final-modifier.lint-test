@@ -1,0 +1,8 @@
+<?php
+
+final class Foo {
+  public function bar() {}
+  final public function baz() {}
+}
+~~~~~~~~~~
+advice:5:3
