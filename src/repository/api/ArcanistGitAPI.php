@@ -540,7 +540,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if (version_compare($version, '1.7.5', '>=')) {
       list($stdout) = $this->execxLocal('ls-remote --get-url %s', $remote);
     } else {
-      list($stdout) = $this->execxLocal('config %s', "remote.$remote.url");
+      list($stdout) = $this->execxLocal('config %s', "remote.{$remote}.url");
     }
 
     $uri = rtrim($stdout);
