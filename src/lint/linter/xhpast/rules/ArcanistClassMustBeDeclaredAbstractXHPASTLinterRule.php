@@ -43,32 +43,4 @@ final class ArcanistClassMustBeDeclaredAbstractXHPASTLinterRule
     }
   }
 
-  /**
-   * Get class/method modifiers.
-   *
-   * @param  XHPASTNode         A node of type `n_CLASS_DECLARATION` or
-   *                            `n_METHOD_DECLARATION`.
-   * @return map<string, bool>  Class/method modifiers.
-   */
-  private function getModifiers(XHPASTNode $node) {
-    $modifier_list = $node->getChildByIndex(0);
-
-    switch ($modifier_list->getTypeName()) {
-      case 'n_CLASS_ATTRIBUTES':
-      case 'n_METHOD_MODIFIER_LIST':
-        break;
-
-      default:
-        return array();
-    }
-
-    $modifiers = array();
-
-    foreach ($modifier_list->selectDescendantsOfType('n_STRING') as $modifier) {
-      $modifiers[strtolower($modifier->getConcreteString())] = true;
-    }
-
-    return $modifiers;
-  }
-
 }
