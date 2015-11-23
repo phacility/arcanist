@@ -1,0 +1,6 @@
+<?php
+abstract class SomeClass {
+  private abstract function someMethod();
+}
+~~~~~~~~~~
+error:3:3

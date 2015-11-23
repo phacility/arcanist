@@ -9,6 +9,8 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
+    'ArcanistAbstractPrivateMethodXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistAbstractPrivateMethodXHPASTLinterRule.php',
+    'ArcanistAbstractPrivateMethodXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistAbstractPrivateMethodXHPASTLinterRuleTestCase.php',
     'ArcanistAliasFunctionXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistAliasFunctionXHPASTLinterRule.php',
     'ArcanistAliasFunctionXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistAliasFunctionXHPASTLinterRuleTestCase.php',
     'ArcanistAliasWorkflow' => 'workflow/ArcanistAliasWorkflow.php',
@@ -391,6 +393,8 @@ phutil_register_library_map(array(
   ),
   'function' => array(),
   'xmap' => array(
+    'ArcanistAbstractPrivateMethodXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
+    'ArcanistAbstractPrivateMethodXHPASTLinterRuleTestCase' => 'ArcanistXHPASTLinterRuleTestCase',
     'ArcanistAliasFunctionXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
     'ArcanistAliasFunctionXHPASTLinterRuleTestCase' => 'ArcanistXHPASTLinterRuleTestCase',
     'ArcanistAliasWorkflow' => 'ArcanistWorkflow',
