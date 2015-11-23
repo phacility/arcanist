@@ -20,7 +20,7 @@ final class ArcanistNamingConventionsXHPASTLinterRule
       'xhpast.naminghook' => array(
         'type' => 'optional string',
         'help' => pht(
-          'Name of a concrete subclass of %s which enforces more '.
+          'Name of a concrete subclass of `%s` which enforces more '.
           'granular naming convention rules for symbols.',
           'ArcanistXHPASTLintNamingHook'),
       ),
@@ -56,8 +56,8 @@ final class ArcanistNamingConventionsXHPASTLinterRule
         ArcanistXHPASTLintNamingHook::isUpperCamelCase($name_string)
           ? null
           : pht(
-            'Follow naming conventions: classes should be named using '.
-            'UpperCamelCase.'),
+            'Follow naming conventions: classes should be named using `%s`.',
+            'UpperCamelCase'),
       );
     }
 
@@ -72,8 +72,8 @@ final class ArcanistNamingConventionsXHPASTLinterRule
         ArcanistXHPASTLintNamingHook::isUpperCamelCase($name_string)
           ? null
           : pht(
-            'Follow naming conventions: interfaces should be named using '.
-            'UpperCamelCase.'),
+            'Follow naming conventions: interfaces should be named using `%s`.',
+            'UpperCamelCase'),
       );
     }
 
@@ -94,8 +94,8 @@ final class ArcanistNamingConventionsXHPASTLinterRule
           ArcanistXHPASTLintNamingHook::stripPHPFunction($name_string))
           ? null
           : pht(
-            'Follow naming conventions: functions should be named using '.
-            'lowercase_with_underscores.'),
+            'Follow naming conventions: functions should be named using `%s`.',
+            'lowercase_with_underscores'),
       );
     }
 
@@ -112,8 +112,8 @@ final class ArcanistNamingConventionsXHPASTLinterRule
           ArcanistXHPASTLintNamingHook::stripPHPFunction($name_string))
           ? null
           : pht(
-            'Follow naming conventions: methods should be named using '.
-            'lowerCamelCase.'),
+            'Follow naming conventions: methods should be named using `%s`.',
+            'lowerCamelCase'),
       );
     }
 
@@ -137,8 +137,9 @@ final class ArcanistNamingConventionsXHPASTLinterRule
             ArcanistXHPASTLintNamingHook::stripPHPVariable($name_string))
             ? null
             : pht(
-              'Follow naming conventions: parameters should be named using '.
-              'lowercase_with_underscores.'),
+              'Follow naming conventions: parameters '.
+              'should be named using `%s`',
+              'lowercase_with_underscores'),
         );
       }
     }
@@ -157,8 +158,9 @@ final class ArcanistNamingConventionsXHPASTLinterRule
           ArcanistXHPASTLintNamingHook::isUppercaseWithUnderscores($name_string)
             ? null
             : pht(
-              'Follow naming conventions: class constants should be named '.
-              'using UPPERCASE_WITH_UNDERSCORES.'),
+              'Follow naming conventions: class constants '.
+              'should be named using `%s`',
+              'UPPERCASE_WITH_UNDERSCORES'),
         );
       }
     }
@@ -184,8 +186,9 @@ final class ArcanistNamingConventionsXHPASTLinterRule
             ArcanistXHPASTLintNamingHook::stripPHPVariable($name_string))
             ? null
             : pht(
-              'Follow naming conventions: class properties should be named '.
-              'using lowerCamelCase.'),
+              'Follow naming conventions: class properties '.
+              'should be named using `%s`.',
+              'lowerCamelCase'),
         );
       }
     }
@@ -269,8 +272,9 @@ final class ArcanistNamingConventionsXHPASTLinterRule
             ArcanistXHPASTLintNamingHook::stripPHPVariable($var_string))
               ? null
               : pht(
-                'Follow naming conventions: variables should be named using '.
-                'lowercase_with_underscores.'),
+                'Follow naming conventions: variables '.
+                'should be named using `%s`.',
+                'lowercase_with_underscores'),
         );
       }
     }

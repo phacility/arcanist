@@ -78,7 +78,9 @@ final class ArcanistDeclarationParenthesesXHPASTLinterRule
         if (!$before) {
           $this->raiseLintAtOffset(
             $use->getOffset(),
-            pht('Convention: space before `%s` token.', 'use'),
+            pht(
+              'Convention: space before `%s` token.',
+              'use'),
             '',
             ' ');
         }
@@ -86,7 +88,9 @@ final class ArcanistDeclarationParenthesesXHPASTLinterRule
         if (!$after) {
           $this->raiseLintAtOffset(
             $use->getOffset() + strlen($use->getValue()),
-            pht('Convention: space after `%s` token.', 'use'),
+            pht(
+              'Convention: space after `%s` token.',
+              'use'),
             '',
             ' ');
         }

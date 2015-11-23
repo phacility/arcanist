@@ -92,10 +92,10 @@ final class ArcanistUnsafeDynamicStringXHPASTLinterRule
         $this->raiseLintAtNode(
           $call,
           pht(
-            "Parameter %d of %s should be a scalar string, ".
+            "Parameter %d of `%s` should be a scalar string, ".
             "otherwise it's not safe.",
             $param + 1,
-            $name.'()'));
+            $name));
       }
     }
   }

@@ -6,7 +6,7 @@ final class ArcanistExtractUseXHPASTLinterRule
   const ID = 4;
 
   public function getLintName() {
-    return pht('Use of %s', 'extract()');
+    return pht('Use of `%s`', 'extract');
   }
 
   public function process(XHPASTNode $root) {
@@ -16,8 +16,8 @@ final class ArcanistExtractUseXHPASTLinterRule
       $this->raiseLintAtNode(
         $call,
         pht(
-          'Avoid %s. It is confusing and hinders static analysis.',
-          'extract()'));
+          'Avoid `%s`. It is confusing and hinders static analysis.',
+          'extract'));
     }
   }
 

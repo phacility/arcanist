@@ -51,14 +51,14 @@ final class ArcanistSlownessXHPASTLinterRule
         $this->raiseLintAtNode(
           $strstr,
           pht(
-            'Use %s for checking if the string contains something.',
-            'strpos()'));
+            'Use `%s` for checking if the string contains something.',
+            'strpos'));
       } else if ($name === 'stristr') {
         $this->raiseLintAtNode(
           $strstr,
           pht(
-            'Use %s for checking if the string contains something.',
-            'stripos()'));
+            'Use `%s` for checking if the string contains something.',
+            'stripos'));
       }
     }
   }
@@ -96,14 +96,14 @@ final class ArcanistSlownessXHPASTLinterRule
         $this->raiseLintAtNode(
           $strpos,
           pht(
-            'Use %s for checking if the string starts with something.',
-            'strncmp()'));
+            'Use `%s` for checking if the string starts with something.',
+            'strncmp'));
       } else if ($name === 'stripos') {
         $this->raiseLintAtNode(
           $strpos,
           pht(
-            'Use %s for checking if the string starts with something.',
-            'strncasecmp()'));
+            'Use `%s` for checking if the string starts with something.',
+            'strncasecmp'));
       }
     }
   }

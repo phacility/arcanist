@@ -6,7 +6,7 @@ final class ArcanistPHPShortTagXHPASTLinterRule
   const ID = 6;
 
   public function getLintName() {
-    return pht('Use of Short Tag "%s"', '<?');
+    return pht('Use of Short Tag `%s`', '<?');
   }
 
   public function process(XHPASTNode $root) {
@@ -18,7 +18,7 @@ final class ArcanistPHPShortTagXHPASTLinterRule
           $this->raiseLintAtToken(
             $token,
             pht(
-              'Use the full form of the PHP open tag, "%s".',
+              'Use the full form of the PHP open tag, `%s`.',
               '<?php'),
             "<?php\n");
         }

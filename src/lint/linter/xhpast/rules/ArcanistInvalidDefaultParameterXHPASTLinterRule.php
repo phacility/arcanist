@@ -39,8 +39,8 @@ final class ArcanistInvalidDefaultParameterXHPASTLinterRule
           $this->raiseLintAtNode(
             $default,
             pht(
-              'Default value for parameters with %s type hint '.
-              'can only be an %s or %s.',
+              'Default value for parameters with `%s` type hint '.
+              'can only be an `%s` or `%s`.',
               'array',
               'array',
               'null'));
@@ -54,7 +54,8 @@ final class ArcanistInvalidDefaultParameterXHPASTLinterRule
           $this->raiseLintAtNode(
             $default,
             pht(
-              'Default value for parameters with %s type hint can only be %s.',
+              'Default value for parameters with `%s` type hint '.
+              'can only be `%s`.',
               'callable',
               'null'));
           break;
@@ -69,7 +70,7 @@ final class ArcanistInvalidDefaultParameterXHPASTLinterRule
             $default,
             pht(
               'Default value for parameters with a class type hint '.
-              'can only be %s.',
+              'can only be `%s`.',
               'null'));
           break;
       }

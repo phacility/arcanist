@@ -6,7 +6,7 @@ final class ArcanistPHPEchoTagXHPASTLinterRule
   const ID = 7;
 
   public function getLintName() {
-    return pht('Use of Echo Tag "%s"', '<?=');
+    return pht('Use of Echo Tag `%s`', '<?=');
   }
 
   public function process(XHPASTNode $root) {
@@ -16,7 +16,9 @@ final class ArcanistPHPEchoTagXHPASTLinterRule
       if ($token->getTypeName() === 'T_OPEN_TAG_WITH_ECHO') {
         $this->raiseLintAtToken(
           $token,
-          pht('Avoid the PHP echo short form, "%s".', '<?='));
+          pht(
+            'Avoid the PHP echo short form, `%s`.',
+            '<?='));
       }
     }
   }

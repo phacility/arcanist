@@ -47,7 +47,7 @@ final class ArcanistClassFilenameMismatchXHPASTLinterRule
       $decl_name,
       pht(
         "The name of this file differs from the name of the ".
-        "class or interface it declares. Rename the file to '%s'.",
+        'class or interface it declares. Rename the file to `%s`.',
         $rename));
   }
 

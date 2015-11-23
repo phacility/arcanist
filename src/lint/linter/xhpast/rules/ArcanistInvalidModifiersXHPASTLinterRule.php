@@ -30,7 +30,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                  'Properties cannot be declared %s.',
+                  'Properties cannot be declared `%s`.',
                   'abstract'));
             }
 
@@ -38,7 +38,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                  'Multiple %s modifiers are not allowed.',
+                  'Multiple `%s` modifiers are not allowed.',
                   'abstract'));
             }
 
@@ -46,7 +46,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                'Cannot use the %s modifier on an %s class member',
+                'Cannot use the `%s` modifier on an `%s` class member',
                 'final',
                 'abstract'));
             }
@@ -59,7 +59,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                'Cannot use the %s modifier on an %s class member',
+                'Cannot use the `%s` modifier on an `%s` class member',
                 'final',
                 'abstract'));
             }
@@ -68,7 +68,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                  'Multiple %s modifiers are not allowed.',
+                  'Multiple `%s` modifiers are not allowed.',
                   'final'));
             }
 
@@ -91,7 +91,7 @@ final class ArcanistInvalidModifiersXHPASTLinterRule
               $this->raiseLintAtNode(
                 $modifier,
                 pht(
-                  'Multiple %s modifiers are not allowed.',
+                  'Multiple `%s` modifiers are not allowed.',
                   'static'));
             }
             break;

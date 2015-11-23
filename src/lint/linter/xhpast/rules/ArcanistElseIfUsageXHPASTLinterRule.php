@@ -6,7 +6,7 @@ final class ArcanistElseIfUsageXHPASTLinterRule
   const ID = 42;
 
   public function getLintName() {
-    return pht('ElseIf Usage');
+    return pht('`elseif` Usage');
   }
 
   public function getLintSeverity() {
@@ -19,7 +19,10 @@ final class ArcanistElseIfUsageXHPASTLinterRule
     foreach ($tokens as $token) {
       $this->raiseLintAtToken(
         $token,
-        pht('Usage of `%s` is preferred over `%s`.', 'else if', 'elseif'),
+        pht(
+          'Usage of `%s` is preferred over `%s`.',
+          'else if',
+          'elseif'),
         'else if');
     }
   }

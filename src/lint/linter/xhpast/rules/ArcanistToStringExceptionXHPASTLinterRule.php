@@ -6,7 +6,7 @@ final class ArcanistToStringExceptionXHPASTLinterRule
   const ID = 67;
 
   public function getLintName() {
-    return pht('Throwing Exception in %s Method', '__toString');
+    return pht('Throwing Exception in `%s` Method', '__toString');
   }
 
   public function process(XHPASTNode $root) {
@@ -33,7 +33,7 @@ final class ArcanistToStringExceptionXHPASTLinterRule
         $this->raiseLintAtNode(
           $throw,
           pht(
-            'It is not possible to throw an %s from within the %s method.',
+            'It is not possible to throw an `%s` from within the `%s` method.',
             'Exception',
             '__toString'));
       }

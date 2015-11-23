@@ -6,7 +6,7 @@ final class ArcanistStaticThisXHPASTLinterRule
   const ID = 13;
 
   public function getLintName() {
-    return pht('Use of %s in Static Context', '$this');
+    return pht('Use of `%s` in Static Context', '$this');
   }
 
   public function process(XHPASTNode $root) {
