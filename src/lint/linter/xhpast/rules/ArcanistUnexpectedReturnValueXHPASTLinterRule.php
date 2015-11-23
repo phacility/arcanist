@@ -33,6 +33,10 @@ final class ArcanistUnexpectedReturnValueXHPASTLinterRule
               continue;
             }
 
+            if ($this->isInAnonymousFunction($return)) {
+              continue;
+            }
+
             $this->raiseLintAtNode(
               $return,
               pht(
@@ -42,6 +46,17 @@ final class ArcanistUnexpectedReturnValueXHPASTLinterRule
           }
           break;
       }
+    }
+  }
+
+  private function isInAnonymousFunction(XHPASTNode $node) {
+    while ($node) {
+      if ($node->getTypeName() == 'n_FUNCTION_DECLARATION' &&
+          $node->getChildByIndex(2)->getTypeName() == 'n_EMPTY') {
+        return true;
+      }
+
+      $node = $node->getParentNode();
     }
   }
 
