@@ -70,9 +70,11 @@ final class ArcanistUnsafeDynamicStringXHPASTLinterRule
     AASTNodeList $calls,
     array $safe) {
 
-    $safe = array_combine(
-      array_map('strtolower', array_keys($safe)),
-      $safe);
+    if ($safe) {
+      $safe = array_combine(
+        array_map('strtolower', array_keys($safe)),
+        $safe);
+    }
 
     foreach ($calls as $call) {
       $name = $call->getChildByIndex(0)->getConcreteString();
