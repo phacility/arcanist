@@ -3,7 +3,7 @@
 final class ArcanistInterfaceAbstractMethodXHPASTLinterRule
   extends ArcanistXHPASTLinterRule {
 
-  const ID = 114;
+  const ID = 118;
 
   public function getLintName() {
     return pht('`%s` Methods Cannot Be Marked `%s`', 'interface', 'abstract');
