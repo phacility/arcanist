@@ -1,0 +1,7 @@
+<?php
+
+interface SomeInterface {
+  public function someMethod() {}
+}
+~~~~~~~~~~
+error:4:32
