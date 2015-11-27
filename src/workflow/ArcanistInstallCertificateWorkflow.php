@@ -56,9 +56,11 @@ EOTEXT
 
     $config = $configuration_manager->readUserConfigurationFile();
 
-    $console->writeOut(
-      "%s\n",
-      pht('Trying to connect to server...'));
+    $this->writeInfo(
+      pht('CONNECT'),
+      pht(
+        'Connecting to "%s"...',
+        $uri));
 
     $conduit = $this->establishConduit()->getConduit();
     try {
@@ -194,10 +196,19 @@ EOTEXT
       $uri = $conduit_uri;
     }
 
-    $uri = new PhutilURI($uri);
-    $uri->setPath('/api/');
+    $uri_object = new PhutilURI($uri);
+    if (!$uri_object->getProtocol() || !$uri_object->getDomain()) {
+      throw new ArcanistUsageException(
+        pht(
+          'Server URI "%s" must include a protocol and domain. It should be '.
+          'in the form "%s".',
+          $uri,
+          'https://phabricator.example.com/'));
+    }
 
-    return (string)$uri;
+    $uri_object->setPath('/api/');
+
+    return (string)$uri_object;
   }
 
 }
