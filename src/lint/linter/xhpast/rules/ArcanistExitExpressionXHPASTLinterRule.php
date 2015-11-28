@@ -21,7 +21,7 @@ final class ArcanistExitExpressionXHPASTLinterRule
   const ID = 17;
 
   public function getLintName() {
-    return pht('Exit Used as Expression');
+    return pht('`%s` Used as Expression', 'exit');
   }
 
   public function process(XHPASTNode $root) {
@@ -34,7 +34,9 @@ final class ArcanistExitExpressionXHPASTLinterRule
         if ($unary->getParentNode()->getTypeName() !== 'n_STATEMENT') {
           $this->raiseLintAtNode(
             $unary,
-            pht('Use `%s` as a statement, not an expression.', 'exit'));
+            pht(
+              'Use `%s` as a statement, not an expression.',
+              'exit'));
         }
       }
     }

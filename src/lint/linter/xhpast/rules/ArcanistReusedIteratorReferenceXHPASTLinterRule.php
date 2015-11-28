@@ -173,7 +173,7 @@ final class ArcanistReusedIteratorReferenceXHPASTLinterRule
             $var,
             pht(
               'This variable was used already as a by-reference iterator '.
-              'variable. Such variables survive outside the %s loop, '.
+              'variable. Such variables survive outside the `%s` loop, '.
               'do not reuse.',
               'foreach'));
         }

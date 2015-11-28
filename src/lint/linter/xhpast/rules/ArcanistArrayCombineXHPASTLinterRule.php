@@ -6,7 +6,7 @@ final class ArcanistArrayCombineXHPASTLinterRule
   const ID = 84;
 
   public function getLintName() {
-    return pht('%s Unreliable', 'array_combine()');
+    return pht('`%s` Unreliable', 'array_combine()');
   }
 
   public function getLintSeverity() {
@@ -35,8 +35,8 @@ final class ArcanistArrayCombineXHPASTLinterRule
             'Prior to PHP 5.4, `%s` fails when given empty arrays. '.
             'Prefer to write `%s` as `%s`.',
             'array_combine()',
-            'array_combine(x, x)',
-            'array_fuse(x)'));
+            'array_combine($x, $x)',
+            'array_fuse($x)'));
       }
     }
   }

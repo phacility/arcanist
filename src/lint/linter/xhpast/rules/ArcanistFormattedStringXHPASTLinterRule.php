@@ -16,7 +16,7 @@ final class ArcanistFormattedStringXHPASTLinterRule
       'xhpast.printf-functions' => array(
         'type' => 'optional map<string, int>',
         'help' => pht(
-          '%s-style functions which take a format string and list of values '.
+          '`%s`-style functions which take a format string and list of values '.
           'as arguments. The value for the mapping is the start index of the '.
           'function parameters (the index of the format string parameter).',
           'printf()'),

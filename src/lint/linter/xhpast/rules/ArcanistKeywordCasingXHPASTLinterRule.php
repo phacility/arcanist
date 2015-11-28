@@ -89,7 +89,7 @@ final class ArcanistKeywordCasingXHPASTLinterRule
         $this->raiseLintAtToken(
           $keyword,
           pht(
-            "Convention: spell keyword '%s' as '%s'.",
+            'Convention: spell keyword `%s` as `%s`.',
             $value,
             strtolower($value)),
           strtolower($value));
@@ -115,7 +115,7 @@ final class ArcanistKeywordCasingXHPASTLinterRule
           $this->raiseLintAtNode(
             $symbol,
             pht(
-              "Convention: spell keyword '%s' as '%s'.",
+              'Convention: spell keyword `%s` as `%s`.',
               $symbol_name,
               strtolower($symbol_name)),
             strtolower($symbol_name));

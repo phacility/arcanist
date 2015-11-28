@@ -6,7 +6,7 @@ final class ArcanistParseStrUseXHPASTLinterRule
   const ID = 80;
 
   public function getLintName() {
-    return pht('Questionable Use of %s', 'parse_str()');
+    return pht('Questionable Use of `%s`', 'parse_str');
   }
 
   public function process(XHPASTNode $root) {
@@ -19,9 +19,9 @@ final class ArcanistParseStrUseXHPASTLinterRule
         $this->raiseLintAtNode(
           $call,
           pht(
-            'Avoid %s unless the second parameter is specified. '.
+            'Avoid `%s` unless the second parameter is specified. '.
             'It is confusing and hinders static analysis.',
-            'parse_str()'));
+            'parse_str'));
       }
     }
   }

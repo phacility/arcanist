@@ -19,7 +19,10 @@ final class ArcanistCommentStyleXHPASTLinterRule
 
       $this->raiseLintAtOffset(
         $comment->getOffset(),
-        pht('Use "%s" single-line comments, not "%s".', '//', '#'),
+        pht(
+          'Use `%s` single-line comments, not `%s`.',
+          '//',
+          '#'),
         '#',
         preg_match('/^#\S/', $value) ? '// ' : '//');
     }

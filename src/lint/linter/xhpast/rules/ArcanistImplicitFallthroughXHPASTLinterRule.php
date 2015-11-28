@@ -20,10 +20,10 @@ final class ArcanistImplicitFallthroughXHPASTLinterRule
       'xhpast.switchhook' => array(
         'type' => 'optional string',
         'help' => pht(
-          'Name of a concrete subclass of %s which tunes the '.
-          'analysis of %s statements for this linter.',
+          'Name of a concrete subclass of `%s` which tunes the '.
+          'analysis of `%s` statements for this linter.',
           'ArcanistXHPASTLintSwitchHook',
-          'switch()'),
+          'switch'),
       ),
     );
   }
@@ -190,9 +190,9 @@ final class ArcanistImplicitFallthroughXHPASTLinterRule
           $this->raiseLintAtToken(
             head($tokens),
             pht(
-              "This '%s' or '%s' has a nonempty block which does not end ".
-              "with '%s', '%s', '%s', '%s' or '%s'. Did you forget to add ".
-              "one of those? If you intend to fall through, add a '%s' ".
+              'This `%s` or `%s` has a nonempty block which does not end '.
+              'with `%s`, `%s`, `%s`, `%s` or `%s`. Did you forget to add '.
+              'one of those? If you intend to fall through, add a `%s` '.
               "comment to silence this warning.",
               'case',
               'default',

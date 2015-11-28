@@ -38,7 +38,9 @@ final class ArcanistNewlineAfterOpenTagXHPASTLinterRule
       $next = $token->getNextToken();
       $this->raiseLintAtToken(
         $next,
-        pht('`%s` should be separated from code by an empty line.', '<?php'),
+        pht(
+          '`%s` should be separated from code by an empty line.',
+          '<?php'),
         "\n".$next->getValue());
     }
   }

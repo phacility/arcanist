@@ -6,7 +6,7 @@ final class ArcanistRaggedClassTreeEdgeXHPASTLinterRule
   const ID = 87;
 
   public function getLintName() {
-    return pht('Class Not %s Or %s', 'abstract', 'final');
+    return pht('Class Not `%s` Or `%s`', 'abstract', 'final');
   }
 
   public function getLintSeverity() {
@@ -42,8 +42,8 @@ final class ArcanistRaggedClassTreeEdgeXHPASTLinterRule
         $this->raiseLintAtNode(
           $class->getChildOfType(1, 'n_CLASS_NAME'),
           pht(
-            "This class is neither '%s' nor '%s', and does not have ".
-            "a docblock marking it '%s'.",
+            'This class is neither `%s` nor `%s`, and does not have '.
+            'a docblock marking it `%s`.',
             'final',
             'abstract',
             '@concrete-extensible'));
