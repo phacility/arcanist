@@ -1,0 +1,12 @@
+<?php
+0xFF;
+0xff;
+0XFF;
+~~~~~~~~~~
+warning:3:1
+warning:4:1
+~~~~~~~~~~
+<?php
+0xFF;
+0xFF;
+0xFF;
