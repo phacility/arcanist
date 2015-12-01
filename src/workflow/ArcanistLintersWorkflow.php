@@ -78,6 +78,7 @@ EOTEXT
 
     if ($exact) {
       $linter_info = $this->findExactNames($linter_info, $exact);
+
       if (!$linter_info) {
         $console->writeOut(
           "%s\n",
@@ -170,6 +171,18 @@ EOTEXT
           $print_tail = true;
         }
 
+        $additional = $linter['additional'];
+        foreach ($additional as $title => $body) {
+          $console->writeOut(
+            "\n%s**%s**\n\n",
+            $pad,
+            $title);
+
+          // TODO: This should maybe use `tsprintf`.
+          // See some discussion in D14563.
+          echo $body;
+        }
+
         if ($print_tail) {
           $console->writeOut("\n");
         }
@@ -250,6 +263,7 @@ EOTEXT
         'description' => $linter->getInfoDescription(),
         'exception' => $exception,
         'options' => $linter->getLinterConfigurationOptions(),
+        'additional' => $linter->getAdditionalInformation(),
       );
     }
 
