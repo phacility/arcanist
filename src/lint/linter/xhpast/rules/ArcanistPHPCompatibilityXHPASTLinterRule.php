@@ -414,6 +414,16 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
             '$this'));
       }
     }
+
+    $numeric_scalars = $root->selectDescendantsOfType('n_NUMERIC_SCALAR');
+    foreach ($numeric_scalars as $numeric_scalar) {
+      if (preg_match('/^0b[01]+$/i', $numeric_scalar->getConcreteString())) {
+        $this->raiseLintAtNode(
+          $numeric_scalar,
+          pht(
+            'Binary integer literals are not available before PHP 5.4.'));
+      }
+    }
   }
 
   private function lintPHP54Incompatibilities(XHPASTNode $root) {
