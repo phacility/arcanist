@@ -1,0 +1,9 @@
+<?php
+
+class SomeClass {
+  private $x;
+  protected $y;
+  public $z;
+}
+~~~~~~~~~~
+advice:6:3
