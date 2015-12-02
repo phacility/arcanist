@@ -14,21 +14,25 @@ final class ArcanistFunctionCallShouldBeTypeCastXHPASTLinterRule
   }
 
   public function process(XHPASTNode $root) {
-    static $cast_functions = array(
-      'boolval' => 'bool',
-      'doubleval' => 'double',
-      'floatval' => 'double',
-      'intval' => 'int',
-      'strval' => 'string',
-    );
+    static $cast_functions;
 
-    $casts = $this->getFunctionCalls($root, array_keys($cast_functions));
+    if ($cast_functions === null) {
+      $cast_functions = new CaseInsensitiveArray(array(
+        'boolval' => 'bool',
+        'doubleval' => 'double',
+        'floatval' => 'double',
+        'intval' => 'int',
+        'strval' => 'string',
+      ));
+    }
+
+    $casts = $this->getFunctionCalls($root, $cast_functions->getKeys());
 
     foreach ($casts as $cast) {
       $function_name = $cast
         ->getChildOfType(0, 'n_SYMBOL_NAME')
         ->getConcreteString();
-      $cast_name = $cast_functions[strtolower($function_name)];
+      $cast_name = $cast_functions[$function_name];
 
       $parameters  = $cast->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
       $replacement = null;
