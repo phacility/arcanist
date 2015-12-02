@@ -1,0 +1,12 @@
+<?php
+intval($x);
+intval($x, 8);
+intval($x, 10);
+~~~~~~~~~~
+advice:2:1
+advice:4:1
+~~~~~~~~~~
+<?php
+(int)$x;
+intval($x, 8);
+(int)$x;

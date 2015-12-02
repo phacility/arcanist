@@ -28,7 +28,7 @@ final class ArcanistFunctionCallShouldBeTypeCastXHPASTLinterRule
       $function_name = $cast
         ->getChildOfType(0, 'n_SYMBOL_NAME')
         ->getConcreteString();
-      $cast_name = $cast_functions[$function_name];
+      $cast_name = $cast_functions[strtolower($function_name)];
 
       $parameters  = $cast->getChildOfType(1, 'n_CALL_PARAMETER_LIST');
       $replacement = null;
@@ -38,6 +38,23 @@ final class ArcanistFunctionCallShouldBeTypeCastXHPASTLinterRule
       if (count($parameters->getChildren()) == 1) {
         $parameter   = $parameters->getChildByIndex(0);
         $replacement = '('.$cast_name.')'.$parameter->getConcreteString();
+      }
+
+      if (strtolower($function_name) == 'intval') {
+        if (count($parameters->getChildren()) >= 2) {
+          $base = $parameters->getChildByIndex(1);
+
+          if ($base->getTypeName() != 'n_NUMERIC_SCALAR') {
+            break;
+          }
+
+          if ($base->getConcreteString() != '10') {
+            continue;
+          }
+
+          $parameter   = $parameters->getChildByIndex(0);
+          $replacement = '('.$cast_name.')'.$parameter->getConcreteString();
+        }
       }
 
       $this->raiseLintAtNode(
