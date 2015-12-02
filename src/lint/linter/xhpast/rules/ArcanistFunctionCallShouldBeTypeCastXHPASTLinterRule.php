@@ -37,7 +37,13 @@ final class ArcanistFunctionCallShouldBeTypeCastXHPASTLinterRule
       // one parameter.
       if (count($parameters->getChildren()) == 1) {
         $parameter   = $parameters->getChildByIndex(0);
-        $replacement = '('.$cast_name.')'.$parameter->getConcreteString();
+        $replacement = '('.$cast_name.')';
+
+        if ($parameter->getTypeName() == 'n_BINARY_EXPRESSION') {
+          $replacement .= '('.$parameter->getConcreteString().')';
+        } else {
+          $replacement .= $parameter->getConcreteString();
+        }
       }
 
       if (strtolower($function_name) == 'intval') {
