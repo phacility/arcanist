@@ -6,7 +6,7 @@ final class ArcanistHexadecimalNumericScalarCasingXHPASTLinterRule
   const ID = 127;
 
   public function getLintName() {
-    return pht('Hexadecimal Casing');
+    return pht('Hexadecimal Integer Casing');
   }
 
   public function getLintSeverity() {
@@ -23,8 +23,8 @@ final class ArcanistHexadecimalNumericScalarCasingXHPASTLinterRule
         $this->raiseLintAtNode(
           $hexadecimal,
           pht(
-            'For consistency, write hexadecimals in uppercase '.
-            'with a leading `%s`.',
+            'For consistency, write hexadecimals integers '.
+            'in uppercase with a leading `%s`.',
             '0x'),
           '0x'.strtoupper($value));
       }
