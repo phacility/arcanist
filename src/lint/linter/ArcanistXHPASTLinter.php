@@ -46,6 +46,29 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return pht('Use XHPAST to enforce coding conventions on PHP source files.');
   }
 
+  public function getAdditionalInformation() {
+    $table = id(new PhutilConsoleTable())
+      ->setBorders(true)
+      ->addColumn('id',    array('title' => pht('ID')))
+      ->addColumn('class', array('title' => pht('Class')))
+      ->addColumn('name',  array('title' => pht('Name')));
+
+    $rules = $this->rules;
+    ksort($rules);
+
+    foreach ($rules as $id => $rule) {
+      $table->addRow(array(
+        'id' => $id,
+        'class' => get_class($rule),
+        'name' => $rule->getLintName(),
+      ));
+    }
+
+    return array(
+      pht('Linter Rules') => $table->drawConsoleString(),
+    );
+  }
+
   public function getLinterName() {
     return 'XHP';
   }

@@ -237,6 +237,7 @@ abstract class ArcanistXHPASTLinterRule extends Phobject {
 
     switch ($modifier_list->getTypeName()) {
       case 'n_CLASS_ATTRIBUTES':
+      case 'n_CLASS_MEMBER_MODIFIER_LIST':
       case 'n_METHOD_MODIFIER_LIST':
         break;
 
