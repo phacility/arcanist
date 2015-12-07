@@ -139,14 +139,14 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute('number'));
+        $next_line = (int)$line->getAttribute('number');
         for ($start_line; $start_line < $next_line; $start_line++) {
           $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute('hits')) == 0) {
+        if ((int)$line->getAttribute('hits') == 0) {
           $coverage .= 'U';
-        } else if (intval($line->getAttribute('hits')) > 0) {
+        } else if ((int)$line->getAttribute('hits') > 0) {
           $coverage .= 'C';
         }
 

@@ -8,7 +8,6 @@ final class ArcanistBaseCommitParser extends Phobject {
 
   public function __construct(ArcanistRepositoryAPI $api) {
     $this->api = $api;
-    return $this;
   }
 
   private function tokenizeBaseCommitSpecification($raw_spec) {
