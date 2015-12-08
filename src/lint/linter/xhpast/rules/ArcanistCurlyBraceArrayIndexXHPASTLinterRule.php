@@ -19,6 +19,10 @@ final class ArcanistCurlyBraceArrayIndexXHPASTLinterRule
     foreach ($index_accesses as $index_access) {
       $tokens = $index_access->getChildByIndex(1)->getTokens();
 
+      if (!$tokens) {
+        continue;
+      }
+
       $left_brace = head($tokens)->getPrevToken();
       while (!$left_brace->isSemantic()) {
         $left_brace = $left_brace->getPrevToken();
