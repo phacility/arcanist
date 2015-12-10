@@ -531,6 +531,7 @@ EOTEXT
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
     $this->updateLocalDiffProperty();
+    $this->updateOntoDiffProperty();
     $this->resolveDiffPropertyUpdates();
 
     $output_json = $this->getArgument('json');
@@ -2406,6 +2407,54 @@ EOTEXT
     $this->updateDiffProperty('local:commits', json_encode($local_info));
   }
 
+  private function updateOntoDiffProperty() {
+    $onto = $this->getDiffOntoTargets();
+
+    if (!$onto) {
+      return;
+    }
+
+    $this->updateDiffProperty('arc:onto', json_encode($onto));
+  }
+
+  private function getDiffOntoTargets() {
+    $api = $this->getRepositoryAPI();
+
+    if (!($api instanceof ArcanistGitAPI)) {
+      return null;
+    }
+
+    // If we track an upstream branch either directly or indirectly, use that.
+    $branch = $api->getBranchName();
+    if (strlen($branch)) {
+      $upstream_path = $api->getPathToUpstream($branch);
+      $remote_branch = $upstream_path->getRemoteBranchName();
+      if (strlen($remote_branch)) {
+        return array(
+          array(
+            'type' => 'branch',
+            'name' => $remote_branch,
+            'kind' => 'upstream',
+          ),
+        );
+      }
+    }
+
+    // If "arc.land.onto.default" is configured, use that.
+    $config_key = 'arc.land.onto.default';
+    $onto = $this->getConfigFromAnySource($config_key);
+    if (strlen($onto)) {
+      return array(
+        array(
+          'type' => 'branch',
+          'name' => $onto,
+          'kind' => 'arc.land.onto.default',
+        ),
+      );
+    }
+
+    return null;
+  }
 
   /**
    * Update an arbitrary diff property.
