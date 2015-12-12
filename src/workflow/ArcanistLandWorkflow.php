@@ -87,18 +87,22 @@ EOTEXT
           With **--preview**, execution stops here, before the change is
           merged.
 
-          The change is merged into the target branch, following these rules:
+          The change is merged with the changes in the target branch,
+          following these rules:
 
-          In mutable repositories or with **--squash**, this will perform a
-          squash merge (the entire branch will be represented as one commit on
-          the target branch).
+          In repositories with mutable history or with **--squash**, this will
+          perform a squash merge (the entire branch will be represented as one
+          commit after the merge).
 
-          In immutable repositories or with **--merge**, this will perform a
-          strict merge (a merge commit will always be created, and local
-          commits will be preserved).
+          In repositories with immutable history or with **--merge**, this will
+          perform a strict merge (a merge commit will always be created, and
+          local commits will be preserved).
 
           The resulting commit will be given an up-to-date commit message
           describing the final state of the revision in Differential.
+
+          In Git, the merge occurs in a detached HEAD. The local branch
+          reference (if one exists) is not updated yet.
 
           With **--hold**, execution stops here, before the change is pushed.
 
