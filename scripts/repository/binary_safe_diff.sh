@@ -1,6 +1,8 @@
 #!/bin/sh
 
 diff "$@"
-if [ "$?" = "2" ]; then
+RES="$?"
+if [ "$RES" = "2" ]; then
   exit 1
 fi
+exit "$RES"
