@@ -7,6 +7,7 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
 
   private $lintWorkspace;
   private $lintScheme;
+  private $buildDestination;
   private $analyzeCommands;
 
   public function getInfoName() {
@@ -47,6 +48,19 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
     return $this;
   }
 
+  public function getDefaultDestination() {
+    return 'platform=iOS Simulator,name=iPhone 6';
+  }
+
+  public function getDestination() {
+    return coalesce($this->buildDestination, $this->getDefaultDestination());
+  }
+
+  public function setDestination($destination) {
+    $this->buildDestination = $destination;
+    return $this;
+  }
+
   public function getLinterConfigurationOptions() {
     $options = array(
       'workspace' => array(
@@ -56,6 +70,10 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
       'scheme' => array(
         'type' => 'string',
         'help' => pht('The name of the Xcode scheme to be analyzed.'),
+      ),
+      'destination' => array(
+        'type' => 'optional string',
+        'help' => pht('The destination to run static analysis on, defaults to iPhone 6 on the latest SDK.'),
       ),
     );
 
@@ -69,6 +87,9 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
         return;
       case 'scheme':
         $this->setScheme($value);
+        return;
+      case 'destination':
+        $this->setDestination($value);
         return;
     }
 
@@ -159,8 +180,10 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
 
     $this->verifyXcodebuildInstalled();
     $this->analyzeCommands = array();
-    $command = csprintf('xcodebuild -workspace %s -scheme %s -sdk iphonesimulator -dry-run clean analyze 2>/dev/null',
-                        $this->getWorkspace(), $this->getScheme());
+    $command = csprintf('xcodebuild -workspace %s -scheme %s -destination %s -dry-run clean analyze 2>/dev/null',
+                        $this->getWorkspace(),
+                        $this->getScheme(),
+                        $this->getDestination());
     $handle = popen($command, 'r');
 
     while ($line = fgets($handle)) {
