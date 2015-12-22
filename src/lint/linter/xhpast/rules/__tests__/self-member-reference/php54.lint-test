@@ -4,18 +4,20 @@ final class SomeClass extends Phobject {
   public static function someMethod() {
     $closure = function () {
       SomeClass::someOtherMethod();
+      self::someOtherMethod();
     };
     $closure();
   }
 }
 ~~~~~~~~~~
-advice:6:7
+warning:6:7
 ~~~~~~~~~~
 <?php
 
 final class SomeClass extends Phobject {
   public static function someMethod() {
     $closure = function () {
+      self::someOtherMethod();
       self::someOtherMethod();
     };
     $closure();

@@ -3,59 +3,21 @@
 class Foo extends Bar {
   const FOOBAR = 'FOOBAR';
 
-  public function __construct() {
-    PARENT::__construct(null);
-  }
-
-  public function bar() {
-    echo self::FOOBAR;
-    echo Self :: FOOBAR;
-  }
-
-  public function baz(Foo $x) {
-    echo static::FOOBAR;
+  public function baz() {
     echo Foo::FOOBAR;
-
-    $x::bar();
+    echo self::FOOBAR;
   }
 }
-
-MyClass :: myMethod();
-
-SomeReallyLongClassName
-  ::someMethod();
 ~~~~~~~~~~
-advice:7:5
-advice:12:10
-advice:12:14
-advice:12:17
-advice:17:10
-advice:23:8
-advice:23:11
+warning:7:10
 ~~~~~~~~~~
 <?php
 
 class Foo extends Bar {
   const FOOBAR = 'FOOBAR';
 
-  public function __construct() {
-    parent::__construct(null);
-  }
-
-  public function bar() {
+  public function baz() {
     echo self::FOOBAR;
     echo self::FOOBAR;
-  }
-
-  public function baz(Foo $x) {
-    echo static::FOOBAR;
-    echo self::FOOBAR;
-
-    $x::bar();
   }
 }
-
-MyClass::myMethod();
-
-SomeReallyLongClassName
-  ::someMethod();
