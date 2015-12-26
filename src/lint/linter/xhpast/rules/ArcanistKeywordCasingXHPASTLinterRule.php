@@ -15,73 +15,98 @@ final class ArcanistKeywordCasingXHPASTLinterRule
 
   public function process(XHPASTNode $root) {
     $keywords = $root->selectTokensOfTypes(array(
-      'T_REQUIRE_ONCE',
-      'T_REQUIRE',
+      'T_ABSTRACT',
+      'T_ARRAY',
+      'T_AS',
+      'T_BREAK',
+      'T_CALLABLE',
+      'T_CASE',
+      'T_CATCH',
+      'T_CLASS',
+      'T_CLONE',
+      'T_CONST',
+      'T_CONTINUE',
+      'T_DECLARE',
+      'T_DEFAULT',
+      'T_DO',
+      'T_ECHO',
+      'T_ELSE',
+      'T_ELSEIF',
+      'T_EMPTY',
+      'T_ENDDECLARE',
+      'T_ENDFOR',
+      'T_ENDFOREACH',
+      'T_ENDIF',
+      'T_ENDSWITCH',
+      'T_ENDWHILE',
       'T_EVAL',
-      'T_INCLUDE_ONCE',
+      'T_EXIT',
+      'T_EXTENDS',
+      'T_FINAL',
+      'T_FINALLY',
+      'T_FOR',
+      'T_FOREACH',
+      'T_FUNCTION',
+      'T_GLOBAL',
+      'T_GOTO',
+      'T_HALT_COMPILER',
+      'T_IF',
+      'T_IMPLEMENTS',
       'T_INCLUDE',
+      'T_INCLUDE_ONCE',
+      'T_INSTANCEOF',
+      'T_INSTEADOF',
+      'T_INTERFACE',
+      'T_ISSET',
+      'T_LIST',
+      'T_LOGICAL_AND',
       'T_LOGICAL_OR',
       'T_LOGICAL_XOR',
-      'T_LOGICAL_AND',
-      'T_PRINT',
-      'T_INSTANCEOF',
-      'T_CLONE',
-      'T_NEW',
-      'T_EXIT',
-      'T_IF',
-      'T_ELSEIF',
-      'T_ELSE',
-      'T_ENDIF',
-      'T_ECHO',
-      'T_DO',
-      'T_WHILE',
-      'T_ENDWHILE',
-      'T_FOR',
-      'T_ENDFOR',
-      'T_FOREACH',
-      'T_ENDFOREACH',
-      'T_DECLARE',
-      'T_ENDDECLARE',
-      'T_AS',
-      'T_SWITCH',
-      'T_ENDSWITCH',
-      'T_CASE',
-      'T_DEFAULT',
-      'T_BREAK',
-      'T_CONTINUE',
-      'T_GOTO',
-      'T_FUNCTION',
-      'T_CONST',
-      'T_RETURN',
-      'T_TRY',
-      'T_CATCH',
-      'T_THROW',
-      'T_USE',
-      'T_GLOBAL',
-      'T_PUBLIC',
-      'T_PROTECTED',
-      'T_PRIVATE',
-      'T_FINAL',
-      'T_ABSTRACT',
-      'T_STATIC',
-      'T_VAR',
-      'T_UNSET',
-      'T_ISSET',
-      'T_EMPTY',
-      'T_HALT_COMPILER',
-      'T_CLASS',
-      'T_INTERFACE',
-      'T_EXTENDS',
-      'T_IMPLEMENTS',
-      'T_LIST',
-      'T_ARRAY',
       'T_NAMESPACE',
-      'T_INSTEADOF',
-      'T_CALLABLE',
+      'T_NEW',
+      'T_PRINT',
+      'T_PRIVATE',
+      'T_PROTECTED',
+      'T_PUBLIC',
+      'T_REQUIRE',
+      'T_REQUIRE_ONCE',
+      'T_RETURN',
+      'T_STATIC',
+      'T_SWITCH',
+      'T_THROW',
       'T_TRAIT',
+      'T_TRY',
+      'T_UNSET',
+      'T_USE',
+      'T_VAR',
+      'T_WHILE',
       'T_YIELD',
-      'T_FINALLY',
     ));
+
+    // Because there is no `T_SELF` or `T_PARENT` token.
+    $class_static_accesses = $root
+      ->selectDescendantsOfType('n_CLASS_DECLARATION')
+      ->selectDescendantsOfType('n_CLASS_STATIC_ACCESS');
+    foreach ($class_static_accesses as $class_static_access) {
+      $class_ref = $class_static_access->getChildByIndex(0);
+
+      switch (strtolower($class_ref->getConcreteString())) {
+        case 'parent':
+        case 'self':
+          $tokens = $class_ref->getTokens();
+
+          if (count($tokens) > 1) {
+            throw new Exception(
+              pht(
+                'Unexpected tokens whilst processing `%s`.',
+                __CLASS__));
+          }
+
+          $keywords[] = head($tokens);
+          break;
+      }
+    }
+
     foreach ($keywords as $keyword) {
       $value = $keyword->getValue();
 

@@ -14,14 +14,30 @@ final class ArcanistFlagWorkflow extends ArcanistWorkflow {
   );
 
   private static $colorSpec = array(
-    'red' => 0,       'r' => 0,   0 => 0,
-    'orange' => 1,    'o' => 1,   1 => 1,
-    'yellow' => 2,    'y' => 2,   2 => 2,
-    'green' => 3,     'g' => 3,   3 => 3,
-    'blue' => 4,      'b' => 4,   4 => 4,
-    'pink' => 5,      'p' => 5,   5 => 5,
-    'purple' => 6,    'v' => 6,   6 => 6,
-    'checkered' => 7, 'c' => 7,   7 => 7,
+    'red' => 0,
+    'r' => 0,
+    0 => 0,
+    'orange' => 1,
+    'o' => 1,
+    1 => 1,
+    'yellow' => 2,
+    'y' => 2,
+    2 => 2,
+    'green' => 3,
+    'g' => 3,
+    3 => 3,
+    'blue' => 4,
+    'b' => 4,
+    4 => 4,
+    'pink' => 5,
+    'p' => 5,
+    5 => 5,
+    'purple' => 6,
+    'v' => 6,
+    6 => 6,
+    'checkered' => 7,
+    'c' => 7,
+    7 => 7,
   );
 
   public function getWorkflowName() {

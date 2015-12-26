@@ -74,17 +74,27 @@ $config = null;
 $workflow = null;
 
 try {
+  if ($config_trace_mode) {
+    echo tsprintf(
+      "**<bg:magenta> %s </bg>** %s\n",
+      pht('ARGV'),
+      csprintf('%Ls', $original_argv));
 
-  $console->writeLog(
-    "%s\n",
-    pht(
-      "libphutil loaded from '%s'.",
-      phutil_get_library_root('phutil')));
-  $console->writeLog(
-    "%s\n",
-    pht(
-      "arcanist loaded from '%s'.",
-      phutil_get_library_root('arcanist')));
+    $libraries = array(
+      'phutil',
+      'arcanist',
+    );
+
+    foreach ($libraries as $library_name) {
+      echo tsprintf(
+        "**<bg:magenta> %s </bg>** %s\n",
+        pht('LOAD'),
+        pht(
+          'Loaded "%s" from "%s".',
+          $library_name,
+          phutil_get_library_root($library_name)));
+    }
+  }
 
   if (!$args) {
     if ($help) {

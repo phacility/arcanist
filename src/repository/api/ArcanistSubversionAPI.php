@@ -139,7 +139,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $status = $this->svnStatus;
     if (!$with_externals) {
       foreach ($status as $path => $mask) {
-        if ($mask & ArcanistRepositoryAPI::FLAG_EXTERNALS) {
+        if ($mask & parent::FLAG_EXTERNALS) {
           unset($status[$path]);
         }
       }
@@ -384,7 +384,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $status = $status[$path];
 
     // Build meaningful diff text for "svn copy" operations.
-    if ($status & ArcanistRepositoryAPI::FLAG_ADDED) {
+    if ($status & parent::FLAG_ADDED) {
       $info = $this->getSVNInfo($path);
       if (!empty($info['Copied From URL'])) {
         return $this->buildSyntheticAdditionDiff(
@@ -403,7 +403,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     if (preg_match('/\.(gif|png|jpe?g|swf|pdf|ico)$/i', $path, $matches)) {
       // Check if the file is deleted first; SVN will complain if we try to
       // get properties of a deleted file.
-      if ($status & ArcanistRepositoryAPI::FLAG_DELETED) {
+      if ($status & parent::FLAG_DELETED) {
         return <<<EODIFF
 Index: {$path}
 ===================================================================

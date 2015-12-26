@@ -24,14 +24,6 @@ final class ArcanistBraceFormattingXHPASTLinterRule
       if (!$before) {
         $first = head($tokens);
 
-        // Only insert the space if we're after a closing parenthesis. If
-        // we're in a construct like "else{}", other rules will insert space
-        // after the 'else' correctly.
-        $prev = $first->getPrevToken();
-        if (!$prev || $prev->getValue() !== ')') {
-          continue;
-        }
-
         $this->raiseLintAtToken(
           $first,
           pht(

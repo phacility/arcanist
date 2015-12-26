@@ -193,7 +193,7 @@ final class ArcanistImplicitFallthroughXHPASTLinterRule
               'This `%s` or `%s` has a nonempty block which does not end '.
               'with `%s`, `%s`, `%s`, `%s` or `%s`. Did you forget to add '.
               'one of those? If you intend to fall through, add a `%s` '.
-              "comment to silence this warning.",
+              'comment to silence this warning.',
               'case',
               'default',
               'break',

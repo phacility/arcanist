@@ -1,0 +1,3 @@
+<?php
+is_a('SubClass', 'BaseClass', true);
+~~~~~~~~~~

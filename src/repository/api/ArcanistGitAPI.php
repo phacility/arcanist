@@ -1216,8 +1216,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             // Ideally, we would use something like "for-each-ref --contains"
             // to get a filtered list of branches ready for script consumption.
             // Instead, try to get predictable output from "branch --contains".
+
+            $flags = array();
+            $flags[] = '--no-color';
+
+            // NOTE: The "--no-column" flag was introduced in Git 1.7.11, so
+            // don't pass it if we're running an older version. See T9953.
+            $version = $this->getGitVersion();
+            if (version_compare($version, '1.7.11', '>=')) {
+              $flags[] = '--no-column';
+            }
+
             list($branches) = $this->execxLocal(
-              '-c column.ui=never -c color.ui=never branch --contains %s',
+              'branch %Ls --contains %s',
+              $flags,
               $commit);
             $branches = array_filter(explode("\n", $branches));
 

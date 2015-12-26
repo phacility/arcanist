@@ -1,0 +1,53 @@
+<?php
+
+if (1)
+{}
+
+foreach (x() as $y)
+{}
+
+while (1)
+{}
+
+switch (1)
+{}
+
+if ($x) foo();
+else bar();
+do baz(); while ($x);
+
+if ($x) {}
+else if ($y) {}
+else {}
+
+if ($x) {}else{}
+~~~~~~~~~~
+warning:3:7
+warning:6:20
+warning:9:10
+warning:12:11
+warning:15:9
+warning:16:6
+warning:17:4
+warning:19:11
+warning:20:16
+warning:23:11
+warning:23:15
+~~~~~~~~~~
+<?php
+
+if (1) {}
+
+foreach (x() as $y) {}
+
+while (1) {}
+
+switch (1) {}
+
+if ($x) foo();
+else bar();
+do baz(); while ($x);
+
+if ($x) {} else if ($y) {} else {}
+
+if ($x) {} else {}

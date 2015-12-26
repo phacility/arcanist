@@ -1,0 +1,6 @@
+<?php
+SomeReallyLongClassName::
+  someMethod();
+SomeReallyLongClassName
+  ::someMethod();
+~~~~~~~~~~

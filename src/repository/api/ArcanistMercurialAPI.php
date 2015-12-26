@@ -360,7 +360,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
     foreach ($working_status as $path => $mask) {
-      if (!($mask & ArcanistRepositoryAPI::FLAG_UNTRACKED)) {
+      if (!($mask & parent::FLAG_UNTRACKED)) {
         // Mark tracked files as uncommitted.
         $mask |= self::FLAG_UNCOMMITTED;
       }
