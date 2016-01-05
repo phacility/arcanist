@@ -2418,6 +2418,10 @@ EOTEXT
   }
 
   private function getDiffOntoTargets() {
+    if ($this->isRawDiffSource()) {
+      return null;
+    }
+
     $api = $this->getRepositoryAPI();
 
     if (!($api instanceof ArcanistGitAPI)) {
