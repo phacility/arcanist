@@ -108,7 +108,8 @@
  *     not specified, defaults to the linted file. It is generally not necessary
  *     to capture this unless the linter can raise messages in files other than
  *     the one it is linting.
- *   - `line` (optional) The line number of the message.
+ *   - `line` (optional) The line number of the message. If no text is
+ *     captured, the message is assumed to affect the entire file.
  *   - `char` (optional) The character offset of the message.
  *   - `offset` (optional) The byte offset of the message. If captured, this
  *     supersedes `line` and `char`.
@@ -324,7 +325,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    * Get the line and character of the message from the regex match.
    *
    * @param dict Captured groups from regex.
-   * @return pair<int,int|null> Line and character of the message.
+   * @return pair<int|null,int|null> Line and character of the message.
    *
    * @task parse
    */
@@ -337,10 +338,13 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     }
 
     $line = idx($match, 'line');
-    if ($line) {
+    if (strlen($line)) {
       $line = (int)$line;
+      if (!$line) {
+        $line = 1;
+      }
     } else {
-      $line = 1;
+      $line = null;
     }
 
     $char = idx($match, 'char');
