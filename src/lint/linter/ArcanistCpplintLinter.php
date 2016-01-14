@@ -19,9 +19,10 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
 
   public function getInstallInstructions() {
     return pht(
-      'Install cpplint.py using `%s`.',
-      'wget http://google-styleguide.googlecode.com'.
-      '/svn/trunk/cpplint/cpplint.py');
+      'Install cpplint.py using `%s`, and place it in your path with the'.
+      'appropriate permissions set.',
+      'wget https://raw.github.com'.
+      '/google/styleguide/gh-pages/cpplint/cpplint.py');
   }
 
   protected function getDefaultMessageSeverity($code) {
@@ -60,7 +61,7 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-    if (!preg_match('@^[a-z_]+/[a-z_]+$@', $code)) {
+    if (!preg_match('@^[a-z_]+/[a-z0-9_+]+$@', $code)) {
       throw new Exception(
         pht(
           'Unrecognized lint message code "%s". Expected a valid cpplint '.
