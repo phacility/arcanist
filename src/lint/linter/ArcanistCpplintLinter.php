@@ -14,12 +14,12 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    return 'cpplint';
+    return 'cpplint.py';
   }
 
   public function getInstallInstructions() {
     return pht(
-      'Install cpplint.py using `%s`, and place it in your path with the'.
+      'Install cpplint.py using `%s`, and place it in your path with the '.
       'appropriate permissions set.',
       'wget https://raw.github.com'.
       '/google/styleguide/gh-pages/cpplint/cpplint.py');
