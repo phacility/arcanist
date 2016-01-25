@@ -9,7 +9,16 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
 
   private $parser;
 
+  protected function supportsRunAllTests() {
+    return true;
+  }
+
   public function run() {
+    if ($this->getRunAllTests()) {
+      $root = $this->getWorkingCopy()->getProjectRoot();
+      return $this->runTests(array($root), './');
+    }
+
     $paths = $this->getPaths();
 
     $affected_tests = array();
