@@ -16,7 +16,8 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
   public function run() {
     if ($this->getRunAllTests()) {
       $root = $this->getWorkingCopy()->getProjectRoot();
-      return $this->runTests(array($root), './');
+      $all_tests = glob(Filesystem::resolvePath("$root/tests/**/test_*.py"));
+      return $this->runTests($all_tests, $root);
     }
 
     $paths = $this->getPaths();
