@@ -89,6 +89,12 @@ EOTEXT
           'Normally under git/hg, if the patch is successful, the changes '.
           'are committed to the working copy. This flag prevents the commit.'),
       ),
+      'non-recursive' => array(
+        'supports' => array('git'),
+        'help' => pht(
+          'Normally under git/hg, before the patch is applied, a recursive submodule update is applied. '.
+          'This flag replaces "git submodule update --init --recursive" for "git submodule update --init".'),
+      ),
       'skip-dependencies' => array(
         'supports' => array('git', 'hg'),
         'help' => pht(
@@ -199,6 +205,11 @@ EOTEXT
 
   private function shouldCommit() {
     return !$this->getArgument('nocommit', false);
+  }
+
+  // returns true by default so we do not break the current behavior
+  private function shouldSubmoduleRecursively() {
+    return !$this->getArgument('non-recursive', false);
   }
 
   private function canBranch() {
@@ -710,7 +721,7 @@ EOTEXT
       }
 
       // in case there were any submodule changes involved
-      $repository_api->execpassthru('submodule update --init --recursive');
+      $this->submoduleUpdate($repository_api, $this->shouldSubmoduleRecursively());
 
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
@@ -833,6 +844,14 @@ EOTEXT
     }
 
     return 0;
+  }
+
+  private function submoduleUpdate($repository_api, $recursive) {
+    $command = 'submodule update --init';
+    if($recursive)
+      $command .= ' --recursive';
+
+    return $repository_api->execpassthru($command);
   }
 
   private function getCommitMessage(ArcanistBundle $bundle) {
