@@ -128,10 +128,22 @@ final class ArcanistGitLandEngine
       pht('FETCH'),
       pht('Fetching %s...', $ref));
 
-    $api->execxLocal(
+    // NOTE: Although this output isn't hugely useful, we need to passthru
+    // instead of using a subprocess here because `git fetch` may prompt the
+    // user to enter a password if they're fetching over HTTP with basic
+    // authentication. See T10314.
+
+    $err = $api->execPassthru(
       'fetch -- %s %s',
       $this->getTargetRemote(),
       $this->getTargetOnto());
+
+    if ($err) {
+      throw new ArcanistUsageException(
+        pht(
+          'Fetch failed! Fix the error and run "%s" again.',
+          'arc land'));
+    }
   }
 
   private function updateWorkingCopy() {
