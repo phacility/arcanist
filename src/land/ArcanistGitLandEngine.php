@@ -134,7 +134,7 @@ final class ArcanistGitLandEngine
     // authentication. See T10314.
 
     $err = $api->execPassthru(
-      'fetch -- %s %s',
+      'fetch --quiet -- %s %s',
       $this->getTargetRemote(),
       $this->getTargetOnto());
 
