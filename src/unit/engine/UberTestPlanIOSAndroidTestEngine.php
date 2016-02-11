@@ -44,11 +44,7 @@ final class UberTestPlanIOSAndroidTestEngine extends ArcanistUnitTestEngine {
         }
 
         $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-        print "Test Plan incorrect! Please provide a test plan like:\n";
-        print "\n";
-        print "Test Plan:\n";
-        print "ios: abc, def\n";
-        print "android: def, xyz\n";
+        print "No tests found to run on CI! Check your repo's README for instructions\n";
         return array($result);
         
     }
