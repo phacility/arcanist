@@ -36,6 +36,14 @@ EOTEXT
     return true;
   }
 
+  public function getArguments() {
+    return array(
+      'theirs' => array(
+        'help' => pht('Show their diffs'),
+      ),
+    );
+  }
+
   public function run() {
     static $color_map = array(
       'Closed'          => 'cyan',
@@ -47,29 +55,36 @@ EOTEXT
       'Abandoned'       => 'default',
     );
 
-    $revisions = $this->getConduit()->callMethodSynchronous(
-      'differential.query',
-      array(
-        'authors' => array($this->getUserPHID()),
-        'status'  => 'status-open',
-      ));
+    $user_id = $this->getUserPHID();
+    $show_theirs = $this->getArgument('theirs', false);
+
+    if ($show_theirs) {
+      $query_params = array('status'    => 'status-open',
+                            'reviewers' => array($user_id));
+    } else {
+      $query_params = array('status'  => 'status-open',
+                            'authors' => array($user_id));
+    }
+
+    $revisions = $this->getConduit()->callMethodSynchronous('differential.query', $query_params);
 
     if (!$revisions) {
       echo pht('You have no open Differential revisions.')."\n";
       return 0;
     }
 
-    $repository_api = $this->getRepositoryAPI();
-
     $info = array();
     foreach ($revisions as $key => $revision) {
-      $revision_path = Filesystem::resolvePath($revision['sourcePath']);
-      $current_path  = Filesystem::resolvePath($repository_api->getPath());
-      if ($revision_path == $current_path) {
-        $info[$key]['exists'] = 1;
-      } else {
+      if ($show_theirs) {
         $info[$key]['exists'] = 0;
+      } else {
+        $repository_api = $this->getRepositoryAPI();
+        $revision_path  = Filesystem::resolvePath($revision['sourcePath']);
+        $current_path   = Filesystem::resolvePath($repository_api->getPath());
+
+        $info[$key]['exists'] = ($revision_path == $current_path) ? 1 : 0;
       }
+
       $info[$key]['sort'] = sprintf(
         '%d%04d%08d',
         $info[$key]['exists'],
