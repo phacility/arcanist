@@ -1,33 +1,36 @@
 <?php
 
-final class UberTestPlanTestEngine extends ArcanistUnitTestEngine {
+final class UberRevertPlanTestEngine extends ArcanistUnitTestEngine {
 
     public function run() {
-        return $this->checkNonEmptyTestPlan();
+        return $this->checkNonEmptyRevertPlan();
     }
 
-    // Checks the git commit log and the arcanist message cache for a test plan
-    private function checkNonEmptyTestPlan() {
+    // Checks the git commit log and the arcanist
+    // message cache for a revert plan.
+    private function checkNonEmptyRevertPlan() {
         $result = new ArcanistUnitTestResult();
 
         $lines = implode(' ', $this->getMessage());
-        $test_plan_exists = preg_match('/\sTest Plan:/', $lines);
+        $revert_plan_exists = preg_match('/\sRevert Plan:/', $lines);
 
-        if (!$test_plan_exists) {
+        if (!$revert_plan_exists) {
             $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-            $result->setName('Test Plan not found!');
+            $result->setName('Revert Plan not found!
+            (See http://t.uber.com/revert for more info)');
             return array($result);
         }
 
-        $test_plan_empty = preg_match('/\sTest Plan:\s*?Reviewers:/', $lines);
-        if ($test_plan_empty) {
+        $revert_plan_empty = preg_match('/\sRevert Plan:\s*?$/', $lines);
+        if ($revert_plan_empty) {
             $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-            $result->setName('Test Plan cannot be empty!');
+            $result->setName('Revert Plan cannot be empty!
+            (See http://t.uber.com/revert for more info)');
             return array($result);
         }
 
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-        $result->setName('Test Plan found!');
+        $result->setName('Revert Plan found!');
         return array($result);
     }
 
@@ -39,6 +42,7 @@ final class UberTestPlanTestEngine extends ArcanistUnitTestEngine {
 
         exec('git log `git merge-base origin/master HEAD`^..HEAD --oneline',
             $output, $return_code);
+
         $commit = count($output) - 1;
         exec("git log -n {$commit}", $output, $return_code);
 
