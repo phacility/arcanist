@@ -98,7 +98,8 @@ final class UberTestPlanIOSAndroidTestEngine extends ArcanistUnitTestEngine {
                     array_push($lines_to_parse, $trimmed);
                 }
             } else {
-                if (strcmp($trimmed, $start) == 0) {
+                if (substr($trimmed, 0, strlen($start)) === $start) {
+                    array_push($lines_to_parse, trim(substr($trimmed, strlen($start))));
                     $shouldProcess = true;
                 }
             }
