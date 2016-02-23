@@ -34,8 +34,8 @@ final class UberTestPlanIOSAndroidTestEngine extends ArcanistUnitTestEngine {
         if ($platforms) {
             print "Found tests for the following platforms:\n";
             foreach ($platforms as $platform => $tests) {
-                print "$platform:\n";
-                print join("\t\n", $tests);
+                print "$platform:\n    ";
+                print join("\n    ", $tests);
                 print "\n";
             }
             $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
@@ -71,9 +71,12 @@ final class UberTestPlanIOSAndroidTestEngine extends ArcanistUnitTestEngine {
         $candidates = $this->getCandidateLines($lines);
         foreach ($candidates as $candidate) {
             $pieces = explode(":", $candidate, 2);
+            $pieces = array_map('trim', $pieces);
             $platform = strtolower($pieces[0]);
             if (in_array($platform, array_keys($platforms))) {
-                $platforms[$platform] = array_merge($platforms[$platform], explode(',', $pieces[1]));
+                $tests = explode(',', $pieces[1]);
+                $tests = array_map('trim', $tests);
+                $platforms[$platform] = array_merge($platforms[$platform], $tests);
             }
         }
         foreach ($platforms as $key => $value) {
