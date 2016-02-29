@@ -2036,6 +2036,13 @@ abstract class ArcanistWorkflow extends Phobject {
 
   protected function getModernUnitDictionary(array $map) {
     $map = $this->getModernCommonDictionary($map);
+
+    $details = idx($map, 'userData');
+    if (strlen($details)) {
+      $map['details'] = (string)$details;
+    }
+    unset($map['userData']);
+
     return $map;
   }
 
