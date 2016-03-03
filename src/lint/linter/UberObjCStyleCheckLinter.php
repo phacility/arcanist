@@ -89,7 +89,8 @@ final class UberObjCStyleCheckLinter extends ArcanistExternalLinter {
       return false;
     }
 
-    $orig = file_get_contents($path);
+    $fullpath = $this->getProjectRoot().'/'.$path;
+    $orig = file_get_contents($fullpath);
     if ($orig == $stdout) {
       return array();
     }
