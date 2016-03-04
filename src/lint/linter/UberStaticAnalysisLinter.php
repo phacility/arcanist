@@ -180,7 +180,8 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
 
     $this->verifyXcodebuildInstalled();
     $this->analyzeCommands = array();
-    $command = csprintf('xcodebuild -workspace %s -scheme %s -destination %s -dry-run clean analyze 2>/dev/null',
+    $command = csprintf('xcodebuild -workspace %s/%s -scheme %s -destination %s -dry-run clean analyze',
+                        $this->getProjectRoot(),
                         $this->getWorkspace(),
                         $this->getScheme(),
                         $this->getDestination());
@@ -198,6 +199,13 @@ final class UberStaticAnalysisLinter extends ArcanistFutureLinter {
 
   final protected function buildFutures(array $paths) {
     $this->getAnalyzeCommands();
+    if (empty($this->analyzeCommands)) {
+      throw new Exception(sprintf(
+          "%s\n\n",
+          pht('Error running the static analyzer.'))
+      );
+    }
+
     $futures = array();
 
     foreach ($paths as $path) {
