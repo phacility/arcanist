@@ -2713,7 +2713,9 @@ EOTEXT
 
     $commit = $api->getHeadCommit();
     $prefix = idx($staging, 'prefix', 'phabricator');
-    $tag = $prefix.'/diff/'.$id;
+
+    $base_tag = $prefix.'/base/'.$id;
+    $diff_tag = $prefix.'/diff/'.$id;
 
     $this->writeOkay(
       pht('PUSH STAGING'),
@@ -2723,23 +2725,41 @@ EOTEXT
     if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
       $push_flags[] = '--no-verify';
     }
+
+    $refs = array();
+
+    // If the base commit is a real commit, we're going to push it. We don't
+    // use this, but pushing it to a ref reduces the amount of redundant work
+    // that Git does on later pushes by helping it figure out that the remote
+    // already has most of the history. See T10509.
+
+    // In the future, we could avoid this push if the staging area is the same
+    // as the main repository, or if the staging area is a virtual repository.
+    // In these cases, the staging area should automatically have up-to-date
+    // refs.
+    $base_commit = $api->getSourceControlBaseRevision();
+    if ($base_commit !== ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      $refs[] = "{$base_commit}:refs/tags/{$base_tag}";
+    }
+
+    // We're always going to push the change itself.
+    $refs[] = "{$commit}:refs/tags/{$diff_tag}";
+
     $err = phutil_passthru(
-      'git push %Ls -- %s %s:refs/tags/%s',
+      'git push %Ls -- %s %Ls',
       $push_flags,
       $staging_uri,
-      $commit,
-      $tag);
+      $refs);
 
     if ($err) {
       $this->writeWarn(
         pht('STAGING FAILED'),
         pht('Unable to push changes to the staging area.'));
-    } else {
-      $this->writeOkay(
-        pht('STAGING PUSHED'),
+
+      throw new ArcanistUsageException(
         pht(
-          'Pushed a copy of the changes to tag "%s" in the staging area.',
-          $tag));
+          'Failed to push changes to staging area. Correct the issue, or '.
+          'use --skip-staging to skip this step.'));
     }
   }
 
