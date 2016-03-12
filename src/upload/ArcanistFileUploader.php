@@ -26,7 +26,7 @@
 final class ArcanistFileUploader extends Phobject {
 
   private $conduit;
-  private $files;
+  private $files = array();
 
 
 /* -(  Configuring the Uploader  )------------------------------------------- */

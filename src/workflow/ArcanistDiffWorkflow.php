@@ -22,6 +22,15 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $commitMessageFromRevision;
   private $hitAutotargets;
 
+  const STAGING_PUSHED = 'pushed';
+  const STAGING_USER_SKIP = 'user.skip';
+  const STAGING_DIFF_RAW = 'diff.raw';
+  const STAGING_REPOSITORY_UNKNOWN = 'repository.unknown';
+  const STAGING_REPOSITORY_UNAVAILABLE = 'repository.unavailable';
+  const STAGING_REPOSITORY_UNSUPPORTED = 'repository.unsupported';
+  const STAGING_REPOSITORY_UNCONFIGURED = 'repository.unconfigured';
+  const STAGING_CLIENT_UNSUPPORTED = 'client.unsupported';
+
   public function getWorkflowName() {
     return 'diff';
   }
@@ -519,7 +528,7 @@ EOTEXT
         'unitResult' => $unit_result,
       ));
 
-    $this->pushChangesToStagingArea($this->diffID);
+    $this->submitChangesToStagingArea($this->diffID);
 
     $phid = idx($diff_info, 'phid');
     if ($phid) {
@@ -2657,26 +2666,50 @@ EOTEXT
     return $this->getArgument('browse');
   }
 
+  private function submitChangesToStagingArea($id) {
+    $result = $this->pushChangesToStagingArea($id);
+
+    // We'll either get a failure constant on error, or a list of pushed
+    // refs on success.
+    $ok = is_array($result);
+
+    if ($ok) {
+      $staging = array(
+        'status' => self::STAGING_PUSHED,
+        'refs' => $result,
+      );
+    } else {
+      $staging = array(
+        'status' => $result,
+        'refs' => array(),
+      );
+    }
+
+    $this->updateDiffProperty(
+      'arc.staging',
+      phutil_json_encode($staging));
+  }
+
   private function pushChangesToStagingArea($id) {
     if ($this->getArgument('skip-staging')) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Flag --skip-staging was specified.'));
-      return;
+      return self::STAGING_USER_SKIP;
     }
 
     if ($this->isRawDiffSource()) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Raw changes can not be pushed to a staging area.'));
-      return;
+      return self::STAGING_DIFF_RAW;
     }
 
     if (!$this->getRepositoryPHID()) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Unable to determine repository for this change.'));
-      return;
+      return self::STAGING_REPOSITORY_UNKNOWN;
     }
 
     $staging = $this->getRepositoryStagingConfiguration();
@@ -2684,7 +2717,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('The server does not support staging areas.'));
-      return;
+      return self::STAGING_REPOSITORY_UNAVAILABLE;
     }
 
     $supported = idx($staging, 'supported');
@@ -2692,7 +2725,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Phabricator does not support staging areas for this repository.'));
-      return;
+      return self::STAGING_REPOSITORY_UNSUPPORTED;
     }
 
     $staging_uri = idx($staging, 'uri');
@@ -2700,7 +2733,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('No staging area is configured for this repository.'));
-      return;
+      return self::STAGING_REPOSITORY_UNCONFIGURED;
     }
 
     $api = $this->getRepositoryAPI();
@@ -2708,12 +2741,14 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('This client version does not support staging this repository.'));
-      return;
+      return self::STAGING_CLIENT_UNSUPPORTED;
     }
 
     $commit = $api->getHeadCommit();
     $prefix = idx($staging, 'prefix', 'phabricator');
-    $tag = $prefix.'/diff/'.$id;
+
+    $base_tag = "refs/tags/{$prefix}/base/{$id}";
+    $diff_tag = "refs/tags/{$prefix}/diff/{$id}";
 
     $this->writeOkay(
       pht('PUSH STAGING'),
@@ -2723,24 +2758,63 @@ EOTEXT
     if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
       $push_flags[] = '--no-verify';
     }
+
+    $refs = array();
+
+    $remote = array(
+      'uri' => $staging_uri,
+    );
+
+    // If the base commit is a real commit, we're going to push it. We don't
+    // use this, but pushing it to a ref reduces the amount of redundant work
+    // that Git does on later pushes by helping it figure out that the remote
+    // already has most of the history. See T10509.
+
+    // In the future, we could avoid this push if the staging area is the same
+    // as the main repository, or if the staging area is a virtual repository.
+    // In these cases, the staging area should automatically have up-to-date
+    // refs.
+    $base_commit = $api->getSourceControlBaseRevision();
+    if ($base_commit !== ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      $refs[] = array(
+        'ref' => $base_tag,
+        'type' => 'base',
+        'commit' => $base_commit,
+        'remote' => $remote,
+      );
+    }
+
+    // We're always going to push the change itself.
+    $refs[] = array(
+      'ref' => $diff_tag,
+      'type' => 'diff',
+      'commit' => $commit,
+      'remote' => $remote,
+    );
+
+    $ref_list = array();
+    foreach ($refs as $ref) {
+      $ref_list[] = $ref['commit'].':'.$ref['ref'];
+    }
+
     $err = phutil_passthru(
-      'git push %Ls -- %s %s:refs/tags/%s',
+      'git push %Ls -- %s %Ls',
       $push_flags,
       $staging_uri,
-      $commit,
-      $tag);
+      $ref_list);
 
     if ($err) {
       $this->writeWarn(
         pht('STAGING FAILED'),
         pht('Unable to push changes to the staging area.'));
-    } else {
-      $this->writeOkay(
-        pht('STAGING PUSHED'),
+
+      throw new ArcanistUsageException(
         pht(
-          'Pushed a copy of the changes to tag "%s" in the staging area.',
-          $tag));
+          'Failed to push changes to staging area. Correct the issue, or '.
+          'use --skip-staging to skip this step.'));
     }
+
+    return $refs;
   }
 
 
