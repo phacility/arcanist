@@ -580,7 +580,7 @@ EOTEXT
 
       if ($local_diff !== $reviewed_diff) {
         $ok = phutil_console_confirm(pht(
-          "Your working copy changes do not match diff submited for review. ".
+          "Your working copy changes do not match diff submitted for review. ".
           "Continue anyway?"));
         if (!$ok) {
           throw new ArcanistUserAbortException();

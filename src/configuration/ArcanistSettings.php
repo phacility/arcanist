@@ -183,7 +183,7 @@ final class ArcanistSettings extends Phobject {
         'type' => 'bool',
         'help' => pht(
           'If true, `%s` will check that local changes you are about to land '.
-          'match diff that was submited for review to Differential.',
+          'match diff that was submitted for review to Differential.',
           'arc land'),
         'default' => false,
         'example' => 'false',
