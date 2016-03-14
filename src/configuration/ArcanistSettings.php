@@ -179,6 +179,15 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'true',
       ),
+      'uber.land.review-check' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will check that local changes you are about to land '.
+          'match diff that was submited for review to Differential.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
     );
   }
 

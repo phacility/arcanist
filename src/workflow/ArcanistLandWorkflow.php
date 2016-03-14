@@ -558,6 +558,36 @@ EOTEXT
       }
     }
 
+    $uber_review_check_enabled = $this->getConfigFromAnySource(
+      'uber.land.review-check',
+      false);
+    if ($uber_review_check_enabled) {
+      if (!$repository_api instanceof ArcanistGitAPI) {
+        throw new ArcanistUsageException(pht(
+          "'%s' is only supported for GIT repositories.",
+          'uber.land.review-check'));
+      }
+
+      $local_diff = $this->normalizeDiff(
+        $repository_api->getFullGitDiff(
+          $repository_api->getBaseCommit(),
+          $repository_api->getHeadCommit()));
+
+      $reviewed_diff = $this->normalizeDiff(
+        $this->getConduit()->callMethodSynchronous(
+          'differential.getrawdiff',
+          array('diffID' => head($this->revision['diffs']))));
+
+      if ($local_diff !== $reviewed_diff) {
+        $ok = phutil_console_confirm(pht(
+          "Your working copy changes do not match diff submited for review. ".
+          "Continue anyway?"));
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
+      }
+    }
+
     if ($rev_auxiliary) {
       $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
       if ($phids) {
@@ -613,6 +643,12 @@ EOTEXT
     if ($diff_phid) {
       $this->checkForBuildables($diff_phid);
     }
+  }
+
+  private function normalizeDiff($text) {
+    $changes = id(new ArcanistDiffParser())->parseDiff($text);
+    ksort($changes);
+    return ArcanistBundle::newFromChanges($changes)->toGitPatch();
   }
 
   private function pullFromRemote() {
