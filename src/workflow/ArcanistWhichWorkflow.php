@@ -259,7 +259,7 @@ EOTEXT
     $console = PhutilConsole::getConsole();
     $console->writeOut("**%s**\n", pht('REPOSITORY'));
 
-    $callsign = $this->getRepositoryCallsign();
+    $repo_name = $this->getRepositoryName();
 
     $console->writeOut(
       "%s\n\n",
@@ -272,11 +272,11 @@ EOTEXT
       $console->writeOut("%s\n\n", $reason);
     }
 
-    if ($callsign) {
+    if ($repo_name) {
       $console->writeOut(
         "%s\n",
         pht('This working copy is associated with the %s repository.',
-        phutil_console_format('**%s**', $callsign)));
+        phutil_console_format('**%s**', $repo_name)));
     } else {
       $console->writeOut(
         "%s\n",
