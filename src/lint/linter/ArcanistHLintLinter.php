@@ -6,7 +6,7 @@
 final class ArcanistHLintLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'HLint';
+    return 'Haskell Linter';
   }
 
   public function getInfoURI() {

@@ -40,7 +40,7 @@ final class ArcanistUnnecessaryFinalModifierXHPASTLinterRule
             $this->raiseLintAtNode(
               $attribute,
               pht(
-                'Unnecessary %s modifier in %s class.',
+                'Unnecessary `%s` modifier in `%s` class.',
                 'final',
                 'final'));
           }

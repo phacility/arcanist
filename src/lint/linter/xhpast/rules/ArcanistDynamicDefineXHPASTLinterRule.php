@@ -6,7 +6,7 @@ final class ArcanistDynamicDefineXHPASTLinterRule
   const ID = 12;
 
   public function getLintName() {
-    return pht('Dynamic %s', 'define()');
+    return pht('Dynamic `%s`', 'define');
   }
 
   public function process(XHPASTNode $root) {
@@ -20,8 +20,8 @@ final class ArcanistDynamicDefineXHPASTLinterRule
         $this->raiseLintAtNode(
           $defined,
           pht(
-            'First argument to %s must be a string literal.',
-            'define()'));
+            'First argument to `%s` must be a string literal.',
+            'define'));
       }
     }
   }

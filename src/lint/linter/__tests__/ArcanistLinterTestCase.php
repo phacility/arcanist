@@ -10,7 +10,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
    *
    * @return ArcanistLinter
    */
-  final protected function getLinter() {
+  protected function getLinter() {
     $matches = null;
     if (!preg_match('/^(\w+Linter)TestCase$/', get_class($this), $matches) ||
         !is_subclass_of($matches[1], 'ArcanistLinter')) {
@@ -26,13 +26,8 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
    * Executes all tests from the specified subdirectory. If a linter is not
    * explicitly specified, it will be inferred from the name of the test class.
    */
-  public function executeTestsInDirectory(
-    $root,
-    ArcanistLinter $linter = null) {
-
-    if (!$linter) {
-      $linter = $this->getLinter();
-    }
+  protected function executeTestsInDirectory($root) {
+    $linter = $this->getLinter();
 
     $files = id(new FileFinder($root))
       ->withType('f')

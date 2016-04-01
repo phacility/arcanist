@@ -1,0 +1,7 @@
+<?php
+
+abstract class A extends Phobject {}
+final class B extends A {}
+final class C {}
+~~~~~~~~~~
+disabled:5:1

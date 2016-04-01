@@ -24,14 +24,6 @@ final class ArcanistBraceFormattingXHPASTLinterRule
       if (!$before) {
         $first = head($tokens);
 
-        // Only insert the space if we're after a closing parenthesis. If
-        // we're in a construct like "else{}", other rules will insert space
-        // after the 'else' correctly.
-        $prev = $first->getPrevToken();
-        if (!$prev || $prev->getValue() !== ')') {
-          continue;
-        }
-
         $this->raiseLintAtToken(
           $first,
           pht(
@@ -61,10 +53,17 @@ final class ArcanistBraceFormattingXHPASTLinterRule
       }
 
       $type = $parent->getTypeName();
-      if ($type != 'n_STATEMENT_LIST' && $type != 'n_DECLARE') {
-        $this->raiseLintAtNode(
-          $node,
-          pht('Use braces to surround a statement block.'));
+      switch ($type) {
+        case 'n_DECLARE':
+        case 'n_NAMESPACE':
+        case 'n_STATEMENT_LIST':
+          break;
+
+        default:
+          $this->raiseLintAtNode(
+            $node,
+            pht('Use braces to surround a statement block.'));
+          break;
       }
     }
 

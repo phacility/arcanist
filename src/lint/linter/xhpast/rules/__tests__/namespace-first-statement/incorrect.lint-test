@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * This is actually perfectly valid, for some unknown reason.
+ *
+ * TODO: Maybe fix the handling of this edge case.
+ */
+
+1;
+
+namespace X {
+  class C { }
+  echo 2;
+}
+~~~~~~~~~~
+error:9:1

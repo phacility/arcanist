@@ -1,0 +1,25 @@
+<?php
+
+class Foo {
+  public $x;
+  static protected $y;
+
+  public final function bar() {}
+  private function baz() {}
+  static final public function foobar() {}
+}
+~~~~~~~~~~
+advice:5:3
+advice:7:3
+advice:9:3
+~~~~~~~~~~
+<?php
+
+class Foo {
+  public $x;
+  protected static $y;
+
+  final public function bar() {}
+  private function baz() {}
+  final public static function foobar() {}
+}

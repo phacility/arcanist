@@ -137,7 +137,15 @@ final class ArcanistBundleTestCase extends PhutilTestCase {
         throw $ex;
       }
 
-      execx('git commit -m %s', $subject);
+      // If these aren't configured, Git complains even if we pass --author.
+      $git_name = 'unit-test';
+      $git_email = 'unit-test@phabricator.com';
+
+      execx(
+        'git -c user.name=%s -c user.email=%s commit -m %s',
+        $git_name,
+        $git_email,
+        $subject);
       list($result_hash) = execx('git log -n1 --format=%s', '%T');
       $result_hash = trim($result_hash);
 

@@ -84,6 +84,12 @@ EOTEXT
           'ugly' => pht('Only one output format allowed'),
         ),
       ),
+      'target' => array(
+        'param' => 'phid',
+        'help' => pht(
+          '(PROTOTYPE) Record a copy of the test results on the specified '.
+          'Harbormaster build target.'),
+      ),
       'everything' => array(
         'help' => pht('Run every test.'),
         'conflicts' => array(
@@ -105,6 +111,14 @@ EOTEXT
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+
+  public function requiresConduit() {
+    return $this->shouldUploadResults();
+  }
+
+  public function requiresAuthentication() {
+    return $this->shouldUploadResults();
   }
 
   public function getEngine() {
@@ -137,7 +151,6 @@ EOTEXT
     } else {
       $this->engine->setPaths($paths);
     }
-    $this->engine->setArguments($this->getPassthruArgumentsAsMap('unit'));
 
     $renderer = new ArcanistUnitConsoleRenderer();
     $this->engine->setRenderer($renderer);
@@ -150,13 +163,6 @@ EOTEXT
       $enable_coverage = false;
     }
     $this->engine->setEnableCoverage($enable_coverage);
-
-    // Enable possible async tests only for 'arc diff' not 'arc unit'
-    if ($this->getParentWorkflow()) {
-      $this->engine->setEnableAsyncTests(true);
-    } else {
-      $this->engine->setEnableAsyncTests(false);
-    }
 
     $results = $this->engine->run();
 
@@ -261,6 +267,12 @@ EOTEXT
       case 'none':
         // do nothing
         break;
+    }
+
+
+    $target_phid = $this->getArgument('target');
+    if ($target_phid) {
+      $this->uploadTestResults($target_phid, $overall_result, $results);
     }
 
     return $overall_result;
@@ -368,6 +380,48 @@ EOTEXT
       }
     }
 
+  }
+
+  public static function getHarbormasterTypeFromResult($unit_result) {
+    switch ($unit_result) {
+      case self::RESULT_OKAY:
+      case self::RESULT_SKIP:
+        $type = 'pass';
+        break;
+      default:
+        $type = 'fail';
+        break;
+    }
+
+    return $type;
+  }
+
+  private function shouldUploadResults() {
+    return ($this->getArgument('target') !== null);
+  }
+
+  private function uploadTestResults(
+    $target_phid,
+    $unit_result,
+    array $unit) {
+
+    // TODO: It would eventually be nice to stream test results up to the
+    // server as we go, but just get things working for now.
+
+    $message_type = self::getHarbormasterTypeFromResult($unit_result);
+
+    foreach ($unit as $key => $result) {
+      $dictionary = $result->toDictionary();
+      $unit[$key] = $this->getModernUnitDictionary($dictionary);
+    }
+
+    $this->getConduit()->callMethodSynchronous(
+      'harbormaster.sendmessage',
+      array(
+        'buildTargetPHID' => $target_phid,
+        'unit' => array_values($unit),
+        'type' => $message_type,
+      ));
   }
 
 }

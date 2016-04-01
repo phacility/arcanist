@@ -46,8 +46,8 @@ final class ArcanistClassFilenameMismatchXHPASTLinterRule
     $this->raiseLintAtNode(
       $decl_name,
       pht(
-        "The name of this file differs from the name of the ".
-        "class or interface it declares. Rename the file to '%s'.",
+        'The name of this file differs from the name of the '.
+        'class or interface it declares. Rename the file to `%s`.',
         $rename));
   }
 

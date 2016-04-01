@@ -1,0 +1,12 @@
+<?php
+
+class A extends Phobject {}
+abstract class B extends Phobject {}
+final class C extends Phobject {}
+
+/**
+ * @concrete-extensible
+ */
+class D extends Phobject {}
+~~~~~~~~~~
+disabled:3:7

@@ -39,7 +39,7 @@ final class ArcanistClassNameLiteralXHPASTLinterRule
         $this->raiseLintAtNode(
           $string,
           pht(
-            "Don't hard-code class names, use %s instead.",
+            "Don't hard-code class names, use `%s` instead.",
             '__CLASS__'),
           $replacement);
       }

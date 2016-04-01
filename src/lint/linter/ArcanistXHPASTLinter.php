@@ -11,7 +11,7 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
   private $lintSeverityMap;
 
   public function __construct() {
-    $this->rules = ArcanistXHPASTLinterRule::loadAllRules();
+    $this->setRules(ArcanistXHPASTLinterRule::loadAllRules());
   }
 
   public function __clone() {
@@ -23,12 +23,50 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     }
   }
 
+  /**
+   * Set the XHPAST linter rules which are enforced by this linter.
+   *
+   * This is primarily useful for unit tests in which it is desirable to test
+   * linter rules in isolation. By default, all linter rules will be enabled.
+   *
+   * @param  list<ArcanistXHPASTLinterRule>
+   * @return this
+   */
+  public function setRules(array $rules) {
+    assert_instances_of($rules, 'ArcanistXHPASTLinterRule');
+    $this->rules = $rules;
+    return $this;
+  }
+
   public function getInfoName() {
     return pht('XHPAST Lint');
   }
 
   public function getInfoDescription() {
     return pht('Use XHPAST to enforce coding conventions on PHP source files.');
+  }
+
+  public function getAdditionalInformation() {
+    $table = id(new PhutilConsoleTable())
+      ->setBorders(true)
+      ->addColumn('id',    array('title' => pht('ID')))
+      ->addColumn('class', array('title' => pht('Class')))
+      ->addColumn('name',  array('title' => pht('Name')));
+
+    $rules = $this->rules;
+    ksort($rules);
+
+    foreach ($rules as $id => $rule) {
+      $table->addRow(array(
+        'id' => $id,
+        'class' => get_class($rule),
+        'name' => $rule->getLintName(),
+      ));
+    }
+
+    return array(
+      pht('Linter Rules') => $table->drawConsoleString(),
+    );
   }
 
   public function getLinterName() {

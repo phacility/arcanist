@@ -22,8 +22,8 @@ final class ArcanistPHPOpenTagXHPASTLinterRule
           $this->raiseLintAtToken(
             $token,
             pht(
-              'PHP files should start with "%s", which may be preceded by '.
-              'a "%s" line for scripts.',
+              'PHP files should start with `%s`, which may be preceded by '.
+              'a `%s` line for scripts.',
               '<?php',
               '#!'));
         }

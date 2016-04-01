@@ -1,9 +1,0 @@
-<?php
-
-final class Foo {
-  public function bar() {}
-  final public function baz() {}
-}
-~~~~~~~~~~
-error:3:13 XHP19
-advice:5:3

@@ -691,7 +691,7 @@ EOTEXT
       Filesystem::writeFile($patchfile, $bundle->toGitPatch());
 
       $passthru = new PhutilExecPassthru(
-        'git apply --index --reject -- %s',
+        'git apply --whitespace nowarn --index --reject -- %s',
         $patchfile);
       $passthru->setCWD($repository_api->getPath());
       $err = $passthru->execute();

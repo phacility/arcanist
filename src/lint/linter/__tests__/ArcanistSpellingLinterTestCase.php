@@ -2,14 +2,14 @@
 
 final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testLinter() {
-    $linter = new ArcanistSpellingLinter();
-    $linter->addPartialWordRule('supermn', 'superman');
-    $linter->addExactWordRule('batmn', 'batman');
+  protected function getLinter() {
+    return parent::getLinter()
+      ->addPartialWordRule('supermn', 'superman')
+      ->addExactWordRule('batmn', 'batman');
+  }
 
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/spelling/',
-      $linter);
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/spelling/');
   }
 
   public function testFixLetterCase() {

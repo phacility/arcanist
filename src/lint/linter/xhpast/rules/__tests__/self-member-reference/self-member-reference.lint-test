@@ -1,0 +1,23 @@
+<?php
+
+class Foo extends Bar {
+  const FOOBAR = 'FOOBAR';
+
+  public function baz() {
+    echo Foo::FOOBAR;
+    echo self::FOOBAR;
+  }
+}
+~~~~~~~~~~
+warning:7:10
+~~~~~~~~~~
+<?php
+
+class Foo extends Bar {
+  const FOOBAR = 'FOOBAR';
+
+  public function baz() {
+    echo self::FOOBAR;
+    echo self::FOOBAR;
+  }
+}

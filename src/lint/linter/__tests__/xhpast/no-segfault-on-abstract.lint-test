@@ -3,3 +3,5 @@
 abstract class A {}
 final class F {}
 ~~~~~~~~~~
+disabled:3:1
+disabled:4:1

@@ -28,7 +28,7 @@ abstract class ArcanistLinter extends Phobject {
   private $customSeverityRules = array();
 
 
-/*  -(  Human Readable Information  )---------------------------------------- */
+/* -(  Human Readable Information  )----------------------------------------- */
 
 
   /**
@@ -55,6 +55,20 @@ abstract class ArcanistLinter extends Phobject {
    */
   public function getInfoDescription() {
     return null;
+  }
+
+  /**
+   * Return arbitrary additional information.
+   *
+   * Linters can use this method to provide arbitrary additional information to
+   * be included in the output of `arc linters`.
+   *
+   * @return map<string, string>  A mapping of header to body content for the
+   *                              additional information sections.
+   * @task info
+   */
+  public function getAdditionalInformation() {
+    return array();
   }
 
   /**
@@ -196,40 +210,6 @@ abstract class ArcanistLinter extends Phobject {
     return;
   }
 
-
-  /**
-   * Obsolete hook which was invoked before a path was linted.
-   *
-   * WARNING: This is an obsolete hook which is not called. If you maintain
-   * a linter which relies on it, update to use @{method:lintPath} instead.
-   *
-   * @task exec
-   */
-  final public function willLintPath($path) {
-    // TODO: Remove this method after some time. In the meantime, the "final"
-    // will fatal subclasses which implement this hook and point at the API
-    // change so maintainers get fewer surprises.
-    throw new PhutilMethodNotImplementedException();
-  }
-
-
-  /**
-   * Obsolete hook which was invoked after linters ran.
-   *
-   * WARNING: This is an obsolete hook which is not called. If you maintain
-   * a linter which relies on it, update to use @{method:didLintPaths} instead.
-   *
-   * @return void
-   * @task exec
-   */
-  final public function didRunLinters() {
-    // TODO: Remove this method after some time. In the meantime, the "final"
-    // will fatal subclasses which implement this hook and point at the API
-    // change so maintainers get fewer surprises.
-    throw new PhutilMethodNotImplementedException();
-  }
-
-
   public function getLinterPriority() {
     return 1.0;
   }
@@ -239,6 +219,11 @@ abstract class ArcanistLinter extends Phobject {
    */
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
+    return $this;
+  }
+
+  public function addCustomSeverityMap(array $map) {
+    $this->customSeverityMap = $this->customSeverityMap + $map;
     return $this;
   }
 
@@ -419,7 +404,7 @@ abstract class ArcanistLinter extends Phobject {
     $line,
     $char,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -430,7 +415,7 @@ abstract class ArcanistLinter extends Phobject {
       ->setCode($this->getLintMessageFullCode($code))
       ->setSeverity($this->getLintMessageSeverity($code))
       ->setName($this->getLintMessageName($code))
-      ->setDescription($desc)
+      ->setDescription($description)
       ->setOriginalText($original)
       ->setReplacementText($replacement);
 
@@ -444,7 +429,7 @@ abstract class ArcanistLinter extends Phobject {
   final public function raiseLintAtOffset(
     $offset,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -461,7 +446,7 @@ abstract class ArcanistLinter extends Phobject {
       $line + 1,
       $char + 1,
       $code,
-      $desc,
+      $description,
       $original,
       $replacement);
   }
@@ -523,6 +508,10 @@ abstract class ArcanistLinter extends Phobject {
           'Provide a map of regular expressions to severity levels. All '.
           'matching codes have their severity adjusted.'),
       ),
+      'standard' => array(
+        'type' => 'optional string | list<string>',
+        'help' => pht('The coding standard(s) to apply.'),
+      ),
     );
   }
 
@@ -581,6 +570,22 @@ abstract class ArcanistLinter extends Phobject {
         }
         $this->setCustomSeverityRules($value);
         return;
+
+      case 'standard':
+        $standards = (array)$value;
+
+        foreach ($standards as $standard) {
+          $standard = ArcanistLinterStandard::getStandard($value, $this);
+
+          foreach ($standard->getLinterConfiguration() as $k => $v) {
+            $this->setLinterConfigurationValue($k, $v);
+          }
+          $this->addCustomSeverityMap($standard->getLinterSeverityMap());
+        }
+
+        return;
+
+
     }
 
     throw new Exception(pht('Incomplete implementation: %s!', $key));

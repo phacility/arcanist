@@ -24,9 +24,10 @@ final class ArcanistImplicitConstructorXHPASTLinterRule
           $this->raiseLintAtNode(
             $method_name_token,
             pht(
-              'Name constructors %s explicitly. This method is a constructor '.
-              ' because it has the same name as the class it is defined in.',
-              '__construct()'));
+              'Name constructors `%s` explicitly. This method is a '.
+              'constructor because it has the same name as the class '.
+              'it is defined in.',
+              '__construct'));
         }
       }
     }

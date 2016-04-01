@@ -53,28 +53,51 @@ EOTEXT
 
       $this->setRepositoryAPI($repository);
 
-      // Require no local changes.
-      $this->requireCleanWorkingCopy();
+      // NOTE: Don't use requireCleanWorkingCopy() here because it tries to
+      // amend changes and generally move the workflow forward. We just want to
+      // abort if there are local changes and make the user sort things out.
+      $uncommitted = $repository->getUncommittedStatus();
+      if ($uncommitted) {
+        $message = pht(
+          'You have uncommitted changes in the working copy for this '.
+          'library:');
 
-      // Require the library be on master.
+        $list = id(new PhutilConsoleList())
+          ->setWrap(false)
+          ->addItems(array_keys($uncommitted));
+
+        id(new PhutilConsoleBlock())
+          ->addParagraph($message)
+          ->addList($list)
+          ->draw();
+
+        throw new ArcanistUsageException(
+          pht('`arc upgrade` can only upgrade clean working copies.'));
+      }
+
       $branch_name = $repository->getBranchName();
-      if ($branch_name != 'master') {
+      if ($branch_name != 'master' && $branch_name != 'stable') {
         throw new ArcanistUsageException(
           pht(
-            "%s must be on branch '%s' to be automatically upgraded. ".
+            "%s must be on either branch '%s' or '%s' to be automatically ".
+            "upgraded. ".
             "This copy of %s (in '%s') is on branch '%s'.",
             $lib,
             'master',
+            'stable',
             $lib,
             $root,
             $branch_name));
       }
 
       chdir($root);
+
       try {
-        phutil_passthru('git pull --rebase');
+        execx('git pull --rebase');
       } catch (Exception $ex) {
-        phutil_passthru('git rebase --abort');
+        // If we failed, try to go back to the old state, then throw the
+        // original exception.
+        exec_manual('git rebase --abort');
         throw $ex;
       }
     }

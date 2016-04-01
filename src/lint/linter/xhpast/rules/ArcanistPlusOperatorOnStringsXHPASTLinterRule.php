@@ -26,9 +26,10 @@ final class ArcanistPlusOperatorOnStringsXHPASTLinterRule
         $this->raiseLintAtNode(
           $binop,
           pht(
-            "In PHP, '%s' is the string concatenation operator, not '%s'. ".
-            "This expression uses '+' with a string literal as an operand.",
+            'In PHP, `%s` is the string concatenation operator, not `%s`. '.
+            'This expression uses `%s` with a string literal as an operand.',
             '.',
+            '+',
             '+'));
       }
     }

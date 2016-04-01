@@ -1,0 +1,14 @@
+<?php
+
+try
+{}
+catch (Exception $x)
+{}
+~~~~~~~~~~
+warning:3:4
+warning:5:21
+~~~~~~~~~~
+<?php
+
+try {}
+catch (Exception $x) {}

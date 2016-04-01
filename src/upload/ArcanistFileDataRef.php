@@ -27,6 +27,8 @@ final class ArcanistFileDataRef extends Phobject {
   private $errors = array();
   private $phid;
   private $fileHandle;
+  private $deleteAfterEpoch;
+  private $viewPolicy;
 
 
 /* -(  Configuring File References  )---------------------------------------- */
@@ -104,6 +106,48 @@ final class ArcanistFileDataRef extends Phobject {
    */
   public function getPath() {
     return $this->path;
+  }
+
+
+  /**
+   * @task config
+   */
+  public function setViewPolicy($view_policy) {
+    $this->viewPolicy = $view_policy;
+    return $this;
+  }
+
+
+  /**
+   * @task config
+   */
+  public function getViewPolicy() {
+    return $this->viewPolicy;
+  }
+
+
+  /**
+   * Configure a file to be temporary instead of permanent.
+   *
+   * By default, files are retained indefinitely until explicitly deleted. If
+   * you want to upload a temporary file instead, you can specify an epoch
+   * timestamp. The file will be deleted after this time.
+   *
+   * @param int Epoch timestamp to retain the file until.
+   * @return this
+   * @task config
+   */
+  public function setDeleteAfterEpoch($epoch) {
+    $this->deleteAfterEpoch = $epoch;
+    return $this;
+  }
+
+
+  /**
+   * @task config
+   */
+  public function getDeleteAfterEpoch() {
+    return $this->deleteAfterEpoch;
   }
 
 

@@ -6,7 +6,7 @@ final class ArcanistInstanceOfOperatorXHPASTLinterRule
   const ID = 69;
 
   public function getLintName() {
-    return pht('%s Operator', 'instanceof');
+    return pht('`%s` Operator', 'instanceof');
   }
 
   public function process(XHPASTNode $root) {
@@ -26,7 +26,7 @@ final class ArcanistInstanceOfOperatorXHPASTLinterRule
         $this->raiseLintAtNode(
           $object,
           pht(
-            '%s expects an object instance, constant given.',
+            '`%s` expects an object instance, constant given.',
             'instanceof'));
       }
     }

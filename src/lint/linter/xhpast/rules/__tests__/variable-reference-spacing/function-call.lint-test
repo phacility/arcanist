@@ -1,0 +1,13 @@
+<?php
+$x = &some_function();
+$x = & some_function();
+$x = &
+        some_function();
+~~~~~~~~~~
+warning:3:7
+warning:4:7
+~~~~~~~~~~
+<?php
+$x = &some_function();
+$x = &some_function();
+$x = &some_function();

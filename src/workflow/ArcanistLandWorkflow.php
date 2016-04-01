@@ -38,7 +38,7 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **land** [__options__] [__branch__] [--onto __master__]
+      **land** [__options__] [__ref__]
 EOTEXT
       );
   }
@@ -47,18 +47,75 @@ EOTEXT
     return phutil_console_format(<<<EOTEXT
           Supports: git, hg
 
-          Land an accepted change (currently sitting in local feature branch
-          __branch__) onto __master__ and push it to the remote. Then, delete
-          the feature branch. If you omit __branch__, the current branch will
-          be used.
+          Publish an accepted revision after review. This command is the last
+          step in the standard Differential pre-publish code review workflow.
 
-          In mutable repositories, this will perform a --squash merge (the
-          entire branch will be represented by one commit on __master__). In
-          immutable repositories (or when --merge is provided), it will perform
-          a --no-ff merge (the branch will always be merged into __master__ with
-          a merge commit).
+          This command merges and pushes changes associated with an accepted
+          revision that are currently sitting in __ref__, which is usually the
+          name of a local branch. Without __ref__, the current working copy
+          state will be used.
 
-          Under hg, bookmarks can be landed the same way as branches.
+          Under Git: branches, tags, and arbitrary commits (detached HEADs)
+          may be landed.
+
+          Under Mercurial: branches and bookmarks may be landed, but only
+          onto a target of the same type. See T3855.
+
+          The workflow selects a target branch to land onto and a remote where
+          the change will be pushed to.
+
+          A target branch is selected by examining these sources in order:
+
+            - the **--onto** flag;
+            - the upstream of the current branch, recursively (Git only);
+            - the __arc.land.onto.default__ configuration setting;
+            - or by falling back to a standard default:
+              - "master" in Git;
+              - "default" in Mercurial.
+
+          A remote is selected by examining these sources in order:
+
+            - the **--remote** flag;
+            - the upstream of the current branch, recursively (Git only);
+            - or by falling back to a standard default:
+              - "origin" in Git;
+              - the default remote in Mercurial.
+
+          After selecting a target branch and a remote, the commits which will
+          be landed are printed.
+
+          With **--preview**, execution stops here, before the change is
+          merged.
+
+          The change is merged with the changes in the target branch,
+          following these rules:
+
+          In repositories with mutable history or with **--squash**, this will
+          perform a squash merge (the entire branch will be represented as one
+          commit after the merge).
+
+          In repositories with immutable history or with **--merge**, this will
+          perform a strict merge (a merge commit will always be created, and
+          local commits will be preserved).
+
+          The resulting commit will be given an up-to-date commit message
+          describing the final state of the revision in Differential.
+
+          In Git, the merge occurs in a detached HEAD. The local branch
+          reference (if one exists) is not updated yet.
+
+          With **--hold**, execution stops here, before the change is pushed.
+
+          The change is pushed into the remote.
+
+          Consulting mystical sources of power, the workflow makes a guess
+          about what state you wanted to end up in after the process finishes
+          and the working copy is put into that state.
+
+          The branch which was landed is deleted, unless the **--keep-branch**
+          flag was passed or the landing branch is the same as the target
+          branch.
+
 EOTEXT
       );
   }
@@ -196,6 +253,55 @@ EOTEXT
 
   public function run() {
     $this->readArguments();
+
+    $engine = null;
+    if ($this->isGit && !$this->isGitSvn) {
+      $engine = new ArcanistGitLandEngine();
+    }
+
+    if ($engine) {
+      $this->readEngineArguments();
+
+      $obsolete = array(
+        'delete-remote',
+        'update-with-merge',
+        'update-with-rebase',
+      );
+
+      foreach ($obsolete as $flag) {
+        if ($this->getArgument($flag)) {
+          throw new ArcanistUsageException(
+            pht(
+              'Flag "%s" is no longer supported under Git.',
+              '--'.$flag));
+        }
+      }
+
+      $this->requireCleanWorkingCopy();
+
+      $should_hold = $this->getArgument('hold');
+
+      $engine
+        ->setWorkflow($this)
+        ->setRepositoryAPI($this->getRepositoryAPI())
+        ->setSourceRef($this->branch)
+        ->setTargetRemote($this->remote)
+        ->setTargetOnto($this->onto)
+        ->setShouldHold($should_hold)
+        ->setShouldKeep($this->keepBranch)
+        ->setShouldSquash($this->useSquash)
+        ->setShouldPreview($this->preview)
+        ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      $engine->execute();
+
+      if (!$should_hold && !$this->preview) {
+        $this->didPush();
+      }
+
+      return 0;
+    }
+
     $this->validate();
 
     try {
@@ -256,6 +362,123 @@ EOTEXT
     return null;
   }
 
+  private function readEngineArguments() {
+    // NOTE: This is hard-coded for Git right now.
+    // TODO: Clean this up and move it into LandEngines.
+
+    $onto = $this->getEngineOnto();
+    $remote = $this->getEngineRemote();
+
+    // This just overwrites work we did earlier, but it has to be up in this
+    // class for now because other parts of the workflow still depend on it.
+    $this->onto = $onto;
+    $this->remote = $remote;
+    $this->ontoRemoteBranch = $this->remote.'/'.$onto;
+  }
+
+  private function getEngineOnto() {
+    $onto = $this->getArgument('onto');
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected by the --onto flag.',
+          $onto));
+      return $onto;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($this->branch);
+
+    if ($path->getLength()) {
+      $cycle = $path->getCycle();
+      if ($cycle) {
+        $this->writeWarn(
+          pht('LOCAL CYCLE'),
+          pht(
+            'Local branch tracks an upstream, but following it leads to a '.
+            'local cycle; ignoring branch upstream.'));
+
+        echo tsprintf(
+          "\n    %s\n\n",
+          implode(' -> ', $cycle));
+
+      } else {
+        if ($path->isConnectedToRemote()) {
+          $onto = $path->getRemoteBranchName();
+          $this->writeInfo(
+            pht('TARGET'),
+            pht(
+              'Landing onto "%s", selected by following tracking branches '.
+              'upstream to the closest remote.',
+              $onto));
+          return $onto;
+        } else {
+          $this->writeInfo(
+            pht('NO PATH TO UPSTREAM'),
+            pht(
+              'Local branch tracks an upstream, but there is no path '.
+              'to a remote; ignoring branch upstream.'));
+        }
+      }
+    }
+
+    $config_key = 'arc.land.onto.default';
+    $onto = $this->getConfigFromAnySource($config_key);
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected by "%s" configuration.',
+          $onto,
+          $config_key));
+      return $onto;
+    }
+
+    $onto = 'master';
+    $this->writeInfo(
+      pht('TARGET'),
+      pht(
+        'Landing onto "%s", the default target under git.',
+        $onto));
+    return $onto;
+  }
+
+  private function getEngineRemote() {
+    $remote = $this->getArgument('remote');
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected by the --remote flag.',
+          $remote));
+      return $remote;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($this->branch);
+
+    $remote = $path->getRemoteRemoteName();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected by following tracking branches '.
+          'upstream to the closest remote.',
+          $remote));
+      return $remote;
+    }
+
+    $remote = 'origin';
+    $this->writeInfo(
+      pht('REMOTE'),
+      pht(
+        'Using remote "%s", the default remote under git.',
+        $remote));
+    return $remote;
+  }
+
+
   private function readArguments() {
     $repository_api = $this->getRepositoryAPI();
     $this->isGit = $repository_api instanceof ArcanistGitAPI;
@@ -273,9 +496,12 @@ EOTEXT
     $branch = $this->getArgument('branch');
     if (empty($branch)) {
       $branch = $this->getBranchOrBookmark();
-
       if ($branch) {
         $this->branchType = $this->getBranchType($branch);
+
+        // TODO: This message is misleading when landing a detached head or
+        // a tag in Git.
+
         echo pht("Landing current %s '%s'.", $this->branchType, $branch), "\n";
         $branch = array($branch);
       }
@@ -1068,9 +1294,7 @@ EOTEXT
       // We dispatch this event so we can run checks on the merged revision,
       // right before it gets pushed out. It's easier to do this in arc land
       // than to try to hook into git/hg.
-      $this->dispatchEvent(
-        ArcanistEventType::TYPE_LAND_WILLPUSHREVISION,
-        array());
+      $this->didCommitMerge();
     } catch (Exception $ex) {
       $this->executeCleanupAfterFailedPush();
       throw $ex;
@@ -1118,10 +1342,16 @@ EOTEXT
         $err = $repository_api->execPassthru('push %s', $this->remote);
         $cmd = 'hg push';
       } else if ($this->isHg) {
-        $err = $repository_api->execPassthru(
-          'push -r %s %s',
-          $this->onto,
-          $this->remote);
+        if (strlen($this->remote)) {
+          $err = $repository_api->execPassthru(
+            'push -r %s %s',
+            $this->onto,
+            $this->remote);
+        } else {
+          $err = $repository_api->execPassthru(
+            'push -r %s',
+            $this->onto);
+        }
         $cmd = 'hg push';
       }
 
@@ -1141,16 +1371,7 @@ EOTEXT
           $cmd));
       }
 
-      $this->askForRepositoryUpdate();
-
-      $mark_workflow = $this->buildChildWorkflow(
-        'close-revision',
-        array(
-          '--finalize',
-          '--quiet',
-          $this->revision['id'],
-        ));
-      $mark_workflow->run();
+      $this->didPush();
 
       echo "\n";
     }
@@ -1249,6 +1470,11 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     if ($this->isGit) {
       $branch = $repository_api->getBranchName();
+
+      // If we don't have a branch name, just use whatever's at HEAD.
+      if (!strlen($branch) && !$this->isGitSvn) {
+        $branch = $repository_api->getWorkingCopyRevision();
+      }
     } else if ($this->isHg) {
       $branch = $repository_api->getActiveBookmark();
       if (!$branch) {
@@ -1371,6 +1597,31 @@ EOTEXT
     if (!$console->confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
+  }
+
+  public function buildEngineMessage(ArcanistLandEngine $engine) {
+    // TODO: This is oh-so-gross.
+    $this->findRevision();
+    $engine->setCommitMessageFile($this->messageFile);
+  }
+
+  public function didCommitMerge() {
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_LAND_WILLPUSHREVISION,
+      array());
+  }
+
+  public function didPush() {
+    $this->askForRepositoryUpdate();
+
+    $mark_workflow = $this->buildChildWorkflow(
+      'close-revision',
+      array(
+        '--finalize',
+        '--quiet',
+        $this->revision['id'],
+      ));
+    $mark_workflow->run();
   }
 
 }

@@ -1,0 +1,15 @@
+<?php
+class Foo extends Bar {
+  public function someMethod() {
+    Bar::someOtherMethod();
+  }
+}
+~~~~~~~~~~
+warning:4:5
+~~~~~~~~~~
+<?php
+class Foo extends Bar {
+  public function someMethod() {
+    parent::someOtherMethod();
+  }
+}

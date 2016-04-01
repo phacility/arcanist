@@ -120,7 +120,7 @@ EOTEXT
         foreach ($files as $file => $info) {
           $line_noun = pht(
             '%s line(s)',
-            new PhutilNumber(count($info['lines'])));
+            phutil_count($info['lines']));
           $lines = $this->readableSequenceFromLineNumbers($info['lines']);
           echo "  {$file}: {$line_noun} {$lines}\n";
         }

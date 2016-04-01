@@ -8,7 +8,6 @@ final class ArcanistBaseCommitParser extends Phobject {
 
   public function __construct(ArcanistRepositoryAPI $api) {
     $this->api = $api;
-    return $this;
   }
 
   private function tokenizeBaseCommitSpecification($raw_spec) {
@@ -133,7 +132,13 @@ final class ArcanistBaseCommitParser extends Phobject {
       case 'prompt':
         $reason = pht('it is what you typed when prompted.');
         $this->api->setBaseCommitExplanation($reason);
-        return phutil_console_prompt(pht('Against which commit?'));
+        $result = phutil_console_prompt(pht('Against which commit?'));
+        if (!strlen($result)) {
+          // Allow the user to continue to the next rule by entering no
+          // text.
+          return null;
+        }
+        return $result;
       case 'local':
       case 'user':
       case 'project':

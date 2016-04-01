@@ -16,5 +16,4 @@ void foo(char* str) {
 }
 ~~~~~~~~~~
 error:10:
-error:15:
 error:16:

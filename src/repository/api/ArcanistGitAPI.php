@@ -521,6 +521,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRemoteURI() {
+    // Determine which remote to examine; default to 'origin'
+    $remote = 'origin';
+    $branch = $this->getBranchName();
+    if ($branch) {
+      $path = $this->getPathToUpstream($branch);
+      if ($path->isConnectedToRemote()) {
+        $remote = $path->getRemoteRemoteName();
+      }
+    }
+
     // "git ls-remote --get-url" is the appropriate plumbing to get the remote
     // URI. "git config remote.origin.url", on the other hand, may not be as
     // accurate (for example, it does not take into account possible URL
@@ -528,9 +538,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // the --get-url flag requires git 1.7.5.
     $version = $this->getGitVersion();
     if (version_compare($version, '1.7.5', '>=')) {
-      list($stdout) = $this->execxLocal('ls-remote --get-url origin');
+      list($stdout) = $this->execxLocal('ls-remote --get-url %s', $remote);
     } else {
-      list($stdout) = $this->execxLocal('config remote.origin.url');
+      list($stdout) = $this->execxLocal('config %s', "remote.{$remote}.url");
     }
 
     $uri = rtrim($stdout);
@@ -672,7 +682,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = new PhutilArrayWithDefaultValue();
 
     list($stdout) = $uncommitted_future->resolvex();
-    $uncommitted_files = $this->parseGitStatus($stdout);
+    $uncommitted_files = $this->parseGitRawDiff($stdout);
     foreach ($uncommitted_files as $path => $mask) {
       $result[$path] |= ($mask | self::FLAG_UNCOMMITTED);
     }
@@ -704,7 +714,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $this->getDiffBaseOptions(),
       $this->getBaseCommit());
 
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getGitConfig($key, $default = null) {
@@ -759,7 +769,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
-  private function parseGitStatus($status, $full = false) {
+  private function parseGitRawDiff($status, $full = false) {
     static $flags = array(
       'A' => self::FLAG_ADDED,
       'M' => self::FLAG_MODIFIED,
@@ -777,17 +787,51 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $files = array();
     foreach ($lines as $line) {
       $mask = 0;
+
+      // "git diff --raw" lines begin with a ":" character.
+      $old_mode = ltrim($line[0], ':');
+      $new_mode = $line[1];
+
+      // The hashes may be padded with "." characters for alignment. Discard
+      // them.
+      $old_hash = rtrim($line[2], '.');
+      $new_hash = rtrim($line[3], '.');
+
       $flag = $line[4];
       $file = $line[5];
-      foreach ($flags as $key => $bits) {
-        if ($flag == $key) {
-          $mask |= $bits;
-        }
+
+      $new_value = intval($new_mode, 8);
+      $is_submodule = (($new_value & 0160000) === 0160000);
+
+      if (($is_submodule) &&
+          ($flag == 'M') &&
+          ($old_hash === $new_hash) &&
+          ($old_mode === $new_mode)) {
+        // See T9455. We see this submodule as "modified", but the old and new
+        // hashes are the same and the old and new modes are the same, so we
+        // don't directly see a modification.
+
+        // We can end up here if we have a submodule which has uncommitted
+        // changes inside of it (for example, the user has added untracked
+        // files or made uncommitted changes to files in the submodule). In
+        // this case, we set a different flag because we can't meaningfully
+        // give users the same prompt.
+
+        // Note that if the submodule has real changes from the parent
+        // perspective (the base commit has changed) and also has uncommitted
+        // changes, we'll only see the real changes and miss the uncommitted
+        // changes. At the time of writing, there is no reasonable porcelain
+        // for finding those changes, and the impact of this error seems small.
+
+        $mask |= self::FLAG_EXTERNALS;
+      } else if (isset($flags[$flag])) {
+        $mask |= $flags[$flag];
       }
+
       if ($full) {
         $files[$file] = array(
           'mask' => $mask,
-          'ref'  => rtrim($line[3], '.'),
+          'ref'  => $new_hash,
         );
       } else {
         $files[$file] = $mask;
@@ -807,7 +851,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'diff --raw %s',
       $since_commit);
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getBlame($path) {
@@ -1172,8 +1216,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             // Ideally, we would use something like "for-each-ref --contains"
             // to get a filtered list of branches ready for script consumption.
             // Instead, try to get predictable output from "branch --contains".
+
+            $flags = array();
+            $flags[] = '--no-color';
+
+            // NOTE: The "--no-column" flag was introduced in Git 1.7.11, so
+            // don't pass it if we're running an older version. See T9953.
+            $version = $this->getGitVersion();
+            if (version_compare($version, '1.7.11', '>=')) {
+              $flags[] = '--no-column';
+            }
+
             list($branches) = $this->execxLocal(
-              '-c column.ui=never -c color.ui=never branch --contains %s',
+              'branch %Ls --contains %s',
+              $flags,
               $commit);
             $branches = array_filter(explode("\n", $branches));
 
@@ -1297,6 +1353,77 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   protected function didReloadCommitRange() {
     // After an amend, the symbolic head may resolve to a different commit.
     $this->resolvedHeadCommit = null;
+  }
+
+  /**
+   * Follow the chain of tracking branches upstream until we reach a remote
+   * or cycle locally.
+   *
+   * @param string Ref to start from.
+   * @return list<wild> Path to an upstream.
+   */
+  public function getPathToUpstream($start) {
+    $cursor = $start;
+    $path = new ArcanistGitUpstreamPath();
+    while (true) {
+      list($err, $upstream) = $this->execManualLocal(
+        'rev-parse --symbolic-full-name %s@{upstream}',
+        $cursor);
+
+      if ($err) {
+        // We ended up somewhere with no tracking branch, so we're done.
+        break;
+      }
+
+      $upstream = trim($upstream);
+
+      if (preg_match('(^refs/heads/)', $upstream)) {
+        $upstream = preg_replace('(^refs/heads/)', '', $upstream);
+
+        $is_cycle = $path->getUpstream($upstream);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_LOCAL,
+            'name' => $upstream,
+            'cycle' => $is_cycle,
+          ));
+
+        if ($is_cycle) {
+          // We ran into a local cycle, so we're done.
+          break;
+        }
+
+        // We found another local branch, so follow that one upriver.
+        $cursor = $upstream;
+        continue;
+      }
+
+      if (preg_match('(^refs/remotes/)', $upstream)) {
+        $upstream = preg_replace('(^refs/remotes/)', '', $upstream);
+        list($remote, $branch) = explode('/', $upstream, 2);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_REMOTE,
+            'name' => $branch,
+            'remote' => $remote,
+          ));
+
+        // We found a remote, so we're done.
+        break;
+      }
+
+      throw new Exception(
+        pht(
+          'Got unrecognized upstream format ("%s") from Git, expected '.
+          '"refs/heads/..." or "refs/remotes/...".',
+          $upstream));
+    }
+
+    return $path;
   }
 
 }

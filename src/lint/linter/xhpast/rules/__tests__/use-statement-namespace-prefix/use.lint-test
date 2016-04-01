@@ -1,0 +1,11 @@
+<?php
+namespace SomeNamespace;
+use X\Y\Z;
+use \X\Y\Z;
+~~~~~~~~~~
+warning:4:5
+~~~~~~~~~~
+<?php
+namespace SomeNamespace;
+use X\Y\Z;
+use X\Y\Z;

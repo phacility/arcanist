@@ -6,7 +6,7 @@ final class ArcanistLambdaFuncFunctionXHPASTLinterRule
   const ID = 68;
 
   public function getLintName() {
-    return pht('%s Function', '__lambda_func');
+    return pht('`%s` Function', '__lambda_func');
   }
 
   public function process(XHPASTNode $root) {
@@ -28,10 +28,10 @@ final class ArcanistLambdaFuncFunctionXHPASTLinterRule
       $this->raiseLintAtNode(
         $function_declaration,
         pht(
-          'Declaring a function named %s causes any call to %s to fail. '.
-          'This is because %s eval-declares the function %s, then '.
+          'Declaring a function named `%s` causes any call to %s to fail. '.
+          'This is because `%s` eval-declares the function `%s`, then '.
           'modifies the symbol table so that the function is instead '.
-          'named %s, and returns that name.',
+          'named `%s`, and returns that name.',
           '__lambda_func',
           'create_function',
           'create_function',

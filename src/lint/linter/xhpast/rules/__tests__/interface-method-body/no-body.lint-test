@@ -1,0 +1,6 @@
+<?php
+
+interface SomeInterface {
+  public function someMethod();
+}
+~~~~~~~~~~

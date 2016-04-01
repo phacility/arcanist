@@ -69,13 +69,12 @@ EOTEXT
         ->setName(basename($path))
         ->setPath($path);
 
-      $uploader->addFile($file, $key);
-
       if ($is_temporary) {
-        $uploader->setDeleteFileAfterEpoch(
-          $key,
-          time() + phutil_units('24 hours in seconds'));
+        $expires_at = time() + phutil_units('24 hours in seconds');
+        $file->setDeleteAfterEpoch($expires_at);
       }
+
+      $uploader->addFile($file);
     }
 
     $files = $uploader->uploadFiles();
@@ -144,14 +143,14 @@ EOTEXT
     if ($done) {
       $this->writeStatus(
         pht(
-          'Resuming upload (%d of %d chunks remain).',
-          new PhutilNumber(count($remaining)),
-          new PhutilNumber(count($chunks))));
+          'Resuming upload (%s of %s chunks remain).',
+          phutil_count($remaining),
+          phutil_count($chunks)));
     } else {
       $this->writeStatus(
         pht(
-          'Uploading chunks (%d chunks to upload).',
-          new PhutilNumber(count($remaining))));
+          'Uploading chunks (%s chunks to upload).',
+          phutil_count($remaining)));
     }
 
     $progress = new PhutilConsoleProgressBar();

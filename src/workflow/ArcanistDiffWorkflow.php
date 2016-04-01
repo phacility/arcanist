@@ -22,6 +22,15 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $commitMessageFromRevision;
   private $hitAutotargets;
 
+  const STAGING_PUSHED = 'pushed';
+  const STAGING_USER_SKIP = 'user.skip';
+  const STAGING_DIFF_RAW = 'diff.raw';
+  const STAGING_REPOSITORY_UNKNOWN = 'repository.unknown';
+  const STAGING_REPOSITORY_UNAVAILABLE = 'repository.unavailable';
+  const STAGING_REPOSITORY_UNSUPPORTED = 'repository.unsupported';
+  const STAGING_REPOSITORY_UNCONFIGURED = 'repository.unconfigured';
+  const STAGING_CLIENT_UNSUPPORTED = 'client.unsupported';
+
   public function getWorkflowName() {
     return 'diff';
   }
@@ -519,7 +528,7 @@ EOTEXT
         'unitResult' => $unit_result,
       ));
 
-    $this->pushChangesToStagingArea($this->diffID);
+    $this->submitChangesToStagingArea($this->diffID);
 
     $phid = idx($diff_info, 'phid');
     if ($phid) {
@@ -531,6 +540,7 @@ EOTEXT
     $this->updateLintDiffProperty();
     $this->updateUnitDiffProperty();
     $this->updateLocalDiffProperty();
+    $this->updateOntoDiffProperty();
     $this->resolveDiffPropertyUpdates();
 
     $output_json = $this->getArgument('json');
@@ -962,7 +972,7 @@ EOTEXT
         'works best for changes which will receive detailed human review, '.
         'and not as well for large automated changes or bulk checkins. '.
         'See %s for information about reviewing big checkins. Continue anyway?',
-        new PhutilNumber(count($changes)),
+        phutil_count($changes),
         'https://secure.phabricator.com/book/phabricator/article/'.
           'differential_large_changes/');
 
@@ -1070,18 +1080,18 @@ EOTEXT
             'contain invalid byte sequences). You can either stop this '.
             'workflow and fix these files, or continue. If you continue, '.
             'these files will be marked as binary.',
-            new PhutilNumber(count($utf8_problems))),
+            phutil_count($utf8_problems)),
           pht(
             "You can learn more about how Phabricator handles character ".
             "encodings (and how to configure encoding settings and detect and ".
             "correct encoding problems) by reading 'User Guide: UTF-8 and ".
             "Character Encoding' in the Phabricator documentation."),
           pht(
-            '%d AFFECTED FILE(S)',
-            count($utf8_problems)));
+            '%s AFFECTED FILE(S)',
+            phutil_count($utf8_problems)));
       $confirm = pht(
         'Do you want to mark these %s file(s) as binary and continue?',
-        new PhutilNumber(count($utf8_problems)));
+        phutil_count($utf8_problems));
 
       echo phutil_console_format(
         "**%s**\n",
@@ -2406,6 +2416,58 @@ EOTEXT
     $this->updateDiffProperty('local:commits', json_encode($local_info));
   }
 
+  private function updateOntoDiffProperty() {
+    $onto = $this->getDiffOntoTargets();
+
+    if (!$onto) {
+      return;
+    }
+
+    $this->updateDiffProperty('arc:onto', json_encode($onto));
+  }
+
+  private function getDiffOntoTargets() {
+    if ($this->isRawDiffSource()) {
+      return null;
+    }
+
+    $api = $this->getRepositoryAPI();
+
+    if (!($api instanceof ArcanistGitAPI)) {
+      return null;
+    }
+
+    // If we track an upstream branch either directly or indirectly, use that.
+    $branch = $api->getBranchName();
+    if (strlen($branch)) {
+      $upstream_path = $api->getPathToUpstream($branch);
+      $remote_branch = $upstream_path->getRemoteBranchName();
+      if (strlen($remote_branch)) {
+        return array(
+          array(
+            'type' => 'branch',
+            'name' => $remote_branch,
+            'kind' => 'upstream',
+          ),
+        );
+      }
+    }
+
+    // If "arc.land.onto.default" is configured, use that.
+    $config_key = 'arc.land.onto.default';
+    $onto = $this->getConfigFromAnySource($config_key);
+    if (strlen($onto)) {
+      return array(
+        array(
+          'type' => 'branch',
+          'name' => $onto,
+          'kind' => 'arc.land.onto.default',
+        ),
+      );
+    }
+
+    return null;
+  }
 
   /**
    * Update an arbitrary diff property.
@@ -2604,26 +2666,50 @@ EOTEXT
     return $this->getArgument('browse');
   }
 
+  private function submitChangesToStagingArea($id) {
+    $result = $this->pushChangesToStagingArea($id);
+
+    // We'll either get a failure constant on error, or a list of pushed
+    // refs on success.
+    $ok = is_array($result);
+
+    if ($ok) {
+      $staging = array(
+        'status' => self::STAGING_PUSHED,
+        'refs' => $result,
+      );
+    } else {
+      $staging = array(
+        'status' => $result,
+        'refs' => array(),
+      );
+    }
+
+    $this->updateDiffProperty(
+      'arc.staging',
+      phutil_json_encode($staging));
+  }
+
   private function pushChangesToStagingArea($id) {
     if ($this->getArgument('skip-staging')) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Flag --skip-staging was specified.'));
-      return;
+      return self::STAGING_USER_SKIP;
     }
 
     if ($this->isRawDiffSource()) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Raw changes can not be pushed to a staging area.'));
-      return;
+      return self::STAGING_DIFF_RAW;
     }
 
     if (!$this->getRepositoryPHID()) {
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Unable to determine repository for this change.'));
-      return;
+      return self::STAGING_REPOSITORY_UNKNOWN;
     }
 
     $staging = $this->getRepositoryStagingConfiguration();
@@ -2631,7 +2717,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('The server does not support staging areas.'));
-      return;
+      return self::STAGING_REPOSITORY_UNAVAILABLE;
     }
 
     $supported = idx($staging, 'supported');
@@ -2639,7 +2725,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('Phabricator does not support staging areas for this repository.'));
-      return;
+      return self::STAGING_REPOSITORY_UNSUPPORTED;
     }
 
     $staging_uri = idx($staging, 'uri');
@@ -2647,7 +2733,7 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('No staging area is configured for this repository.'));
-      return;
+      return self::STAGING_REPOSITORY_UNCONFIGURED;
     }
 
     $api = $this->getRepositoryAPI();
@@ -2655,12 +2741,14 @@ EOTEXT
       $this->writeInfo(
         pht('SKIP STAGING'),
         pht('This client version does not support staging this repository.'));
-      return;
+      return self::STAGING_CLIENT_UNSUPPORTED;
     }
 
     $commit = $api->getHeadCommit();
     $prefix = idx($staging, 'prefix', 'phabricator');
-    $tag = $prefix.'/diff/'.$id;
+
+    $base_tag = "refs/tags/{$prefix}/base/{$id}";
+    $diff_tag = "refs/tags/{$prefix}/diff/{$id}";
 
     $this->writeOkay(
       pht('PUSH STAGING'),
@@ -2670,24 +2758,63 @@ EOTEXT
     if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
       $push_flags[] = '--no-verify';
     }
+
+    $refs = array();
+
+    $remote = array(
+      'uri' => $staging_uri,
+    );
+
+    // If the base commit is a real commit, we're going to push it. We don't
+    // use this, but pushing it to a ref reduces the amount of redundant work
+    // that Git does on later pushes by helping it figure out that the remote
+    // already has most of the history. See T10509.
+
+    // In the future, we could avoid this push if the staging area is the same
+    // as the main repository, or if the staging area is a virtual repository.
+    // In these cases, the staging area should automatically have up-to-date
+    // refs.
+    $base_commit = $api->getSourceControlBaseRevision();
+    if ($base_commit !== ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      $refs[] = array(
+        'ref' => $base_tag,
+        'type' => 'base',
+        'commit' => $base_commit,
+        'remote' => $remote,
+      );
+    }
+
+    // We're always going to push the change itself.
+    $refs[] = array(
+      'ref' => $diff_tag,
+      'type' => 'diff',
+      'commit' => $commit,
+      'remote' => $remote,
+    );
+
+    $ref_list = array();
+    foreach ($refs as $ref) {
+      $ref_list[] = $ref['commit'].':'.$ref['ref'];
+    }
+
     $err = phutil_passthru(
-      'git push %Ls -- %s %s:refs/tags/%s',
+      'git push %Ls -- %s %Ls',
       $push_flags,
       $staging_uri,
-      $commit,
-      $tag);
+      $ref_list);
 
     if ($err) {
       $this->writeWarn(
         pht('STAGING FAILED'),
         pht('Unable to push changes to the staging area.'));
-    } else {
-      $this->writeOkay(
-        pht('STAGING PUSHED'),
+
+      throw new ArcanistUsageException(
         pht(
-          'Pushed a copy of the changes to tag "%s" in the staging area.',
-          $tag));
+          'Failed to push changes to staging area. Correct the issue, or '.
+          'use --skip-staging to skip this step.'));
     }
+
+    return $refs;
   }
 
 
@@ -2753,15 +2880,7 @@ EOTEXT
         $unit[$key] = $this->getModernUnitDictionary($message);
       }
 
-      switch ($unit_result) {
-        case ArcanistUnitWorkflow::RESULT_OKAY:
-        case ArcanistUnitWorkflow::RESULT_SKIP:
-          $type = 'pass';
-          break;
-        default:
-          $type = 'fail';
-          break;
-      }
+      $type = ArcanistUnitWorkflow::getHarbormasterTypeFromResult($unit_result);
 
       $futures[] = $this->getConduit()->callMethod(
         'harbormaster.sendmessage',
@@ -2783,25 +2902,6 @@ EOTEXT
       phlog($ex);
       return false;
     }
-  }
-
-  private function getModernLintDictionary(array $map) {
-    $map = $this->getModernCommonDictionary($map);
-    return $map;
-  }
-
-  private function getModernUnitDictionary(array $map) {
-    $map = $this->getModernCommonDictionary($map);
-    return $map;
-  }
-
-  private function getModernCommonDictionary(array $map) {
-    foreach ($map as $key => $value) {
-      if ($value === null) {
-        unset($map[$key]);
-      }
-    }
-    return $map;
   }
 
 }

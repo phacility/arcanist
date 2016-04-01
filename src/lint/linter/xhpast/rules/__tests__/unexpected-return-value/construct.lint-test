@@ -1,0 +1,8 @@
+<?php
+class SomeClass {
+  public function __construct() {
+    return null;
+  }
+}
+~~~~~~~~~~
+warning:4:5

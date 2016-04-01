@@ -1,0 +1,8 @@
+<?php
+
+exit(-1);
+exit -1;
+strtoupper(33 * exit - 6);
+~~~~~~~~~~
+error:4:1
+error:5:17

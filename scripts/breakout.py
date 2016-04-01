@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 import time
 import select
 import curses
-import curses.wrapper
+from curses import wrapper
 
 entities = []
 grid = []
@@ -217,4 +217,4 @@ try:
     print ('You destroyed %s blocks out of %s with %s deaths.' %
         (Block.killed, Block.total, Ball.killed))
 except PowerOverwhelmingException as e:
-    print e
+    print (e)

@@ -129,34 +129,33 @@ final class ArcanistPhpunitTestResultParser extends ArcanistTestResultParser {
       $line_count = count(file($class_path));
 
       $coverage = '';
+      $any_line_covered = false;
       $start_line = 1;
       $lines = $file->getElementsByTagName('line');
-      for ($ii = 0; $ii < $lines->length; $ii++) {
-        $line = $lines->item($ii);
-        for (; $start_line < $line->getAttribute('num'); $start_line++) {
-          $coverage .= 'N';
-        }
 
+      $coverage = str_repeat('N', $line_count);
+      foreach ($lines as $line) {
         if ($line->getAttribute('type') != 'stmt') {
-          $coverage .= 'N';
-        } else {
-          if ((int)$line->getAttribute('count') == 0) {
-            $coverage .= 'U';
-          } else if ((int)$line->getAttribute('count') > 0) {
-            $coverage .= 'C';
-          }
+          continue;
         }
-
-        $start_line++;
+        if ((int)$line->getAttribute('count') > 0) {
+          $is_covered = 'C';
+          $any_line_covered = true;
+        } else {
+          $is_covered = 'U';
+        }
+        $line_no = (int)$line->getAttribute('num');
+        $coverage[$line_no - 1] = $is_covered;
       }
 
-      for (; $start_line <= $line_count; $start_line++) {
-        $coverage .= 'N';
+      // Sometimes the Clover coverage gives false positives on uncovered lines
+      // when the file wasn't actually part of the test. This filters out files
+      // with no coverage which helps give more accurate overall results.
+      if ($any_line_covered) {
+        $len = strlen($this->projectRoot.DIRECTORY_SEPARATOR);
+        $class_path = substr($class_path, $len);
+        $reports[$class_path] = $coverage;
       }
-
-      $len = strlen($this->projectRoot.DIRECTORY_SEPARATOR);
-      $class_path = substr($class_path, $len);
-      $reports[$class_path] = $coverage;
     }
 
     return $reports;

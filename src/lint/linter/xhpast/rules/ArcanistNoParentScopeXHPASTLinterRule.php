@@ -34,7 +34,7 @@ final class ArcanistNoParentScopeXHPASTLinterRule
             $this->raiseLintAtNode(
               $static_access,
               pht(
-                'Cannot access %s when current class scope has no parent.',
+                'Cannot access `%s` when current class scope has no parent.',
                 'parent::'));
           }
         }

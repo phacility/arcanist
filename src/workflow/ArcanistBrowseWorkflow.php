@@ -225,6 +225,7 @@ EOTEXT
     }
 
     $branch = $this->getArgument('branch', 'master');
+    $branch = phutil_escape_uri_path_component($branch);
 
     return $repo_uri.'browse/'.$branch.'/';
   }

@@ -12,7 +12,7 @@ final class ArcanistPregQuoteMisuseXHPASTLinterRule
   const ID = 14;
 
   public function getLintName() {
-    return pht('Misuse of %s', 'preg_quote()');
+    return pht('Misuse of `%s`', 'preg_quote');
   }
 
   public function getLintSeverity() {
@@ -33,8 +33,8 @@ final class ArcanistPregQuoteMisuseXHPASTLinterRule
             'arguments to %s, so that %s knows which delimiter to escape.',
             '//',
             '()',
-            'preg_quote()',
-            'preg_quote()'));
+            'preg_quote',
+            'preg_quote'));
       }
     }
   }

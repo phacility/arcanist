@@ -52,7 +52,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $userName;
   private $repositoryAPI;
   private $configurationManager;
-  private $workingCopy;
   private $arguments = array();
   private $passedArguments = array();
   private $command;
@@ -601,10 +600,6 @@ abstract class ArcanistWorkflow extends Phobject {
       $workflow->conduitAuthenticated = $this->conduitAuthenticated;
     }
 
-    if ($this->workingCopy) {
-      $workflow->setWorkingCopy($this->workingCopy);
-    }
-
     $workflow->setArcanistConfiguration($arc_config);
 
     $workflow->parseArguments(array_values($argv));
@@ -790,12 +785,6 @@ abstract class ArcanistWorkflow extends Phobject {
     return $working_copy;
   }
 
-  final public function setWorkingCopy(
-    ArcanistWorkingCopyIdentity $working_copy) {
-    $this->workingCopy = $working_copy;
-    return $this;
-  }
-
   final public function setRepositoryAPI($api) {
     $this->repositoryAPI = $api;
     return $this;
@@ -893,11 +882,47 @@ abstract class ArcanistWorkflow extends Phobject {
           implode("\n    ", $missing)));
     }
 
+    $externals = $api->getDirtyExternalChanges();
+
+    // TODO: This state can exist in Subversion, but it is currently handled
+    // elsewhere. It should probably be handled here, eventually.
+    if ($api instanceof ArcanistSubversionAPI) {
+      $externals = array();
+    }
+
+    if ($externals) {
+      $message = pht(
+        '%s submodule(s) have uncommitted or untracked changes:',
+        new PhutilNumber(count($externals)));
+
+      $prompt = pht(
+        'Ignore the changes to these %s submodule(s) and continue?',
+        new PhutilNumber(count($externals)));
+
+      $list = id(new PhutilConsoleList())
+        ->setWrap(false)
+        ->addItems($externals);
+
+      id(new PhutilConsoleBlock())
+        ->addParagraph($message)
+        ->addList($list)
+        ->draw();
+
+      $ok = phutil_console_confirm($prompt, $default_no = false);
+      if (!$ok) {
+        throw new ArcanistUserAbortException();
+      }
+    }
+
     $uncommitted = $api->getUncommittedChanges();
     $unstaged = $api->getUnstagedChanges();
 
+    // We already dealt with externals.
+    $unstaged = array_diff($unstaged, $externals);
+
     // We only want files which are purely uncommitted.
     $uncommitted = array_diff($uncommitted, $unstaged);
+    $uncommitted = array_diff($uncommitted, $externals);
 
     $untracked = $api->getUntrackedChanges();
     if (!$this->shouldRequireCleanUntrackedFiles()) {
@@ -913,17 +938,17 @@ abstract class ArcanistWorkflow extends Phobject {
       if ($api instanceof ArcanistGitAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           '.git/info/exclude');
       } else if ($api instanceof ArcanistSubversionAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           'svn:ignore');
       } else if ($api instanceof ArcanistMercurialAPI) {
         $hint = pht(
           '(To ignore these %s change(s), add them to "%s".)',
-          new PhutilNumber(count($untracked)),
+          phutil_count($untracked),
           '.hgignore');
       }
 
@@ -936,7 +961,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
       $prompt = pht(
         'Ignore these %s untracked file(s) and continue?',
-        new PhutilNumber(count($untracked)));
+        phutil_count($untracked));
 
       if (!phutil_console_confirm($prompt)) {
         throw new ArcanistUserAbortException();
@@ -1082,8 +1107,17 @@ abstract class ArcanistWorkflow extends Phobject {
     // Don't amend the current commit if it has already been published.
     $repository = $this->loadProjectRepository();
     if ($repository) {
-      $callsign = $repository['callsign'];
-      $commit_name = 'r'.$callsign.$commit['commit'];
+      $repo_id = $repository['id'];
+      $commit_hash = $commit['commit'];
+      $callsign =  idx($repository, 'callsign');
+      if ($callsign) {
+        // The server might be too old to support the new style commit names,
+        // so prefer the old way
+        $commit_name = "r{$callsign}{$commit_hash}";
+      } else {
+        $commit_name = "R{$repo_id}:{$commit_hash}";
+      }
+
       $result = $this->getConduit()->callMethodSynchronous(
         'diffusion.querycommits',
         array('names' => array($commit_name)));
@@ -1125,11 +1159,11 @@ abstract class ArcanistWorkflow extends Phobject {
     if ($this->getShouldAmend()) {
       $prompt = pht(
         'Do you want to amend these %s change(s) to the current commit?',
-        new PhutilNumber(count($files)));
+        phutil_count($files));
     } else {
       $prompt = pht(
         'Do you want to create a new commit with these %s change(s)?',
-        new PhutilNumber(count($files)));
+        phutil_count($files));
     }
     return $prompt;
   }
@@ -1336,7 +1370,7 @@ abstract class ArcanistWorkflow extends Phobject {
     fwrite(STDERR, $msg);
   }
 
-  final protected function writeInfo($title, $message) {
+  final public function writeInfo($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:blue>** %s **</bg> %s\n",
@@ -1344,7 +1378,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $message));
   }
 
-  final protected function writeWarn($title, $message) {
+  final public function writeWarn($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:yellow>** %s **</bg> %s\n",
@@ -1352,7 +1386,7 @@ abstract class ArcanistWorkflow extends Phobject {
         $message));
   }
 
-  final protected function writeOkay($title, $message) {
+  final public function writeOkay($title, $message) {
     $this->writeStatusMessage(
       phutil_console_format(
         "<bg:green>** %s **</bg> %s\n",
@@ -1661,18 +1695,17 @@ abstract class ArcanistWorkflow extends Phobject {
     return idx($this->getRepositoryInformation(), 'phid');
   }
 
-
   /**
-   * Get the callsign of the Phabricator repository this working copy
+   * Get the name of the Phabricator repository this working copy
    * corresponds to. Returns `null` if no repository can be identified.
    *
-   * @return string|null  Repository callsign, or null if no repository can be
+   * @return string|null  Repository name, or null if no repository can be
    *                      identified.
    *
    * @task phabrep
    */
-  final protected function getRepositoryCallsign() {
-    return idx($this->getRepositoryInformation(), 'callsign');
+  final protected function getRepositoryName() {
+    return idx($this->getRepositoryInformation(), 'name');
   }
 
 
@@ -1988,12 +2021,12 @@ abstract class ArcanistWorkflow extends Phobject {
     // If we know which repository we're in, try to tell Phabricator that we
     // pushed commits to it so it can update. This hint can help pull updates
     // more quickly, especially in rarely-used repositories.
-    if ($this->getRepositoryCallsign()) {
+    if ($this->getRepositoryPHID()) {
       try {
         $this->getConduit()->callMethodSynchronous(
           'diffusion.looksoon',
           array(
-            'callsigns' => array($this->getRepositoryCallsign()),
+            'repositories' => array($this->getRepositoryPHID()),
           ));
       } catch (ConduitClientException $ex) {
         // If we hit an exception, just ignore it. Likely, we are running
@@ -2002,6 +2035,32 @@ abstract class ArcanistWorkflow extends Phobject {
         // no effect.
       }
     }
+  }
+
+  protected function getModernLintDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+    return $map;
+  }
+
+  protected function getModernUnitDictionary(array $map) {
+    $map = $this->getModernCommonDictionary($map);
+
+    $details = idx($map, 'userData');
+    if (strlen($details)) {
+      $map['details'] = (string)$details;
+    }
+    unset($map['userData']);
+
+    return $map;
+  }
+
+  private function getModernCommonDictionary(array $map) {
+    foreach ($map as $key => $value) {
+      if ($value === null) {
+        unset($map[$key]);
+      }
+    }
+    return $map;
   }
 
 

@@ -9,7 +9,7 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 max_line_length = 80
 
-[src/lint/linter/__tests__/**.lint-test]
+[src/lint/linter/**/__tests__/**.lint-test]
 indent_style =
 end_of_line =
 max_line_length =

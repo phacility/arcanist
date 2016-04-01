@@ -6,7 +6,7 @@
 final class ArcanistCppcheckLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'Cppcheck';
+    return 'C++ linter';
   }
 
   public function getInfoURI() {
