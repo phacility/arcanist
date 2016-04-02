@@ -34,7 +34,7 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
 
     $future->setTimeout($timeout);
     $result = new ArcanistUnitTestResult();
-    $result->setName($command);
+    $result->setName($command ? $command : 'unknown');
 
     try {
         list($stdout, $stderr) = $future->resolvex();
