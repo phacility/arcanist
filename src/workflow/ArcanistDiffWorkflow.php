@@ -2529,13 +2529,19 @@ EOTEXT
     $id = $revision['id'];
     $title = $revision['title'];
 
-    throw new ArcanistUsageException(
-      pht(
-        "You don't own revision %s '%s'. You can only update revisions ".
-        "you own. You can 'Commandeer' this revision from the web ".
-        "interface if you want to become the owner.",
-        "D{$id}",
-        $title));
+    $prompt = pht(
+      "You don't own revision %s: \"%s\". Normally, you should ".
+      "only update revisions you own. You can \"Commandeer\" this revision ".
+      "from the web interface if you want to become the owner.\n\n".
+      "Update this revision anyway? [y/N]",
+      "D{$id}",
+      $title);
+
+    $ok = phutil_console_confirm($prompt, $default_no = true);
+    if (!$ok) {
+      throw new ArcanistUsageException(
+        pht('Aborted update of revision: You are not the owner.'));
+    }
   }
 
 
