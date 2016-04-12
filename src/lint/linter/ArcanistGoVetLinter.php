@@ -80,6 +80,7 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
         $message->setPath($path);
         $message->setLine($matches[1]);
         $message->setCode($this->getLinterName());
+        $message->setName($this->getLinterName());
         $message->setDescription(ucfirst(trim($matches[2])));
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
 
