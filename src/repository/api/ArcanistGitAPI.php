@@ -966,19 +966,43 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($ref_list) = $this->execxLocal(
-      'for-each-ref --format=%s refs/heads',
-      '%(refname)');
-    $refs = explode("\n", rtrim($ref_list));
+    $field_list = array(
+      '%(refname)',
+      '%(objectname)',
+      '%(committerdate:raw)',
+      '%(tree)',
+      '%(subject)',
+      '%(subject)%0a%0a%(body)',
+      '%02',
+    );
+
+    list($stdout) = $this->execxLocal(
+      'for-each-ref --format=%s -- refs/heads',
+      implode('%01', $field_list));
 
     $current = $this->getBranchName();
     $result = array();
-    foreach ($refs as $ref) {
+
+    $lines = explode("\2", $stdout);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (!strlen($line)) {
+        continue;
+      }
+
+      $fields = explode("\1", $line, 6);
+      list($ref, $hash, $epoch, $tree, $desc, $text) = $fields;
+
       $branch = $this->getBranchNameFromRef($ref);
       if ($branch) {
         $result[] = array(
           'current' => ($branch === $current),
-          'name'    => $branch,
+          'name' => $branch,
+          'hash' => $hash,
+          'tree' => $tree,
+          'epoch' => (int)$epoch,
+          'desc' => $desc,
+          'text' => $text,
         );
       }
     }
