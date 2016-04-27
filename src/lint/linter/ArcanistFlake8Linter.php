@@ -91,12 +91,13 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     } else {
       // "E": PEP8 Error
       // "F": PyFlakes Error
+      //  or: Flake8 Extension Message
       return ArcanistLintSeverity::SEVERITY_ERROR;
     }
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-    if (!preg_match('/^(E|W|C|F)\d+$/', $code)) {
+    if (!preg_match('/^[A-Z]\d+$/', $code)) {
       throw new Exception(
         pht(
           'Unrecognized lint message code "%s". Expected a valid flake8 '.
