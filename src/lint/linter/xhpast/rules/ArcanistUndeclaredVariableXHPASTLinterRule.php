@@ -88,7 +88,7 @@ final class ArcanistUndeclaredVariableXHPASTLinterRule
         $vars[] = $var;
       }
 
-      $body = $def->getChildByIndex(5);
+      $body = $def->getChildByIndex(6);
       if ($body->getTypeName() === 'n_EMPTY') {
         // Abstract method declaration.
         continue;

@@ -40,7 +40,7 @@ final class ArcanistUselessOverridingMethodXHPASTLinterRule
         $parameters[] = $parameter->getConcreteString();
       }
 
-      $statements = $method->getChildByIndex(5);
+      $statements = $method->getChildByIndex(6);
 
       if ($statements->getTypeName() != 'n_STATEMENT_LIST') {
         continue;
