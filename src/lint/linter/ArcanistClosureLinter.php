@@ -33,8 +33,7 @@ final class ArcanistClosureLinter extends ArcanistExternalLinter {
     return pht(
       'Install %s using `%s`.',
       'gjslint',
-      'sudo easy_install http://closure-linter.googlecode.com/'.
-      'files/closure_linter-latest.tar.gz');
+      'pip install closure-linter');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

@@ -45,7 +45,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install flake8 using `%s`.', 'easy_install flake8');
+    return pht('Install flake8 using `%s`.', 'pip install flake8');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
