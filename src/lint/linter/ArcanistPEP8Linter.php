@@ -43,7 +43,7 @@ final class ArcanistPEP8Linter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install PEP8 using `%s`.', 'easy_install pep8');
+    return pht('Install PEP8 using `%s`.', 'pip install pep8');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

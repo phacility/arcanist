@@ -14,7 +14,7 @@ final class ArcanistAbstractMethodBodyXHPASTLinterRule
 
     foreach ($methods as $method) {
       $modifiers = $this->getModifiers($method);
-      $body = $method->getChildByIndex(5);
+      $body = $method->getChildByIndex(6);
 
       if (idx($modifiers, 'abstract') && $body->getTypeName() != 'n_EMPTY') {
         $this->raiseLintAtNode(
