@@ -109,6 +109,7 @@ final class UberStandardLinter extends ArcanistExternalLinter {
         $message->setLine(idx($err, 'line'));
         $message->setChar(idx($err, 'column'));
         $message->setCode(idx($err, 'rule'));
+        $message->setName(idx($err, 'message'));
         $message->setDescription(idx($err, 'message'));
         $message->setSeverity($this->getLintMessageSeverity(idx($err, 'type')));
 
