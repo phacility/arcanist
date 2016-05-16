@@ -651,7 +651,7 @@ EODIFF;
     $results = $conduit->callMethodSynchronous('differential.query', $query);
 
     foreach ($results as $key => $result) {
-      if ($result['sourcePath'] != $this->getPath()) {
+      if (idx($result, 'sourcePath') != $this->getPath()) {
         unset($results[$key]);
       }
     }
