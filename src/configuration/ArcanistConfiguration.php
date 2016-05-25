@@ -148,7 +148,7 @@ class ArcanistConfiguration extends Phobject {
     if (count($corrected) == 1) {
       $console->writeErr(
         pht(
-          "(Assuming '%s' is the British spelling of '%s'.)",
+          "(Assuming '%s' is the American spelling of '%s'.)",
           $command,
           head($corrected))."\n");
       $command = head($corrected);
