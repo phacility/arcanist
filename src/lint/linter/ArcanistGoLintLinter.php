@@ -55,7 +55,7 @@ final class ArcanistGoLintLinter extends ArcanistExternalLinter {
         $message->setCode($this->getLinterName());
         $message->setName($this->getLinterName());
         $message->setDescription(ucfirst(trim($matches[3])));
-        $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
+        $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
 
         $messages[] = $message;
       }
