@@ -451,6 +451,10 @@ EODIFF;
   }
 
   protected function buildSyntheticAdditionDiff($path, $source, $rev) {
+    if (is_dir($this->getPath($path))) {
+      return null;
+    }
+
     $type = $this->getSVNProperty($path, 'svn:mime-type');
     if ($type == 'application/octet-stream') {
       return <<<EODIFF
@@ -460,10 +464,6 @@ Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
 
 EODIFF;
-    }
-
-    if (is_dir($this->getPath($path))) {
-      return null;
     }
 
     $data = Filesystem::readFile($this->getPath($path));
