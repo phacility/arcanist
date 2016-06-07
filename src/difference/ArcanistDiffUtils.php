@@ -151,7 +151,7 @@ final class ArcanistDiffUtils extends Phobject {
       ->setReplaceCost(2)
       ->setMaximumLength($max)
       ->setSequences($ov, $nv)
-      ->setApplySmoothing(true)
+      ->setApplySmoothing(PhutilEditDistanceMatrix::SMOOTHING_INTERNAL)
       ->getEditString();
   }
 
