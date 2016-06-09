@@ -284,7 +284,9 @@ try {
   $blind_key = 'https.blindly-trust-domains';
   $blind_trust = $configuration_manager->getConfigFromAnySource($blind_key);
   if ($blind_trust) {
-    HTTPSFuture::setBlindlyTrustDomains($blind_trust);
+    $trust_extension = PhutilHTTPEngineExtension::requireExtension(
+      ArcanistBlindlyTrustHTTPEngineExtension::EXTENSIONKEY);
+    $trust_extension->setDomains($blind_trust);
   }
 
   if ($need_conduit) {
