@@ -151,6 +151,7 @@ final class ArcanistDiffUtils extends Phobject {
       ->setReplaceCost(2)
       ->setMaximumLength($max)
       ->setSequences($ov, $nv)
+      ->setApplySmoothing(PhutilEditDistanceMatrix::SMOOTHING_INTERNAL)
       ->getEditString();
   }
 
@@ -166,25 +167,6 @@ final class ArcanistDiffUtils extends Phobject {
     }
 
     $result = self::generateEditString($ov, $nv);
-
-    // Smooth the string out, by replacing short runs of similar characters
-    // with 'x' operations. This makes the result more readable to humans, since
-    // there are fewer choppy runs of short added and removed substrings.
-    do {
-      $original = $result;
-      $result = preg_replace(
-        '/([xdi])(s{3})([xdi])/',
-        '$1xxx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{2})([xdi])/',
-        '$1xx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{1})([xdi])/',
-        '$1x$3',
-        $result);
-    } while ($result != $original);
 
     // Now we have a character-based description of the edit. We need to
     // convert into a byte-based description. Walk through the edit string and

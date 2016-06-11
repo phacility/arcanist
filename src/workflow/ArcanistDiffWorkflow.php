@@ -2591,10 +2591,6 @@ EOTEXT
     foreach ($need_upload as $key => $spec) {
       $change = $need_upload[$key]['change'];
 
-      $type = $spec['type'];
-      $size = strlen($spec['data']);
-
-      $change->setMetadata("{$type}:file:size", $size);
       if ($spec['data'] === null) {
         // This covers the case where a file was added or removed; we don't
         // need to upload the other half of it (e.g., the old file data for
@@ -2603,6 +2599,11 @@ EOTEXT
         unset($need_upload[$key]);
         continue;
       }
+
+      $type = $spec['type'];
+      $size = strlen($spec['data']);
+
+      $change->setMetadata("{$type}:file:size", $size);
 
       $mime = $this->getFileMimeType($spec['data']);
       if (preg_match('@^image/@', $mime)) {

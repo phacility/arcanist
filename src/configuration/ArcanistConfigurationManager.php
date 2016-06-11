@@ -100,7 +100,17 @@ final class ArcanistConfigurationManager extends Phobject {
     }
 
     $user_config = $this->readUserArcConfig();
-    $pval = idx($user_config, $key);
+
+    // For "aliases" coming from the user config file specifically, read the
+    // top level "aliases" key instead of the "aliases" key inside the "config"
+    // setting. Aliases were originally user-specific but later became standard
+    // configuration, which is why this works oddly.
+    if ($key === 'aliases') {
+      $pval = idx($this->readUserConfigurationFile(), $key);
+    } else {
+      $pval = idx($user_config, $key);
+    }
+
     if ($pval !== null) {
       $results[self::CONFIG_SOURCE_USER] =
         $settings->willReadValue($key, $pval);

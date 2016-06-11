@@ -59,17 +59,14 @@ EOTEXT
 
   public static function getAliases(
     ArcanistConfigurationManager $configuration_manager) {
+    $sources = $configuration_manager->getConfigFromAllSources('aliases');
 
-    $working_copy_config_aliases =
-      $configuration_manager->getProjectConfig('aliases');
-    if (!$working_copy_config_aliases) {
-      $working_copy_config_aliases = array();
+    $aliases = array();
+    foreach ($sources as $source) {
+      $aliases += $source;
     }
-    $user_config_aliases = idx(
-      $configuration_manager->readUserConfigurationFile(),
-      'aliases',
-      array());
-    return $user_config_aliases + $working_copy_config_aliases;
+
+    return $aliases;
   }
 
   private function writeAliases(array $aliases) {
