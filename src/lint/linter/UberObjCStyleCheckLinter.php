@@ -36,7 +36,7 @@ final class UberObjCStyleCheckLinter extends ArcanistExternalLinter {
   }
 
   public function setLintRepoPath($path) {
-    $this->lintRepoPath = $path;
+    $this->lintRepoPath = $this->getProjectRoot().'/'.$path;
     return $this;
   }
 
