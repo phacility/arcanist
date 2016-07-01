@@ -196,14 +196,31 @@ EOTEXT
       $uri = $conduit_uri;
     }
 
+    $example = 'https://phabricator.example.com/';
+
     $uri_object = new PhutilURI($uri);
-    if (!$uri_object->getProtocol() || !$uri_object->getDomain()) {
+    $protocol = $uri_object->getProtocol();
+    if (!$protocol || !$uri_object->getDomain()) {
       throw new ArcanistUsageException(
         pht(
           'Server URI "%s" must include a protocol and domain. It should be '.
           'in the form "%s".',
           $uri,
-          'https://phabricator.example.com/'));
+          $example));
+    }
+
+    $protocol = $uri_object->getProtocol();
+    switch ($protocol) {
+      case 'http':
+      case 'https':
+        break;
+      default:
+        throw new ArcanistUsageException(
+          pht(
+            'Server URI "%s" must include the "http" or "https" protocol. '.
+            'It should be in the form "%s".',
+            $uri,
+            $example));
     }
 
     $uri_object->setPath('/api/');
