@@ -550,7 +550,7 @@ EOTEXT
     } else if ($this->getArgument('squash')) {
       $this->useSquash = true;
     } else {
-      $this->useSquash = false;
+      $this->useSquash = !$this->isHistoryImmutable();
     }
 
     $this->ontoRemoteBranch = $this->onto;
@@ -1214,10 +1214,14 @@ EOTEXT
         $this->branch);
 
       if ($err) {
+        $err = phutil_passthru(
+          'git merge --abort');
+        $err = phutil_passthru(
+          'git checkout %s', $this->branch);
+
         throw new ArcanistUsageException(pht(
-          "'%s' failed. Your working copy has been left in a partially ".
-          "merged state. You can: abort with '%s'; or follow the ".
-          "instructions to complete the merge.",
+          "'%s' failed. Your merge was aborted. Please merge master ".
+          "into your feature branch, resolve conflicts, and try again",
           'git merge',
           'git merge --abort'));
       }

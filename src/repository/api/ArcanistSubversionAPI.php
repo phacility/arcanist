@@ -614,6 +614,10 @@ EODIFF;
     return true;
   }
 
+  public function alwaysDefaultSkipStaging() {
+    return true;
+  }
+
   public function supportsAmend() {
     return false;
   }
