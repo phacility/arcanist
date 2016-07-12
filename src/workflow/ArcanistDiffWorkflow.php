@@ -2693,6 +2693,11 @@ EOTEXT
   }
 
   private function pushChangesToStagingArea($id) {
+
+    if ($this->alwaysSkipStaging()) {
+      return;
+    }
+
     if ($this->getArgument('skip-staging')) {
       $this->writeInfo(
         pht('SKIP STAGING'),

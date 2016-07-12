@@ -1,6 +1,5 @@
 {
-  "phabricator.uri": "https://secure.phabricator.com/",
-  "load": [
-    "src/"
-  ]
+  "project_id" : "index-arcanist",
+  "phabricator.uri" : "https://cr.goindex.com/",
+  "history.immutable": false
 }

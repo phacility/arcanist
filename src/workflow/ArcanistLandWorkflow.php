@@ -523,7 +523,6 @@ EOTEXT
     } else if ($this->getArgument('update-with-merge')) {
       $this->shouldUpdateWithRebase = false;
     }
-
     $this->preview = $this->getArgument('preview');
 
     if (!$this->branchType) {
@@ -1201,6 +1200,7 @@ EOTEXT
   }
 
   private function merge() {
+    $rev_id = $this->revision['id'];
     $repository_api = $this->getRepositoryAPI();
 
     // In immutable histories, do a --no-ff merge to force a merge commit with
@@ -1210,14 +1210,18 @@ EOTEXT
     chdir($repository_api->getPath());
     if ($this->isGit) {
       $err = phutil_passthru(
-        'git merge --no-stat --no-ff --no-commit %s',
+        "git merge --log --no-ff --edit --no-commit -m 'Merging revision https://cr.goindex.com/D{$rev_id} from {$this->branch}' %s",
         $this->branch);
 
       if ($err) {
+        $err = phutil_passthru(
+          'git merge --abort');
+        $err = phutil_passthru(
+          'git checkout %s', $this->branch);
+
         throw new ArcanistUsageException(pht(
-          "'%s' failed. Your working copy has been left in a partially ".
-          "merged state. You can: abort with '%s'; or follow the ".
-          "instructions to complete the merge.",
+          "'%s' failed. Your merge was aborted. Please merge master ".
+          "into your feature branch, resolve conflicts, and try again",
           'git merge',
           'git merge --abort'));
       }

@@ -524,6 +524,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
+  public function alwaysDefaultSkipStaging() {
+    return true;
+  }
+
   public function supportsAmend() {
     list($err, $stdout) = $this->execManualLocal('help commit');
     if ($err) {
