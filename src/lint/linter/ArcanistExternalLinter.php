@@ -13,6 +13,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   private $bin;
   private $interpreter;
   private $flags;
+  private $versionRequirement;
 
 
 /* -(  Interpreters, Binaries and Flags  )----------------------------------- */
@@ -43,6 +44,16 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   abstract public function getInstallInstructions();
 
   /**
+   * Return a human-readable string describing how to upgrade the linter.
+   *
+   * @return string Human readable upgrade instructions
+   * @task bin
+   */
+  public function getUpgradeInstructions() {
+      return null;
+  }
+
+  /**
    * Return true to continue when the external linter exits with an error code.
    * By default, linters which exit with an error code are assumed to have
    * failed. However, some linters exit with a specific code to indicate that
@@ -56,51 +67,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   public function shouldExpectCommandErrors() {
-    return false;
-  }
-
-  /**
-   * Return true to indicate that the external linter can read input from
-   * stdin, rather than requiring a file. If this mode is supported, it is
-   * slightly more flexible and may perform better, and is thus preferable.
-   *
-   * To send data over stdin instead of via a command line parameter, override
-   * this method and return true. If the linter also needs a command line
-   * flag (like `--stdin` or `-`), override
-   * @{method:getReadDataFromStdinFilename} to provide it.
-   *
-   * For example, linters are normally invoked something like this:
-   *
-   *   $ linter file.js
-   *
-   * If you override this method, invocation will be more similar to this:
-   *
-   *   $ linter < file.js
-   *
-   * If you additionally override @{method:getReadDataFromStdinFilename} to
-   * return `"-"`, invocation will be similar to this:
-   *
-   *   $ linter - < file.js
-   *
-   * @return bool True to send data over stdin.
-   * @task bin
-   */
-  public function supportsReadDataFromStdin() {
-    return false;
-  }
-
-  /**
-   * If the linter can read data over stdin, override
-   * @{method:supportsReadDataFromStdin} and then optionally override this
-   * method to provide any required arguments (like `-` or `--stdin`). See
-   * that method for discussion.
-   *
-   * @return string|null  Additional arguments required by the linter when
-   *                      operating in stdin mode.
-   * @task bin
-   */
-  public function getReadDataFromStdinFilename() {
-    return null;
+    return true;
   }
 
   /**
@@ -141,8 +108,20 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @return this
    * @task bin
    */
-  final public function setFlags($flags) {
-    $this->flags = (array)$flags;
+  final public function setFlags(array $flags) {
+    $this->flags = $flags;
+    return $this;
+  }
+
+  /**
+   * Set the binary's version requirement.
+   *
+   * @param string Version requirement.
+   * @return this
+   * @task bin
+   */
+  final public function setVersionRequirement($version) {
+    $this->versionRequirement = trim($version);
     return $this;
   }
 
@@ -192,7 +171,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task bin
    */
   public function getDefaultInterpreter() {
-    throw new Exception('Incomplete implementation!');
+    throw new PhutilMethodNotImplementedException();
   }
 
   /**
@@ -265,37 +244,98 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
 
     if ($interpreter) {
       if (!Filesystem::binaryExists($interpreter)) {
-        throw new ArcanistUsageException(
+        throw new ArcanistMissingLinterException(
           pht(
-            'Unable to locate interpreter "%s" to run linter %s. You may '.
-            'need to install the interpreter, or adjust your linter '.
-            'configuration.'.
-            "\nTO INSTALL: %s",
+            'Unable to locate interpreter "%s" to run linter %s. You may need '.
+            'to install the interpreter, or adjust your linter configuration.',
             $interpreter,
-            get_class($this),
-            $this->getInstallInstructions()));
+            get_class($this)));
       }
       if (!Filesystem::pathExists($binary)) {
-        throw new ArcanistUsageException(
-          pht(
-            'Unable to locate script "%s" to run linter %s. You may need '.
-            'to install the script, or adjust your linter configuration. '.
-            "\nTO INSTALL: %s",
-            $binary,
-            get_class($this),
-            $this->getInstallInstructions()));
+        throw new ArcanistMissingLinterException(
+          sprintf(
+            "%s\n%s",
+            pht(
+              'Unable to locate script "%s" to run linter %s. You may need '.
+              'to install the script, or adjust your linter configuration.',
+              $binary,
+              get_class($this)),
+            pht(
+              'TO INSTALL: %s',
+              $this->getInstallInstructions())));
       }
     } else {
       if (!Filesystem::binaryExists($binary)) {
-        throw new ArcanistUsageException(
-          pht(
-            'Unable to locate binary "%s" to run linter %s. You may need '.
-            'to install the binary, or adjust your linter configuration. '.
-            "\nTO INSTALL: %s",
-            $binary,
-            get_class($this),
-            $this->getInstallInstructions()));
+        throw new ArcanistMissingLinterException(
+          sprintf(
+            "%s\n%s",
+            pht(
+              'Unable to locate binary "%s" to run linter %s. You may need '.
+              'to install the binary, or adjust your linter configuration.',
+              $binary,
+              get_class($this)),
+            pht(
+              'TO INSTALL: %s',
+              $this->getInstallInstructions())));
       }
+    }
+  }
+
+  /**
+   * If a binary version requirement has been specified, compare the version
+   * of the configured binary to the required version, and if the binary's
+   * version is not supported, throw an exception.
+   *
+   * @param  string   Version string to check.
+   * @return void
+   */
+  final protected function checkBinaryVersion($version) {
+    if (!$this->versionRequirement) {
+      return;
+    }
+
+    if (!$version) {
+      $message = pht(
+        'Linter %s requires %s version %s. Unable to determine the version '.
+        'that you have installed.',
+         get_class($this),
+         $this->getBinary(),
+         $this->versionRequirement);
+
+      $instructions = $this->getUpgradeInstructions();
+      if ($instructions) {
+        $message .= "\n".pht('TO UPGRADE: %s', $instructions);
+      }
+
+      throw new ArcanistMissingLinterException($message);
+    }
+
+    $operator = '==';
+    $compare_to = $this->versionRequirement;
+
+    $matches = null;
+    if (preg_match('/^([<>]=?|=)\s*(.*)$/', $compare_to, $matches)) {
+      $operator = $matches[1];
+      $compare_to = $matches[2];
+      if ($operator === '=') {
+        $operator = '==';
+      }
+    }
+
+    if (!version_compare($version, $compare_to, $operator)) {
+      $message = pht(
+        'Linter %s requires %s version %s. You have version %s.',
+        get_class($this),
+        $this->getBinary(),
+        $this->versionRequirement,
+        $version);
+
+      $instructions = $this->getUpgradeInstructions();
+      if ($instructions) {
+        $message .= "\n".pht('TO UPGRADE: %s', $instructions);
+      }
+
+      throw new ArcanistMissingLinterException($message);
     }
   }
 
@@ -334,27 +374,22 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
    * @task exec
    */
   final protected function getCommandFlags() {
-    $mandatory_flags = $this->getMandatoryFlags();
-    if (!is_array($mandatory_flags)) {
-      phutil_deprecated(
-        'String support for flags.', 'You should use list<string> instead.');
-      $mandatory_flags = (array) $mandatory_flags;
-    }
-
-    $flags = nonempty($this->flags, $this->getDefaultFlags());
-    if (!is_array($flags)) {
-      phutil_deprecated(
-        'String support for flags.', 'You should use list<string> instead.');
-      $flags = (array) $flags;
-    }
-
-    return array_merge($mandatory_flags, $flags);
+    return array_merge(
+      $this->getMandatoryFlags(),
+      nonempty($this->flags, $this->getDefaultFlags()));
   }
 
   public function getCacheVersion() {
+    try {
+      $this->checkBinaryConfiguration();
+    } catch (ArcanistMissingLinterException $e) {
+      return null;
+    }
+
     $version = $this->getVersion();
 
     if ($version) {
+      $this->checkBinaryVersion($version);
       return $version.'-'.json_encode($this->getCommandFlags());
     } else {
       // Either we failed to parse the version number or the `getVersion`
@@ -382,20 +417,11 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
 
     $futures = array();
     foreach ($paths as $path) {
-      if ($this->supportsReadDataFromStdin()) {
-        $future = new ExecFuture(
-          '%C %C',
-          $bin,
-          $this->getReadDataFromStdinFilename());
-        $future->write($this->getEngine()->loadData($path));
-      } else {
-        // TODO: In commit hook mode, we need to do more handling here.
-        $disk_path = $this->getEngine()->getFilePathOnDisk($path);
-        $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
-        $future = new ExecFuture('%C %C', $bin, $path_argument);
-      }
+      $disk_path = $this->getEngine()->getFilePathOnDisk($path);
+      $path_argument = $this->getPathArgumentForLinterFuture($disk_path);
+      $future = new ExecFuture('%C %C', $bin, $path_argument);
 
-      $future->setCWD($this->getEngine()->getWorkingCopy()->getProjectRoot());
+      $future->setCWD($this->getProjectRoot());
       $futures[$path] = $future;
     }
 
@@ -410,12 +436,23 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
 
     $messages = $this->parseLinterOutput($path, $err, $stdout, $stderr);
 
+    if ($err && $this->shouldExpectCommandErrors() && !$messages) {
+      // We assume that if the future exits with a non-zero status and we
+      // failed to parse any linter messages, then something must've gone wrong
+      // during parsing.
+      $messages = false;
+    }
+
     if ($messages === false) {
       if ($err) {
         $future->resolvex();
       } else {
         throw new Exception(
-          "Linter failed to parse output!\n\n{$stdout}\n\n{$stderr}");
+          sprintf(
+            "%s\n\nSTDOUT\n%s\n\nSTDERR\n%s",
+            pht('Linter failed to parse output!'),
+            $stdout,
+            $stderr));
       }
     }
 
@@ -440,6 +477,13 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
           'Provide a list of additional flags to pass to the linter on the '.
           'command line.'),
       ),
+      'version' => array(
+        'type' => 'optional string',
+        'help' => pht(
+          'Specify a version requirement for the binary. The version number '.
+          'may be prefixed with <, <=, >, >=, or = to specify the version '.
+          'comparison operator (default: =).'),
+      ),
     );
 
     if ($this->shouldUseInterpreter()) {
@@ -459,8 +503,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
       case 'interpreter':
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (Filesystem::binaryExists($path)) {
@@ -481,8 +524,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
       case 'bin':
         $is_script = $this->shouldUseInterpreter();
 
-        $working_copy = $this->getEngine()->getWorkingCopy();
-        $root = $working_copy->getProjectRoot();
+        $root = $this->getProjectRoot();
 
         foreach ((array)$value as $path) {
           if (!$is_script && Filesystem::binaryExists($path)) {
@@ -501,13 +543,10 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
         throw new Exception(
           pht('None of the configured binaries can be located.'));
       case 'flags':
-        if (!is_array($value)) {
-          phutil_deprecated(
-            'String support for flags.',
-            'You should use list<string> instead.');
-          $value = (array) $value;
-        }
         $this->setFlags($value);
+        return;
+      case 'version':
+        $this->setVersionRequirement($value);
         return;
     }
 

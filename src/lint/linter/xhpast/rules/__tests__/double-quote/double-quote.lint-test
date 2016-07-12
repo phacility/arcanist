@@ -1,0 +1,31 @@
+<?php
+
+'foobar';
+"foo\"bar";
+"foobar\n";
+"'foobar'";
+"foo{$bar}";
+'foo"bar"';
+pht(
+  "This string requires \x12\x34 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");
+pht(
+  "This string also requires \123\345 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");
+~~~~~~~~~~
+advice:4:1
+~~~~~~~~~~
+<?php
+
+'foobar';
+'foo"bar';
+"foobar\n";
+"'foobar'";
+"foo{$bar}";
+'foo"bar"';
+pht(
+  "This string requires \x12\x34 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");
+pht(
+  "This string also requires \123\345 double quotes, but ".
+  "this string does not. Here, they are used for consistency.");

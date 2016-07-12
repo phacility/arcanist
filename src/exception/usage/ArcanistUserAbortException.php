@@ -7,7 +7,7 @@
 final class ArcanistUserAbortException extends ArcanistUsageException {
 
   public function __construct() {
-    parent::__construct('User aborted the workflow.');
+    parent::__construct(pht('User aborted the workflow.'));
   }
 
 }

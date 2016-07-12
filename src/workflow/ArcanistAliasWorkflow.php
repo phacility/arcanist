@@ -59,17 +59,14 @@ EOTEXT
 
   public static function getAliases(
     ArcanistConfigurationManager $configuration_manager) {
+    $sources = $configuration_manager->getConfigFromAllSources('aliases');
 
-    $working_copy_config_aliases =
-      $configuration_manager->getProjectConfig('aliases');
-    if (!$working_copy_config_aliases) {
-      $working_copy_config_aliases = array();
+    $aliases = array();
+    foreach ($sources as $source) {
+      $aliases += $source;
     }
-    $user_config_aliases = idx(
-      $configuration_manager->readUserConfigurationFile(),
-      'aliases',
-      array());
-    return $user_config_aliases + $working_copy_config_aliases;
+
+    return $aliases;
   }
 
   private function writeAliases(array $aliases) {
@@ -83,49 +80,42 @@ EOTEXT
 
     $argv = $this->getArgument('argv');
     if (count($argv) == 0) {
-      if ($aliases) {
-        foreach ($aliases as $alias => $binding) {
-          echo phutil_console_format(
-            "**%s** %s\n",
-            $alias,
-            implode(' ' , $binding));
-        }
-      } else {
-        echo "You haven't defined any aliases yet.\n";
-      }
+      $this->printAliases($aliases);
     } else if (count($argv) == 1) {
-      if (empty($aliases[$argv[0]])) {
-        echo "No alias '{$argv[0]}' to remove.\n";
-      } else {
-        echo phutil_console_format(
-          "'**arc %s**' is currently aliased to '**arc %s**'.",
-          $argv[0],
-          implode(' ', $aliases[$argv[0]]));
-        $ok = phutil_console_confirm('Delete this alias?');
-        if ($ok) {
-          $was = implode(' ', $aliases[$argv[0]]);
-          unset($aliases[$argv[0]]);
-          $this->writeAliases($aliases);
-          echo "Unaliased '{$argv[0]}' (was '{$was}').\n";
-        } else {
-          throw new ArcanistUserAbortException();
-        }
-      }
+      $this->removeAlias($aliases, $argv[0]);
     } else {
       $arc_config = $this->getArcanistConfiguration();
+      $alias = $argv[0];
 
-      if ($arc_config->buildWorkflow($argv[0])) {
+      if ($arc_config->buildWorkflow($alias)) {
         throw new ArcanistUsageException(
-          "You can not create an alias for '{$argv[0]}' because it is a ".
-          "builtin command. 'arc alias' can only create new commands.");
+          pht(
+            'You can not create an alias for "%s" because it is a '.
+            'builtin command. "%s" can only create new commands.',
+            "arc {$alias}",
+            'arc alias'));
       }
 
-      $aliases[$argv[0]] = array_slice($argv, 1);
-      echo phutil_console_format(
-        "Aliased '**arc %s**' to '**arc %s**'.\n",
-        $argv[0],
-        implode(' ', $aliases[$argv[0]]));
+      $new_alias = array_slice($argv, 1);
 
+      $command = implode(' ', $new_alias);
+      if (self::isShellCommandAlias($command)) {
+        echo tsprintf(
+          "%s\n",
+          pht(
+            'Aliased "%s" to shell command "%s".',
+            "arc {$alias}",
+            substr($command, 1)));
+      } else {
+        echo tsprintf(
+          "%s\n",
+          pht(
+            'Aliased "%s" to "%s".',
+            "arc {$alias}",
+            "arc {$command}"));
+      }
+
+      $aliases[$alias] = $new_alias;
       $this->writeAliases($aliases);
     }
 
@@ -142,7 +132,7 @@ EOTEXT
     array $argv,
     ArcanistConfigurationManager $configuration_manager) {
 
-    $aliases = ArcanistAliasWorkflow::getAliases($configuration_manager);
+    $aliases = self::getAliases($configuration_manager);
     if (!isset($aliases[$command])) {
       return array(null, $argv);
     }
@@ -166,6 +156,85 @@ EOTEXT
     }
 
     return array($new_command, $argv);
+  }
+
+  private function printAliases(array $aliases) {
+    if (!$aliases) {
+      echo tsprintf(
+        "%s\n",
+        pht('You have not defined any aliases yet.'));
+      return;
+    }
+
+    $table = id(new PhutilConsoleTable())
+      ->addColumn('input', array('title' => pht('Alias')))
+      ->addColumn('command', array('title' => pht('Command')))
+      ->addColumn('type', array('title' => pht('Type')));
+
+    ksort($aliases);
+
+    foreach ($aliases as $alias => $binding) {
+      $command = implode(' ', $binding);
+      if (self::isShellCommandAlias($command)) {
+        $command = substr($command, 1);
+        $type = pht('Shell Command');
+      } else {
+        $command = "arc {$command}";
+        $type = pht('Arcanist Command');
+      }
+
+      $row = array(
+        'input' => "arc {$alias}",
+        'type' => $type,
+        'command' => $command,
+      );
+
+      $table->addRow($row);
+    }
+
+    $table->draw();
+  }
+
+  private function removeAlias(array $aliases, $alias) {
+    if (empty($aliases[$alias])) {
+      echo tsprintf(
+        "%s\n",
+        pht('No alias "%s" to remove.', $alias));
+      return;
+    }
+
+    $command = implode(' ', $aliases[$alias]);
+
+    if (self::isShellCommandAlias($command)) {
+      echo tsprintf(
+        "%s\n",
+        pht(
+          '"%s" is currently aliased to shell command "%s".',
+          "arc {$alias}",
+          substr($command, 1)));
+    } else {
+      echo tsprintf(
+        "%s\n",
+        pht(
+          '"%s" is currently aliased to "%s".',
+          "arc {$alias}",
+          "arc {$command}"));
+    }
+
+
+    $ok = phutil_console_confirm(pht('Delete this alias?'));
+    if (!$ok) {
+      throw new ArcanistUserAbortException();
+    }
+
+    unset($aliases[$alias]);
+    $this->writeAliases($aliases);
+
+    echo tsprintf(
+      "%s\n",
+      pht(
+        'Removed alias "%s".',
+        "arc {$alias}"));
   }
 
 }

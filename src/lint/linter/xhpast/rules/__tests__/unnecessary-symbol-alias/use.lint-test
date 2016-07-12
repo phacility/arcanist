@@ -1,0 +1,16 @@
+<?php
+use A;
+use B as B;
+use C as D;
+use E\F as F;
+use G\H as I;
+~~~~~~~~~~
+warning:3:5
+warning:5:5
+~~~~~~~~~~
+<?php
+use A;
+use B;
+use C as D;
+use E\F;
+use G\H as I;

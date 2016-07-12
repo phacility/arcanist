@@ -14,14 +14,30 @@ final class ArcanistFlagWorkflow extends ArcanistWorkflow {
   );
 
   private static $colorSpec = array(
-    'red' => 0,       'r' => 0,   0 => 0,
-    'orange' => 1,    'o' => 1,   1 => 1,
-    'yellow' => 2,    'y' => 2,   2 => 2,
-    'green' => 3,     'g' => 3,   3 => 3,
-    'blue' => 4,      'b' => 4,   4 => 4,
-    'pink' => 5,      'p' => 5,   5 => 5,
-    'purple' => 6,    'v' => 6,   6 => 6,
-    'checkered' => 7, 'c' => 7,   7 => 7,
+    'red' => 0,
+    'r' => 0,
+    0 => 0,
+    'orange' => 1,
+    'o' => 1,
+    1 => 1,
+    'yellow' => 2,
+    'y' => 2,
+    2 => 2,
+    'green' => 3,
+    'g' => 3,
+    3 => 3,
+    'blue' => 4,
+    'b' => 4,
+    4 => 4,
+    'pink' => 5,
+    'p' => 5,
+    5 => 5,
+    'purple' => 6,
+    'v' => 6,
+    6 => 6,
+    'checkered' => 7,
+    'c' => 7,
+    7 => 7,
   );
 
   public function getWorkflowName() {
@@ -57,18 +73,18 @@ EOTEXT
     return array(
       '*' => 'objects',
       'clear' => array(
-        'help' => 'Delete the flag on an object.',
+        'help' => pht('Delete the flag on an object.'),
       ),
       'edit' => array(
-        'help' => 'Edit the flag on an object.',
+        'help' => pht('Edit the flag on an object.'),
       ),
       'color' => array(
         'param' => 'color',
-        'help' => 'Set the color of a flag.',
+        'help' => pht('Set the color of a flag.'),
       ),
       'note' => array(
         'param' => 'note',
-        'help' => 'Set the note on a flag.',
+        'help' => pht('Set the note on a flag.'),
       ),
     );
   }
@@ -114,10 +130,11 @@ EOTEXT
     $editing = $edit || ($color != -1) || $note;
 
     if ($editing && $clear) {
-      throw new ArcanistUsageException("You can't both edit and clear a flag.");
+      throw new ArcanistUsageException(
+        pht("You can't both edit and clear a flag."));
     }
     if (($editing || $clear) && count($objects) != 1) {
-      throw new ArcanistUsageException('Specify exactly one object.');
+      throw new ArcanistUsageException(pht('Specify exactly one object.'));
     }
 
     if (!empty($objects)) {
@@ -131,7 +148,9 @@ EOTEXT
         if (isset($handles[$object])) {
           $phids[$object] = $handles[$object]['phid'];
         } else {
-          echo phutil_console_format("**%s** doesn't exist.\n", $object);
+          echo pht(
+            "%s doesn't exist.\n",
+            phutil_console_format('**%s**', $object));
         }
       }
       if (empty($phids)) {
@@ -153,7 +172,9 @@ EOTEXT
           'objectPHID' => head($phids),
         ));
       if (!$flag) {
-        echo phutil_console_format("**%s** has no flag to clear.\n", $object);
+        echo pht(
+          "%s has no flag to clear.\n",
+          phutil_console_format('**%s**', $object));
       } else {
         self::flagWasEdited($flag, 'deleted');
       }
@@ -186,7 +207,9 @@ EOTEXT
         'objectPHID');
       foreach ($phids as $object => $phid) {
         if (!isset($flags[$phid])) {
-          echo phutil_console_format("**%s** has no flag.\n", $object);
+          echo pht(
+            "%s has no flag.\n",
+            phutil_console_format('**%s**', $object));
         }
       }
 
@@ -196,7 +219,7 @@ EOTEXT
         // If the user passed object names, we already told them all their
         // objects are nonexistent or unflagged.
         if (empty($objects)) {
-          echo "You have no flagged objects.\n";
+          echo pht('You have no flagged objects.')."\n";
         }
       } else {
         // Print ALL the flags. With fancy formatting. Because fancy formatting

@@ -1,0 +1,6 @@
+<?php
+
+$$foo;
+$obj->$bar; // okay
+~~~~~~~~~~
+error:3:1

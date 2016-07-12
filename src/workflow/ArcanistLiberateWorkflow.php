@@ -34,35 +34,35 @@ EOTEXT
   public function getArguments() {
     return array(
       'all' => array(
-        'help' =>
+        'help' => pht(
           'Drop the module cache before liberating. This will completely '.
-          'reanalyze the entire library. Thorough, but slow!',
+          'reanalyze the entire library. Thorough, but slow!'),
       ),
       'force-update' => array(
-        'help' =>
+        'help' => pht(
           'Force the library map to be updated, even in the presence of '.
-          'lint errors.',
+          'lint errors.'),
       ),
       'library-name' => array(
         'param' => 'name',
         'help' =>
-          'Use a flag for library name rather than awaiting user input.',
+          pht('Use a flag for library name rather than awaiting user input.'),
       ),
       'remap' => array(
         'hide' => true,
-        'help' =>
+        'help' => pht(
           'Internal. Run the remap step of liberation. You do not need to '.
-          'run this unless you are debugging the workflow.',
+          'run this unless you are debugging the workflow.'),
       ),
       'verify' => array(
         'hide' => true,
-        'help' =>
+        'help' => pht(
           'Internal. Run the verify step of liberation. You do not need to '.
-          'run this unless you are debugging the workflow.',
+          'run this unless you are debugging the workflow.'),
       ),
       'upgrade' => array(
         'hide'  => true,
-        'help'  => 'Experimental. Upgrade library to v2.',
+        'help'  => pht('Experimental. Upgrade library to v2.'),
       ),
       '*' => 'argv',
     );
@@ -72,8 +72,10 @@ EOTEXT
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
-        "Provide only one path to 'arc liberate'. The path should be a ".
-        "directory where you want to create or update a libphutil library.");
+        pht(
+          "Provide only one path to '%s'. The path should be a directory ".
+          "where you want to create or update a libphutil library.",
+          'arc liberate'));
     } else if (count($argv) == 0) {
       $path = getcwd();
     } else {
@@ -96,8 +98,9 @@ EOTEXT
     if ($init) {
       if (count($init) > 1) {
         throw new ArcanistUsageException(
-          'Specified directory contains more than one libphutil library. Use '.
-          'a more specific path.');
+          pht(
+            'Specified directory contains more than one libphutil library. '.
+            'Use a more specific path.'));
       }
       $path = Filesystem::resolvePath(dirname(reset($init)), $path);
     } else {
@@ -110,7 +113,7 @@ EOTEXT
         }
       }
       if (!$found) {
-        echo "No library currently exists at that path...\n";
+        echo pht("No library currently exists at that path...\n");
         $this->liberateCreateDirectory($path);
         $this->liberateCreateLibrary($path);
         return;
@@ -124,17 +127,19 @@ EOTEXT
           return $this->upgradeLibrary($path);
         }
         throw new ArcanistUsageException(
-          "This library is using libphutil v1, which is no longer supported. ".
-          "Run 'arc liberate --upgrade' to upgrade to v2.");
+          pht(
+            "This library is using libphutil v1, which is no ".
+            "longer supported. Run '%s' to upgrade to v2.",
+            'arc liberate --upgrade'));
       case 2:
         if ($this->getArgument('upgrade')) {
           throw new ArcanistUsageException(
-            "Can't upgrade a v2 library!");
+            pht("Can't upgrade a v2 library!"));
         }
         return $this->liberateVersion2($path);
       default:
         throw new ArcanistUsageException(
-          "Unknown library version '{$version}'!");
+          pht("Unknown library version '%s'!", $version));
     }
   }
 
@@ -171,12 +176,12 @@ EOTEXT
       ->withType('f')
       ->find();
 
-    echo "Removing __init__.php files...\n";
+    echo pht('Removing %s files...', '__init__.php')."\n";
     foreach ($inits as $init) {
       Filesystem::remove($path.'/'.$init);
     }
 
-    echo "Upgrading library to v2...\n";
+    echo pht('Upgrading library to v2...')."\n";
     $this->liberateVersion2($path);
   }
 
@@ -184,14 +189,15 @@ EOTEXT
     if (Filesystem::pathExists($path)) {
       if (!is_dir($path)) {
         throw new ArcanistUsageException(
-          'Provide a directory to create or update a libphutil library in.');
+          pht(
+            'Provide a directory to create or update a libphutil library in.'));
       }
       return;
     }
 
-    echo "The directory '{$path}' does not exist.";
-    if (!phutil_console_confirm('Do you want to create it?')) {
-      throw new ArcanistUsageException('Cancelled.');
+    echo pht("The directory '%s' does not exist.", $path);
+    if (!phutil_console_confirm(pht('Do you want to create it?'))) {
+      throw new ArcanistUsageException(pht('Canceled.'));
     }
 
     execx('mkdir -p %s', $path);
@@ -203,21 +209,24 @@ EOTEXT
       return;
     }
 
-    echo "Creating new libphutil library in '{$path}'.\n";
+    echo pht("Creating new libphutil library in '%s'.", $path)."\n";
 
     do {
       $name = $this->getArgument('library-name');
       if ($name === null) {
-        echo "Choose a name for the new library.\n";
-        $name = phutil_console_prompt('What do you want to name this library?');
+        echo pht('Choose a name for the new library.')."\n";
+        $name = phutil_console_prompt(
+          pht('What do you want to name this library?'));
       } else {
-        echo "Using library name {$name}.\n";
+        echo pht('Using library name %s.', $name)."\n";
       }
       if (preg_match('/^[a-z-]+$/', $name)) {
         break;
       } else {
-        echo "Library name should contain only lowercase letters and ".
-          "hyphens.\n";
+        echo phutil_console_format(
+          "%s\n",
+          pht(
+          'Library name should contain only lowercase letters and hyphens.'));
       }
     } while (true);
 
@@ -225,7 +234,10 @@ EOTEXT
       "<?php\n\n".
       "phutil_register_library('{$name}', __FILE__);\n";
 
-    echo "Writing '__phutil_library_init__.php' to '{$path}'...\n";
+    echo pht(
+      "Writing '%s' to '%s'...\n",
+      '__phutil_library_init__.php',
+      $path);
     Filesystem::writeFile($init_path, $template);
     $this->liberateVersion2($path);
   }

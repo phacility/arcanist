@@ -5,18 +5,29 @@
  */
 final class PytestTestEngine extends ArcanistUnitTestEngine {
 
+  private $projectRoot;
+
   public function run() {
     $working_copy = $this->getWorkingCopy();
-    $this->project_root = $working_copy->getProjectRoot();
+    $this->projectRoot = $working_copy->getProjectRoot();
 
     $junit_tmp = new TempFile();
     $cover_tmp = new TempFile();
 
     $future = $this->buildTestFuture($junit_tmp, $cover_tmp);
-    $future->resolvex();
+    list($err, $stdout, $stderr) = $future->resolve();
+
+    if (!Filesystem::pathExists($junit_tmp)) {
+      throw new CommandException(
+        pht('Command failed with error #%s!', $err),
+        $future->getCommand(),
+        $err,
+        $stdout,
+        $stderr);
+    }
 
     $future = new ExecFuture('coverage xml -o %s', $cover_tmp);
-    $future->setCWD($this->project_root);
+    $future->setCWD($this->projectRoot);
     $future->resolvex();
 
     return $this->parseTestResults($junit_tmp, $cover_tmp);
@@ -30,7 +41,7 @@ final class PytestTestEngine extends ArcanistUnitTestEngine {
     if ($this->getEnableCoverage() !== false) {
       $cmd_line = csprintf(
         'coverage run --source %s -m %C',
-        $this->project_root,
+        $this->projectRoot,
         $cmd_line);
     }
 
@@ -105,15 +116,14 @@ final class PytestTestEngine extends ArcanistUnitTestEngine {
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute('number'));
+        $next_line = (int)$line->getAttribute('number');
         for ($start_line; $start_line < $next_line; $start_line++) {
             $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute('hits')) == 0) {
+        if ((int)$line->getAttribute('hits') == 0) {
             $coverage .= 'U';
-        }
-        else if (intval($line->getAttribute('hits')) > 0) {
+        } else if ((int)$line->getAttribute('hits') > 0) {
             $coverage .= 'C';
         }
 

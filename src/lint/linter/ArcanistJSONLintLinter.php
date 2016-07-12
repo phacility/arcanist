@@ -6,7 +6,7 @@
 final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'JSON Lint';
+    return pht('JSON Lint');
   }
 
   public function getInfoURI() {
@@ -14,7 +14,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `jsonlint` to detect syntax errors in JSON files.');
+    return pht('Use `%s` to detect syntax errors in JSON files.', 'jsonlint');
   }
 
   public function getLinterName() {
@@ -44,15 +44,7 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install jsonlint using `npm install -g jsonlint`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function supportsReadDataFromStdin() {
-    return true;
+    return pht('Install jsonlint using `%s`.', 'npm install -g jsonlint');
   }
 
   protected function getMandatoryFlags() {
@@ -80,15 +72,12 @@ final class ArcanistJSONLintLinter extends ArcanistExternalLinter {
         $message->setLine($matches['line']);
         $message->setChar($matches['column']);
         $message->setCode($this->getLinterName());
+        $message->setName($this->getLinterName());
         $message->setDescription(ucfirst($matches['description']));
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
 
         $messages[] = $message;
       }
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

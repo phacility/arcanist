@@ -34,15 +34,18 @@ EOTEXT
     return array(
       'show' => array(
         'conflicts' => array(
-          'as' =>
-            'Use --show to direct the file to stdout, or --as to direct '.
+          'as' => pht(
+            'Use %s to direct the file to stdout, or %s to direct '.
             'it to a named location.',
+            '--show',
+            '--as'),
         ),
-        'help' => 'Write file to stdout instead of to disk.',
+        'help' => pht('Write file to stdout instead of to disk.'),
       ),
       'as' => array(
         'param' => 'name',
-        'help' => 'Save the file with a specific name rather than the default.',
+        'help' => pht(
+          'Save the file with a specific name rather than the default.'),
       ),
       '*' => 'argv',
     );
@@ -51,15 +54,17 @@ EOTEXT
   protected function didParseArguments() {
     $argv = $this->getArgument('argv');
     if (!$argv) {
-      throw new ArcanistUsageException('Specify a file to download.');
+      throw new ArcanistUsageException(pht('Specify a file to download.'));
     }
     if (count($argv) > 1) {
-      throw new ArcanistUsageException('Specify exactly one file to download.');
+      throw new ArcanistUsageException(
+        pht('Specify exactly one file to download.'));
     }
 
     $file = reset($argv);
     if (!preg_match('/^F?\d+$/', $file)) {
-      throw new ArcanistUsageException('Specify file by ID, e.g. F123.');
+      throw new ArcanistUsageException(
+        pht('Specify file by ID, e.g. %s.', 'F123'));
     }
 
     $this->id = (int)ltrim($file, 'F');
@@ -72,23 +77,21 @@ EOTEXT
   }
 
   public function run() {
-
     $conduit = $this->getConduit();
 
-    $this->writeStatusMessage("Getting file information...\n");
+    $this->writeStatusMessage(pht('Getting file information...')."\n");
     $info = $conduit->callMethodSynchronous(
       'file.info',
       array(
         'id' => $this->id,
       ));
 
-    $bytes = number_format($info['byteSize']);
-    $desc = '('.$bytes.' bytes)';
+    $desc = pht('(%s bytes)', new PhutilNumber($info['byteSize']));
     if ($info['name']) {
       $desc = "'".$info['name']."' ".$desc;
     }
 
-    $this->writeStatusMessage("Downloading file {$desc}...\n");
+    $this->writeStatusMessage(pht('Downloading file %s...', $desc)."\n");
     $data = $conduit->callMethodSynchronous(
       'file.download',
       array(
@@ -103,7 +106,7 @@ EOTEXT
       $path = Filesystem::writeUniqueFile(
         nonempty($this->saveAs, $info['name'], 'file'),
         $data);
-      $this->writeStatusMessage("Saved file as '{$path}'.\n");
+      $this->writeStatusMessage(pht("Saved file as '%s'.", $path)."\n");
     }
 
     return 0;

@@ -40,7 +40,7 @@ EOTEXT
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 
@@ -56,17 +56,22 @@ EOTEXT
     $method = $this->getArgument('method', array());
     if (count($method) !== 1) {
       throw new ArcanistUsageException(
-        'Provide exactly one Conduit method name.');
+        pht('Provide exactly one Conduit method name.'));
     }
     $method = reset($method);
 
     $console = PhutilConsole::getConsole();
-    $console->writeErr("%s\n", pht('Waiting for JSON parameters on stdin...'));
+    if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
+      $console->writeErr(
+        "%s\n",
+        pht('Waiting for JSON parameters on stdin...'));
+    }
     $params = @file_get_contents('php://stdin');
-    $params = json_decode($params, true);
-    if (!is_array($params)) {
+    try {
+      $params = phutil_json_decode($params);
+    } catch (PhutilJSONParserException $ex) {
       throw new ArcanistUsageException(
-        'Provide method parameters on stdin as a JSON blob.');
+        pht('Provide method parameters on stdin as a JSON blob.'));
     }
 
     $error = null;

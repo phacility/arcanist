@@ -1,0 +1,28 @@
+<?php
+
+printf();
+printf(null);
+printf('');
+
+sprintf('%s');
+pht('%s', 'foo', 'bar');
+
+fprintf(null, 'x');
+queryfx(null, 'x', 'y');
+
+foobar(null, null, '%s');
+~~~~~~~~~~
+error:3:1
+error:7:1
+error:8:1
+error:11:1
+error:13:1
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.printf-functions": {
+      "foobar": 2
+    }
+  }
+}

@@ -7,7 +7,19 @@
  */
 final class NoseTestEngine extends ArcanistUnitTestEngine {
 
+  private $parser;
+
+  protected function supportsRunAllTests() {
+    return true;
+  }
+
   public function run() {
+    if ($this->getRunAllTests()) {
+      $root = $this->getWorkingCopy()->getProjectRoot();
+      $all_tests = glob(Filesystem::resolvePath("$root/tests/**/test_*.py"));
+      return $this->runTests($all_tests, $root);
+    }
+
     $paths = $this->getPaths();
 
     $affected_tests = array();
@@ -59,10 +71,12 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
     }
 
     $results = array();
-    foreach (Futures($futures)->limit(4) as $test_path => $future) {
+    $futures = id(new FutureIterator($futures))
+      ->limit(4);
+    foreach ($futures as $test_path => $future) {
       try {
         list($stdout, $stderr) = $future->resolvex();
-      } catch(CommandException $exc) {
+      } catch (CommandException $exc) {
         if ($exc->getError() > 1) {
           // 'nose' returns 1 when tests are failing/broken.
           throw $exc;
@@ -73,17 +87,19 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
       $cover_tmp = $tmpfiles[$test_path]['cover'];
 
       $this->parser = new ArcanistXUnitTestResultParser();
-      $results[] = $this->parseTestResults($source_path,
-                                           $xunit_tmp,
-                                           $cover_tmp);
+      $results[] = $this->parseTestResults(
+        $source_path,
+        $xunit_tmp,
+        $cover_tmp);
     }
 
     return array_mergev($results);
   }
 
   public function buildTestFuture($path, $xunit_tmp, $cover_tmp) {
-    $cmd_line = csprintf('nosetests --with-xunit --xunit-file=%s',
-                         $xunit_tmp);
+    $cmd_line = csprintf(
+      'nosetests --with-xunit --xunit-file=%s',
+      $xunit_tmp);
 
     if ($this->getEnableCoverage() !== false) {
       $cmd_line .= csprintf(
@@ -133,14 +149,14 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute('number'));
+        $next_line = (int)$line->getAttribute('number');
         for ($start_line; $start_line < $next_line; $start_line++) {
           $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute('hits')) == 0) {
+        if ((int)$line->getAttribute('hits') == 0) {
           $coverage .= 'U';
-        } else if (intval($line->getAttribute('hits')) > 0) {
+        } else if ((int)$line->getAttribute('hits') > 0) {
           $coverage .= 'C';
         }
 

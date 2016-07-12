@@ -42,26 +42,14 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install CoffeeLint using `npm install -g coffeelint`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '--stdin';
+    return pht(
+      'Install CoffeeLint using `%s`.',
+      'npm install -g coffeelint');
   }
 
   protected function getMandatoryFlags() {
     $options = array(
-      '--reporter=checkstyle',
-      '--nocolor',
-      '--quiet',
+      '--reporter=raw',
     );
 
     if ($this->config) {
@@ -93,32 +81,29 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $report_dom = new DOMDocument();
-    $ok = @$report_dom->loadXML($stdout);
+    $messages = array();
+    $output = phutil_json_decode($stdout);
 
-    if (!$ok) {
+    // We are only linting a single file.
+    if (count($output) != 1) {
       return false;
     }
 
-    $files = $report_dom->getElementsByTagName('file');
-    $messages = array();
-    foreach ($files as $file) {
-      foreach ($file->getElementsByTagName('error') as $error) {
-
+    foreach ($output as $reports) {
+      foreach ($reports as $report) {
         // Column number is not provided in the output.
         // See https://github.com/clutchski/coffeelint/issues/87
 
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($error->getAttribute('line'));
-        $message->setCode($this->getLinterName());
-        $message->setDescription(preg_replace(
-          '/; context: .*$/',
-          '.',
-          $error->getAttribute('message')));
+        $message = id(new ArcanistLintMessage())
+          ->setPath($path)
+          ->setLine($report['lineNumber'])
+          ->setCode($this->getLinterName())
+          ->setName(ucwords(str_replace('_', ' ', $report['name'])))
+          ->setDescription($report['message'])
+          ->setOriginalText(idx($report, 'line'));
 
-        switch ($error->getAttribute('severity')) {
-          case 'warning':
+        switch ($report['level']) {
+          case 'warn':
             $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
             break;
 
@@ -139,10 +124,8 @@ final class ArcanistCoffeeLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-
     // NOTE: We can't figure out which rule generated each message, so we
     // can not customize severities.
-
     throw new Exception(
       pht(
         "CoffeeLint does not currently support custom severity levels, ".

@@ -1,0 +1,14 @@
+<?php
+
+function outer() {
+  if (!function_exists('inner')) {
+    function inner() {}
+  }
+}
+
+// Closures are allowed.
+function my_func($foo) {
+  function () {};
+}
+~~~~~~~~~~
+warning:5:5

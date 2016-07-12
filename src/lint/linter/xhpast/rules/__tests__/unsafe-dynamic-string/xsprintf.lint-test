@@ -1,0 +1,15 @@
+<?php
+
+csprintf('x');
+csprintf($x);
+~~~~~~~~~~
+error:4:1
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.dynamic-string.functions": {
+      "csprintf": 0
+    }
+  }
+}

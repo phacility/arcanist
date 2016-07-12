@@ -9,28 +9,28 @@ $args->parse(
   array(
     array(
       'name'      => 'quiet',
-      'help'      => 'Do not print status messages to stdout.',
+      'help'      => pht('Do not print status messages to stdout.'),
     ),
     array(
       'name'      => 'skip-hello',
-      'help'      => 'Do not send "capability" message when clients connect. '.
-                     'Clients must be configured not to expect the message. '.
-                     'This deviates from the Mercurial protocol, but slightly '.
-                     'improves performance.',
+      'help'      => pht(
+        'Do not send "capability" message when clients connect. Clients '.
+        'must be configured not to expect the message. This deviates '.
+        'from the Mercurial protocol, but slightly improves performance.'),
     ),
     array(
       'name'      => 'do-not-daemonize',
-      'help'      => 'Remain in the foreground instead of daemonizing.',
+      'help'      => pht('Remain in the foreground instead of daemonizing.'),
     ),
     array(
       'name'      => 'client-limit',
       'param'     => 'limit',
-      'help'      => 'Exit after serving __limit__ clients.',
+      'help'      => pht('Exit after serving __limit__ clients.'),
     ),
     array(
       'name'      => 'idle-limit',
       'param'     => 'seconds',
-      'help'      => 'Exit after __seconds__ spent idle.',
+      'help'      => pht('Exit after __seconds__ spent idle.'),
     ),
     array(
       'name'      => 'repository',
@@ -40,7 +40,7 @@ $args->parse(
 
 $repo = $args->getArg('repository');
 if (count($repo) !== 1) {
-  throw new Exception('Specify exactly one working copy!');
+  throw new Exception(pht('Specify exactly one working copy!'));
 }
 $repo = head($repo);
 

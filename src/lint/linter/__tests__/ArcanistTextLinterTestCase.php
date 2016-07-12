@@ -1,11 +1,9 @@
 <?php
 
-final class ArcanistTextLinterTestCase extends ArcanistArcanistLinterTestCase {
+final class ArcanistTextLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testTextLint() {
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/text/',
-      new ArcanistTextLinter());
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/text/');
   }
 
 }

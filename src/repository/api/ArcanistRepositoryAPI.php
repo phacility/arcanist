@@ -5,7 +5,7 @@
  *
  * @task  status      Path Status
  */
-abstract class ArcanistRepositoryAPI {
+abstract class ArcanistRepositoryAPI extends Phobject {
 
   const FLAG_MODIFIED     = 1;
   const FLAG_ADDED        = 2;
@@ -15,6 +15,9 @@ abstract class ArcanistRepositoryAPI {
   const FLAG_MISSING      = 32;
   const FLAG_UNSTAGED     = 64;
   const FLAG_UNCOMMITTED  = 128;
+
+  // Occurs in SVN when you have uncommitted changes to a modified external,
+  // or in Git when you have uncommitted or untracked changes in a submodule.
   const FLAG_EXTERNALS    = 256;
 
   // Occurs in SVN when you replace a file with a directory without telling
@@ -63,7 +66,8 @@ abstract class ArcanistRepositoryAPI {
     if (!$working_copy) {
       throw new Exception(
         pht(
-          'Trying to create a RepositoryAPI without a working copy!'));
+          'Trying to create a %s without a working copy!',
+          __CLASS__));
     }
 
     $root = $working_copy->getProjectRoot();
@@ -188,6 +192,14 @@ abstract class ArcanistRepositoryAPI {
    */
   final public function getMissingChanges() {
     return $this->getUncommittedPathsWithMask(self::FLAG_MISSING);
+  }
+
+
+  /**
+   * @task status
+   */
+  final public function getDirtyExternalChanges() {
+    return $this->getUncommittedPathsWithMask(self::FLAG_EXTERNALS);
   }
 
 

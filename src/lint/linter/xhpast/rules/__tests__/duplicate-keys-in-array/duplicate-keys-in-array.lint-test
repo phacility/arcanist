@@ -1,0 +1,43 @@
+<?php
+
+$a = array(
+  'a' => 'val1',
+  $a => 'val2',
+  'a' => val3(),
+  1 => val4(),
+  '1' => val5(),
+  1 => $val6,
+  'b' => 'val7',
+  b() => 'val8',
+);
+static $b = array(
+  1 => 'one',
+  2 => 'two',
+  2 => 'TWO',
+);
+$c = array();
+$d = array(
+  A => 'ay',
+  A => 'aye',
+  'A' => 'AYE',
+);
+$e = array(
+  self::B => 'bee',
+  self::B => 'bea',
+  self::b() => 'ehh',
+  self::$b => 'weh',
+  B => 'b',
+  C::B => 'cb',
+);
+$f = array(
+  $a => 'var',
+  'a' => 'lit',
+  $a => 'var2',
+);
+~~~~~~~~~~
+error:6:3
+error:9:3
+error:16:3
+error:21:3
+error:26:3
+error:35:3

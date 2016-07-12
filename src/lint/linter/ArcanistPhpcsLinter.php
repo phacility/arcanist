@@ -5,7 +5,7 @@
  */
 final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
 
-  private $reports;
+  private $standard;
 
   public function getInfoName() {
     return 'PHP_CodeSniffer';
@@ -29,31 +29,44 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     return 'phpcs';
   }
 
-  public function getMandatoryFlags() {
-    return array('--report=xml');
-  }
-
   public function getInstallInstructions() {
-    return pht('Install PHPCS with `pear install PHP_CodeSniffer`.');
+    return pht('Install PHPCS with `%s`.', 'pear install PHP_CodeSniffer');
   }
 
-  public function getDefaultFlags() {
-    $options = $this->getDeprecatedConfiguration('lint.phpcs.options', array());
-    $standard = $this->getDeprecatedConfiguration('lint.phpcs.standard');
+  public function getLinterConfigurationOptions() {
+    $options = array(
+      'phpcs.standard' => array(
+        'type' => 'optional string',
+        'help' => pht('The name or path of the coding standard to use.'),
+      ),
+    );
 
-    if (!empty($standard)) {
-      if (is_array($options)) {
-        $options[] = '--standard='.$standard;
-      } else {
-        $options .= ' --standard='.$standard;
-      }
+    return $options + parent::getLinterConfigurationOptions();
+  }
+
+  public function setLinterConfigurationValue($key, $value) {
+    switch ($key) {
+      case 'phpcs.standard':
+        $this->standard = $value;
+        return;
+
+      default:
+        return parent::setLinterConfigurationValue($key, $value);
+    }
+  }
+
+  protected function getMandatoryFlags() {
+    $options = array('--report=xml');
+
+    if ($this->standard) {
+      $options[] = '--standard='.$this->standard;
     }
 
     return $options;
   }
 
   public function getDefaultBinary() {
-    return $this->getDeprecatedConfiguration('lint.phpcs.bin', 'phpcs');
+    return 'phpcs';
   }
 
   public function getVersion() {
@@ -66,14 +79,6 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
     } else {
       return false;
     }
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function supportsReadDataFromStdin() {
-    return true;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -104,15 +109,17 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
           $prefix = 'W';
         }
 
-        $code = 'PHPCS.'.$prefix.'.'.$child->getAttribute('source');
+        $source = $child->getAttribute('source');
+        $code = 'PHPCS.'.$prefix.'.'.$source;
 
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($child->getAttribute('line'));
-        $message->setChar($child->getAttribute('column'));
-        $message->setCode($code);
-        $message->setDescription($child->nodeValue);
-        $message->setSeverity($this->getLintMessageSeverity($code));
+        $message = id(new ArcanistLintMessage())
+          ->setPath($path)
+          ->setName($source)
+          ->setLine($child->getAttribute('line'))
+          ->setChar($child->getAttribute('column'))
+          ->setCode($code)
+          ->setDescription($child->nodeValue)
+          ->setSeverity($this->getLintMessageSeverity($code));
 
         $messages[] = $message;
       }
@@ -132,7 +139,10 @@ final class ArcanistPhpcsLinter extends ArcanistExternalLinter {
   protected function getLintCodeFromLinterConfigurationKey($code) {
     if (!preg_match('/^PHPCS\\.(E|W)\\./', $code)) {
       throw new Exception(
-        "Invalid severity code '{$code}', should begin with 'PHPCS.'.");
+        pht(
+          "Invalid severity code '%s', should begin with '%s.'.",
+          $code,
+          'PHPCS'));
     }
     return $code;
   }

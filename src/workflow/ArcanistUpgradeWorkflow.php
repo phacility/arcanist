@@ -24,58 +24,88 @@ EOTEXT
       );
   }
 
-  public function getArguments() {
-    return array();
-  }
-
   public function run() {
-    $roots = array();
-    $roots['libphutil'] = dirname(phutil_get_library_root('phutil'));
-    $roots['arcanist'] = dirname(phutil_get_library_root('arcanist'));
+    $roots = array(
+      'libphutil' => dirname(phutil_get_library_root('phutil')),
+      'arcanist' => dirname(phutil_get_library_root('arcanist')),
+    );
 
     foreach ($roots as $lib => $root) {
-      echo "Upgrading {$lib}...\n";
-
-      if (!Filesystem::pathExists($root.'/.git')) {
-        throw new ArcanistUsageException(
-          "{$lib} must be in its git working copy to be automatically ".
-          "upgraded. This copy of {$lib} (in '{$root}') is not in a git ".
-          "working copy.");
-      }
+      echo phutil_console_format(
+        "%s\n",
+        pht('Upgrading %s...', $lib));
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
-
       $configuration_manager = clone $this->getConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
-      $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
+      $repository = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
         $configuration_manager);
 
-      $this->setRepositoryAPI($repository_api);
-
-      // Require no local changes.
-      $this->requireCleanWorkingCopy();
-
-      // Require the library be on master.
-      $branch_name = $repository_api->getBranchName();
-      if ($branch_name != 'master') {
+      if (!Filesystem::pathExists($repository->getMetadataPath())) {
         throw new ArcanistUsageException(
-          "{$lib} must be on branch 'master' to be automatically upgraded. ".
-          "This copy of {$lib} (in '{$root}') is on branch '{$branch_name}'.");
+          pht(
+            "%s must be in its git working copy to be automatically upgraded. ".
+            "This copy of %s (in '%s') is not in a git working copy.",
+            $lib,
+            $lib,
+            $root));
+      }
+
+      $this->setRepositoryAPI($repository);
+
+      // NOTE: Don't use requireCleanWorkingCopy() here because it tries to
+      // amend changes and generally move the workflow forward. We just want to
+      // abort if there are local changes and make the user sort things out.
+      $uncommitted = $repository->getUncommittedStatus();
+      if ($uncommitted) {
+        $message = pht(
+          'You have uncommitted changes in the working copy for this '.
+          'library:');
+
+        $list = id(new PhutilConsoleList())
+          ->setWrap(false)
+          ->addItems(array_keys($uncommitted));
+
+        id(new PhutilConsoleBlock())
+          ->addParagraph($message)
+          ->addList($list)
+          ->draw();
+
+        throw new ArcanistUsageException(
+          pht('`arc upgrade` can only upgrade clean working copies.'));
+      }
+
+      $branch_name = $repository->getBranchName();
+      if ($branch_name != 'master' && $branch_name != 'stable') {
+        throw new ArcanistUsageException(
+          pht(
+            "%s must be on either branch '%s' or '%s' to be automatically ".
+            "upgraded. ".
+            "This copy of %s (in '%s') is on branch '%s'.",
+            $lib,
+            'master',
+            'stable',
+            $lib,
+            $root,
+            $branch_name));
       }
 
       chdir($root);
+
       try {
-        phutil_passthru('git pull --rebase');
+        execx('git pull --rebase');
       } catch (Exception $ex) {
-        phutil_passthru('git rebase --abort');
+        // If we failed, try to go back to the old state, then throw the
+        // original exception.
+        exec_manual('git rebase --abort');
         throw $ex;
       }
     }
 
-    echo phutil_console_wrap(
-      phutil_console_format(
-        "**Updated!** Your copy of arc is now up to date.\n"));
-
+    echo phutil_console_format(
+      "**%s** %s\n",
+      pht('Updated!'),
+      pht('Your copy of arc is now up to date.'));
     return 0;
   }
 

@@ -55,7 +55,7 @@ EOTEXT
       ));
 
     if (!$revisions) {
-      echo "You have no open Differential revisions.\n";
+      echo pht('You have no open Differential revisions.')."\n";
       return 0;
     }
 
@@ -83,19 +83,22 @@ EOTEXT
     $table = id(new PhutilConsoleTable())
       ->setShowHeader(false)
       ->addColumn('exists', array('title' => ''))
-      ->addColumn('status', array('title' => 'Status'))
-      ->addColumn('title',  array('title' => 'Title'));
+      ->addColumn('status', array('title' => pht('Status')))
+      ->addColumn('title',  array('title' => pht('Title')));
 
     $info = isort($info, 'sort');
     foreach ($info as $key => $spec) {
       $revision = $revisions[$key];
 
       $table->addRow(array(
-        'exists' => $spec['exists'] ? phutil_console_format('**%s**', '*') : '',
-        'status' => phutil_console_format(
-          "<fg:{$spec['color']}>%s</fg>", $spec['statusName']),
-        'title'  => phutil_console_format(
-          '**D%d:** %s', $revision['id'], $revision['title']),
+        'exists' => $spec['exists'] ? tsprintf('**%s**', '*') : '',
+        'status' => tsprintf(
+          "<fg:{$spec['color']}>%s</fg>",
+          $spec['statusName']),
+        'title'  => tsprintf(
+          '**D%d:** %s',
+          $revision['id'],
+          $revision['title']),
       ));
     }
 

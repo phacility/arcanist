@@ -1,11 +1,11 @@
 <?php
 
-final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
+final class ArcanistBaseCommitParserTestCase extends PhutilTestCase {
 
   public function testBasics() {
     // Verify that the very basics of base commit resolution work.
     $this->assertCommit(
-      'Empty Rules',
+      pht('Empty Rules'),
       null,
       array(
       ));
@@ -23,7 +23,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
     // test cases intentionally scramble argument order to test that resolution
     // order is independent of argument order.
     $this->assertCommit(
-      'Order: Args',
+      pht('Order: Args'),
       'y',
       array(
         'local'   => 'literal:n',
@@ -33,7 +33,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       ));
 
     $this->assertCommit(
-      'Order: Local',
+      pht('Order: Local'),
       'y',
       array(
         'project' => 'literal:n',
@@ -42,7 +42,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       ));
 
     $this->assertCommit(
-      'Order: Project',
+      pht('Order: Project'),
       'y',
       array(
         'project' => 'literal:y',
@@ -50,7 +50,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
       ));
 
     $this->assertCommit(
-      'Order: Global',
+      pht('Order: Global'),
       'y',
       array(
         'user' => 'literal:y',
@@ -60,7 +60,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
   public function testLegacyRule() {
     // 'global' should translate to 'user'
     $this->assertCommit(
-      '"global" name',
+      pht('"%s" name', 'global'),
       'y',
       array(
         'runtime' => 'arc:global, arc:halt',
@@ -71,7 +71,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
 
     // 'args' should translate to 'runtime'
     $this->assertCommit(
-      '"args" name',
+      pht('"%s" name', 'args'),
       'y',
       array(
         'runtime' => 'arc:project, literal:y',
@@ -84,7 +84,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
   public function testHalt() {
     // 'arc:halt' should halt all processing.
     $this->assertCommit(
-      'Halt',
+      pht('Halt'),
       null,
       array(
         'runtime' => 'arc:halt',
@@ -95,7 +95,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
   public function testYield() {
     // 'arc:yield' should yield to other rulesets.
     $this->assertCommit(
-      'Yield',
+      pht('Yield'),
       'xyz',
       array(
         'runtime' => 'arc:yield, literal:abc',
@@ -104,7 +104,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
 
     // This one should return to 'runtime' after exhausting 'local'.
     $this->assertCommit(
-      'Yield + Return',
+      pht('Yield + Return'),
       'abc',
       array(
         'runtime' => 'arc:yield, literal:abc',
@@ -115,7 +115,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
   public function testJump() {
     // This should resolve to 'abc' without hitting any of the halts.
     $this->assertCommit(
-      'Jump',
+      pht('Jump'),
       'abc',
       array(
         'runtime' => 'arc:project, arc:halt',
@@ -128,7 +128,7 @@ final class ArcanistBaseCommitParserTestCase extends ArcanistTestCase {
   public function testJumpReturn() {
     // After jumping to project, we should return to 'runtime'.
     $this->assertCommit(
-      'Jump Return',
+      pht('Jump Return'),
       'xyz',
       array(
         'runtime' => 'arc:project, literal:xyz',

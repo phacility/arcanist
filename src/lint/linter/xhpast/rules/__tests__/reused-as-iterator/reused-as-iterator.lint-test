@@ -1,0 +1,67 @@
+<?php
+
+function f($stuff, $thing) {
+  foreach ($stuff as $ii) {}
+
+  // OK: Only reused for iteration.
+
+  foreach ($stuff as $ii) {}
+}
+
+function g($stuff, $thing) {
+  foreach ($stuff as $thing) {}
+
+  // OK: Not reused later.
+}
+
+function h($stuff, $thing) {
+
+  // OK: Used afterwards but not before.
+
+  foreach ($stuff as $key => $val) {}
+
+  $key = 1;
+  $thing = 1;
+  $thing = $key;
+  $key = $thing;
+}
+
+function i($stuff, $thing) {
+  foreach ($stuff as $thing) {
+    $thing++;
+  }
+
+  // OK: Used afterwards but inside loop.
+
+  foreach ($stuff as $thing) {
+    $thing++;
+  }
+}
+
+function j($stuff, $thing) {
+
+  foreach ($stuff as $thing) {
+    break;
+  }
+
+  // ERROR: Clobbers $thing; probably not what the author intended.
+
+  f($thing);
+}
+
+function k($stuff, $thing) {
+  foreach ($stuff as $thing) {
+    break;
+  }
+
+  // ERROR: Clobbers $thing. Test case to cover some errors of implementation
+  // where subsequent legitimate foreach()es threw a wrench in the gears.
+
+  f($thing);
+
+  $other = array();
+  foreach ($other as $item) {}
+}
+~~~~~~~~~~
+error:43:22
+error:53:22

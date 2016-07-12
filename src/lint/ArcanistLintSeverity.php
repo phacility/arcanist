@@ -3,7 +3,7 @@
 /**
  * Describes the severity of an @{class:ArcanistLintMessage}.
  */
-final class ArcanistLintSeverity {
+final class ArcanistLintSeverity extends Phobject {
 
   const SEVERITY_ADVICE       = 'advice';
   const SEVERITY_AUTOFIX      = 'autofix';
@@ -13,11 +13,11 @@ final class ArcanistLintSeverity {
 
   public static function getLintSeverities() {
     return array(
-      self::SEVERITY_ADVICE   => 'Advice',
-      self::SEVERITY_AUTOFIX  => 'Auto-Fix',
-      self::SEVERITY_WARNING  => 'Warning',
-      self::SEVERITY_ERROR    => 'Error',
-      self::SEVERITY_DISABLED => 'Disabled',
+      self::SEVERITY_ADVICE   => pht('Advice'),
+      self::SEVERITY_AUTOFIX  => pht('Auto-Fix'),
+      self::SEVERITY_WARNING  => pht('Warning'),
+      self::SEVERITY_ERROR    => pht('Error'),
+      self::SEVERITY_DISABLED => pht('Disabled'),
     );
   }
 
@@ -25,7 +25,7 @@ final class ArcanistLintSeverity {
     $map = self::getLintSeverities();
 
     if (!array_key_exists($severity_code, $map)) {
-      throw new Exception("Unknown lint severity '{$severity_code}'!");
+      throw new Exception(pht("Unknown lint severity '%s'!", $severity_code));
     }
 
     return $map[$severity_code];

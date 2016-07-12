@@ -1,0 +1,25 @@
+<?php
+
+class Foo extends Bar {
+  public static function doSomething() {
+    return SELF::doSomethingElse();
+  }
+
+  public static function doSomethingElse() {
+    return self::doSomething();
+  }
+}
+~~~~~~~~~~
+warning:5:12
+~~~~~~~~~~
+<?php
+
+class Foo extends Bar {
+  public static function doSomething() {
+    return self::doSomethingElse();
+  }
+
+  public static function doSomethingElse() {
+    return self::doSomething();
+  }
+}

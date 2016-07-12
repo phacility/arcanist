@@ -41,14 +41,14 @@ EOTEXT
     return array(
       'title' => array(
         'param' => 'title',
-        'help' => 'Title for the paste.',
+        'help' => pht('Title for the paste.'),
       ),
       'lang' => array(
         'param' => 'language',
-        'help' => 'Language for syntax highlighting.',
+        'help' => pht('Language for syntax highlighting.'),
       ),
       'json' => array(
-        'help' => 'Output in JSON format.',
+        'help' => pht('Output in JSON format.'),
       ),
       '*' => 'argv',
     );
@@ -59,41 +59,35 @@ EOTEXT
   }
 
   protected function didParseArguments() {
+    $this->json     = $this->getArgument('json');
     $this->language = $this->getArgument('lang');
     $this->title    = $this->getArgument('title');
-    $this->json     = $this->getArgument('json');
 
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
-      throw new ArcanistUsageException('Specify only one paste to retrieve.');
+      throw new ArcanistUsageException(
+        pht('Specify only one paste to retrieve.'));
     } else if (count($argv) == 1) {
       $id = $argv[0];
       if (!preg_match('/^P?\d+/', $id)) {
-        throw new ArcanistUsageException('Specify a paste ID, like P123.');
+        throw new ArcanistUsageException(
+          pht(
+            'Specify a paste ID, like %s.',
+            'P123'));
       }
       $this->id = (int)ltrim($id, 'P');
 
       if ($this->language || $this->title) {
         throw new ArcanistUsageException(
-          'Use options --lang and --title only when creating pastes.');
+          pht(
+            'Use options %s and %s only when creating pastes.',
+            '--lang',
+            '--title'));
       }
     }
   }
 
-  private function getTitle() {
-    return $this->title;
-  }
-
-  private function getLanguage() {
-    return $this->language;
-  }
-
-  private function getJSON() {
-    return $this->json;
-  }
-
   public function run() {
-
     if ($this->id) {
       return $this->getPaste();
     } else {
@@ -111,13 +105,13 @@ EOTEXT
       ));
     $info = head($info);
 
-    if ($this->getJSON()) {
+    if ($this->json) {
       echo json_encode($info)."\n";
     } else {
       echo $info['content'];
       if (!preg_match('/\\n$/', $info['content'])) {
         // If there's no newline, add one, since it looks stupid otherwise. If
-        // you want byte-for-byte equivalence you can use --json.
+        // you want byte-for-byte equivalence you can use `--json`.
         echo "\n";
       }
     }
@@ -128,15 +122,16 @@ EOTEXT
   private function createPaste() {
     $conduit = $this->getConduit();
 
-    // Avoid confusion when people type "arc paste" with nothing else.
-    $this->writeStatusMessage("Reading paste from stdin...\n");
+    if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
+      $this->writeStatusMessage(pht('Reading paste from stdin...')."\n");
+    }
 
     $info = $conduit->callMethodSynchronous(
       'paste.create',
       array(
-        'content'   => file_get_contents('php://stdin'),
-        'title'     => $this->getTitle(),
-        'language'  => $this->getLanguage(),
+        'content' => file_get_contents('php://stdin'),
+        'title' => $this->title,
+        'language' => $this->language,
       ));
 
     if ($this->getArgument('json')) {

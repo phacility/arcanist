@@ -4,17 +4,20 @@
  * Implements lint rules, like syntax checks for a specific language.
  *
  * @task info Human Readable Information
- * @stable
+ * @task state Runtime State
+ * @task exec Executing Linters
  */
-abstract class ArcanistLinter {
+abstract class ArcanistLinter extends Phobject {
 
   const GRANULARITY_FILE = 1;
   const GRANULARITY_DIRECTORY = 2;
   const GRANULARITY_REPOSITORY = 3;
   const GRANULARITY_GLOBAL = 4;
 
-  protected $paths  = array();
-  protected $data   = array();
+  private $id;
+  protected $paths = array();
+  private $filteredPaths = null;
+  protected $data = array();
   protected $engine;
   protected $activePath;
   protected $messages = array();
@@ -25,7 +28,8 @@ abstract class ArcanistLinter {
   private $customSeverityRules = array();
 
 
-/*  -(  Human Readable Information  )---------------------------------------- */
+/* -(  Human Readable Information  )----------------------------------------- */
+
 
   /**
    * Return an optional informative URI where humans can learn more about this
@@ -54,6 +58,20 @@ abstract class ArcanistLinter {
   }
 
   /**
+   * Return arbitrary additional information.
+   *
+   * Linters can use this method to provide arbitrary additional information to
+   * be included in the output of `arc linters`.
+   *
+   * @return map<string, string>  A mapping of header to body content for the
+   *                              additional information sections.
+   * @task info
+   */
+  public function getAdditionalInformation() {
+    return array();
+  }
+
+  /**
    * Return a human-readable linter name.
    *
    * These are used by `arc linters`, and can let you give a linter a more
@@ -69,6 +87,129 @@ abstract class ArcanistLinter {
       get_class($this));
   }
 
+
+/* -(  Runtime State  )------------------------------------------------------ */
+
+
+  /**
+   * @task state
+   */
+  final public function getActivePath() {
+    return $this->activePath;
+  }
+
+
+  /**
+   * @task state
+   */
+  final public function setActivePath($path) {
+    $this->stopAllLinters = false;
+    $this->activePath = $path;
+    return $this;
+  }
+
+
+  /**
+   * @task state
+   */
+  final public function setEngine(ArcanistLintEngine $engine) {
+    $this->engine = $engine;
+    return $this;
+  }
+
+
+  /**
+   * @task state
+   */
+  final protected function getEngine() {
+    return $this->engine;
+  }
+
+
+  /**
+   * Set the internal ID for this linter.
+   *
+   * This ID is assigned automatically by the @{class:ArcanistLintEngine}.
+   *
+   * @param string Unique linter ID.
+   * @return this
+   * @task state
+   */
+  final public function setLinterID($id) {
+    $this->id = $id;
+    return $this;
+  }
+
+
+  /**
+   * Get the internal ID for this linter.
+   *
+   * Retrieves an internal linter ID managed by the @{class:ArcanistLintEngine}.
+   * This ID is a unique scalar which distinguishes linters in a list.
+   *
+   * @return string Unique linter ID.
+   * @task state
+   */
+  final public function getLinterID() {
+    return $this->id;
+  }
+
+
+/* -(  Executing Linters  )-------------------------------------------------- */
+
+
+  /**
+   * Hook called before a list of paths are linted.
+   *
+   * Parallelizable linters can start multiple requests in parallel here,
+   * to improve performance. They can implement @{method:didLintPaths} to
+   * collect results.
+   *
+   * Linters which are not parallelizable should normally ignore this callback
+   * and implement @{method:lintPath} instead.
+   *
+   * @param list<string> A list of paths to be linted
+   * @return void
+   * @task exec
+   */
+  public function willLintPaths(array $paths) {
+    return;
+  }
+
+
+  /**
+   * Hook called for each path to be linted.
+   *
+   * Linters which are not parallelizable can do work here.
+   *
+   * Linters which are parallelizable may want to ignore this callback and
+   * implement @{method:willLintPaths} and @{method:didLintPaths} instead.
+   *
+   * @param string Path to lint.
+   * @return void
+   * @task exec
+   */
+  public function lintPath($path) {
+    return;
+  }
+
+
+  /**
+   * Hook called after a list of paths are linted.
+   *
+   * Parallelizable linters can collect results here.
+   *
+   * Linters which are not paralleizable should normally ignore this callback
+   * and implement @{method:lintPath} instead.
+   *
+   * @param list<string> A list of paths which were linted.
+   * @return void
+   * @task exec
+   */
+  public function didLintPaths(array $paths) {
+    return;
+  }
+
   public function getLinterPriority() {
     return 1.0;
   }
@@ -81,13 +222,32 @@ abstract class ArcanistLinter {
     return $this;
   }
 
+  public function addCustomSeverityMap(array $map) {
+    $this->customSeverityMap = $this->customSeverityMap + $map;
+    return $this;
+  }
+
   final public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
   }
 
-  final public function getActivePath() {
-    return $this->activePath;
+  final public function getProjectRoot() {
+    $engine = $this->getEngine();
+    if (!$engine) {
+      throw new Exception(
+        pht(
+          'You must call %s before you can call %s.',
+          'setEngine()',
+          __FUNCTION__.'()'));
+    }
+
+    $working_copy = $engine->getWorkingCopy();
+    if (!$working_copy) {
+      return null;
+    }
+
+    return $working_copy->getProjectRoot();
   }
 
   final public function getOtherLocation($offset, $path = null) {
@@ -117,19 +277,24 @@ abstract class ArcanistLinter {
 
   final public function addPath($path) {
     $this->paths[$path] = $path;
+    $this->filteredPaths = null;
     return $this;
   }
 
   final public function setPaths(array $paths) {
     $this->paths = $paths;
+    $this->filteredPaths = null;
     return $this;
   }
 
   /**
    * Filter out paths which this linter doesn't act on (for example, because
    * they are binaries and the linter doesn't apply to binaries).
+   *
+   * @param  list<string>
+   * @return list<string>
    */
-  final private function filterPaths($paths) {
+  final private function filterPaths(array $paths) {
     $engine = $this->getEngine();
 
     $keep = array();
@@ -157,7 +322,11 @@ abstract class ArcanistLinter {
   }
 
   final public function getPaths() {
-    return $this->filterPaths(array_values($this->paths));
+    if ($this->filteredPaths === null) {
+      $this->filteredPaths = $this->filterPaths(array_values($this->paths));
+    }
+
+    return $this->filteredPaths;
   }
 
   final public function addData($path, $data) {
@@ -172,18 +341,10 @@ abstract class ArcanistLinter {
     return $this->data[$path];
   }
 
-  final public function setEngine(ArcanistLintEngine $engine) {
-    $this->engine = $engine;
-    return $this;
-  }
-
-  final protected function getEngine() {
-    return $this->engine;
-  }
-
   public function getCacheVersion() {
     return 0;
   }
+
 
   final public function getLintMessageFullCode($short_code) {
     return $this->getLinterName().$short_code;
@@ -223,15 +384,14 @@ abstract class ArcanistLinter {
     if (isset($map[$code])) {
       return $map[$code];
     }
-    return 'Unknown lint message!';
+    return pht('Unknown lint message!');
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {
-    if (!$this->getEngine()->getCommitHookMode()) {
-      $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
-      $path = Filesystem::resolvePath($message->getPath(), $root);
-      $message->setPath(Filesystem::readablePath($path, $root));
-    }
+    $root = $this->getProjectRoot();
+    $path = Filesystem::resolvePath($message->getPath(), $root);
+    $message->setPath(Filesystem::readablePath($path, $root));
+
     $this->messages[] = $message;
     return $message;
   }
@@ -240,11 +400,11 @@ abstract class ArcanistLinter {
     return $this->messages;
   }
 
-  final protected function raiseLintAtLine(
+  final public function raiseLintAtLine(
     $line,
     $char,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -255,21 +415,21 @@ abstract class ArcanistLinter {
       ->setCode($this->getLintMessageFullCode($code))
       ->setSeverity($this->getLintMessageSeverity($code))
       ->setName($this->getLintMessageName($code))
-      ->setDescription($desc)
+      ->setDescription($description)
       ->setOriginalText($original)
       ->setReplacementText($replacement);
 
     return $this->addLintMessage($message);
   }
 
-  final protected function raiseLintAtPath($code, $desc) {
+  final public function raiseLintAtPath($code, $desc) {
     return $this->raiseLintAtLine(null, null, $code, $desc, null, null);
   }
 
-  final protected function raiseLintAtOffset(
+  final public function raiseLintAtOffset(
     $offset,
     $code,
-    $desc,
+    $description,
     $original = null,
     $replacement = null) {
 
@@ -286,33 +446,19 @@ abstract class ArcanistLinter {
       $line + 1,
       $char + 1,
       $code,
-      $desc,
+      $description,
       $original,
       $replacement);
-  }
-
-  public function willLintPath($path) {
-    $this->stopAllLinters = false;
-    $this->activePath = $path;
   }
 
   public function canRun() {
     return true;
   }
 
-  public function willLintPaths(array $paths) {
-    return;
-  }
-
-  abstract public function lintPath($path);
   abstract public function getLinterName();
 
   public function getVersion() {
     return null;
-  }
-
-  public function didRunLinters() {
-    // This is a hook.
   }
 
   final protected function isCodeEnabled($code) {
@@ -362,15 +508,19 @@ abstract class ArcanistLinter {
           'Provide a map of regular expressions to severity levels. All '.
           'matching codes have their severity adjusted.'),
       ),
+      'standard' => array(
+        'type' => 'optional string | list<string>',
+        'help' => pht('The coding standard(s) to apply.'),
+      ),
     );
   }
 
   public function setLinterConfigurationValue($key, $value) {
     $sev_map = array(
-      'error' => ArcanistLintSeverity::SEVERITY_ERROR,
-      'warning' => ArcanistLintSeverity::SEVERITY_WARNING,
-      'autofix' => ArcanistLintSeverity::SEVERITY_AUTOFIX,
-      'advice' => ArcanistLintSeverity::SEVERITY_ADVICE,
+      'error'    => ArcanistLintSeverity::SEVERITY_ERROR,
+      'warning'  => ArcanistLintSeverity::SEVERITY_WARNING,
+      'autofix'  => ArcanistLintSeverity::SEVERITY_AUTOFIX,
+      'advice'   => ArcanistLintSeverity::SEVERITY_ADVICE,
       'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
 
@@ -420,9 +570,27 @@ abstract class ArcanistLinter {
         }
         $this->setCustomSeverityRules($value);
         return;
+
+      case 'standard':
+        $standards = (array)$value;
+
+        foreach ($standards as $standard_name) {
+          $standard = ArcanistLinterStandard::getStandard(
+            $standard_name,
+            $this);
+
+          foreach ($standard->getLinterConfiguration() as $k => $v) {
+            $this->setLinterConfigurationValue($k, $v);
+          }
+          $this->addCustomSeverityMap($standard->getLinterSeverityMap());
+        }
+
+        return;
+
+
     }
 
-    throw new Exception("Incomplete implementation: {$key}!");
+    throw new Exception(pht('Incomplete implementation: %s!', $key));
   }
 
   protected function canCustomizeLintSeverities() {
@@ -457,49 +625,6 @@ abstract class ArcanistLinter {
    */
   protected function getLintCodeFromLinterConfigurationKey($code) {
     return $code;
-  }
-
-  /**
-   * Retrieve an old lint configuration value from `.arcconfig` or a similar
-   * source.
-   *
-   * Modern linters should use @{method:getConfig} to read configuration from
-   * `.arclint`.
-   *
-   * @param   string  Configuration key to retrieve.
-   * @param   wild    Default value to return if key is not present in config.
-   * @return  wild    Configured value, or default if no configuration exists.
-   */
-  final protected function getDeprecatedConfiguration($key, $default = null) {
-    // If we're being called in a context without an engine (probably from
-    // `arc linters`), just return the default value.
-    if (!$this->engine) {
-      return $default;
-    }
-
-    $config = $this->getEngine()->getConfigurationManager();
-
-    // Construct a sentinel object so we can tell if we're reading config
-    // or not.
-    $sentinel = (object)array();
-    $result = $config->getConfigFromAnySource($key, $sentinel);
-
-    // If we read config, warn the user that this mechanism is deprecated and
-    // discouraged.
-    if ($result !== $sentinel) {
-      $console = PhutilConsole::getConsole();
-      $console->writeErr(
-        "**%s**: %s\n",
-        pht('Deprecation Warning'),
-        pht(
-          'Configuration option "%s" is deprecated. Generally, linters should '.
-          'now be configured using an `.arclint` file. See "Arcanist User '.
-          'Guide: Lint" in the documentation for more information.',
-          $key));
-      return $result;
-    }
-
-    return $default;
   }
 
 }

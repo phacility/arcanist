@@ -1,0 +1,14 @@
+<?php
+
+echo <<<'EOT'
+Hello World!
+EOT;
+~~~~~~~~~~
+error:3:6
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.php-version": "5.2.3"
+  }
+}

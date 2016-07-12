@@ -29,7 +29,7 @@ EOTEXT
   public function getArguments() {
     return array(
       'full' => array(
-        'help' => 'Print detailed information about each command.',
+        'help' => pht('Print detailed information about each command.'),
       ),
       '*' => 'command',
     );
@@ -46,7 +46,10 @@ EOTEXT
       $target = head($this->getArgument('command'));
       if (empty($workflows[$target])) {
         throw new ArcanistUsageException(
-          "Unrecognized command '{$target}'. Try 'arc help'.");
+          pht(
+            "Unrecognized command '%s'. Try '%s'.",
+            $target,
+            'arc help'));
       }
     }
 
@@ -109,19 +112,19 @@ EOTEXT
         }
 
         if (isset($config_arguments[$argument])) {
-          $optref[] = '              (This is a custom option for this '.
-                      'project.)';
+          $optref[] = '              '.
+            pht('(This is a custom option for this project.)');
         }
 
         if (isset($spec['supports'])) {
-          $optref[] = '              Supports: '.
-                      implode(', ', $spec['supports']);
+          $optref[] = '              '.
+            pht('Supports: %s', implode(', ', $spec['supports']));
         }
 
         if (isset($spec['help'])) {
           $docs = $spec['help'];
         } else {
-          $docs = 'This option is not documented.';
+          $docs = pht('This option is not documented.');
         }
         $docs = phutil_console_wrap($docs, 14);
         $optref[] = "{$docs}\n";
@@ -163,7 +166,9 @@ EOTEXT
     );
 
     if (!$this->getArgument('full')) {
-      echo "Run 'arc help --full' to get commands and options descriptions.\n";
+      echo pht(
+        "Run '%s' to get commands and options descriptions.\n",
+        'arc help --full');
       return;
     }
 
@@ -188,6 +193,9 @@ EOTEXT
       __--conduit-uri__ __uri__
           Ignore configured Conduit URI and use an explicit one instead. Mostly
           useful for Arcanist development.
+
+      __--conduit-token__ __token__
+          Ignore configured credentials and use an explicit API token instead.
 
       __--conduit-version__ __version__
           Ignore software version and claim to be running some other version

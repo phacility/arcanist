@@ -3,7 +3,8 @@
 /**
  * Test cases for @{class:ArcanistXHPASTLintNamingHook}.
  */
-final class ArcanistXHPASTLintNamingHookTestCase extends ArcanistTestCase {
+final class ArcanistXHPASTLintNamingHookTestCase
+  extends PhutilTestCase {
 
   public function testCaseUtilities() {
     $tests = array(
@@ -28,19 +29,19 @@ final class ArcanistXHPASTLintNamingHookTestCase extends ArcanistTestCase {
       $this->assertEqual(
         $expect[0],
         ArcanistXHPASTLintNamingHook::isUpperCamelCase($test),
-        "UpperCamelCase: '{$test}'");
+        pht("UpperCamelCase: '%s'", $test));
       $this->assertEqual(
         $expect[1],
         ArcanistXHPASTLintNamingHook::isLowerCamelCase($test),
-        "lowerCamelCase: '{$test}'");
+        pht("lowerCamelCase: '%s'", $test));
       $this->assertEqual(
         $expect[2],
         ArcanistXHPASTLintNamingHook::isUppercaseWithUnderscores($test),
-        "UPPERCASE_WITH_UNDERSCORES: '{$test}'");
+        pht("UPPERCASE_WITH_UNDERSCORES: '%s'", $test));
       $this->assertEqual(
         $expect[3],
         ArcanistXHPASTLintNamingHook::isLowercaseWithUnderscores($test),
-        "lowercase_with_underscores: '{$test}'");
+        pht("lowercase_with_underscores: '%s'", $test));
     }
   }
 

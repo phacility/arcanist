@@ -1,0 +1,25 @@
+<?php
+
+class Foo extends Bar {
+  public static function newInstance() {
+    return new Foo();
+  }
+
+  public static function init() {
+    return new self();
+  }
+}
+~~~~~~~~~~
+warning:5:16
+~~~~~~~~~~
+<?php
+
+class Foo extends Bar {
+  public static function newInstance() {
+    return new self();
+  }
+
+  public static function init() {
+    return new self();
+  }
+}

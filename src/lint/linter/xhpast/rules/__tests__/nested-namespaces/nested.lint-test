@@ -1,0 +1,9 @@
+<?php
+namespace X {
+  namespace Y {
+    namespace Z {}
+  }
+}
+~~~~~~~~~~
+error:3:3
+error:4:5

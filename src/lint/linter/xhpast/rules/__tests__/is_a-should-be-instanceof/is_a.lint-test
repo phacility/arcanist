@@ -1,0 +1,16 @@
+<?php
+is_a($x, $y);
+is_a($x, 'SomeClass');
+is_a($x, '\\SomeClass');
+is_a($x, '\\'.'Some'.'Class');
+~~~~~~~~~~
+advice:2:1
+advice:3:1
+advice:4:1
+advice:5:1
+~~~~~~~~~~
+<?php
+$x instanceof $y;
+$x instanceof SomeClass;
+$x instanceof \SomeClass;
+is_a($x, '\\'.'Some'.'Class');

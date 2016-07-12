@@ -1,9 +1,0 @@
-<?php
-final class Platypus {
-  public function platypus() {
-    // This method must be renamed to __construct().
-  }
-}
-~~~~~~~~~~
-error:2:13 XHP19 Class-Filename Mismatch
-error:3:19

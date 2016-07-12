@@ -40,13 +40,13 @@ final class ArcanistXMLLinter extends ArcanistLinter {
     }
 
     foreach (libxml_get_errors() as $error) {
-      $message = new ArcanistLintMessage();
-      $message->setPath($path);
-      $message->setLine($error->line);
-      $message->setChar($error->column ? $error->column : null);
-      $message->setCode($this->getLintMessageFullCode($error->code));
-      $message->setName('LibXML Error');
-      $message->setDescription(trim($error->message));
+      $message = id(new ArcanistLintMessage())
+        ->setPath($path)
+        ->setLine($error->line)
+        ->setChar($error->column ? $error->column : null)
+        ->setCode($this->getLintMessageFullCode($error->code))
+        ->setName(pht('LibXML Error'))
+        ->setDescription(trim($error->message));
 
       switch ($error->level) {
         case LIBXML_ERR_NONE:

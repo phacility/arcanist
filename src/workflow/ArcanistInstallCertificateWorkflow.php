@@ -35,7 +35,7 @@ EOTEXT
     );
   }
 
-  public function shouldShellComplete() {
+  protected function shouldShellComplete() {
     return false;
   }
 
@@ -48,66 +48,132 @@ EOTEXT
   }
 
   public function run() {
+    $console = PhutilConsole::getConsole();
+
     $uri = $this->determineConduitURI();
     $this->setConduitURI($uri);
     $configuration_manager = $this->getConfigurationManager();
 
-    echo "Installing certificate for '{$uri}'...\n";
-
     $config = $configuration_manager->readUserConfigurationFile();
 
-    echo "Trying to connect to server...\n";
+    $this->writeInfo(
+      pht('CONNECT'),
+      pht(
+        'Connecting to "%s"...',
+        $uri));
+
     $conduit = $this->establishConduit()->getConduit();
     try {
       $conduit->callMethodSynchronous('conduit.ping', array());
     } catch (Exception $ex) {
       throw new ArcanistUsageException(
-        'Failed to connect to server: '.$ex->getMessage());
+        pht(
+          'Failed to connect to server (%s): %s',
+          $uri,
+          $ex->getMessage()));
     }
-    echo "Connection OK!\n";
 
     $token_uri = new PhutilURI($uri);
     $token_uri->setPath('/conduit/token/');
 
-    echo "\n";
-    echo phutil_console_format("**LOGIN TO PHABRICATOR**\n");
-    echo "Open this page in your browser and login to Phabricator if ".
-         "necessary:\n";
-    echo "\n";
-    echo "    {$token_uri}\n";
-    echo "\n";
-    echo 'Then paste the token on that page below.';
+    // Check if this server supports the more modern token-based login.
+    $is_token_auth = false;
+    try {
+      $capabilities = $conduit->callMethodSynchronous(
+        'conduit.getcapabilities',
+        array());
+      $auth = idx($capabilities, 'authentication', array());
+      if (in_array('token', $auth)) {
+        $token_uri->setPath('/conduit/login/');
+        $is_token_auth = true;
+      }
+    } catch (Exception $ex) {
+      // Ignore.
+    }
 
+    echo phutil_console_format("**%s**\n", pht('LOGIN TO PHABRICATOR'));
+    echo phutil_console_format(
+      "%s\n\n%s\n\n%s",
+      pht(
+        'Open this page in your browser and login to '.
+        'Phabricator if necessary:'),
+      $token_uri,
+      pht('Then paste the API Token on that page below.'));
 
     do {
-      $token = phutil_console_prompt('Paste token from that page:');
+      $token = phutil_console_prompt(pht('Paste API Token from that page:'));
       $token = trim($token);
       if (strlen($token)) {
         break;
       }
     } while (true);
 
-    echo "\n";
-    echo "Downloading authentication certificate...\n";
-    $info = $conduit->callMethodSynchronous(
-      'conduit.getcertificate',
-      array(
+    if ($is_token_auth) {
+      if (strlen($token) != 32) {
+        throw new ArcanistUsageException(
+          pht(
+            'The token "%s" is not formatted correctly. API tokens should '.
+            'be 32 characters long. Make sure you visited the correct URI '.
+            'and copy/pasted the token correctly.',
+            $token));
+      }
+
+      if (strncmp($token, 'cli-', 4) !== 0) {
+        throw new ArcanistUsageException(
+          pht(
+            'The token "%s" is not formatted correctly. Valid API tokens '.
+            'should begin "cli-" and be 32 characters long. Make sure you '.
+            'visited the correct URI and copy/pasted the token correctly.',
+            $token));
+      }
+
+      $conduit->setConduitToken($token);
+      try {
+        $conduit->callMethodSynchronous('user.whoami', array());
+      } catch (Exception $ex) {
+        throw new ArcanistUsageException(
+          pht(
+            'The token "%s" is not a valid API Token. The server returned '.
+            'this response when trying to use it as a token: %s',
+            $token,
+            $ex->getMessage()));
+      }
+
+      $config['hosts'][$uri] = array(
         'token' => $token,
-        'host'  => $uri,
-      ));
+      );
+    } else {
+      echo "\n";
+      echo pht('Downloading authentication certificate...')."\n";
+      $info = $conduit->callMethodSynchronous(
+        'conduit.getcertificate',
+        array(
+          'token' => $token,
+          'host'  => $uri,
+        ));
 
-    $user = $info['username'];
-    echo "Installing certificate for '{$user}'...\n";
-    $config['hosts'][$uri] = array(
-      'user' => $user,
-      'cert' => $info['certificate'],
-    );
+      $user = $info['username'];
+      echo pht("Installing certificate for '%s'...", $user)."\n";
+      $config['hosts'][$uri] = array(
+        'user' => $user,
+        'cert' => $info['certificate'],
+      );
+    }
 
-    echo "Writing ~/.arcrc...\n";
+    echo pht('Writing %s...', '~/.arcrc')."\n";
     $configuration_manager->writeUserConfigurationFile($config);
 
-    echo phutil_console_format(
-      "<bg:green>** SUCCESS! **</bg> Certificate installed.\n");
+    if ($is_token_auth) {
+      echo phutil_console_format(
+        "<bg:green>** %s **</bg> %s\n",
+        pht('SUCCESS!'),
+        pht('API Token installed.'));
+    } else {
+      echo phutil_console_format(
+        "<bg:green>** %s **</bg> %s\n",
+        pht('SUCCESS!'),
+        pht('Certificate installed.'));
+    }
 
     return 0;
   }
@@ -115,23 +181,51 @@ EOTEXT
   private function determineConduitURI() {
     $uri = $this->getArgument('uri');
     if (count($uri) > 1) {
-      throw new ArcanistUsageException('Specify at most one URI.');
+      throw new ArcanistUsageException(pht('Specify at most one URI.'));
     } else if (count($uri) == 1) {
       $uri = reset($uri);
     } else {
       $conduit_uri = $this->getConduitURI();
       if (!$conduit_uri) {
         throw new ArcanistUsageException(
-          'Specify an explicit URI or run this command from within a project '.
-          'which is configured with a .arcconfig.');
+          pht(
+            'Specify an explicit URI or run this command from within a '.
+            'project which is configured with a %s.',
+            '.arcconfig'));
       }
       $uri = $conduit_uri;
     }
 
-    $uri = new PhutilURI($uri);
-    $uri->setPath('/api/');
+    $example = 'https://phabricator.example.com/';
 
-    return (string)$uri;
+    $uri_object = new PhutilURI($uri);
+    $protocol = $uri_object->getProtocol();
+    if (!$protocol || !$uri_object->getDomain()) {
+      throw new ArcanistUsageException(
+        pht(
+          'Server URI "%s" must include a protocol and domain. It should be '.
+          'in the form "%s".',
+          $uri,
+          $example));
+    }
+
+    $protocol = $uri_object->getProtocol();
+    switch ($protocol) {
+      case 'http':
+      case 'https':
+        break;
+      default:
+        throw new ArcanistUsageException(
+          pht(
+            'Server URI "%s" must include the "http" or "https" protocol. '.
+            'It should be in the form "%s".',
+            $uri,
+            $example));
+    }
+
+    $uri_object->setPath('/api/');
+
+    return (string)$uri_object;
   }
 
 }

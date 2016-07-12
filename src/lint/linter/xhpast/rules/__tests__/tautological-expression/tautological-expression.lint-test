@@ -1,0 +1,23 @@
+<?php
+
+if ($x == $x) {}
+
+if ($x->m(3) < $x->m(3)) {}
+
+if ($y[2] - $y[2]) {}
+
+if ($x == $y) {}
+
+// See xhpast 0.54 -> 0.55.
+return $a->sub->value < $b->sub->value;
+
+$skip_cache = true || $some_complicated_expression;
+$skip_cache = $a || $b;
+$skip_cache = false && something();
+$skip_cache = f();
+~~~~~~~~~~
+error:3:5
+error:5:5
+error:7:5
+error:14:15
+error:16:15

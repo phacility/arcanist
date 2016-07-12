@@ -1,0 +1,8 @@
+<?php
+class SomeClass {
+  public function __construct() {
+    $this = null;
+  }
+}
+~~~~~~~~~~
+error:4:5

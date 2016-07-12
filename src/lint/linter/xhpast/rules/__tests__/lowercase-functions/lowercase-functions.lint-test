@@ -1,0 +1,11 @@
+<?php
+
+var_dump('');
+Var_Dump('');
+~~~~~~~~~~
+advice:4:1
+~~~~~~~~~~
+<?php
+
+var_dump('');
+var_dump('');

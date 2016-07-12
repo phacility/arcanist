@@ -3,7 +3,7 @@
 /**
  * Shows lint messages to the user.
  */
-abstract class ArcanistLintRenderer {
+abstract class ArcanistLintRenderer extends Phobject {
 
   public function renderPreamble() {
     return '';

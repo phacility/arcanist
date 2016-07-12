@@ -6,7 +6,7 @@
 final class ArcanistHLintLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'HLint';
+    return 'Haskell Linter';
   }
 
   public function getInfoURI() {
@@ -30,22 +30,10 @@ final class ArcanistHLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install hlint with `cabal install hlint`.');
+    return pht('Install hlint with `%s`.', 'cabal install hlint');
   }
 
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function getReadDataFromStdinFilename() {
-    return '-';
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function getMandatoryFlags() {
+  protected function getMandatoryFlags() {
     return array('--json');
   }
 
@@ -62,7 +50,6 @@ final class ArcanistHLintLinter extends ArcanistExternalLinter {
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-
     $json = phutil_json_decode($stdout);
     $messages = array();
     foreach ($json as $fix) {
@@ -83,13 +70,17 @@ final class ArcanistHLintLinter extends ArcanistExternalLinter {
          all necessary notes too. */
       $notes = '';
       foreach ($fix['note'] as $note) {
-        $notes .= ' **NOTE**: '.trim($note, '"').'.';
+        $notes .= phutil_console_format(
+          ' **%s**: %s.',
+          pht('NOTE'),
+          trim($note, '"'));
       }
 
       $message->setDescription(
         pht(
-          'In module `%s`, declaration `%s`.%s',
-          $fix['module'], $fix['decl'], $notes));
+          'In module `%s`, declaration `%s`.',
+          $fix['module'],
+          $fix['decl']).$notes);
 
       switch ($fix['severity']) {
         case 'Error':

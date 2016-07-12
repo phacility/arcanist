@@ -1,0 +1,14 @@
+<?php
+
+class SomeClass {}
+class SomeOtherClass{}
+class YetAnotherClass extends SomeClass{}
+~~~~~~~~~~
+warning:4:21
+warning:5:40
+~~~~~~~~~~
+<?php
+
+class SomeClass {}
+class SomeOtherClass {}
+class YetAnotherClass extends SomeClass {}

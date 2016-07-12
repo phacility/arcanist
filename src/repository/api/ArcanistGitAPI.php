@@ -17,10 +17,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   private $symbolicHeadCommit;
   private $resolvedHeadCommit;
 
-  public static function newHookAPI($root) {
-    return new ArcanistGitAPI($root);
-  }
-
   protected function buildLocalFuture(array $argv) {
     $argv[0] = 'git '.$argv[0];
 
@@ -53,6 +49,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getSourceControlSystemName() {
     return 'git';
+  }
+
+  public function getGitVersion() {
+    list($stdout) = $this->execxLocal('--version');
+    return rtrim(str_replace('git version ', '', $stdout));
   }
 
   public function getMetadataPath() {
@@ -96,8 +97,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     if ($this->repositoryHasNoCommits) {
       // Zero commits.
       throw new Exception(
-        "You can't get local commit information for a repository with no ".
-        "commits.");
+        pht(
+          "You can't get local commit information for a repository with no ".
+          "commits."));
     } else if ($this->getBaseCommit() == self::GIT_MAGIC_ROOT_COMMIT) {
       // One commit.
       $against = 'HEAD';
@@ -202,9 +204,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   protected function buildBaseCommit($symbolic_commit) {
     if ($symbolic_commit !== null) {
-      if ($symbolic_commit == ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT) {
+      if ($symbolic_commit == self::GIT_MAGIC_ROOT_COMMIT) {
         $this->setBaseCommitExplanation(
-          'you explicitly specified the empty tree.');
+          pht('you explicitly specified the empty tree.'));
         return $symbolic_commit;
       }
 
@@ -214,19 +216,24 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $this->getHeadCommit());
       if ($err) {
         throw new ArcanistUsageException(
-          "Unable to find any git commit named '{$symbolic_commit}' in ".
-          "this repository.");
+          pht(
+            "Unable to find any git commit named '%s' in this repository.",
+            $symbolic_commit));
       }
 
       if ($this->symbolicHeadCommit === null) {
         $this->setBaseCommitExplanation(
-          "it is the merge-base of the explicitly specified base commit ".
-          "'{$symbolic_commit}' and HEAD.");
+          pht(
+            "it is the merge-base of the explicitly specified base commit ".
+            "'%s' and HEAD.",
+            $symbolic_commit));
       } else {
         $this->setBaseCommitExplanation(
-          "it is the merge-base of the explicitly specified base commit ".
-          "'{$symbolic_commit}' and the explicitly specified head ".
-          "commit '{$this->symbolicHeadCommit}'.");
+          pht(
+            "it is the merge-base of the explicitly specified base commit ".
+            "'%s' and the explicitly specified head commit '%s'.",
+            $symbolic_commit,
+            $this->symbolicHeadCommit));
       }
 
       return trim($merge_base);
@@ -243,11 +250,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       }
 
       if ($this->repositoryHasNoCommits) {
-        $this->setBaseCommitExplanation(
-          'the repository has no commits.');
+        $this->setBaseCommitExplanation(pht('the repository has no commits.'));
       } else {
         $this->setBaseCommitExplanation(
-          'the repository has only one commit.');
+          pht('the repository has only one commit.'));
       }
 
       return self::GIT_MAGIC_ROOT_COMMIT;
@@ -258,9 +264,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $base = $this->resolveBaseCommit();
       if (!$base) {
         throw new ArcanistUsageException(
-          "None of the rules in your 'base' configuration matched a valid ".
-          "commit. Adjust rules or specify which commit you want to use ".
-          "explicitly.");
+          pht(
+            "None of the rules in your 'base' configuration matched a valid ".
+            "commit. Adjust rules or specify which commit you want to use ".
+            "explicitly."));
       }
       return $base;
     }
@@ -272,9 +279,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $default_relative = $working_copy->getProjectConfig(
         'git.default-relative-commit');
       $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$default_relative}' and HEAD, as ".
-        "specified in 'git.default-relative-commit' in '.arcconfig'. This ".
-        "setting overrides other settings.");
+        pht(
+          "it is the merge-base of '%s' and HEAD, as specified in '%s' in ".
+          "'%s'. This setting overrides other settings.",
+          $default_relative,
+          'git.default-relative-commit',
+          '.arcconfig'));
     }
 
     if (!$default_relative) {
@@ -285,8 +295,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       if (!$err) {
         $default_relative = trim($upstream);
         $this->setBaseCommitExplanation(
-          "it is the merge-base of '{$default_relative}' (the Git upstream ".
-          "of the current branch) HEAD.");
+          pht(
+            "it is the merge-base of '%s' (the Git upstream ".
+            "of the current branch) HEAD.",
+            $default_relative));
       }
     }
 
@@ -295,8 +307,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $default_relative = trim($default_relative);
       if ($default_relative) {
         $this->setBaseCommitExplanation(
-          "it is the merge-base of '{$default_relative}' and HEAD, as ".
-          "specified in '.git/arc/default-relative-commit'.");
+          pht(
+            "it is the merge-base of '%s' and HEAD, as specified in '%s'.",
+            $default_relative,
+            '.git/arc/default-relative-commit'));
       }
     }
 
@@ -305,25 +319,33 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // TODO: Remove the history lesson soon.
 
       echo phutil_console_format(
-        "<bg:green>** Select a Default Commit Range **</bg>\n\n");
+        "<bg:green>** %s **</bg>\n\n",
+        pht('Select a Default Commit Range'));
       echo phutil_console_wrap(
-        "You're running a command which operates on a range of revisions ".
-        "(usually, from some revision to HEAD) but have not specified the ".
-        "revision that should determine the start of the range.\n\n".
-        "Previously, arc assumed you meant 'HEAD^' when you did not specify ".
-        "a start revision, but this behavior does not make much sense in ".
-        "most workflows outside of Facebook's historic git-svn workflow.\n\n".
-        "arc no longer assumes 'HEAD^'. You must specify a relative commit ".
-        "explicitly when you invoke a command (e.g., `arc diff HEAD^`, not ".
-        "just `arc diff`) or select a default for this working copy.\n\n".
-        "In most cases, the best default is 'origin/master'. You can also ".
-        "select 'HEAD^' to preserve the old behavior, or some other remote ".
-        "or branch. But you almost certainly want to select ".
-        "'origin/master'.\n\n".
-        "(Technically: the merge-base of the selected revision and HEAD is ".
-        "used to determine the start of the commit range.)");
+        pht(
+          "You're running a command which operates on a range of revisions ".
+          "(usually, from some revision to HEAD) but have not specified the ".
+          "revision that should determine the start of the range.\n\n".
+          "Previously, arc assumed you meant '%s' when you did not specify ".
+          "a start revision, but this behavior does not make much sense in ".
+          "most workflows outside of Facebook's historic %s workflow.\n\n".
+          "arc no longer assumes '%s'. You must specify a relative commit ".
+          "explicitly when you invoke a command (e.g., `%s`, not just `%s`) ".
+          "or select a default for this working copy.\n\nIn most cases, the ".
+          "best default is '%s'. You can also select '%s' to preserve the ".
+          "old behavior, or some other remote or branch. But you almost ".
+          "certainly want to select 'origin/master'.\n\n".
+          "(Technically: the merge-base of the selected revision and HEAD is ".
+          "used to determine the start of the commit range.)",
+          'HEAD^',
+          'git-svn',
+          'HEAD^',
+          'arc diff HEAD^',
+          'arc diff',
+          'origin/master',
+          'HEAD^'));
 
-      $prompt = 'What default do you want to use? [origin/master]';
+      $prompt = pht('What default do you want to use? [origin/master]');
       $default = phutil_console_prompt($prompt);
 
       if (!strlen(trim($default))) {
@@ -340,7 +362,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     if (trim($object_type) !== 'commit') {
       throw new Exception(
-        "Relative commit '{$default_relative}' is not the name of a commit!");
+        pht(
+          "Relative commit '%s' is not the name of a commit!",
+          $default_relative));
     }
 
     if ($do_write) {
@@ -348,8 +372,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // valid commit name.
       $this->writeScratchFile('default-relative-commit', $default_relative);
       $this->setBaseCommitExplanation(
-        "it is the merge-base of '{$default_relative}' and HEAD, as you ".
-        "just specified.");
+        pht(
+          "it is the merge-base of '%s' and HEAD, as you just specified.",
+          $default_relative));
     }
 
     list($merge_base) = $this->execxLocal(
@@ -368,7 +393,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->resolvedHeadCommit;
   }
 
-  final public function setHeadCommit($symbolic_commit) {
+  public function setHeadCommit($symbolic_commit) {
     $this->symbolicHeadCommit = $symbolic_commit;
     $this->reloadCommitRange();
     return $this;
@@ -386,8 +411,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     if ($err) {
       throw new ArcanistUsageException(
-        "Unable to find any git commit named '{$symbolic_commit}' in ".
-        "this repository.");
+        pht(
+          "Unable to find any git commit named '%s' in this repository.",
+          $symbolic_commit));
     }
 
     return trim($commit_hash);
@@ -461,33 +487,69 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $stdout;
   }
 
-  public function getBranchName() {
-    // TODO: consider:
-    //
-    //    $ git rev-parse --abbrev-ref `git symbolic-ref HEAD`
-    //
-    // But that may fail if you're not on a branch.
-    list($stdout) = $this->execxLocal('branch --no-color');
-
-    // Assume that any branch beginning with '(' means 'no branch', or whatever
-    // 'no branch' is in the current locale.
-    $matches = null;
-    if (preg_match('/^\* ([^\(].*)$/m', $stdout, $matches)) {
-      return $matches[1];
+  private function getBranchNameFromRef($ref) {
+    $count = 0;
+    $branch = preg_replace('/^refs\/heads\//', '', $ref, 1, $count);
+    if ($count !== 1) {
+      return null;
     }
 
-    return null;
+    return $branch;
+  }
+
+  public function getBranchName() {
+    list($err, $stdout, $stderr) = $this->execManualLocal(
+      'symbolic-ref --quiet HEAD');
+
+    if ($err === 0) {
+      // We expect the branch name to come qualified with a refs/heads/ prefix.
+      // Verify this, and strip it.
+      $ref = rtrim($stdout);
+      $branch = $this->getBranchNameFromRef($ref);
+      if (!$branch) {
+        throw new Exception(
+          pht('Failed to parse %s output!', 'git symbolic-ref'));
+      }
+      return $branch;
+    } else if ($err === 1) {
+      // Exit status 1 with --quiet indicates that HEAD is detached.
+      return null;
+    } else {
+      throw new Exception(
+        pht('Command %s failed: %s', 'git symbolic-ref', $stderr));
+    }
   }
 
   public function getRemoteURI() {
-    list($stdout) = $this->execxLocal('remote show -n origin');
-
-    $matches = null;
-    if (preg_match('/^\s*Fetch URL: (.*)$/m', $stdout, $matches)) {
-      return trim($matches[1]);
+    // Determine which remote to examine; default to 'origin'
+    $remote = 'origin';
+    $branch = $this->getBranchName();
+    if ($branch) {
+      $path = $this->getPathToUpstream($branch);
+      if ($path->isConnectedToRemote()) {
+        $remote = $path->getRemoteRemoteName();
+      }
     }
 
-    return null;
+    // "git ls-remote --get-url" is the appropriate plumbing to get the remote
+    // URI. "git config remote.origin.url", on the other hand, may not be as
+    // accurate (for example, it does not take into account possible URL
+    // rewriting rules set by the user through "url.<base>.insteadOf"). However,
+    // the --get-url flag requires git 1.7.5.
+    $version = $this->getGitVersion();
+    if (version_compare($version, '1.7.5', '>=')) {
+      list($stdout) = $this->execxLocal('ls-remote --get-url %s', $remote);
+    } else {
+      list($stdout) = $this->execxLocal('config %s', "remote.{$remote}.url");
+    }
+
+    $uri = rtrim($stdout);
+    // 'origin' is what ls-remote outputs if no origin remote URI exists
+    if (!$uri || $uri === 'origin') {
+      return null;
+    }
+
+    return $uri;
   }
 
   public function getSourceControlPath() {
@@ -551,7 +613,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $input);
     if (!$stdout) {
       throw new ArcanistUsageException(
-        "Cannot find the {$vcs} equivalent of {$input}.");
+        pht(
+          'Cannot find the %s equivalent of %s.',
+          $vcs,
+          $input));
     }
     // When git performs a partial-rebuild during svn
     // look-up, we need to parse the final line
@@ -609,7 +674,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // After the other commands exit, we can start the `diff-files` command.
     );
 
-    Futures($futures)->resolveAll();
+    id(new FutureIterator($futures))->resolveAll();
 
     // We're clear to start the `git diff-files` now.
     $unstaged_future->start();
@@ -617,7 +682,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $result = new PhutilArrayWithDefaultValue();
 
     list($stdout) = $uncommitted_future->resolvex();
-    $uncommitted_files = $this->parseGitStatus($stdout);
+    $uncommitted_files = $this->parseGitRawDiff($stdout);
     foreach ($uncommitted_files as $path => $mask) {
       $result[$path] |= ($mask | self::FLAG_UNCOMMITTED);
     }
@@ -649,7 +714,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $this->getDiffBaseOptions(),
       $this->getBaseCommit());
 
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getGitConfig($key, $default = null) {
@@ -704,16 +769,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
-  public function getPreReceiveHookStatus($old_ref, $new_ref) {
-    $options = $this->getDiffBaseOptions();
-    list($stdout) = $this->execxLocal(
-      "diff {$options} --raw %s %s --",
-      $old_ref,
-      $new_ref);
-    return $this->parseGitStatus($stdout, $full = true);
-  }
-
-  private function parseGitStatus($status, $full = false) {
+  private function parseGitRawDiff($status, $full = false) {
     static $flags = array(
       'A' => self::FLAG_ADDED,
       'M' => self::FLAG_MODIFIED,
@@ -731,17 +787,51 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $files = array();
     foreach ($lines as $line) {
       $mask = 0;
+
+      // "git diff --raw" lines begin with a ":" character.
+      $old_mode = ltrim($line[0], ':');
+      $new_mode = $line[1];
+
+      // The hashes may be padded with "." characters for alignment. Discard
+      // them.
+      $old_hash = rtrim($line[2], '.');
+      $new_hash = rtrim($line[3], '.');
+
       $flag = $line[4];
       $file = $line[5];
-      foreach ($flags as $key => $bits) {
-        if ($flag == $key) {
-          $mask |= $bits;
-        }
+
+      $new_value = intval($new_mode, 8);
+      $is_submodule = (($new_value & 0160000) === 0160000);
+
+      if (($is_submodule) &&
+          ($flag == 'M') &&
+          ($old_hash === $new_hash) &&
+          ($old_mode === $new_mode)) {
+        // See T9455. We see this submodule as "modified", but the old and new
+        // hashes are the same and the old and new modes are the same, so we
+        // don't directly see a modification.
+
+        // We can end up here if we have a submodule which has uncommitted
+        // changes inside of it (for example, the user has added untracked
+        // files or made uncommitted changes to files in the submodule). In
+        // this case, we set a different flag because we can't meaningfully
+        // give users the same prompt.
+
+        // Note that if the submodule has real changes from the parent
+        // perspective (the base commit has changed) and also has uncommitted
+        // changes, we'll only see the real changes and miss the uncommitted
+        // changes. At the time of writing, there is no reasonable porcelain
+        // for finding those changes, and the impact of this error seems small.
+
+        $mask |= self::FLAG_EXTERNALS;
+      } else if (isset($flags[$flag])) {
+        $mask |= $flags[$flag];
       }
+
       if ($full) {
         $files[$file] = array(
           'mask' => $mask,
-          'ref'  => rtrim($line[3], '.'),
+          'ref'  => $new_hash,
         );
       } else {
         $files[$file] = $mask;
@@ -761,41 +851,46 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal(
       'diff --raw %s',
       $since_commit);
-    return $this->parseGitStatus($stdout);
+    return $this->parseGitRawDiff($stdout);
   }
 
   public function getBlame($path) {
-    // TODO: 'git blame' supports --porcelain and we should probably use it.
     list($stdout) = $this->execxLocal(
-      'blame --date=iso -w -M %s -- %s',
+      'blame --porcelain -w -M %s -- %s',
       $this->getBaseCommit(),
       $path);
 
+    // the --porcelain format prints at least one header line per source line,
+    // then the source line prefixed by a tab character
+    $blame_info = preg_split('/^\t.*\n/m', rtrim($stdout));
+
+    // commit info is not repeated in these headers, so cache it
+    $revision_data = array();
+
     $blame = array();
-    foreach (explode("\n", trim($stdout)) as $line) {
-      if (!strlen($line)) {
-        continue;
+    foreach ($blame_info as $line_info) {
+      $revision = substr($line_info, 0, 40);
+      $data = idx($revision_data, $revision, array());
+
+      if (empty($data)) {
+        $matches = array();
+        if (!preg_match('/^author (.*)$/m', $line_info, $matches)) {
+          throw new Exception(
+            pht(
+              'Unexpected output from %s: no author for commit %s',
+              'git blame',
+              $revision));
+        }
+        $data['author'] = $matches[1];
+        $data['from_first_commit'] = preg_match('/^boundary$/m', $line_info);
+        $revision_data[$revision] = $data;
       }
 
-      // lines predating a git repo's history are blamed to the oldest revision,
-      // with the commit hash prepended by a ^. we shouldn't count these lines
-      // as blaming to the oldest diff's unfortunate author
-      if ($line[0] == '^') {
-        continue;
+      // Ignore lines predating the git repository (on a boundary commit)
+      // rather than blaming them on the oldest diff's unfortunate author
+      if (!$data['from_first_commit']) {
+        $blame[] = array($data['author'], $revision);
       }
-
-      $matches = null;
-      $ok = preg_match(
-        '/^([0-9a-f]+)[^(]+?[(](.*?) +\d\d\d\d-\d\d-\d\d/',
-        $line,
-        $matches);
-      if (!$ok) {
-        throw new Exception("Bad blame? `{$line}'");
-      }
-      $revision = $matches[1];
-      $author = $matches[2];
-
-      $blame[] = array($author, $revision);
     }
 
     return $blame;
@@ -825,7 +920,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $line,
         $matches);
       if (!$ok) {
-        throw new Exception('Failed to parse git ls-tree output!');
+        throw new Exception(pht('Failed to parse %s output!', 'git ls-tree'));
       }
       $result[$matches[4]] = array(
         'mode' => $matches[1],
@@ -871,24 +966,45 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($branch_info) = $this->execxLocal(
-      'branch --no-color');
-    $lines = explode("\n", rtrim($branch_info));
+    $field_list = array(
+      '%(refname)',
+      '%(objectname)',
+      '%(committerdate:raw)',
+      '%(tree)',
+      '%(subject)',
+      '%(subject)%0a%0a%(body)',
+      '%02',
+    );
 
+    list($stdout) = $this->execxLocal(
+      'for-each-ref --format=%s -- refs/heads',
+      implode('%01', $field_list));
+
+    $current = $this->getBranchName();
     $result = array();
-    foreach ($lines as $line) {
 
-      if (preg_match('@^[* ]+\(no branch|detached from \w+/\w+\)@', $line)) {
-        // This is indicating that the working copy is in a detached state;
-        // just ignore it.
+    $lines = explode("\2", $stdout);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (!strlen($line)) {
         continue;
       }
 
-      list($current, $name) = preg_split('/\s+/', $line, 2);
-      $result[] = array(
-        'current' => !empty($current),
-        'name'    => $name,
-      );
+      $fields = explode("\1", $line, 6);
+      list($ref, $hash, $epoch, $tree, $desc, $text) = $fields;
+
+      $branch = $this->getBranchNameFromRef($ref);
+      if ($branch) {
+        $result[] = array(
+          'current' => ($branch === $current),
+          'name' => $branch,
+          'hash' => $hash,
+          'tree' => $tree,
+          'epoch' => (int)$epoch,
+          'desc' => $desc,
+          'text' => $text,
+        );
+      }
     }
 
     return $result;
@@ -950,7 +1066,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   public function performLocalBranchMerge($branch, $message) {
     if (!$branch) {
       throw new ArcanistUsageException(
-        'Under git, you must specify the branch you want to merge.');
+        pht('Under git, you must specify the branch you want to merge.'));
     }
     $err = phutil_passthru(
       '(cd %s && git merge --no-ff -m %s %s)',
@@ -959,13 +1075,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $branch);
 
     if ($err) {
-      throw new ArcanistUsageException('Merge failed!');
+      throw new ArcanistUsageException(pht('Merge failed!'));
     }
   }
 
   public function getFinalizedRevisionMessage() {
-    return "You may now push this commit upstream, as appropriate (e.g. with ".
-           "'git push', or 'git svn dcommit', or by printing and faxing it).";
+    return pht(
+      "You may now push this commit upstream, as appropriate (e.g. with ".
+      "'%s', or '%s', or by printing and faxing it).",
+      'git push',
+      'git svn dcommit');
   }
 
   public function getCommitMessage($commit) {
@@ -1009,8 +1128,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       foreach ($results as $key => $result) {
         $hash = substr($reason_map[$result['id']], 0, 16);
-        $results[$key]['why'] =
-          "Commit message for '{$hash}' has explicit 'Differential Revision'.";
+        $results[$key]['why'] = pht(
+          "Commit message for '%s' has explicit 'Differential Revision'.",
+          $hash);
       }
 
       return $results;
@@ -1030,9 +1150,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       ));
 
     foreach ($results as $key => $result) {
-      $results[$key]['why'] =
+      $results[$key]['why'] = pht(
         'A git commit or tree hash in the commit range is already attached '.
-        'to the Differential revision.';
+        'to the Differential revision.');
     }
 
     return $results;
@@ -1045,7 +1165,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getCommitSummary($commit) {
     if ($commit == self::GIT_MAGIC_ROOT_COMMIT) {
-      return '(The Empty Tree)';
+      return pht('(The Empty Tree)');
     }
 
     list($summary) = $this->execxLocal(
@@ -1057,17 +1177,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function backoutCommit($commit_hash) {
-    $this->execxLocal(
-      'revert %s -n --no-edit', $commit_hash);
+    $this->execxLocal('revert %s -n --no-edit', $commit_hash);
     $this->reloadWorkingCopy();
     if (!$this->getUncommittedStatus()) {
       throw new ArcanistUsageException(
-        "{$commit_hash} has already been reverted.");
+        pht('%s has already been reverted.', $commit_hash));
     }
   }
 
   public function getBackoutMessage($commit_hash) {
-    return 'This reverts commit '.$commit_hash.'.';
+    return pht('This reverts commit %s.', $commit_hash);
   }
 
   public function isGitSubversionRepo() {
@@ -1086,9 +1205,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             $matches[1]);
           if (!$err) {
             $this->setBaseCommitExplanation(
-              "it is the merge-base of '{$matches[1]}' and HEAD, as ".
-              "specified by '{$rule}' in your {$source} 'base' ".
-              "configuration.");
+              pht(
+                "it is the merge-base of '%s' and HEAD, as specified by ".
+                "'%s' in your %s 'base' configuration.",
+                $matches[1],
+                $rule,
+                $source));
             return trim($merge_base);
           }
         } else if (preg_match('/^branch-unique\((.+)\)$/', $name, $matches)) {
@@ -1113,11 +1235,40 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
           $commits[] = $merge_base;
 
           $head_branch_count = null;
+          $all_branch_names = ipull($this->getAllBranches(), 'name');
           foreach ($commits as $commit) {
+            // Ideally, we would use something like "for-each-ref --contains"
+            // to get a filtered list of branches ready for script consumption.
+            // Instead, try to get predictable output from "branch --contains".
+
+            $flags = array();
+            $flags[] = '--no-color';
+
+            // NOTE: The "--no-column" flag was introduced in Git 1.7.11, so
+            // don't pass it if we're running an older version. See T9953.
+            $version = $this->getGitVersion();
+            if (version_compare($version, '1.7.11', '>=')) {
+              $flags[] = '--no-column';
+            }
+
             list($branches) = $this->execxLocal(
-              'branch --contains %s',
+              'branch %Ls --contains %s',
+              $flags,
               $commit);
             $branches = array_filter(explode("\n", $branches));
+
+            // Filter the list, removing the "current" marker (*) and ignoring
+            // anything other than known branch names (mainly, any possible
+            // "detached HEAD" or "no branch" line).
+            foreach ($branches as $key => $branch) {
+              $branch = trim($branch, ' *');
+              if (in_array($branch, $all_branch_names)) {
+                $branches[$key] = $branch;
+              } else {
+                unset($branches[$key]);
+              }
+            }
+
             if ($head_branch_count === null) {
               // If this is the first commit, it's HEAD. Count how many
               // branches it is on; we want to include commits on the same
@@ -1126,14 +1277,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               // for whatever reason.
               $head_branch_count = count($branches);
             } else if (count($branches) > $head_branch_count) {
-              foreach ($branches as $key => $branch) {
-                $branches[$key] = trim($branch, ' *');
-              }
               $branches = implode(', ', $branches);
               $this->setBaseCommitExplanation(
-                "it is the first commit between '{$merge_base}' (the ".
-                "merge-base of '{$matches[1]}' and HEAD) which is also ".
-                "contained by another branch ({$branches}).");
+                pht(
+                  "it is the first commit between '%s' (the merge-base of ".
+                  "'%s' and HEAD) which is also contained by another branch ".
+                  "(%s).",
+                  $merge_base,
+                  $matches[1],
+                  $branches));
               return $commit;
             }
           }
@@ -1143,8 +1295,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             $name);
           if (!$err) {
             $this->setBaseCommitExplanation(
-              "it is specified by '{$rule}' in your {$source} 'base' ".
-              "configuration.");
+              pht(
+                "it is specified by '%s' in your %s 'base' configuration.",
+                $rule,
+                $source));
             return $name;
           }
         }
@@ -1153,8 +1307,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         switch ($name) {
           case 'empty':
             $this->setBaseCommitExplanation(
-              "you specified '{$rule}' in your {$source} 'base' ".
-              "configuration.");
+              pht(
+                "you specified '%s' in your %s 'base' configuration.",
+                $rule,
+                $source));
             return self::GIT_MAGIC_ROOT_COMMIT;
           case 'amended':
             $text = $this->getCommitMessage('HEAD');
@@ -1162,9 +1318,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
               $text);
             if ($message->getRevisionID()) {
               $this->setBaseCommitExplanation(
-                "HEAD has been amended with 'Differential Revision:', ".
-                "as specified by '{$rule}' in your {$source} 'base' ".
-                "configuration.");
+                pht(
+                  "HEAD has been amended with 'Differential Revision:', ".
+                  "as specified by '%s' in your %s 'base' configuration.",
+                  $rule,
+                  $source));
               return 'HEAD^';
             }
             break;
@@ -1179,16 +1337,21 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
                 $upstream);
               $upstream_merge_base = rtrim($upstream_merge_base);
               $this->setBaseCommitExplanation(
-                "it is the merge-base of the upstream of the current branch ".
-                "and HEAD, and matched the rule '{$rule}' in your {$source} ".
-                "'base' configuration.");
+                pht(
+                  "it is the merge-base of the upstream of the current branch ".
+                  "and HEAD, and matched the rule '%s' in your %s ".
+                  "'base' configuration.",
+                  $rule,
+                  $source));
               return $upstream_merge_base;
             }
             break;
           case 'this':
             $this->setBaseCommitExplanation(
-              "you specified '{$rule}' in your {$source} 'base' ".
-              "configuration.");
+              pht(
+                "you specified '%s' in your %s 'base' configuration.",
+                $rule,
+                $source));
             return 'HEAD^';
         }
       default:
@@ -1214,6 +1377,77 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   protected function didReloadCommitRange() {
     // After an amend, the symbolic head may resolve to a different commit.
     $this->resolvedHeadCommit = null;
+  }
+
+  /**
+   * Follow the chain of tracking branches upstream until we reach a remote
+   * or cycle locally.
+   *
+   * @param string Ref to start from.
+   * @return list<wild> Path to an upstream.
+   */
+  public function getPathToUpstream($start) {
+    $cursor = $start;
+    $path = new ArcanistGitUpstreamPath();
+    while (true) {
+      list($err, $upstream) = $this->execManualLocal(
+        'rev-parse --symbolic-full-name %s@{upstream}',
+        $cursor);
+
+      if ($err) {
+        // We ended up somewhere with no tracking branch, so we're done.
+        break;
+      }
+
+      $upstream = trim($upstream);
+
+      if (preg_match('(^refs/heads/)', $upstream)) {
+        $upstream = preg_replace('(^refs/heads/)', '', $upstream);
+
+        $is_cycle = $path->getUpstream($upstream);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_LOCAL,
+            'name' => $upstream,
+            'cycle' => $is_cycle,
+          ));
+
+        if ($is_cycle) {
+          // We ran into a local cycle, so we're done.
+          break;
+        }
+
+        // We found another local branch, so follow that one upriver.
+        $cursor = $upstream;
+        continue;
+      }
+
+      if (preg_match('(^refs/remotes/)', $upstream)) {
+        $upstream = preg_replace('(^refs/remotes/)', '', $upstream);
+        list($remote, $branch) = explode('/', $upstream, 2);
+
+        $path->addUpstream(
+          $cursor,
+          array(
+            'type' => ArcanistGitUpstreamPath::TYPE_REMOTE,
+            'name' => $branch,
+            'remote' => $remote,
+          ));
+
+        // We found a remote, so we're done.
+        break;
+      }
+
+      throw new Exception(
+        pht(
+          'Got unrecognized upstream format ("%s") from Git, expected '.
+          '"refs/heads/..." or "refs/remotes/...".',
+          $upstream));
+    }
+
+    return $path;
   }
 
 }

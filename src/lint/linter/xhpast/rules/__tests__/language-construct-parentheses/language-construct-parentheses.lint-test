@@ -1,0 +1,50 @@
+<?php
+
+include 'foo.php';
+include_once 'foo.php';
+require 'foo.php';
+require_once 'foo.php';
+echo 'foo';
+
+include('bar.php');
+include_once('bar.php');
+require('bar.php');
+require_once('bar.php');
+echo('bar');
+
+include ('baz.php');
+include_once ('baz.php');
+require ('baz.php');
+require_once ('baz.php');
+echo ('baz');
+~~~~~~~~~~
+warning:9:8
+warning:10:13
+warning:11:8
+warning:12:13
+warning:13:5
+warning:15:9
+warning:16:14
+warning:17:9
+warning:18:14
+warning:19:6
+~~~~~~~~~~
+<?php
+
+include 'foo.php';
+include_once 'foo.php';
+require 'foo.php';
+require_once 'foo.php';
+echo 'foo';
+
+include 'bar.php';
+include_once 'bar.php';
+require 'bar.php';
+require_once 'bar.php';
+echo 'bar';
+
+include 'baz.php';
+include_once 'baz.php';
+require 'baz.php';
+require_once 'baz.php';
+echo 'baz';

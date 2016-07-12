@@ -24,7 +24,9 @@ final class ArcanistSummaryLintRenderer extends ArcanistLintRenderer {
 
   public function renderOkayResult() {
     return phutil_console_format(
-      "<bg:green>** OKAY **</bg> No lint warnings.\n");
+      "<bg:green>** %s **</bg> %s\n",
+      pht('OKAY'),
+      pht('No lint warnings.'));
   }
 
 }

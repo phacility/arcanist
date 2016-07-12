@@ -30,7 +30,12 @@ EOTEXT
   public function getArguments() {
     return array(
       'json' => array(
-        'help' => 'Output upload information in JSON format.',
+        'help' => pht('Output upload information in JSON format.'),
+      ),
+      'temporary' => array(
+        'help' => pht(
+          'Mark the file as temporary. Temporary files will be deleted '.
+          'automatically after 24 hours.'),
       ),
       '*' => 'paths',
     );
@@ -38,7 +43,8 @@ EOTEXT
 
   protected function didParseArguments() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException('Specify one or more files to upload.');
+      throw new ArcanistUsageException(
+        pht('Specify one or more files to upload.'));
     }
 
     $this->paths = $this->getArgument('paths');
@@ -49,58 +55,144 @@ EOTEXT
     return true;
   }
 
-  private function getPaths() {
-    return $this->paths;
-  }
-
-  private function getJSON() {
-    return $this->json;
-  }
-
   public function run() {
-    $conduit = $this->getConduit();
+    $is_temporary = $this->getArgument('temporary');
 
+    $conduit = $this->getConduit();
     $results = array();
 
-    foreach ($this->paths as $path) {
-      $name = basename($path);
-      $this->writeStatusMessage("Uploading '{$name}'...\n");
-      try {
-        $data = Filesystem::readFile($path);
-      } catch (FilesystemException $ex) {
-        $this->writeStatusMessage(
-          "Unable to upload file: ".$ex->getMessage()."\n");
-        $results[$path] = null;
-        continue;
+    $uploader = id(new ArcanistFileUploader())
+      ->setConduitClient($conduit);
+
+    foreach ($this->paths as $key => $path) {
+      $file = id(new ArcanistFileDataRef())
+        ->setName(basename($path))
+        ->setPath($path);
+
+      if ($is_temporary) {
+        $expires_at = time() + phutil_units('24 hours in seconds');
+        $file->setDeleteAfterEpoch($expires_at);
       }
 
-      $phid = $conduit->callMethodSynchronous(
-        'file.upload',
-        array(
-          'data_base64' => base64_encode($data),
-          'name'        => $name,
-        ));
+      $uploader->addFile($file);
+    }
+
+    $files = $uploader->uploadFiles();
+
+    $results = array();
+    foreach ($files as $file) {
+      // TODO: This could be handled more gracefully; just preserving behavior
+      // until we introduce `file.query` and modernize this.
+      if ($file->getErrors()) {
+        throw new Exception(implode("\n", $file->getErrors()));
+      }
+      $phid = $file->getPHID();
+      $name = $file->getName();
+
       $info = $conduit->callMethodSynchronous(
         'file.info',
         array(
-          'phid'        => $phid,
+          'phid' => $phid,
         ));
 
       $results[$path] = $info;
 
-      if (!$this->getJSON()) {
+      if (!$this->json) {
         $id = $info['id'];
         echo "  F{$id} {$name}: ".$info['uri']."\n\n";
       }
     }
 
-    if ($this->getJSON()) {
+    if ($this->json) {
       echo json_encode($results)."\n";
     } else {
-      $this->writeStatusMessage("Done.\n");
+      $this->writeStatus(pht('Done.'));
     }
 
     return 0;
+  }
+
+  private function writeStatus($line) {
+    $this->writeStatusMessage($line."\n");
+  }
+
+  private function uploadChunks($file_phid, $path) {
+    $conduit = $this->getConduit();
+
+    $f = @fopen($path, 'rb');
+    if (!$f) {
+      throw new Exception(pht('Unable to open file "%s"', $path));
+    }
+
+    $this->writeStatus(pht('Beginning chunked upload of large file...'));
+    $chunks = $conduit->callMethodSynchronous(
+      'file.querychunks',
+      array(
+        'filePHID' => $file_phid,
+      ));
+
+    $remaining = array();
+    foreach ($chunks as $chunk) {
+      if (!$chunk['complete']) {
+        $remaining[] = $chunk;
+      }
+    }
+
+    $done = (count($chunks) - count($remaining));
+
+    if ($done) {
+      $this->writeStatus(
+        pht(
+          'Resuming upload (%s of %s chunks remain).',
+          phutil_count($remaining),
+          phutil_count($chunks)));
+    } else {
+      $this->writeStatus(
+        pht(
+          'Uploading chunks (%s chunks to upload).',
+          phutil_count($remaining)));
+    }
+
+    $progress = new PhutilConsoleProgressBar();
+    $progress->setTotal(count($chunks));
+
+    for ($ii = 0; $ii < $done; $ii++) {
+      $progress->update(1);
+    }
+
+    $progress->draw();
+
+    // TODO: We could do these in parallel to improve upload performance.
+    foreach ($remaining as $chunk) {
+      $offset = $chunk['byteStart'];
+
+      $ok = fseek($f, $offset);
+      if ($ok !== 0) {
+        throw new Exception(
+          pht(
+            'Failed to %s!',
+            'fseek()'));
+      }
+
+      $data = fread($f, $chunk['byteEnd'] - $chunk['byteStart']);
+      if ($data === false) {
+        throw new Exception(
+          pht(
+            'Failed to %s!',
+            'fread()'));
+      }
+
+      $conduit->callMethodSynchronous(
+        'file.uploadchunk',
+        array(
+          'filePHID' => $file_phid,
+          'byteStart' => $offset,
+          'dataEncoding' => 'base64',
+          'data' => base64_encode($data),
+        ));
+
+      $progress->update(1);
+    }
   }
 
 }

@@ -1,0 +1,27 @@
+<?php
+
+class MyClass {
+  public function __toString() {
+    if (some_function()) {
+      throw new Exception('Oops');
+    }
+
+    return __CLASS__;
+  }
+}
+
+class MyOtherClass {
+  public function __toString() {
+    return 'Success';
+  }
+}
+
+interface SomeInterface {
+  public function __toString();
+}
+
+abstract class SomeAbstractClass {
+  abstract public function __toString();
+}
+~~~~~~~~~~
+error:6:7

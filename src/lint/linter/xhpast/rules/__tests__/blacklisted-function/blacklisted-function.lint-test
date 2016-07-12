@@ -1,0 +1,14 @@
+<?php
+
+eval('evil code');
+~~~~~~~~~~
+error:3:1
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.blacklisted.function": {
+      "eval": "Evil function"
+    }
+  }
+}

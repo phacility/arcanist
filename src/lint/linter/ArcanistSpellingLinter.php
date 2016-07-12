@@ -54,7 +54,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   }
 
   public function loadDictionary($path) {
-    $root = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+    $root = $this->getProjectRoot();
     $path = Filesystem::resolvePath($path, $root);
 
     $dict = phutil_json_decode(Filesystem::readFile($path));
@@ -78,12 +78,14 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     $this->exactWordRules = array_merge(
       $this->exactWordRules,
       array($misspelling => $correction));
+    return $this;
   }
 
   public function addPartialWordRule($misspelling, $correction) {
     $this->partialWordRules = array_merge(
       $this->partialWordRules,
       array($misspelling => $correction));
+    return $this;
   }
 
   public function getLintSeverityMap() {

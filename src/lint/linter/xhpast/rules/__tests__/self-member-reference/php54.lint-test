@@ -1,0 +1,31 @@
+<?php
+
+final class SomeClass extends Phobject {
+  public static function someMethod() {
+    $closure = function () {
+      SomeClass::someOtherMethod();
+      self::someOtherMethod();
+    };
+    $closure();
+  }
+}
+~~~~~~~~~~
+warning:6:7
+~~~~~~~~~~
+<?php
+
+final class SomeClass extends Phobject {
+  public static function someMethod() {
+    $closure = function () {
+      self::someOtherMethod();
+      self::someOtherMethod();
+    };
+    $closure();
+  }
+}
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.php-version": "5.4.0"
+  }
+}

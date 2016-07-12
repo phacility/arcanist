@@ -3,7 +3,7 @@
 /**
  * Dumping ground for diff- and diff-algorithm-related miscellany.
  */
-final class ArcanistDiffUtils {
+final class ArcanistDiffUtils extends Phobject {
 
   /**
    * Make a best-effort attempt to determine if a file is definitely binary.
@@ -26,7 +26,7 @@ final class ArcanistDiffUtils {
     $diff_options  = "-L 'Old Value' -L 'New Value'") {
 
     if ((string)$old === (string)$new) {
-      $new .= "\n(Old and new values are identical.)";
+      $new .= "\n".pht('(Old and new values are identical.)');
     }
 
     $file_old = new TempFile();
@@ -151,6 +151,7 @@ final class ArcanistDiffUtils {
       ->setReplaceCost(2)
       ->setMaximumLength($max)
       ->setSequences($ov, $nv)
+      ->setApplySmoothing(PhutilEditDistanceMatrix::SMOOTHING_INTERNAL)
       ->getEditString();
   }
 
@@ -166,25 +167,6 @@ final class ArcanistDiffUtils {
     }
 
     $result = self::generateEditString($ov, $nv);
-
-    // Smooth the string out, by replacing short runs of similar characters
-    // with 'x' operations. This makes the result more readable to humans, since
-    // there are fewer choppy runs of short added and removed substrings.
-    do {
-      $original = $result;
-      $result = preg_replace(
-        '/([xdi])(s{3})([xdi])/',
-        '$1xxx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{2})([xdi])/',
-        '$1xx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{1})([xdi])/',
-        '$1x$3',
-        $result);
-    } while ($result != $original);
 
     // Now we have a character-based description of the edit. We need to
     // convert into a byte-based description. Walk through the edit string and

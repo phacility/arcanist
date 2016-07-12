@@ -14,7 +14,9 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `ruby` to check for syntax errors in Ruby source files.');
+    return pht(
+      'Use `%s` to check for syntax errors in Ruby source files.',
+      'ruby');
   }
 
   public function getLinterName() {
@@ -26,11 +28,6 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.ruby.prefix');
-    if ($prefix !== null) {
-      $ruby_bin = $prefix.'ruby';
-    }
-
     return 'ruby';
   }
 
@@ -38,7 +35,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)p\d+/';
+    $regex = '/^ruby (?P<version>\d+\.\d+\.\d+)+/';
     if (preg_match($regex, $stdout, $matches)) {
       return $matches['version'];
     } else {
@@ -47,15 +44,7 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install `ruby` from <http://www.ruby-lang.org/>.');
-  }
-
-  public function supportsReadDataFromStdin() {
-    return true;
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
+    return pht('Install `%s` from <%s>.', 'ruby', 'http://www.ruby-lang.org/');
   }
 
   protected function getMandatoryFlags() {
@@ -90,10 +79,6 @@ final class ArcanistRubyLinter extends ArcanistExternalLinter {
       $message->setSeverity($this->getLintMessageSeverity($code));
 
       $messages[] = $message;
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

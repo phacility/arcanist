@@ -1,0 +1,36 @@
+<?php
+
+class Foo extends Bar {
+  public function bar() {
+    echo self::FOOBAR;
+    echo self :: FOOBAR;
+  }
+}
+
+MyClass::myMethod();
+MyClass :: myMethod();
+
+MyClass::$myProperty;
+MyClass :: $myProperty;
+~~~~~~~~~~
+warning:6:14
+warning:6:17
+warning:11:8
+warning:11:11
+warning:14:8
+warning:14:11
+~~~~~~~~~~
+<?php
+
+class Foo extends Bar {
+  public function bar() {
+    echo self::FOOBAR;
+    echo self::FOOBAR;
+  }
+}
+
+MyClass::myMethod();
+MyClass::myMethod();
+
+MyClass::$myProperty;
+MyClass::$myProperty;

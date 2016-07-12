@@ -1,0 +1,21 @@
+<?php
+
+if (true) {
+  echo 'foo';
+} elseif (false) {
+  echo 'bar';
+} else if (null) {
+  echo 'baz';
+}
+~~~~~~~~~~
+advice:5:3
+~~~~~~~~~~
+<?php
+
+if (true) {
+  echo 'foo';
+} else if (false) {
+  echo 'bar';
+} else if (null) {
+  echo 'baz';
+}

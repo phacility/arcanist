@@ -1,0 +1,7 @@
+<?php
+namespace X;
+class X {}
+
+namespace Y;
+class Y {}
+~~~~~~~~~~

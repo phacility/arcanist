@@ -1,0 +1,40 @@
+<?php
+
+array($x => $y);
+array($x=>$y);
+array($x =>$y);
+array($x=> $y);
+
+array(
+  $x => $y,
+);
+array(
+  $x =>
+    $y,
+);
+array(
+  $x=>$y,
+);
+~~~~~~~~~~
+warning:4:9
+warning:5:10
+warning:6:9
+warning:16:5
+~~~~~~~~~~
+<?php
+
+array($x => $y);
+array($x => $y);
+array($x => $y);
+array($x => $y);
+
+array(
+  $x => $y,
+);
+array(
+  $x =>
+    $y,
+);
+array(
+  $x => $y,
+);

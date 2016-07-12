@@ -1,0 +1,29 @@
+<?php
+
+$x = null;
+$y = null;
+switch ($x) {}
+switch ($x) {
+  case 1:     break;
+  case '1':   break;
+  case true:  break;
+  case null:  break;
+  default:    break;
+}
+switch ($x) {
+  case 'foo': break;
+  case 'bar': break;
+  case 'foo': break;
+
+  default:
+    switch ($y) {
+      case 'foo': break;
+      case 'bar': break;
+      case 'baz': break;
+      case 'baz': break;
+    }
+    break;
+}
+~~~~~~~~~~
+error:16:3
+error:23:7

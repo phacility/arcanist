@@ -1,0 +1,11 @@
+<?php
+class SomeClass {
+  private $closure;
+
+  public function __construct() {
+    $this->closure = function() {
+        return null;
+    };
+  }
+}
+~~~~~~~~~~

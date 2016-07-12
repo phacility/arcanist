@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistDifferentialRevisionStatus {
+final class ArcanistDifferentialRevisionStatus extends Phobject {
 
   const NEEDS_REVIEW      = 0;
   const NEEDS_REVISION    = 1;
@@ -21,7 +21,7 @@ final class ArcanistDifferentialRevisionStatus {
       self::IN_PREPARATION    => pht('In Preparation'),
     );
 
-    return idx($map, coalesce($status, '?'), 'Unknown');
+    return idx($map, coalesce($status, '?'), pht('Unknown'));
   }
 
 }

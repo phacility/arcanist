@@ -1,0 +1,81 @@
+<?php
+
+array(1, 2, 3);
+array(1, 2, 3,);
+array(
+  1,
+  2,
+  3,
+);
+array(
+  1,
+  2,
+  3 // comment
+);
+array(
+  'foo',
+  array('foo')
+);
+array(
+  'foo' => <<<EOTEXT
+This is some heredoc text.
+EOTEXT
+);
+array(
+  1,
+  2,
+  3);
+array(
+  1,
+  2,
+  3 /* comment */ );
+array(
+  1,
+  2,
+  3, /* comment */ );
+~~~~~~~~~~
+advice:4:14
+advice:13:3
+advice:17:3
+advice:27:3
+advice:31:3
+advice:35:20
+~~~~~~~~~~
+<?php
+
+array(1, 2, 3);
+array(1, 2, 3);
+array(
+  1,
+  2,
+  3,
+);
+array(
+  1,
+  2,
+  3, // comment
+);
+array(
+  'foo',
+  array('foo'),
+);
+array(
+  'foo' => <<<EOTEXT
+This is some heredoc text.
+EOTEXT
+);
+array(
+  1,
+  2,
+  3,
+);
+array(
+  1,
+  2,
+  3, /* comment */ 
+);
+array(
+  1,
+  2,
+  3, /* comment */ 
+);

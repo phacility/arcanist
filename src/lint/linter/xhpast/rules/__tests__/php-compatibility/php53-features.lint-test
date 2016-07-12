@@ -1,0 +1,27 @@
+<?php
+
+namespace a;
+use b, c;
+f(function () {});
+g(function () use ($c) {});
+static::m();
+1 ? 1 : 2;
+1 ?: 2;
+$a = 'stdClass';
+$a::m();
+echo __DIR__;
+~~~~~~~~~~
+error:3:1
+error:4:1
+error:5:3
+error:6:3
+error:7:1
+error:9:1
+error:12:6
+~~~~~~~~~~
+~~~~~~~~~~
+{
+  "config": {
+    "xhpast.php-version": "5.2.3"
+  }
+}

@@ -41,31 +41,32 @@ EOTEXT
     return array(
       'status' => array(
         'param' => 'task_status',
-        'help' => 'Show tasks that or open or closed, default is open.',
+        'help' => pht('Show tasks that are open or closed, default is open.'),
       ),
       'owner' => array(
         'param' => 'username',
         'paramtype' => 'username',
-        'help' =>
+        'help' => pht(
           'Only show tasks assigned to the given username, '.
-          'also accepts @all to show all, default is you.',
+          'also accepts %s to show all, default is you.',
+          '@all'),
         'conflict' => array(
-          'unassigned' => '--owner suppresses unassigned',
+          'unassigned' => pht('%s suppresses unassigned', '--owner'),
         ),
       ),
       'order' => array(
         'param' => 'task_order',
-        'help' =>
+        'help' => pht(
           'Arrange tasks based on priority, created, or modified, '.
-          'default is priority.',
+          'default is priority.'),
       ),
       'limit' => array(
         'param' => 'n',
         'paramtype' => 'int',
-        'help' => 'Limit the amount of tasks outputted, default is all.',
+        'help' => pht('Limit the amount of tasks outputted, default is all.'),
       ),
       'unassigned' => array(
-        'help' => 'Only show tasks that are not assigned (upforgrabs).',
+        'help' => pht('Only show tasks that are not assigned (upforgrabs).'),
       ),
     );
   }
@@ -94,23 +95,23 @@ EOTEXT
       $limit);
 
     if (!$this->tasks) {
-      echo "No tasks found.\n";
+      echo pht('No tasks found.')."\n";
       return 0;
     }
 
     $table = id(new PhutilConsoleTable())
       ->setShowHeader(false)
-      ->addColumn('id', array('title' => 'ID'))
-      ->addColumn('title', array('title' => 'Title'))
-      ->addColumn('priority', array('title' => 'Priority'))
-      ->addColumn('status', array('title' => 'Status'));
+      ->addColumn('id', array('title' => pht('ID')))
+      ->addColumn('title', array('title' => pht('Title')))
+      ->addColumn('priority', array('title' => pht('Priority')))
+      ->addColumn('status', array('title' => pht('Status')));
 
     foreach ($this->tasks as $task) {
       $output = array();
 
       // Render the "T123" column.
       $task_id = 'T'.$task['id'];
-      $formatted_task_id = phutil_console_format('**%s**', $task_id);
+      $formatted_task_id = tsprintf('**%s**', $task_id);
       $output['id'] = $formatted_task_id;
 
       // Render the "Title" column.
@@ -144,7 +145,7 @@ EOTEXT
       } else {
         $color = 'white';
       }
-      $formatted_priority = phutil_console_format(
+      $formatted_priority = tsprintf(
         "<bg:{$color}> </bg> %s",
         $task['priority']);
       $output['priority'] = $formatted_priority;
@@ -158,7 +159,7 @@ EOTEXT
           $status_text = $task['statusName'];
           $status_color = 'green';
         }
-        $formatted_status = phutil_console_format(
+        $formatted_status = tsprintf(
           "<bg:{$status_color}> </bg> %s",
           $status_text);
         $output['status'] = $formatted_status;

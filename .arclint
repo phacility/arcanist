@@ -1,7 +1,6 @@
 {
   "exclude": [
-    "(^externals/)",
-    "(\\.lint-test$)"
+    "(^externals/)"
   ],
   "linters": {
     "chmod": {
@@ -32,13 +31,9 @@
       "type": "phutil-library",
       "include": "(\\.php$)"
     },
-    "phutil-xhpast": {
-      "type": "phutil-xhpast",
-      "include": "(\\.php$)"
-    },
     "spelling": {
       "type": "spelling",
-      "exclude": "(resources/spelling/.*\\.json$)"
+      "exclude": "(^resources/spelling/.*\\.json$)"
     },
     "text": {
       "type": "text"
@@ -46,12 +41,7 @@
     "xhpast": {
       "type": "xhpast",
       "include": "(\\.php$)",
-      "severity": {
-        "16": "advice",
-        "34": "error"
-      },
-      "xhpast.php-version": "5.2.3",
-      "xhpast.php-version.windows": "5.3.0"
+      "standard": "phutil.xhpast"
     }
   }
 }

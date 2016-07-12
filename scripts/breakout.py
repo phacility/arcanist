@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 import time
 import select
 import curses
-import curses.wrapper
+from curses import wrapper
 
 entities = []
 grid = []
@@ -166,7 +166,11 @@ def main(stdscr):
     h = height / 10
     for x in range(1, width / 7 - 1):
         for y in range(1, 7):
-            entities.append(Block(x * 7, y * h + x / 2 % 2, 7, h, colors[y - 1]))
+            entities.append(Block(x * 7,
+                                  y * h + x / 2 % 2,
+                                  7,
+                                  h,
+                                  colors[y - 1]))
 
     while True:
         while select.select([ sys.stdin ], [], [], 0)[0]:
@@ -213,4 +217,4 @@ try:
     print ('You destroyed %s blocks out of %s with %s deaths.' %
         (Block.killed, Block.total, Ball.killed))
 except PowerOverwhelmingException as e:
-    print e
+    print (e)

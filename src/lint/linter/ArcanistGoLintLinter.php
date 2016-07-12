@@ -27,7 +27,13 @@ final class ArcanistGoLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install Golint using `go get github.com/golang/lint/golint`.');
+    return pht(
+      'Install Golint using `%s`.',
+      'go get github.com/golang/lint/golint');
+  }
+
+  public function shouldExpectCommandErrors() {
+    return false;
   }
 
   protected function canCustomizeLintSeverities() {
@@ -47,6 +53,7 @@ final class ArcanistGoLintLinter extends ArcanistExternalLinter {
         $message->setLine($matches[1]);
         $message->setChar($matches[2]);
         $message->setCode($this->getLinterName());
+        $message->setName($this->getLinterName());
         $message->setDescription(ucfirst(trim($matches[3])));
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
 

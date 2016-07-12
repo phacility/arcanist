@@ -11,9 +11,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EOF_NEWLINE          = 4;
   const LINT_BAD_CHARSET          = 5;
   const LINT_TRAILING_WHITESPACE  = 6;
-  const LINT_NO_COMMIT            = 7;
   const LINT_BOF_WHITESPACE       = 8;
   const LINT_EOF_WHITESPACE       = 9;
+  const LINT_EMPTY_FILE           = 10;
 
   private $maxLineLength = 80;
 
@@ -84,16 +84,22 @@ final class ArcanistTextLinter extends ArcanistLinter {
       self::LINT_EOF_NEWLINE         => pht('File Does Not End in Newline'),
       self::LINT_BAD_CHARSET         => pht('Bad Charset'),
       self::LINT_TRAILING_WHITESPACE => pht('Trailing Whitespace'),
-      self::LINT_NO_COMMIT           => pht('Explicit %s', '@no'.'commit'),
       self::LINT_BOF_WHITESPACE      => pht('Leading Whitespace at BOF'),
       self::LINT_EOF_WHITESPACE      => pht('Trailing Whitespace at EOF'),
+      self::LINT_EMPTY_FILE          => pht('Empty File'),
     );
   }
 
   public function lintPath($path) {
+    $this->lintEmptyFile($path);
+
     if (!strlen($this->getData($path))) {
       // If the file is empty, don't bother; particularly, don't require
       // the user to add a newline.
+      return;
+    }
+
+    if ($this->didStopAllLinters()) {
       return;
     }
 
@@ -116,9 +122,28 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
     $this->lintBOFWhitespace($path);
     $this->lintEOFWhitespace($path);
+  }
 
-    if ($this->getEngine()->getCommitHookMode()) {
-      $this->lintNoCommit($path);
+  protected function lintEmptyFile($path) {
+    $data = $this->getData($path);
+
+    // It is reasonable for certain file types to be completely empty,
+    // so they are excluded here.
+    switch ($filename = basename($this->getActivePath())) {
+      case '__init__.py':
+        return;
+
+      default:
+        if (strlen($filename) && $filename[0] == '.') {
+          return;
+        }
+    }
+
+    if (preg_match('/^\s*$/', $data)) {
+      $this->raiseLintAtPath(
+        self::LINT_EMPTY_FILE,
+        pht("Empty files usually don't serve any useful purpose."));
+      $this->stopAllLinters();
     }
   }
 
@@ -291,23 +316,6 @@ final class ArcanistTextLinter extends ArcanistLinter {
         'This is unnecessary and should be avoided when possible.'),
       $string,
       '');
-  }
-
-  private function lintNoCommit($path) {
-    $data = $this->getData($path);
-
-    $deadly = '@no'.'commit';
-
-    $offset = strpos($data, $deadly);
-    if ($offset !== false) {
-      $this->raiseLintAtOffset(
-        $offset,
-        self::LINT_NO_COMMIT,
-        pht(
-          'This file is explicitly marked as "%s", which blocks commits.',
-          $deadly),
-        $deadly);
-    }
   }
 
 }

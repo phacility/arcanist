@@ -3,7 +3,7 @@
 /**
  * This class holds everything related to configuration and configuration files.
  */
-final class ArcanistConfigurationManager {
+final class ArcanistConfigurationManager extends Phobject {
 
   private $runtimeConfig = array();
   private $workingCopy = null;
@@ -13,6 +13,7 @@ final class ArcanistConfigurationManager {
   public function setWorkingCopyIdentity(
     ArcanistWorkingCopyIdentity $working_copy) {
     $this->workingCopy = $working_copy;
+    return $this;
   }
 
 /* -(  Get config  )--------------------------------------------------------- */
@@ -99,7 +100,17 @@ final class ArcanistConfigurationManager {
     }
 
     $user_config = $this->readUserArcConfig();
-    $pval = idx($user_config, $key);
+
+    // For "aliases" coming from the user config file specifically, read the
+    // top level "aliases" key instead of the "aliases" key inside the "config"
+    // setting. Aliases were originally user-specific but later became standard
+    // configuration, which is why this works oddly.
+    if ($key === 'aliases') {
+      $pval = idx($this->readUserConfigurationFile(), $key);
+    } else {
+      $pval = idx($user_config, $key);
+    }
+
     if ($pval !== null) {
       $results[self::CONFIG_SOURCE_USER] =
         $settings->willReadValue($key, $pval);
@@ -180,11 +191,13 @@ final class ArcanistConfigurationManager {
           }
           if ($mode & 0177) {
             // Mode should allow only owner access.
-            $prompt = "File permissions on your ~/.arcrc are too open. ".
-                      "Fix them by chmod'ing to 600?";
+            $prompt = pht(
+              "File permissions on your %s are too open. ".
+              "Fix them by chmod'ing to 600?",
+              '~/.arcrc');
             if (!phutil_console_confirm($prompt, $default_no = false)) {
               throw new ArcanistUsageException(
-                'Set ~/.arcrc to file mode 600.');
+                pht('Set %s to file mode 600.', '~/.arcrc'));
             }
             execx('chmod 600 %s', $user_config_path);
 
@@ -200,7 +213,7 @@ final class ArcanistConfigurationManager {
           $user_config = phutil_json_decode($user_config_data);
         } catch (PhutilJSONParserException $ex) {
           throw new PhutilProxyException(
-            "Your '~/.arcrc' file is not a valid JSON file.",
+            pht("Your '%s' file is not a valid JSON file.", '~/.arcrc'),
             $ex);
         }
       } else {
@@ -236,11 +249,12 @@ final class ArcanistConfigurationManager {
   public function setUserConfigurationFileLocation($custom_arcrc) {
     if (!Filesystem::pathExists($custom_arcrc)) {
       throw new Exception(
-        'Custom arcrc file was specified, but it was not found!');
+        pht('Custom %s file was specified, but it was not found!', 'arcrc'));
     }
 
     $this->customArcrcFilename = $custom_arcrc;
     $this->userConfigCache = null;
+    return $this;
   }
 
   public function getUserConfigurationFileLocation() {
@@ -318,8 +332,12 @@ final class ArcanistConfigurationManager {
     foreach ($options as $opt) {
       $opt_config = preg_split('/=/', $opt, 2);
       if (count($opt_config) !== 2) {
-        throw new ArcanistUsageException("Argument was '{$opt}', but must be ".
-        "'name=value'. For example, history.immutable=true");
+        throw new ArcanistUsageException(
+          pht(
+            "Argument was '%s', but must be '%s'. For example, %s",
+            $opt,
+            'name=value',
+            'history.immutable=true'));
       }
 
       list($key, $value) = $opt_config;

@@ -10,7 +10,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoName() {
-    return pht('PyFlakes');
+    return pht('Python PyFlakes');
   }
 
   public function getInfoDescription() {
@@ -28,14 +28,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.pyflakes.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.pyflakes.bin', 'pyflakes');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'pyflakes';
   }
 
   public function getVersion() {
@@ -50,15 +43,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install pyflakes with `pip install pyflakes`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
-  }
-
-  public function supportsReadDataFromStdin() {
-    return true;
+    return pht('Install pyflakes with `%s`.', 'pip install pyflakes');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -86,14 +71,11 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
       $message->setPath($path);
       $message->setLine($matches[2]);
       $message->setCode($this->getLinterName());
+      $message->setName($this->getLinterName());
       $message->setDescription($description);
       $message->setSeverity($severity);
 
       $messages[] = $message;
-    }
-
-    if ($err && !$messages) {
-      return false;
     }
 
     return $messages;

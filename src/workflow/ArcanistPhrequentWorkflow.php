@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Base workflow for Phrequent workflows
+ * Base workflow for Phrequent workflows.
  */
 abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
 
@@ -10,14 +10,13 @@ abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
 
     $results = $conduit->callMethodSynchronous(
       'phrequent.tracking',
-      array(
-      ));
+      array());
     $results = $results['data'];
 
     if (count($results) === 0) {
       echo phutil_console_format(
-        "Not currently tracking time against any object\n");
-
+        "%s\n",
+        pht('Not currently tracking time against any object.'));
       return 0;
     }
 
@@ -37,27 +36,27 @@ abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
       if (array_key_exists($lookup, $phid_query)) {
         $phid_map[$lookup] = $phid_query[$lookup]['fullName'];
       } else {
-        $phid_map[$lookup] = 'Unknown Object';
+        $phid_map[$lookup] = pht('Unknown Object');
       }
     }
 
     $table = id(new PhutilConsoleTable())
-      ->addColumn('type', array('title' => 'Status'))
-      ->addColumn('time', array('title' => 'Tracked', 'align' => 'right'))
-      ->addColumn('name', array('title' => 'Name'))
+      ->addColumn('type', array('title' => pht('Status')))
+      ->addColumn('time', array('title' => pht('Tracked'), 'align' => 'right'))
+      ->addColumn('name', array('title' => pht('Name')))
       ->setBorders(false);
 
     $i = 0;
     foreach ($results as $result) {
       if ($i === 0) {
-        $column_type = 'In Progress';
+        $column_type = pht('In Progress');
       } else {
-        $column_type = 'Suspended';
+        $column_type = pht('Suspended');
       }
 
       $table->addRow(array(
         'type' => '('.$column_type.')',
-        'time' => phutil_format_relative_time($result['time']),
+        'time' => tsprintf($result['time']),
         'name' => $phid_map[$result['phid']],
       ));
 
@@ -65,7 +64,6 @@ abstract class ArcanistPhrequentWorkflow extends ArcanistWorkflow {
     }
 
     $table->draw();
-
     return 0;
   }
 

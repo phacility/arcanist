@@ -1,5 +1,0 @@
-<?php
-$$foo;
-$obj->$bar; // okay
-~~~~~~~~~~
-error:2:1

@@ -1,16 +1,15 @@
 <?php
 
-final class ArcanistSpellingLinterTestCase
-  extends ArcanistArcanistLinterTestCase {
+final class ArcanistSpellingLinterTestCase extends ArcanistLinterTestCase {
 
-  public function testSpellingLint() {
-    $linter = new ArcanistSpellingLinter();
-    $linter->addPartialWordRule('supermn', 'superman');
-    $linter->addExactWordRule('batmn', 'batman');
+  protected function getLinter() {
+    return parent::getLinter()
+      ->addPartialWordRule('supermn', 'superman')
+      ->addExactWordRule('batmn', 'batman');
+  }
 
-    $this->executeTestsInDirectory(
-      dirname(__FILE__).'/spelling/',
-      $linter);
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/spelling/');
   }
 
   public function testFixLetterCase() {

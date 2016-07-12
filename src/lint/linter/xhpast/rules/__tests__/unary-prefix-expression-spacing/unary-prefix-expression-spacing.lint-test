@@ -1,0 +1,14 @@
+<?php
+
+$f = @ fopen($path, 'rb');
+@fclose($f);
+exit ();
+~~~~~~~~~~
+warning:3:7
+warning:5:5
+~~~~~~~~~~
+<?php
+
+$f = @fopen($path, 'rb');
+@fclose($f);
+exit();

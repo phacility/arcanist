@@ -7,7 +7,7 @@
 final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
   public function getInfoName() {
-    return 'Flake8';
+    return 'Python Flake8 multi-linter';
   }
 
   public function getInfoURI() {
@@ -16,8 +16,9 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
   public function getInfoDescription() {
     return pht(
-      'Uses `flake8` to run several linters (PyFlakes, pep8, and a McCabe '.
-      'complexity checker) on Python source files.');
+      'Uses `%s` to run several linters (PyFlakes, pep8, and a McCabe '.
+      'complexity checker) on Python source files.',
+      'flake8');
   }
 
   public function getLinterName() {
@@ -28,19 +29,8 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     return 'flake8';
   }
 
-  public function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration('lint.flake8.options', array());
-  }
-
   public function getDefaultBinary() {
-    $prefix = $this->getDeprecatedConfiguration('lint.flake8.prefix');
-    $bin = $this->getDeprecatedConfiguration('lint.flake8.bin', 'flake8');
-
-    if ($prefix) {
-      return $prefix.'/'.$bin;
-    } else {
-      return $bin;
-    }
+    return 'flake8';
   }
 
   public function getVersion() {
@@ -55,11 +45,7 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install flake8 using `easy_install flake8`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
+    return pht('Install flake8 using `%s`.', 'pip install flake8');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -92,10 +78,6 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
       $messages[] = $message;
     }
 
-    if ($err && !$messages) {
-      return false;
-    }
-
     return $messages;
   }
 
@@ -109,12 +91,13 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
     } else {
       // "E": PEP8 Error
       // "F": PyFlakes Error
+      //  or: Flake8 Extension Message
       return ArcanistLintSeverity::SEVERITY_ERROR;
     }
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-    if (!preg_match('/^(E|W|C|F)\d+$/', $code)) {
+    if (!preg_match('/^[A-Z]\d+$/', $code)) {
       throw new Exception(
         pht(
           'Unrecognized lint message code "%s". Expected a valid flake8 '.

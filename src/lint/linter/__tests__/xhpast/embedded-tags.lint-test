@@ -2,4 +2,4 @@
 
 This shouldn't fatal the parser.
 ~~~~~~~~~~
-error:1:10
+disabled:2:1

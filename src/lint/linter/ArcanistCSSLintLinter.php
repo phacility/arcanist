@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Uses "CSS Lint" to detect checkstyle errors in css code.
+ * Uses "CSS Lint" to detect checkstyle errors in CSS code.
  */
 final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
@@ -14,7 +14,9 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInfoDescription() {
-    return pht('Use `csslint` to detect issues with CSS source files.');
+    return pht(
+      'Use `%s` to detect issues with CSS source files.',
+      'csslint');
   }
 
   public function getLinterName() {
@@ -25,19 +27,14 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
     return 'csslint';
   }
 
-  public function getMandatoryFlags() {
+  protected function getMandatoryFlags() {
     return array(
       '--format=lint-xml',
-      '--quiet',
     );
   }
 
-  public function getDefaultFlags() {
-    return $this->getDeprecatedConfiguration('lint.csslint.options', array());
-  }
-
   public function getDefaultBinary() {
-    return $this->getDeprecatedConfiguration('lint.csslint.bin', 'csslint');
+    return 'csslint';
   }
 
   public function getVersion() {
@@ -52,11 +49,9 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   public function getInstallInstructions() {
-    return pht('Install CSSLint using `npm install -g csslint`.');
-  }
-
-  public function shouldExpectCommandErrors() {
-    return true;
+    return pht(
+      'Install %s using `%s`.', 'CSSLint',
+      'npm install -g csslint');
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
@@ -69,31 +64,44 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
 
     $files = $report_dom->getElementsByTagName('file');
     $messages = array();
+
     foreach ($files as $file) {
       foreach ($file->childNodes as $child) {
-        if (!($child instanceof DOMElement)) {
-          continue;
+        $line = $child->getAttribute('line');
+        $char = $child->getAttribute('char');
+        $original_text = $child->getAttribute('evidence');
+
+        if ($line === '') {
+          $line = null;
         }
 
-        $data = $this->getData($path);
-        $lines = explode("\n", $data);
-        $name = $child->getAttribute('reason');
-        $severity = ($child->getAttribute('severity') == 'warning')
-          ? ArcanistLintSeverity::SEVERITY_WARNING
-          : ArcanistLintSeverity::SEVERITY_ERROR;
+        if ($char === '') {
+          $char = null;
+        } else {
+          $original_text = substr($original_text, $char - 1);
+        }
 
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($child->getAttribute('line'));
-        $message->setChar($child->getAttribute('char'));
-        $message->setCode('CSSLint');
-        $message->setDescription($child->getAttribute('reason'));
-        $message->setSeverity($severity);
+        $message = id(new ArcanistLintMessage())
+          ->setPath($path)
+          ->setLine($line)
+          ->setChar($char)
+          ->setCode($this->getLinterName())
+          ->setName($this->getLinterName())
+          ->setDescription($child->getAttribute('reason'))
+          ->setOriginalText($original_text);
 
-        if ($child->hasAttribute('line') && $child->getAttribute('line') > 0) {
-          $line = $lines[$child->getAttribute('line') - 1];
-          $text = substr($line, $child->getAttribute('char') - 1);
-          $message->setOriginalText($text);
+        switch ($child->getAttribute('severity')) {
+          case 'error':
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+            break;
+
+          case 'warning':
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
+            break;
+
+          default:
+            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+            break;
         }
 
         $messages[] = $message;
@@ -104,18 +112,16 @@ final class ArcanistCSSLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getLintCodeFromLinterConfigurationKey($code) {
-
     // NOTE: We can't figure out which rule generated each message, so we
     // can not customize severities. I opened a pull request to add this
     // ability; see:
     //
     // https://github.com/stubbornella/csslint/pull/409
-
     throw new Exception(
       pht(
-        "CSSLint does not currently support custom severity levels, because ".
-        "rules can't be identified from messages in output. ".
-        "See Pull Request #409."));
+        "%s does not currently support custom severity levels, because ".
+        "rules can't be identified from messages in output.",
+        'CSSLint'));
   }
 
 }
