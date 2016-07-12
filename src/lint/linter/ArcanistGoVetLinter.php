@@ -73,15 +73,15 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
 
     $messages = array();
     foreach ($lines as $line) {
-      $matches = explode(':', $line, 3);
+      preg_match('/[^:]*:([0-9]+)(:[0-9]+)?: (.*)/', $line, $matches);
 
-      if (count($matches) === 3) {
+      if (count($matches) === 4) {
         $message = new ArcanistLintMessage();
         $message->setPath($path);
         $message->setLine($matches[1]);
         $message->setCode($this->getLinterName());
         $message->setName($this->getLinterName());
-        $message->setDescription(ucfirst(trim($matches[2])));
+        $message->setDescription(ucfirst(trim($matches[3])));
         $message->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
 
         $messages[] = $message;
