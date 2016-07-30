@@ -18,7 +18,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Start tracking work in Phrequent.
+          Stop tracking work in Phrequent.
 EOTEXT
       );
   }

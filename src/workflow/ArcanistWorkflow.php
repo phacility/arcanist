@@ -673,9 +673,8 @@ abstract class ArcanistWorkflow extends Phobject {
         }
 
         if (!array_key_exists($arg_key, $spec)) {
-          $corrected = ArcanistConfiguration::correctArgumentSpelling(
-            $arg_key,
-            array_keys($spec));
+          $corrected = PhutilArgumentSpellingCorrector::newFlagCorrector()
+            ->correctSpelling($arg_key, array_keys($spec));
           if (count($corrected) == 1) {
             PhutilConsole::getConsole()->writeErr(
               pht(
