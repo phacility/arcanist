@@ -21,6 +21,10 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $branchType;
   private $ontoType;
   private $preview;
+  private $shouldUseSubmitQueue;
+  private $submitQueueUri;
+  private $submitQueueClient;
+  private $tbr;
 
   private $revision;
   private $messageFile;
@@ -248,6 +252,14 @@ EOTEXT
           'actually modify or land the commits.'),
       ),
       '*' => 'branch',
+      'tbr' => array(
+        'help' => pht(
+          'tbr: To-Be-Reviewed. Skips the submit-queue if the submit-queue '.
+          'is enabled for this repo.'),
+        'supports' => array(
+          'git',
+        ),
+      ),
     );
   }
 
@@ -257,6 +269,11 @@ EOTEXT
     $engine = null;
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
+      if ($this->shouldUseSubmitQueue && !$this->tbr) {
+        $engine = new UberArcanistSubmitQueueEngine(
+          $this->submitQueueClient,
+          $this->getConduit());
+      }
     }
 
     if ($engine) {
@@ -292,6 +309,10 @@ EOTEXT
         ->setShouldSquash($this->useSquash)
         ->setShouldPreview($this->preview)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      if ($engine instanceof UberArcanistSubmitQueueEngine) {
+        $engine->setRevision($this->uberGetRevision());
+      }
 
       $engine->execute();
 
@@ -562,6 +583,25 @@ EOTEXT
     }
 
     $this->oldBranch = $this->getBranchOrBookmark();
+    $this->shouldUseSubmitQueue = nonempty(
+        $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+        false
+    );
+
+    if ($this->getArgument('tbr')) {
+      $this->tbr = true;
+    } else {
+      $this->tbr = false;
+    }
+    if ($this->shouldUseSubmitQueue) {
+      $this->submitQueueUri = $this->getConfigFromAnySource('uber.land.submitqueue.uri');
+      if(empty($this->submitQueueUri)) {
+        $message = pht(
+            "You are trying to use submitqueue, but the submitqueue URI for your repo is not set");
+        throw new ArcanistUsageException($message);
+      }
+      $this->submitQueueClient = new UberSubmitQueueClient($this->submitQueueUri);
+    }
   }
 
   private function validate() {
@@ -680,6 +720,80 @@ EOTEXT
     }
 
     echo pht("The following commit(s) will be landed:\n\n%s", $out), "\n";
+  }
+
+
+  // copy of the first part of the findRevision()
+  // reason it has been copied as a separate function is that this way it
+  // is easier to maintain with the upstream changes
+  public function uberGetRevision() {
+    $repository_api = $this->getRepositoryAPI();
+
+    $this->parseBaseCommitArgument(array($this->ontoRemoteBranch));
+
+    $revision_id = $this->getArgument('revision');
+    if ($revision_id) {
+      $revision_id = $this->normalizeRevisionID($revision_id);
+      $revisions = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
+        array(
+          'ids' => array($revision_id),
+        ));
+      if (!$revisions) {
+        throw new ArcanistUsageException(pht(
+          "No such revision '%s'!",
+          "D{$revision_id}"));
+      }
+    } else {
+      $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
+        $this->getConduit(),
+        array());
+    }
+
+    if (!count($revisions)) {
+      throw new ArcanistUsageException(pht(
+        "arc can not identify which revision exists on %s '%s'. Update the ".
+        "revision with recent changes to synchronize the %s name and hashes, ".
+        "or use '%s' to amend the commit message at HEAD, or use ".
+        "'%s' to select a revision explicitly.",
+        $this->branchType,
+        $this->branch,
+        $this->branchType,
+        'arc amend',
+        '--revision <id>'));
+    } else if (count($revisions) > 1) {
+      switch ($this->branchType) {
+        case self::REFTYPE_BOOKMARK:
+          $message = pht(
+            "There are multiple revisions on feature bookmark '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different bookmarks, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+        case self::REFTYPE_BRANCH:
+        default:
+          $message = pht(
+            "There are multiple revisions on feature branch '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different branches, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+      }
+
+      throw new ArcanistUsageException($message);
+    }
+
+    return head($revisions);
   }
 
   private function findRevision() {
@@ -1612,6 +1726,9 @@ EOTEXT
   }
 
   public function didPush() {
+    if ($this->shouldUseSubmitQueue) {
+      return;
+    }
     $this->askForRepositoryUpdate();
 
     $mark_workflow = $this->buildChildWorkflow(

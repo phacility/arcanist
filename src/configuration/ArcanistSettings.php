@@ -188,6 +188,19 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.land.submitqueue.enable' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will merge changes on the server-side using'.
+          'submitqueue'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.uri' => array(
+        'type' => 'string',
+        'help' => pht('URI to use for the submitqueue backend'),
+        'example' => '"https://submitqueue.uberinternal.com"',
+      ),
     );
   }
 
