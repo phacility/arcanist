@@ -181,7 +181,10 @@ final class ArcanistGitLandEngine
           $this->getTargetFullRef()));
     }
 
-    list($changes) = $api->execxLocal('diff HEAD --');
+    // TODO: This could probably be cleaner by asking the API a question
+    // about working copy status instead of running a raw diff command. See
+    // discussion in T11435.
+    list($changes) = $api->execxLocal('diff --no-ext-diff HEAD --');
     $changes = trim($changes);
     if (!strlen($changes)) {
       throw new Exception(
