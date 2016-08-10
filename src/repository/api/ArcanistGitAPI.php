@@ -826,6 +826,22 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $mask |= self::FLAG_EXTERNALS;
       } else if (isset($flags[$flag])) {
         $mask |= $flags[$flag];
+      } else if ($flag[0] == 'R') {
+        $both = explode("\t", $file);
+        if ($full) {
+          $files[$both[0]] = array(
+            'mask' => $mask | self::FLAG_DELETED,
+            'ref'  => str_repeat('0', 40),
+          );
+        } else {
+          $files[$both[0]] = $mask | self::FLAG_DELETED;
+        }
+        $file = $both[1];
+        $mask |= self::FLAG_ADDED;
+      } else if ($flag[0] == 'C') {
+        $both = explode("\t", $file);
+        $file = $both[1];
+        $mask |= self::FLAG_ADDED;
       }
 
       if ($full) {
