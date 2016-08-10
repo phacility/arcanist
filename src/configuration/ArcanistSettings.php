@@ -201,6 +201,16 @@ final class ArcanistSettings extends Phobject {
         'help' => pht('URI to use for the submitqueue backend'),
         'example' => '"https://submitqueue.uberinternal.com"',
       ),
+      'uber.land.submitqueue.shadow' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will submit requests to submitqueue with'.
+          'shadow_option=true, and on success land the request using the '.
+          'arcanist gitland engine'
+        ),
+        'default' => false,
+        'example' => 'false',
+      ),
     );
   }
 

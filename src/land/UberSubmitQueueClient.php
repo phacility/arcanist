@@ -4,15 +4,17 @@ final class UberSubmitQueueClient extends Phobject {
 
     private $uri;
     private $host;
+    private $conduitToken;
     private $timeout;
 
-    public function __construct($uri, $timeout=10) {
+    public function __construct($uri, $conduitToken, $timeout=10) {
         $this->uri = new PhutilURI($uri);
         if (!strlen($this->uri->getDomain())) {
             throw new Exception(
                 pht("SubmitQueue URI '%s' must include a valid host.", $uri));
         }
         $this->host = $this->uri->getDomain();
+        $this->conduitToken = $conduitToken;
         $this->timeout = $timeout;
     }
 
@@ -20,14 +22,17 @@ final class UberSubmitQueueClient extends Phobject {
         return $this->host;
     }
 
-    public function submitMergeRequest($remoteUrl, $diffId, $revisionId) {
+    public function submitMergeRequest($remoteUrl, $diffId, $revisionId, $shouldShadow) {
         $params = array(
           'remote' => $remoteUrl,
           'diffId' => $diffId,
           'revisionId' => $revisionId,
+          'conduitToken' => $this->conduitToken,
         );
-        $result = $this->callMethodSynchronous("POST", "/merge_requests", $params);
-        return "whatever";
+        if ($shouldShadow) {
+          $params['shouldShadow'] = "true";
+        }
+        return $this->callMethodSynchronous("POST", "/merge_requests", $params);
     }
 
     private function callMethodSynchronous($method, $api, array $params) {

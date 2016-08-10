@@ -23,6 +23,7 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $preview;
   private $shouldUseSubmitQueue;
   private $submitQueueUri;
+  private $submitQueueShadowMode;
   private $submitQueueClient;
   private $tbr;
 
@@ -267,12 +268,20 @@ EOTEXT
     $this->readArguments();
 
     $engine = null;
+    $uberShadowEngine = null;
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
       if ($this->shouldUseSubmitQueue && !$this->tbr) {
-        $engine = new UberArcanistSubmitQueueEngine(
-          $this->submitQueueClient,
-          $this->getConduit());
+        // If the shadow-mode is on, then initialize the shadowEngine
+        if ($this->submitQueueShadowMode) {
+          $uberShadowEngine = new UberArcanistSubmitQueueEngine(
+            $this->submitQueueClient,
+            $this->getConduit());
+        } else {
+          $engine = new UberArcanistSubmitQueueEngine(
+            $this->submitQueueClient,
+            $this->getConduit());
+        }
       }
     }
 
@@ -309,6 +318,24 @@ EOTEXT
         ->setShouldSquash($this->useSquash)
         ->setShouldPreview($this->preview)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      // initialize the shadow engine and execute it if uberShadowEngine is initialized
+      if ($uberShadowEngine) {
+        $uberShadowEngine
+          ->setWorkflow($this)
+          ->setRepositoryAPI($this->getRepositoryAPI())
+          ->setSourceRef($this->branch)
+          ->setTargetRemote($this->remote)
+          ->setTargetOnto($this->onto)
+          ->setShouldHold($should_hold)
+          ->setShouldKeep($this->keepBranch)
+          ->setShouldSquash($this->useSquash)
+          ->setShouldPreview($this->preview)
+          ->setBuildMessageCallback(array($this, 'buildEngineMessage'))
+          ->setRevision($this->uberGetRevision())
+          ->setShouldShadow(true);
+        $uberShadowEngine->execute();
+      }
 
       if ($engine instanceof UberArcanistSubmitQueueEngine) {
         $engine->setRevision($this->uberGetRevision());
@@ -595,12 +622,16 @@ EOTEXT
     }
     if ($this->shouldUseSubmitQueue) {
       $this->submitQueueUri = $this->getConfigFromAnySource('uber.land.submitqueue.uri');
+      $this->submitQueueShadowMode = $this->getConfigFromAnySource('uber.land.submitqueue.shadow');
       if(empty($this->submitQueueUri)) {
         $message = pht(
             "You are trying to use submitqueue, but the submitqueue URI for your repo is not set");
         throw new ArcanistUsageException($message);
       }
-      $this->submitQueueClient = new UberSubmitQueueClient($this->submitQueueUri);
+      $this->submitQueueClient =
+        new UberSubmitQueueClient(
+          $this->submitQueueUri,
+          $this->getConduit()->getConduitToken());
     }
   }
 
