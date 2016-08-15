@@ -169,6 +169,48 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.sirmixalot.enrolled' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, the setting will enable sirmixalot enrollment for this '.
+          'repo. This means that the merged commit produced while landing a '.
+          'diff will be put to `%s` branch instead of the master branch.',
+          'landed/TIMESTAMP'),
+        'default' => false,
+        'example' => 'true',
+      ),
+      'uber.land.review-check' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will check that local changes you are about to land '.
+          'match diff that was submitted for review to Differential.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.enable' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will merge changes on the server-side using'.
+          'submitqueue'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.uri' => array(
+        'type' => 'string',
+        'help' => pht('URI to use for the submitqueue backend'),
+        'example' => '"https://submitqueue.uberinternal.com"',
+      ),
+      'uber.land.submitqueue.shadow' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will submit requests to submitqueue with'.
+          'shadow_option=true, and on success land the request using the '.
+          'arcanist gitland engine'
+        ),
+        'default' => false,
+        'example' => 'false',
+      ),
     );
   }
 

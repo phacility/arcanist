@@ -21,6 +21,11 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $branchType;
   private $ontoType;
   private $preview;
+  private $shouldUseSubmitQueue;
+  private $submitQueueUri;
+  private $submitQueueShadowMode;
+  private $submitQueueClient;
+  private $tbr;
 
   private $revision;
   private $messageFile;
@@ -248,6 +253,14 @@ EOTEXT
           'actually modify or land the commits.'),
       ),
       '*' => 'branch',
+      'tbr' => array(
+        'help' => pht(
+          'tbr: To-Be-Reviewed. Skips the submit-queue if the submit-queue '.
+          'is enabled for this repo.'),
+        'supports' => array(
+          'git',
+        ),
+      ),
     );
   }
 
@@ -255,8 +268,21 @@ EOTEXT
     $this->readArguments();
 
     $engine = null;
+    $uberShadowEngine = null;
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
+      if ($this->shouldUseSubmitQueue && !$this->tbr) {
+        // If the shadow-mode is on, then initialize the shadowEngine
+        if ($this->submitQueueShadowMode) {
+          $uberShadowEngine = new UberArcanistSubmitQueueEngine(
+            $this->submitQueueClient,
+            $this->getConduit());
+        } else {
+          $engine = new UberArcanistSubmitQueueEngine(
+            $this->submitQueueClient,
+            $this->getConduit());
+        }
+      }
     }
 
     if ($engine) {
@@ -292,6 +318,28 @@ EOTEXT
         ->setShouldSquash($this->useSquash)
         ->setShouldPreview($this->preview)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      // initialize the shadow engine and execute it if uberShadowEngine is initialized
+      if ($uberShadowEngine) {
+        $uberShadowEngine
+          ->setWorkflow($this)
+          ->setRepositoryAPI($this->getRepositoryAPI())
+          ->setSourceRef($this->branch)
+          ->setTargetRemote($this->remote)
+          ->setTargetOnto($this->onto)
+          ->setShouldHold($should_hold)
+          ->setShouldKeep($this->keepBranch)
+          ->setShouldSquash($this->useSquash)
+          ->setShouldPreview($this->preview)
+          ->setBuildMessageCallback(array($this, 'buildEngineMessage'))
+          ->setRevision($this->uberGetRevision())
+          ->setShouldShadow(true);
+        $uberShadowEngine->execute();
+      }
+
+      if ($engine instanceof UberArcanistSubmitQueueEngine) {
+        $engine->setRevision($this->uberGetRevision());
+      }
 
       $engine->execute();
 
@@ -562,6 +610,29 @@ EOTEXT
     }
 
     $this->oldBranch = $this->getBranchOrBookmark();
+    $this->shouldUseSubmitQueue = nonempty(
+        $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+        false
+    );
+
+    if ($this->getArgument('tbr')) {
+      $this->tbr = true;
+    } else {
+      $this->tbr = false;
+    }
+    if ($this->shouldUseSubmitQueue) {
+      $this->submitQueueUri = $this->getConfigFromAnySource('uber.land.submitqueue.uri');
+      $this->submitQueueShadowMode = $this->getConfigFromAnySource('uber.land.submitqueue.shadow');
+      if(empty($this->submitQueueUri)) {
+        $message = pht(
+            "You are trying to use submitqueue, but the submitqueue URI for your repo is not set");
+        throw new ArcanistUsageException($message);
+      }
+      $this->submitQueueClient =
+        new UberSubmitQueueClient(
+          $this->submitQueueUri,
+          $this->getConduit()->getConduitToken());
+    }
   }
 
   private function validate() {
@@ -682,6 +753,80 @@ EOTEXT
     echo pht("The following commit(s) will be landed:\n\n%s", $out), "\n";
   }
 
+
+  // copy of the first part of the findRevision()
+  // reason it has been copied as a separate function is that this way it
+  // is easier to maintain with the upstream changes
+  public function uberGetRevision() {
+    $repository_api = $this->getRepositoryAPI();
+
+    $this->parseBaseCommitArgument(array($this->ontoRemoteBranch));
+
+    $revision_id = $this->getArgument('revision');
+    if ($revision_id) {
+      $revision_id = $this->normalizeRevisionID($revision_id);
+      $revisions = $this->getConduit()->callMethodSynchronous(
+        'differential.query',
+        array(
+          'ids' => array($revision_id),
+        ));
+      if (!$revisions) {
+        throw new ArcanistUsageException(pht(
+          "No such revision '%s'!",
+          "D{$revision_id}"));
+      }
+    } else {
+      $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
+        $this->getConduit(),
+        array());
+    }
+
+    if (!count($revisions)) {
+      throw new ArcanistUsageException(pht(
+        "arc can not identify which revision exists on %s '%s'. Update the ".
+        "revision with recent changes to synchronize the %s name and hashes, ".
+        "or use '%s' to amend the commit message at HEAD, or use ".
+        "'%s' to select a revision explicitly.",
+        $this->branchType,
+        $this->branch,
+        $this->branchType,
+        'arc amend',
+        '--revision <id>'));
+    } else if (count($revisions) > 1) {
+      switch ($this->branchType) {
+        case self::REFTYPE_BOOKMARK:
+          $message = pht(
+            "There are multiple revisions on feature bookmark '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different bookmarks, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+        case self::REFTYPE_BRANCH:
+        default:
+          $message = pht(
+            "There are multiple revisions on feature branch '%s' which are ".
+            "not present on '%s':\n\n".
+            "%s\n".
+            'Separate these revisions onto different branches, or use '.
+            '--revision <id> to use the commit message from <id> '.
+            'and land them all.',
+            $this->branch,
+            $this->onto,
+            $this->renderRevisionList($revisions));
+          break;
+      }
+
+      throw new ArcanistUsageException($message);
+    }
+
+    return head($revisions);
+  }
+
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
@@ -784,6 +929,36 @@ EOTEXT
       }
     }
 
+    $uber_review_check_enabled = $this->getConfigFromAnySource(
+      'uber.land.review-check',
+      false);
+    if ($uber_review_check_enabled) {
+      if (!$repository_api instanceof ArcanistGitAPI) {
+        throw new ArcanistUsageException(pht(
+          "'%s' is only supported for GIT repositories.",
+          'uber.land.review-check'));
+      }
+
+      $local_diff = $this->normalizeDiff(
+        $repository_api->getFullGitDiff(
+          $repository_api->getBaseCommit(),
+          $repository_api->getHeadCommit()));
+
+      $reviewed_diff = $this->normalizeDiff(
+        $this->getConduit()->callMethodSynchronous(
+          'differential.getrawdiff',
+          array('diffID' => head($this->revision['diffs']))));
+
+      if ($local_diff !== $reviewed_diff) {
+        $ok = phutil_console_confirm(pht(
+          "Your working copy changes do not match diff submitted for review. ".
+          "Continue anyway?"));
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
+      }
+    }
+
     if ($rev_auxiliary) {
       $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
       if ($phids) {
@@ -839,6 +1014,12 @@ EOTEXT
     if ($diff_phid) {
       $this->checkForBuildables($diff_phid);
     }
+  }
+
+  private function normalizeDiff($text) {
+    $changes = id(new ArcanistDiffParser())->parseDiff($text);
+    ksort($changes);
+    return ArcanistBundle::newFromChanges($changes)->toGitPatch();
   }
 
   private function pullFromRemote() {
@@ -1269,7 +1450,18 @@ EOTEXT
         'Holding change in **%s**: it has NOT been pushed yet.',
         $this->onto)."\n");
     } else {
-      echo pht('Pushing change...'), "\n\n";
+      $sirmixalot_enrolled = $this->getConfigFromAnySource(
+        'uber.sirmixalot.enrolled',
+        false);
+      // check, if this repo is enrolled to sirmixalot service
+      if ($sirmixalot_enrolled) {
+        // if repo is enrolled, land change on a specific remote branch
+        $remote_landed_branch = sprintf('landed/%s', date("YmdHis"));
+        $landed_branch = sprintf("HEAD:%s", $remote_landed_branch);
+      } else {
+        $remote_landed_branch = $landed_branch = $this->onto;
+      }
+      echo pht('Pushing change to %s', $remote_landed_branch), "\n\n";
 
       chdir($repository_api->getPath());
 
@@ -1277,8 +1469,17 @@ EOTEXT
         $err = phutil_passthru('git svn dcommit');
         $cmd = 'git svn dcommit';
       } else if ($this->isGit) {
-        $err = phutil_passthru('git push %s %s', $this->remote, $this->onto);
+        $err = phutil_passthru(
+          'git push %s %s',
+          $this->remote,
+          $landed_branch);
         $cmd = 'git push';
+        if ($sirmixalot_enrolled) {
+          // clean up current branch (the one used for merging). if we don't,
+          // current branch will have landed commits that are not on branch's
+          // remote origin (future 'arc float' executions will fail)
+          $repository_api->execxLocal('reset --hard HEAD^');
+        }
       } else if ($this->isHgSvn) {
         // hg-svn doesn't support 'push -r', so we do a normal push
         // which hg-svn modifies to only push the current branch and
@@ -1556,6 +1757,9 @@ EOTEXT
   }
 
   public function didPush() {
+    if ($this->shouldUseSubmitQueue) {
+      return;
+    }
     $this->askForRepositoryUpdate();
 
     $mark_workflow = $this->buildChildWorkflow(
