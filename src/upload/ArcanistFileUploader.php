@@ -116,8 +116,7 @@ final class ArcanistFileUploader extends Phobject {
     $conduit = $this->conduit;
     $futures = array();
     foreach ($files as $key => $file) {
-      $params = array(
-        'name' => $file->getName(),
+      $params = $this->getUploadParameters($file) + array(
         'contentLength' => $file->getByteSize(),
         'contentHash' => $file->getContentHash(),
       );
@@ -125,11 +124,6 @@ final class ArcanistFileUploader extends Phobject {
       $delete_after = $file->getDeleteAfterEpoch();
       if ($delete_after !== null) {
         $params['deleteAfterEpoch'] = $delete_after;
-      }
-
-      $view_policy = $file->getViewPolicy();
-      if ($view_policy !== null) {
-        $params['viewPolicy'] = $view_policy;
       }
 
       $futures[$key] = $conduit->callMethod('file.allocate', $params);
@@ -294,10 +288,26 @@ final class ArcanistFileUploader extends Phobject {
 
     return $conduit->callMethodSynchronous(
       'file.upload',
-      array(
-        'name' => $file->getName(),
+      $this->getUploadParameters($file) + array(
         'data_base64' => base64_encode($data),
       ));
+  }
+
+
+  /**
+   * Get common parameters for file uploads.
+   */
+  private function getUploadParameters(ArcanistFileDataRef $file) {
+    $params = array(
+      'name' => $file->getName(),
+    );
+
+    $view_policy = $file->getViewPolicy();
+    if ($view_policy !== null) {
+      $params['viewPolicy'] = $view_policy;
+    }
+
+    return $params;
   }
 
 
