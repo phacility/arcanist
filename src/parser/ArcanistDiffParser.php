@@ -1310,11 +1310,17 @@ final class ArcanistDiffParser extends Phobject {
 
 
   /**
-   * Split the paths on a "diff --git" line into old and new paths. This
-   * is difficult because they may be ambiguous if the files contain spaces.
+   * Extracts the common filename from two strings with differing path
+   * prefixes as found after `diff --git`.  These strings may be
+   * quoted; if so, the filename is returned unescaped.  The prefixes
+   * default to "a/" and "b/", but may be any string -- or may be
+   * entierly absent.  This function may return "null" if the hunk
+   * represents a file move or copy, and with pathological renames may
+   * return an incorrect value.  Such cases are expected to be
+   * recovered by later rename detection codepaths.
    *
    * @param string Text from a diff line after "diff --git ".
-   * @return pair<string, string> Old and new paths.
+   * @return string Filename being altered, or null for a rename.
    */
   public static function extractGitCommonFilename($paths) {
     $matches = null;
