@@ -2528,7 +2528,7 @@ EOTEXT
       "You don't own revision %s: \"%s\". Normally, you should ".
       "only update revisions you own. You can \"Commandeer\" this revision ".
       "from the web interface if you want to become the owner.\n\n".
-      "Update this revision anyway? [y/N]",
+      "Update this revision anyway?",
       "D{$id}",
       $title);
 
