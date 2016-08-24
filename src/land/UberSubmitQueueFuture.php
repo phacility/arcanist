@@ -23,7 +23,6 @@ final class UberSubmitQueueFuture extends FutureProxy {
           'a SubmitQueue method call.'),
         $ex);
     }
-
-    return $data;
+    return $data['url'];
 	}
 }
