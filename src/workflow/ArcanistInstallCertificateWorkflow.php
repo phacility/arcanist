@@ -118,7 +118,15 @@ EOTEXT
             $token));
       }
 
-      if (strncmp($token, 'cli-', 4) !== 0) {
+      if (strncmp($token, 'api-', 4) == 0) {
+        echo pht(
+          'You are installing a standard API token, but a CLI API token '.
+          'was expected. If you\'re writing a script, consider passing the '.
+          'token at runtime with --conduit-token instead of installing it.');
+        if (!phutil_console_confirm(pht('Install this token anyway?'))) {
+          throw new ArcanistUsageException(pht('Not installing API token.'));
+        }
+      } else if (strncmp($token, 'cli-', 4) !== 0) {
         throw new ArcanistUsageException(
           pht(
             'The token "%s" is not formatted correctly. Valid API tokens '.
