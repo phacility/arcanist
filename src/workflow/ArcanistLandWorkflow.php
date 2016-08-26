@@ -21,6 +21,7 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $branchType;
   private $ontoType;
   private $preview;
+  private $shouldRunUnit;
   private $shouldUseSubmitQueue;
   private $submitQueueUri;
   private $submitQueueShadowMode;
@@ -261,11 +262,92 @@ EOTEXT
           'git',
         ),
       ),
+      'nounit' => array(
+        'help' => pht('Do not run unit tests.'),
+      ),
     );
+  }
+
+  /**
+   * @task lintunit
+   */
+  private function uberRunUnit() {
+    if ($this->getArgument('nounit')) {
+      return ArcanistUnitWorkflow::RESULT_SKIP;
+    }
+    $console = PhutilConsole::getConsole();
+
+    $repository_api = $this->getRepositoryAPI();
+
+    $console->writeOut("%s\n", pht('Running unit tests...'));
+    try {
+      $argv = $this->getPassthruArgumentsAsArgv('unit');
+      if ($repository_api->supportsCommitRanges()) {
+        $argv[] = '--rev';
+        $argv[] = $repository_api->getBaseCommit();
+      }
+      $unit_workflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $unit_workflow->run();
+
+      switch ($unit_result) {
+        case ArcanistUnitWorkflow::RESULT_OKAY:
+          $console->writeOut(
+            "<bg:green>** %s **</bg> %s\n",
+            pht('UNIT OKAY'),
+            pht('No unit test failures.'));
+          break;
+        case ArcanistUnitWorkflow::RESULT_UNSOUND:
+          if ($this->getArgument('ignore-unsound-tests')) {
+            echo phutil_console_format(
+              "<bg:yellow>** %s **</bg> %s\n",
+              pht('UNIT UNSOUND'),
+              pht(
+                'Unit testing raised errors, but all '.
+                'failing tests are unsound.'));
+          } else {
+            $continue = $console->confirm(
+              pht(
+                'Unit test results included failures, but all failing tests '.
+                'are known to be unsound. Ignore unsound test failures?'));
+            if (!$continue) {
+              throw new ArcanistUserAbortException();
+            }
+          }
+          break;
+        case ArcanistUnitWorkflow::RESULT_FAIL:
+          $console->writeOut(
+            "<bg:red>** %s **</bg> %s\n",
+            pht('UNIT ERRORS'),
+            pht('Unit testing raised errors!'));
+          $ok = phutil_console_confirm(pht("Revision does not pass arc unit. Continue anyway?"));
+          if (!$ok) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+      }
+
+      $testResults = array();
+      foreach ($unit_workflow->getTestResults() as $test) {
+        $testResults[] = $test->toDictionary();
+      }
+
+      return $unit_result;
+    } catch (ArcanistNoEngineException $ex) {
+      $console->writeOut(
+        "%s\n",
+        pht('No unit test engine is configured for this project.'));
+    } catch (ArcanistNoEffectException $ex) {
+      $console->writeOut("%s\n", $ex->getMessage());
+    }
+
+    return null;
   }
 
   public function run() {
     $this->readArguments();
+    if ($this->shouldRunUnit) {
+      $this->uberRunUnit();
+    }
 
     $engine = null;
     $uberShadowEngine = null;
@@ -610,6 +692,10 @@ EOTEXT
     }
 
     $this->oldBranch = $this->getBranchOrBookmark();
+    $this->shouldRunUnit = nonempty(
+      $this->getConfigFromAnySource('uber.land.run.unit'),
+      false
+    );
     $this->shouldUseSubmitQueue = nonempty(
         $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
         false

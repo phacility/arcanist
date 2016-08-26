@@ -188,6 +188,12 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.land.run.unit' => array(
+        'type' => 'bool',
+        'help' => pht('If true, `arc land` will run arc unit before landing'),
+        'default' => false,
+        'example' => 'false',
+      ),
       'uber.land.submitqueue.enable' => array(
         'type' => 'bool',
         'help' => pht(
