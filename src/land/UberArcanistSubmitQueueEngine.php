@@ -23,7 +23,7 @@ final class UberArcanistSubmitQueueEngine
 
     try {
       $this->updateWorkingCopy();
-      $this->updateRevision();
+//      $this->updateRevision();
 
       $this->pushChange();
       if ($this->shouldShadow) {
