@@ -753,7 +753,7 @@ EOTEXT
         $ex = null;
         try {
           if ($this->shouldUseMerge()) {
-            $repository_api->execxLocal('merge --squash %s', $new_branch);
+            $repository_api->execxLocal('merge %s', $new_branch);
           } else {
             $repository_api->execxLocal('cherry-pick %s', $new_branch);
           }
