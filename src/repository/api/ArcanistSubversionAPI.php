@@ -40,6 +40,7 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
     $argv[0] = 'svn '.$argv[0];
 
     $future = newv('ExecFuture', $argv);
+    $future->setEnv(array('LANG'=>'en_US.UTF-8'));
     $future->setCWD($this->getPath());
     return $future;
   }
