@@ -225,6 +225,20 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.land.submitqueue.tags' => array(
+        'type' => 'list',
+        'help' => pht('List of tags to be used when creating tbr excuse tasks.'),
+        'default' => array(),
+        'example' => '["SubmitQueue-Mobile"]',
+      ),
+      'uber.land.submitqueue.owners' => array(
+        'type' => 'list',
+        'help' => pht(
+          'List of owners for the given repository who need to be tagged'.
+          'on tbr excuse tasks.'),
+        'default' => array(),
+        'example' => '["X, Y, Z"]',
+      ),
     );
   }
 

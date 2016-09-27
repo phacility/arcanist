@@ -28,6 +28,7 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $submitQueueShadowMode;
   private $submitQueueClient;
   private $tbr;
+  private $submitQueueTags;
 
   private $revision;
   private $messageFile;
@@ -269,6 +270,46 @@ EOTEXT
     );
   }
 
+  private function uberTbrGetExcuse($prompt, $history) {
+    $console = PhutilConsole::getConsole();
+    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+    $excuse = phutil_console_prompt($prompt, $history);
+    if ($excuse == '') {
+      throw new ArcanistUserAbortException();
+    }
+    return $excuse;
+  }
+
+  private function uberCreateTask($revision) {
+    if (empty($this->submitQueueTags)) {
+      return;
+    }
+
+    $console = PhutilConsole::getConsole();
+    $excuse = $this->uberTbrGetExcuse(
+      pht('Provide explanation for skipping SubmitQueue or press Enter to abort.'),
+      'tbr-excuses');
+    $args = array(
+      pht('%s is skipping SubmitQueue', 'D' . $revision['id']),
+      '--uber-description',
+      pht("%s is skipping SubmitQueue\n Author: %s\n Excuse: %s\n",
+        'D' . $revision['id'],
+        $this->getUserName(),
+        $excuse),
+      '--browse');
+    foreach ($this->submitQueueTags as $tag) {
+      array_push($args, "--project", $tag);
+    }
+
+    $owners = $this->getConfigFromAnySource("uber.land.submitqueue.owners");
+    foreach ($owners as $owner) {
+      array_push($args, "--cc", $owner);
+    }
+
+    $todo_workflow = $this->buildChildWorkflow('todo', $args);
+    $todo_workflow->run();
+  }
+
   /**
    * @task lintunit
    */
@@ -381,20 +422,24 @@ EOTEXT
     $uberShadowEngine = null;
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
-      if ($this->shouldUseSubmitQueue && !$this->tbr) {
+      if ($this->shouldUseSubmitQueue) {
         $revision = $this->uberGetRevision();
         if ($this->uberShouldRunSubmitQueue($revision, $this->submitQueueRegex)) {
-          // If the shadow-mode is on, then initialize the shadowEngine
-          if ($this->submitQueueShadowMode) {
-            $uberShadowEngine = new UberArcanistSubmitQueueEngine(
-              $this->submitQueueClient,
-              $this->getConduit());
-            $uberShadowEngine = $uberShadowEngine->setRevision($revision);
+          if ($this->tbr) {
+            $this->uberCreateTask($revision);
           } else {
-            $engine = new UberArcanistSubmitQueueEngine(
-              $this->submitQueueClient,
-              $this->getConduit());
-            $engine = $engine->setRevision($revision);
+            // If the shadow-mode is on, then initialize the shadowEngine
+            if ($this->submitQueueShadowMode) {
+              $uberShadowEngine = new UberArcanistSubmitQueueEngine(
+                $this->submitQueueClient,
+                $this->getConduit());
+              $uberShadowEngine = $uberShadowEngine->setRevision($revision);
+            } else {
+              $engine = new UberArcanistSubmitQueueEngine(
+                $this->submitQueueClient,
+                $this->getConduit());
+              $engine = $engine->setRevision($revision);
+            }
           }
         }
       }
@@ -747,6 +792,7 @@ EOTEXT
         new UberSubmitQueueClient(
           $this->submitQueueUri,
           $this->getConduit()->getConduitToken());
+      $this->submitQueueTags = $this->getConfigFromAnySource('uber.land.submitqueue.tags');
     }
   }
 

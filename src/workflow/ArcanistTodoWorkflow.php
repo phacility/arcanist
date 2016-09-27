@@ -52,6 +52,10 @@ EOTEXT
       'browse' => array(
         'help' => pht('After creating the task, open it in a web browser.'),
       ),
+      'uber-description' => array(
+        'param' => 'uber-description',
+        'help' => pht('Description for the new task.'),
+      ),
     );
   }
 
@@ -103,6 +107,11 @@ EOTEXT
       }
 
       $args['projectPHIDs'] = $phids;
+    }
+
+    $uber_description = $this->getArgument('uber-description');
+    if ($uber_description) {
+      $args['description'] = $uber_description;
     }
 
     $result = $conduit->callMethodSynchronous('maniphest.createtask', $args);
