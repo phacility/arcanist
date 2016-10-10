@@ -179,6 +179,15 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'true',
       ),
+      'uber.land.buildables-check' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will check that changes you are about to land '.
+          'does not land if you have failed harbormaster buildables. ',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
       'uber.land.review-check' => array(
         'type' => 'bool',
         'help' => pht(
