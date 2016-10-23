@@ -22,11 +22,12 @@ final class UberSubmitQueueClient extends Phobject {
         return $this->host;
     }
 
-    public function submitMergeRequest($remoteUrl, $diffId, $revisionId, $shouldShadow) {
+    public function submitMergeRequest($remoteUrl, $diffId, $revisionId, $shouldShadow, $targetOnto) {
         $params = array(
           'remote' => $remoteUrl,
           'diffId' => $diffId,
           'revisionId' => $revisionId,
+          'targetOnto' => $targetOnto,
           'conduitToken' => $this->conduitToken,
         );
         if ($shouldShadow) {

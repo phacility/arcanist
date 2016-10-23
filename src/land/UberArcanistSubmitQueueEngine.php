@@ -70,7 +70,8 @@ final class UberArcanistSubmitQueueEngine
       $remoteUrl,
       $revision['diffs'][0],
       $revision['id'],
-      $this->shouldShadow);
+      $this->shouldShadow,
+      $this->getTargetOnto());
     $this->writeInfo(
       pht('Successfully submitted the request to the Submit Queue.'),
       pht('Please use "%s" to track your changes', $statusUrl));
