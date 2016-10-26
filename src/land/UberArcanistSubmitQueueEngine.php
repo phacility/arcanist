@@ -5,6 +5,7 @@ final class UberArcanistSubmitQueueEngine
 {
   private $revision;
   private $shouldShadow;
+  private $skipUpdateWorkingCopy;
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -22,7 +23,9 @@ final class UberArcanistSubmitQueueEngine
     $this->saveLocalState();
 
     try {
-      $this->updateWorkingCopy();
+      if (!$this->getSkipUpdateWorkingCopy()) {
+        $this->updateWorkingCopy();
+      }
 //      $this->updateRevision();
 
       $this->pushChange();
@@ -114,6 +117,15 @@ final class UberArcanistSubmitQueueEngine
 
   final public function setRevision($revision) {
     $this->revision = $revision;
+    return $this;
+  }
+
+  final public function getSkipUpdateWorkingCopy() {
+    return $this->skipUpdateWorkingCopy;
+  }
+
+  final public function setSkipUpdateWorkingCopy($skipUpdateWorkingCopy) {
+    $this->skipUpdateWorkingCopy = $skipUpdateWorkingCopy;
     return $this;
   }
 

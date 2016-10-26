@@ -264,6 +264,10 @@ EOTEXT
           'git',
         ),
       ),
+      'uber-skip-update' => array(
+        'help' => pht('uber-skip-update: Skip updating working copy'),
+        'supports' => array('git',),
+      ),
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
       ),
@@ -433,12 +437,18 @@ EOTEXT
               $uberShadowEngine = new UberArcanistSubmitQueueEngine(
                 $this->submitQueueClient,
                 $this->getConduit());
-              $uberShadowEngine = $uberShadowEngine->setRevision($revision);
+              $uberShadowEngine =
+                $uberShadowEngine
+                  ->setRevision($revision)
+                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
             } else {
               $engine = new UberArcanistSubmitQueueEngine(
                 $this->submitQueueClient,
                 $this->getConduit());
-              $engine = $engine->setRevision($revision);
+              $engine =
+                $engine
+                  ->setRevision($revision)
+                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
             }
           }
         }
