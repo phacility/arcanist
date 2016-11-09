@@ -1,9 +1,10 @@
 <?php
 
 /**
-* Checks if any of modified/added files are larger than the given limit.
-* Filesize limit can be specified as a runtime config in ".arcconfig" as
-* following:
+* Checks if any of modified/added files that don't match any of excluded
+* patterns are larger than the given limit.
+* Filesize limit (in bytes) and excluded patterns can be specified as a
+* runtime config in ".arcconfig" as following:
 * { ...
 *   "unit.engine": "UberMultiTestEngine",
 *   "unit.engine.multi.engines":
@@ -11,7 +12,8 @@
 *     ...,
 *     {
 *       "engine": "UberFilesizeTestEngine",
-*       "max_filesize_limit" : 1000000
+*       "max_filesize_limit" : 1000000,
+*       "exclude_paths": ["(\\.h$)", "(\\.c$)"]
 *     },
 *     ...
 *   ],
@@ -22,6 +24,7 @@
 final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
 
     const MAX_FILESIZE_LIMIT_KEY = 'max_filesize_limit';
+    const EXCLUDE_PATHS = 'exclude_paths';
 
     public function run() {
         return $this->checkFilesizes();
@@ -30,9 +33,11 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
     private function checkFilesizes() {
         $result = new ArcanistUnitTestResult();
 
-        $max_filesize_limit =
-            $this->getConfigurationManager()
-                 ->getConfigFromAnySource(self::MAX_FILESIZE_LIMIT_KEY);
+        $config_manager = $this->getConfigurationManager();
+        $max_filesize_limit = $config_manager
+            ->getConfigFromAnySource(self::MAX_FILESIZE_LIMIT_KEY);
+        $exclude_paths = $config_manager
+            ->getConfigFromAnySource(self::EXCLUDE_PATHS);
 
         if (is_null($max_filesize_limit)) {
             throw new ArcanistUsageException(
@@ -55,23 +60,25 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
 
         $large_files = [];
         for ($i = 0; $i < count($files); $i++) {
-            // deleted files are skipped
-            if (file_exists($files[$i])) {
-                if (filesize($files[$i]) > $max_filesize_limit) {
-                    array_push($large_files, $files[$i]);
-                }
+            // skip deleted files and files matching one of the exclude patterns
+            if (file_exists($files[$i]) &&
+                !$this->isExcluded($files[$i], $exclude_paths) &&
+                filesize($files[$i]) > $max_filesize_limit) {
+                array_push($large_files, $files[$i]);
             }
         }
 
         if (count($large_files) > 0) {
             $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             $error_string =
-                sprintf('Maximum allowed filesize is %d.',
-                    $max_filesize_limit);
-            $error_string .=  ' Files exceeding the limit:';
+                sprintf('Maximum allowed filesize is %s.',
+                    $this->formatBytes($max_filesize_limit));
+            $error_string .=  ' Files exceeding the filesize limit:';
             for ($i = 0; $i < count($large_files); $i++) {
                 $error_string .= "\n";
-                $error_string .= $large_files[$i];
+                $large_file_size = filesize($large_files[$i]);
+                $error_string .= $this->formatBytes($large_file_size);
+                $error_string .= ' '.$large_files[$i];
             }
             $result->setName($error_string);
         } else {
@@ -85,6 +92,15 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
         return array($result);
     }
 
+    private function isExcluded($file, $exclude_paths) {
+        for ($i = 0; $i < count($exclude_paths); $i++) {
+            if (preg_match($exclude_paths[$i], $file)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function getModifiedFiles() {
         $output = [];
         $return_code = 0;
@@ -95,6 +111,14 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
             $last_ancestor_sha), $output, $return_code);
 
         return $output;
+    }
+
+    private function formatBytes($size, $precision = 2) {
+        $base = log($size, 1024);
+        $suffixes = array('', 'K', 'M', 'G', 'T');
+
+        return round(pow(1024, $base - floor($base)), $precision)
+            .$suffixes[floor($base)];
     }
 }
 
