@@ -78,6 +78,10 @@ final class ArcanistConduitEngine
       ->setParameters($parameters);
   }
 
+  public function resolveCall($method, array $parameters) {
+    return $this->newCall($method, $parameters)->resolve();
+  }
+
   public function newFuture(ArcanistConduitCall $call) {
     $method = $call->getMethod();
     $parameters = $call->getParameters();

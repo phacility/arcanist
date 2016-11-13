@@ -375,6 +375,10 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return array();
   }
 
+  public function getAllBranchRefs() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
   public function hasLocalCommit($commit) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
@@ -666,6 +670,14 @@ abstract class ArcanistRepositoryAPI extends Phobject {
 
   public function getRepositoryUUID() {
     return null;
+  }
+
+  final public function newCommitRef() {
+    return new ArcanistCommitRef();
+  }
+
+  final public function newBranchRef() {
+    return new ArcanistBranchRef();
   }
 
 }

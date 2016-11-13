@@ -2073,4 +2073,16 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->conduitEngine;
   }
 
+  final protected function newWorkingCopyStateRef() {
+    return new ArcanistWorkingCopyStateRef();
+  }
+
+  final protected function newRefQuery(array $refs) {
+    assert_instances_of($refs, 'ArcanistRef');
+    return id(new ArcanistRefQuery())
+      ->setRepositoryAPI($this->getRepositoryAPI())
+      ->setConduitEngine($this->getConduitEngine())
+      ->setRefs($refs);
+  }
+
 }

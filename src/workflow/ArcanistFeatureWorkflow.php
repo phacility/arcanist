@@ -38,16 +38,8 @@ EOTEXT
       );
   }
 
-  public function requiresConduit() {
-    return true;
-  }
-
   public function requiresRepositoryAPI() {
     return true;
-  }
-
-  public function requiresAuthentication() {
-    return !$this->getArgument('branch');
   }
 
   public function getArguments() {
@@ -86,15 +78,29 @@ EOTEXT
       return $this->checkoutBranch($names);
     }
 
-    $branches = $repository_api->getAllBranches();
+    // TODO: Everything in this whole workflow that says "branch" means
+    // "bookmark" in Mercurial.
+
+    $branches = $repository_api->getAllBranchRefs();
     if (!$branches) {
       throw new ArcanistUsageException(
         pht('No branches in this working copy.'));
     }
 
-    $branches = $this->loadCommitInfo($branches);
-    $revisions = $this->loadRevisions($branches);
-    $this->printBranches($branches, $revisions);
+    $states = array();
+    foreach ($branches as $branch) {
+      $states[] = $this->newWorkingCopyStateRef()
+        ->attachBranchRef($branch);
+    }
+
+    $this->newRefQuery($states)
+      ->needHardpoints(
+        array(
+          'revisionRefs',
+        ))
+      ->execute();
+
+    $this->printBranches($states);
 
     return 0;
   }
@@ -125,21 +131,19 @@ EOTEXT
     if ($err) {
       $match = null;
       if (preg_match('/^D(\d+)$/', $name, $match)) {
-        try {
-          $diff = $this->getConduit()->callMethodSynchronous(
-            'differential.querydiffs',
-            array(
-              'revisionIDs' => array($match[1]),
-            ));
-          $diff = head($diff);
+        $diff = $this->getConduitEngine()->resolveCall(
+          'differential.querydiffs',
+          array(
+            'revisionIDs' => array($match[1]),
+          ));
+        $diff = head($diff);
 
-          if ($diff['branch'] != '') {
-            $name = $diff['branch'];
-            list($err, $stdout, $stderr) = $api->execManualLocal(
-              $command,
-              $name);
-          }
-        } catch (ConduitClientException $ex) {}
+        if ($diff['branch'] != '') {
+          $name = $diff['branch'];
+          list($err, $stdout, $stderr) = $api->execManualLocal(
+            $command,
+            $name);
+        }
       }
     }
 
@@ -171,99 +175,7 @@ EOTEXT
     return $err;
   }
 
-  private function loadCommitInfo(array $branches) {
-    $repository_api = $this->getRepositoryAPI();
-
-    $branches = ipull($branches, null, 'name');
-
-    if ($repository_api instanceof ArcanistMercurialAPI) {
-      $futures = array();
-      foreach ($branches as $branch) {
-        $futures[$branch['name']] = $repository_api->execFutureLocal(
-          'log -l 1 --template %s -r %s',
-          "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
-          hgsprintf('%s', $branch['name']));
-      }
-
-      $futures = id(new FutureIterator($futures))
-        ->limit(16);
-      foreach ($futures as $name => $future) {
-        list($info) = $future->resolvex();
-
-        $fields = explode("\1", trim($info), 5);
-        list($hash, $epoch, $tree, $desc, $text) = $fields;
-
-        $branches[$name] += array(
-          'hash' => $hash,
-          'desc' => $desc,
-          'tree' => $tree,
-          'epoch' => (int)$epoch,
-          'text' => $text,
-        );
-      }
-    }
-
-    foreach ($branches as $name => $branch) {
-      $text = $branch['text'];
-
-      try {
-        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-        $id = $message->getRevisionID();
-
-        $branch['revisionID'] = $id;
-      } catch (ArcanistUsageException $ex) {
-        // In case of invalid commit message which fails the parsing,
-        // do nothing.
-        $branch['revisionID'] = null;
-      }
-
-      $branches[$name] = $branch;
-    }
-
-    return $branches;
-  }
-
-  private function loadRevisions(array $branches) {
-    $ids = array();
-    $hashes = array();
-
-    foreach ($branches as $branch) {
-      if ($branch['revisionID']) {
-        $ids[] = $branch['revisionID'];
-      }
-      $hashes[] = array('gtcm', $branch['hash']);
-      $hashes[] = array('gttr', $branch['tree']);
-    }
-
-    $calls = array();
-
-    if ($ids) {
-      $calls[] = $this->getConduit()->callMethod(
-        'differential.query',
-        array(
-          'ids' => $ids,
-        ));
-    }
-
-    if ($hashes) {
-      $calls[] = $this->getConduit()->callMethod(
-        'differential.query',
-        array(
-          'commitHashes' => $hashes,
-        ));
-    }
-
-    $results = array();
-    foreach (new FutureIterator($calls) as $call) {
-      $results[] = $call->resolve();
-    }
-
-    return array_mergev($results);
-  }
-
-  private function printBranches(array $branches, array $revisions) {
-    $revisions = ipull($revisions, null, 'id');
-
+  private function printBranches(array $states) {
     static $color_map = array(
       'Closed'          => 'cyan',
       'Needs Review'    => 'magenta',
@@ -282,48 +194,45 @@ EOTEXT
     );
 
     $out = array();
-    foreach ($branches as $branch) {
-      $revision = idx($revisions, idx($branch, 'revisionID'));
+    foreach ($states as $state) {
+      $branch = $state->getBranchRef();
 
-      // If we haven't identified a revision by ID, try to identify it by hash.
-      if (!$revision) {
-        foreach ($revisions as $rev) {
-          $hashes = idx($rev, 'hashes', array());
-          foreach ($hashes as $hash) {
-            if (($hash[0] == 'gtcm' && $hash[1] == $branch['hash']) ||
-                ($hash[0] == 'gttr' && $hash[1] == $branch['tree'])) {
-              $revision = $rev;
-              break;
-            }
-          }
+      $revision = null;
+      if ($state->hasAmbiguousRevisionRefs()) {
+        $status = pht('Ambiguous Revision');
+      } else {
+        $revision = $state->getRevisionRef();
+        if ($revision) {
+          $status = $revision->getStatusDisplayName();
+        } else {
+          $status = pht('No Revision');
         }
       }
 
-      if ($revision) {
-        $desc = 'D'.$revision['id'].': '.$revision['title'];
-        $status = $revision['statusName'];
-      } else {
-        $desc = $branch['desc'];
-        $status = pht('No Revision');
-      }
-
-      if (!$this->getArgument('view-all') && !$branch['current']) {
+      if (!$this->getArgument('view-all') && !$branch->getIsCurrentBranch()) {
         if ($status == 'Closed' || $status == 'Abandoned') {
           continue;
         }
       }
 
-      $epoch = $branch['epoch'];
+      $commit = $branch->getCommitRef();
+      $epoch = $commit->getCommitEpoch();
 
       $color = idx($color_map, $status, 'default');
       $ssort = sprintf('%d%012d', idx($ssort_map, $status, 0), $epoch);
 
+      if ($revision) {
+        $desc = $revision->getFullName();
+      } else {
+        $desc = $commit->getSummary();
+      }
+
       $out[] = array(
-        'name'      => $branch['name'],
-        'current'   => $branch['current'],
+        'name'      => $branch->getBranchName(),
+        'current'   => $branch->getIsCurrentBranch(),
         'status'    => $status,
         'desc'      => $desc,
-        'revision'  => $revision ? $revision['id'] : null,
+        'revision'  => $revision ? $revision->getID() : null,
         'color'     => $color,
         'esort'     => $epoch,
         'epoch'     => $epoch,

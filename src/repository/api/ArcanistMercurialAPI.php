@@ -583,6 +583,19 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $return;
   }
 
+  public function getAllBranchRefs() {
+    $branches = $this->getAllBranches();
+
+    $refs = array();
+    foreach ($branches as $branch) {
+      $refs[] = $this->newBranchRef()
+        ->setBranchName($branch['name'])
+        ->setIsCurrentBranch($branch['current']);
+    }
+
+    return $refs;
+  }
+
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);

@@ -1014,6 +1014,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $result[] = array(
           'current' => ($branch === $current),
           'name' => $branch,
+          'ref' => $ref,
           'hash' => $hash,
           'tree' => $tree,
           'epoch' => (int)$epoch,
@@ -1024,6 +1025,27 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     return $result;
+  }
+
+  public function getAllBranchRefs() {
+    $branches = $this->getAllBranches();
+
+    $refs = array();
+    foreach ($branches as $branch) {
+      $commit_ref = $this->newCommitRef()
+        ->setCommitHash($branch['hash'])
+        ->setTreeHash($branch['tree'])
+        ->setCommitEpoch($branch['epoch'])
+        ->attachMessage($branch['text']);
+
+      $refs[] = $this->newBranchRef()
+        ->setBranchName($branch['name'])
+        ->setRefName($branch['ref'])
+        ->setIsCurrentBranch($branch['current'])
+        ->attachCommitRef($commit_ref);
+    }
+
+    return $refs;
   }
 
   public function getWorkingCopyRevision() {
