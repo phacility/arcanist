@@ -2755,8 +2755,15 @@ EOTEXT
       pht('Pushing changes to staging area...'));
 
     $push_flags = array();
+
+    $verify_config_name = 'uber.diff.git.push.verify';
+    $verify = $this->getConfigFromAnySource($verify_config_name);
     if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
-      $push_flags[] = '--no-verify';
+      if ($verify) {
+        $push_flags[] = '--verify'; // default in git
+      } else {
+        $push_flags[] = '--no-verify';
+      }
     }
 
     $refs = array();

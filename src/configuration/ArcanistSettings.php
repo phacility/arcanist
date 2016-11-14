@@ -248,6 +248,14 @@ final class ArcanistSettings extends Phobject {
         'default' => array(),
         'example' => '["X, Y, Z"]',
       ),
+      'uber.diff.git.push.verify' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc diff` will run `git push` with `--verify` flag, '.
+          'and if missing (or false), `arc diff` will run `git push` with '.
+          '`--no-verify` flag.'),
+        'default' => false,
+      ),
     );
   }
 
