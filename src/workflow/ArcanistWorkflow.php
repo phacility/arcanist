@@ -69,6 +69,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $repositoryVersion;
 
   private $changeCache = array();
+  private $conduitEngine;
 
 
   public function __construct() {}
@@ -1767,9 +1768,9 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     try {
-      $results = $this->getConduit()->callMethodSynchronous(
-        'repository.query',
-        $query);
+      $method = 'repository.query';
+      $results = $this->getConduitEngine()->newCall($method, $query)
+        ->resolve();
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         $reasons[] = pht(
@@ -2062,5 +2063,14 @@ abstract class ArcanistWorkflow extends Phobject {
     return $map;
   }
 
+  final public function setConduitEngine(
+    ArcanistConduitEngine $conduit_engine) {
+    $this->conduitEngine = $conduit_engine;
+    return $this;
+  }
+
+  final public function getConduitEngine() {
+    return $this->conduitEngine;
+  }
 
 }

@@ -53,19 +53,13 @@ EOTEXT
     return true;
   }
 
-  public function requiresConduit() {
-    return true;
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
   public function desiresRepositoryAPI() {
     return true;
   }
 
   public function run() {
+    $conduit = $this->getConduitEngine();
+
     $console = PhutilConsole::getConsole();
 
     $is_force = $this->getArgument('force');
@@ -80,11 +74,13 @@ EOTEXT
     }
     $things = array_fuse($things);
 
-    $objects = $this->getConduit()->callMethodSynchronous(
-      'phid.lookup',
-      array(
-        'names' => array_keys($things),
-      ));
+    $method = 'phid.lookup';
+    $params = array(
+      'names' => array_keys($things),
+    );
+
+    $objects = $conduit->newCall($method, $params)
+      ->resolve();
 
     $uris = array();
     foreach ($objects as $name => $object) {
@@ -123,12 +119,15 @@ EOTEXT
       }
 
       if ($commits) {
-        $commit_info = $this->getConduit()->callMethodSynchronous(
-          'diffusion.querycommits',
-          array(
-            'repositoryPHID' => $this->getRepositoryPHID(),
-            'names' => array_keys($commits),
-          ));
+        $method = 'diffusion.querycommits';
+
+        $params = array(
+          'repositoryPHID' => $this->getRepositoryPHID(),
+          'names' => array_keys($commits),
+        );
+
+        $commit_info = $conduit->newCall($method, $params)
+          ->resolve();
 
         foreach ($commit_info['identifierMap'] as $ckey => $cphid) {
           $thing = $commits[$ckey];

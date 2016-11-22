@@ -7,6 +7,7 @@
 
 # libphutil
 /src/.phutil_module_cache
+/src/.cache
 
 # User extensions
 /externals/includes/*
