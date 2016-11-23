@@ -33,10 +33,12 @@ final class ArcanistGitRevisionHardpointLoader
         $commit->getCommitHash(),
       );
 
-      $commit_hashes[] = array(
-        'gttr',
-        $commit->getTreeHash(),
-      );
+      if ($commit->getTreeHash()) {
+        $commit_hashes[] = array(
+          'gttr',
+          $commit->getTreeHash(),
+        );
+      }
 
       foreach ($commit_hashes as $hash) {
         $hashes[] = $hash;

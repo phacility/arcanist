@@ -28,6 +28,22 @@ final class ArcanistRevisionRef
     return idx($this->parameters, 'statusName');
   }
 
+  public function isClosed() {
+    // TODO: This should use sensible constants, not English language
+    // display text.
+    switch ($this->getStatusDisplayName()) {
+      case 'Abandoned':
+      case 'Closed':
+        return true;
+    }
+
+    return false;
+  }
+
+  public function getURI() {
+    return idx($this->parameters, 'uri');
+  }
+
   public function getFullName() {
     return pht('%s: %s', $this->getMonogram(), $this->getName());
   }

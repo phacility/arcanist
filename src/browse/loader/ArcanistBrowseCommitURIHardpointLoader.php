@@ -47,7 +47,6 @@ final class ArcanistBrowseCommitURIHardpointLoader
     }
 
     $refs = $this->getRefsWithSupportedTypes($refs);
-
     if (!$refs) {
       return array();
     }
@@ -80,7 +79,7 @@ final class ArcanistBrowseCommitURIHardpointLoader
         $uri = $commit_ref->getURI();
         if ($uri !== null) {
           $results[$key][] = id(new ArcanistBrowseURIRef())
-            ->setURI()
+            ->setURI($uri)
             ->setType(self::BROWSETYPE);
         }
       }

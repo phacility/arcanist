@@ -68,13 +68,6 @@ EOTEXT
     $console = PhutilConsole::getConsole();
 
     $targets = $this->getArgument('targets');
-    if (!$targets) {
-      throw new ArcanistUsageException(
-        pht(
-          'Specify one or more paths or objects to browse. Use the '.
-          'command "%s" if you want to browse this directory.',
-          'arc browse .'));
-    }
     $targets = array_fuse($targets);
 
     if (!$targets) {
@@ -222,11 +215,19 @@ EOTEXT
     // If anything failed to resolve, this is also an error.
     if ($zero_hits) {
       foreach ($zero_hits as $ref) {
-        echo tsprintf(
-          "%s\n",
-          pht(
-            'Unable to resolve argument "%s".',
-            $ref->getToken()));
+        $token = $ref->getToken();
+        if ($token === null) {
+          echo tsprintf(
+            "%s\n",
+            pht(
+              'Unable to resolve default browse target.'));
+        } else {
+          echo tsprintf(
+            "%s\n",
+            pht(
+              'Unable to resolve argument "%s".',
+              $ref->getToken()));
+        }
       }
 
       foreach ($loaders as $loader) {

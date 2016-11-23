@@ -33,9 +33,6 @@ final class ArcanistBrowseCommitHardpointLoader
 
     $commit_map = array();
     foreach ($refs as $key => $ref) {
-      $is_commit = $ref->hasType(
-        ArcanistBrowseCommitURIHardpointLoader::BROWSETYPE);
-
       $token = $ref->getToken();
 
       if ($token === '.') {
@@ -44,13 +41,15 @@ final class ArcanistBrowseCommitHardpointLoader
         continue;
       }
 
+      // Always resolve the empty token; top-level loaders filter out
+      // irrelevant tokens before this stage.
       if ($token === null) {
-        if ($is_commit) {
-          $token = $api->getHeadCommit();
-        } else {
-          continue;
-        }
+        $token = $api->getHeadCommit();
       }
+
+      // TODO: We should pull a full commit ref out of the API as soon as it
+      // is able to provide them. In particular, we currently miss Git tree
+      // hashes which reduces the accuracy of lookups.
 
       try {
         $commit = $api->getCanonicalRevisionName($token);
