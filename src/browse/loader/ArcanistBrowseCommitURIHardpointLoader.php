@@ -34,69 +34,55 @@ final class ArcanistBrowseCommitURIHardpointLoader
   }
 
   public function loadHardpoints(array $refs, $hardpoint) {
-    $api = $this->getQuery()->getRepositoryAPI();
+    $query = $this->getQuery();
+
+    $api = $query->getRepositoryAPI();
     if (!$api) {
       return array();
     }
 
-    $repository_ref = $this->getQuery()->getRepositoryRef();
+    $repository_ref = $query->getRepositoryRef();
     if (!$repository_ref) {
       return array();
     }
 
-    $repository_phid = $repository_ref->getPHID();
-
     $refs = $this->getRefsWithSupportedTypes($refs);
 
-    $commit_map = array();
-    foreach ($refs as $key => $ref) {
-      $is_commit = $ref->hasType('commit');
-
-      $token = $ref->getToken();
-
-      if ($token === '.') {
-        // Git resolves "." like HEAD, but we want to treat it as "browse the
-        // current directory" instead in all cases.
-        continue;
-      }
-
-      if ($token === null) {
-        if ($is_commit) {
-          $token = $api->getHeadCommit();
-        } else {
-          continue;
-        }
-      }
-
-      try {
-        $commit = $api->getCanonicalRevisionName($token);
-        if ($commit) {
-          $commit_map[$commit][] = $key;
-        }
-      } catch (Exception $ex) {
-        // Ignore anything we can't resolve.
-      }
-    }
-
-    if (!$commit_map) {
+    if (!$refs) {
       return array();
     }
 
-    $commit_info = $this->resolveCall(
-      'diffusion.querycommits',
-      array(
-        'repositoryPHID' => $repository_phid,
-        'names' => array_keys($commit_map),
-      ));
+    $this->newQuery($refs)
+      ->needHardpoints(
+        array(
+          'commitRefs',
+        ))
+      ->execute();
+
+    $commit_refs = array();
+    foreach ($refs as $key => $ref) {
+      foreach ($ref->getCommitRefs() as $commit_ref) {
+        $commit_refs[] = $commit_ref;
+      }
+    }
+
+    $this->newQuery($commit_refs)
+      ->needHardpoints(
+        array(
+          'upstream',
+        ))
+      ->execute();
 
     $results = array();
-    foreach ($commit_info['identifierMap'] as $commit_key => $commit_phid) {
-      foreach ($commit_map[$commit_key] as $key) {
-        $commit_uri = $commit_info['data'][$commit_phid]['uri'];
-
-        $results[$key][] = id(new ArcanistBrowseURIRef())
-          ->setURI($commit_uri)
-          ->setType('commit');
+    foreach ($refs as $key => $ref) {
+      $commit_refs = $ref->getCommitRefs();
+      foreach ($commit_refs as $commit_ref) {
+        $uri = $commit_ref->getURI();
+        if ($uri !== null) {
+          $results[$key][] = id(new ArcanistBrowseURIRef())
+            ->setURI()
+            ->setType(self::BROWSETYPE);
+        }
       }
     }
 

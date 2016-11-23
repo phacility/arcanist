@@ -13,6 +13,10 @@ final class ArcanistBrowseRef
 
   public function defineHardpoints() {
     return array(
+      'commitRefs' => array(
+        'type' => 'ArcanistCommitRef',
+        'vector' => true,
+      ),
       'uris' => array(
         'type' => 'ArcanistBrowseURIRef',
         'vector' => true,
@@ -59,6 +63,10 @@ final class ArcanistBrowseRef
 
   public function getURIs() {
     return $this->getHardpoint('uris');
+  }
+
+  public function getCommitRefs() {
+    return $this->getHardpoint('commitRefs');
   }
 
 }

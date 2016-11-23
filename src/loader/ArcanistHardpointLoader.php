@@ -25,10 +25,28 @@ abstract class ArcanistHardpointLoader
   }
 
   final protected function newQuery(array $refs) {
-    return id(new ArcanistRefQuery())
-      ->setRepositoryAPI($this->getQuery()->getRepositoryAPI())
+    $result = id(new ArcanistRefQuery())
       ->setConduitEngine($this->getQuery()->getConduitEngine())
       ->setRefs($refs);
+
+    $query = $this->getQuery();
+
+    $repository_api = $query->getRepositoryAPI();
+    if ($repository_api) {
+      $result->setRepositoryAPI($repository_api);
+    }
+
+    $repository_ref = $query->getRepositoryRef();
+    if ($repository_ref) {
+      $result->setRepositoryRef($repository_ref);
+    }
+
+    $working_ref = $query->getWorkingCopyRef();
+    if ($working_ref) {
+      $result->setWorkingCopyRef($working_ref);
+    }
+
+    return $result;
   }
 
   final public function getLoaderKey() {

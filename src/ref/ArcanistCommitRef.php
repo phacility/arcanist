@@ -7,6 +7,7 @@ final class ArcanistCommitRef
   private $treeHash;
   private $commitEpoch;
   private $authorEpoch;
+  private $upstream;
 
   public function getRefIdentifier() {
     return pht('Commit %s', $this->getCommitHash());
@@ -16,6 +17,9 @@ final class ArcanistCommitRef
     return array(
       'message' => array(
         'type' => 'string',
+      ),
+      'upstream' => array(
+        'type' => 'wild',
       ),
     );
   }
@@ -71,6 +75,20 @@ final class ArcanistCommitRef
 
   public function getMessage() {
     return $this->getHardpoint('message');
+  }
+
+  public function getURI() {
+    return $this->getUpstreamProperty('uri');
+  }
+
+  private function getUpstreamProperty($key, $default = null) {
+    $upstream = $this->getHardpoint('upstream');
+
+    if (!$upstream) {
+      return $default;
+    }
+
+    return idx($upstream, $key, $default);
   }
 
 }
