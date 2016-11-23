@@ -3,7 +3,7 @@
 final class ArcanistSettings extends Phobject {
 
   private function getOptions() {
-    return array(
+    $legacy_builtins = array(
       'default' => array(
         'type' => 'string',
         'help' => pht(
@@ -175,6 +175,16 @@ final class ArcanistSettings extends Phobject {
           'Configured command aliases. Use "arc alias" to define aliases.'),
       ),
     );
+
+    $settings = ArcanistSetting::getAllSettings();
+    foreach ($settings as $key => $setting) {
+      $settings[$key] = $setting->getLegacyDictionary();
+    }
+
+    $results = $settings + $legacy_builtins;
+    ksort($results);
+
+    return $results;
   }
 
   private function getOption($key) {

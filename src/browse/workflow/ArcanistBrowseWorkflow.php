@@ -154,6 +154,9 @@ EOTEXT
       }
     }
 
+    $pick_map = array();
+    $pick_selection = null;
+    $pick_id = 0;
     if ($many_hits) {
       foreach ($many_hits as $ref) {
         $token = $ref->getToken();
@@ -166,8 +169,17 @@ EOTEXT
         $this->writeWarn(pht('AMBIGUOUS'), $message);
       }
 
-      $table = id(new PhutilConsoleTable())
-        ->addColumn('argument', array('title' => pht('Argument')))
+      $is_single_ref = (count($refs) == 1);
+
+      $table = id(new PhutilConsoleTable());
+
+      if ($is_single_ref) {
+        $table->addColumn('pick', array('title' => pht('Pick')));
+      } else {
+        $table->addColumn('argument', array('title' => pht('Argument')));
+      }
+
+      $table
         ->addColumn('type', array('title' => pht('Type')))
         ->addColumn('uri', array('title' => pht('URI')));
 
@@ -178,7 +190,11 @@ EOTEXT
         }
 
         foreach ($ref->getURIs() as $uri) {
+          ++$pick_id;
+          $pick_map[$pick_id] = $uri;
+
           $row = array(
+            'pick' => $pick_id,
             'argument' => $token_display,
             'type' => $uri->getType(),
             'uri' => $uri->getURI(),
@@ -190,9 +206,17 @@ EOTEXT
 
       $table->draw();
 
-      $this->writeInfo(
-        pht('CHOOSE'),
-        pht('Use "--types" to select between alternatives.'));
+      if ($is_single_ref) {
+        $pick_selection = phutil_console_select(
+          pht('Which URI do you want to open?'),
+          1,
+          $pick_id);
+        $open_uris[] = $ref;
+      } else {
+        $this->writeInfo(
+          pht('CHOOSE'),
+          pht('Use "--types" to select between alternatives.'));
+      }
     }
 
     // If anything failed to resolve, this is also an error.
@@ -212,7 +236,17 @@ EOTEXT
 
     $uris = array();
     foreach ($open_uris as $ref) {
-      $ref_uri = head($ref->getURIs());
+      $ref_uris = $ref->getURIs();
+
+      if (count($ref_uris) > 1) {
+        foreach ($ref_uris as $uri_key => $uri) {
+          if ($pick_map[$pick_selection] !== $uri) {
+            unset($ref_uris[$uri_key]);
+          }
+        }
+      }
+
+      $ref_uri = head($ref_uris);
       $uris[] = $ref_uri->getURI();
     }
 
