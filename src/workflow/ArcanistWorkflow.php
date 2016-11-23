@@ -62,6 +62,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $projectInfo;
   private $repositoryInfo;
   private $repositoryReasons;
+  private $repositoryRef;
 
   private $arcanistConfiguration;
   private $parentWorkflow;
@@ -583,6 +584,7 @@ abstract class ArcanistWorkflow extends Phobject {
     $arc_config = $this->getArcanistConfiguration();
     $workflow = $arc_config->buildWorkflow($command);
     $workflow->setParentWorkflow($this);
+    $workflow->setConduitEngine($this->getConduitEngine());
     $workflow->setCommand($command);
     $workflow->setConfigurationManager($this->getConfigurationManager());
 
@@ -2074,15 +2076,57 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function newWorkingCopyStateRef() {
-    return new ArcanistWorkingCopyStateRef();
+    $ref = new ArcanistWorkingCopyStateRef();
+
+    $working_copy = $this->getWorkingCopy();
+    $ref->setRootDirectory($working_copy->getProjectRoot());
+
+    return $ref;
   }
 
   final protected function newRefQuery(array $refs) {
     assert_instances_of($refs, 'ArcanistRef');
-    return id(new ArcanistRefQuery())
-      ->setRepositoryAPI($this->getRepositoryAPI())
+
+    $query = id(new ArcanistRefQuery())
       ->setConduitEngine($this->getConduitEngine())
       ->setRefs($refs);
+
+    if ($this->hasRepositoryAPI()) {
+      $query->setRepositoryAPI($this->getRepositoryAPI());
+    }
+
+    $repository_ref = $this->getRepositoryRef();
+    if ($repository_ref) {
+      $query->setRepositoryRef($repository_ref);
+    }
+
+    $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
+    if ($working_copy) {
+      $working_ref = $this->newWorkingCopyStateRef();
+      $query->setWorkingCopyRef($working_ref);
+    }
+
+    return $query;
+  }
+
+  final public function getRepositoryRef() {
+    if (!$this->getConfigurationManager()->getWorkingCopyIdentity()) {
+      return null;
+    }
+
+    if (!$this->repositoryAPI) {
+      return null;
+    }
+
+    if (!$this->repositoryRef) {
+      $ref = id(new ArcanistRepositoryRef())
+        ->setPHID($this->getRepositoryPHID())
+        ->setBrowseURI($this->getRepositoryURI());
+
+      $this->repositoryRef = $ref;
+    }
+
+    return $this->repositoryRef;
   }
 
 }

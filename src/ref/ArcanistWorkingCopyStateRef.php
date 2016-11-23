@@ -3,6 +3,8 @@
 final class ArcanistWorkingCopyStateRef
   extends ArcanistRef {
 
+  private $rootDirectory;
+
   public function getRefIdentifier() {
     // TODO: This could check attached hardpoints and render something more
     // insightful.
@@ -22,6 +24,15 @@ final class ArcanistWorkingCopyStateRef
         'vector' => true,
       ),
     );
+  }
+
+  public function setRootDirectory($root_directory) {
+    $this->rootDirectory = $root_directory;
+    return $this;
+  }
+
+  public function getRootDirectory() {
+    return $this->rootDirectory;
   }
 
   public function attachBranchRef(ArcanistBranchRef $branch_ref) {

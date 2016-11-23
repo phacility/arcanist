@@ -4,9 +4,12 @@ final class ArcanistRefQuery extends Phobject {
 
   private $repositoryAPI;
   private $conduitEngine;
+  private $repositoryRef;
+  private $workingCopyRef;
 
   private $refs;
   private $hardpoints;
+  private $loaders;
 
   public function setRefs(array $refs) {
     assert_instances_of($refs, 'ArcanistRef');
@@ -27,6 +30,14 @@ final class ArcanistRefQuery extends Phobject {
     return $this->repositoryAPI;
   }
 
+  public function setRepositoryRef(ArcanistRepositoryRef $repository_ref) {
+    $this->repositoryRef = $repository_ref;
+    return $this;
+  }
+  public function getRepositoryRef() {
+    return $this->repositoryRef;
+  }
+
   public function setConduitEngine(ArcanistConduitEngine $conduit_engine) {
     $this->conduitEngine = $conduit_engine;
     return $this;
@@ -36,8 +47,28 @@ final class ArcanistRefQuery extends Phobject {
     return $this->conduitEngine;
   }
 
+  public function setWorkingCopyRef(ArcanistWorkingCopyStateRef $working_ref) {
+    $this->workingCopyRef = $working_ref;
+    return $this;
+  }
+
+  public function getWorkingCopyRef() {
+    return $this->workingCopyRef;
+  }
+
   public function needHardpoints(array $hardpoints) {
     $this->hardpoints = $hardpoints;
+    return $this;
+  }
+
+  public function setLoaders(array $loaders) {
+    assert_instances_of($loaders, 'ArcanistHardpointLoader');
+
+    foreach ($loaders as $key => $loader) {
+      $loader->setQuery($this);
+    }
+    $this->loaders = $loaders;
+
     return $this;
   }
 
@@ -52,13 +83,23 @@ final class ArcanistRefQuery extends Phobject {
       throw new PhutilInvalidStateException('needHardpoints');
     }
 
-    $api = $this->getRepositoryAPI();
-    $all_loaders = ArcanistHardpointLoader::getAllLoaders();
+    if ($this->loaders == null) {
+      $all_loaders = ArcanistHardpointLoader::getAllLoaders();
+      foreach ($all_loaders as $key => $loader) {
+        $all_loaders[$key] = clone $loader;
+      }
+      $this->setLoaders($all_loaders);
+    }
 
+    $all_loaders = $this->loaders;
+
+    $api = $this->getRepositoryAPI();
     $loaders = array();
     foreach ($all_loaders as $loader_key => $loader) {
-      if (!$loader->canLoadRepositoryAPI($api)) {
-        continue;
+      if ($api) {
+        if (!$loader->canLoadRepositoryAPI($api)) {
+          continue;
+        }
       }
 
       $loaders[$loader_key] = id(clone $loader)
