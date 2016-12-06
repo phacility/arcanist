@@ -3,6 +3,8 @@
 /**
 * Checks if any of modified/added files that don't match any of excluded
 * patterns are larger than the given limit.
+* If "skip_lfs_files" is set to true, all files tracked by "git lfs"
+* will be skipped from the check.
 * Filesize limit (in bytes) and excluded patterns can be specified as a
 * runtime config in ".arcconfig" as following:
 * { ...
@@ -13,7 +15,8 @@
 *     {
 *       "engine": "UberFilesizeTestEngine",
 *       "max_filesize_limit" : 1000000,
-*       "exclude_paths": ["(\\.h$)", "(\\.c$)"]
+*       "exclude_paths": ["(\\.h$)", "(\\.c$)"],
+*       "skip_lfs_files": true
 *     },
 *     ...
 *   ],
@@ -25,6 +28,7 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
 
     const MAX_FILESIZE_LIMIT_KEY = 'max_filesize_limit';
     const EXCLUDE_PATHS = 'exclude_paths';
+    const SKIP_LFS_FILES = 'skip_lfs_files';
 
     public function run() {
         return $this->checkFilesizes();
@@ -38,6 +42,8 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
             ->getConfigFromAnySource(self::MAX_FILESIZE_LIMIT_KEY);
         $exclude_paths = $config_manager
             ->getConfigFromAnySource(self::EXCLUDE_PATHS);
+        $skip_lfs_files = $config_manager
+            ->getConfigFromAnySource(self::SKIP_LFS_FILES);
 
         if (is_null($max_filesize_limit)) {
             throw new ArcanistUsageException(
@@ -69,6 +75,14 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
         }
 
         if (count($large_files) > 0) {
+            if ($skip_lfs_files) {
+                // execute "git lfs" only if there are files over the limit,
+                // because lfs file list might be very big.
+                $lfs_files = $this->getLFSFiles();
+                $large_files = array_values(array_diff($large_files, $lfs_files));
+            }
+        }
+        if (count($large_files) > 0) {
             $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             $error_string =
                 sprintf('Maximum allowed filesize is %s.',
@@ -99,6 +113,23 @@ final class UberFilesizeTestEngine extends ArcanistUnitTestEngine {
             }
         }
         return false;
+    }
+
+    private function getLFSFiles() {
+        $output = [];
+        $return_code = 0;
+
+        exec('git lfs ls-files', $output, $return_code);
+
+        $lfs_files = [];
+        for ($i = 0; $i < count($output); $i++) {
+            // git lfs ls-files format is: <sha> * <filepath>
+            // for example:
+            // sha12345 * some/path to/file.zip
+            array_push($lfs_files, explode(' ', $output[$i], 3)[2]);
+        }
+
+        return $lfs_files;
     }
 
     private function getModifiedFiles() {
