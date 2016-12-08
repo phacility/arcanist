@@ -44,6 +44,18 @@ EOTEXT
         'repeat' => true,
         'help'   => pht('Other users to CC on the new task.'),
       ),
+      'owner' => array(
+        'param'  => 'owner',
+        'short'  => 'O',
+        'repeat' => false,
+        'help'   => pht('Owner of the new task.'),
+      ),
+      'priority' => array(
+        'param'  => 'priority',
+        'short'  => 'P',
+        'repeat' => false,
+        'help'   => pht('Priority value (99, 90, 85, 80, 50, 25, 0)'),
+      ),
       'project' => array(
         'param'  => 'project',
         'repeat' => true,
@@ -58,6 +70,8 @@ EOTEXT
   public function run() {
     $summary = implode(' ', $this->getArgument('summary'));
     $ccs = $this->getArgument('cc');
+    $owner = $this->getArgument('owner');
+    $priority = $this->getArgument('priority');
     $slugs = $this->getArgument('project');
 
     $conduit = $this->getConduit();
@@ -83,6 +97,23 @@ EOTEXT
         $phids[] = $info['phid'];
       }
       $args['ccPHIDs'] = $phids;
+    }
+
+    if ($owner) {
+      $phids = array();
+      $users = $conduit->callMethodSynchronous(
+        'user.query',
+        array(
+          'usernames' => [$owner],
+        ));
+      foreach ($users as $user => $info) {
+        $phids[] = $info['phid'];
+      }
+      $args['ownerPHID'] = $phids[0];
+    }
+
+    if ($priority !== null) {
+      $args['priority'] = $priority;
     }
 
     if ($slugs) {
