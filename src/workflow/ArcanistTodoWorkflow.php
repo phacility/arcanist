@@ -38,6 +38,16 @@ EOTEXT
   public function getArguments() {
     return array(
       '*' => 'summary',
+      'description' => array(
+        'param'  => 'description',
+        'repeat' => false,
+        'help'   => pht('The description of the task.'),
+      ),
+      'owner' => array(
+        'param'  => 'owner',
+        'repeat' => false,
+        'help'   => pht('The owner of the task.'),
+      ),
       'cc' => array(
         'param'  => 'cc',
         'short'  => 'C',
@@ -57,6 +67,8 @@ EOTEXT
 
   public function run() {
     $summary = implode(' ', $this->getArgument('summary'));
+    $description = $this->getArgument('description');
+    $owner = $this->getArgument('owner');
     $ccs = $this->getArgument('cc');
     $slugs = $this->getArgument('project');
 
@@ -71,6 +83,27 @@ EOTEXT
       'title' => $summary,
       'ownerPHID' => $this->getUserPHID(),
     );
+
+    if ($description) {
+      $args['description'] = $description;
+    }
+
+    if ($owner) {
+      $users = $conduit->callMethodSynchronous(
+        'user.query',
+        array(
+          'usernames' => [$owner],
+        ));
+      $ownerPHID = false;
+      foreach ($users as $user => $info) {
+        $ownerPHID = $info['phid'];
+      }
+      if (!$ownerPHID) {
+        echo "Can't find user: " . $owner . "\n";
+        return;
+      }
+      $args['ownerPHID'] = $ownerPHID;
+    }
 
     if ($ccs) {
       $phids = array();
