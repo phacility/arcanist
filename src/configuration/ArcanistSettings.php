@@ -256,6 +256,15 @@ final class ArcanistSettings extends Phobject {
           '`--no-verify` flag.'),
         'default' => false,
       ),
+      'uber.diff.staging.uri.replace' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, and staging environment is setup, then it will replace '.
+          'staging uri with git remote name defined for it. It parses '.
+          '"git remote -v" output and uses first remote name where remote url '.
+          'matches staging uri.'),
+        'default' => false,
+      ),
     );
   }
 
