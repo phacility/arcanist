@@ -544,8 +544,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     $uri = rtrim($stdout);
-    // 'origin' is what ls-remote outputs if no origin remote URI exists
-    if (!$uri || $uri === 'origin') {
+    // ls-remote echos the remote name (ie 'origin') if no remote URI is found
+    // TODO: In 2.7.0 (circa 2016) git introduced `git remote get-url`
+    // with saner error handling.
+    if (!$uri || $uri === $remote) {
       return null;
     }
 
