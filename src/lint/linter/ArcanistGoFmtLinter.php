@@ -27,15 +27,7 @@ final class ArcanistGoFmtLinter extends ArcanistLinter {
   }
 
   public function getBinary() {
-    $go_imports = $this->getGoImportsBinary();
-    if (Filesystem::binaryExists($go_imports)) {
-      return $go_imports;
-    }
     return 'gofmt';
-  }
-
-  public function getGoImportsBinary() {
-    return 'goimports';
   }
 
   protected function checkBinaryConfiguration() {
