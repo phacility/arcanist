@@ -1196,6 +1196,14 @@ abstract class ArcanistWorkflow extends Phobject {
     $future = $conduit->callMethod('differential.querydiffs', $params);
     $diff = head($future->resolve());
 
+    if ($diff == null) {
+      throw new Exception(
+        phutil_console_wrap(
+          pht("The diff or revision you specified is either invalid or you ".
+          "don't have permission to view it."))
+      );
+    }
+
     $changes = array();
     foreach ($diff['changes'] as $changedict) {
       $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
