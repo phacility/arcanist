@@ -69,6 +69,16 @@ EOTEXT
 
     $settings = new ArcanistSettings();
 
+    $console = PhutilConsole::getConsole();
+
+    if (!$settings->getHelp($key)) {
+      $warn = pht(
+        'The configuration key \'%s\' is not recognized by arc. It may '.
+        'be misspelled or out of date.',
+        $key);
+      $console->writeErr("**%s:** %s\n", pht('Warning'), $warn);
+    }
+
     $old = null;
     if (array_key_exists($key, $config)) {
       $old = $config[$key];
@@ -85,12 +95,12 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo pht(
+        $console->writeOut(
           "Deleted key '%s' from %s config.\n",
           $key,
           $which);
       } else {
-        echo pht(
+        $console->writeOut(
           "Deleted key '%s' from %s config (was %s).\n",
           $key,
           $which,
@@ -110,13 +120,13 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo pht(
+        $console->writeOut(
           "Set key '%s' = %s in %s config.\n",
           $key,
           $val,
           $which);
       } else {
-        echo pht(
+        $console->writeOut(
           "Set key '%s' = %s in %s config (was %s).\n",
           $key,
           $val,
