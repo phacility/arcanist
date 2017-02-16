@@ -72,11 +72,14 @@ EOTEXT
     $console = PhutilConsole::getConsole();
 
     if (!$settings->getHelp($key)) {
-      $warn = pht(
-        'The configuration key \'%s\' is not recognized by arc. It may '.
-        'be misspelled or out of date.',
-        $key);
-      $console->writeErr("**%s:** %s\n", pht('Warning'), $warn);
+      $warning = tsprintf(
+        "**%s:** %s\n",
+        pht('Warning'),
+        pht(
+          'The configuration key "%s" is not recognized by arc. It may '.
+          'be misspelled or out of date.',
+          $key));
+      $console->writeErr('%s', $warning);
     }
 
     $old = null;
@@ -95,17 +98,18 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        $console->writeOut(
-          "Deleted key '%s' from %s config.\n",
+        $message = pht(
+          'Deleted key "%s" from %s config.',
           $key,
           $which);
       } else {
-        $console->writeOut(
-          "Deleted key '%s' from %s config (was %s).\n",
+        $message = pht(
+          'Deleted key "%s" from %s config (was %s).',
           $key,
           $which,
           $old);
       }
+      $console->writeOut('%s', tsprintf("%s\n", $message));
     } else {
       $val = $settings->willWriteValue($key, $val);
 
@@ -120,19 +124,20 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        $console->writeOut(
-          "Set key '%s' = %s in %s config.\n",
+        $message = pht(
+          'Set key "%s" = %s in %s config.',
           $key,
           $val,
           $which);
       } else {
-        $console->writeOut(
-          "Set key '%s' = %s in %s config (was %s).\n",
+        $message = pht(
+          'Set key "%s" = %s in %s config (was %s).',
           $key,
           $val,
           $which,
           $old);
       }
+      $console->writeOut('%s', tsprintf("%s\n", $message));
     }
 
     return 0;
