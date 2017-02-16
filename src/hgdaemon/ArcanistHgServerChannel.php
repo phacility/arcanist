@@ -54,6 +54,7 @@ final class ArcanistHgServerChannel extends PhutilProtocolChannel {
   private $mode                   = self::MODE_CHANNEL;
   private $byteLengthOfNextChunk  = 1;
   private $buf                    = '';
+  private $outputChannel;
 
 
 /* -(  Protocol Implementation  )-------------------------------------------- */
@@ -137,7 +138,7 @@ final class ArcanistHgServerChannel extends PhutilProtocolChannel {
           // 'output', 'error', 'result' or 'debug' respectively. This is a
           // single byte long. Next, we'll expect a length.
 
-          $this->channel = $chunk;
+          $this->outputChannel = $chunk;
           $this->byteLengthOfNextChunk = 4;
           $this->mode = self::MODE_LENGTH;
           break;
@@ -153,11 +154,11 @@ final class ArcanistHgServerChannel extends PhutilProtocolChannel {
           // given length. We produce a message from the channel and the data
           // and return it. Next, we expect another channel name.
 
-          $message = array($this->channel, $chunk);
+          $message = array($this->outputChannel, $chunk);
 
           $this->byteLengthOfNextChunk = 1;
           $this->mode = self::MODE_CHANNEL;
-          $this->channel = null;
+          $this->outputChannel = null;
 
           $messages[] = $message;
           break;
