@@ -282,7 +282,7 @@ abstract class ArcanistRepositoryAPI extends Phobject {
    * Hook for implementations to dirty working copy caches after the working
    * copy has been updated.
    *
-   * @return this
+   * @return void
    * @task status
    */
   protected function didReloadWorkingCopy() {

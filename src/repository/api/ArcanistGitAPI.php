@@ -1405,7 +1405,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * or cycle locally.
    *
    * @param string Ref to start from.
-   * @return list<wild> Path to an upstream.
+   * @return ArcanistGitUpstreamPath Path to an upstream.
    */
   public function getPathToUpstream($start) {
     $cursor = $start;

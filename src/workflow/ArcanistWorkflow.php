@@ -336,7 +336,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
           $this->conduitAuthenticated = true;
 
-          return;
+          return $this;
         } catch (Exception $ex) {
           $conduit->setConduitToken(null);
           throw $ex;

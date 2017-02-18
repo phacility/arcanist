@@ -886,7 +886,7 @@ EOTEXT
         }
       } catch (CommandException $ex) {
         $err = $ex->getError();
-        $stdout = $ex->getStdOut();
+        $stdout = $ex->getStdout();
 
         // Copied from: PhabricatorRepositoryPullLocalDaemon.php
         // NOTE: Between versions 2.1 and 2.1.1, Mercurial changed the

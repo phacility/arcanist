@@ -710,7 +710,7 @@ EOTEXT
       }
 
       // in case there were any submodule changes involved
-      $repository_api->execpassthru('submodule update --init --recursive');
+      $repository_api->execPassthru('submodule update --init --recursive');
 
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
@@ -763,7 +763,7 @@ EOTEXT
         echo phutil_console_format(
           "\n<bg:red>** %s **</bg>\n",
           pht('Patch Failed!'));
-        $stderr = $ex->getStdErr();
+        $stderr = $ex->getStderr();
         if (preg_match('/case-folding collision/', $stderr)) {
           echo phutil_console_wrap(
             phutil_console_format(

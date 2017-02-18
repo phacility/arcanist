@@ -40,7 +40,8 @@ final class ArcanistLintMessage extends Phobject {
     $message->setGranularity(idx($dict, 'granularity'));
     $message->setOtherLocations(idx($dict, 'locations', array()));
     if (isset($dict['bypassChangedLineFiltering'])) {
-      $message->bypassChangedLineFiltering($dict['bypassChangedLineFiltering']);
+      $message->setBypassChangedLineFiltering(
+        $dict['bypassChangedLineFiltering']);
     }
     return $message;
   }
