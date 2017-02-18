@@ -1008,9 +1008,7 @@ abstract class ArcanistWorkflow extends Phobject {
         }
         $should_commit = true;
       } else {
-        $permit_autostash = $this->getConfigFromAnySource(
-          'arc.autostash',
-          false);
+        $permit_autostash = $this->getConfigFromAnySource('arc.autostash');
         if ($permit_autostash && $api->canStashChanges()) {
            echo pht(
             'Stashing uncommitted changes. (You can restore them with `%s`).',

@@ -446,6 +446,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // would ship up the binaries for 'arc patch' but display the textconv
       // output in the visual diff.
       '--no-textconv',
+      // Provide a standard view of submodule changes; the 'log' and 'diff'
+      // values do not parse by the diff parser.
+      '--submodule=short',
     );
     return implode(' ', $options);
   }

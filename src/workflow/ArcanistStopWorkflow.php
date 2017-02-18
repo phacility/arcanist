@@ -105,7 +105,7 @@ EOTEXT
       "%s  %s\n\n",
       pht('Stopped:'),
       implode(', ', ipull($phid_query, 'fullName')));
-    $this->printCurrentTracking(true);
+    $this->printCurrentTracking();
   }
 
 }

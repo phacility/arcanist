@@ -69,6 +69,19 @@ EOTEXT
 
     $settings = new ArcanistSettings();
 
+    $console = PhutilConsole::getConsole();
+
+    if (!$settings->getHelp($key)) {
+      $warning = tsprintf(
+        "**%s:** %s\n",
+        pht('Warning'),
+        pht(
+          'The configuration key "%s" is not recognized by arc. It may '.
+          'be misspelled or out of date.',
+          $key));
+      $console->writeErr('%s', $warning);
+    }
+
     $old = null;
     if (array_key_exists($key, $config)) {
       $old = $config[$key];
@@ -85,17 +98,18 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo pht(
-          "Deleted key '%s' from %s config.\n",
+        $message = pht(
+          'Deleted key "%s" from %s config.',
           $key,
           $which);
       } else {
-        echo pht(
-          "Deleted key '%s' from %s config (was %s).\n",
+        $message = pht(
+          'Deleted key "%s" from %s config (was %s).',
           $key,
           $which,
           $old);
       }
+      $console->writeOut('%s', tsprintf("%s\n", $message));
     } else {
       $val = $settings->willWriteValue($key, $val);
 
@@ -110,19 +124,20 @@ EOTEXT
       $old = $settings->formatConfigValueForDisplay($key, $old);
 
       if ($old === null) {
-        echo pht(
-          "Set key '%s' = %s in %s config.\n",
+        $message = pht(
+          'Set key "%s" = %s in %s config.',
           $key,
           $val,
           $which);
       } else {
-        echo pht(
-          "Set key '%s' = %s in %s config (was %s).\n",
+        $message = pht(
+          'Set key "%s" = %s in %s config (was %s).',
           $key,
           $val,
           $which,
           $old);
       }
+      $console->writeOut('%s', tsprintf("%s\n", $message));
     }
 
     return 0;
