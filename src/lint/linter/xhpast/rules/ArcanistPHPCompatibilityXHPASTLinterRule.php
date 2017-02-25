@@ -369,7 +369,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       }
     }
 
-    $literals = $root->selectDescendantsOftype('n_ARRAY_LITERAL');
+    $literals = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
     foreach ($literals as $literal) {
       $open_token = head($literal->getTokens())->getValue();
       if ($open_token == '[') {
