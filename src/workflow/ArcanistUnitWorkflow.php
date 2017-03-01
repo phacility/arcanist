@@ -140,7 +140,7 @@ EOTEXT
     }
 
     if ($everything) {
-      $paths = iterator_to_array($this->getRepositoryApi()->getAllFiles());
+      $paths = iterator_to_array($this->getRepositoryAPI()->getAllFiles());
     } else {
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }

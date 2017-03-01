@@ -336,7 +336,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
           $this->conduitAuthenticated = true;
 
-          return;
+          return $this;
         } catch (Exception $ex) {
           $conduit->setConduitToken(null);
           throw $ex;
@@ -673,9 +673,8 @@ abstract class ArcanistWorkflow extends Phobject {
         }
 
         if (!array_key_exists($arg_key, $spec)) {
-          $corrected = ArcanistConfiguration::correctArgumentSpelling(
-            $arg_key,
-            array_keys($spec));
+          $corrected = PhutilArgumentSpellingCorrector::newFlagCorrector()
+            ->correctSpelling($arg_key, array_keys($spec));
           if (count($corrected) == 1) {
             PhutilConsole::getConsole()->writeErr(
               pht(
@@ -1009,9 +1008,7 @@ abstract class ArcanistWorkflow extends Phobject {
         }
         $should_commit = true;
       } else {
-        $permit_autostash = $this->getConfigFromAnySource(
-          'arc.autostash',
-          false);
+        $permit_autostash = $this->getConfigFromAnySource('arc.autostash');
         if ($permit_autostash && $api->canStashChanges()) {
            echo pht(
             'Stashing uncommitted changes. (You can restore them with `%s`).',
@@ -1196,6 +1193,14 @@ abstract class ArcanistWorkflow extends Phobject {
 
     $future = $conduit->callMethod('differential.querydiffs', $params);
     $diff = head($future->resolve());
+
+    if ($diff == null) {
+      throw new Exception(
+        phutil_console_wrap(
+          pht("The diff or revision you specified is either invalid or you ".
+          "don't have permission to view it."))
+      );
+    }
 
     $changes = array();
     foreach ($diff['changes'] as $changedict) {

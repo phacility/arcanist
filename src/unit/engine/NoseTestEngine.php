@@ -126,8 +126,12 @@ final class NoseTestEngine extends ArcanistUnitTestEngine {
   }
 
   public function readCoverage($cover_file, $source_path) {
+    $coverage_xml = Filesystem::readFile($cover_file);
+    if (strlen($coverage_xml) < 1) {
+      return array();
+    }
     $coverage_dom = new DOMDocument();
-    $coverage_dom->loadXML(Filesystem::readFile($cover_file));
+    $coverage_dom->loadXML($coverage_xml);
 
     $reports = array();
     $classes = $coverage_dom->getElementsByTagName('class');

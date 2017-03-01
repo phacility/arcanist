@@ -1962,7 +1962,13 @@ EOTEXT
       $faux_message[] = pht('CC: %s', $this->getArgument('cc'));
     }
 
+    // See T12069. After T10312, the first line of a message is always parsed
+    // as a title. Add a placeholder so "Reviewers" and "CC" are never the
+    // first line.
+    $placeholder_title = pht('<placeholder>');
+
     if ($faux_message) {
+      array_unshift($faux_message, $placeholder_title);
       $faux_message = implode("\n\n", $faux_message);
       $local = array(
         '(Flags)     ' => array(
@@ -2031,6 +2037,10 @@ EOTEXT
     foreach ($fields as $hash => $dict) {
       $title = idx($dict, 'title');
       if (!strlen($title)) {
+        continue;
+      }
+
+      if ($title === $placeholder_title) {
         continue;
       }
 
@@ -2528,7 +2538,7 @@ EOTEXT
       "You don't own revision %s: \"%s\". Normally, you should ".
       "only update revisions you own. You can \"Commandeer\" this revision ".
       "from the web interface if you want to become the owner.\n\n".
-      "Update this revision anyway? [y/N]",
+      "Update this revision anyway?",
       "D{$id}",
       $title);
 

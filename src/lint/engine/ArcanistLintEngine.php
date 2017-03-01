@@ -343,7 +343,18 @@ abstract class ArcanistLintEngine extends Phobject {
       $path = idx($location, 'path', $message->getPath());
 
       if (!array_key_exists($path, $this->changedLines)) {
-        continue;
+        if (phutil_is_windows()) {
+          // We try checking the UNIX path form as well, on Windows.  Linters
+          // store noramlized paths, which use the Windows-style "\" as a
+          // delimiter; as such, they don't match the UNIX-style paths stored
+          // in changedLines, which come from the VCS.
+          $path = str_replace('\\', '/', $path);
+          if (!array_key_exists($path, $this->changedLines)) {
+            continue;
+          }
+        } else {
+          continue;
+        }
       }
 
       $changed = $this->getPathChangedLines($path);

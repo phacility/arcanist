@@ -369,6 +369,19 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       }
     }
 
+    $literals = $root->selectDescendantsOfType('n_ARRAY_LITERAL');
+    foreach ($literals as $literal) {
+      $open_token = head($literal->getTokens())->getValue();
+      if ($open_token == '[') {
+        $this->raiseLintAtNode(
+          $literal,
+          pht(
+            'The short array syntax ("[...]") was not introduced until '.
+            'PHP 5.4, but this codebase targets an earlier version of PHP. '.
+            'You can rewrite this expression using `array(...)` instead.'));
+      }
+    }
+
     $closures = $this->getAnonymousClosures($root);
     foreach ($closures as $closure) {
       $static_accesses = $closure

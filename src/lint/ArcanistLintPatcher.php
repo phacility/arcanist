@@ -42,12 +42,13 @@ final class ArcanistLintPatcher extends Phobject {
     // supported under OSX.
     if (Filesystem::pathExists($path)) {
       // This path may not exist if we're generating a new file.
-      execx('cp -p %s %s', $path, $lint);
+      Filesystem::copyFile($path, $lint);
     }
     Filesystem::writeFile($lint, $data);
 
-    list($err) = exec_manual('mv -f %s %s', $lint, $path);
-    if ($err) {
+    try {
+      Filesystem::rename($lint, $path);
+    } catch (FilesystemException $e) {
       throw new Exception(
         pht(
           "Unable to overwrite path '%s', patched version was left at '%s'.",

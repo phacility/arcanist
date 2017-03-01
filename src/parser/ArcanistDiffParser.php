@@ -288,9 +288,11 @@ final class ArcanistDiffParser extends Phobject {
 
       if (isset($match['type'])) {
         if ($match['type'] == 'diff --git') {
-          list($old, $new) = self::splitGitDiffPaths($match['oldnew']);
-          $match['old'] = $old;
-          $match['cur'] = $new;
+          $filename = self::extractGitCommonFilename($match['oldnew']);
+          if ($filename !== null) {
+            $match['old'] = $filename;
+            $match['cur'] = $filename;
+          }
         }
       }
 
@@ -1308,99 +1310,52 @@ final class ArcanistDiffParser extends Phobject {
 
 
   /**
-   * Strip prefixes off paths from `git diff`. By default git uses a/ and b/,
-   * but you can set `diff.mnemonicprefix` to get a different set of prefixes,
-   * or use `--no-prefix`, `--src-prefix` or `--dst-prefix` to set these to
-   * other arbitrary values.
-   *
-   * We strip the default and mnemonic prefixes, and trust the user knows what
-   * they're doing in the other cases.
-   *
-   * @param   string Path to strip.
-   * @return  string Stripped path.
-   */
-  public static function stripGitPathPrefix($path) {
-
-    static $regex;
-    if ($regex === null) {
-      $prefixes = array(
-        // These are the defaults.
-        'a/',
-        'b/',
-
-        // These show up when you set "diff.mnemonicprefix".
-        'i/',
-        'c/',
-        'w/',
-        'o/',
-        '1/',
-        '2/',
-      );
-
-      foreach ($prefixes as $key => $prefix) {
-        $prefixes[$key] = preg_quote($prefix, '@');
-      }
-      $regex = '@^('.implode('|', $prefixes).')@S';
-    }
-
-    return preg_replace($regex, '', $path);
-  }
-
-
-  /**
-   * Split the paths on a "diff --git" line into old and new paths. This
-   * is difficult because they may be ambiguous if the files contain spaces.
+   * Extracts the common filename from two strings with differing path
+   * prefixes as found after `diff --git`.  These strings may be
+   * quoted; if so, the filename is returned unescaped.  The prefixes
+   * default to "a/" and "b/", but may be any string -- or may be
+   * entierly absent.  This function may return "null" if the hunk
+   * represents a file move or copy, and with pathological renames may
+   * return an incorrect value.  Such cases are expected to be
+   * recovered by later rename detection codepaths.
    *
    * @param string Text from a diff line after "diff --git ".
-   * @return pair<string, string> Old and new paths.
+   * @return string Filename being altered, or null for a rename.
    */
-  public static function splitGitDiffPaths($paths) {
+  public static function extractGitCommonFilename($paths) {
     $matches = null;
     $paths = rtrim($paths, "\r\n");
 
-    $patterns = array(
-      // Try quoted paths, used for unicode filenames or filenames with quotes.
-      '@^(?P<old>"(?:\\\\.|[^"\\\\]+)+") (?P<new>"(?:\\\\.|[^"\\\\]+)+")$@',
+    // Try the exact same string twice in a row separated by a
+    // space, with an optional prefix.  This can hit a false
+    // positive for moves from files like "old file old" to "file",
+    // but such a cases will be caught by the "rename from" /
+    // "rename to" lines.
+    $prefix = '(?:[^/]+/)?';
+    $pattern =
+             "@^(?P<old>(?P<oldq>\"?){$prefix}(?P<common>.+)\\k<oldq>)"
+             ." "
+             ."(?P<new>(?P<newq>\"?){$prefix}\\k<common>\\k<newq>)$@";
 
-      // Try paths without spaces.
-      '@^(?P<old>[^ ]+) (?P<new>[^ ]+)$@',
-
-      // Try paths with well-known prefixes.
-      '@^(?P<old>[abicwo12]/.*) (?P<new>[abicwo12]/.*)$@',
-
-      // Try the exact same string twice in a row separated by a space.
-      // This can hit a false positive for moves from files like "old file old"
-      // to "file", but such a case combined with custom diff prefixes is
-      // incredibly obscure.
-      '@^(?P<old>.*) (?P<new>\\1)$@',
-    );
-
-    foreach ($patterns as $pattern) {
-      if (preg_match($pattern, $paths, $matches)) {
-        break;
-      }
+    if (!preg_match($pattern, $paths, $matches)) {
+      // A rename or some form; return null for now, and let the
+      // "rename from" / "rename to" lines fix it up.
+      return null;
     }
 
-    if (!$matches) {
-      throw new Exception(
-        pht(
-          "Input diff contains ambiguous line '%s'. This line is ambiguous ".
-          "because there are spaces in the file names, so the parser can not ".
-          "determine where the file names begin and end. To resolve this ".
-          "ambiguity, use standard prefixes ('a/' and 'b/') when ".
-          "generating diffs.",
-          "diff --git {$paths}"));
-    }
+    // Use the common subpart.  There may be ambiguity here: "src/file
+    // dst/file" may _either_ be a prefix-less move, or a change with
+    // two custom prefixes.  We assume it is the latter; if it is a
+    // rename, diff parsing will update based on the "rename from" /
+    // "rename to" lines.
 
-    $old = $matches['old'];
-    $old = self::unescapeFilename($old);
-    $old = self::stripGitPathPrefix($old);
-
-    $new = $matches['new'];
+    // This re-assembles with the differing prefixes removed, but the
+    // quoting from the original.  Necessary so we know if we should
+    // unescape characters from the common string.
+    $new = $matches['newq'].$matches['common'].$matches['newq'];
     $new = self::unescapeFilename($new);
-    $new = self::stripGitPathPrefix($new);
 
-    return array($old, $new);
+    return $new;
   }
 
 

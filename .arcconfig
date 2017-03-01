@@ -1,5 +1,8 @@
 {
   "project_id" : "index-arcanist",
   "phabricator.uri" : "https://cr.goindex.com/",
+  "load": [
+    "src/"
+  ],
   "history.immutable": false
 }

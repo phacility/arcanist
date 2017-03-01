@@ -144,7 +144,8 @@ class ArcanistConfiguration extends Phobject {
 
     // We haven't found a real command, alias, or unique prefix. Try similar
     // spellings.
-    $corrected = self::correctCommandSpelling($command, $all, 2);
+    $corrected = PhutilArgumentSpellingCorrector::newCommandCorrector()
+      ->correctSpelling($command, $all);
     if (count($corrected) == 1) {
       $console->writeErr(
         pht(
@@ -181,80 +182,6 @@ class ArcanistConfiguration extends Phobject {
     }
 
     return array_keys($is_prefix);
-  }
-
-  public static function correctCommandSpelling(
-    $command,
-    array $options,
-    $max_distance) {
-
-    // Adjust to the scaled edit costs we use below, so "2" roughly means
-    // "2 edits".
-    $max_distance = $max_distance * 3;
-
-    // These costs are somewhat made up, but the theory is that it is far more
-    // likely you will mis-strike a key ("lans" for "land") or press two keys
-    // out of order ("alnd" for "land") than omit keys or press extra keys.
-    $matrix = id(new PhutilEditDistanceMatrix())
-      ->setInsertCost(4)
-      ->setDeleteCost(4)
-      ->setReplaceCost(3)
-      ->setTransposeCost(2);
-
-    return self::correctSpelling($command, $options, $matrix, $max_distance);
-  }
-
-  public static function correctArgumentSpelling($command, array $options) {
-    $max_distance = 1;
-
-    // We are stricter with arguments - we allow only one inserted or deleted
-    // character. It is mainly to handle cases like --no-lint versus --nolint
-    // or --reviewer versus --reviewers.
-    $matrix = id(new PhutilEditDistanceMatrix())
-      ->setInsertCost(1)
-      ->setDeleteCost(1)
-      ->setReplaceCost(10);
-
-    return self::correctSpelling($command, $options, $matrix, $max_distance);
-  }
-
-  public static function correctSpelling(
-    $input,
-    array $options,
-    PhutilEditDistanceMatrix $matrix,
-    $max_distance) {
-
-    $distances = array();
-    $inputv = str_split($input);
-    foreach ($options as $option) {
-      $optionv = str_split($option);
-      $matrix->setSequences($optionv, $inputv);
-      $distances[$option] = $matrix->getEditDistance();
-    }
-
-    asort($distances);
-    $best = min($max_distance, reset($distances));
-    foreach ($distances as $option => $distance) {
-      if ($distance > $best) {
-        unset($distances[$option]);
-      }
-    }
-
-    // Before filtering, check if we have multiple equidistant matches and
-    // return them if we do. This prevents us from, e.g., matching "alnd" with
-    // both "land" and "amend", then dropping "land" for being too short, and
-    // incorrectly completing to "amend".
-    if (count($distances) > 1) {
-      return array_keys($distances);
-    }
-
-    foreach ($distances as $option => $distance) {
-      if (strlen($option) < $distance) {
-        unset($distances[$option]);
-      }
-    }
-
-    return array_keys($distances);
   }
 
 }

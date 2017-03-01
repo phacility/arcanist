@@ -795,7 +795,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         'commit --amend -l %s',
         $tmp_file);
     } catch (CommandException $ex) {
-      if (preg_match('/nothing changed/', $ex->getStdOut())) {
+      if (preg_match('/nothing changed/', $ex->getStdout())) {
         // NOTE: Mercurial considers it an error to make a no-op amend. Although
         // we generally defer to the underlying VCS to dictate behavior, this
         // one seems a little goofy, and we use amend as part of various

@@ -255,7 +255,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
         throw $exc;
       }
       $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-      $result->setUserdata($exc->getStdout());
+      $result->setUserData($exc->getStdout());
     }
 
     $result->setDuration(microtime(true) - $regenerate_start);
@@ -301,7 +301,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
           throw $exc;
         }
         $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-        $result->setUserdata($exc->getStdout());
+        $result->setUserData($exc->getStdout());
         $build_failed = true;
       }
 

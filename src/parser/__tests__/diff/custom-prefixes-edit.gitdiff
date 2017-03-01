@@ -1,0 +1,11 @@
+diff --git src/file dst/file
+index 711edb6..a8cd7be 100644
+--- src/file
++++ dst/file
+@@ -5,5 +5,5 @@
+ some context
+ other context
+-old value
++new value
+ some context
+ other context
