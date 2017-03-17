@@ -446,6 +446,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // would ship up the binaries for 'arc patch' but display the textconv
       // output in the visual diff.
       '--no-textconv',
+      // Provide a standard view of submodule changes; the 'log' and 'diff'
+      // values do not parse by the diff parser.
+      '--submodule=short',
     );
     return implode(' ', $options);
   }
@@ -544,8 +547,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     $uri = rtrim($stdout);
-    // 'origin' is what ls-remote outputs if no origin remote URI exists
-    if (!$uri || $uri === 'origin') {
+    // ls-remote echos the remote name (ie 'origin') if no remote URI is found
+    // TODO: In 2.7.0 (circa 2016) git introduced `git remote get-url`
+    // with saner error handling.
+    if (!$uri || $uri === $remote) {
       return null;
     }
 
@@ -826,6 +831,22 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $mask |= self::FLAG_EXTERNALS;
       } else if (isset($flags[$flag])) {
         $mask |= $flags[$flag];
+      } else if ($flag[0] == 'R') {
+        $both = explode("\t", $file);
+        if ($full) {
+          $files[$both[0]] = array(
+            'mask' => $mask | self::FLAG_DELETED,
+            'ref'  => str_repeat('0', 40),
+          );
+        } else {
+          $files[$both[0]] = $mask | self::FLAG_DELETED;
+        }
+        $file = $both[1];
+        $mask |= self::FLAG_ADDED;
+      } else if ($flag[0] == 'C') {
+        $both = explode("\t", $file);
+        $file = $both[1];
+        $mask |= self::FLAG_ADDED;
       }
 
       if ($full) {
@@ -966,19 +987,43 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * @return list<dict<string, string>> Dictionary of branch information.
    */
   public function getAllBranches() {
-    list($ref_list) = $this->execxLocal(
-      'for-each-ref --format=%s refs/heads',
-      '%(refname)');
-    $refs = explode("\n", rtrim($ref_list));
+    $field_list = array(
+      '%(refname)',
+      '%(objectname)',
+      '%(committerdate:raw)',
+      '%(tree)',
+      '%(subject)',
+      '%(subject)%0a%0a%(body)',
+      '%02',
+    );
+
+    list($stdout) = $this->execxLocal(
+      'for-each-ref --format=%s -- refs/heads',
+      implode('%01', $field_list));
 
     $current = $this->getBranchName();
     $result = array();
-    foreach ($refs as $ref) {
+
+    $lines = explode("\2", $stdout);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (!strlen($line)) {
+        continue;
+      }
+
+      $fields = explode("\1", $line, 6);
+      list($ref, $hash, $epoch, $tree, $desc, $text) = $fields;
+
       $branch = $this->getBranchNameFromRef($ref);
       if ($branch) {
         $result[] = array(
           'current' => ($branch === $current),
-          'name'    => $branch,
+          'name' => $branch,
+          'hash' => $hash,
+          'tree' => $tree,
+          'epoch' => (int)$epoch,
+          'desc' => $desc,
+          'text' => $text,
         );
       }
     }
@@ -1360,7 +1405,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * or cycle locally.
    *
    * @param string Ref to start from.
-   * @return list<wild> Path to an upstream.
+   * @return ArcanistGitUpstreamPath Path to an upstream.
    */
   public function getPathToUpstream($start) {
     $cursor = $start;

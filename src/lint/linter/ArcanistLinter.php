@@ -574,8 +574,10 @@ abstract class ArcanistLinter extends Phobject {
       case 'standard':
         $standards = (array)$value;
 
-        foreach ($standards as $standard) {
-          $standard = ArcanistLinterStandard::getStandard($value, $this);
+        foreach ($standards as $standard_name) {
+          $standard = ArcanistLinterStandard::getStandard(
+            $standard_name,
+            $this);
 
           foreach ($standard->getLinterConfiguration() as $k => $v) {
             $this->setLinterConfigurationValue($k, $v);

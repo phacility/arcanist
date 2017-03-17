@@ -727,9 +727,7 @@ EOTEXT
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
 
-    $update_strategy = $this->getConfigFromAnySource(
-      'arc.land.update.default',
-      'merge');
+    $update_strategy = $this->getConfigFromAnySource('arc.land.update.default');
     $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
     if ($this->getArgument('update-with-rebase')) {
       $this->shouldUpdateWithRebase = true;
@@ -1175,7 +1173,7 @@ EOTEXT
         }
       } catch (CommandException $ex) {
         $err = $ex->getError();
-        $stdout = $ex->getStdOut();
+        $stdout = $ex->getStdout();
 
         // Copied from: PhabricatorRepositoryPullLocalDaemon.php
         // NOTE: Between versions 2.1 and 2.1.1, Mercurial changed the

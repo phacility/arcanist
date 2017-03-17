@@ -3,11 +3,14 @@
 final class ArcanistClosureLinterTestCase
   extends ArcanistExternalLinterTestCase {
 
-  public function testLinter() {
+  protected function getLinter() {
     $linter = new ArcanistClosureLinter();
     $linter->setFlags(array('--additional_extensions=lint-test'));
+    return $linter;
+  }
 
-    $this->executeTestsInDirectory(dirname(__FILE__).'/gjslint/', $linter);
+  public function testLinter() {
+    $this->executeTestsInDirectory(dirname(__FILE__).'/gjslint/');
   }
 
 }

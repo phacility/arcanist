@@ -169,6 +169,11 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'aliases' => array(
+        'type' => 'aliases',
+        'help' => pht(
+          'Configured command aliases. Use "arc alias" to define aliases.'),
+      ),
       'uber.sirmixalot.enrolled' => array(
         'type' => 'bool',
         'help' => pht(
@@ -359,6 +364,12 @@ final class ArcanistSettings extends Phobject {
         break;
       case 'wild':
         break;
+      case 'aliases':
+        throw new Exception(
+          pht(
+            'Use "arc alias" to configure aliases, not "arc set-config".'));
+        break;
+
     }
 
     return $value;
@@ -392,6 +403,7 @@ final class ArcanistSettings extends Phobject {
         }
         break;
       case 'wild':
+      case 'aliases':
         break;
     }
 

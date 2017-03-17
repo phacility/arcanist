@@ -1815,12 +1815,7 @@ EOTEXT
     }
 
     $reviewers = $message->getFieldValue('reviewerPHIDs');
-    if (!$reviewers) {
-      $confirm = pht('You have not specified any reviewers. Continue anyway?');
-      if (!phutil_console_confirm($confirm)) {
-        throw new ArcanistUsageException(pht('Specify reviewers and retry.'));
-      }
-    } else {
+    if ($reviewers) {
       $futures['reviewers'] = $this->getConduit()->callMethod(
         'user.query',
         array(
@@ -1967,7 +1962,13 @@ EOTEXT
       $faux_message[] = pht('CC: %s', $this->getArgument('cc'));
     }
 
+    // See T12069. After T10312, the first line of a message is always parsed
+    // as a title. Add a placeholder so "Reviewers" and "CC" are never the
+    // first line.
+    $placeholder_title = pht('<placeholder>');
+
     if ($faux_message) {
+      array_unshift($faux_message, $placeholder_title);
       $faux_message = implode("\n\n", $faux_message);
       $local = array(
         '(Flags)     ' => array(
@@ -2036,6 +2037,10 @@ EOTEXT
     foreach ($fields as $hash => $dict) {
       $title = idx($dict, 'title');
       if (!strlen($title)) {
+        continue;
+      }
+
+      if ($title === $placeholder_title) {
         continue;
       }
 
@@ -2529,13 +2534,19 @@ EOTEXT
     $id = $revision['id'];
     $title = $revision['title'];
 
-    throw new ArcanistUsageException(
-      pht(
-        "You don't own revision %s '%s'. You can only update revisions ".
-        "you own. You can 'Commandeer' this revision from the web ".
-        "interface if you want to become the owner.",
-        "D{$id}",
-        $title));
+    $prompt = pht(
+      "You don't own revision %s: \"%s\". Normally, you should ".
+      "only update revisions you own. You can \"Commandeer\" this revision ".
+      "from the web interface if you want to become the owner.\n\n".
+      "Update this revision anyway?",
+      "D{$id}",
+      $title);
+
+    $ok = phutil_console_confirm($prompt, $default_no = true);
+    if (!$ok) {
+      throw new ArcanistUsageException(
+        pht('Aborted update of revision: You are not the owner.'));
+    }
   }
 
 
@@ -2585,10 +2596,6 @@ EOTEXT
     foreach ($need_upload as $key => $spec) {
       $change = $need_upload[$key]['change'];
 
-      $type = $spec['type'];
-      $size = strlen($spec['data']);
-
-      $change->setMetadata("{$type}:file:size", $size);
       if ($spec['data'] === null) {
         // This covers the case where a file was added or removed; we don't
         // need to upload the other half of it (e.g., the old file data for
@@ -2597,6 +2604,11 @@ EOTEXT
         unset($need_upload[$key]);
         continue;
       }
+
+      $type = $spec['type'];
+      $size = strlen($spec['data']);
+
+      $change->setMetadata("{$type}:file:size", $size);
 
       $mime = $this->getFileMimeType($spec['data']);
       if (preg_match('@^image/@', $mime)) {

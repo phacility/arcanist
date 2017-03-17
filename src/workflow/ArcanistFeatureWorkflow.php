@@ -174,38 +174,37 @@ EOTEXT
   private function loadCommitInfo(array $branches) {
     $repository_api = $this->getRepositoryAPI();
 
-    $futures = array();
-    foreach ($branches as $branch) {
-      if ($repository_api instanceof ArcanistMercurialAPI) {
+    $branches = ipull($branches, null, 'name');
+
+    if ($repository_api instanceof ArcanistMercurialAPI) {
+      $futures = array();
+      foreach ($branches as $branch) {
         $futures[$branch['name']] = $repository_api->execFutureLocal(
           'log -l 1 --template %s -r %s',
           "{node}\1{date|hgdate}\1{p1node}\1{desc|firstline}\1{desc}",
           hgsprintf('%s', $branch['name']));
-      } else {
-        // NOTE: "-s" is an option deep in git's diff argument parser that
-        // doesn't seem to have much documentation and has no long form. It
-        // suppresses any diff output.
-        $futures[$branch['name']] = $repository_api->execFutureLocal(
-          'show -s --format=%C %s --',
-          '%H%x01%ct%x01%T%x01%s%x01%s%n%n%b',
-          $branch['name']);
+      }
+
+      $futures = id(new FutureIterator($futures))
+        ->limit(16);
+      foreach ($futures as $name => $future) {
+        list($info) = $future->resolvex();
+
+        $fields = explode("\1", trim($info), 5);
+        list($hash, $epoch, $tree, $desc, $text) = $fields;
+
+        $branches[$name] += array(
+          'hash' => $hash,
+          'desc' => $desc,
+          'tree' => $tree,
+          'epoch' => (int)$epoch,
+          'text' => $text,
+        );
       }
     }
 
-    $branches = ipull($branches, null, 'name');
-
-    $futures = id(new FutureIterator($futures))
-      ->limit(16);
-    foreach ($futures as $name => $future) {
-      list($info) = $future->resolvex();
-      list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
-
-      $branch = $branches[$name] + array(
-        'hash' => $hash,
-        'desc' => $desc,
-        'tree' => $tree,
-        'epoch' => (int)$epoch,
-      );
+    foreach ($branches as $name => $branch) {
+      $text = $branch['text'];
 
       try {
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
@@ -330,6 +329,11 @@ EOTEXT
         'epoch'     => $epoch,
         'ssort'     => $ssort,
       );
+    }
+
+    if (!$out) {
+      // All of the revisions are closed or abandoned.
+      return;
     }
 
     $len_name = max(array_map('strlen', ipull($out, 'name'))) + 2;

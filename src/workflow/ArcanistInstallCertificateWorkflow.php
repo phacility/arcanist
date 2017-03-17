@@ -118,7 +118,15 @@ EOTEXT
             $token));
       }
 
-      if (strncmp($token, 'cli-', 4) !== 0) {
+      if (strncmp($token, 'api-', 4) == 0) {
+        echo pht(
+          'You are installing a standard API token, but a CLI API token '.
+          'was expected. If you\'re writing a script, consider passing the '.
+          'token at runtime with --conduit-token instead of installing it.');
+        if (!phutil_console_confirm(pht('Install this token anyway?'))) {
+          throw new ArcanistUsageException(pht('Not installing API token.'));
+        }
+      } else if (strncmp($token, 'cli-', 4) !== 0) {
         throw new ArcanistUsageException(
           pht(
             'The token "%s" is not formatted correctly. Valid API tokens '.
@@ -196,14 +204,31 @@ EOTEXT
       $uri = $conduit_uri;
     }
 
+    $example = 'https://phabricator.example.com/';
+
     $uri_object = new PhutilURI($uri);
-    if (!$uri_object->getProtocol() || !$uri_object->getDomain()) {
+    $protocol = $uri_object->getProtocol();
+    if (!$protocol || !$uri_object->getDomain()) {
       throw new ArcanistUsageException(
         pht(
           'Server URI "%s" must include a protocol and domain. It should be '.
           'in the form "%s".',
           $uri,
-          'https://phabricator.example.com/'));
+          $example));
+    }
+
+    $protocol = $uri_object->getProtocol();
+    switch ($protocol) {
+      case 'http':
+      case 'https':
+        break;
+      default:
+        throw new ArcanistUsageException(
+          pht(
+            'Server URI "%s" must include the "http" or "https" protocol. '.
+            'It should be in the form "%s".',
+            $uri,
+            $example));
     }
 
     $uri_object->setPath('/api/');

@@ -56,7 +56,30 @@ final class ArcanistDiffUtils extends Phobject {
       );
     }
 
-    return self::computeIntralineEdits($o, $n);
+    // Do a fast check for certainly-too-long inputs before splitting the
+    // lines. Inputs take ~200x more memory to represent as lists than as
+    // strings, so we can run out of memory quickly if we try to split huge
+    // inputs. See T11744.
+    $ol = strlen($o);
+    $nl = strlen($n);
+
+    $max_glyphs = 80;
+
+    // This has some wiggle room for multi-byte UTF8 characters, and the
+    // fact that we're testing the sum of the lengths of both strings. It can
+    // still generate false positives for, say, Chinese text liberally
+    // slathered with combining characters, but this kind of text should be
+    // vitually nonexistent in real data.
+    $too_many_bytes = (16 * $max_glyphs);
+
+    if ($ol + $nl > $too_many_bytes) {
+      return array(
+        array(array(1, $ol)),
+        array(array(1, $nl)),
+      );
+    }
+
+    return self::computeIntralineEdits($o, $n, $max_glyphs);
   }
 
   public static function applyIntralineDiff($str, $intra_stack) {
@@ -151,10 +174,11 @@ final class ArcanistDiffUtils extends Phobject {
       ->setReplaceCost(2)
       ->setMaximumLength($max)
       ->setSequences($ov, $nv)
+      ->setApplySmoothing(PhutilEditDistanceMatrix::SMOOTHING_INTERNAL)
       ->getEditString();
   }
 
-  public static function computeIntralineEdits($o, $n) {
+  private static function computeIntralineEdits($o, $n, $max_glyphs) {
     if (preg_match('/[\x80-\xFF]/', $o.$n)) {
       $ov = phutil_utf8v_combined($o);
       $nv = phutil_utf8v_combined($n);
@@ -165,26 +189,7 @@ final class ArcanistDiffUtils extends Phobject {
       $multibyte = false;
     }
 
-    $result = self::generateEditString($ov, $nv);
-
-    // Smooth the string out, by replacing short runs of similar characters
-    // with 'x' operations. This makes the result more readable to humans, since
-    // there are fewer choppy runs of short added and removed substrings.
-    do {
-      $original = $result;
-      $result = preg_replace(
-        '/([xdi])(s{3})([xdi])/',
-        '$1xxx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{2})([xdi])/',
-        '$1xx$3',
-        $result);
-      $result = preg_replace(
-        '/([xdi])(s{1})([xdi])/',
-        '$1x$3',
-        $result);
-    } while ($result != $original);
+    $result = self::generateEditString($ov, $nv, $max_glyphs);
 
     // Now we have a character-based description of the edit. We need to
     // convert into a byte-based description. Walk through the edit string and

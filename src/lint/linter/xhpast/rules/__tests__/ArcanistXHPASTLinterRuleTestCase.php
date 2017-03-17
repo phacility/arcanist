@@ -8,8 +8,19 @@ abstract class ArcanistXHPASTLinterRuleTestCase
   extends ArcanistLinterTestCase {
 
   final protected function getLinter() {
+    // Always include this rule so we get good messages if a test includes
+    // a syntax error. No normal test should contain syntax errors.
+    $syntax_rule = new ArcanistSyntaxErrorXHPASTLinterRule();
+
+    $test_rule = $this->getLinterRule();
+
+    $rules = array(
+      $syntax_rule,
+      $test_rule,
+    );
+
     return id(new ArcanistXHPASTLinter())
-      ->setRules(array($this->getLinterRule()));
+      ->setRules($rules);
   }
 
   /**

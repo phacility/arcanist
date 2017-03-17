@@ -60,12 +60,12 @@ final class ArcanistDiffUtilsTestCase extends PhutilTestCase {
       array(
         'abcdefg',
         'abxdxfg',
-        'ssxsxss',
+        'ssxxxss',
       ),
       array(
         'private function a($a, $b) {',
         'public function and($b, $c) {',
-        'siixsdddxsssssssssssiissxsssxsss',
+        'siixxdddxsssssssssssiixxxxxxxsss',
       ),
       array(
 

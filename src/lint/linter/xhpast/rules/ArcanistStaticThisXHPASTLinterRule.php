@@ -40,7 +40,7 @@ final class ArcanistStaticThisXHPASTLinterRule
           continue;
         }
 
-        $body = $method->getChildOfType(5, 'n_STATEMENT_LIST');
+        $body = $method->getChildOfType(6, 'n_STATEMENT_LIST');
         $variables = $body->selectDescendantsOfType('n_VARIABLE');
 
         foreach ($variables as $variable) {

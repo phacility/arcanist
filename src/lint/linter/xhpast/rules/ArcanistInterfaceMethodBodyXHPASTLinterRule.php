@@ -16,7 +16,7 @@ final class ArcanistInterfaceMethodBodyXHPASTLinterRule
       $methods = $interface->selectDescendantsOfType('n_METHOD_DECLARATION');
 
       foreach ($methods as $method) {
-        $body = $method->getChildByIndex(5);
+        $body = $method->getChildByIndex(6);
 
         if ($body->getTypeName() != 'n_EMPTY') {
           $this->raiseLintAtNode(

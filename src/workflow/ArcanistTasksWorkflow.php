@@ -81,7 +81,7 @@ EOTEXT
     $unassigned = $this->getArgument('unassigned');
 
     if ($owner) {
-      $owner_phid = $this->findOwnerPhid($owner);
+      $owner_phid = $this->findOwnerPHID($owner);
     } else if ($unassigned) {
       $owner_phid = null;
     } else {

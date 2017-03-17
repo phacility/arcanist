@@ -189,7 +189,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * Get a path's parse exception from the responsible linter.
    *
    * @param   string          Path to retrieve exception for.
-   * @return  Exeption|null   Parse exception, if available.
+   * @return  Exception|null  Parse exception, if available.
    * @task sharing
    */
   final protected function getXHPASTExceptionForPath($path) {

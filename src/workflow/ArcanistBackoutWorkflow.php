@@ -123,6 +123,9 @@ EOTEXT
     $template = $this->newInteractiveEditor($template)
       ->setName('new-commit')
       ->editInteractively();
+
+    $template = ArcanistCommentRemover::removeComments($template);
+
     return $template;
   }
 

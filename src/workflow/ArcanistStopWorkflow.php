@@ -18,7 +18,7 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Start tracking work in Phrequent.
+          Stop tracking work in Phrequent.
 EOTEXT
       );
   }
@@ -105,7 +105,7 @@ EOTEXT
       "%s  %s\n\n",
       pht('Stopped:'),
       implode(', ', ipull($phid_query, 'fullName')));
-    $this->printCurrentTracking(true);
+    $this->printCurrentTracking();
   }
 
 }
