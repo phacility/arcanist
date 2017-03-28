@@ -1856,6 +1856,21 @@ EOTEXT
       }
     }
 
+    $config = $this->getConfigurationManager();
+    $mandatory_fields = $config->getConfigFromAnySource(
+      'differential.mandatory_fields');
+
+    if (!is_null($mandatory_fields)) {
+      foreach ($mandatory_fields as $mandatory_field){
+        $fieldName = $mandatory_field['field_name'];
+        $field = $message->getFieldValue($fieldName);
+        if (empty($field)) {
+          $fieldMessage = $mandatory_field['field_message'];
+          throw new ArcanistUsageException(
+            pht($fieldMessage));
+        }
+      }
+    }
   }
 
 
