@@ -1024,6 +1024,14 @@ EOTEXT
       }
     }
 
+    $uber_prevent_unaccepted_changes = $this->getConfigFromAnySource(
+      'uber.land.prevent-unaccepted-changes',
+      false);
+    if ($uber_prevent_unaccepted_changes && $rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
+      throw new ArcanistUsageException(
+        pht("Revision '%s' has not been accepted.", "D{$rev_id}: {$rev_title}"));
+    }
+
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(pht(
         "Revision '%s' has not been accepted. Continue anyway?",

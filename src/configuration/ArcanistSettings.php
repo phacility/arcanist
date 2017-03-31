@@ -193,6 +193,15 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.land.prevent-unaccepted-changes' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will prevent developers to land changes that'.
+          'are not accepted.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
       'uber.land.review-check' => array(
         'type' => 'bool',
         'help' => pht(
