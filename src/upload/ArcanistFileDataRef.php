@@ -346,11 +346,23 @@ final class ArcanistFileDataRef extends Phobject {
   }
 
   private function newFileHash($path) {
-    return null;
+    $hash = hash_file('sha256', $path, $raw_output = false);
+
+    if ($hash === false) {
+      return null;
+    }
+
+    return $hash;
   }
 
   private function newDataHash($data) {
-    return null;
+    $hash = hash('sha256', $data, $raw_output = false);
+
+    if ($hash === false) {
+      return null;
+    }
+
+    return $hash;
   }
 
 }
