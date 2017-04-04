@@ -222,15 +222,6 @@ final class ArcanistFileDataRef extends Phobject {
             $path));
       }
 
-      $hash = @sha1_file($path);
-      if ($hash === false) {
-        throw new Exception(
-          pht(
-            'Unable to upload file: failed to calculate file data hash for '.
-            'path "%s".',
-            $path));
-      }
-
       $size = @filesize($path);
       if ($size === false) {
         throw new Exception(
@@ -240,11 +231,11 @@ final class ArcanistFileDataRef extends Phobject {
             $path));
       }
 
-      $this->hash = $hash;
+      $this->hash = $this->newFileHash($path);
       $this->size = $size;
     } else {
       $data = $this->data;
-      $this->hash = sha1($data);
+      $this->hash = $this->newDataHash($data);
       $this->size = strlen($data);
     }
   }
@@ -352,6 +343,14 @@ final class ArcanistFileDataRef extends Phobject {
     }
 
     return $data;
+  }
+
+  private function newFileHash($path) {
+    return null;
+  }
+
+  private function newDataHash($data) {
+    return null;
   }
 
 }
