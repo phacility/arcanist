@@ -1888,6 +1888,11 @@ EOTEXT
         $this->revision['id'],
       ));
     $mark_workflow->run();
+    // UBER CODE
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_LAND_DIDPUSHREVISION,
+      array());
+    // END UBER CODE
   }
 
 }

@@ -12,5 +12,8 @@ final class ArcanistEventType extends PhutilEventType {
   const TYPE_REVISION_WILLCREATEREVISION = 'revision.willCreateRevision';
 
   const TYPE_LAND_WILLPUSHREVISION  = 'land.willPushRevision';
+  // UBER CODE
+  const TYPE_LAND_DIDPUSHREVISION  = 'land.didPushRevision';
+  // END UBER CODE
 
 }
