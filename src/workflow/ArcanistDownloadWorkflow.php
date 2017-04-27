@@ -83,6 +83,7 @@ EOTEXT
     $display_name = 'F'.$id;
     $is_show = $this->show;
     $save_as = $this->saveAs;
+    $path = null;
 
     try {
       $file = $conduit->callMethodSynchronous(
@@ -186,7 +187,7 @@ EOTEXT
         throw new Exception(
           pht(
             'Got HTTP %d status response, expected HTTP 200.',
-            $status));
+            $status->getStatusCode()));
       }
 
       if (strlen($data)) {
@@ -232,6 +233,14 @@ EOTEXT
 
       return 0;
     } catch (Exception $ex) {
+
+      // If we created an empty file, clean it up.
+      if (!$is_show) {
+        if ($path !== null) {
+          Filesystem::remove($path);
+        }
+      }
+
       // If we fail for any reason, fall back to the older mechanism using
       // "file.info" and "file.download".
     }
