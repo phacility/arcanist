@@ -56,12 +56,14 @@ final class ArcanistPhutilXHPASTLinterStandard
   }
 
   public function getLinterSeverityMap() {
-    $advice = ArcanistLintSeverity::SEVERITY_ADVICE;
-    $error  = ArcanistLintSeverity::SEVERITY_ERROR;
+    $advice  = ArcanistLintSeverity::SEVERITY_ADVICE;
+    $error   = ArcanistLintSeverity::SEVERITY_ERROR;
+    $warning = ArcanistLintSeverity::SEVERITY_WARNING;
 
     return array(
-      ArcanistTodoCommentXHPASTLinterRule::ID    => $advice,
-      ArcanistCommentSpacingXHPASTLinterRule::ID => $error,
+      ArcanistTodoCommentXHPASTLinterRule::ID         => $advice,
+      ArcanistCommentSpacingXHPASTLinterRule::ID      => $error,
+      ArcanistRaggedClassTreeEdgeXHPASTLinterRule::ID => $warning,
     );
   }
 
