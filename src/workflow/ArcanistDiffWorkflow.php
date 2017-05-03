@@ -967,7 +967,8 @@ EOTEXT
     }
 
     $config = $this->getConfigurationManager();
-    $max_changes = $config->getConfigFromAnySource('differential.max_changes');
+    $max_changes = $config->getConfigFromAnySource(
+      'uber.differential.max_changes');
     if (is_null($max_changes)) {
       $max_changes = 250;
     }
