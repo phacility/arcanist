@@ -966,7 +966,13 @@ EOTEXT
       throw new Exception(pht('Repository API is not supported.'));
     }
 
-    if (count($changes) > 250) {
+    $config = $this->getConfigurationManager();
+    $max_changes = $config->getConfigFromAnySource('differential.max_changes');
+    if (is_null($max_changes)) {
+      $max_changes = 250;
+    }
+
+    if (count($changes) > $max_changes) {
       $message = pht(
         'This diff has a very large number of changes (%s). Differential '.
         'works best for changes which will receive detailed human review, '.
