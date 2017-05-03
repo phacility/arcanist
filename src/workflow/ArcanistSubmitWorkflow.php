@@ -309,4 +309,19 @@ EOTEXT
   public function requiresRepositoryAPI() {
     return true;
   }
+
+  public function getArguments() {
+    return array(
+      'onto' => array(
+        'param' => 'master',
+        'help' => pht(
+          "Land feature branch onto a branch other than the default ".
+          "('master' in git, 'default' in hg). You can change the default ".
+          "by setting '%s' with `%s` or for the entire project in %s.",
+          'arc.land.onto.default',
+          'arc set-config',
+          '.arcconfig'),
+      )
+    );
+  }
 }
