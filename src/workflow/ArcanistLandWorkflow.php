@@ -271,6 +271,14 @@ EOTEXT
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
       ),
+      'use-sq' => array(
+        'help' => pht(
+          'force using the submit-queue if the submit-queue is configured '.
+          'for this repo.'),
+        'supports' => array(
+          'git',
+        ),
+      ),
     );
   }
 
@@ -777,8 +785,10 @@ EOTEXT
       $this->getConfigFromAnySource('uber.land.run.unit'),
       false
     );
+
     $this->shouldUseSubmitQueue = nonempty(
         $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+        $this->getArgument('use-sq'),
         false
     );
 

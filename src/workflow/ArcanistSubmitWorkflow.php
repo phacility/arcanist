@@ -59,8 +59,8 @@ EOTEXT
     return phutil_console_format(<<<EOTEXT
           Supports: git
 
-          Publish an accepted revision after review through SubmitQueue. 
-          This command is the last step in the standard Differential pre-publish 
+          Publish an accepted revision after review through SubmitQueue.
+          This command is the last step in the standard Differential pre-publish
           code review workflow.
 
           This command requests Submit Queue to push changes associated with an accepted
@@ -164,6 +164,7 @@ EOTEXT
 
     $this->shouldUseSubmitQueue = nonempty(
       $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+      $this->getArgument('use-sq'),
       false
     );
 
@@ -321,7 +322,12 @@ EOTEXT
           'arc.land.onto.default',
           'arc set-config',
           '.arcconfig'),
-      )
+      ),
+      'use-sq' => array(
+        'help' => pht(
+          'force using the submit-queue if the submit-queue is configured '.
+          'for this repo.'),
+      ),
     );
   }
 }
