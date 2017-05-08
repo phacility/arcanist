@@ -18,6 +18,9 @@ final class ArcanistSubmitWorkflow extends ArcanistWorkflow {
   private $submitQueueUri;
   private $submitQueueClient;
 
+  const REFTYPE_BRANCH = 'branch';
+  const REFTYPE_BOOKMARK = 'bookmark';
+
   public function run() {
     $this->readArguments();
     $revision = $this->getRevision();
