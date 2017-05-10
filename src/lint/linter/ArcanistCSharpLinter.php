@@ -88,6 +88,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
       return;
     }
 
+    $this->projectRoot = $this->getEngine()->getWorkingCopy()->getProjectRoot();
+
     // Determine runtime engine (.NET or Mono).
     if (phutil_is_windows()) {
       $this->runtimeEngine = '';
@@ -102,6 +104,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     $cslint = $this->cslintHintPath;
     if ($cslint !== null && file_exists($cslint)) {
       $this->cslintEngine = Filesystem::resolvePath($cslint);
+    } else if ($cslint !== null && file_exists($this->projectRoot.DIRECTORY_SEPARATOR.$cslint)) {
+      $this->cslintEngine = Filesystem::resolvePath($this->projectRoot.DIRECTORY_SEPARATOR.$cslint);
     } else if (Filesystem::binaryExists('cslint.exe')) {
       $this->cslintEngine = 'cslint.exe';
     } else {
@@ -169,9 +173,10 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         // settings JSON through base64-encoded to mitigate
         // this issue.
         $futures[] = new ExecFuture(
-          '%C --settings-base64=%s -r=. %Ls',
+          '%C --settings-base64=%s -r=%s %Ls',
           $this->runtimeEngine.$this->cslintEngine,
           base64_encode(json_encode($this->discoveryMap)),
+          $this->projectRoot,
           $current_paths);
         $current_paths = array();
       }
@@ -184,9 +189,10 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     // a future for those too.
     if (count($current_paths) > 0) {
       $futures[] = new ExecFuture(
-        '%C --settings-base64=%s -r=. %Ls',
+        '%C --settings-base64=%s -r=%s %Ls',
         $this->runtimeEngine.$this->cslintEngine,
         base64_encode(json_encode($this->discoveryMap)),
+        $this->projectRoot,
         $current_paths);
       $current_paths = array();
     }
