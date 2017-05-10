@@ -331,6 +331,12 @@ EOTEXT
           'force using the submit-queue if the submit-queue is configured '.
           'for this repo.'),
       ),
+      'revision' => array(
+        'param' => 'id',
+        'help' => pht(
+          'Use the message from a specific revision, rather than '.
+          'inferring the revision based on branch content.'),
+      ),
     );
   }
 }
