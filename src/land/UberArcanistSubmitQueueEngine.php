@@ -20,6 +20,13 @@ final class UberArcanistSubmitQueueEngine
       return;
     }
 
+    $workflow = $this->getWorkflow();
+    if ($workflow->getConfigFromAnySource("uber.land.submitqueue.events.prepush")) {
+      // fn dispatches ArcanistEventType::TYPE_LAND_WILLPUSHREVISION for
+      // arc-pre-push hooks;  see UberArcPrePushEventListener
+      $workflow->didCommitMerge();
+    }
+
     $this->saveLocalState();
 
     try {
