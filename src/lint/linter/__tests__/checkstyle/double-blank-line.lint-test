@@ -1,0 +1,13 @@
+public class ValidationTester {
+  public void isValid() {
+    assert true;
+  }
+  # below double blank lines
+
+
+  public void isNotValid() {
+    assert false;
+  }
+}
+~~~~~~~~~~
+error:5:1

@@ -1,0 +1,9 @@
+public class ValidationTester {
+  # below line has trailing spaces
+  
+  public void isValid() {
+    assert true;
+  }
+}
+~~~~~~~~~~
+error:3:1
