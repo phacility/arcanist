@@ -41,6 +41,10 @@ final class ArcanistMercurialParser extends Phobject {
       }
       $code = $line[0];
       $path = substr($line, 2);
+      if (!preg_match('!!u', $path)) {
+        // this isn't utf8, convert it.
+        $path = utf8_encode($path);
+      }
       switch ($code) {
         case 'A':
           $flags |= ArcanistRepositoryAPI::FLAG_ADDED;
