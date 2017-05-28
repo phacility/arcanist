@@ -16,6 +16,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EMPTY_FILE           = 10;
 
   private $maxLineLength = 80;
+  private $allowUTF8 = false;
 
   public function getInfoName() {
     return pht('Basic Text Linter');
@@ -39,6 +40,13 @@ final class ArcanistTextLinter extends ArcanistLinter {
           'Adjust the maximum line length before a warning is raised. By '.
           'default, a warning is raised on lines exceeding 80 characters.'),
       ),
+      'text.allow-utf8' => array(
+        'type' => 'optional bool',
+        'help' => pht(
+          'Allow any valid UTF-8 character. By default, only ASCII bytes '.
+          'with ordinal decimal values between 32 and 126 inclusive, plus '.
+          'linefeed are allowed.'),
+      ),
     );
 
     return $options + parent::getLinterConfigurationOptions();
@@ -53,6 +61,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
     switch ($key) {
       case 'text.max-line-length':
         $this->setMaxLineLength($value);
+        return;
+      case 'text.allow-utf8':
+        $this->allowUTF8 = $value;
         return;
     }
 
@@ -149,6 +160,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
   protected function lintNewlines($path) {
     $data = $this->getData($path);
+    $allowUTF8 = $this->allowUTF8;
     $pos  = strpos($this->getData($path), "\r");
 
     if ($pos !== false) {
@@ -212,9 +224,18 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $data = $this->getData($path);
 
     $matches = null;
-    $bad = '[^\x09\x0A\x20-\x7E]';
+    // Allow newline, tab, 32 to 126, Letters, Marks, Numbers,
+    // Punctuation and Symbols
+    $badUTF8 = '[^\x09\x0A\x20-\x7E\p{L}\p{M}\p{N}\p{P}\p{S}]';
+    $badUTF8Regex = "/{$badUTF8}(.*{$badUTF8})?/u";
+
+    $badAscii = '[^\x09\x0A\x20-\x7E]';
+    $badAsciiRegex = "/{$badAscii}(.*{$badAscii})?/";
+
+    $badRegex = ($allowUTF8 ? $badUTF8Regex : $badAsciiRegex);
+
     $preg = preg_match_all(
-      "/{$bad}(.*{$bad})?/",
+      $badRegex,
       $data,
       $matches,
       PREG_OFFSET_CAPTURE);
@@ -223,15 +244,20 @@ final class ArcanistTextLinter extends ArcanistLinter {
       return;
     }
 
+    $badAsciiHelpText = 'Source code should contain only ASCII bytes with ordinal '.
+      'decimal values between 32 and 126 inclusive, plus linefeed. '.
+      'Do not use UTF-8 or other multibyte charsets.';
+
+    $badUTF8HelpText = 'Source code should contain only printable UTF-8 characters.';
+
+    $helpText = ($allowUTF8 ? $badUTF8HelpText : $badAsciiHelpText);
+
     foreach ($matches[0] as $match) {
       list($string, $offset) = $match;
       $this->raiseLintAtOffset(
         $offset,
         self::LINT_BAD_CHARSET,
-        pht(
-          'Source code should contain only ASCII bytes with ordinal '.
-          'decimal values between 32 and 126 inclusive, plus linefeed. '.
-          'Do not use UTF-8 or other multibyte charsets.'),
+        pht($helpText),
         $string);
     }
 
