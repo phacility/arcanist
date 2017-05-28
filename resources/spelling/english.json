@@ -24,7 +24,7 @@
       "acient": "ancient",
       "ackowledge": "acknowledge",
       "ackowledged": "acknowledged",
-      "acknowldegement": "acknowldegement",
+      "acknowldegement": "acknowledgment",
       "acording": "according",
       "activete": "activate",
       "acumulating": "accumulating",
@@ -592,7 +592,9 @@
     "partial": {
       "recieve": "receive",
       "uft8": "utf8",
+      "lengh": "length",
       "lenght": "length",
+      "lenth": "length",
       "heigth": "height",
       "fuction": "function"
     }
