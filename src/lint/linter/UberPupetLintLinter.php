@@ -3,16 +3,16 @@
 /**
  * A linter for Puppet files.
  */
-final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
+final class UberPupetLintLinter extends ArcanistExternalLinter {
 
   private $config;
 
   public function getInfoName() {
-    return 'puppet-lint';
+    return 'uber-puppet-lint';
   }
 
   public function getInfoURI() {
-    return 'http://puppet-lint.com/';
+    return 'http://t.uber.com/uber-puppet-lint';
   }
 
   public function getInfoDescription() {
@@ -23,15 +23,15 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
   }
 
   public function getLinterName() {
-    return 'PUPPETLINT';
+    return 'UBERPUPPETLINT';
   }
 
   public function getLinterConfigurationName() {
-    return 'puppet-lint';
+    return 'uber-puppet-lint';
   }
 
   public function getDefaultBinary() {
-    return 'puppet-lint';
+    return $this->getProjectRoot().'/scripts/uber-puppet-lint';
   }
 
   public function getVersion() {
@@ -48,53 +48,21 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
 
   public function getInstallInstructions() {
     return pht(
-      'Install puppet-lint using `%s`.',
-      'gem install puppet-lint');
+      'Please visit %s for instructions',
+      $this->getInstallInstructions());
   }
 
   protected function getMandatoryFlags() {
     return array(
       '--error-level=all',
       sprintf('--log-format=%s', implode('|', array(
-        '%{line}',
+        '%{linenumber}',
         '%{column}',
         '%{kind}',
         '%{check}',
         '%{message}',
       ))),
     );
-  }
-
-  public function getLinterConfigurationOptions() {
-    $options = array(
-      'puppet-lint.config' => array(
-        'type' => 'optional string',
-        'help' => pht('Pass in a custom configuration file path.'),
-      ),
-    );
-
-    return $options + parent::getLinterConfigurationOptions();
-  }
-
-  public function setLinterConfigurationValue($key, $value) {
-    switch ($key) {
-      case 'puppet-lint.config':
-        $this->config = $value;
-        return;
-
-      default:
-        return parent::setLinterConfigurationValue($key, $value);
-    }
-  }
-
-  protected function getDefaultFlags() {
-    $options = array();
-
-    if ($this->config) {
-      $options[] = '--config='.$this->config;
-    }
-
-    return $options;
   }
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {

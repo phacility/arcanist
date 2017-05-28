@@ -1,13 +1,13 @@
 <?php
 
-final class ArcanistGitLandEngine
+class ArcanistGitLandEngine
   extends ArcanistLandEngine {
 
   private $localRef;
   private $localCommit;
   private $sourceCommit;
   private $mergedRef;
-  private $restoreWhenDestroyed;
+  protected $restoreWhenDestroyed;
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -90,7 +90,7 @@ final class ArcanistGitLandEngine
     call_user_func($this->getBuildMessageCallback(), $this);
   }
 
-  private function verifySourceAndTargetExist() {
+  protected function verifySourceAndTargetExist() {
     $api = $this->getRepositoryAPI();
 
     list($err) = $api->execManualLocal(
@@ -119,7 +119,7 @@ final class ArcanistGitLandEngine
     $this->sourceCommit = trim($stdout);
   }
 
-  private function fetchTarget() {
+  protected function fetchTarget() {
     $api = $this->getRepositoryAPI();
 
     $ref = $this->getTargetFullRef();
@@ -230,7 +230,7 @@ final class ArcanistGitLandEngine
     }
   }
 
-  private function reconcileLocalState() {
+  protected function reconcileLocalState() {
     $api = $this->getRepositoryAPI();
 
     // Try to put the user into the best final state we can. This is very
@@ -471,7 +471,7 @@ final class ArcanistGitLandEngine
     return;
   }
 
-  private function destroyLocalBranch() {
+  protected function destroyLocalBranch() {
     $api = $this->getRepositoryAPI();
 
     if ($this->getSourceRef() == $this->getTargetOnto()) {
@@ -502,7 +502,7 @@ final class ArcanistGitLandEngine
   /**
    * Save the local working copy state so we can restore it later.
    */
-  private function saveLocalState() {
+  protected function saveLocalState() {
     $api = $this->getRepositoryAPI();
 
     $this->localCommit = $api->getWorkingCopyRevision();
@@ -522,7 +522,7 @@ final class ArcanistGitLandEngine
    * Restore the working copy to the state it was in before we started
    * performing writes.
    */
-  private function restoreLocalState() {
+  protected function restoreLocalState() {
     $api = $this->getRepositoryAPI();
 
     $api->execxLocal('checkout %s --', $this->localRef);
@@ -532,7 +532,7 @@ final class ArcanistGitLandEngine
     $this->restoreWhenDestroyed = false;
   }
 
-  private function getTargetFullRef() {
+  protected function getTargetFullRef() {
     return $this->getTargetRemote().'/'.$this->getTargetOnto();
   }
 

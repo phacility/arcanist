@@ -966,7 +966,13 @@ EOTEXT
       throw new Exception(pht('Repository API is not supported.'));
     }
 
-    if (count($changes) > 250) {
+    $config = $this->getConfigurationManager();
+    $max_changes = $config->getConfigFromAnySource('differential.max_changes');
+    if (is_null($max_changes)) {
+      $max_changes = 250;
+    }
+
+    if (count($changes) > $max_changes) {
       $message = pht(
         'This diff has a very large number of changes (%s). Differential '.
         'works best for changes which will receive detailed human review, '.
@@ -1856,6 +1862,21 @@ EOTEXT
       }
     }
 
+    $config = $this->getConfigurationManager();
+    $mandatory_fields = $config->getConfigFromAnySource(
+      'differential.mandatory_fields');
+
+    if (!is_null($mandatory_fields)) {
+      foreach ($mandatory_fields as $mandatory_field){
+        $fieldName = $mandatory_field['field_name'];
+        $field = $message->getFieldValue($fieldName);
+        if (empty($field)) {
+          $fieldMessage = $mandatory_field['field_message'];
+          throw new ArcanistUsageException(
+            pht($fieldMessage));
+        }
+      }
+    }
   }
 
 
@@ -2746,6 +2767,11 @@ EOTEXT
         pht('SKIP STAGING'),
         pht('No staging area is configured for this repository.'));
       return self::STAGING_REPOSITORY_UNCONFIGURED;
+    } else if ($this->getConfigFromAnySource('uber.diff.staging.uri.replace')) {
+        $remote_name = $this->getRemoteName($staging_uri);
+        if (strlen($remote_name) > 0) {
+          $staging_uri = $remote_name;
+        }
     }
 
     $api = $this->getRepositoryAPI();
@@ -2767,8 +2793,15 @@ EOTEXT
       pht('Pushing changes to staging area...'));
 
     $push_flags = array();
+
+    $verify_config_name = 'uber.diff.git.push.verify';
+    $verify = $this->getConfigFromAnySource($verify_config_name);
     if (version_compare($api->getGitVersion(), '1.8.2', '>=')) {
-      $push_flags[] = '--no-verify';
+      if ($verify) {
+        $push_flags[] = '--verify'; // default in git
+      } else {
+        $push_flags[] = '--no-verify';
+      }
     }
 
     $refs = array();
@@ -2829,6 +2862,30 @@ EOTEXT
     return $refs;
   }
 
+  /**
+   * Finds the git remote name for given git remote url.
+   *
+   * @return string Remote name if there is any, or empty string otherwise.
+   */
+   private function getRemoteName($remote_url) {
+     list($git_remote_stdout, $git_remote_stderr) = execx('git remote -v');
+     $git_remote_list = explode("\n", $git_remote_stdout);
+
+     foreach ($git_remote_list as $key => $line) {
+       if (strlen($line) > 0) {
+         // Every line has the following format:
+         // <remote_name>TAB<remote_url>SPACE([fetch|push|...])
+         $pat = '/(?P<remote_name>[^\s]+)\s+(?P<remote_url>[^\s]+)\s+([^\s]+)/';
+         $matches = array();
+         preg_match($pat, $line, $matches);
+         if (array_key_exists('remote_url', $matches) &&
+            $matches['remote_url'] == $remote_url) {
+            return $matches['remote_name'];
+         }
+       }
+     }
+     return '';
+   }
 
   /**
    * Try to upload lint and unit test results into modern Harbormaster build

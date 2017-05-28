@@ -107,6 +107,17 @@ EOTEXT
           'update' => true,
         ),
       ),
+      'uber-use-merge-strategy' => array(
+        'supports' => array('git'),
+        'help' => pht(
+          'Normally, a new branch (git) or bookmark (hg) is created and then '.
+          'the patch is applied and committed in the new branch/bookmark. '.
+          'This flag merges the resultant commit onto the original '.
+          'branch and deletes the temporary branch.'),
+        'conflicts' => array(
+          'update' => true,
+        ),
+      ),
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
@@ -213,6 +224,11 @@ EOTEXT
       return false;
     }
     return true;
+  }
+
+  private function shouldUseMerge() {
+    $allow_empty = $this->getArgument('uber-use-merge-strategy', false);
+    return $allow_empty;
   }
 
   private function getBranchName(ArcanistBundle $bundle) {
@@ -748,7 +764,11 @@ EOTEXT
         $repository_api->execxLocal('checkout %s', $original_branch);
         $ex = null;
         try {
-          $repository_api->execxLocal('cherry-pick %s', $new_branch);
+          if ($this->shouldUseMerge()) {
+            $repository_api->execxLocal('cherry-pick --keep-redundant-commits %s', $new_branch);
+          } else {
+            $repository_api->execxLocal('cherry-pick %s', $new_branch);
+          }
         } catch (Exception $ex) {
           // do nothing
         }

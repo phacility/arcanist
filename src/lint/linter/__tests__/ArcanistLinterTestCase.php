@@ -78,6 +78,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
         'path' => 'optional string',
         'mode' => 'optional string',
         'stopped' => 'optional bool',
+        'file_extension' => 'optional string',
       ));
 
     $exception = null;
@@ -87,7 +88,11 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     $caught_exception = false;
 
     try {
+      $file_extension = idx($config, 'file_extension', '');
       $tmp = new TempFile($basename);
+      if (!empty($file_extension)) {
+        $tmp .= '.'.$file_extension;
+      }
       Filesystem::writeFile($tmp, $data);
       $full_path = (string)$tmp;
 

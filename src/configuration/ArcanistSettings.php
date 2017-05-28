@@ -174,6 +174,111 @@ final class ArcanistSettings extends Phobject {
         'help' => pht(
           'Configured command aliases. Use "arc alias" to define aliases.'),
       ),
+      'uber.sirmixalot.enrolled' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, the setting will enable sirmixalot enrollment for this '.
+          'repo. This means that the merged commit produced while landing a '.
+          'diff will be put to `%s` branch instead of the master branch.',
+          'landed/TIMESTAMP'),
+        'default' => false,
+        'example' => 'true',
+      ),
+      'uber.land.buildables-check' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will check that changes you are about to land '.
+          'does not land if you have failed harbormaster buildables. ',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.prevent-unaccepted-changes' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will prevent developers to land changes that'.
+          'are not accepted.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.review-check' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will check that local changes you are about to land '.
+          'match diff that was submitted for review to Differential.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.run.unit' => array(
+        'type' => 'bool',
+        'help' => pht('If true, `arc land` will run arc unit before landing'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.regex' => array(
+        'type' => 'string',
+        'help' => pht(
+          'If set, the regex will be used to filter the set of diffs that '.
+          'need to go through SubmitQueue during arc land.'),
+        'default' => '',
+        'example' => '/apps\/iphone/'
+      ),
+      'uber.land.submitqueue.enable' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will merge changes on the server-side using'.
+          'submitqueue'),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.uri' => array(
+        'type' => 'string',
+        'help' => pht('URI to use for the submitqueue backend'),
+        'example' => '"https://submitqueue.uberinternal.com"',
+      ),
+      'uber.land.submitqueue.shadow' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc land` will submit requests to submitqueue with'.
+          'shadow_option=true, and on success land the request using the '.
+          'arcanist gitland engine'
+        ),
+        'default' => false,
+        'example' => 'false',
+      ),
+      'uber.land.submitqueue.tags' => array(
+        'type' => 'list',
+        'help' => pht('List of tags to be used when creating tbr excuse tasks.'),
+        'default' => array(),
+        'example' => '["SubmitQueue-Mobile"]',
+      ),
+      'uber.land.submitqueue.owners' => array(
+        'type' => 'list',
+        'help' => pht(
+          'List of owners for the given repository who need to be tagged'.
+          'on tbr excuse tasks.'),
+        'default' => array(),
+        'example' => '["X, Y, Z"]',
+      ),
+      'uber.diff.git.push.verify' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `arc diff` will run `git push` with `--verify` flag, '.
+          'and if missing (or false), `arc diff` will run `git push` with '.
+          '`--no-verify` flag.'),
+        'default' => false,
+      ),
+      'uber.diff.staging.uri.replace' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, and staging environment is setup, then it will replace '.
+          'staging uri with git remote name defined for it. It parses '.
+          '"git remote -v" output and uses first remote name where remote url '.
+          'matches staging uri.'),
+        'default' => false,
+      ),
     );
   }
 

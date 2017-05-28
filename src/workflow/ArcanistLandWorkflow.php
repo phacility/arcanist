@@ -21,6 +21,14 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $branchType;
   private $ontoType;
   private $preview;
+  private $shouldRunUnit;
+  private $shouldUseSubmitQueue;
+  private $submitQueueRegex;
+  private $submitQueueUri;
+  private $submitQueueShadowMode;
+  private $submitQueueClient;
+  private $tbr;
+  private $submitQueueTags;
 
   private $revision;
   private $messageFile;
@@ -248,15 +256,203 @@ EOTEXT
           'actually modify or land the commits.'),
       ),
       '*' => 'branch',
+      'tbr' => array(
+        'help' => pht(
+          'tbr: To-Be-Reviewed. Skips the submit-queue if the submit-queue '.
+          'is enabled for this repo.'),
+        'supports' => array(
+          'git',
+        ),
+      ),
+      'uber-skip-update' => array(
+        'help' => pht('uber-skip-update: Skip updating working copy'),
+        'supports' => array('git',),
+      ),
+      'nounit' => array(
+        'help' => pht('Do not run unit tests.'),
+      ),
     );
+  }
+
+  private function uberTbrGetExcuse($prompt, $history) {
+    $console = PhutilConsole::getConsole();
+    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+    $excuse = phutil_console_prompt($prompt, $history);
+    if ($excuse == '') {
+      throw new ArcanistUserAbortException();
+    }
+    return $excuse;
+  }
+
+  private function uberCreateTask($revision) {
+    if (empty($this->submitQueueTags)) {
+      return;
+    }
+
+    $console = PhutilConsole::getConsole();
+    $excuse = $this->uberTbrGetExcuse(
+      pht('Provide explanation for skipping SubmitQueue or press Enter to abort.'),
+      'tbr-excuses');
+    $args = array(
+      pht('%s is skipping SubmitQueue', 'D' . $revision['id']),
+      '--uber-description',
+      pht("%s is skipping SubmitQueue\n Author: %s\n Excuse: %s\n",
+        'D' . $revision['id'],
+        $this->getUserName(),
+        $excuse),
+      '--browse');
+    foreach ($this->submitQueueTags as $tag) {
+      array_push($args, "--project", $tag);
+    }
+
+    $owners = $this->getConfigFromAnySource("uber.land.submitqueue.owners");
+    foreach ($owners as $owner) {
+      array_push($args, "--cc", $owner);
+    }
+
+    $todo_workflow = $this->buildChildWorkflow('todo', $args);
+    $todo_workflow->run();
+  }
+
+  /**
+   * @task lintunit
+   */
+  private function uberRunUnit() {
+    if ($this->getArgument('nounit')) {
+      return ArcanistUnitWorkflow::RESULT_SKIP;
+    }
+    $console = PhutilConsole::getConsole();
+
+    $repository_api = $this->getRepositoryAPI();
+
+    $console->writeOut("%s\n", pht('Running unit tests...'));
+    try {
+      $argv = $this->getPassthruArgumentsAsArgv('unit');
+      if ($repository_api->supportsCommitRanges()) {
+        $argv[] = '--rev';
+        $argv[] = $repository_api->getBaseCommit();
+      }
+      $unit_workflow = $this->buildChildWorkflow('unit', $argv);
+      $unit_result = $unit_workflow->run();
+
+      switch ($unit_result) {
+        case ArcanistUnitWorkflow::RESULT_OKAY:
+          $console->writeOut(
+            "<bg:green>** %s **</bg> %s\n",
+            pht('UNIT OKAY'),
+            pht('No unit test failures.'));
+          break;
+        case ArcanistUnitWorkflow::RESULT_UNSOUND:
+          if ($this->getArgument('ignore-unsound-tests')) {
+            echo phutil_console_format(
+              "<bg:yellow>** %s **</bg> %s\n",
+              pht('UNIT UNSOUND'),
+              pht(
+                'Unit testing raised errors, but all '.
+                'failing tests are unsound.'));
+          } else {
+            $continue = $console->confirm(
+              pht(
+                'Unit test results included failures, but all failing tests '.
+                'are known to be unsound. Ignore unsound test failures?'));
+            if (!$continue) {
+              throw new ArcanistUserAbortException();
+            }
+          }
+          break;
+        case ArcanistUnitWorkflow::RESULT_FAIL:
+          $console->writeOut(
+            "<bg:red>** %s **</bg> %s\n",
+            pht('UNIT ERRORS'),
+            pht('Unit testing raised errors!'));
+          $ok = phutil_console_confirm(pht("Revision does not pass arc unit. Continue anyway?"));
+          if (!$ok) {
+            throw new ArcanistUserAbortException();
+          }
+          break;
+      }
+
+      $testResults = array();
+      foreach ($unit_workflow->getTestResults() as $test) {
+        $testResults[] = $test->toDictionary();
+      }
+
+      return $unit_result;
+    } catch (ArcanistNoEngineException $ex) {
+      $console->writeOut(
+        "%s\n",
+        pht('No unit test engine is configured for this project.'));
+    } catch (ArcanistNoEffectException $ex) {
+      $console->writeOut("%s\n", $ex->getMessage());
+    }
+
+    return null;
+  }
+
+  private function uberShouldRunSubmitQueue($revision, $regex) {
+    if (empty($regex)) {
+      return true;
+    }
+
+    $diff = head(
+      $this->getConduit()->callMethodSynchronous(
+        'differential.querydiffs',
+        array('ids' => array(head($revision['diffs'])))));
+    $changes = array();
+    foreach ($diff['changes'] as $changedict) {
+      $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
+    }
+
+    foreach ($changes as $change) {
+      if (preg_match($regex, $change->getOldPath())) {
+        return true;
+      }
+
+      if (preg_match($regex, $change->getCurrentPath())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public function run() {
     $this->readArguments();
+    if ($this->shouldRunUnit) {
+      $this->uberRunUnit();
+    }
 
     $engine = null;
+    $uberShadowEngine = null;
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
+      if ($this->shouldUseSubmitQueue) {
+        $revision = $this->uberGetRevision();
+        if ($this->uberShouldRunSubmitQueue($revision, $this->submitQueueRegex)) {
+          if ($this->tbr) {
+            $this->uberCreateTask($revision);
+          } else {
+            // If the shadow-mode is on, then initialize the shadowEngine
+            if ($this->submitQueueShadowMode) {
+              $uberShadowEngine = new UberArcanistSubmitQueueEngine(
+                $this->submitQueueClient,
+                $this->getConduit());
+              $uberShadowEngine =
+                $uberShadowEngine
+                  ->setRevision($revision)
+                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
+            } else {
+              $engine = new UberArcanistSubmitQueueEngine(
+                $this->submitQueueClient,
+                $this->getConduit());
+              $engine =
+                $engine
+                  ->setRevision($revision)
+                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
+            }
+          }
+        }
+      }
     }
 
     if ($engine) {
@@ -292,6 +488,23 @@ EOTEXT
         ->setShouldSquash($this->useSquash)
         ->setShouldPreview($this->preview)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+
+      // initialize the shadow engine and execute it if uberShadowEngine is initialized
+      if ($uberShadowEngine) {
+        $uberShadowEngine
+          ->setWorkflow($this)
+          ->setRepositoryAPI($this->getRepositoryAPI())
+          ->setSourceRef($this->branch)
+          ->setTargetRemote($this->remote)
+          ->setTargetOnto($this->onto)
+          ->setShouldHold($should_hold)
+          ->setShouldKeep($this->keepBranch)
+          ->setShouldSquash($this->useSquash)
+          ->setShouldPreview($this->preview)
+          ->setBuildMessageCallback(array($this, 'buildEngineMessage'))
+          ->setShouldShadow(true);
+        $uberShadowEngine->execute();
+      }
 
       $engine->execute();
 
@@ -560,6 +773,35 @@ EOTEXT
     }
 
     $this->oldBranch = $this->getBranchOrBookmark();
+    $this->shouldRunUnit = nonempty(
+      $this->getConfigFromAnySource('uber.land.run.unit'),
+      false
+    );
+    $this->shouldUseSubmitQueue = nonempty(
+        $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+        false
+    );
+
+    if ($this->getArgument('tbr')) {
+      $this->tbr = true;
+    } else {
+      $this->tbr = false;
+    }
+    if ($this->shouldUseSubmitQueue) {
+      $this->submitQueueUri = $this->getConfigFromAnySource('uber.land.submitqueue.uri');
+      $this->submitQueueShadowMode = $this->getConfigFromAnySource('uber.land.submitqueue.shadow');
+      $this->submitQueueRegex = $this->getConfigFromAnySource('uber.land.submitqueue.regex');
+      if(empty($this->submitQueueUri)) {
+        $message = pht(
+            "You are trying to use submitqueue, but the submitqueue URI for your repo is not set");
+        throw new ArcanistUsageException($message);
+      }
+      $this->submitQueueClient =
+        new UberSubmitQueueClient(
+          $this->submitQueueUri,
+          $this->getConduit()->getConduitToken());
+      $this->submitQueueTags = $this->getConfigFromAnySource('uber.land.submitqueue.tags');
+    }
   }
 
   private function validate() {
@@ -680,6 +922,15 @@ EOTEXT
     echo pht("The following commit(s) will be landed:\n\n%s", $out), "\n";
   }
 
+
+  // copy of the first part of the findRevision()
+  // reason it has been copied as a separate function is that this way it
+  // is easier to maintain with the upstream changes
+  public function uberGetRevision() {
+    $this->findRevision();
+    return $this->revision;
+  }
+
   private function findRevision() {
     $repository_api = $this->getRepositoryAPI();
 
@@ -773,12 +1024,50 @@ EOTEXT
       }
     }
 
+    $uber_prevent_unaccepted_changes = $this->getConfigFromAnySource(
+      'uber.land.prevent-unaccepted-changes',
+      false);
+    if ($uber_prevent_unaccepted_changes && $rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
+      throw new ArcanistUsageException(
+        pht("Revision '%s' has not been accepted.", "D{$rev_id}: {$rev_title}"));
+    }
+
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
       $ok = phutil_console_confirm(pht(
         "Revision '%s' has not been accepted. Continue anyway?",
         "D{$rev_id}: {$rev_title}"));
       if (!$ok) {
         throw new ArcanistUserAbortException();
+      }
+    }
+
+    $uber_review_check_enabled = $this->getConfigFromAnySource(
+      'uber.land.review-check',
+      false);
+    if ($uber_review_check_enabled) {
+      if (!$repository_api instanceof ArcanistGitAPI) {
+        throw new ArcanistUsageException(pht(
+          "'%s' is only supported for GIT repositories.",
+          'uber.land.review-check'));
+      }
+
+      $local_diff = $this->normalizeDiff(
+        $repository_api->getFullGitDiff(
+          $repository_api->getBaseCommit(),
+          $repository_api->getHeadCommit()));
+
+      $reviewed_diff = $this->normalizeDiff(
+        $this->getConduit()->callMethodSynchronous(
+          'differential.getrawdiff',
+          array('diffID' => head($this->revision['diffs']))));
+
+      if ($local_diff !== $reviewed_diff) {
+        $ok = phutil_console_confirm(pht(
+          "Your working copy changes do not match diff submitted for review. ".
+          "Continue anyway?"));
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
       }
     }
 
@@ -837,6 +1126,12 @@ EOTEXT
     if ($diff_phid) {
       $this->checkForBuildables($diff_phid);
     }
+  }
+
+  private function normalizeDiff($text) {
+    $changes = id(new ArcanistDiffParser())->parseDiff($text);
+    ksort($changes);
+    return ArcanistBundle::newFromChanges($changes)->toGitPatch();
   }
 
   private function pullFromRemote() {
@@ -1267,7 +1562,18 @@ EOTEXT
         'Holding change in **%s**: it has NOT been pushed yet.',
         $this->onto)."\n");
     } else {
-      echo pht('Pushing change...'), "\n\n";
+      $sirmixalot_enrolled = $this->getConfigFromAnySource(
+        'uber.sirmixalot.enrolled',
+        false);
+      // check, if this repo is enrolled to sirmixalot service
+      if ($sirmixalot_enrolled) {
+        // if repo is enrolled, land change on a specific remote branch
+        $remote_landed_branch = sprintf('landed/%s', date("YmdHis"));
+        $landed_branch = sprintf("HEAD:%s", $remote_landed_branch);
+      } else {
+        $remote_landed_branch = $landed_branch = $this->onto;
+      }
+      echo pht('Pushing change to %s', $remote_landed_branch), "\n\n";
 
       chdir($repository_api->getPath());
 
@@ -1275,8 +1581,17 @@ EOTEXT
         $err = phutil_passthru('git svn dcommit');
         $cmd = 'git svn dcommit';
       } else if ($this->isGit) {
-        $err = phutil_passthru('git push %s %s', $this->remote, $this->onto);
+        $err = phutil_passthru(
+          'git push %s %s',
+          $this->remote,
+          $landed_branch);
         $cmd = 'git push';
+        if ($sirmixalot_enrolled) {
+          // clean up current branch (the one used for merging). if we don't,
+          // current branch will have landed commits that are not on branch's
+          // remote origin (future 'arc float' executions will fail)
+          $repository_api->execxLocal('reset --hard HEAD^');
+        }
       } else if ($this->isHgSvn) {
         // hg-svn doesn't support 'push -r', so we do a normal push
         // which hg-svn modifies to only push the current branch and
@@ -1536,6 +1851,12 @@ EOTEXT
       pht('Harbormaster URI'),
       $buildable['uri']);
 
+    if ($this->getConfigFromAnySource("uber.land.buildables-check") && !$this->tbr) {
+      $console->writeOut("\n");
+      throw new ArcanistUsageException(
+        pht("All harbormaster buildables have not succeeded."));
+    }
+
     if (!$console->confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
@@ -1554,6 +1875,9 @@ EOTEXT
   }
 
   public function didPush() {
+    if ($this->shouldUseSubmitQueue) {
+      return;
+    }
     $this->askForRepositoryUpdate();
 
     $mark_workflow = $this->buildChildWorkflow(
@@ -1564,6 +1888,11 @@ EOTEXT
         $this->revision['id'],
       ));
     $mark_workflow->run();
+    // UBER CODE
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_LAND_DIDPUSHREVISION,
+      array());
+    // END UBER CODE
   }
 
 }
