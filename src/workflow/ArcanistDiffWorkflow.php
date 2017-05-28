@@ -685,7 +685,12 @@ EOTEXT
         $this->setCommitMode(self::COMMIT_ALLOW);
       }
       if ($repository_api instanceof ArcanistSubversionAPI) {
-        $repository_api->limitStatusToPaths($this->getArgument('paths'));
+		if($this->getArgument('paths')){
+		  $repository_api->limitStatusToPaths($this->getArgument('paths'));
+		} else {
+		  $currentPath[0] = getcwd();
+		  $repository_api->limitStatusToPaths($currentPath);
+		}
       }
       if (!$this->getArgument('head')) {
         $this->requireCleanWorkingCopy();
