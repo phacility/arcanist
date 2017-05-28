@@ -350,7 +350,7 @@ abstract class ArcanistLinter extends Phobject {
     return $this->getLinterName().$short_code;
   }
 
-  final public function getLintMessageSeverity($code) {
+  final public function getLintMessageSeverity($code, $severity_code = null) {
     $map = $this->customSeverityMap;
     if (isset($map[$code])) {
       return $map[$code];
@@ -367,7 +367,11 @@ abstract class ArcanistLinter extends Phobject {
       return $map[$code];
     }
 
-    return $this->getDefaultMessageSeverity($code);
+    if ($severity_code !== null) {
+      return $this->getDefaultMessageSeverity($severity_code);
+    } else {
+      return $this->getDefaultMessageSeverity($code);
+    }
   }
 
   protected function getDefaultMessageSeverity($code) {
