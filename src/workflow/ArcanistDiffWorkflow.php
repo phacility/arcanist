@@ -1355,7 +1355,7 @@ EOTEXT
                 'Unit testing raised errors, but all '.
                 'failing tests are unsound.'));
           } else {
-            $continue = $this->console->confirm(
+            $continue = phutil_console_confirm(
               pht(
                 'Unit test results included failures, but all failing tests '.
                 'are known to be unsound. Ignore unsound test failures?'));

@@ -1417,7 +1417,7 @@ EOTEXT
       pht('Harbormaster URI'),
       $buildable['uri']);
 
-    if (!$console->confirm($prompt)) {
+    if (!phutil_console_confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
   }
