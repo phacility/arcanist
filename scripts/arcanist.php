@@ -641,16 +641,33 @@ function arcanist_load_libraries(
       if ($ex->getLibrary() != 'arcanist') {
         throw $ex;
       }
-      $arc_dir = dirname(dirname(__FILE__));
-      $error = pht(
-        "You are trying to run one copy of Arcanist on another copy of ".
-        "Arcanist. This operation is not supported. To execute Arcanist ".
-        "operations against this working copy, run `%s` (from the current ".
-        "working copy) not some other copy of '%s' (you ran one from '%s').",
-        './bin/arc',
-        'arc',
-        $arc_dir);
-      throw new ArcanistUsageException($error);
+
+      // NOTE: If you are running `arc` against itself, we ignore the library
+      // conflict created by loading the local `arc` library (in the current
+      // working directory) and continue without loading it.
+
+      // This means we only execute code in the `arcanist/` directory which is
+      // associated with the binary you are running, whereas we would normally
+      // execute local code.
+
+      // This can make `arc` development slightly confusing if your setup is
+      // especially bizarre, but it allows `arc` to be used in automation
+      // workflows more easily. For some context, see PHI13.
+
+      $executing_directory = dirname(dirname(__FILE__));
+      $working_directory = dirname($location);
+
+      fwrite(
+        STDERR,
+        tsprintf(
+          "**<bg:yellow> %s </bg>** %s\n",
+          pht('VERY META'),
+          pht(
+            'You are running one copy of Arcanist (at path "%s") against '.
+            'another copy of Arcanist (at path "%s"). Code in the current '.
+            'working directory will not be loaded or executed.',
+            $executing_directory,
+            $working_directory)));
     }
   }
 }
