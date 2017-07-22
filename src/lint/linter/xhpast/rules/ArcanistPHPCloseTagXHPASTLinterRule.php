@@ -12,7 +12,7 @@ final class ArcanistPHPCloseTagXHPASTLinterRule
   public function process(XHPASTNode $root) {
     $inline_html = $root->selectDescendantsOfType('n_INLINE_HTML');
 
-    if ($inline_html) {
+    if (count($inline_html) > 0) {
       return;
     }
 
