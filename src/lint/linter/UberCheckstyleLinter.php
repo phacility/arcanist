@@ -83,12 +83,13 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
   private function checkScriptConfiguration() {
     // Some scripts have command line arguments
     $script = explode(' ', $this->checkstyleScript)[0];
-    if (!Filesystem::pathExists($script)) {
+    $absScriptPath = Filesystem::resolvePath($script, $this->getProjectRoot());
+    if (!Filesystem::pathExists($absScriptPath)) {
       throw new ArcanistMissingLinterException(
         pht(
           'Unable to locate script "%s" to run linter %s. You may need ' .
           'to install the script, or adjust your linter configuration.',
-          $script,
+          $absScriptPath,
           get_class($this)));
     }
   }
@@ -98,14 +99,16 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
       throw new ArcanistMissingLinterException(
         pht('Java is not installed', get_class($this)));
     }
-    if (!Filesystem::pathExists($this->checkstyleJar)) {
+
+    $absJarPath = Filesystem::resolvePath($this->checkstyleJar, $this->getProjectRoot());
+    if (!Filesystem::pathExists($absJarPath)) {
       throw new ArcanistMissingLinterException(
         sprintf(
           "%s\n%s",
           pht(
             'Unable to locate jar "%s" to run linter %s. You may need ' .
             'to install the script, or adjust your linter configuration.',
-            $this->checkstyleJar,
+            $absJarPath,
             get_class($this)),
           pht('
                 TO INSTALL: 
@@ -134,7 +137,7 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
     $this->checkConfiguration();
     $futures = array();
     // Call checkstyle in batches of 500
-    $chunks = array_chunk($paths, 500);
+    $chunks = array_chunk($paths, 100);
 
     $command = $this->getCommand();
     foreach ($chunks as $chunk) {
