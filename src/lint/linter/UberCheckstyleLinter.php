@@ -9,6 +9,7 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
   private $checkstyleJar = null;
   private $checkstyleConfig = null;
   private $useScript = false;
+  private $maxFiles = 100;
 
   public function getInfoName() {
     return 'Java checkstyle linter';
@@ -44,6 +45,10 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
         'type' => 'optional string',
         'help' => pht('Checkstyle configuration file'),
       ),
+      'checkstyle.maxfiles' => array(
+        'type' => 'optional int',
+        'help' => pht('The maximum number of files to check per call of checkstyle. If there are more files, they will be split up into multiple checkstyle invocations.'),
+      ),
     );
     return $options + parent::getLinterConfigurationOptions();
   }
@@ -58,6 +63,9 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
         return;
       case 'checkstyle.config':
         $this->checkstyleConfig = $value;
+        return;
+      case 'checkstyle.maxfiles':
+        $this->maxFiles = $value;
         return;
     }
     return parent::setLinterConfigurationValue($key, $value);
@@ -120,10 +128,6 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
 
   private function getCommand() {
     if ($this->useScript === true) {
-      print("
-            DEPRECATION WARNING: [checkstyle.script] will be deprecated.
-            Use UberCheckStyleLinter's `checkstyle.jar`/`checkstyle.config`
-            or Arcanist's Script-and-Regex linter (https://secure.phabricator.com/book/phabricator/article/arcanist_lint_script_and_regex/)\n\n");
       return $this->checkstyleScript;
     }  else {
       $command = sprintf('java -jar %s -f xml -c %s ',
@@ -136,8 +140,8 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
   final protected function buildFutures(array $paths) {
     $this->checkConfiguration();
     $futures = array();
-    // Call checkstyle in batches of 500
-    $chunks = array_chunk($paths, 100);
+    // Call checkstyle in batches
+    $chunks = array_chunk($paths, this->$maxFiles);
 
     $command = $this->getCommand();
     foreach ($chunks as $chunk) {
