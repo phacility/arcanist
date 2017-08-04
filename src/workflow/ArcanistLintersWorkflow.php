@@ -36,7 +36,7 @@ EOTEXT
         'param' => 'search',
         'repeat' => true,
         'help' => pht(
-          'Search for linters. Search is case-insensitive, and is performed'.
+          'Search for linters. Search is case-insensitive, and is performed '.
           'against name and description of each linter.'),
       ),
       '*' => 'exact',
