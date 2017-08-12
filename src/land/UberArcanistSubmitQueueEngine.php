@@ -6,6 +6,9 @@ final class UberArcanistSubmitQueueEngine
   private $revision;
   private $shouldShadow;
   private $skipUpdateWorkingCopy;
+  private $submitQueueRegex;
+  private $tbr;
+  private $submitQueueTags;
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -23,12 +26,22 @@ final class UberArcanistSubmitQueueEngine
     $this->saveLocalState();
 
     try {
+      $this->identifyRevision();
+      print_r($this->revision);
+      assert(!empty($this->revision));
       if (!$this->getSkipUpdateWorkingCopy()) {
         $this->updateWorkingCopy();
       }
-//      $this->updateRevision();
 
-      $this->pushChange();
+      if ($this->getTbr()) {
+        $this->uberCreateTask($this->getRevision());
+        $this->pushChange();
+      } else if ($this->uberShouldRunSubmitQueue($this->getRevision(), $this->submitQueueRegex)) {
+        $this->pushChangeToSubmitQueue();
+      } else {
+        $this->pushChange();
+      }
+
       if ($this->shouldShadow) {
         // do nothing
       } else {
@@ -56,7 +69,13 @@ final class UberArcanistSubmitQueueEngine
     $api->execxLocal("checkout %s --", $this->getTargetOnto());
   }
 
-  private function pushChange() {
+  private function identifyRevision() {
+    $api = $this->getRepositoryAPI();
+    $api->execxLocal('checkout %s --', $this->getSourceRef());
+    call_user_func($this->getBuildMessageCallback(), $this);
+  }
+
+  private function pushChangeToSubmitQueue() {
     $this->writeInfo(
       pht('PUSHING'),
       pht('Pushing changes to Submit Queue.'));
@@ -85,27 +104,6 @@ final class UberArcanistSubmitQueueEngine
     $this->conduit = $conduit;
   }
 
-  private function updateWorkingCopy() {
-    $api = $this->getRepositoryAPI();
-
-    $api->execxLocal('checkout %s --', $this->getSourceRef());
-
-    try {
-      // merge target against source to generate the latest patch
-      $api->execxLocal('merge --no-stat %s --', $this->getTargetFullRef());
-    } catch (Exception $ex) {
-      $api->execManualLocal('merge --abort');
-      $api->execManualLocal('reset --hard HEAD --');
-
-      throw new Exception(
-        pht(
-          '"%s" does not merge cleanly into Local "%s". Merge or rebase '.
-          'local changes so they can merge cleanly.',
-          $this->getTargetFullRef(),
-          $this->getSourceRef()));
-    }
-  }
-
   final public function getRevision() {
     return $this->revision;
   }
@@ -126,6 +124,44 @@ final class UberArcanistSubmitQueueEngine
 
   final public function setSkipUpdateWorkingCopy($skipUpdateWorkingCopy) {
     $this->skipUpdateWorkingCopy = $skipUpdateWorkingCopy;
+    return $this;
+  }
+
+  public function getConduit() {
+    return $this->conduit;
+  }
+
+  public function getUserName() {
+    return $this->userName;
+  }
+
+  public function getSubmitQueueRegex() {
+    return $this->submitQueueRegex;
+  }
+
+  public function setSubmitQueueRegex($submitQueueRegex) {
+    $this->submitQueueRegex = $submitQueueRegex;
+    return $this;
+  }
+
+  public function getTbr() {
+    if (empty($this->tbr)) {
+      return false;
+    }
+    return $this->tbr;
+  }
+
+  public function setTbr($tbr) {
+    $this->tbr = $tbr;
+    return $this;
+  }
+
+  public function getSubmitQueueTags() {
+    return $this->submitQueueTags;
+  }
+
+  public function setSubmitQueueTags($submitQueueTags) {
+    $this->submitQueueTags = $submitQueueTags;
     return $this;
   }
 
@@ -156,6 +192,73 @@ final class UberArcanistSubmitQueueEngine
     $changes = id(new ArcanistDiffParser())->parseDiff($text);
     ksort($changes);
     return ArcanistBundle::newFromChanges($changes)->toGitPatch();
+  }
+
+  private function uberShouldRunSubmitQueue($revision, $regex) {
+    if (empty($regex)) {
+      return true;
+    }
+
+    $diff = head(
+      $this->getConduit()->callMethodSynchronous(
+        'differential.querydiffs',
+        array('ids' => array(head($revision['diffs'])))));
+    $changes = array();
+    foreach ($diff['changes'] as $changedict) {
+      $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
+    }
+
+    foreach ($changes as $change) {
+      if (preg_match($regex, $change->getOldPath())) {
+        return true;
+      }
+
+      if (preg_match($regex, $change->getCurrentPath())) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private function uberTbrGetExcuse($prompt, $history) {
+    $console = PhutilConsole::getConsole();
+    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
+    $excuse = phutil_console_prompt($prompt, $history);
+    if ($excuse == '') {
+      throw new ArcanistUserAbortException();
+    }
+    return $excuse;
+  }
+
+  private function uberCreateTask($revision) {
+    if (empty($this->getSubmitQueueTags())) {
+      return;
+    }
+
+    $console = PhutilConsole::getConsole();
+    $excuse = $this->uberTbrGetExcuse(
+      pht('Provide explanation for skipping SubmitQueue or press Enter to abort.'),
+      'tbr-excuses');
+    $args = array(
+      pht('%s is skipping SubmitQueue', 'D' . $revision['id']),
+      '--uber-description',
+      pht("%s is skipping SubmitQueue\n Author: %s\n Excuse: %s\n",
+        'D' . $revision['id'],
+        $this->getWorkflow()->getUserName(),
+        $excuse),
+      '--browse');
+    foreach ($this->submitQueueTags as $tag) {
+      array_push($args, "--project", $tag);
+    }
+
+    $owners = $this->getWorkflow()->getConfigFromAnySource("uber.land.submitqueue.owners");
+    foreach ($owners as $owner) {
+      array_push($args, "--cc", $owner);
+    }
+
+    $todo_workflow = $this->getWorkflow()->buildChildWorkflow('todo', $args);
+    $todo_workflow->run();
   }
 
   private $submitQueueClient;
