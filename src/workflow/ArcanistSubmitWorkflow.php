@@ -27,7 +27,6 @@ final class ArcanistSubmitWorkflow extends ArcanistWorkflow {
     $engine = new UberArcanistSubmitQueueEngine(
       $this->submitQueueClient,
       $this->getConduit());
-    $engine = $engine;
 
     $engine
       ->setRevision($revision)
