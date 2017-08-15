@@ -3,7 +3,7 @@
 /**
  * Applies changes from Differential or a file to the working copy.
  */
-final class ArcanistPatchWorkflow extends ArcanistWorkflow {
+final class ArcanistPatchWorkflow extends ArcanistDiffBasedWorkflow {
 
   const SOURCE_BUNDLE         = 'bundle';
   const SOURCE_PATCH          = 'patch';
@@ -400,6 +400,7 @@ EOTEXT
             $param);
           break;
         case self::SOURCE_DIFF:
+          $this->pullBaseTagFromStagingArea($param);
           $bundle = $this->loadDiffBundleFromConduit(
             $this->getConduit(),
             $param);
@@ -1123,4 +1124,22 @@ EOTEXT
     return $graph;
   }
 
+  private function pullBaseTagFromStagingArea($id){
+    list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup();
+    if (!$success) {
+      return $message;
+    }
+    $prefix = idx($staging, 'prefix', 'phabricator');
+    $base_tag = "{$prefix}/base/{$id}";
+    echo pht('Fetching base tag from staging remote')."\n";
+    $err = phutil_passthru(
+          'git fetch --tag -n %s %s',
+          $staging_uri,
+          $base_tag);
+    if ($err) {
+      $this->writeWarn(pht('STAGING TAG PULL FAILED'),
+          pht('Unable to pull tag from the staging area but proceeding !!'));
+      }
+    return self::SUCCESS;
+  }
 }
