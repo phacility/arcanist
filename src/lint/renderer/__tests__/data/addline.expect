@@ -1,0 +1,12 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Lint Warning
+    Consider this.
+
+               1 apple
+               2 banana
+    >>> +        cherry
+               3 date
+               4 eclaire
+               5 fig

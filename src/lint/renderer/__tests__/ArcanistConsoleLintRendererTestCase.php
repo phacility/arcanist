@@ -26,6 +26,34 @@ final class ArcanistConsoleLintRendererTestCase
         'original' => 'tantawount',
         'replacement' => 'tantamount',
       ),
+
+      'newline' => array(
+        'line' => 6,
+        'char' => 1,
+        'original' => "\n",
+        'replacement' => '',
+      ),
+
+      'addline' => array(
+        'line' => 3,
+        'char' => 1,
+        'original' => '',
+        'replacement' => "cherry\n",
+      ),
+
+      'addlinesuffix' => array(
+        'line' => 2,
+        'char' => 7,
+        'original' => '',
+        'replacement' => "\ncherry",
+      ),
+
+      'xml' => array(
+        'line' => 3,
+        'char' => 6,
+        'original' => '',
+        'replacement' => "\n",
+      ),
     );
 
     $defaults = array(
@@ -80,6 +108,11 @@ final class ArcanistConsoleLintRendererTestCase
         PhutilConsoleFormatter::disableANSI(false);
         throw $ex;
       }
+
+      // Trim "~" off the ends of lines. This allows the "expect" file to test
+      // for trailing whitespace without actually containing trailing
+      // whitespace.
+      $expect = preg_replace('/~+$/m', '', $expect);
 
       $this->assertEqual(
         $expect,

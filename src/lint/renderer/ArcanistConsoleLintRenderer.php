@@ -15,11 +15,11 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();
     $path = $result->getPath();
+    $data = $result->getData();
 
-    $lines = explode("\n", $result->getData());
+    $line_map = $this->newOffsetMap($data);
 
     $text = array();
-
     foreach ($messages as $message) {
       if (!$this->showAutofixPatches && $message->isAutofix()) {
         continue;
@@ -57,7 +57,7 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         phutil_console_wrap($description, 4));
 
       if ($message->hasFileContext()) {
-        $text[] = $this->renderContext($message, $lines);
+        $text[] = $this->renderContext($message, $data, $line_map);
       }
     }
 
@@ -75,153 +75,148 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
   protected function renderContext(
     ArcanistLintMessage $message,
-    array $line_data) {
+    $data,
+    array $line_map) {
 
-    $lines_of_context = 3;
+    $context = 3;
+
+    $message = $message->newTrimmedMessage();
+
+    $original = $message->getOriginalText();
+    $replacement = $message->getReplacementText();
+
+    $line = $message->getLine();
+    $char = $message->getChar();
+
+    $old = $data;
+    $old_lines = phutil_split_lines($old);
+
+    if ($message->isPatchable()) {
+      $patch_offset = $line_map[$line] + ($char - 1);
+
+      $new = substr_replace(
+        $old,
+        $replacement,
+        $patch_offset,
+        strlen($original));
+      $new_lines = phutil_split_lines($new);
+
+      // Figure out how many "-" and "+" lines we have by counting the newlines
+      // for the relevant patches. This may overestimate things if we are adding
+      // or removing entire lines, but we'll adjust things below.
+      $old_impact = substr_count($original, "\n") + 1;
+      $new_impact = substr_count($replacement, "\n") + 1;
+
+      $start = $line;
+
+      // If lines at the beginning of the changed line range are actually the
+      // same, shrink the range. This happens when a patch just adds a line.
+      do {
+        if ($old_lines[$start - 1] != $new_lines[$start - 1]) {
+          break;
+        }
+
+        $start++;
+        $old_impact--;
+        $new_impact--;
+
+        if ($old_impact < 0 || $new_impact < 0) {
+          throw new Exception(
+            pht(
+              'Modified prefix line range has become negative '.
+              '(old = %d, new = %d).',
+              $old_impact,
+              $new_impact));
+        }
+      } while (true);
+
+      // If the lines at the end of the changed line range are actually the
+      // same, shrink the range. This happens when a patch just removes a
+      // line.
+      do {
+        $old_suffix = $old_lines[$start + $old_impact - 2];
+        $new_suffix = $new_lines[$start + $new_impact - 2];
+
+        if ($old_suffix != $new_suffix) {
+          break;
+        }
+
+        $old_impact--;
+        $new_impact--;
+
+        if ($old_impact < 0 || $new_impact < 0) {
+          throw new Exception(
+            pht(
+              'Modified suffix line range has become negative '.
+              '(old = %d, new = %d).',
+              $old_impact,
+              $new_impact));
+        }
+      } while (true);
+
+    } else {
+      $old_impact = 0;
+      $new_impact = 0;
+    }
+
     $out = array();
 
-    $num_lines = count($line_data);
-     // make line numbers line up with array indexes
-    array_unshift($line_data, '');
-
-    $line_num = min($message->getLine(), $num_lines);
-    $line_num = max(1, $line_num);
-
-    // Print out preceding context before the impacted region.
-    $cursor = max(1, $line_num - $lines_of_context);
-    for (; $cursor < $line_num; $cursor++) {
-      $out[] = $this->renderLine($cursor, $line_data[$cursor]);
+    $head = max(1, $start - $context);
+    for ($ii = $head; $ii < $start; $ii++) {
+      $out[] = array(
+        'text' => $old_lines[$ii - 1],
+        'number' => $ii,
+      );
     }
 
-    $text = $message->getOriginalText();
-    $start = $message->getChar() - 1;
-    $patch = '';
-    // Refine original and replacement text to eliminate start and end in common
-    if ($message->isPatchable()) {
-      $patch = $message->getReplacementText();
-      $text_strlen = strlen($text);
-      $patch_strlen = strlen($patch);
-      $min_length = min($text_strlen, $patch_strlen);
-
-      $same_at_front = 0;
-      for ($ii = 0; $ii < $min_length; $ii++) {
-        if ($text[$ii] !== $patch[$ii]) {
-          break;
-        }
-        $same_at_front++;
-        $start++;
-        if ($text[$ii] == "\n") {
-          $out[] = $this->renderLine($cursor, $line_data[$cursor]);
-          $cursor++;
-          $start = 0;
-          $line_num++;
-        }
-      }
-      // deal with shorter string '     ' longer string '     a     '
-      $min_length -= $same_at_front;
-
-      // And check the end of the string
-      $same_at_end = 0;
-      for ($ii = 1; $ii <= $min_length; $ii++) {
-        if ($text[$text_strlen - $ii] !== $patch[$patch_strlen - $ii]) {
-          break;
-        }
-        $same_at_end++;
-      }
-
-      $text = substr(
-        $text,
-        $same_at_front,
-        $text_strlen - $same_at_end - $same_at_front);
-      $patch = substr(
-        $patch,
-        $same_at_front,
-        $patch_strlen - $same_at_end - $same_at_front);
-    }
-    // Print out the impacted region itself.
-    $diff = $message->isPatchable() ? '-' : null;
-
-    $text_lines = explode("\n", $text);
-    $text_length = count($text_lines);
-
-    $intraline = ($text != '' || $start || !preg_match('/\n$/', $patch));
-
-    if ($intraline) {
-      for (; $cursor < $line_num + $text_length; $cursor++) {
-        $chevron = ($cursor == $line_num);
-        // We may not have any data if, e.g., the old file does not exist.
-        $data = idx($line_data, $cursor, null);
-
-        // Highlight the problem substring.
-        $text_line = $text_lines[$cursor - $line_num];
-        if (strlen($text_line)) {
-          $data = substr_replace(
-            $data,
-            phutil_console_format('##%s##', $text_line),
-            ($cursor == $line_num ? ($start > 0 ? $start : null) : 0),
-            strlen($text_line));
-        }
-
-        $out[] = $this->renderLine($cursor, $data, $chevron, $diff);
-      }
+    for ($ii = $start; $ii < $start + $old_impact; $ii++) {
+      $out[] = array(
+        'text' => $old_lines[$ii - 1],
+        'number' => $ii,
+        'type' => '-',
+        'chevron' => ($ii == $start),
+      );
     }
 
-    // Print out replacement text.
-    if ($message->isPatchable()) {
-      // Strip trailing newlines, since "explode" will create an extra patch
-      // line for these.
-      if (strlen($patch) && ($patch[strlen($patch) - 1] === "\n")) {
-        $patch = substr($patch, 0, -1);
-      }
-      $patch_lines = explode("\n", $patch);
-      $patch_length = count($patch_lines);
-
-      $patch_line = $patch_lines[0];
-
-      $len = isset($text_lines[0]) ? strlen($text_lines[0]) : 0;
-
-      $patched = phutil_console_format('##%s##', $patch_line);
-
-      if ($intraline) {
-        $patched = substr_replace(
-          $line_data[$line_num],
-          $patched,
-          $start,
-          $len);
-      }
-
-      $out[] = $this->renderLine(null, $patched, false, '+');
-
-      foreach (array_slice($patch_lines, 1) as $patch_line) {
-        $out[] = $this->renderLine(
-          null,
-          phutil_console_format('##%s##', $patch_line), false, '+');
-      }
+    for ($ii = $start; $ii < $start + $new_impact; $ii++) {
+      $out[] = array(
+        'text' => $new_lines[$ii - 1],
+        'type' => '+',
+        'chevron' => ($ii == $start),
+      );
     }
 
-    $end = min($num_lines, $cursor + $lines_of_context);
-    for (; $cursor < $end; $cursor++) {
-      // If there is no original text, we didn't print out a chevron or any
-      // highlighted text above, so print it out here. This allows messages
-      // which don't have any original/replacement information to still
-      // render with indicator chevrons.
-      if ($text || $message->isPatchable()) {
+    $cursor = $start + $old_impact;
+    $foot = min(count($old_lines), $cursor + $context);
+    for ($ii = $cursor; $ii <= $foot; $ii++) {
+      $out[] = array(
+        'text' => $old_lines[$ii - 1],
+        'number' => $ii,
+        'chevron' => ($ii == $cursor),
+      );
+    }
+
+    $result = array();
+
+    $seen_chevron = false;
+    foreach ($out as $spec) {
+      if ($seen_chevron) {
         $chevron = false;
       } else {
-        $chevron = ($cursor == $line_num);
+        $chevron = !empty($spec['chevron']);
+        if ($chevron) {
+          $seen_chevron = true;
+        }
       }
-      $out[] = $this->renderLine($cursor, $line_data[$cursor], $chevron);
 
-      // With original text, we'll render the text highlighted above. If the
-      // lint message only has a line/char offset there's nothing to
-      // highlight, so print out a caret on the next line instead.
-      if ($chevron && $message->getChar()) {
-        $out[] = $this->renderCaret($message->getChar());
-      }
+      $result[] = $this->renderLine(
+        idx($spec, 'number'),
+        $spec['text'],
+        $chevron,
+        idx($spec, 'type'));
     }
-    $out[] = null;
 
-    return implode("\n", $out);
+    return implode('', $result);
   }
 
   private function renderCaret($pos) {
@@ -243,6 +238,22 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       "<bg:green>** %s **</bg> %s\n",
       pht('OKAY'),
       pht('No lint warnings.'));
+  }
+
+  private function newOffsetMap($data) {
+    $lines = phutil_split_lines($data);
+
+    $line_map = array();
+
+    $number = 1;
+    $offset = 0;
+    foreach ($lines as $line) {
+      $line_map[$number] = $offset;
+      $number++;
+      $offset += strlen($line);
+    }
+
+    return $line_map;
   }
 
 }
