@@ -6,10 +6,20 @@
 final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
   private $showAutofixPatches = false;
+  private $testableMode;
 
   public function setShowAutofixPatches($show_autofix_patches) {
     $this->showAutofixPatches = $show_autofix_patches;
     return $this;
+  }
+
+  public function setTestableMode($testable_mode) {
+    $this->testableMode = $testable_mode;
+    return $this;
+  }
+
+  public function getTestableMode() {
+    return $this->testableMode;
   }
 
   public function renderLintResult(ArcanistLintResult $result) {
@@ -90,6 +100,7 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
     $old = $data;
     $old_lines = phutil_split_lines($old);
+    $old_impact = substr_count($original, "\n") + 1;
     $start = $line;
 
     if ($message->isPatchable()) {
@@ -105,8 +116,25 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       // Figure out how many "-" and "+" lines we have by counting the newlines
       // for the relevant patches. This may overestimate things if we are adding
       // or removing entire lines, but we'll adjust things below.
-      $old_impact = substr_count($original, "\n") + 1;
       $new_impact = substr_count($replacement, "\n") + 1;
+
+
+      // If this is a change on a single line, we'll try to highlight the
+      // changed character range to make it easier to pick out.
+      if ($old_impact === 1 && $new_impact === 1) {
+        $old_lines[$start - 1] = substr_replace(
+          $old_lines[$start - 1],
+          $this->highlightText($original),
+          $char - 1,
+          strlen($original));
+
+        $new_lines[$start - 1] = substr_replace(
+          $new_lines[$start - 1],
+          $this->highlightText($replacement),
+          $char - 1,
+          strlen($replacement));
+      }
+
 
       // If lines at the beginning of the changed line range are actually the
       // same, shrink the range. This happens when a patch just adds a line.
@@ -154,6 +182,18 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       } while (true);
 
     } else {
+
+      // If we have "original" text and it is contained on a single line,
+      // highlight the affected area. If we don't have any text, we'll mark
+      // the character with a caret (below, in rendering) instead.
+      if ($old_impact == 1 && strlen($original)) {
+        $old_lines[$start - 1] = substr_replace(
+          $old_lines[$start - 1],
+          $this->highlightText($original),
+          $char - 1,
+          strlen($original));
+      }
+
       $old_impact = 0;
       $new_impact = 0;
     }
@@ -261,6 +301,14 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
     }
 
     return $line_map;
+  }
+
+  private function highlightText($text) {
+    if ($this->getTestableMode()) {
+      return '>'.$text.'<';
+    } else {
+      return (string)tsprintf('##%s##', $text);
+    }
   }
 
 }

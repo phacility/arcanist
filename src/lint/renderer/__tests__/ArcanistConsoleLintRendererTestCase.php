@@ -61,6 +61,12 @@ final class ArcanistConsoleLintRendererTestCase
         'name' => 'Fruit Misinformation',
         'description' => 'Arguably untrue.',
       ),
+
+      'original' => array(
+        'line' => 1,
+        'char' => 4,
+        'original' => 'should of',
+      ),
     );
 
     $defaults = array(
@@ -105,7 +111,8 @@ final class ArcanistConsoleLintRendererTestCase
         ->setData($data)
         ->addMessage($message);
 
-      $renderer = new ArcanistConsoleLintRenderer();
+      $renderer = id(new ArcanistConsoleLintRenderer())
+        ->setTestableMode(true);
 
       try {
         PhutilConsoleFormatter::disableANSI(true);
