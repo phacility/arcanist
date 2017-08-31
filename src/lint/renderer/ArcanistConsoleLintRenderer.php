@@ -90,6 +90,7 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
     $old = $data;
     $old_lines = phutil_split_lines($old);
+    $start = $line;
 
     if ($message->isPatchable()) {
       $patch_offset = $line_map[$line] + ($char - 1);
@@ -106,8 +107,6 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       // or removing entire lines, but we'll adjust things below.
       $old_impact = substr_count($original, "\n") + 1;
       $new_impact = substr_count($replacement, "\n") + 1;
-
-      $start = $line;
 
       // If lines at the beginning of the changed line range are actually the
       // same, shrink the range. This happens when a patch just adds a line.
@@ -214,6 +213,14 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         $spec['text'],
         $chevron,
         idx($spec, 'type'));
+
+      // If this is just a message and does not have a patch, put a little
+      // caret underneath the line to point out where the issue is.
+      if ($chevron) {
+        if (!$message->isPatchable() && !strlen($original)) {
+          $result[] = $this->renderCaret($char)."\n";
+        }
+      }
     }
 
     return implode('', $result);

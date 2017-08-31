@@ -54,6 +54,13 @@ final class ArcanistConsoleLintRendererTestCase
         'original' => '',
         'replacement' => "\n",
       ),
+
+      'caret' => array(
+        'line' => 2,
+        'char' => 13,
+        'name' => 'Fruit Misinformation',
+        'description' => 'Arguably untrue.',
+      ),
     );
 
     $defaults = array(
