@@ -17,6 +17,15 @@ final class ArcanistConsoleLintRendererTestCase
         'original' => 'cat',
         'replacement' => 'dog',
       ),
+
+      // In this test, the original and replacement texts have a large
+      // amount of overlap.
+      'overlap' => array(
+        'line' => 1,
+        'char' => 1,
+        'original' => 'tantawount',
+        'replacement' => 'tantamount',
+      ),
     );
 
     $defaults = array(
