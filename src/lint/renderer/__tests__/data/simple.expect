@@ -1,0 +1,10 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Lint Warning
+    Consider this.
+
+    >>> -      1 >a<
+        +        >z<
+               2 b
+               3 c

@@ -1,0 +1,11 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Fruit Misinformation
+    Arguably untrue.
+
+               1 Apples are round.
+    >>>        2 Bananas are round.
+                             ^
+               3 Cherries are round.
+               4 Dates are round.

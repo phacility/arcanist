@@ -274,4 +274,75 @@ final class ArcanistLintMessage extends Phobject {
     return $value;
   }
 
+  public function newTrimmedMessage() {
+    if (!$this->isPatchable()) {
+      return clone $this;
+    }
+
+    // If the original and replacement text have a similar prefix or suffix,
+    // we trim it to reduce the size of the diff we show to the user.
+
+    $replacement = $this->getReplacementText();
+    $original = $this->getOriginalText();
+
+    $replacement_length = strlen($replacement);
+    $original_length = strlen($original);
+
+    $minimum_length = min($original_length, $replacement_length);
+
+    $prefix_length = 0;
+    for ($ii = 0; $ii < $minimum_length; $ii++) {
+      if ($original[$ii] !== $replacement[$ii]) {
+        break;
+      }
+      $prefix_length++;
+    }
+
+    // NOTE: The two strings can't be the same because the message won't be
+    // "patchable" if they are, so we don't need a special check for the case
+    // where the entire string is a shared prefix.
+
+    $suffix_length = 0;
+    for ($ii = 1; $ii <= $minimum_length; $ii++) {
+      $original_char = $original[$original_length - $ii];
+      $replacement_char = $replacement[$replacement_length - $ii];
+      if ($original_char !== $replacement_char) {
+        break;
+      }
+      $suffix_length++;
+    }
+
+    if ($suffix_length) {
+      $original = substr($original, 0, -$suffix_length);
+      $replacement = substr($replacement, 0, -$suffix_length);
+    }
+
+    $line = $this->getLine();
+    $char = $this->getChar();
+
+    if ($prefix_length) {
+      $prefix = substr($original, 0, $prefix_length);
+
+      $original = substr($original, $prefix_length);
+      $replacement = substr($replacement, $prefix_length);
+
+      // If we've removed a prefix, we need to push the character and line
+      // number for the warning forward to account for the characters we threw
+      // away.
+      for ($ii = 0; $ii < $prefix_length; $ii++) {
+        $char++;
+        if ($prefix[$ii] == "\n") {
+          $line++;
+          $char = 1;
+        }
+      }
+    }
+
+    return id(clone $this)
+      ->setOriginalText($original)
+      ->setReplacementText($replacement)
+      ->setLine($line)
+      ->setChar($char);
+  }
+
 }
