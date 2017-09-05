@@ -19,6 +19,23 @@ import cat;
 import dog;
 EOTEXT;
 
+    $remline_original = <<<EOTEXT
+import apple;
+import banana;
+
+
+import cat;
+import dog;
+EOTEXT;
+
+    $remline_replacement = <<<EOTEXT
+import apple;
+import banana;
+
+import cat;
+import dog;
+EOTEXT;
+
     $map = array(
       'simple' => array(
         'line' => 1,
@@ -88,6 +105,13 @@ EOTEXT;
         'char' => 1,
         'original' => $midline_original,
         'replacement' => $midline_replacement,
+      ),
+
+      'remline' => array(
+        'line' => 1,
+        'char' => 1,
+        'original' => $remline_original,
+        'replacement' => $remline_replacement,
       ),
     );
 
