@@ -4,6 +4,21 @@ final class ArcanistConsoleLintRendererTestCase
   extends PhutilTestCase {
 
   public function testRendering() {
+    $midline_original = <<<EOTEXT
+import apple;
+import banana;
+import cat;
+import dog;
+EOTEXT;
+
+    $midline_replacement = <<<EOTEXT
+import apple;
+import banana;
+
+import cat;
+import dog;
+EOTEXT;
+
     $map = array(
       'simple' => array(
         'line' => 1,
@@ -66,6 +81,13 @@ final class ArcanistConsoleLintRendererTestCase
         'line' => 1,
         'char' => 4,
         'original' => 'should of',
+      ),
+
+      'midline' => array(
+        'line' => 1,
+        'char' => 1,
+        'original' => $midline_original,
+        'replacement' => $midline_replacement,
       ),
     );
 

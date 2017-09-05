@@ -45,6 +45,14 @@ final class ArcanistLintMessageTestCase
         'line' => 2,
         'char' => 5,
       ),
+      'mid-newline' => array(
+        'old' => 'ABA',
+        'new' => 'ABBA',
+        'old.expect' => '',
+        'new.expect' => 'B',
+        'line' => 1,
+        'char' => 3,
+      ),
     );
 
     foreach ($map as $key => $test_case) {

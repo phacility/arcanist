@@ -302,8 +302,13 @@ final class ArcanistLintMessage extends Phobject {
     // "patchable" if they are, so we don't need a special check for the case
     // where the entire string is a shared prefix.
 
+    // However, if the two strings are in the form "ABC" and "ABBC", we may
+    // find a prefix and a suffix with a combined length greater than the
+    // total size of the smaller string if we don't limit the search.
+    $max_suffix = ($minimum_length - $prefix_length);
+
     $suffix_length = 0;
-    for ($ii = 1; $ii <= $minimum_length; $ii++) {
+    for ($ii = 1; $ii <= $max_suffix; $ii++) {
       $original_char = $original[$original_length - $ii];
       $replacement_char = $replacement[$replacement_length - $ii];
       if ($original_char !== $replacement_char) {
@@ -323,8 +328,11 @@ final class ArcanistLintMessage extends Phobject {
     if ($prefix_length) {
       $prefix = substr($original, 0, $prefix_length);
 
-      $original = substr($original, $prefix_length);
-      $replacement = substr($replacement, $prefix_length);
+      // NOTE: Prior to PHP7, `substr("a", 1)` returned false instead of
+      // the empty string. Cast these to force the PHP7-ish behavior we
+      // expect.
+      $original = (string)substr($original, $prefix_length);
+      $replacement = (string)substr($replacement, $prefix_length);
 
       // If we've removed a prefix, we need to push the character and line
       // number for the warning forward to account for the characters we threw

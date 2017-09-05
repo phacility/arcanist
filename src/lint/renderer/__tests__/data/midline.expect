@@ -1,0 +1,11 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Lint Warning
+    Consider this.
+
+               1 import apple;
+               2 import banana;
+    >>> +        ~
+               3 import cat;
+               4 import dog;
