@@ -171,13 +171,10 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         $old_impact--;
         $new_impact--;
 
-        if ($old_impact < 0 || $new_impact < 0) {
-          throw new Exception(
-            pht(
-              'Modified suffix line range has become negative '.
-              '(old = %d, new = %d).',
-              $old_impact,
-              $new_impact));
+        // We can end up here if a patch removes a line which occurs after
+        // another identical line.
+        if ($old_impact <= 0 || $new_impact <= 0) {
+          break;
         }
       } while (true);
 
