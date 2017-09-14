@@ -101,7 +101,7 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
    */
   private function parseRevisionIDFromRawCorpus($corpus) {
     $match = null;
-    if (!preg_match('/^Differential Revision:\s*(.+)/im', $corpus, $match)) {
+    if (!preg_match('/Differential\s*[^:]+:\s*(.+)/im', $corpus, $match)) {
       return null;
     }
 
