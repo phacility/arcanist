@@ -125,6 +125,21 @@ final class ArcanistLintMessage extends Phobject {
   }
 
   public function setName($name) {
+    $maximum_bytes = 255;
+    $actual_bytes = strlen($name);
+
+    if ($actual_bytes > $maximum_bytes) {
+      throw new Exception(
+        pht(
+          'Parameter ("%s") passed to "%s" when constructing a lint message '.
+          'must be a string with a maximum length of %s bytes, but is %s '.
+          'bytes in length.',
+          $name,
+          'setName()',
+          new PhutilNumber($maximum_bytes),
+          new PhutilNumber($actual_bytes)));
+    }
+
     $this->name = $name;
     return $this;
   }
