@@ -113,6 +113,13 @@ EOTEXT;
         'original' => $remline_original,
         'replacement' => $remline_replacement,
       ),
+
+      'extrawhitespace' => array(
+        'line' => 2,
+        'char' => 1,
+        'original' => "\n",
+        'replacement' => '',
+      ),
     );
 
     $defaults = array(
@@ -125,6 +132,8 @@ EOTEXT;
 
     foreach ($map as $key => $test_case) {
       $data = $this->readTestData("{$key}.txt");
+      $data = preg_replace('/~+\s*$/m', '', $data);
+
       $expect = $this->readTestData("{$key}.expect");
 
       $test_case = $test_case + $defaults;
