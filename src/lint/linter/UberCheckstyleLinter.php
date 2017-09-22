@@ -8,6 +8,7 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
   private $checkstyleScript = null;
   private $checkstyleJar = null;
   private $checkstyleConfig = null;
+  private $checkstyleURL = null;
   private $useScript = false;
   private $maxFiles = 100;
 
@@ -49,6 +50,12 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
         'type' => 'optional int',
         'help' => pht('The maximum number of files to check per call of checkstyle. If there are more files, they will be split up into multiple checkstyle invocations.'),
       ),
+      'checkstyle.url' => array(
+        'type' => 'optional string',
+        'help' => pht('If $checkstyle.jar doesn\'t exist and ' .
+                '$checkstyle.url is populated, download the jar ' .
+                'from this URL'),
+      ),
     );
     return $options + parent::getLinterConfigurationOptions();
   }
@@ -67,6 +74,9 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
       case 'checkstyle.maxfiles':
         $this->maxFiles = $value;
         return;
+      case 'checkstyle.url':
+        $this->checkstyleURL = $value;
+        return;
     }
     return parent::setLinterConfigurationValue($key, $value);
   }
@@ -77,7 +87,11 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
    */
   private function checkConfiguration() {
     if ($this->checkstyleJar != null) {
-      $this->checkJarConfiguration();
+      if ($this->checkstyleConfig != null) {
+        $this->checkCheckstyleConfig($this->checkstyleConfig);
+      }
+      $this->checkJavaConfiguration();
+      $this->checkJarConfiguration($this->checkstyleJar, $this->checkstyleURL);
     } else if ($this->checkstyleScript != null) {
       $this->checkScriptConfiguration();
       $this->useScript = true;
@@ -85,6 +99,19 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
       throw new ArcanistMissingLinterException(
         pht('Missing config.  Either \'checkstyle.script\' or \'checkstyle.jar\' need to be set. ')
       );
+    }
+  }
+
+  private function checkCheckstyleConfig($checkstyleConfig) {
+    $absScriptPath = Filesystem::resolvePath($checkstyleConfig, $this->getProjectRoot());
+    if (!Filesystem::pathExists($absScriptPath)) {
+      throw new InvalidArgumentException(
+        pht(
+          'Unable to locate checkstyle config "%s" to run linter %s. ' .
+          'Either set it to a valid location in your linter ' .
+          'configuration or leave it unset.',
+          $absScriptPath,
+          get_class($this)));
     }
   }
 
@@ -102,27 +129,69 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
     }
   }
 
-  private function checkJarConfiguration() {
+  private function checkJavaConfiguration() {
     if (!Filesystem::binaryExists("java")) {
       throw new ArcanistMissingLinterException(
         pht('Java is not installed', get_class($this)));
     }
+  }
 
-    $absJarPath = Filesystem::resolvePath($this->checkstyleJar, $this->getProjectRoot());
-    if (!Filesystem::pathExists($absJarPath)) {
+  private function downloadCheckstyleJar($checkstyleJar, $checkstyleURL) {
+    $absJarPath = Filesystem::resolvePath($checkstyleJar, $this->getProjectRoot());
+    if(!is_writable(dirname($absJarPath))){
+      throw new InvalidArgumentException(
+        pht('Checkstyle jar cannot be written to "%s"', $checkstyleJar)
+      );
+    }
+
+    // Stage and validate to avoid file_put_contents leaving around an empty file
+    // if the URL is bad etc
+    $tmpFile = tempnam(sys_get_temp_dir(), 'TMP_');
+    $bytesDownloaded = file_put_contents($tmpFile, fopen($this->checkstyleURL, 'r'));
+    if ($bytesDownloaded == 0) {
+      unlink($tmpFile);
       throw new ArcanistMissingLinterException(
-        sprintf(
-          "%s\n%s",
-          pht(
-            'Unable to locate jar "%s" to run linter %s. You may need ' .
-            'to install the script, or adjust your linter configuration.',
-            $absJarPath,
-            get_class($this)),
-          pht('
-                TO INSTALL: 
-                1) Download checkstyle jar from https://sourceforge.net/projects/checkstyle/files/checkstyle/
-                2) Set `checkstyle.jar` in `.arclint` to the location of the jar.'
-          )));
+        pht(
+          'Unable to download jar "%s" from "%s" ' .
+          'to run linter %s. Make sure `checkstyle.url` is set ' .
+          'to a valid URL for the checkstyle binary (ie: ' .
+          'https://sourceforge.net/projects/checkstyle/files/checkstyle/8.2/checkstyle-8.2-all.jar)',
+          $absJarPath,
+          $checkstyleURL,
+          get_class($this))
+      );
+    } else {
+      rename($tmpFile, $absJarPath);
+    }
+  }
+
+  private function checkJarConfiguration($checkstyleJar, $checkstyleURL) {
+    $absJarPath = Filesystem::resolvePath($checkstyleJar, $this->getProjectRoot());
+    if (!Filesystem::pathExists($absJarPath)) {
+      if ($checkstyleURL) {
+        $this->downloadCheckstyleJar($checkstyleJar, $checkstyleURL);
+      } else {
+        throw new ArcanistMissingLinterException(
+          sprintf(
+            "%s\n\n%s\n",
+            pht(
+              'Unable to locate jar "%s" to run linter %s. ' .
+              'Either download the checkstyle binary manually ' .
+              'or adjust your linter configuration. (see ' .
+              'checkstyle.jar and checkstyle.url in .arclint)',
+              $absJarPath,
+              get_class($this)),
+            pht("TO FIX:\n" .
+              "Download checkstyle jar from https://sourceforge" .
+              "net/projects/checkstyle/files/checkstyle/\n" .
+              "-or-\n" .
+              "Set `checkstyle.url` in `.arclint` to a valid " .
+              "URL for the checkstyle binary\n" .
+              "(ie: https://sourceforge.net/projects/" .
+              "checkstyle/files/checkstyle/8.2/" .
+              "checkstyle-8.2-all.jar)"
+        )));
+      }
     }
   }
 
@@ -130,9 +199,11 @@ class UberCheckstyleLinter extends ArcanistFutureLinter {
     if ($this->useScript === true) {
       return $this->checkstyleScript;
     }  else {
-      $command = sprintf('java -jar %s -f xml -c %s ',
-        $this->checkstyleJar,
-        $this->checkstyleConfig);
+      $command = sprintf('java -jar %s -f xml ', $this->checkstyleJar);
+      if($this->checkstyleConfig) {
+        $command .= sprintf('-c %s ', $this->checkstyleConfig);
+      }
+      
       return $command;
     }
   }
