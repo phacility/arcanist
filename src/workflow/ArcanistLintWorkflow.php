@@ -286,13 +286,6 @@ EOTEXT
       }
     }
 
-    // Enable possible async linting only for 'arc diff' not 'arc lint'
-    if ($this->getParentWorkflow()) {
-      $engine->setEnableAsyncLint(true);
-    } else {
-      $engine->setEnableAsyncLint(false);
-    }
-
     if ($this->getArgument('only-new')) {
       $conduit = $this->getConduit();
       $api = $this->getRepositoryAPI();
