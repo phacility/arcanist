@@ -393,10 +393,6 @@ EOTEXT
         ),
         'supports' => array('git', 'hg'),
       ),
-      'no-diff' => array(
-        'help' => pht(
-          'Only run lint and unit tests. Intended for internal use.'),
-      ),
       'cache' => array(
         'param' => 'bool',
         'help' => pht(
@@ -456,14 +452,6 @@ EOTEXT
     $this->console = PhutilConsole::getConsole();
 
     $this->runRepositoryAPISetup();
-
-    if ($this->getArgument('no-diff')) {
-      $this->removeScratchFile('diff-result.json');
-      $data = $this->runLintUnit();
-      $this->writeScratchJSONFile('diff-result.json', $data);
-      return 0;
-    }
-
     $this->runDiffSetupBasics();
 
     $commit_message = $this->buildCommitMessage();
