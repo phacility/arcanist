@@ -129,7 +129,6 @@ EOTEXT
       'everything' => array(
         'help' => pht('Lint all files in the project.'),
         'conflicts' => array(
-          'cache' => pht('%s lints all files', '--everything'),
           'rev' => pht('%s lints all files', '--everything'),
         ),
       ),
@@ -143,16 +142,6 @@ EOTEXT
               "', '",
               array_keys(ArcanistLintSeverity::getLintSeverities()))),
           self::DEFAULT_SEVERITY),
-      ),
-      'cache' => array(
-        'param' => 'bool',
-        'help' => pht(
-          "%d to disable cache, %d to enable. The default value is determined ".
-          "by '%s' in configuration, which defaults to off. See notes in '%s'.",
-          0,
-          1,
-          'arc.lint.cache',
-          'arc.lint.cache'),
       ),
       '*' => 'paths',
     );
@@ -170,14 +159,6 @@ EOTEXT
     return true;
   }
 
-  private function getCacheKey() {
-    return implode("\n", array(
-      get_class($this->engine),
-      $this->getArgument('severity', self::DEFAULT_SEVERITY),
-      $this->shouldLintAll,
-    ));
-  }
-
   public function run() {
     $console = PhutilConsole::getConsole();
     $working_copy = $this->getWorkingCopy();
@@ -187,7 +168,6 @@ EOTEXT
 
     $rev = $this->getArgument('rev');
     $paths = $this->getArgument('paths');
-    $use_cache = $this->getArgument('cache', null);
     $everything = $this->getArgument('everything');
     if ($everything && $paths) {
       throw new ArcanistUsageException(
@@ -195,11 +175,6 @@ EOTEXT
           'You can not specify paths with %s. The %s flag lints every file.',
           '--everything',
           '--everything'));
-    }
-    if ($use_cache === null) {
-      $use_cache = (bool)$configuration_manager->getConfigFromAnySource(
-        'arc.lint.cache',
-        false);
     }
 
     if ($rev && $paths) {
@@ -229,40 +204,6 @@ EOTEXT
 
     $engine->setMinimumSeverity(
       $this->getArgument('severity', self::DEFAULT_SEVERITY));
-
-    $file_hashes = array();
-    if ($use_cache) {
-      $engine->setRepositoryVersion($this->getRepositoryVersion());
-      $cache = $this->readScratchJSONFile('lint-cache.json');
-      $cache = idx($cache, $this->getCacheKey(), array());
-      $cached = array();
-
-      foreach ($paths as $path) {
-        $abs_path = $engine->getFilePathOnDisk($path);
-        if (!Filesystem::pathExists($abs_path)) {
-          continue;
-        }
-        $file_hashes[$abs_path] = md5_file($abs_path);
-
-        if (!isset($cache[$path])) {
-          continue;
-        }
-        $messages = idx($cache[$path], $file_hashes[$abs_path]);
-        if ($messages !== null) {
-          $cached[$path] = $messages;
-        }
-      }
-
-      if ($cached) {
-        $console->writeErr(
-          "%s\n",
-          pht(
-            "Using lint cache, use '%s' to disable it.",
-            '--cache 0'));
-      }
-
-      $engine->setCachedResults($cached);
-    }
 
     // Propagate information about which lines changed to the lint engine.
     // This is used so that the lint engine can drop warning messages
@@ -415,7 +356,6 @@ EOTEXT
 
         $patcher->writePatchToDisk();
         $wrote_to_disk = true;
-        $file_hashes[$old_file] = md5_file($old_file);
       }
     }
 
@@ -485,46 +425,6 @@ EOTEXT
       }
     }
     $this->unresolvedMessages = $unresolved;
-
-    $cache = $this->readScratchJSONFile('lint-cache.json');
-    $cached = idx($cache, $this->getCacheKey(), array());
-    if ($cached || $use_cache) {
-      $stopped = $engine->getStoppedPaths();
-      foreach ($results as $result) {
-        $path = $result->getPath();
-        if (!$use_cache) {
-          unset($cached[$path]);
-          continue;
-        }
-        $abs_path = $engine->getFilePathOnDisk($path);
-        if (!Filesystem::pathExists($abs_path)) {
-          continue;
-        }
-        $version = $result->getCacheVersion();
-        $cached_path = array();
-        if (isset($stopped[$path])) {
-          $cached_path['stopped'] = $stopped[$path];
-        }
-        $cached_path['repository_version'] = $this->getRepositoryVersion();
-        foreach ($result->getMessages() as $message) {
-          $granularity = $message->getGranularity();
-          if ($granularity == ArcanistLinter::GRANULARITY_GLOBAL) {
-            continue;
-          }
-          if (!$message->isPatchApplied()) {
-            $cached_path[] = $message->toDictionary();
-          }
-        }
-        $hash = idx($file_hashes, $abs_path);
-        if (!$hash) {
-          $hash = md5_file($abs_path);
-        }
-        $cached[$path] = array($hash => array($version => $cached_path));
-      }
-      $cache[$this->getCacheKey()] = $cached;
-      // TODO: Garbage collection.
-      $this->writeScratchJSONFile('lint-cache.json', $cache);
-    }
 
     // Take the most severe lint message severity and use that
     // as the result code.
