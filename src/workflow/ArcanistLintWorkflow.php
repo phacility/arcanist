@@ -13,7 +13,6 @@ final class ArcanistLintWorkflow extends ArcanistWorkflow {
   const DEFAULT_SEVERITY = ArcanistLintSeverity::SEVERITY_ADVICE;
 
   private $unresolvedMessages;
-  private $shouldLintAll;
   private $shouldAmendChanges = false;
   private $shouldAmendWithoutPrompt = false;
   private $shouldAmendAutofixesWithoutPrompt = false;
@@ -61,17 +60,6 @@ EOTEXT
         'help' => pht(
           'Show all lint warnings, not just those on changed lines. When '.
           'paths are specified, this is the default behavior.'),
-        'conflicts' => array(
-          'only-changed' => true,
-        ),
-      ),
-      'only-changed' => array(
-        'help' => pht(
-          'Show lint warnings just on changed lines. When no paths are '.
-          'specified, this is the default.'),
-        'conflicts' => array(
-          'lintall' => true,
-        ),
       ),
       'rev' => array(
         'param' => 'revision',
@@ -177,25 +165,34 @@ EOTEXT
           '--everything'));
     }
 
-    if ($rev && $paths) {
-      throw new ArcanistUsageException(
-        pht('Specify either %s or paths.', '--rev'));
+    if ($rev !== null) {
+      $this->parseBaseCommitArgument(array($rev));
     }
 
+    // Sometimes, we hide low-severity messages which occur on lines which
+    // were not changed. This is the default behavior when you run "arc lint"
+    // with no arguments: if you touched a file, but there was already some
+    // minor warning about whitespace or spelling elsewhere in the file, you
+    // don't need to correct it.
 
-    // NOTE: When the user specifies paths, we imply --lintall and show all
-    // warnings for the paths in question. This is easier to deal with for
-    // us and less confusing for users.
-    $this->shouldLintAll = $paths ? true : false;
+    // In other modes, notably "arc lint <file>", this is not the defualt
+    // behavior. If you ask us to lint a specific file, we show you all the
+    // lint messages in the file.
+
+    // You can change this behavior with various flags, including "--lintall",
+    // "--rev", and "--everything".
     if ($this->getArgument('lintall')) {
-      $this->shouldLintAll = true;
-    } else if ($this->getArgument('only-changed')) {
-      $this->shouldLintAll = false;
+      $lint_all = true;
+    } else if ($rev !== null) {
+      $lint_all = false;
+    } else if ($paths || $everything) {
+      $lint_all = true;
+    } else {
+      $lint_all = false;
     }
 
     if ($everything) {
       $paths = iterator_to_array($this->getRepositoryAPI()->getAllFiles());
-      $this->shouldLintAll = true;
     } else {
       $paths = $this->selectPathsForWorkflow($paths, $rev);
     }
@@ -209,7 +206,7 @@ EOTEXT
     // This is used so that the lint engine can drop warning messages
     // concerning lines that weren't in the change.
     $engine->setPaths($paths);
-    if (!$this->shouldLintAll) {
+    if ($lint_all) {
       foreach ($paths as $path) {
         // Note that getChangedLines() returns null to indicate that a file
         // is binary or a directory (i.e., changed lines are not relevant).
