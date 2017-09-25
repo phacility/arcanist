@@ -74,12 +74,7 @@ EOTEXT
       ),
       'output' => array(
         'param' => 'format',
-        'help' => pht(
-          "With 'summary', show lint warnings in a more compact format. ".
-          "With 'json', show lint warnings in machine-readable JSON format. ".
-          "With 'none', show no lint warnings. ".
-          "With 'compiler', show lint warnings in suitable for your editor. ".
-          "With 'xml', show lint warnings in the Checkstyle XML format."),
+        'help' => pht('Select an output format.'),
       ),
       'outfile' => array(
         'param' => 'path',
@@ -243,11 +238,8 @@ EOTEXT
     }
 
     if ($this->getArgument('amend-autofixes')) {
-      $prompt_autofix_patches = false;
       $this->shouldAmendChanges = true;
       $this->shouldAmendAutofixesWithoutPrompt = true;
-    } else {
-      $prompt_autofix_patches = true;
     }
 
     $repository_api = $this->getRepositoryAPI();
@@ -258,110 +250,76 @@ EOTEXT
 
     $wrote_to_disk = false;
 
-    switch ($this->getArgument('output')) {
-      case 'json':
-        $renderer = new ArcanistJSONLintRenderer();
-        $prompt_patches = false;
-        $apply_patches = $this->getArgument('apply-patches');
-        break;
-      case 'summary':
-        $renderer = new ArcanistSummaryLintRenderer();
-        break;
-      case 'none':
-        $prompt_patches = false;
-        $apply_patches = $this->getArgument('apply-patches');
-        $renderer = new ArcanistNoneLintRenderer();
-        break;
-      case 'compiler':
-        $renderer = new ArcanistCompilerLintRenderer();
-        $prompt_patches = false;
-        $apply_patches = $this->getArgument('apply-patches');
-        break;
-      case 'xml':
-        $renderer = new ArcanistCheckstyleXMLLintRenderer();
-        $prompt_patches = false;
-        $apply_patches = $this->getArgument('apply-patches');
-        break;
-      default:
-        $renderer = new ArcanistConsoleLintRenderer();
-        $renderer->setShowAutofixPatches($prompt_autofix_patches);
-        break;
+    $default_renderer = ArcanistConsoleLintRenderer::RENDERERKEY;
+    $renderer_key = $this->getArgument('output', $default_renderer);
+
+    $renderers = ArcanistLintRenderer::getAllRenderers();
+    if (!isset($renderers[$renderer_key])) {
+      throw new Exception(
+        pht(
+          'Lint renderer "%s" is unknown. Supported renderers are: %s.',
+          $renderer_key,
+          implode(', ', array_keys($renderers))));
     }
+    $renderer = $renderers[$renderer_key];
 
     $all_autofix = true;
-    $tmp = null;
 
-    if ($this->getArgument('outfile') !== null) {
-      $tmp = id(new TempFile())
-        ->setPreserveFile(true);
-    }
-
-    $preamble = $renderer->renderPreamble();
-    if ($tmp) {
-      Filesystem::appendFile($tmp, $preamble);
+    $out_path = $this->getArgument('outfile');
+    if ($out_path !== null) {
+      $tmp = new TempFile();
+      $renderer->setOutputPath((string)$tmp);
     } else {
-      $console->writeOut('%s', $preamble);
+      $tmp = null;
     }
 
-    foreach ($results as $result) {
-      $result_all_autofix = $result->isAllAutofix();
+    if ($failed) {
+      $renderer->handleException($failed);
+    }
 
-      if (!$result->getMessages() && !$result_all_autofix) {
+    $renderer->willRenderResults();
+
+    $should_patch = ($apply_patches && $renderer->supportsPatching());
+    foreach ($results as $result) {
+      if (!$result->getMessages()) {
         continue;
       }
 
+      $result_all_autofix = $result->isAllAutofix();
       if (!$result_all_autofix) {
         $all_autofix = false;
       }
 
-      $lint_result = $renderer->renderLintResult($result);
-      if ($lint_result) {
-        if ($tmp) {
-          Filesystem::appendFile($tmp, $lint_result);
-        } else {
-          $console->writeOut('%s', $lint_result);
-        }
-      }
+      $renderer->renderLintResult($result);
 
-      if ($apply_patches && $result->isPatchable()) {
+      if ($should_patch && $result->isPatchable()) {
         $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
-        $old_file = $result->getFilePathOnDisk();
 
-        if ($prompt_patches &&
-            !($result_all_autofix && !$prompt_autofix_patches)) {
+        $apply = true;
+        if ($prompt_patches && !$result_all_autofix) {
+          $old_file = $result->getFilePathOnDisk();
           if (!Filesystem::pathExists($old_file)) {
-            $old_file = '/dev/null';
+            $old_file = null;
           }
+
           $new_file = new TempFile();
           $new = $patcher->getModifiedFileContent();
           Filesystem::writeFile($new_file, $new);
 
-          // TODO: Improve the behavior here, make it more like
-          // difference_render().
-          list(, $stdout, $stderr) =
-            exec_manual('diff -u %s %s', $old_file, $new_file);
-          $console->writeOut('%s', $stdout);
-          $console->writeErr('%s', $stderr);
-
-          $prompt = pht(
-            'Apply this patch to %s?',
-            phutil_console_format('__%s__', $result->getPath()));
-          if (!phutil_console_confirm($prompt, $default_no = false)) {
-            continue;
-          }
+          $apply = $renderer->promptForPatch($result, $old_file, $new_file);
         }
 
-        $patcher->writePatchToDisk();
-        $wrote_to_disk = true;
+        if ($apply) {
+          $patcher->writePatchToDisk();
+          $wrote_to_disk = true;
+        }
       }
     }
 
-    $postamble = $renderer->renderPostamble();
+    $renderer->didRenderResults();
+
     if ($tmp) {
-      Filesystem::appendFile($tmp, $postamble);
-      Filesystem::rename($tmp, $this->getArgument('outfile'));
-    } else {
-      $console->writeOut('%s', $postamble);
+      Filesystem::rename($tmp, $out_path);
     }
 
     if ($wrote_to_disk && $this->shouldAmendChanges) {
@@ -389,20 +347,6 @@ EOTEXT
             'Sort out the lint changes that were applied to the working '.
             'copy and relint.'));
       }
-    }
-
-    if ($this->getArgument('output') == 'json') {
-      // NOTE: Required by save_lint.php in Phabricator.
-      return 0;
-    }
-
-    if ($failed) {
-      if ($failed instanceof ArcanistNoEffectException) {
-        if ($renderer instanceof ArcanistNoneLintRenderer) {
-          return 0;
-        }
-      }
-      throw $failed;
     }
 
     $unresolved = array();
@@ -433,11 +377,7 @@ EOTEXT
       $result_code = self::RESULT_OKAY;
     }
 
-    if (!$this->getParentWorkflow()) {
-      if ($result_code == self::RESULT_OKAY) {
-        $console->writeOut('%s', $renderer->renderOkayResult());
-      }
-    }
+    $renderer->renderResultCode($result_code);
 
     return $result_code;
   }

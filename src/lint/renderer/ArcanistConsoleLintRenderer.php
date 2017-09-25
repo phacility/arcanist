@@ -1,17 +1,10 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
-  private $showAutofixPatches = false;
-  private $testableMode;
+  const RENDERERKEY = 'console';
 
-  public function setShowAutofixPatches($show_autofix_patches) {
-    $this->showAutofixPatches = $show_autofix_patches;
-    return $this;
-  }
+  private $testableMode;
 
   public function setTestableMode($testable_mode) {
     $this->testableMode = $testable_mode;
@@ -20,6 +13,38 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
   public function getTestableMode() {
     return $this->testableMode;
+  }
+
+  public function supportsPatching() {
+    return true;
+  }
+
+  public function renderResultCode($result_code) {
+    if ($result_code == ArcanistLintWorkflow::RESULT_OKAY) {
+      $view = new PhutilConsoleInfo(
+        pht('OKAY'),
+        pht('No lint messages.'));
+      $this->writeOut($view->drawConsoleString());
+    }
+  }
+
+  public function promptForPatch(
+    ArcanistLintResult $result,
+    $old_path,
+    $new_path) {
+
+    if ($old_path === null) {
+      $old_path = '/dev/null';
+    }
+
+    list($err, $stdout) = exec_manual('diff -u %s %s', $old_path, $new_path);
+    $this->writeOut($stdout);
+
+    $prompt = pht(
+      'Apply this patch to %s?',
+      tsprintf('__%s__', $result->getPath()));
+
+    return phutil_console_confirm($prompt, $default_no = false);
   }
 
   public function renderLintResult(ArcanistLintResult $result) {
@@ -31,10 +56,6 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
 
     $text = array();
     foreach ($messages as $message) {
-      if (!$this->showAutofixPatches && $message->isAutofix()) {
-        continue;
-      }
-
       if ($message->isError()) {
         $color = 'red';
       } else {
@@ -77,9 +98,7 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         pht(
           'Lint for %s:',
           phutil_console_format('__%s__', $path)));
-      return $prefix.implode("\n", $text);
-    } else {
-      return null;
+      $this->writeOut($prefix.implode("\n", $text));
     }
   }
 
@@ -276,13 +295,6 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       $diff,
       $line,
       $data);
-  }
-
-  public function renderOkayResult() {
-    return phutil_console_format(
-      "<bg:green>** %s **</bg> %s\n",
-      pht('OKAY'),
-      pht('No lint warnings.'));
   }
 
   private function newOffsetMap($data) {

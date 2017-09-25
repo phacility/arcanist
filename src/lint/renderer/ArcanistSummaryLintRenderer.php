@@ -1,9 +1,8 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistSummaryLintRenderer extends ArcanistLintRenderer {
+
+  const RENDERERKEY = 'summary';
 
   public function renderLintResult(ArcanistLintResult $result) {
     $messages = $result->getMessages();
@@ -19,14 +18,16 @@ final class ArcanistSummaryLintRenderer extends ArcanistLintRenderer {
       $text[] = "{$path}:{$line}:{$severity}: {$name}\n";
     }
 
-    return implode('', $text);
+    $this->writeOut(implode('', $text));
   }
 
-  public function renderOkayResult() {
-    return phutil_console_format(
-      "<bg:green>** %s **</bg> %s\n",
-      pht('OKAY'),
-      pht('No lint warnings.'));
+  public function renderResultCode($result_code) {
+    if ($result_code == ArcanistLintWorkflow::RESULT_OKAY) {
+      $view = new PhutilConsoleInfo(
+        pht('OKAY'),
+        pht('No lint messages.'));
+      $this->writeOut($view->drawConsoleString());
+    }
   }
 
 }
