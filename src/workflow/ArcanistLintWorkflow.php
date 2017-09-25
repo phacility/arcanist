@@ -68,9 +68,7 @@ EOTEXT
       'only-changed' => array(
         'help' => pht(
           'Show lint warnings just on changed lines. When no paths are '.
-          'specified, this is the default. This differs from only-new '.
-          'in cases where line modifications introduce lint on other '.
-          'unmodified lines.'),
+          'specified, this is the default.'),
         'conflicts' => array(
           'lintall' => true,
         ),
@@ -99,12 +97,6 @@ EOTEXT
         'param' => 'path',
         'help' => pht(
           'Output the linter results to a file. Defaults to stdout.'),
-      ),
-      'only-new' => array(
-        'param' => 'bool',
-        'supports' => array('git', 'hg'), // TODO: svn
-        'help' => pht(
-          'Display only messages not present in the original code.'),
       ),
       'engine' => array(
         'param' => 'classname',
@@ -167,7 +159,7 @@ EOTEXT
   }
 
   public function requiresAuthentication() {
-    return (bool)$this->getArgument('only-new');
+    return false;
   }
 
   public function requiresWorkingCopy() {
@@ -286,42 +278,6 @@ EOTEXT
       }
     }
 
-    if ($this->getArgument('only-new')) {
-      $conduit = $this->getConduit();
-      $api = $this->getRepositoryAPI();
-      if ($rev) {
-        $api->setBaseCommit($rev);
-      }
-      $svn_root = id(new PhutilURI($api->getSourceControlPath()))->getPath();
-
-      $all_paths = array();
-      foreach ($paths as $path) {
-        $path = str_replace(DIRECTORY_SEPARATOR, '/', $path);
-        $full_paths = array($path);
-
-        $change = $this->getChange($path);
-        $type = $change->getType();
-        if (ArcanistDiffChangeType::isOldLocationChangeType($type)) {
-          $full_paths = $change->getAwayPaths();
-        } else if (ArcanistDiffChangeType::isNewLocationChangeType($type)) {
-          continue;
-        } else if (ArcanistDiffChangeType::isDeleteChangeType($type)) {
-          continue;
-        }
-
-        foreach ($full_paths as $full_path) {
-          $all_paths[$svn_root.'/'.$full_path] = $path;
-        }
-      }
-
-      $lint_future = $conduit->callMethod('diffusion.getlintmessages', array(
-        'repositoryPHID' => idx($this->loadProjectRepository(), 'phid'),
-        'branch' => '', // TODO: Tracking branch.
-        'commit' => $api->getBaseCommit(),
-        'files' => array_keys($all_paths),
-      ));
-    }
-
     $failed = null;
     try {
       $engine->run();
@@ -330,65 +286,6 @@ EOTEXT
     }
 
     $results = $engine->getResults();
-
-    if ($this->getArgument('only-new')) {
-      $total = 0;
-      foreach ($results as $result) {
-        $total += count($result->getMessages());
-      }
-
-      // Don't wait for response with default value of --only-new.
-      $timeout = null;
-      if ($this->getArgument('only-new') === null || !$total) {
-        $timeout = 0;
-      }
-
-      $raw_messages = $this->resolveCall($lint_future, $timeout);
-      if ($raw_messages && $total) {
-        $old_messages = array();
-        $line_maps = array();
-        foreach ($raw_messages as $message) {
-          $path = $all_paths[$message['path']];
-          $line = $message['line'];
-          $code = $message['code'];
-
-          if (!isset($line_maps[$path])) {
-            $line_maps[$path] = $this->getChange($path)->buildLineMap();
-          }
-
-          $new_lines = idx($line_maps[$path], $line);
-          if (!$new_lines) { // Unmodified lines after last hunk.
-            $last_old = ($line_maps[$path] ? last_key($line_maps[$path]) : 0);
-            $news = array_filter($line_maps[$path]);
-            $last_new = ($news ? last(end($news)) : 0);
-            $new_lines = array($line + $last_new - $last_old);
-          }
-
-          $error = array($code => array(true));
-          foreach ($new_lines as $new) {
-            if (isset($old_messages[$path][$new])) {
-              $old_messages[$path][$new][$code][] = true;
-              break;
-            }
-            $old_messages[$path][$new] = &$error;
-          }
-          unset($error);
-        }
-
-        foreach ($results as $result) {
-          foreach ($result->getMessages() as $message) {
-            $path = str_replace(DIRECTORY_SEPARATOR, '/', $message->getPath());
-            $line = $message->getLine();
-            $code = $message->getCode();
-            if (!empty($old_messages[$path][$line][$code])) {
-              $message->setObsolete(true);
-              array_pop($old_messages[$path][$line][$code]);
-            }
-          }
-          $result->sortAndFilterMessages();
-        }
-      }
-    }
 
     if ($this->getArgument('never-apply-patches')) {
       $apply_patches = false;
