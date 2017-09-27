@@ -343,11 +343,6 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     array $query);
   abstract public function getRemoteURI();
 
-
-  public function getUnderlyingWorkingCopyRevision() {
-    return $this->getWorkingCopyRevision();
-  }
-
   public function getChangedFiles($since_commit) {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
@@ -376,6 +371,10 @@ abstract class ArcanistRepositoryAPI extends Phobject {
   }
 
   public function getAllBranchRefs() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  public function getBaseCommitRef() {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 

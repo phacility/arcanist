@@ -201,7 +201,7 @@ EOTEXT
     // This is used so that the lint engine can drop warning messages
     // concerning lines that weren't in the change.
     $engine->setPaths($paths);
-    if ($lint_all) {
+    if (!$lint_all) {
       foreach ($paths as $path) {
         // Note that getChangedLines() returns null to indicate that a file
         // is binary or a directory (i.e., changed lines are not relevant).

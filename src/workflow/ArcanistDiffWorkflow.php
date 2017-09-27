@@ -393,16 +393,6 @@ EOTEXT
         ),
         'supports' => array('git', 'hg'),
       ),
-      'cache' => array(
-        'param' => 'bool',
-        'help' => pht(
-          '%d to disable lint cache, %d to enable (default).',
-          0,
-          1),
-        'passthru' => array(
-          'lint' => true,
-        ),
-      ),
       'coverage' => array(
         'help' => pht('Always enable coverage information.'),
         'conflicts' => array(
@@ -1950,6 +1940,15 @@ EOTEXT
       $faux_message[] = pht('CC: %s', $this->getArgument('cc'));
     }
 
+    // NOTE: For now, this isn't a real field, so it just ends up as the first
+    // part of the summary.
+    $depends_ref = $this->getDependsOnRevisionRef();
+    if ($depends_ref) {
+      $faux_message[] = pht(
+        'Depends on %s. ',
+        $depends_ref->getMonogram());
+    }
+
     // See T12069. After T10312, the first line of a message is always parsed
     // as a title. Add a placeholder so "Reviewers" and "CC" are never the
     // first line.
@@ -2902,6 +2901,47 @@ EOTEXT
       phlog($ex);
       return false;
     }
+  }
+
+  private function getDependsOnRevisionRef() {
+    $api = $this->getRepositoryAPI();
+    $base_ref = $api->getBaseCommitRef();
+
+    $state_ref = $this->newWorkingCopyStateRef()
+      ->setCommitRef($base_ref);
+
+    $this->newRefQuery(array($state_ref))
+      ->needHardpoints(
+        array(
+          'revisionRefs',
+        ))
+      ->execute();
+
+    $revision_refs = $state_ref->getRevisionRefs();
+    $viewer_phid = $this->getUserPHID();
+
+    foreach ($revision_refs as $key => $revision_ref) {
+      // Don't automatically depend on closed revisions.
+      if ($revision_ref->isClosed()) {
+        unset($revision_refs[$key]);
+        continue;
+      }
+
+      // Don't automatically depend on revisions authored by other users.
+      if ($revision_ref->getAuthorPHID() != $viewer_phid) {
+        continue;
+      }
+    }
+
+    if (!$revision_refs) {
+      return null;
+    }
+
+    if (count($revision_refs) > 1) {
+      return null;
+    }
+
+    return head($revision_refs);
   }
 
 }

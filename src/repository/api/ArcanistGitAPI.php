@@ -1053,17 +1053,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $refs;
   }
 
+  public function getBaseCommitRef() {
+    $base_commit = $this->getSourceControlBaseRevision();
+    $base_message = $this->getCommitMessage($base_commit);
+
+    // TODO: We should also pull the tree hash.
+
+    return $this->newCommitRef()
+      ->setCommitHash($base_commit)
+      ->attachMessage($base_message);
+  }
+
   public function getWorkingCopyRevision() {
     list($stdout) = $this->execxLocal('rev-parse HEAD');
     return rtrim($stdout, "\n");
-  }
-
-  public function getUnderlyingWorkingCopyRevision() {
-    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
-    if (!$err && $stdout) {
-      return rtrim($stdout, "\n");
-    }
-    return $this->getWorkingCopyRevision();
   }
 
   public function isHistoryDefaultImmutable() {

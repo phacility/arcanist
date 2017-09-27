@@ -56,6 +56,10 @@ final class ArcanistRevisionRef
     return idx($this->parameters, 'title');
   }
 
+  public function getAuthorPHID() {
+    return idx($this->parameters, 'authorPHID');
+  }
+
   public function addSource(ArcanistRevisionRefSource $source) {
     $this->sources[] = $source;
     return $this;
