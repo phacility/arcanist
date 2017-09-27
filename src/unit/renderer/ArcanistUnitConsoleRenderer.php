@@ -21,7 +21,8 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
       $this->getFormattedResult($result->getResult()).$duration,
       $test_name);
 
-    if ($result_code != ArcanistUnitTestResult::RESULT_PASS) {
+    if ($result_code != ArcanistUnitTestResult::RESULT_PASS
+        && strlen($result->getUserData())) {
       $return .= $result->getUserData()."\n";
     }
 

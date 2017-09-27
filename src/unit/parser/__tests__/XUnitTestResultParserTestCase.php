@@ -28,7 +28,7 @@ final class XUnitTestResultParserTestCase extends PhutilTestCase {
       $parsed_results = id(new ArcanistXUnitTestResultParser())
         ->parseTestResults('');
 
-      $this->failTest(pht('Should throw on empty input'));
+      $this->assertFailure(pht('Should throw on empty input'));
     } catch (Exception $e) {
       // OK
     }
@@ -43,7 +43,7 @@ final class XUnitTestResultParserTestCase extends PhutilTestCase {
       $parsed_results = id(new ArcanistXUnitTestResultParser())
         ->parseTestResults($stubbed_results);
 
-      $this->failTest(pht('Should throw on non-xml input'));
+      $this->assertFailure(pht('Should throw on non-xml input'));
     } catch (Exception $e) {
       // OK
     }

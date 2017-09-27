@@ -59,7 +59,7 @@ final class ArcanistGitLandEngine
 
   public function __destruct() {
     if ($this->restoreWhenDestroyed) {
-      $this->writeWARN(
+      $this->writeWarn(
         pht('INTERRUPTED!'),
         pht('Restoring working copy to its original state.'));
 

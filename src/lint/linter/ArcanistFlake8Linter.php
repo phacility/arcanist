@@ -51,12 +51,14 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stdout, false);
 
+    // stdin:2: W802 undefined name 'foo'  # pyflakes
+    // stdin:3:1: E302 expected 2 blank lines, found 1  # pep8
+    $regexp =
+      '/^(?:.*?):(?P<line>\d+):(?:(?P<char>\d+):)? (?P<code>\S+) (?P<msg>.*)$/';
+
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
-      // stdin:2: W802 undefined name 'foo'  # pyflakes
-      // stdin:3:1: E302 expected 2 blank lines, found 1  # pep8
-      $regexp = '/^(.*?):(\d+):(?:(\d+):)? (\S+) (.*)$/';
       if (!preg_match($regexp, $line, $matches)) {
         continue;
       }
@@ -66,14 +68,14 @@ final class ArcanistFlake8Linter extends ArcanistExternalLinter {
 
       $message = new ArcanistLintMessage();
       $message->setPath($path);
-      $message->setLine($matches[2]);
-      if (!empty($matches[3])) {
-        $message->setChar($matches[3]);
+      $message->setLine($matches['line']);
+      if (!empty($matches['char'])) {
+        $message->setChar($matches['char']);
       }
-      $message->setCode($matches[4]);
-      $message->setName($this->getLinterName().' '.$matches[3]);
-      $message->setDescription($matches[5]);
-      $message->setSeverity($this->getLintMessageSeverity($matches[4]));
+      $message->setCode($matches['code']);
+      $message->setName($this->getLinterName().' '.$matches['code']);
+      $message->setDescription($matches['msg']);
+      $message->setSeverity($this->getLintMessageSeverity($matches['code']));
 
       $messages[] = $message;
     }

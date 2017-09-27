@@ -40,7 +40,8 @@ final class ArcanistLintMessage extends Phobject {
     $message->setGranularity(idx($dict, 'granularity'));
     $message->setOtherLocations(idx($dict, 'locations', array()));
     if (isset($dict['bypassChangedLineFiltering'])) {
-      $message->bypassChangedLineFiltering($dict['bypassChangedLineFiltering']);
+      $message->setBypassChangedLineFiltering(
+        $dict['bypassChangedLineFiltering']);
     }
     return $message;
   }
@@ -286,6 +287,85 @@ final class ArcanistLintMessage extends Phobject {
     }
 
     return $value;
+  }
+
+  public function newTrimmedMessage() {
+    if (!$this->isPatchable()) {
+      return clone $this;
+    }
+
+    // If the original and replacement text have a similar prefix or suffix,
+    // we trim it to reduce the size of the diff we show to the user.
+
+    $replacement = $this->getReplacementText();
+    $original = $this->getOriginalText();
+
+    $replacement_length = strlen($replacement);
+    $original_length = strlen($original);
+
+    $minimum_length = min($original_length, $replacement_length);
+
+    $prefix_length = 0;
+    for ($ii = 0; $ii < $minimum_length; $ii++) {
+      if ($original[$ii] !== $replacement[$ii]) {
+        break;
+      }
+      $prefix_length++;
+    }
+
+    // NOTE: The two strings can't be the same because the message won't be
+    // "patchable" if they are, so we don't need a special check for the case
+    // where the entire string is a shared prefix.
+
+    // However, if the two strings are in the form "ABC" and "ABBC", we may
+    // find a prefix and a suffix with a combined length greater than the
+    // total size of the smaller string if we don't limit the search.
+    $max_suffix = ($minimum_length - $prefix_length);
+
+    $suffix_length = 0;
+    for ($ii = 1; $ii <= $max_suffix; $ii++) {
+      $original_char = $original[$original_length - $ii];
+      $replacement_char = $replacement[$replacement_length - $ii];
+      if ($original_char !== $replacement_char) {
+        break;
+      }
+      $suffix_length++;
+    }
+
+    if ($suffix_length) {
+      $original = substr($original, 0, -$suffix_length);
+      $replacement = substr($replacement, 0, -$suffix_length);
+    }
+
+    $line = $this->getLine();
+    $char = $this->getChar();
+
+    if ($prefix_length) {
+      $prefix = substr($original, 0, $prefix_length);
+
+      // NOTE: Prior to PHP7, `substr("a", 1)` returned false instead of
+      // the empty string. Cast these to force the PHP7-ish behavior we
+      // expect.
+      $original = (string)substr($original, $prefix_length);
+      $replacement = (string)substr($replacement, $prefix_length);
+
+      // If we've removed a prefix, we need to push the character and line
+      // number for the warning forward to account for the characters we threw
+      // away.
+      for ($ii = 0; $ii < $prefix_length; $ii++) {
+        $char++;
+        if ($prefix[$ii] == "\n") {
+          $line++;
+          $char = 1;
+        }
+      }
+    }
+
+    return id(clone $this)
+      ->setOriginalText($original)
+      ->setReplacementText($replacement)
+      ->setLine($line)
+      ->setChar($char);
   }
 
 }

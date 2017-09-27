@@ -1355,7 +1355,7 @@ EOTEXT
                 'Unit testing raised errors, but all '.
                 'failing tests are unsound.'));
           } else {
-            $continue = $this->console->confirm(
+            $continue = phutil_console_confirm(
               pht(
                 'Unit test results included failures, but all failing tests '.
                 'are known to be unsound. Ignore unsound test failures?'));
@@ -1962,7 +1962,13 @@ EOTEXT
       $faux_message[] = pht('CC: %s', $this->getArgument('cc'));
     }
 
+    // See T12069. After T10312, the first line of a message is always parsed
+    // as a title. Add a placeholder so "Reviewers" and "CC" are never the
+    // first line.
+    $placeholder_title = pht('<placeholder>');
+
     if ($faux_message) {
+      array_unshift($faux_message, $placeholder_title);
       $faux_message = implode("\n\n", $faux_message);
       $local = array(
         '(Flags)     ' => array(
@@ -2031,6 +2037,10 @@ EOTEXT
     foreach ($fields as $hash => $dict) {
       $title = idx($dict, 'title');
       if (!strlen($title)) {
+        continue;
+      }
+
+      if ($title === $placeholder_title) {
         continue;
       }
 

@@ -446,6 +446,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       // would ship up the binaries for 'arc patch' but display the textconv
       // output in the visual diff.
       '--no-textconv',
+      // Provide a standard view of submodule changes; the 'log' and 'diff'
+      // values do not parse by the diff parser.
+      '--submodule=short',
     );
     return implode(' ', $options);
   }
@@ -544,8 +547,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     $uri = rtrim($stdout);
-    // 'origin' is what ls-remote outputs if no origin remote URI exists
-    if (!$uri || $uri === 'origin') {
+    // ls-remote echos the remote name (ie 'origin') if no remote URI is found
+    // TODO: In 2.7.0 (circa 2016) git introduced `git remote get-url`
+    // with saner error handling.
+    if (!$uri || $uri === $remote) {
       return null;
     }
 
@@ -1422,7 +1427,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    * or cycle locally.
    *
    * @param string Ref to start from.
-   * @return list<wild> Path to an upstream.
+   * @return ArcanistGitUpstreamPath Path to an upstream.
    */
   public function getPathToUpstream($start) {
     $cursor = $start;

@@ -51,8 +51,14 @@ EOTEXT
           pht('%s is not a git working copy.', $lib));
       }
 
-      list($stdout) = $repository->execxLocal('log -1 --format=%s', '%H %ct');
-      list($commit, $timestamp) = explode(' ', $stdout);
+      // NOTE: Carefully execute these commands in a way that works on Windows
+      // until T8298 is properly fixed. See PHI52.
+
+      list($commit) = $repository->execxLocal('log -1 --format=%%H');
+      $commit = trim($commit);
+
+      list($timestamp) = $repository->execxLocal('log -1 --format=%%ct');
+      $timestamp = trim($timestamp);
 
       $console->writeOut(
         "%s %s (%s)\n",
