@@ -596,6 +596,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $refs;
   }
 
+  public function getBaseCommitRef() {
+    $base_commit = $this->getBaseCommit();
+
+    if ($base_commit === 'null') {
+      return null;
+    }
+
+    $base_message = $this->getCommitMessage($base_commit);
+
+    return $this->newCommitRef()
+      ->setCommitHash($base_commit)
+      ->attachMessage($base_message);
+  }
+
   public function hasLocalCommit($commit) {
     try {
       $this->getCanonicalRevisionName($commit);

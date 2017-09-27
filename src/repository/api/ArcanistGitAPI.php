@@ -1054,7 +1054,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getBaseCommitRef() {
-    $base_commit = $this->getSourceControlBaseRevision();
+    $base_commit = $this->getBaseCommit();
+
+    if ($base_commit === self::GIT_MAGIC_ROOT_COMMIT) {
+      return null;
+    }
+
     $base_message = $this->getCommitMessage($base_commit);
 
     // TODO: We should also pull the tree hash.
