@@ -328,7 +328,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
         unlink($xunit_temp);
       }
       $future = new ExecFuture(
-        '%C %s /xml %s',
+        '%C %s -xml %s',
         trim($this->runtimeEngine.' '.$this->testEngine),
         $test_assembly,
         $xunit_temp);
@@ -420,7 +420,7 @@ class XUnitTestEngine extends ArcanistUnitTestEngine {
     $tests = $xunit_dom->getElementsByTagName('test');
     foreach ($tests as $test) {
       $name = $test->getAttribute('name');
-      $time = $test->getAttribute('time');
+      $time = floatval($test->getAttribute('time'));
       $status = ArcanistUnitTestResult::RESULT_UNSOUND;
       switch ($test->getAttribute('result')) {
         case 'Pass':

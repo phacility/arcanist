@@ -87,7 +87,7 @@ final class ArcanistUnitTestResult extends Phobject {
     if (!is_int($duration) && !is_float($duration)) {
       throw new Exception(
         pht(
-          'Parameter passed to setDuration() must be an integer or a float.'));
+          'Parameter passed to setDuration() must be an integer or a float. It is %s.', $duration));
     }
     $this->duration = $duration;
     return $this;
