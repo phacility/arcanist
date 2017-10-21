@@ -25,8 +25,15 @@ final class ArcanistLintMessage extends Phobject {
     $message = new ArcanistLintMessage();
 
     $message->setPath($dict['path']);
-    $message->setLine($dict['line']);
-    $message->setChar($dict['char']);
+
+    if (isset($dict['line'])) {
+      $message->setLine($dict['line']);
+    }
+
+    if (isset($dict['char'])) {
+      $message->setChar($dict['char']);
+    }
+
     $message->setCode($dict['code']);
     $message->setSeverity($dict['severity']);
     $message->setName($dict['name']);
