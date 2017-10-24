@@ -235,8 +235,11 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
     }
 
     for ($ii = $start; $ii < $start + $new_impact; $ii++) {
+      // If the patch was at the end of the file and ends with a newline, we
+      // won't have an actual entry in the array for the last line, even though
+      // we want to show it in the diff.
       $out[] = array(
-        'text' => $new_lines[$ii - 1],
+        'text' => idx($new_lines, $ii - 1, ''),
         'type' => '+',
         'chevron' => ($ii == $start),
       );
@@ -265,9 +268,17 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         }
       }
 
+      // If the line doesn't actually end in a newline, add one so the layout
+      // doesn't mess up. This can happen when the last line of the old file
+      // didn't have a newline at the end.
+      $text = $spec['text'];
+      if (!preg_match('/\n\z/', $spec['text'])) {
+        $text .= "\n";
+      }
+
       $result[] = $this->renderLine(
         idx($spec, 'number'),
-        $spec['text'],
+        $text,
         $chevron,
         idx($spec, 'type'));
 
@@ -308,6 +319,15 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
       $line_map[$number] = $offset;
       $number++;
       $offset += strlen($line);
+    }
+
+    // If the last line ends in a newline, add a virtual offset for the final
+    // line with no characters on it. This allows lint messages to target the
+    // last line of the file at character 1.
+    if ($lines) {
+      if (preg_match('/\n\z/', $line)) {
+        $line_map[$number] = $offset;
+      }
     }
 
     return $line_map;
