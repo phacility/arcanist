@@ -113,7 +113,6 @@ EOTEXT
         'param' => 'commit',
         'help' => pht('Read revision information from a specific commit.'),
         'conflicts' => array(
-          'only'    => null,
           'preview' => null,
           'update'  => null,
         ),
@@ -176,10 +175,6 @@ EOTEXT
             '%s can not be used with %s.',
             '--create',
             '--edit'),
-          'only'    => pht(
-            '%s can not be used with %s.',
-            '--create',
-            '--only'),
           'preview' => pht(
             '%s can not be used with %s.',
             '--create',
@@ -206,29 +201,12 @@ EOTEXT
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
       ),
-      'only' => array(
-        'help' => pht(
-          'Only generate a diff, without running lint, unit tests, or other '.
-          'auxiliary steps. See also %s.',
-          '--preview'),
-        'conflicts' => array(
-          'preview'   => null,
-          'message'   => pht('%s does not affect revisions.', '--only'),
-          'edit'      => pht('%s does not affect revisions.', '--only'),
-          'lintall'   => pht('%s suppresses lint.', '--only'),
-          'advice'    => pht('%s suppresses lint.', '--only'),
-          'apply-patches' => pht('%s suppresses lint.', '--only'),
-          'never-apply-patches' => pht('%s suppresses lint.', '--only'),
-        ),
-      ),
       'preview' => array(
         'help' => pht(
           'Instead of creating or updating a revision, only create a diff, '.
           'which you may later attach to a revision. This still runs lint '.
-          'unit tests. See also %s.',
-          '--only'),
+          'unit tests.'),
         'conflicts' => array(
-          'only'      => null,
           'edit'      => pht('%s does affect revisions.', '--preview'),
           'message'   => pht('%s does not update any revision.', '--preview'),
         ),
@@ -343,7 +321,6 @@ EOTEXT
         'conflicts' => array(
           'use-commit-message'  => true,
           'update'              => true,
-          'only'                => true,
           'preview'             => true,
           'raw'                 => true,
           'raw-command'         => true,
@@ -354,7 +331,6 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add reviewers.'),
         'conflicts' => array(
-          'only'    => true,
           'preview' => true,
           'update'  => true,
         ),
@@ -363,7 +339,6 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add CCs.'),
         'conflicts' => array(
-          'only'    => true,
           'preview' => true,
           'update'  => true,
         ),
@@ -762,8 +737,7 @@ EOTEXT
       return true;
     }
 
-    return $this->getArgument('preview') ||
-           $this->getArgument('only');
+    return $this->getArgument('preview');
   }
 
   private function generateAffectedPaths() {
@@ -1200,7 +1174,6 @@ EOTEXT
    */
   private function runLint() {
     if ($this->getArgument('nolint') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistLintWorkflow::RESULT_SKIP;
@@ -1281,7 +1254,6 @@ EOTEXT
    */
   private function runUnit() {
     if ($this->getArgument('nounit') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistUnitWorkflow::RESULT_SKIP;
@@ -1425,7 +1397,7 @@ EOTEXT
    * @task message
    */
   private function buildCommitMessage() {
-    if ($this->getArgument('preview') || $this->getArgument('only')) {
+    if ($this->getArgument('preview')) {
       return null;
     }
 
