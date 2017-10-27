@@ -233,14 +233,6 @@ EOTEXT
           'message'   => pht('%s does not update any revision.', '--preview'),
         ),
       ),
-      'plan-changes' => array(
-        'help' => pht(
-          'Create or update a revision without requesting a code review.'),
-        'conflicts' => array(
-          'only'     => pht('%s does not affect revisions.', '--only'),
-          'preview'  => pht('%s does not affect revisions.', '--preview'),
-        ),
-      ),
       'encoding' => array(
         'param' => 'encoding',
         'help' => pht(
@@ -591,16 +583,6 @@ EOTEXT
         "        **%s** __%s__\n\n",
         pht('Revision URI:'),
         $uri);
-
-      if ($this->getArgument('plan-changes')) {
-        $conduit->callMethodSynchronous(
-          'differential.createcomment',
-          array(
-            'revision_id' => $result['revisionid'],
-            'action' => 'rethink',
-          ));
-        echo pht('Planned changes to the revision.')."\n";
-      }
 
       if ($this->shouldOpenCreatedObjectsInBrowser()) {
         $this->openURIsInBrowser(array($uri));
