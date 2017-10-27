@@ -113,7 +113,7 @@ EOTEXT
         'param' => 'commit',
         'help' => pht('Read revision information from a specific commit.'),
         'conflicts' => array(
-          'preview' => null,
+          'only' => null,
           'update'  => null,
         ),
       ),
@@ -175,10 +175,10 @@ EOTEXT
             '%s can not be used with %s.',
             '--create',
             '--edit'),
-          'preview' => pht(
+          'only' => pht(
             '%s can not be used with %s.',
             '--create',
-            '--preview'),
+            '--only'),
           'update'  => pht(
             '%s can not be used with %s.',
             '--create',
@@ -201,14 +201,13 @@ EOTEXT
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
       ),
-      'preview' => array(
+      'only' => array(
         'help' => pht(
           'Instead of creating or updating a revision, only create a diff, '.
-          'which you may later attach to a revision. This still runs lint '.
-          'unit tests.'),
+          'which you may later attach to a revision.'),
         'conflicts' => array(
-          'edit'      => pht('%s does affect revisions.', '--preview'),
-          'message'   => pht('%s does not update any revision.', '--preview'),
+          'edit'      => pht('%s does affect revisions.', '--only'),
+          'message'   => pht('%s does not update any revision.', '--only'),
         ),
       ),
       'encoding' => array(
@@ -321,7 +320,7 @@ EOTEXT
         'conflicts' => array(
           'use-commit-message'  => true,
           'update'              => true,
-          'preview'             => true,
+          'only' => true,
           'raw'                 => true,
           'raw-command'         => true,
           'message-file'        => true,
@@ -331,7 +330,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add reviewers.'),
         'conflicts' => array(
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -339,7 +338,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add CCs.'),
         'conflicts' => array(
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -737,7 +736,7 @@ EOTEXT
       return true;
     }
 
-    return $this->getArgument('preview');
+    return $this->getArgument('only');
   }
 
   private function generateAffectedPaths() {
@@ -1397,7 +1396,7 @@ EOTEXT
    * @task message
    */
   private function buildCommitMessage() {
-    if ($this->getArgument('preview')) {
+    if ($this->getArgument('only')) {
       return null;
     }
 
