@@ -190,6 +190,16 @@ EOTEXT
         'param' => 'revision_id',
         'help'  => pht('Always update a specific revision.'),
       ),
+      'draft' => array(
+        'help' => pht(
+          'Hold this revision as a draft instead of submitting it for '.
+          'review.'),
+        'conflicts' => array(
+          'edit' => null,
+          'only' => null,
+          'update' => null,
+        ),
+      ),
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
       ),
@@ -511,9 +521,21 @@ EOTEXT
         $this->openURIsInBrowser(array($diff_info['uri']));
       }
     } else {
+      $is_draft = $this->getArgument('draft');
       $revision['diffid'] = $this->getDiffID();
 
       if ($commit_message->getRevisionID()) {
+        if ($is_draft) {
+          // TODO: In at least some cases, we could raise this earlier in the
+          // workflow to save users some time before the workflow aborts.
+          throw new ArcanistUsageException(
+            pht(
+              'You are updating a revision ("%s") but have specified '.
+              'the "--draft" flag. Only newly created revisions can be '.
+              'held as drafts.',
+              $commit_message->getRevisionMonogram()));
+        }
+
         $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
           $revision);
@@ -523,6 +545,9 @@ EOTEXT
           unset($messages[$revision['id']]);
           $this->writeScratchJSONFile($file, $messages);
         }
+
+        $result_uri = $result['uri'];
+        $result_id = $result['revisionid'];
 
         echo pht('Updated an existing Differential revision:')."\n";
       } else {
@@ -536,6 +561,13 @@ EOTEXT
             'type' => 'update',
             'value' => $diff_info['phid'],
           );
+
+          if ($is_draft) {
+            $xactions[] = array(
+              'type' => 'draft',
+              'value' => true,
+            );
+          }
 
           $result = $conduit->callMethodSynchronous(
             'differential.revision.edit',
@@ -556,6 +588,14 @@ EOTEXT
           $result_uri = id(new PhutilURI($this->getConduitURI()))
             ->setPath('/D'.$result_id);
         } else {
+          if ($is_draft) {
+            throw new ArcanistUsageException(
+              pht(
+                'You have specified "--draft", but the version of Phabricator '.
+                'on the server is too old to support draft revisions. Omit '.
+                'the flag or upgrade the server software.'));
+          }
+
           $revision = $this->dispatchWillCreateRevisionEvent($revision);
 
           $result = $conduit->callMethodSynchronous(

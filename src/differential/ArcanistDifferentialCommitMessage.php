@@ -38,6 +38,13 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     return $this->revisionID;
   }
 
+  public function getRevisionMonogram() {
+    if ($this->revisionID) {
+      return 'D'.$this->revisionID;
+    }
+    return null;
+  }
+
   public function pullDataFromConduit(
     ConduitClient $conduit,
     $partial = false) {
