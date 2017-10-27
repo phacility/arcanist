@@ -21,6 +21,7 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
+  private $revisionTransactions;
 
   const STAGING_PUSHED = 'pushed';
   const STAGING_USER_SKIP = 'user.skip';
@@ -525,16 +526,50 @@ EOTEXT
 
         echo pht('Updated an existing Differential revision:')."\n";
       } else {
-        $revision = $this->dispatchWillCreateRevisionEvent($revision);
+        // NOTE: We're either using "differential.revision.edit" (preferred)
+        // if we can, or falling back to "differential.createrevision"
+        // (the older way) if not.
 
-        $result = $conduit->callMethodSynchronous(
-          'differential.createrevision',
-          $revision);
+        $xactions = $this->revisionTransactions;
+        if ($xactions) {
+          $xactions[] = array(
+            'type' => 'update',
+            'value' => $diff_info['phid'],
+          );
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.revision.edit',
+            array(
+              'transactions' => $xactions,
+            ));
+
+          $result_id = idxv($result, array('object', 'id'));
+          if (!$result_id) {
+            throw new Exception(
+              pht(
+                'Expected a revision ID to be returned by '.
+                '"differential.revision.edit".'));
+          }
+
+          // TODO: This is hacky, but we don't currently receive a URI back
+          // from "differential.revision.edit".
+          $result_uri = id(new PhutilURI($this->getConduitURI()))
+            ->setPath('/D'.$result_id);
+        } else {
+          $revision = $this->dispatchWillCreateRevisionEvent($revision);
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.createrevision',
+            $revision);
+
+          $result_uri = $result['uri'];
+          $result_id = $result['revisionid'];
+        }
 
         $revised_message = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
           array(
-            'revision_id' => $result['revisionid'],
+            'revision_id' => $result_id,
           ));
 
         if ($this->shouldAmend()) {
@@ -552,7 +587,7 @@ EOTEXT
         echo pht('Created a new Differential revision:')."\n";
       }
 
-      $uri = $result['uri'];
+      $uri = $result_uri;
       echo phutil_console_format(
         "        **%s** __%s__\n\n",
         pht('Revision URI:'),
@@ -640,6 +675,7 @@ EOTEXT
     $revision = array(
       'fields' => $message->getFields(),
     );
+    $xactions = $message->getTransactions();
 
     if ($revision_id) {
 
@@ -694,6 +730,7 @@ EOTEXT
       }
 
       $revision['fields'] = $new_message->getFields();
+      $xactions = $new_message->getTransactions();
 
       $revision['id'] = $revision_id;
       $this->revisionID = $revision_id;
@@ -715,6 +752,8 @@ EOTEXT
         $this->writeScratchJSONFile('update-messages.json', $update_messages);
       }
     }
+
+    $this->revisionTransactions = $xactions;
 
     return $revision;
   }

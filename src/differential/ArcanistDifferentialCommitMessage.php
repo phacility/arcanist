@@ -8,6 +8,7 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
   private $rawCorpus;
   private $revisionID;
   private $fields = array();
+  private $xactions = null;
 
   private $gitSVNBaseRevision;
   private $gitSVNBasePath;
@@ -50,6 +51,9 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
 
     $this->fields = $result['fields'];
 
+    // NOTE: This does not exist prior to late October 2017.
+    $this->xactions = idx($result, 'transactions');
+
     if (!empty($result['errors'])) {
       throw new ArcanistDifferentialCommitMessageParserException(
         $result['errors']);
@@ -91,6 +95,10 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     ksort($fields);
     $fields = json_encode($fields);
     return md5($fields);
+  }
+
+  public function getTransactions() {
+    return $this->xactions;
   }
 
   /**
