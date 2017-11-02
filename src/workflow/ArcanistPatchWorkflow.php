@@ -877,6 +877,20 @@ EOTEXT
         "D{$revision_id}");
     }
 
+    if (!$commit_message && $revision_id) {
+      $this->authenticateConduit();
+      $conduit        = $this->getConduit();
+      $commit_message = $conduit->callMethodSynchronous(
+        'differential.getcommitmessage',
+        array(
+          'revision_id' => $revision_id,
+        ));
+      $prompt_message = pht(
+        '  Note arcanist failed to load the commit message '.
+        'from differential for revision %s.',
+        "D{$revision_id}");
+    }
+
     // no revision id or failed to fetch commit message so get it from the
     // user on the command line
     if (!$commit_message) {
