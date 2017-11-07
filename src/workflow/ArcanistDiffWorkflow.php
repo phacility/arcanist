@@ -2961,6 +2961,7 @@ EOTEXT
 
       // Don't automatically depend on revisions authored by other users.
       if ($revision_ref->getAuthorPHID() != $viewer_phid) {
+        unset($revision_refs[$key]);
         continue;
       }
     }
