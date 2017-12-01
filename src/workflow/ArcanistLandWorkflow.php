@@ -694,6 +694,8 @@ EOTEXT
     $rev_title = $this->revision['title'];
     $rev_auxiliary = idx($this->revision, 'auxiliary', array());
 
+    $full_name = pht('D%d: %s', $rev_id, $rev_title);
+
     if ($this->revision['authorPHID'] != $this->getUserPHID()) {
       $other_author = $this->getConduit()->callMethodSynchronous(
         'user.query',
@@ -706,17 +708,46 @@ EOTEXT
         "This %s has revision '%s' but you are not the author. Land this ".
         "revision by %s?",
         $this->branchType,
-        "D{$rev_id}: {$rev_title}",
+        $full_name,
         $other_author));
       if (!$ok) {
         throw new ArcanistUserAbortException();
       }
     }
 
-    if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
-      $ok = phutil_console_confirm(pht(
-        "Revision '%s' has not been accepted. Continue anyway?",
-        "D{$rev_id}: {$rev_title}"));
+    $state_warning = null;
+    $state_header = null;
+    if ($rev_status == ArcanistDifferentialRevisionStatus::CHANGES_PLANNED) {
+      $state_header = pht('REVISION HAS CHANGES PLANNED');
+      $state_warning = pht(
+        'The revision you are landing ("%s") is currently in the "%s" state, '.
+        'indicating that you expect to revise it before moving forward.'.
+        "\n\n".
+        'Normally, you should resubmit it for review and wait until it is '.
+        '"%s" by reviewers before you continue.'.
+        "\n\n".
+        'To resubmit the revision for review, either: update the revision '.
+        'with revised changes; or use "Request Review" from the web interface.',
+        $full_name,
+        pht('Changes Planned'),
+        pht('Accepted'));
+    } else if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
+      $state_header = pht('REVISION HAS NOT BEEN ACCEPTED');
+      $state_warning = pht(
+        'The revision you are landing ("%s") has not been "%s" by reviewers.',
+        $full_name,
+        pht('Accepted'));
+    }
+
+    if ($state_warning !== null) {
+      $prompt = pht('Land revision in the wrong state?');
+
+      id(new PhutilConsoleBlock())
+        ->addParagraph(tsprintf('<bg:yellow>** %s **</bg>', $state_header))
+        ->addParagraph(tsprintf('%B', $state_warning))
+        ->draw();
+
+      $ok = phutil_console_confirm($prompt);
       if (!$ok) {
         throw new ArcanistUserAbortException();
       }
