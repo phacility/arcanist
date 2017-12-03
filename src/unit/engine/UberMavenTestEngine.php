@@ -29,7 +29,21 @@ final class MavenTestEngine extends ArcanistUnitTestEngine {
     $start_time = time();
 
     $maven_top_dirs = $this->findTopLevelMavenDirectories();
+    $maven_failed = false;
+    $future = new ExecFuture($command);
+    $future->setCWD($this->project_root);
+    list($status, $stdout, $stderr) = $future->resolve();
+    if ($status) {
+        // Maven exits with a nonzero status if there were test failures
+        // or if there was a compilation error.
+        $maven_failed = true;
+    }
 
+    /**
+     * NOTE: This optimization doesn't work with multi-modules.
+     * Removing this for now until we can fix this.
+     * TODO(johnie@uber.com)
+     *
     // We'll figure out if any of the modified files we're testing are in
     // Maven directories. We won't want to run a bunch of Java tests for
     // changes to CSS files or whatever.
@@ -55,6 +69,7 @@ final class MavenTestEngine extends ArcanistUnitTestEngine {
         }
       }
     }
+    **/
 
     $testResults = $this->parseTestResultsSince($start_time);
     if ($maven_failed) {
