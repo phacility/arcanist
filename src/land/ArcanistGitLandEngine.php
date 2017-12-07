@@ -146,7 +146,7 @@ class ArcanistGitLandEngine
     }
   }
 
-  private function updateWorkingCopy() {
+  protected function updateWorkingCopy() {
     $api = $this->getRepositoryAPI();
     $source = $this->sourceCommit;
 
@@ -209,7 +209,7 @@ class ArcanistGitLandEngine
     $this->mergedRef = trim($stdout);
   }
 
-  private function pushChange() {
+  protected function pushChange() {
     $api = $this->getRepositoryAPI();
 
     $this->writeInfo(
