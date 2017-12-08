@@ -27,6 +27,7 @@ final class ArcanistSubmitWorkflow extends ArcanistWorkflow {
     $engine = new UberArcanistSubmitQueueEngine(
       $this->submitQueueClient,
       $this->getConduit());
+    $engine = $engine;
 
     $engine
       ->setRevision($revision)
@@ -39,8 +40,7 @@ final class ArcanistSubmitWorkflow extends ArcanistWorkflow {
       ->setSkipUpdateWorkingCopy(false)
       ->setShouldHold(false)
       ->setShouldSquash(false)
-      ->setShouldPreview($this->preview)
-      ->setSkipUpdateWorkingCopy(true);
+      ->setShouldPreview($this->preview);
 
     $engine->execute();
 
