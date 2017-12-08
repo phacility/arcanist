@@ -3,7 +3,7 @@
 /**
  * Applies changes from Differential or a file to the working copy.
  */
-final class ArcanistPatchWorkflow extends ArcanistDiffBasedWorkflow {
+final class ArcanistPatchWorkflow extends ArcanistWorkflow {
 
   const SOURCE_BUNDLE         = 'bundle';
   const SOURCE_PATCH          = 'patch';
@@ -114,14 +114,6 @@ EOTEXT
           'the patch is applied and committed in the new branch/bookmark. '.
           'This flag merges the resultant commit onto the original '.
           'branch and deletes the temporary branch.'),
-        'conflicts' => array(
-          'update' => true,
-        ),
-      ),
-      'uber-use-staging-git-tags' => array(
-        'supports' => array('git'),
-        'help' => pht(
-          'Pull base revision from staging git tags when available'),
         'conflicts' => array(
           'update' => true,
         ),
@@ -237,11 +229,6 @@ EOTEXT
   private function shouldUseMerge() {
     $allow_empty = $this->getArgument('uber-use-merge-strategy', false);
     return $allow_empty;
-  }
-
-  private function shouldUseStagingGitTags() {
-    $allow_tags = $this->getArgument('uber-use-staging-git-tags', false);
-    return $allow_tags;
   }
 
   private function getBranchName(ArcanistBundle $bundle) {
@@ -413,9 +400,6 @@ EOTEXT
             $param);
           break;
         case self::SOURCE_DIFF:
-          if ($this->shouldUseStagingGitTags()) {
-            $this->pullBaseTagFromStagingArea($param);
-          }
           $bundle = $this->loadDiffBundleFromConduit(
             $this->getConduit(),
             $param);
@@ -1153,22 +1137,4 @@ EOTEXT
     return $graph;
   }
 
-  private function pullBaseTagFromStagingArea($id){
-    list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup();
-    if (!$success) {
-      return $message;
-    }
-    $prefix = idx($staging, 'prefix', 'phabricator');
-    $base_tag = "{$prefix}/base/{$id}";
-    echo pht('Fetching base tag from staging remote')."\n";
-    $err = phutil_passthru(
-          'git fetch --tag -n %s %s',
-          $staging_uri,
-          $base_tag);
-    if ($err) {
-      $this->writeWarn(pht('STAGING TAG PULL FAILED'),
-          pht('Unable to pull tag from the staging area but proceeding !!'));
-      }
-    return self::SUCCESS;
-  }
 }

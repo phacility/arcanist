@@ -8,7 +8,7 @@
  * @task diffspec   Diff Specification
  * @task diffprop   Diff Properties
  */
-final class ArcanistDiffWorkflow extends ArcanistDiffBasedWorkflow {
+final class ArcanistDiffWorkflow extends ArcanistWorkflow {
 
   private $console;
   private $hasWarnedExternals = false;
@@ -21,6 +21,15 @@ final class ArcanistDiffWorkflow extends ArcanistDiffBasedWorkflow {
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
+
+  const STAGING_PUSHED = 'pushed';
+  const STAGING_USER_SKIP = 'user.skip';
+  const STAGING_DIFF_RAW = 'diff.raw';
+  const STAGING_REPOSITORY_UNKNOWN = 'repository.unknown';
+  const STAGING_REPOSITORY_UNAVAILABLE = 'repository.unavailable';
+  const STAGING_REPOSITORY_UNSUPPORTED = 'repository.unsupported';
+  const STAGING_REPOSITORY_UNCONFIGURED = 'repository.unconfigured';
+  const STAGING_CLIENT_UNSUPPORTED = 'client.unsupported';
 
   public function getWorkflowName() {
     return 'diff';
@@ -437,6 +446,10 @@ EOTEXT
     );
 
     return $arguments;
+  }
+
+  public function isRawDiffSource() {
+    return $this->getArgument('raw') || $this->getArgument('raw-command');
   }
 
   public function run() {
@@ -2712,13 +2725,64 @@ EOTEXT
   }
 
   private function pushChangesToStagingArea($id) {
-    list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup($id);
+    if ($this->getArgument('skip-staging')) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Flag --skip-staging was specified.'));
+      return self::STAGING_USER_SKIP;
+    }
 
-    if (!$success) {
-        return $message;
+    if ($this->isRawDiffSource()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Raw changes can not be pushed to a staging area.'));
+      return self::STAGING_DIFF_RAW;
+    }
+
+    if (!$this->getRepositoryPHID()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Unable to determine repository for this change.'));
+      return self::STAGING_REPOSITORY_UNKNOWN;
+    }
+
+    $staging = $this->getRepositoryStagingConfiguration();
+    if ($staging === null) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('The server does not support staging areas.'));
+      return self::STAGING_REPOSITORY_UNAVAILABLE;
+    }
+
+    $supported = idx($staging, 'supported');
+    if (!$supported) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Phabricator does not support staging areas for this repository.'));
+      return self::STAGING_REPOSITORY_UNSUPPORTED;
+    }
+
+    $staging_uri = idx($staging, 'uri');
+    if (!$staging_uri) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('No staging area is configured for this repository.'));
+      return self::STAGING_REPOSITORY_UNCONFIGURED;
+    } else if ($this->getConfigFromAnySource('uber.diff.staging.uri.replace')) {
+        $remote_name = $this->getRemoteName($staging_uri);
+        if (strlen($remote_name) > 0) {
+          $staging_uri = $remote_name;
+        }
     }
 
     $api = $this->getRepositoryAPI();
+    if (!($api instanceof ArcanistGitAPI)) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('This client version does not support staging this repository.'));
+      return self::STAGING_CLIENT_UNSUPPORTED;
+    }
+
     $commit = $api->getHeadCommit();
     $prefix = idx($staging, 'prefix', 'phabricator');
 
