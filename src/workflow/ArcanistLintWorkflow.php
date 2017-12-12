@@ -546,7 +546,8 @@ EOTEXT
           pht('Automatically amending HEAD with lint patches.'));
         $amend = true;
       } else {
-        $amend = phutil_console_confirm(pht('Amend HEAD with lint patches?'));
+        $amend = phutil_console_confirm(pht('Amend HEAD with lint patches?'),
+                                        false);
       }
 
       if ($amend) {
