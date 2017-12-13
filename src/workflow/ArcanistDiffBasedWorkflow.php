@@ -85,4 +85,29 @@ abstract class ArcanistDiffBasedWorkflow extends ArcanistWorkflow {
     public function isRawDiffSource() {
         return $this->getArgument('raw') || $this->getArgument('raw-command');
     }
+
+    /**
+     * Finds the git remote name for given git remote url.
+     *
+     * @return string Remote name if there is any, or empty string otherwise.
+      */
+    protected function getRemoteName($remote_url) {
+      list($git_remote_stdout, $git_remote_stderr) = execx('git remote -v');
+      $git_remote_list = explode("\n", $git_remote_stdout);
+
+      foreach ($git_remote_list as $key => $line) {
+        if (strlen($line) > 0) {
+          // Every line has the following format:
+          // <remote_name>TAB<remote_url>SPACE([fetch|push|...])
+          $pat = '/(?P<remote_name>[^\s]+)\s+(?P<remote_url>[^\s]+)\s+([^\s]+)/';
+          $matches = array();
+          preg_match($pat, $line, $matches);
+          if (array_key_exists('remote_url', $matches) &&
+            $matches['remote_url'] == $remote_url) {
+            return $matches['remote_name'];
+          }
+        }
+      }
+      return '';
+    }
 }
