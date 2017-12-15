@@ -1,11 +1,11 @@
 <?php
 
-final class UberArcanistSubmitQueueEngine
+class UberArcanistSubmitQueueEngine
     extends ArcanistGitLandEngine
 {
-  private $revision;
-  private $shouldShadow;
-  private $skipUpdateWorkingCopy;
+  protected $revision;
+  protected $shouldShadow;
+  protected $skipUpdateWorkingCopy;
   private $submitQueueRegex;
   private $tbr;
   private $submitQueueTags;
@@ -24,7 +24,7 @@ final class UberArcanistSubmitQueueEngine
 
     try {
       $this->identifyRevision();
-      assert(!empty($this->revision));
+      $this->validate();
       $this->printLandingCommits();
 
       if ($this->getShouldPreview()) {
@@ -87,7 +87,7 @@ final class UberArcanistSubmitQueueEngine
     }
   }
 
-  private function pushChangeToSubmitQueue() {
+  protected function pushChangeToSubmitQueue() {
     $this->writeInfo(
       pht('PUSHING'),
       pht('Pushing changes to Submit Queue.'));
@@ -200,7 +200,7 @@ final class UberArcanistSubmitQueueEngine
     }
   }
 
-  private function normalizeDiff($text) {
+  protected function normalizeDiff($text) {
     $changes = id(new ArcanistDiffParser())->parseDiff($text);
     ksort($changes);
     return ArcanistBundle::newFromChanges($changes)->toGitPatch();
@@ -291,6 +291,10 @@ final class UberArcanistSubmitQueueEngine
     }
   }
 
-  private $submitQueueClient;
-  private $conduit;
+  protected function validate() {
+    assert(!empty($this->revision));
+  }
+
+  protected $submitQueueClient;
+  protected $conduit;
 }

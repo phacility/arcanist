@@ -4,8 +4,8 @@ class ArcanistGitLandEngine
   extends ArcanistLandEngine {
 
   private $localRef;
-  private $localCommit;
-  private $sourceCommit;
+  protected $localCommit;
+  protected $sourceCommit;
   private $mergedRef;
   protected $restoreWhenDestroyed;
 
@@ -473,7 +473,6 @@ class ArcanistGitLandEngine
 
   protected function destroyLocalBranch() {
     $api = $this->getRepositoryAPI();
-
     if ($this->getSourceRef() == $this->getTargetOnto()) {
       // If we landed a branch into a branch with the same name, so don't
       // destroy it. This prevents us from cleaning up "master" if you're

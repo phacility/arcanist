@@ -1116,13 +1116,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $message;
   }
 
-  public function loadWorkingCopyDifferentialRevisions(
-    ConduitClient $conduit,
-    array $query) {
-
+  public function findWorkingDifferentialRevisionsFromLog() {
     $messages = $this->getGitCommitLog();
     if (!strlen($messages)) {
-      return array();
+      return array(null, null, null);
     }
 
     $parser = new ArcanistDiffParser();
@@ -1139,7 +1136,20 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $reason_map[$object->getRevisionID()] = $message->getCommitHash();
       }
     }
+    return array($revision_ids, $reason_map, $messages);
+  }
 
+  public function loadWorkingCopyDifferentialRevisions(
+    ConduitClient $conduit,
+    array $query) {
+
+    list($revision_ids, $reason_map, $messages) = $this->findWorkingDifferentialRevisionsFromLog();
+    if ($messages == null) {
+      return array();
+    }
+
+    $revisionIdToIndex = array();
+    $finalResults = array();
     if ($revision_ids) {
       $results = $conduit->callMethodSynchronous(
         'differential.query',
@@ -1152,16 +1162,24 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $results[$key]['why'] = pht(
           "Commit message for '%s' has explicit 'Differential Revision'.",
           $hash);
+        $revisionIdToIndex[$result["id"]] = $key;
       }
 
-      return $results;
+      // differential.query does not guarantee order. Ensure result is in order of revision-ids found
+      foreach ($revision_ids as $revision_id) {
+        $finalResults[] = $results[$revisionIdToIndex[$revision_id]];
+      }
+
+      return $finalResults;
     }
 
     // If we didn't succeed, try to find revisions by hash.
     $hashes = array();
+    $hash_keys = array();
     foreach ($this->getLocalCommitInformation() as $commit) {
       $hashes[] = array('gtcm', $commit['commit']);
       $hashes[] = array('gttr', $commit['tree']);
+      $hash_keys[] = $commit['commit'] . "_" . $commit['tree'];
     }
 
     $results = $conduit->callMethodSynchronous(
@@ -1172,11 +1190,35 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     foreach ($results as $key => $result) {
       $results[$key]['why'] = pht(
-        'A git commit or tree hash in the commit range is already attached '.
+        'A git commit or tree hash in the commit range is already attached ' .
         'to the Differential revision.');
+      $revisionIdToIndex[$this->buildCommitKey($result)] = $key;
     }
 
-    return $results;
+    // differential.query does not guarantee order. Ensure result is in order of revision-ids found
+    foreach ($hash_keys as $hash_key) {
+      if ( array_key_exists($hash_key, $revisionIdToIndex)) {
+        $results_key = $revisionIdToIndex[$hash_key];
+        if ( array_key_exists($results_key, $results)) {
+          $finalResults[] = $results[$results_key];
+        }
+      }
+    }
+    return $finalResults;
+  }
+
+  private function buildCommitKey(&$diffQueryResult) {
+    $hashes = $diffQueryResult["hashes"];
+    $gtcm = "";
+    $gttr = "";
+    foreach ($hashes as $hash) {
+      if($hash[0] == 'gtcm') {
+        $gtcm = $hash[1];
+      } else {
+        $gttr = $hash[1];
+      }
+    }
+    return $gtcm . "_" . $gttr;
   }
 
   public function updateWorkingCopy() {
