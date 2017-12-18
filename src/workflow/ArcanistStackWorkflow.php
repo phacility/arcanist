@@ -858,7 +858,8 @@ EOTEXT
     // END UBER CODE
   }
 
-  private function debugLog(...$message) {
+  private function debugLog($pattern /*... */) {
+    $message = func_get_args();
     if ( $this->traceModeEnabled) {
       echo phutil_console_format(call_user_func_array('pht', $message));
     }
