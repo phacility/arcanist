@@ -5,6 +5,8 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
   public function testGitStateParsing() {
     if (Filesystem::binaryExists('git')) {
       $this->parseState('git_basic.git.tgz');
+      $this->parseState('git_submodules_dirty.git.tgz');
+      $this->parseState('git_submodules_staged.git.tgz');
     } else {
       $this->assertSkipped(pht('Git is not installed'));
     }
@@ -98,6 +100,28 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
           'UNSTAGED'    => $f_add,
         );
         $this->assertEqual($expect_range, $api->getCommitRangeStatus());
+        break;
+      case 'git_submodules_dirty.git.tgz':
+        $expect_uncommitted = array(
+          '.gitmodules'           => $f_mod | $f_uns | $f_unc,
+          'added/'                => $f_unt,
+          'deleted'               => $f_del | $f_uns | $f_unc,
+          'modified-commit'       => $f_mod | $f_uns | $f_unc,
+          'modified-commit-dirty' => $f_mod | $f_uns | $f_unc,
+          'modified-dirty'        => $f_ext | $f_uns | $f_unc,
+        );
+        $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
+        break;
+      case 'git_submodules_staged.git.tgz':
+        $expect_uncommitted = array(
+          '.gitmodules'           => $f_mod | $f_uns | $f_unc,
+          'added'                 => $f_add | $f_unc,
+          'deleted'               => $f_del | $f_unc,
+          'modified-commit'       => $f_mod | $f_unc,
+          'modified-commit-dirty' => $f_mod | $f_uns | $f_unc,
+          'modified-dirty'        => $f_ext | $f_uns | $f_unc,
+        );
+        $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
         break;
       case 'hg_basic.hg.tgz':
         $expect_uncommitted = array(
