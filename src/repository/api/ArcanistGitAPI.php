@@ -52,8 +52,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function getGitVersion() {
-    list($stdout) = $this->execxLocal('--version');
-    return rtrim(str_replace('git version ', '', $stdout));
+    static $version = null;
+    if ($version === null) {
+      list($stdout) = $this->execxLocal('--version');
+      $version = rtrim(str_replace('git version ', '', $stdout));
+    }
+    return $version;
   }
 
   public function getMetadataPath() {
@@ -645,8 +649,70 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this->executeSVNFindRev($hash, 'SVN');
   }
 
+  private function buildUncommittedStatusViaStatus() {
+    $status = $this->buildLocalFuture(
+      array(
+        'status --porcelain=2 -z',
+      ));
+    list($stdout) = $status->resolvex();
+
+    $result = new PhutilArrayWithDefaultValue();
+    $parts = explode("\0", $stdout);
+    while (count($parts) > 1) {
+      $entry = array_shift($parts);
+      $entry_parts = explode(' ', $entry);
+      if ($entry_parts[0] == '1') {
+        $path = $entry_parts[8];
+      } else if ($entry_parts[0] == '2') {
+        $path = $entry_parts[9];
+      } else if ($entry_parts[0] == 'u') {
+        $path = $entry_parts[10];
+      } else if ($entry_parts[0] == '?') {
+        $result[$entry_parts[1]] = self::FLAG_UNTRACKED;
+        continue;
+      }
+
+      $result[$path] |= self::FLAG_UNCOMMITTED;
+      $index_state = substr($entry_parts[1], 0, 1);
+      $working_state = substr($entry_parts[1], 1, 1);
+      if ($index_state == 'A') {
+        $result[$path] |= self::FLAG_ADDED;
+      } else if ($index_state == 'M') {
+        $result[$path] |= self::FLAG_MODIFIED;
+      } else if ($index_state == 'D') {
+        $result[$path] |= self::FLAG_DELETED;
+      }
+      if ($working_state != '.') {
+        $result[$path] |= self::FLAG_UNSTAGED;
+        if ($index_state == '.') {
+          if ($working_state == 'A') {
+            $result[$path] |= self::FLAG_ADDED;
+          } else if ($working_state == 'M') {
+            $result[$path] |= self::FLAG_MODIFIED;
+          } else if ($working_state == 'D') {
+            $result[$path] |= self::FLAG_DELETED;
+          }
+        }
+      }
+      $submodule_tracked = substr($entry_parts[2], 2, 1);
+      $submodule_untracked = substr($entry_parts[2], 3, 1);
+      if ($submodule_tracked == 'M' || $submodule_untracked == 'U') {
+        $result[$path] |= self::FLAG_EXTERNALS;
+      }
+
+      if ($entry_parts[0] == '2') {
+        $result[array_shift($parts)] = $result[$path] | self::FLAG_DELETED;
+        $result[$path] |= self::FLAG_ADDED;
+      }
+    }
+    return $result->toArray();
+  }
 
   protected function buildUncommittedStatus() {
+    if (version_compare($this->getGitVersion(), '2.11.0', '>=')) {
+      return $this->buildUncommittedStatusViaStatus();
+    }
+
     $diff_options = $this->getDiffBaseOptions();
 
     if ($this->repositoryHasNoCommits) {
@@ -719,7 +785,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   protected function buildCommitRangeStatus() {
     list($stdout, $stderr) = $this->execxLocal(
-      'diff %C --raw %s --',
+      'diff %C --raw %s HEAD --',
       $this->getDiffBaseOptions(),
       $this->getBaseCommit());
 

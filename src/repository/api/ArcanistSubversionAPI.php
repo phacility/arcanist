@@ -45,9 +45,9 @@ final class ArcanistSubversionAPI extends ArcanistRepositoryAPI {
   }
 
   protected function buildCommitRangeStatus() {
-    // In SVN, the commit range is always "uncommitted changes", so these
-    // statuses are equivalent.
-    return $this->getUncommittedStatus();
+    // In SVN, there are never any previous commits in the range -- it is all in
+    // the uncommitted status.
+    return array();
   }
 
   protected function buildUncommittedStatus() {

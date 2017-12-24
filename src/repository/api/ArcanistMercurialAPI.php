@@ -372,41 +372,18 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   protected function buildCommitRangeStatus() {
-    // TODO: Possibly we should use "hg status --rev X --rev ." for this
-    // instead, but we must run "hg diff" later anyway in most cases, so
-    // building and caching it shouldn't hurt us.
+    list($stdout) = $this->execxLocal(
+      'status --rev %s --rev tip',
+      $this->getBaseCommit());
 
-    $diff = $this->getFullMercurialDiff();
-    if (!$diff) {
-      return array();
+    $results = new PhutilArrayWithDefaultValue();
+
+    $working_status = ArcanistMercurialParser::parseMercurialStatus($stdout);
+    foreach ($working_status as $path => $mask) {
+      $results[$path] |= $mask;
     }
 
-    $parser = new ArcanistDiffParser();
-    $changes = $parser->parseDiff($diff);
-
-    $status_map = array();
-    foreach ($changes as $change) {
-      $flags = 0;
-      switch ($change->getType()) {
-        case ArcanistDiffChangeType::TYPE_ADD:
-        case ArcanistDiffChangeType::TYPE_MOVE_HERE:
-        case ArcanistDiffChangeType::TYPE_COPY_HERE:
-          $flags |= self::FLAG_ADDED;
-          break;
-        case ArcanistDiffChangeType::TYPE_CHANGE:
-        case ArcanistDiffChangeType::TYPE_COPY_AWAY: // Check for changes?
-          $flags |= self::FLAG_MODIFIED;
-          break;
-        case ArcanistDiffChangeType::TYPE_DELETE:
-        case ArcanistDiffChangeType::TYPE_MOVE_AWAY:
-        case ArcanistDiffChangeType::TYPE_MULTICOPY:
-          $flags |= self::FLAG_DELETED;
-          break;
-      }
-      $status_map[$change->getCurrentPath()] = $flags;
-    }
-
-    return $status_map;
+    return $results->toArray();
   }
 
   protected function didReloadWorkingCopy() {
