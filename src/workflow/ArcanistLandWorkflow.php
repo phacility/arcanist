@@ -1404,13 +1404,12 @@ EOTEXT
     switch ($buildable['buildableStatus']) {
       case 'building':
         $message = pht(
-          'Harbormaster is still building the active diff for this revision:');
+          'Harbormaster is still building the active diff for this revision.');
         $prompt = pht('Land revision anyway, despite ongoing build?');
         break;
       case 'failed':
         $message = pht(
-          'Harbormaster failed to build the active diff for this revision. '.
-          'Build failures:');
+          'Harbormaster failed to build the active diff for this revision.');
         $prompt = pht('Land revision anyway, despite build failures?');
         break;
       default:
@@ -1418,28 +1417,25 @@ EOTEXT
         return;
     }
 
-    $builds = $this->getConduit()->callMethodSynchronous(
-      'harbormaster.querybuilds',
+    $builds = $this->queryBuilds(
       array(
         'buildablePHIDs' => array($buildable['phid']),
       ));
 
     $console->writeOut($message."\n\n");
-    foreach ($builds['data'] as $build) {
-      switch ($build['buildStatus']) {
-        case 'failed':
-          $color = 'red';
-          break;
-        default:
-          $color = 'yellow';
-          break;
-      }
 
-      $console->writeOut(
-        "    **<bg:".$color."> %s </bg>** %s: %s\n",
-        phutil_utf8_strtoupper($build['buildStatusName']),
-        pht('Build %d', $build['id']),
-        $build['name']);
+    $builds = msort($builds, 'getStatusSortVector');
+    foreach ($builds as $build) {
+      $ansi_color = $build->getStatusANSIColor();
+      $status_name = $build->getStatusName();
+      $object_name = $build->getObjectName();
+      $build_name = $build->getName();
+
+      echo tsprintf(
+        "    **<bg:".$ansi_color."> %s </bg>** %s: %s\n",
+        $status_name,
+        $object_name,
+        $build_name);
     }
 
     $console->writeOut(
@@ -1477,5 +1473,35 @@ EOTEXT
       ));
     $mark_workflow->run();
   }
+
+  private function queryBuilds(array $constraints) {
+    $conduit = $this->getConduit();
+
+    // NOTE: This method only loads the 100 most recent builds. It's rare for
+    // a revision to have more builds than that and there's currently no paging
+    // wrapper for "*.search" Conduit API calls available in Arcanist.
+
+    try {
+      $raw_result = $conduit->callMethodSynchronous(
+        'harbormaster.build.search',
+        array(
+          'constraints' => $constraints,
+        ));
+    } catch (Exception $ex) {
+      // If the server doesn't have "harbormaster.build.search" yet (Aug 2016),
+      // try the older "harbormaster.querybuilds" instead.
+      $raw_result = $conduit->callMethodSynchronous(
+        'harbormaster.querybuilds',
+        $constraints);
+    }
+
+    $refs = array();
+    foreach ($raw_result['data'] as $raw_data) {
+      $refs[] = ArcanistBuildRef::newFromConduit($raw_data);
+    }
+
+    return $refs;
+  }
+
 
 }
