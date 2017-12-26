@@ -1391,7 +1391,7 @@ EOTEXT
 
     $console = PhutilConsole::getConsole();
 
-    $buildable = head($buildables);
+    $buildable = head($buildables['data']);
 
     if ($buildable['buildableStatus'] == 'passed') {
       $console->writeOut(
