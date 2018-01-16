@@ -142,6 +142,20 @@ EOTEXT;
         'replacement' => "\nX\nY\n",
       ),
 
+      'rmmulti' => array(
+        'line' => 2,
+        'char' => 1,
+        'original' => "\n",
+        'replacement' => '',
+      ),
+
+      'rmmulti2' => array(
+        'line' => 1,
+        'char' => 2,
+        'original' => "\n",
+        'replacement' => '',
+      ),
+
     );
 
     $defaults = array(
