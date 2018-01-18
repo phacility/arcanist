@@ -281,7 +281,7 @@ EOTEXT
       $branch = $repository_api->getBranchName();
 
       // If we don't have a branch name, just use whatever's at HEAD.
-      if (!strlen($branch) && !$this->isGitSvn) {
+      if (!strlen($branch)) {
         $branch = $repository_api->getWorkingCopyRevision();
       }
     } else if ($this->isHg) {
