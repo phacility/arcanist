@@ -1167,7 +1167,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
       // differential.query does not guarantee order. Ensure result is in order of revision-ids found
       foreach ($revision_ids as $revision_id) {
-        $finalResults[] = $results[$revisionIdToIndex[$revision_id]];
+        if (isset($revisionIdToIndex[$revision_id])) {
+          $finalResults[] = $results[$revisionIdToIndex[$revision_id]];
+        }
       }
 
       return $finalResults;
