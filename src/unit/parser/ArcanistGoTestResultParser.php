@@ -68,7 +68,7 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
       if (strncmp($line, 'ok', 2) === 0) {
         $meta = array();
         preg_match(
-          '/^ok[\s\t]+(?P<test_name>\w.*)[\s\t]+(?P<time>.*)s.*/',
+          '/^ok[\s]+(?P<test_name>\w.*)[\s]+(?:(?P<time>.*)s|\(cached\))/',
           $line,
           $meta);
 
@@ -84,7 +84,10 @@ final class ArcanistGoTestResultParser extends ArcanistTestResultParser {
           $result = new ArcanistUnitTestResult();
           $result->setName($test_name);
           $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-          $result->setDuration((float)$meta['time']);
+
+          if (array_key_exists('time', $meta)) {
+            $result->setDuration((float)$meta['time']);
+          }
 
           $results[] = $result;
         } else {
