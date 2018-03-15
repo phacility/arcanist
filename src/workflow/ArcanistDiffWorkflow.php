@@ -22,6 +22,7 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $commitMessageFromRevision;
   private $hitAutotargets;
   private $revisionTransactions;
+  private $revisionIsDraft;
 
   const STAGING_PUSHED = 'pushed';
   const STAGING_USER_SKIP = 'user.skip';
@@ -192,8 +193,10 @@ EOTEXT
       ),
       'draft' => array(
         'help' => pht(
-          'Hold this revision as a draft instead of submitting it for '.
-          'review.'),
+          'Create a draft revision so you can look over your changes before '.
+          'involving anyone else. Other users will not be notified about the '.
+          'revision until you later use "Request Review" to publish it. You '.
+          'can still share the draft by giving someone the link.'),
         'conflicts' => array(
           'edit' => null,
           'only' => null,
@@ -528,12 +531,25 @@ EOTEXT
         if ($is_draft) {
           // TODO: In at least some cases, we could raise this earlier in the
           // workflow to save users some time before the workflow aborts.
-          throw new ArcanistUsageException(
-            pht(
-              'You are updating a revision ("%s") but have specified '.
-              'the "--draft" flag. Only newly created revisions can be '.
-              'held as drafts.',
-              $commit_message->getRevisionMonogram()));
+          if ($this->revisionIsDraft) {
+            $this->writeWarn(
+              pht('ALREADY A DRAFT'),
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision is already a draft. You only need to '.
+                'provide the "--draft" flag when creating a revision. Draft '.
+                'revisions are not published until you explicitly request '.
+                'review from the web UI.',
+                $commit_message->getRevisionMonogram()));
+          } else {
+            throw new ArcanistUsageException(
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision has already been published for review. '.
+                'You can not turn a revision back into a draft once it has '.
+                'been published.',
+                $commit_message->getRevisionMonogram()));
+          }
         }
 
         $result = $conduit->callMethodSynchronous(
@@ -1792,6 +1808,12 @@ EOTEXT
     }
 
     $this->checkRevisionOwnership($revision);
+
+    // TODO: Save this status to improve a prompt later. See PHI458. This is
+    // extra awful until we move to "differential.revision.search" because
+    // the "differential.query" method doesn't return a real draft status for
+    // compatibility.
+    $this->revisionIsDraft = (idx($revision, 'statusName') === 'Draft');
 
     $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
