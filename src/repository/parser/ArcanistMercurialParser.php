@@ -174,6 +174,10 @@ final class ArcanistMercurialParser extends Phobject {
           case 'bookmark':
             $commit['bookmark'] = $value;
             break;
+          case 'obsolete':
+            // This is an extra field added by the "evolve" extension even
+            // if HGPLAIN=1 is set. See PHI502.
+            break;
           default:
             throw new Exception(
               pht("Unknown Mercurial log field '%s'!", $name));

@@ -103,6 +103,27 @@ final class ArcanistGoTestResultParserTestCase extends PhutilTestCase {
     }
   }
 
+  public function testNonVerboseOutputV110() {
+    $stubbed_results = Filesystem::readFile(
+      dirname(__FILE__).'/testresults/go.nonverbose-go1.10');
+
+    $parsed_results = id(new ArcanistGoTestResultParser())
+      ->parseTestResults('package', $stubbed_results);
+
+    $this->assertEqual(2, count($parsed_results));
+    $this->assertEqual(
+      'Go::TestCase::package::subpackage1',
+      $parsed_results[0]->getName());
+    $this->assertEqual(
+      'Go::TestCase::package::subpackage2',
+      $parsed_results[1]->getName());
+    foreach ($parsed_results as $result) {
+      $this->assertEqual(
+        ArcanistUnitTestResult::RESULT_PASS,
+        $result->getResult());
+    }
+  }
+
   public function testSingleTestCaseSuccessfulGo14() {
     $stubbed_results = Filesystem::readFile(
       dirname(__FILE__).'/testresults/go.single-test-case-successful-go1.4');

@@ -171,7 +171,7 @@ EOTEXT
     }
 
     echo $stdout;
-    fprintf(STDERR, $stderr);
+    fprintf(STDERR, '%s', $stderr);
     return $err;
   }
 
