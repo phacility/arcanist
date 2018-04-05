@@ -418,7 +418,7 @@ phutil_register_library_map(array(
     'CSharpToolsTestEngine' => 'unit/engine/CSharpToolsTestEngine.php',
     'ConfigurableGolangTestEngine' => 'unit/engine/ConfigurableGolangTestEngine.php',
     'ConfigurablePytestTestEngine' => 'unit/engine/ConfigurablePytestTestEngine.php',
-    'ESLingLinter' => 'lint/linter/ESLintLinter.php',
+    'ESLintLinter' => 'lint/linter/ESLintLinter.php',
     'LintTrapLinter' => 'lint/linter/LintTrapLinter.php',
     'MavenTestEngine' => 'unit/engine/UberMavenTestEngine.php',
     'NoseTestEngine' => 'unit/engine/NoseTestEngine.php',
