@@ -7,6 +7,7 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
       $this->parseState('git_basic.git.tgz');
       $this->parseState('git_submodules_dirty.git.tgz');
       $this->parseState('git_submodules_staged.git.tgz');
+      $this->parseState('git_spaces.git.tgz');
     } else {
       $this->assertSkipped(pht('Git is not installed'));
     }
@@ -155,6 +156,17 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
           'modified-dirty'        => $f_ext | $f_mod | $f_uns | $f_unc,
         );
         $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
+        break;
+      case 'git_spaces.git.tgz':
+        $expect_working = array(
+          'SPACES ADDED'       => $f_add,
+          'SPACES DELETED'     => $f_del,
+          'SPACES MODIFIED'    => $f_mod,
+          'SPACES UNCOMMITTED' => $f_add | $f_unc,
+          'SPACES UNSTAGED'    => $f_add | $f_mod | $f_uns | $f_unc,
+          'SPACES UNTRACKED'   => $f_unt,
+        );
+        $this->assertEqual($expect_working, $api->getWorkingCopyStatus());
         break;
       case 'hg_basic.hg.tgz':
         $expect_uncommitted = array(
