@@ -453,7 +453,15 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    $commit_message = $this->buildCommitMessage();
+    $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
+    if (!is_null($revert_plan_check_paths)) {
+      // revert plan checking only happens for certain paths in the repository
+      // so, we need to compute the changes early in this case
+      $changes = $this->generateChanges();
+      $commit_message = $this->buildCommitMessage($changes);
+    } else {
+      $commit_message = $this->buildCommitMessage();
+    }
 
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
@@ -488,7 +496,11 @@ EOTEXT
         'unit-excuses');
     }
 
-    $changes = $this->generateChanges();
+    // $changes may have already been set if revert plan checking is enabled;
+    // don't recompute
+    if (!isset($changes)) {
+      $changes = $this->generateChanges();
+    }
     if (!$changes) {
       throw new ArcanistUsageException(
         pht('There are no changes to generate a diff from!'));
@@ -1458,7 +1470,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function buildCommitMessage() {
+  private function buildCommitMessage($changes = NULL) {
     if ($this->getArgument('preview') || $this->getArgument('only')) {
       return null;
     }
@@ -1508,7 +1520,7 @@ EOTEXT
       if ($message_file) {
         return $this->getCommitMessageFromFile($message_file);
       } else {
-        return $this->getCommitMessageFromUser();
+        return $this->getCommitMessageFromUser($changes);
       }
     } else if ($is_update) {
       $revision_id = $this->normalizeRevisionID($is_update);
@@ -1540,9 +1552,18 @@ EOTEXT
 
 
   /**
+   * If revert plan checking is enabled, returns the regexp from config
+   * indicating which paths should be checked.  Otherwise returns null.
+   */
+  private function getRevertPlanCheckPaths() {
+    return $this->getConfigurationManager()->getConfigFromAnySource(
+      'differential.revert_plan_check_paths'
+    );
+  }
+  /**
    * @task message
    */
-  private function getCommitMessageFromUser() {
+  private function getCommitMessageFromUser($changes = NULL) {
     $conduit = $this->getConduit();
 
     $template = null;
@@ -1599,6 +1620,11 @@ EOTEXT
         $commit = head($this->getRepositoryAPI()->getLocalCommitInformation());
         $template = $commit['message'];
       } else {
+        $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
+        if (!is_null($revert_plan_check_paths)
+          && $this->modifiesPath($revert_plan_check_paths, $changes)) {
+          $fields['revertPlan'] = $this->getRevertPlan();
+        }
         $template = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
           array(
@@ -1738,6 +1764,38 @@ EOTEXT
     return $message;
   }
 
+
+  private function modifiesPath($paths_to_check, $changes) {
+    foreach ($changes as $changed_file => $contents) {
+      if (preg_match($paths_to_check, $changed_file)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * get revert plan by prompting developer
+   */
+  private function getRevertPlan() {
+    $ff_prompt = 'Is this diff guarded by a feature flag?';
+    $flagged = phutil_console_confirm($ff_prompt, $default_no = false);
+    if ($flagged) {
+      $flagnames = phutil_console_prompt('Flag name:');
+      return 'Guarded by feature flag ' . $flagnames;
+    } else {
+      $reasons =
+        $this->getConfigurationManager()->getConfigFromAnySource(
+          'differential.revert_plan_ommitted_reasons'
+        );
+      $prompt = "Please choose reason for no flag:\n";
+      for ($i = 0; $i < count($reasons); $i++) {
+        $prompt .= pht("%s: %s\n", $i+1, $reasons[$i]);
+      }
+      $option = phutil_console_select($prompt, 1, count($reasons));
+      return 'No feature flag: ' . $reasons[$option-1];
+    }
+  }
 
   /**
    * @task message
