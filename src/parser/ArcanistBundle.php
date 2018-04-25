@@ -800,13 +800,16 @@ final class ArcanistBundle extends Phobject {
       }
 
       $input = gzcompress($data);
+      $is_64bit = (PHP_INT_SIZE >= 8);
     } else {
       switch ($mode) {
         case '32bit':
           $input = $data;
+          $is_64bit = false;
           break;
         case '64bit':
           $input = $data;
+          $is_64bit = true;
           break;
         default:
           throw new Exception(
@@ -818,25 +821,6 @@ final class ArcanistBundle extends Phobject {
 
     // See emit_binary_diff_body() in diff.c for git's implementation.
 
-    $buf = '';
-
-    $lines = str_split($input, 52);
-    foreach ($lines as $line) {
-      $len = strlen($line);
-      // The first character encodes the line length.
-      if ($len <= 26) {
-        $buf .= chr($len + ord('A') - 1);
-      } else {
-        $buf .= chr($len - 26 + ord('a') - 1);
-      }
-      $buf .= self::encodeBase85($line);
-      $buf .= $eol;
-    }
-
-    return $buf;
-  }
-
-  private static function encodeBase85($data) {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
@@ -863,6 +847,9 @@ final class ArcanistBundle extends Phobject {
     //
     // (Since PHP overflows integer operations into floats, we don't need much
     // additional casting.)
+
+    // On 64 bit systems, we skip all this fanfare and just use integers. This
+    // is significantly faster.
 
     static $map = array(
       '0',
@@ -952,27 +939,65 @@ final class ArcanistBundle extends Phobject {
       '~',
     );
 
+    $len_map = array();
+    for ($ii = 0; $ii <= 52; $ii++) {
+      if ($ii <= 26) {
+        $len_map[$ii] = chr($ii + ord('A') - 1);
+      } else {
+        $len_map[$ii] = chr($ii - 26 + ord('a') - 1);
+      }
+    }
+
     $buf = '';
 
-    $pos = 0;
-    $bytes = strlen($data);
-    while ($bytes) {
-      $accum = 0;
-      for ($count = 24; $count >= 0; $count -= 8) {
-        $val = ord($data[$pos++]);
-        $val = $val * (1 << $count);
-        $accum = $accum + $val;
-        if (--$bytes == 0) {
-          break;
+    $lines = str_split($input, 52);
+    $final = (count($lines) - 1);
+
+    foreach ($lines as $idx => $line) {
+      if ($idx === $final) {
+        $len = strlen($line);
+      } else {
+        $len = 52;
+      }
+
+      // The first character encodes the line length.
+      $buf .= $len_map[$len];
+
+      $pos = 0;
+      while ($len) {
+        $accum = 0;
+        for ($count = 24; $count >= 0; $count -= 8) {
+          $val = ord($line[$pos++]);
+          $val = $val * (1 << $count);
+          $accum = $accum + $val;
+          if (--$len == 0) {
+            break;
+          }
         }
+
+        $slice = '';
+
+        // If we're in 64bit mode, we can just use integers. Otherwise, we
+        // need to use floating point math to avoid overflows.
+
+        if ($is_64bit) {
+          for ($count = 4; $count >= 0; $count--) {
+            $val = $accum % 85;
+            $accum = $accum / 85;
+            $slice .= $map[$val];
+          }
+        } else {
+          for ($count = 4; $count >= 0; $count--) {
+            $val = (int)fmod($accum, 85.0);
+            $accum = floor($accum / 85.0);
+            $slice .= $map[$val];
+          }
+        }
+
+        $buf .= strrev($slice);
       }
-      $slice = '';
-      for ($count = 4; $count >= 0; $count--) {
-        $val = (int)fmod($accum, 85.0);
-        $accum = floor($accum / 85.0);
-        $slice .= $map[$val];
-      }
-      $buf .= strrev($slice);
+
+      $buf .= $eol;
     }
 
     return $buf;
