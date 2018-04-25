@@ -781,21 +781,46 @@ final class ArcanistBundle extends Phobject {
 
   private function emitBinaryDiffBody($data) {
     $eol = $this->getEOL('git');
+    return self::newBase85Data($data, $eol);
+  }
 
-    if (!function_exists('gzcompress')) {
-      throw new Exception(
-        pht(
-          'This patch has binary data. The PHP zlib extension is required to '.
-          'apply patches with binary data to git. Install the PHP zlib '.
-          'extension to continue.'));
+  public static function newBase85Data($data, $eol, $mode = null) {
+    // The "32bit" and "64bit" modes are used by unit tests to verify that all
+    // of the encoding pathways here work identically. In these modes, we skip
+    // compression because `gzcompress()` may not be stable and we just want
+    // to test that the output matches some expected result.
+
+    if ($mode === null) {
+      if (!function_exists('gzcompress')) {
+        throw new Exception(
+          pht(
+            'This patch has binary data. The PHP zlib extension is required '.
+            'to apply patches with binary data to git. Install the PHP zlib '.
+            'extension to continue.'));
+      }
+
+      $input = gzcompress($data);
+    } else {
+      switch ($mode) {
+        case '32bit':
+          $input = $data;
+          break;
+        case '64bit':
+          $input = $data;
+          break;
+        default:
+          throw new Exception(
+            pht(
+              'Unsupported base85 encoding mode "%s".',
+              $mode));
+      }
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.
 
     $buf = '';
 
-    $deflated = gzcompress($data);
-    $lines = str_split($deflated, 52);
+    $lines = str_split($input, 52);
     foreach ($lines as $line) {
       $len = strlen($line);
       // The first character encodes the line length.
@@ -811,7 +836,7 @@ final class ArcanistBundle extends Phobject {
     return $buf;
   }
 
-  public static function encodeBase85($data) {
+  private static function encodeBase85($data) {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
