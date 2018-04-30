@@ -663,11 +663,7 @@ EODIFF;
     }
 
     $expect = Filesystem::readFile(dirname(__FILE__).'/base85/expect1.txt');
-    $expect = trim($expect);
-
-    $this->assertEqual(
-      $expect,
-      ArcanistBundle::encodeBase85($data));
+    $this->assertBase85($expect, $data, pht('Byte Sequences'));
 
     // This is just a large block of random binary data, it has no special
     // significance.
@@ -948,11 +944,27 @@ EODIFF;
       "\xe8\x1d\xa4\x18\xf3\x73\x82\xb4\x50\x59\xc2\x34\x36\x05\xeb";
 
     $expect = Filesystem::readFile(dirname(__FILE__).'/base85/expect2.txt');
-    $expect = trim($expect);
 
-    $this->assertEqual(
-      $expect,
-      ArcanistBundle::encodeBase85($data));
+    $this->assertBase85($expect, $data, pht('Random Data'));
+  }
+
+  private function assertBase85($expect, $data, $label) {
+    $modes = array(
+      '32bit',
+    );
+
+    // If this is a 64-bit machine, we can also test 64-bit mode.
+    $has_64bit = (PHP_INT_SIZE >= 8);
+    if ($has_64bit) {
+      $modes[] = '64bit';
+    }
+
+    foreach ($modes as $mode) {
+      $this->assertEqual(
+        $expect,
+        ArcanistBundle::newBase85Data($data, "\n", $mode),
+        pht('base85/%s: %s', $mode, $label));
+    }
   }
 
 }

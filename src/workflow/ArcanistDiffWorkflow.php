@@ -994,22 +994,6 @@ EOTEXT
       throw new Exception(pht('Repository API is not supported.'));
     }
 
-    if (count($changes) > 250) {
-      $message = pht(
-        'This diff has a very large number of changes (%s). Differential '.
-        'works best for changes which will receive detailed human review, '.
-        'and not as well for large automated changes or bulk checkins. '.
-        'See %s for information about reviewing big checkins. Continue anyway?',
-        phutil_count($changes),
-        'https://secure.phabricator.com/book/phabricator/article/'.
-          'differential_large_changes/');
-
-      if (!phutil_console_confirm($message)) {
-        throw new ArcanistUsageException(
-          pht('Aborted generation of gigantic diff.'));
-      }
-    }
-
     $limit = 1024 * 1024 * 4;
     foreach ($changes as $change) {
       $size = 0;
