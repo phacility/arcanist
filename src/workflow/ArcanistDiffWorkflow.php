@@ -1552,13 +1552,17 @@ EOTEXT
 
 
   /**
-   * If revert plan checking is enabled, returns the regexp from config
-   * indicating which paths should be checked.  Otherwise returns null.
+   * If revert plan checking is enabled, returns an array of regexps from
+   * config indicating which paths should be checked.  Otherwise returns null.
    */
   private function getRevertPlanCheckPaths() {
-    return $this->getConfigurationManager()->getConfigFromAnySource(
+    $paths = $this->getConfigurationManager()->getConfigFromAnySource(
       'differential.revert_plan_check_paths'
     );
+    if (!is_null($paths) && !is_array($paths)) {
+      $paths = array($paths);
+    }
+    return $paths;
   }
   /**
    * @task message
@@ -1767,8 +1771,10 @@ EOTEXT
 
   private function modifiesPath($paths_to_check, $changes) {
     foreach ($changes as $changed_file => $contents) {
-      if (preg_match($paths_to_check, $changed_file)) {
-        return true;
+      foreach ($paths_to_check as $cur_path) {
+        if (preg_match($cur_path, $changed_file)) {
+          return true;
+        }
       }
     }
     return false;
