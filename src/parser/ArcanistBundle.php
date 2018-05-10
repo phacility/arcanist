@@ -15,6 +15,8 @@ final class ArcanistBundle extends Phobject {
   private $loadFileDataCallback;
   private $authorName;
   private $authorEmail;
+  private $byteLimit;
+  private $reservedBytes;
 
   public function setAuthorEmail($author_email) {
     $this->authorEmail = $author_email;
@@ -74,6 +76,15 @@ final class ArcanistBundle extends Phobject {
 
   public function getEncoding() {
     return $this->encoding;
+  }
+
+  public function setByteLimit($byte_limit) {
+    $this->byteLimit = $byte_limit;
+    return $this;
+  }
+
+  public function getByteLimit() {
+    return $this->byteLimit;
   }
 
   public function getBaseRevision() {
@@ -241,12 +252,13 @@ final class ArcanistBundle extends Phobject {
   }
 
   public function toUnifiedDiff() {
+    $this->reservedBytes = 0;
+
     $eol = $this->getEOL('unified');
 
     $result = array();
     $changes = $this->getChanges();
     foreach ($changes as $change) {
-
       $hunk_changes = $this->buildHunkChanges($change->getHunks(), $eol);
       if (!$hunk_changes) {
         continue;
@@ -299,6 +311,8 @@ final class ArcanistBundle extends Phobject {
   }
 
   public function toGitPatch() {
+    $this->reservedBytes = 0;
+
     $eol = $this->getEOL('git');
 
     $result = array();
@@ -649,6 +663,8 @@ final class ArcanistBundle extends Phobject {
         $n_len = $small_hunk->getNewLength();
         $corpus = $small_hunk->getCorpus();
 
+        $this->reserveBytes(strlen($corpus));
+
         // NOTE: If the length is 1 it can be omitted. Since git does this,
         // we also do it so that "arc export --git" diffs are as similar to
         // real git diffs as possible, which helps debug issues.
@@ -740,6 +756,20 @@ final class ArcanistBundle extends Phobject {
 
     $old_length = strlen($old_data);
 
+    // Here, and below, the binary will be emitted with base85 encoding. This
+    // encoding encodes each 4 bytes of input in 5 bytes of output, so we may
+    // need up to 5/4ths as many bytes to represent it.
+
+    // We reserve space up front because base85 encoding isn't super cheap. If
+    // the blob is enormous, we'd rather just bail out now before doing a ton
+    // of work and then throwing it away anyway.
+
+    // However, the data is compressed before it is emitted so we may actually
+    // end up using fewer bytes. For now, the allocator just assumes the worst
+    // case since it isn't important to be precise, but we could do a more
+    // exact job of this.
+    $this->reserveBytes($old_length * 5 / 4);
+
     if ($old_data === null) {
       $old_data = '';
       $old_sha1 = str_repeat('0', 40);
@@ -758,6 +788,7 @@ final class ArcanistBundle extends Phobject {
     }
 
     $new_length = strlen($new_data);
+    $this->reserveBytes($new_length * 5 / 4);
 
     if ($new_data === null) {
       $new_data = '';
@@ -1001,6 +1032,23 @@ final class ArcanistBundle extends Phobject {
     }
 
     return $buf;
+  }
+
+  private function reserveBytes($bytes) {
+    $this->reservedBytes += $bytes;
+
+    if ($this->byteLimit) {
+      if ($this->reservedBytes > $this->byteLimit) {
+        throw new ArcanistDiffByteSizeException(
+          pht(
+            'This large diff requires more space than it is allowed to '.
+            'use (limited to %s bytes; needs more than %s bytes).',
+            new PhutilNumber($this->byteLimit),
+            new PhutilNumber($this->reservedBytes)));
+      }
+    }
+
+    return $this;
   }
 
 }
