@@ -9,6 +9,8 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
 
   private $warning_as_error = FALSE;
 
+  private $defaultSeverityMap = array();
+
   public function getInfoName() {
     return 'ShellCheck';
   }
@@ -131,6 +133,21 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
     return null;
   }
 
+  protected function getDefaultMessageSeverity($code) {
+    switch ($this->defaultSeverityMap[$code]) {
+      case 'error':
+        return ArcanistLintSeverity::SEVERITY_ERROR;
+      case 'warning':
+        return $this->warning_as_error
+          ? ArcanistLintSeverity::SEVERITY_ERROR
+          : ArcanistLintSeverity::SEVERITY_WARNING;
+      case 'info':
+        return ArcanistLintSeverity::SEVERITY_ADVICE;
+      default:
+        return ArcanistLintSeverity::SEVERITY_ERROR;
+    }
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $report_dom = new DOMDocument();
     $ok = @$report_dom->loadXML($stdout);
@@ -162,6 +179,7 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
         }
 
         $code = str_replace('ShellCheck.', '', $child->getAttribute('source'));
+        $this->defaultSeverityMap[$code] = $child->getAttribute('severity');
 
         $message = id(new ArcanistLintMessage())
           ->setPath($path)
@@ -169,27 +187,8 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
           ->setChar($child->getAttribute('column'))
           ->setName($this->getLinterName())
           ->setCode($code)
-          ->setDescription($child->getAttribute('message'));
-
-        switch ($child->getAttribute('severity')) {
-          case 'error':
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-            break;
-
-          case 'warning':
-            $message->setSeverity($this->warning_as_error
-              ? ArcanistLintSeverity::SEVERITY_ERROR
-              : ArcanistLintSeverity::SEVERITY_WARNING);
-            break;
-
-          case 'info':
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ADVICE);
-            break;
-
-          default:
-            $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
-            break;
-        }
+          ->setDescription($child->getAttribute('message'))
+          ->setSeverity($this->getLintMessageSeverity($code));
 
         $messages[] = $message;
       }
