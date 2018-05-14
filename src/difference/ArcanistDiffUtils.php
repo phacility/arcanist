@@ -63,7 +63,7 @@ final class ArcanistDiffUtils extends Phobject {
     $ol = strlen($o);
     $nl = strlen($n);
 
-    $max_glyphs = 80;
+    $max_glyphs = 100;
 
     // This has some wiggle room for multi-byte UTF8 characters, and the
     // fact that we're testing the sum of the lengths of both strings. It can
