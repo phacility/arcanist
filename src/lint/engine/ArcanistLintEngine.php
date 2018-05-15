@@ -397,7 +397,7 @@ abstract class ArcanistLintEngine extends Phobject {
       $line_number = 0;
       $line_start = 0;
       foreach ($lines as $line) {
-        $len = strlen($line) + 1; // Account for "\n".
+        $len = mb_strlen($line) + 1; // Account for "\n".
         $line_to_first_char[] = $line_start;
         $line_start += $len;
         for ($ii = 0; $ii < $len; $ii++) {
