@@ -133,6 +133,7 @@ final class ArcanistConfigurationDrivenUnitTestEngine
       $engine
         ->setWorkingCopy($this->getWorkingCopy())
         ->setEnableCoverage($this->getEnableCoverage())
+        ->setConfigurationManager($this->getConfigurationManager())
         ->setRenderer($renderer);
 
       // TODO: At some point, maybe we should emit a warning here if an engine
