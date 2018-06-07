@@ -714,9 +714,6 @@ EOTEXT
         throw new ArcanistUsageException(pht('Unable to apply patch!'));
       }
 
-      // in case there were any submodule changes involved
-      $repository_api->execPassthru('submodule update --init --recursive');
-
       if ($this->shouldCommit()) {
         if ($bundle->getFullAuthor()) {
           $author_cmd = csprintf('--author=%s', $bundle->getFullAuthor());
@@ -753,6 +750,11 @@ EOTEXT
           throw $ex;
         }
       }
+
+      // Synchronize submodule state, since the patch may have made changes
+      // to ".gitmodules". We do this after we finish managing branches so
+      // the behavior is correct under "--nobranch"; see PHI648.
+      $repository_api->execPassthru('submodule update --init --recursive');
 
       echo phutil_console_format(
         "<bg:green>** %s **</bg> %s\n",
