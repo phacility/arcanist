@@ -17,7 +17,6 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $remote;
   private $useSquash;
   private $keepBranch;
-  private $shouldUpdateWithRebase;
   private $branchType;
   private $ontoType;
   private $preview;
@@ -205,43 +204,8 @@ EOTEXT
         'conflicts' => array(
           'keep-branch' => true,
         ),
-      ),
-      'update-with-rebase' => array(
-        'help' => pht(
-          "When updating the feature branch, use rebase instead of merge. ".
-          "This might make things work better in some cases. Set ".
-          "%s to '%s' to make this the default.",
-          'arc.land.update.default',
-          'rebase'),
-        'conflicts' => array(
-          'merge' => pht(
-            'The %s strategy does not update the feature branch.',
-            '--merge'),
-          'update-with-merge' => pht(
-            'Cannot be used with %s.',
-            '--update-with-merge'),
-        ),
         'supports' => array(
-          'git',
-        ),
-      ),
-      'update-with-merge' => array(
-        'help' => pht(
-          "When updating the feature branch, use merge instead of rebase. ".
-          "This is the default behavior. Setting %s to '%s' can also be ".
-          "used to make this the default.",
-          'arc.land.update.default',
-          'merge'),
-        'conflicts' => array(
-          'merge' => pht(
-            'The %s strategy does not update the feature branch.',
-            '--merge'),
-          'update-with-rebase' => pht(
-            'Cannot be used with %s.',
-            '--update-with-rebase'),
-        ),
-        'supports' => array(
-          'git',
+          'hg',
         ),
       ),
       'revision' => array(
@@ -457,22 +421,6 @@ EOTEXT
 
     if ($engine) {
       $this->readEngineArguments();
-
-      $obsolete = array(
-        'delete-remote',
-        'update-with-merge',
-        'update-with-rebase',
-      );
-
-      foreach ($obsolete as $flag) {
-        if ($this->getArgument($flag)) {
-          throw new ArcanistUsageException(
-            pht(
-              'Flag "%s" is no longer supported under Git.',
-              '--'.$flag));
-        }
-      }
-
       $this->requireCleanWorkingCopy();
 
       $should_hold = $this->getArgument('hold');
@@ -726,14 +674,6 @@ EOTEXT
     }
     $this->branch = head($branch);
     $this->keepBranch = $this->getArgument('keep-branch');
-
-    $update_strategy = $this->getConfigFromAnySource('arc.land.update.default');
-    $this->shouldUpdateWithRebase = $update_strategy == 'rebase';
-    if ($this->getArgument('update-with-rebase')) {
-      $this->shouldUpdateWithRebase = true;
-    } else if ($this->getArgument('update-with-merge')) {
-      $this->shouldUpdateWithRebase = false;
-    }
 
     $this->preview = $this->getArgument('preview');
 
@@ -1238,42 +1178,7 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
 
     chdir($repository_api->getPath());
-    if ($this->isGit) {
-      if ($this->shouldUpdateWithRebase) {
-        echo phutil_console_format(pht(
-          'Rebasing **%s** onto **%s**',
-          $this->branch,
-          $this->onto)."\n");
-        $err = phutil_passthru('git rebase %s', $this->onto);
-        if ($err) {
-          throw new ArcanistUsageException(pht(
-            "'%s' failed. You can abort with '%s', or resolve conflicts ".
-            "and use '%s' to continue forward. After resolving the rebase, ".
-            "run '%s' again.",
-            sprintf('git rebase %s', $this->onto),
-            'git rebase --abort',
-            'git rebase --continue',
-            'arc land'));
-        }
-      } else {
-        echo phutil_console_format(pht(
-          'Merging **%s** into **%s**',
-          $this->branch,
-          $this->onto)."\n");
-        $err = phutil_passthru(
-          'git merge --no-stat %s -m %s',
-          $this->onto,
-          pht("Automatic merge by '%s'", 'arc land'));
-        if ($err) {
-          throw new ArcanistUsageException(pht(
-            "'%s' failed. To continue: resolve the conflicts, commit ".
-            "the changes, then run '%s' again. To abort: run '%s'.",
-            sprintf('git merge %s', $this->onto),
-            'arc land',
-            'git merge --abort'));
-        }
-      }
-    } else if ($this->isHg) {
+    if ($this->isHg) {
       $onto_tip = $repository_api->getCanonicalRevisionName($this->onto);
       $common_ancestor = $repository_api->getCanonicalRevisionName(
         hgsprintf('ancestor(%s, %s)', $this->onto, $this->branch));
@@ -1674,31 +1579,7 @@ EOTEXT
     }
 
     if ($this->getArgument('delete-remote')) {
-      if ($this->isGit) {
-        list($err, $ref) = $repository_api->execManualLocal(
-          'rev-parse --verify %s/%s',
-          $this->remote,
-          $this->branch);
-
-        if ($err) {
-          echo pht(
-            'No remote feature %s to clean up.',
-            $this->branchType);
-          echo "\n";
-        } else {
-
-          // NOTE: In Git, you delete a remote branch by pushing it with a
-          // colon in front of its name:
-          //
-          //   git push <remote> :<branch>
-
-          echo pht('Cleaning up remote feature %s...', $this->branchType), "\n";
-          $repository_api->execxLocal(
-            'push %s :%s',
-            $this->remote,
-            $this->branch);
-        }
-      } else if ($this->isHg) {
+      if ($this->isHg) {
         // named branches were closed as part of the earlier commit
         // so only worry about bookmarks
         if ($repository_api->isBookmark($this->branch)) {

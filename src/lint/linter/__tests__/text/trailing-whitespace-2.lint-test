@@ -1,0 +1,15 @@
+Lorem ipsum dolor sit amet,	
+consectetur adipiscing elit.	
+Phasellus sodales nibh erat,	
+in hendrerit nulla dictum interdum.	
+~~~~~~~~~~
+error:1:28
+autofix:1:28
+autofix:2:29
+autofix:3:29
+autofix:4:36
+~~~~~~~~~~
+Lorem ipsum dolor sit amet,
+consectetur adipiscing elit.
+Phasellus sodales nibh erat,
+in hendrerit nulla dictum interdum.

@@ -245,7 +245,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
 
     $matches = null;
     $preg = preg_match_all(
-      '/ +$/m',
+      '/[[:blank:]]+$/m',
       $data,
       $matches,
       PREG_OFFSET_CAPTURE);

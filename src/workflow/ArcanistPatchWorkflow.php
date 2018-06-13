@@ -446,6 +446,18 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     $has_base_revision = $repository_api->hasLocalCommit(
       $bundle->getBaseRevision());
+    if (!$has_base_revision) {
+      if ($repository_api instanceof ArcanistGitAPI) {
+        echo phutil_console_format(
+          "<bg:blue>** %s **</bg> %s\n",
+          pht('INFO'),
+          pht('Base commit is not in local repository; trying to fetch.'));
+        $repository_api->execManualLocal('fetch --quiet --all');
+        $has_base_revision = $repository_api->hasLocalCommit(
+          $bundle->getBaseRevision());
+      }
+    }
+
     if ($this->canBranch() &&
          ($this->shouldBranch() ||
          ($this->shouldCommit() && $has_base_revision))) {

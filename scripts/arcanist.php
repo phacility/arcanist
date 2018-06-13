@@ -422,7 +422,8 @@ try {
   }
 
   if (!$is_usage) {
-    fwrite(STDERR, phutil_console_format("**%s**\n", pht('Exception')));
+    fwrite(STDERR, phutil_console_format(
+      "<bg:red>** %s **</bg>\n", pht('Exception')));
 
     while ($ex) {
       fwrite(STDERR, $ex->getMessage()."\n");
