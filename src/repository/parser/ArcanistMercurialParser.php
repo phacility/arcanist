@@ -175,8 +175,9 @@ final class ArcanistMercurialParser extends Phobject {
             $commit['bookmark'] = $value;
             break;
           case 'obsolete':
-            // This is an extra field added by the "evolve" extension even
-            // if HGPLAIN=1 is set. See PHI502.
+          case 'instability':
+            // These are extra fields added by the "evolve" extension even
+            // if HGPLAIN=1 is set. See PHI502 and PHI718.
             break;
           default:
             throw new Exception(
