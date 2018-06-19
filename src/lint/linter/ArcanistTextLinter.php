@@ -311,9 +311,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->raiseLintAtOffset(
       $offset,
       self::LINT_EOF_WHITESPACE,
-      pht(
-        'This file contains trailing whitespace at the end of the file. '.
-        'This is unnecessary and should be avoided when possible.'),
+      pht('This file contains unnecessary trailing whitespace.'),
       $string,
       '');
   }

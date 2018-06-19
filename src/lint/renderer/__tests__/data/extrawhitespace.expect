@@ -1,0 +1,8 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Lint Warning
+    Consider this.
+
+               1 Adrift upon the sea.
+    >>> -      2 ~

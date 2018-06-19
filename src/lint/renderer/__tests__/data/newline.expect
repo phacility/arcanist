@@ -1,0 +1,14 @@
+>>> Lint for path/to/example.c:
+
+
+   Warning  (WARN123) Lint Warning
+    Consider this.
+
+               3 ccc
+               4 ddd
+               5 eee
+    >>> -      6 ~
+               7 fff
+               8 ggg
+               9 hhh
+              10 iii
