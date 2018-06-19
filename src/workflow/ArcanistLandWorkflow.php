@@ -1655,7 +1655,7 @@ EOTEXT
         pht("All harbormaster buildables have not succeeded."));
     }
 
-    if (!$console->confirm($prompt)) {
+    if (!phutil_console_confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
   }
