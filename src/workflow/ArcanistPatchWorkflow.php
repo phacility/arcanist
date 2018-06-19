@@ -3,7 +3,7 @@
 /**
  * Applies changes from Differential or a file to the working copy.
  */
-final class ArcanistPatchWorkflow extends ArcanistWorkflow {
+final class ArcanistPatchWorkflow extends ArcanistDiffBasedWorkflow {
 
   const SOURCE_BUNDLE         = 'bundle';
   const SOURCE_PATCH          = 'patch';
@@ -114,6 +114,14 @@ EOTEXT
           'the patch is applied and committed in the new branch/bookmark. '.
           'This flag merges the resultant commit onto the original '.
           'branch and deletes the temporary branch.'),
+        'conflicts' => array(
+          'update' => true,
+        ),
+      ),
+      'uber-use-staging-git-tags' => array(
+        'supports' => array('git'),
+        'help' => pht(
+          'Pull base revision from staging git tags when available'),
         'conflicts' => array(
           'update' => true,
         ),
@@ -231,6 +239,11 @@ EOTEXT
     return $allow_empty;
   }
 
+  private function shouldUseStagingGitTags() {
+    $allow_tags = $this->getArgument('uber-use-staging-git-tags', false);
+    return $allow_tags;
+  }
+
   private function getBranchName(ArcanistBundle $bundle) {
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
@@ -240,7 +253,7 @@ EOTEXT
       $base_name .= "-D{$revision_id}";
     }
 
-    $suffixes = array(null, '_1', '_2', '_3');
+    $suffixes = array(null, '_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9');
     foreach ($suffixes as $suffix) {
       $proposed_name = $base_name.$suffix;
 
@@ -400,6 +413,9 @@ EOTEXT
             $param);
           break;
         case self::SOURCE_DIFF:
+          if ($this->shouldUseStagingGitTags()) {
+            $this->pullBaseTagFromStagingArea($param);
+          }
           $bundle = $this->loadDiffBundleFromConduit(
             $this->getConduit(),
             $param);
@@ -889,6 +905,20 @@ EOTEXT
         "D{$revision_id}");
     }
 
+    if (!$commit_message && $revision_id) {
+      $this->authenticateConduit();
+      $conduit        = $this->getConduit();
+      $commit_message = $conduit->callMethodSynchronous(
+        'differential.getcommitmessage',
+        array(
+          'revision_id' => $revision_id,
+        ));
+      $prompt_message = pht(
+        '  Note arcanist failed to load the commit message '.
+        'from differential for revision %s.',
+        "D{$revision_id}");
+    }
+
     // no revision id or failed to fetch commit message so get it from the
     // user on the command line
     if (!$commit_message) {
@@ -1135,4 +1165,22 @@ EOTEXT
     return $graph;
   }
 
+  private function pullBaseTagFromStagingArea($id){
+    list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup();
+    if (!$success) {
+      return $message;
+    }
+    $prefix = idx($staging, 'prefix', 'phabricator');
+    $base_tag = "{$prefix}/base/{$id}";
+    echo pht('Fetching base tag from staging remote')."\n";
+    $err = phutil_passthru(
+          'git fetch --tag -n %s %s',
+          $staging_uri,
+          $base_tag);
+    if ($err) {
+      $this->writeWarn(pht('STAGING TAG PULL FAILED'),
+          pht('Unable to pull tag from the staging area but proceeding !!'));
+      }
+    return self::SUCCESS;
+  }
 }

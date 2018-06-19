@@ -518,7 +518,7 @@ EOTEXT
           $prompt = pht(
             'Apply this patch to %s?',
             phutil_console_format('__%s__', $result->getPath()));
-          if (!$console->confirm($prompt, $default = true)) {
+          if (!phutil_console_confirm($prompt, $default_no = false)) {
             continue;
           }
         }
@@ -546,7 +546,7 @@ EOTEXT
           pht('Automatically amending HEAD with lint patches.'));
         $amend = true;
       } else {
-        $amend = $console->confirm(pht('Amend HEAD with lint patches?'));
+        $amend = phutil_console_confirm(pht('Amend HEAD with lint patches?'));
       }
 
       if ($amend) {

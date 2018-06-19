@@ -1,0 +1,4 @@
+TEST=1
+TEST2=$TEST
+~~~~~~~~~~
+error:2:1

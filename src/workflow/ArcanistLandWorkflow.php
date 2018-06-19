@@ -235,47 +235,15 @@ EOTEXT
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
       ),
+      'use-sq' => array(
+        'help' => pht(
+          'force using the submit-queue if the submit-queue is configured '.
+          'for this repo.'),
+        'supports' => array(
+          'git',
+        ),
+      ),
     );
-  }
-
-  private function uberTbrGetExcuse($prompt, $history) {
-    $console = PhutilConsole::getConsole();
-    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-    $excuse = phutil_console_prompt($prompt, $history);
-    if ($excuse == '') {
-      throw new ArcanistUserAbortException();
-    }
-    return $excuse;
-  }
-
-  private function uberCreateTask($revision) {
-    if (empty($this->submitQueueTags)) {
-      return;
-    }
-
-    $console = PhutilConsole::getConsole();
-    $excuse = $this->uberTbrGetExcuse(
-      pht('Provide explanation for skipping SubmitQueue or press Enter to abort.'),
-      'tbr-excuses');
-    $args = array(
-      pht('%s is skipping SubmitQueue', 'D' . $revision['id']),
-      '--uber-description',
-      pht("%s is skipping SubmitQueue\n Author: %s\n Excuse: %s\n",
-        'D' . $revision['id'],
-        $this->getUserName(),
-        $excuse),
-      '--browse');
-    foreach ($this->submitQueueTags as $tag) {
-      array_push($args, "--project", $tag);
-    }
-
-    $owners = $this->getConfigFromAnySource("uber.land.submitqueue.owners");
-    foreach ($owners as $owner) {
-      array_push($args, "--cc", $owner);
-    }
-
-    $todo_workflow = $this->buildChildWorkflow('todo', $args);
-    $todo_workflow->run();
   }
 
   /**
@@ -353,33 +321,6 @@ EOTEXT
     return null;
   }
 
-  private function uberShouldRunSubmitQueue($revision, $regex) {
-    if (empty($regex)) {
-      return true;
-    }
-
-    $diff = head(
-      $this->getConduit()->callMethodSynchronous(
-        'differential.querydiffs',
-        array('ids' => array(head($revision['diffs'])))));
-    $changes = array();
-    foreach ($diff['changes'] as $changedict) {
-      $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
-    }
-
-    foreach ($changes as $change) {
-      if (preg_match($regex, $change->getOldPath())) {
-        return true;
-      }
-
-      if (preg_match($regex, $change->getCurrentPath())) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   public function run() {
     $this->readArguments();
     if ($this->shouldRunUnit) {
@@ -391,31 +332,9 @@ EOTEXT
     if ($this->isGit && !$this->isGitSvn) {
       $engine = new ArcanistGitLandEngine();
       if ($this->shouldUseSubmitQueue) {
-        $revision = $this->uberGetRevision();
-        if ($this->uberShouldRunSubmitQueue($revision, $this->submitQueueRegex)) {
-          if ($this->tbr) {
-            $this->uberCreateTask($revision);
-          } else {
-            // If the shadow-mode is on, then initialize the shadowEngine
-            if ($this->submitQueueShadowMode) {
-              $uberShadowEngine = new UberArcanistSubmitQueueEngine(
-                $this->submitQueueClient,
-                $this->getConduit());
-              $uberShadowEngine =
-                $uberShadowEngine
-                  ->setRevision($revision)
-                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
-            } else {
-              $engine = new UberArcanistSubmitQueueEngine(
-                $this->submitQueueClient,
-                $this->getConduit());
-              $engine =
-                $engine
-                  ->setRevision($revision)
-                  ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'));
-            }
-          }
-        }
+          $engine = new UberArcanistSubmitQueueEngine(
+            $this->submitQueueClient,
+            $this->getConduit());
       }
     }
 
@@ -437,21 +356,15 @@ EOTEXT
         ->setShouldPreview($this->preview)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
 
-      // initialize the shadow engine and execute it if uberShadowEngine is initialized
-      if ($uberShadowEngine) {
-        $uberShadowEngine
-          ->setWorkflow($this)
-          ->setRepositoryAPI($this->getRepositoryAPI())
-          ->setSourceRef($this->branch)
-          ->setTargetRemote($this->remote)
-          ->setTargetOnto($this->onto)
-          ->setShouldHold($should_hold)
-          ->setShouldKeep($this->keepBranch)
-          ->setShouldSquash($this->useSquash)
-          ->setShouldPreview($this->preview)
-          ->setBuildMessageCallback(array($this, 'buildEngineMessage'))
-          ->setShouldShadow(true);
-        $uberShadowEngine->execute();
+      if ($engine instanceof UberArcanistSubmitQueueEngine) {
+        $engine =
+          $engine
+            ->setRevision($this->revision)
+            ->setSubmitQueueRegex($this->submitQueueRegex)
+            ->setTbr($this->tbr)
+            ->setSubmitQueueTags($this->submitQueueTags)
+            ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'))
+            ->setBuildMessageCallback(array($this, 'uberBuildEngineMessage'));
       }
 
       $engine->execute();
@@ -717,8 +630,10 @@ EOTEXT
       $this->getConfigFromAnySource('uber.land.run.unit'),
       false
     );
+
     $this->shouldUseSubmitQueue = nonempty(
         $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+        $this->getArgument('use-sq'),
         false
     );
 
@@ -926,7 +841,9 @@ EOTEXT
             "There are multiple revisions on feature branch '%s' which are ".
             "not present on '%s':\n\n".
             "%s\n".
-            'Separate these revisions onto different branches, or use '.
+            'If you want all these diffs to be landed to Submit Queue atomically, '.
+            'use arc stack.\n Alternatively, you can '.
+            'separate these revisions onto different branches, or use '.
             '--revision <id> to use the commit message from <id> '.
             'and land them all.',
             $this->branch,
@@ -962,6 +879,14 @@ EOTEXT
       if (!$ok) {
         throw new ArcanistUserAbortException();
       }
+    }
+
+    $uber_prevent_unaccepted_changes = $this->getConfigFromAnySource(
+      'uber.land.prevent-unaccepted-changes',
+      false);
+    if ($uber_prevent_unaccepted_changes && $rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
+      throw new ArcanistUsageException(
+        pht("Revision '%s' has not been accepted.", "D{$rev_id}: {$rev_title}"));
     }
 
     if ($rev_status != ArcanistDifferentialRevisionStatus::ACCEPTED) {
@@ -1730,9 +1655,15 @@ EOTEXT
         pht("All harbormaster buildables have not succeeded."));
     }
 
-    if (!$console->confirm($prompt)) {
+    if (!phutil_console_confirm($prompt)) {
       throw new ArcanistUserAbortException();
     }
+  }
+
+  public function uberBuildEngineMessage(UberArcanistSubmitQueueEngine $engine) {
+    // TODO: This is oh-so-gross because the below method is gross.
+    $this->buildEngineMessage($engine);
+    $engine->setRevision($this->revision);
   }
 
   public function buildEngineMessage(ArcanistLandEngine $engine) {
@@ -1761,6 +1692,11 @@ EOTEXT
         $this->revision['id'],
       ));
     $mark_workflow->run();
+    // UBER CODE
+    $this->dispatchEvent(
+      ArcanistEventType::TYPE_LAND_DIDPUSHREVISION,
+      array());
+    // END UBER CODE
   }
 
 }

@@ -186,6 +186,15 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
         'example' => 'false',
       ),
+      'uber.land.prevent-unaccepted-changes' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, `%s` will prevent developers to land changes that'.
+          'are not accepted.',
+          'arc land'),
+        'default' => false,
+        'example' => 'false',
+      ),
       'uber.land.review-check' => array(
         'type' => 'bool',
         'help' => pht(
@@ -262,6 +271,13 @@ final class ArcanistSettings extends Phobject {
           '"git remote -v" output and uses first remote name where remote url '.
           'matches staging uri.'),
         'default' => false,
+      ),
+      'uber.differential.max_changes' => array(
+        'type' => 'int',
+        'help' => pht(
+          'The maximum number of changes to allow before prompting users with the '.
+          'large changes interactive input. '),
+        'default' => 250,
       ),
     );
   }

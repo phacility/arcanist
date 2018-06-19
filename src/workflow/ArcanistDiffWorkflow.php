@@ -8,7 +8,7 @@
  * @task diffspec   Diff Specification
  * @task diffprop   Diff Properties
  */
-final class ArcanistDiffWorkflow extends ArcanistWorkflow {
+final class ArcanistDiffWorkflow extends ArcanistDiffBasedWorkflow {
 
   private $console;
   private $hasWarnedExternals = false;
@@ -21,15 +21,6 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
-
-  const STAGING_PUSHED = 'pushed';
-  const STAGING_USER_SKIP = 'user.skip';
-  const STAGING_DIFF_RAW = 'diff.raw';
-  const STAGING_REPOSITORY_UNKNOWN = 'repository.unknown';
-  const STAGING_REPOSITORY_UNAVAILABLE = 'repository.unavailable';
-  const STAGING_REPOSITORY_UNSUPPORTED = 'repository.unsupported';
-  const STAGING_REPOSITORY_UNCONFIGURED = 'repository.unconfigured';
-  const STAGING_CLIENT_UNSUPPORTED = 'client.unsupported';
 
   public function getWorkflowName() {
     return 'diff';
@@ -448,10 +439,6 @@ EOTEXT
     return $arguments;
   }
 
-  public function isRawDiffSource() {
-    return $this->getArgument('raw') || $this->getArgument('raw-command');
-  }
-
   public function run() {
     $this->console = PhutilConsole::getConsole();
 
@@ -466,7 +453,15 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    $commit_message = $this->buildCommitMessage();
+    $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
+    if (!is_null($revert_plan_check_paths)) {
+      // revert plan checking only happens for certain paths in the repository
+      // so, we need to compute the changes early in this case
+      $changes = $this->generateChanges();
+      $commit_message = $this->buildCommitMessage($changes);
+    } else {
+      $commit_message = $this->buildCommitMessage();
+    }
 
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
@@ -501,7 +496,11 @@ EOTEXT
         'unit-excuses');
     }
 
-    $changes = $this->generateChanges();
+    // $changes may have already been set if revert plan checking is enabled;
+    // don't recompute
+    if (!isset($changes)) {
+      $changes = $this->generateChanges();
+    }
     if (!$changes) {
       throw new ArcanistUsageException(
         pht('There are no changes to generate a diff from!'));
@@ -966,7 +965,14 @@ EOTEXT
       throw new Exception(pht('Repository API is not supported.'));
     }
 
-    if (count($changes) > 250) {
+    $config = $this->getConfigurationManager();
+    $max_changes = $config->getConfigFromAnySource(
+      'uber.differential.max_changes');
+    if (is_null($max_changes)) {
+      $max_changes = 250;
+    }
+
+    if (count($changes) > $max_changes) {
       $message = pht(
         'This diff has a very large number of changes (%s). Differential '.
         'works best for changes which will receive detailed human review, '.
@@ -1355,7 +1361,7 @@ EOTEXT
                 'Unit testing raised errors, but all '.
                 'failing tests are unsound.'));
           } else {
-            $continue = $this->console->confirm(
+            $continue = phutil_console_confirm(
               pht(
                 'Unit test results included failures, but all failing tests '.
                 'are known to be unsound. Ignore unsound test failures?'));
@@ -1464,7 +1470,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function buildCommitMessage() {
+  private function buildCommitMessage($changes = NULL) {
     if ($this->getArgument('preview') || $this->getArgument('only')) {
       return null;
     }
@@ -1514,7 +1520,7 @@ EOTEXT
       if ($message_file) {
         return $this->getCommitMessageFromFile($message_file);
       } else {
-        return $this->getCommitMessageFromUser();
+        return $this->getCommitMessageFromUser($changes);
       }
     } else if ($is_update) {
       $revision_id = $this->normalizeRevisionID($is_update);
@@ -1546,9 +1552,22 @@ EOTEXT
 
 
   /**
+   * If revert plan checking is enabled, returns an array of regexps from
+   * config indicating which paths should be checked.  Otherwise returns null.
+   */
+  private function getRevertPlanCheckPaths() {
+    $paths = $this->getConfigurationManager()->getConfigFromAnySource(
+      'differential.revert_plan_check_paths'
+    );
+    if (!is_null($paths) && !is_array($paths)) {
+      $paths = array($paths);
+    }
+    return $paths;
+  }
+  /**
    * @task message
    */
-  private function getCommitMessageFromUser() {
+  private function getCommitMessageFromUser($changes = NULL) {
     $conduit = $this->getConduit();
 
     $template = null;
@@ -1605,6 +1624,12 @@ EOTEXT
         $commit = head($this->getRepositoryAPI()->getLocalCommitInformation());
         $template = $commit['message'];
       } else {
+        $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
+        if (!array_key_exists('revertPlan', $fields)
+          && !is_null($revert_plan_check_paths)
+          && $this->modifiesPath($revert_plan_check_paths, $changes)) {
+          $fields['revertPlan'] = $this->getRevertPlan();
+        }
         $template = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
           array(
@@ -1745,6 +1770,40 @@ EOTEXT
   }
 
 
+  private function modifiesPath($paths_to_check, $changes) {
+    foreach ($changes as $changed_file => $contents) {
+      foreach ($paths_to_check as $cur_path) {
+        if (preg_match($cur_path, $changed_file)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * get revert plan by prompting developer
+   */
+  private function getRevertPlan() {
+    $ff_prompt = 'Is this diff guarded by a feature flag?';
+    $flagged = phutil_console_confirm($ff_prompt, $default_no = false);
+    if ($flagged) {
+      $flagnames = phutil_console_prompt('Flag name:');
+      return 'Guarded by feature flag ' . $flagnames;
+    } else {
+      $reasons =
+        $this->getConfigurationManager()->getConfigFromAnySource(
+          'differential.revert_plan_ommitted_reasons'
+        );
+      $prompt = "Please choose reason for no flag:\n";
+      for ($i = 0; $i < count($reasons); $i++) {
+        $prompt .= pht("%s: %s\n", $i+1, $reasons[$i]);
+      }
+      $option = phutil_console_select($prompt, 1, count($reasons));
+      return 'No feature flag: ' . $reasons[$option-1];
+    }
+  }
+
   /**
    * @task message
    */
@@ -1856,6 +1915,21 @@ EOTEXT
       }
     }
 
+    $config = $this->getConfigurationManager();
+    $mandatory_fields = $config->getConfigFromAnySource(
+      'differential.mandatory_fields');
+
+    if (!is_null($mandatory_fields)) {
+      foreach ($mandatory_fields as $mandatory_field){
+        $fieldName = $mandatory_field['field_name'];
+        $field = $message->getFieldValue($fieldName);
+        if (empty($field)) {
+          $fieldMessage = $mandatory_field['field_message'];
+          throw new ArcanistUsageException(
+            pht($fieldMessage));
+        }
+      }
+    }
   }
 
 
@@ -2703,64 +2777,13 @@ EOTEXT
   }
 
   private function pushChangesToStagingArea($id) {
-    if ($this->getArgument('skip-staging')) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('Flag --skip-staging was specified.'));
-      return self::STAGING_USER_SKIP;
-    }
+    list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup($id);
 
-    if ($this->isRawDiffSource()) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('Raw changes can not be pushed to a staging area.'));
-      return self::STAGING_DIFF_RAW;
-    }
-
-    if (!$this->getRepositoryPHID()) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('Unable to determine repository for this change.'));
-      return self::STAGING_REPOSITORY_UNKNOWN;
-    }
-
-    $staging = $this->getRepositoryStagingConfiguration();
-    if ($staging === null) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('The server does not support staging areas.'));
-      return self::STAGING_REPOSITORY_UNAVAILABLE;
-    }
-
-    $supported = idx($staging, 'supported');
-    if (!$supported) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('Phabricator does not support staging areas for this repository.'));
-      return self::STAGING_REPOSITORY_UNSUPPORTED;
-    }
-
-    $staging_uri = idx($staging, 'uri');
-    if (!$staging_uri) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('No staging area is configured for this repository.'));
-      return self::STAGING_REPOSITORY_UNCONFIGURED;
-    } else if ($this->getConfigFromAnySource('uber.diff.staging.uri.replace')) {
-        $remote_name = $this->getRemoteName($staging_uri);
-        if (strlen($remote_name) > 0) {
-          $staging_uri = $remote_name;
-        }
+    if (!$success) {
+        return $message;
     }
 
     $api = $this->getRepositoryAPI();
-    if (!($api instanceof ArcanistGitAPI)) {
-      $this->writeInfo(
-        pht('SKIP STAGING'),
-        pht('This client version does not support staging this repository.'));
-      return self::STAGING_CLIENT_UNSUPPORTED;
-    }
-
     $commit = $api->getHeadCommit();
     $prefix = idx($staging, 'prefix', 'phabricator');
 
@@ -2840,31 +2863,6 @@ EOTEXT
 
     return $refs;
   }
-
-  /**
-   * Finds the git remote name for given git remote url.
-   *
-   * @return string Remote name if there is any, or empty string otherwise.
-   */
-   private function getRemoteName($remote_url) {
-     list($git_remote_stdout, $git_remote_stderr) = execx('git remote -v');
-     $git_remote_list = explode("\n", $git_remote_stdout);
-
-     foreach ($git_remote_list as $key => $line) {
-       if (strlen($line) > 0) {
-         // Every line has the following format:
-         // <remote_name>TAB<remote_url>SPACE([fetch|push|...])
-         $pat = '/(?P<remote_name>[^\s]+)\s+(?P<remote_url>[^\s]+)\s+([^\s]+)/';
-         $matches = array();
-         preg_match($pat, $line, $matches);
-         if (array_key_exists('remote_url', $matches) &&
-            $matches['remote_url'] == $remote_url) {
-            return $matches['remote_name'];
-         }
-       }
-     }
-     return '';
-   }
 
   /**
    * Try to upload lint and unit test results into modern Harbormaster build

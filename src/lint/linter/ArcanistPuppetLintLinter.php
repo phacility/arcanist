@@ -56,7 +56,7 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
     return array(
       '--error-level=all',
       sprintf('--log-format=%s', implode('|', array(
-        '%{linenumber}',
+        '%{line}',
         '%{column}',
         '%{kind}',
         '%{check}',

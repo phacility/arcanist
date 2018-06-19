@@ -35,12 +35,13 @@ final class TAPTestEngine extends ArcanistUnitTestEngine {
     $future->setTimeout($timeout);
     $result = new ArcanistUnitTestResult();
     $result->setName($command ? $command : 'unknown');
-
+    $projectRoot = $this->getWorkingCopy()->getProjectRoot();
+    $coveragePath = Filesystem::resolvePath('coverage/cobertura-coverage.xml', $projectRoot);
     try {
         list($stdout, $stderr) = $future->resolvex();
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
         if ($this->getEnableCoverage() !== false) {
-            $coverage = $this->readCoverage('coverage/cobertura-coverage.xml');
+            $coverage = $this->readCoverage($coveragePath);
             $result->setCoverage($coverage);
         }
     } catch(CommandException $exc) {
