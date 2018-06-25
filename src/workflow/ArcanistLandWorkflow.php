@@ -570,7 +570,7 @@ EOTEXT
     $branch = $this->getArgument('branch');
     if (empty($branch)) {
       $branch = $this->getBranchOrBookmark();
-      if ($branch) {
+      if ($branch !== null) {
         $this->branchType = $this->getBranchType($branch);
 
         // TODO: This message is misleading when landing a detached head or
