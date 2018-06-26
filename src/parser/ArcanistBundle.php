@@ -424,6 +424,9 @@ final class ArcanistBundle extends Phobject {
         $cur_target  = 'b/'.$cur_path;
       }
 
+      $old_target = $this->encodeGitTargetPath($old_target);
+      $cur_target = $this->encodeGitTargetPath($cur_target);
+
       $result[] = "diff --git {$old_index} {$cur_index}".$eol;
 
       if ($type == ArcanistDiffChangeType::TYPE_ADD) {
@@ -590,6 +593,24 @@ final class ArcanistBundle extends Phobject {
 
     return $results;
   }
+
+  private function encodeGitTargetPath($path) {
+    // See T8768. If a target path contains spaces, it must be terminated with
+    // a tab. If we don't do this, Mercurial has the wrong behavior when
+    // applying the patch. This results in a semantic trailing whitespace
+    // character:
+    //
+    //   +++ b/X Y.txt\t
+    //
+    // Everyone is at fault here and there are no winners.
+
+    if (strpos($path, ' ') !== false) {
+      $path = $path."\t";
+    }
+
+    return $path;
+  }
+
 
   private function getOldPath(ArcanistDiffChange $change) {
     $old_path = $change->getOldPath();

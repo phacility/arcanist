@@ -33,6 +33,37 @@ final class ArcanistBundleTestCase extends PhutilTestCase {
     return ArcanistBundle::newFromDiff($diff);
   }
 
+  public function testTabEncoding() {
+    // See T8768. Test that we add semantic trailing tab literals to diffs
+    // touching files with spaces in them. This is a pain to encode using the
+    // support toolset here so just do it manually.
+
+    // Note that the "b/X Y.txt" line has a trailing tab literal.
+
+    $diff = <<<EODIFF
+diff --git a/X Y.txt b/X Y.txt
+new file mode 100644
+--- /dev/null
++++ b/X Y.txt\t
+@@ -0,0 +1 @@
++quack
+
+
+EODIFF;
+
+    $bundle = ArcanistBundle::newFromDiff($diff);
+
+    $changes = $bundle->getChanges();
+    $this->assertEqual(1, count($changes));
+
+    // The path should parse as "X Y.txt" despite the trailing tab.
+    $change = head($changes);
+    $this->assertEqual('X Y.txt', $change->getCurrentPath());
+
+    // The tab should be restored when the diff is output again.
+    $this->assertEqual($diff, $bundle->toGitPatch());
+  }
+
   /**
    * Unarchive a saved git repository and apply each commit as though via
    * "arc patch", verifying that the resulting tree hash is identical to the

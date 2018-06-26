@@ -91,7 +91,9 @@ EOTEXT
           'Harbormaster build target.'),
       ),
       'everything' => array(
-        'help' => pht('Run every test.'),
+        'help' => pht(
+          'Run every test associated with a tracked file in the working '.
+          'copy.'),
         'conflicts' => array(
           'rev' => pht('%s runs all tests.', '--everything'),
         ),
@@ -134,7 +136,8 @@ EOTEXT
     if ($everything && $paths) {
       throw new ArcanistUsageException(
         pht(
-          'You can not specify paths with %s. The %s flag runs every test.',
+          'You can not specify paths with %s. The %s flag runs every test '.
+          'associated with a tracked file in the working copy.',
           '--everything',
           '--everything'));
     }
