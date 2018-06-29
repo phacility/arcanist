@@ -453,15 +453,7 @@ EOTEXT
 
     $this->runDiffSetupBasics();
 
-    $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
-    if (!is_null($revert_plan_check_paths)) {
-      // revert plan checking only happens for certain paths in the repository
-      // so, we need to compute the changes early in this case
-      $changes = $this->generateChanges();
-      $commit_message = $this->buildCommitMessage($changes);
-    } else {
-      $commit_message = $this->buildCommitMessage();
-    }
+    $commit_message = $this->buildCommitMessage();
 
     $this->dispatchEvent(
       ArcanistEventType::TYPE_DIFF_DIDBUILDMESSAGE,
@@ -496,11 +488,7 @@ EOTEXT
         'unit-excuses');
     }
 
-    // $changes may have already been set if revert plan checking is enabled;
-    // don't recompute
-    if (!isset($changes)) {
-      $changes = $this->generateChanges();
-    }
+    $changes = $this->generateChanges();
     if (!$changes) {
       throw new ArcanistUsageException(
         pht('There are no changes to generate a diff from!'));
@@ -1470,7 +1458,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function buildCommitMessage($changes = NULL) {
+  private function buildCommitMessage() {
     if ($this->getArgument('preview') || $this->getArgument('only')) {
       return null;
     }
@@ -1520,7 +1508,7 @@ EOTEXT
       if ($message_file) {
         return $this->getCommitMessageFromFile($message_file);
       } else {
-        return $this->getCommitMessageFromUser($changes);
+        return $this->getCommitMessageFromUser();
       }
     } else if ($is_update) {
       $revision_id = $this->normalizeRevisionID($is_update);
@@ -1567,7 +1555,7 @@ EOTEXT
   /**
    * @task message
    */
-  private function getCommitMessageFromUser($changes = NULL) {
+  private function getCommitMessageFromUser() {
     $conduit = $this->getConduit();
 
     $template = null;
@@ -1627,7 +1615,7 @@ EOTEXT
         $revert_plan_check_paths = $this->getRevertPlanCheckPaths();
         if (!array_key_exists('revertPlan', $fields)
           && !is_null($revert_plan_check_paths)
-          && $this->modifiesPath($revert_plan_check_paths, $changes)) {
+          && $this->modifiesPath($revert_plan_check_paths)) {
           $fields['revertPlan'] = $this->getRevertPlan();
         }
         $template = $conduit->callMethodSynchronous(
@@ -1770,8 +1758,9 @@ EOTEXT
   }
 
 
-  private function modifiesPath($paths_to_check, $changes) {
-    foreach ($changes as $changed_file => $contents) {
+  private function modifiesPath($paths_to_check) {
+    $changes = $this->getRepositoryAPI()->getCommitRangeStatus();
+    foreach ($changes as $changed_file => $ignored) {
       foreach ($paths_to_check as $cur_path) {
         if (preg_match($cur_path, $changed_file)) {
           return true;
