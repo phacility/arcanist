@@ -148,36 +148,35 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
         $old_impact--;
         $new_impact--;
 
-        if ($old_impact < 0 || $new_impact < 0) {
-          throw new Exception(
-            pht(
-              'Modified prefix line range has become negative '.
-              '(old = %d, new = %d).',
-              $old_impact,
-              $new_impact));
+        // We can end up here if a patch removes a line which occurs before
+        // another identical line.
+        if ($old_impact <= 0 || $new_impact <= 0) {
+          break;
         }
       } while (true);
 
       // If the lines at the end of the changed line range are actually the
       // same, shrink the range. This happens when a patch just removes a
       // line.
-      do {
-        $old_suffix = idx($old_lines, $start + $old_impact - 2, null);
-        $new_suffix = idx($new_lines, $start + $new_impact - 2, null);
+      if ($old_impact > 0 && $new_impact > 0) {
+        do {
+          $old_suffix = idx($old_lines, $start + $old_impact - 2, null);
+          $new_suffix = idx($new_lines, $start + $new_impact - 2, null);
 
-        if ($old_suffix !== $new_suffix) {
-          break;
-        }
+          if ($old_suffix !== $new_suffix) {
+            break;
+          }
 
-        $old_impact--;
-        $new_impact--;
+          $old_impact--;
+          $new_impact--;
 
-        // We can end up here if a patch removes a line which occurs after
-        // another identical line.
-        if ($old_impact <= 0 || $new_impact <= 0) {
-          break;
-        }
-      } while (true);
+          // We can end up here if a patch removes a line which occurs after
+          // another identical line.
+          if ($old_impact <= 0 || $new_impact <= 0) {
+            break;
+          }
+        } while (true);
+      }
 
     } else {
 

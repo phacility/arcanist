@@ -135,7 +135,9 @@ EOTEXT
           'patches suggested by lint without prompting.'),
       ),
       'everything' => array(
-        'help' => pht('Lint all files in the project.'),
+        'help' => pht(
+          'Lint all tracked files in the working copy. Ignored files and '.
+          'untracked files will not be linted.'),
         'conflicts' => array(
           'cache' => pht('%s lints all files', '--everything'),
           'rev' => pht('%s lints all files', '--everything'),
@@ -200,7 +202,8 @@ EOTEXT
     if ($everything && $paths) {
       throw new ArcanistUsageException(
         pht(
-          'You can not specify paths with %s. The %s flag lints every file.',
+          'You can not specify paths with %s. The %s flag lints every '.
+          'tracked file in the working copy.',
           '--everything',
           '--everything'));
     }
@@ -546,7 +549,8 @@ EOTEXT
           pht('Automatically amending HEAD with lint patches.'));
         $amend = true;
       } else {
-        $amend = phutil_console_confirm(pht('Amend HEAD with lint patches?'));
+        $amend = phutil_console_confirm(pht('Amend HEAD with lint patches?'),
+                                        false);
       }
 
       if ($amend) {

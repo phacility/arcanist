@@ -5,6 +5,8 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
   public function testGitStateParsing() {
     if (Filesystem::binaryExists('git')) {
       $this->parseState('git_basic.git.tgz');
+      $this->parseState('git_submodules_dirty.git.tgz');
+      $this->parseState('git_submodules_staged.git.tgz');
     } else {
       $this->assertSkipped(pht('Git is not installed'));
     }
@@ -54,6 +56,16 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
   }
 
   private function assertCorrectState($test, ArcanistRepositoryAPI $api) {
+    if ($api instanceof ArcanistGitAPI) {
+      $version = $api->getGitVersion();
+      if (version_compare($version, '2.11.0', '<')) {
+        // Behavior differs slightly on older versions of git; rather than code
+        // both variants, skip the tests in the presence of such a git.
+        $this->assertSkipped(pht('Behavior differs slightly on git < 2.11.0'));
+        return;
+      }
+    }
+
     $f_mod = ArcanistRepositoryAPI::FLAG_MODIFIED;
     $f_add = ArcanistRepositoryAPI::FLAG_ADDED;
     $f_del = ArcanistRepositoryAPI::FLAG_DELETED;
@@ -68,7 +80,7 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
 
     switch ($test) {
       case 'svn_basic.svn.tgz':
-        $expect = array(
+        $expect_uncommitted = array(
           'ADDED'       => $f_add,
           'COPIED_TO'   => $f_add,
           'DELETED'     => $f_del,
@@ -78,8 +90,22 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
           'PROPCHANGE'  => $f_mod,
           'UNTRACKED'   => $f_unt,
         );
-        $this->assertEqual($expect, $api->getUncommittedStatus());
-        $this->assertEqual($expect, $api->getCommitRangeStatus());
+        $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
+
+        $expect_range = array();
+        $this->assertEqual($expect_range, $api->getCommitRangeStatus());
+
+        $expect_working = array(
+          'ADDED'       => $f_add,
+          'COPIED_TO'   => $f_add,
+          'DELETED'     => $f_del,
+          'MODIFIED'    => $f_mod,
+          'MOVED'       => $f_del,
+          'MOVED_TO'    => $f_add,
+          'PROPCHANGE'  => $f_mod,
+          'UNTRACKED'   => $f_unt,
+        );
+        $this->assertEqual($expect_working, $api->getWorkingCopyStatus());
         break;
       case 'git_basic.git.tgz':
         $expect_uncommitted = array(
@@ -94,10 +120,41 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
           'ADDED'       => $f_add,
           'DELETED'     => $f_del,
           'MODIFIED'    => $f_mod,
-          'UNCOMMITTED' => $f_add,
           'UNSTAGED'    => $f_add,
         );
         $this->assertEqual($expect_range, $api->getCommitRangeStatus());
+
+        $expect_working = array(
+          'ADDED'       => $f_add,
+          'DELETED'     => $f_del,
+          'MODIFIED'    => $f_mod,
+          'UNCOMMITTED' => $f_add | $f_unc,
+          'UNSTAGED'    => $f_add | $f_mod | $f_uns | $f_unc,
+          'UNTRACKED'   => $f_unt,
+        );
+        $this->assertEqual($expect_working, $api->getWorkingCopyStatus());
+        break;
+      case 'git_submodules_dirty.git.tgz':
+        $expect_uncommitted = array(
+          '.gitmodules'           => $f_mod | $f_uns | $f_unc,
+          'added/'                => $f_unt,
+          'deleted'               => $f_del | $f_uns | $f_unc,
+          'modified-commit'       => $f_mod | $f_uns | $f_unc,
+          'modified-commit-dirty' => $f_ext | $f_mod | $f_uns | $f_unc,
+          'modified-dirty'        => $f_ext | $f_mod | $f_uns | $f_unc,
+        );
+        $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
+        break;
+      case 'git_submodules_staged.git.tgz':
+        $expect_uncommitted = array(
+          '.gitmodules'           => $f_mod | $f_unc,
+          'added'                 => $f_add | $f_unc,
+          'deleted'               => $f_del | $f_unc,
+          'modified-commit'       => $f_mod | $f_unc,
+          'modified-commit-dirty' => $f_ext | $f_mod | $f_uns | $f_unc,
+          'modified-dirty'        => $f_ext | $f_mod | $f_uns | $f_unc,
+        );
+        $this->assertEqual($expect_uncommitted, $api->getUncommittedStatus());
         break;
       case 'hg_basic.hg.tgz':
         $expect_uncommitted = array(
@@ -113,6 +170,15 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
           'UNCOMMITTED' => $f_add,
         );
         $this->assertEqual($expect_range, $api->getCommitRangeStatus());
+
+        $expect_working = array(
+          'ADDED'       => $f_add,
+          'DELETED'     => $f_del,
+          'MODIFIED'    => $f_mod,
+          'UNCOMMITTED' => $f_add | $f_mod | $f_unc,
+          'UNTRACKED'   => $f_unt,
+        );
+        $this->assertEqual($expect_working, $api->getWorkingCopyStatus());
         break;
       default:
         throw new Exception(
