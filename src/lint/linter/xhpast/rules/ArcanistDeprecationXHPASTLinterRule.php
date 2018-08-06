@@ -20,7 +20,7 @@ final class ArcanistDeprecationXHPASTLinterRule
       'xhpast.deprecated.functions' => array(
         'type' => 'optional map<string, string>',
         'help' => pht(
-          'Functions which should should be considered deprecated.'),
+          'Functions which should be considered deprecated.'),
       ),
     );
   }
