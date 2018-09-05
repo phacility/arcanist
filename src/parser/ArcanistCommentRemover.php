@@ -8,21 +8,25 @@ final class ArcanistCommentRemover extends Phobject {
    * considered a comment.
    */
   public static function removeComments($body) {
-    $lines = explode("\n", $body);
+    $body = rtrim($body);
+
+    $lines = phutil_split_lines($body);
     $lines = array_reverse($lines);
+
     foreach ($lines as $key => $line) {
-      if (!strlen($line)) {
+      if (preg_match('/^#/', $line)) {
         unset($lines[$key]);
         continue;
       }
-      if ($line[0] == '#') {
-        unset($lines[$key]);
-        continue;
-      }
+
       break;
     }
+
     $lines = array_reverse($lines);
-    return implode("\n", $lines)."\n";
+    $lines = implode('', $lines);
+    $lines = rtrim($lines)."\n";
+
+    return $lines;
   }
 
 }
