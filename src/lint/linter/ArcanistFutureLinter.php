@@ -11,7 +11,7 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
     return 8;
   }
 
-  final public function willLintPaths(array $paths) {
+  public function willLintPaths(array $paths) {
     $limit = $this->getFuturesLimit();
     $this->futures = id(new FutureIterator(array()))->limit($limit);
     foreach ($this->buildFutures($paths) as $path => $future) {
@@ -23,7 +23,7 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
     return;
   }
 
-  final public function didLintPaths(array $paths) {
+  public function didLintPaths(array $paths) {
     if (!$this->futures) {
       return;
     }
