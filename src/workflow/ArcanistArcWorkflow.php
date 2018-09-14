@@ -33,7 +33,7 @@
  * @task  scratch   Scratch Files
  * @task  phabrep   Phabricator Repositories
  */
-abstract class ArcanistWorkflow extends Phobject {
+abstract class ArcanistArcWorkflow extends ArcanistWorkflow {
 
   const COMMIT_DISABLE = 0;
   const COMMIT_ALLOW = 1;
@@ -52,8 +52,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $userName;
   private $repositoryAPI;
   private $configurationManager;
-  private $arguments = array();
-  private $passedArguments = array();
   private $command;
 
   private $stashed;
@@ -72,11 +70,9 @@ abstract class ArcanistWorkflow extends Phobject {
   private $changeCache = array();
   private $conduitEngine;
 
-
-  public function __construct() {}
-
-
-  abstract public function run();
+  final public function supportsToolset(ArcanistToolset $toolset) {
+    return ($toolset->getToolsetKey() === 'arc');
+  }
 
   /**
    * Finalizes any cleanup operations that need to occur regardless of
@@ -86,27 +82,6 @@ abstract class ArcanistWorkflow extends Phobject {
     $this->finalizeWorkingCopy();
   }
 
-  /**
-   * Return the command used to invoke this workflow from the command like,
-   * e.g. "help" for @{class:ArcanistHelpWorkflow}.
-   *
-   * @return string   The command a user types to invoke this workflow.
-   */
-  abstract public function getWorkflowName();
-
-  /**
-   * Return console formatted string with all command synopses.
-   *
-   * @return string  6-space indented list of available command synopses.
-   */
-  abstract public function getCommandSynopses();
-
-  /**
-   * Return console formatted string with command help printed in `arc help`.
-   *
-   * @return string  10-space indented help to use the command.
-   */
-  abstract public function getCommandHelp();
 
 
 /* -(  Conduit  )------------------------------------------------------------ */
@@ -608,169 +583,6 @@ abstract class ArcanistWorkflow extends Phobject {
     $workflow->parseArguments(array_values($argv));
 
     return $workflow;
-  }
-
-  final public function getArgument($key, $default = null) {
-    return idx($this->arguments, $key, $default);
-  }
-
-  final public function getPassedArguments() {
-    return $this->passedArguments;
-  }
-
-  final public function getCompleteArgumentSpecification() {
-    $spec = $this->getArguments();
-    $arc_config = $this->getArcanistConfiguration();
-    $command = $this->getCommand();
-    $spec += $arc_config->getCustomArgumentsForCommand($command);
-
-    return $spec;
-  }
-
-  final public function parseArguments(array $args) {
-    $this->passedArguments = $args;
-
-    $spec = $this->getCompleteArgumentSpecification();
-
-    $dict = array();
-
-    $more_key = null;
-    if (!empty($spec['*'])) {
-      $more_key = $spec['*'];
-      unset($spec['*']);
-      $dict[$more_key] = array();
-    }
-
-    $short_to_long_map = array();
-    foreach ($spec as $long => $options) {
-      if (!empty($options['short'])) {
-        $short_to_long_map[$options['short']] = $long;
-      }
-    }
-
-    foreach ($spec as $long => $options) {
-      if (!empty($options['repeat'])) {
-        $dict[$long] = array();
-      }
-    }
-
-    $more = array();
-    $size = count($args);
-    for ($ii = 0; $ii < $size; $ii++) {
-      $arg = $args[$ii];
-      $arg_name = null;
-      $arg_key = null;
-      if ($arg == '--') {
-        $more = array_merge(
-          $more,
-          array_slice($args, $ii + 1));
-        break;
-      } else if (!strncmp($arg, '--', 2)) {
-        $arg_key = substr($arg, 2);
-        $parts = explode('=', $arg_key, 2);
-        if (count($parts) == 2) {
-          list($arg_key, $val) = $parts;
-
-          array_splice($args, $ii, 1, array('--'.$arg_key, $val));
-          $size++;
-        }
-
-        if (!array_key_exists($arg_key, $spec)) {
-          $corrected = PhutilArgumentSpellingCorrector::newFlagCorrector()
-            ->correctSpelling($arg_key, array_keys($spec));
-          if (count($corrected) == 1) {
-            PhutilConsole::getConsole()->writeErr(
-              pht(
-                "(Assuming '%s' is the British spelling of '%s'.)",
-                '--'.$arg_key,
-                '--'.head($corrected))."\n");
-            $arg_key = head($corrected);
-          } else {
-            throw new ArcanistUsageException(
-              pht(
-                "Unknown argument '%s'. Try '%s'.",
-                $arg_key,
-                'arc help'));
-          }
-        }
-      } else if (!strncmp($arg, '-', 1)) {
-        $arg_key = substr($arg, 1);
-        if (empty($short_to_long_map[$arg_key])) {
-          throw new ArcanistUsageException(
-            pht(
-              "Unknown argument '%s'. Try '%s'.",
-              $arg_key,
-              'arc help'));
-        }
-        $arg_key = $short_to_long_map[$arg_key];
-      } else {
-        $more[] = $arg;
-        continue;
-      }
-
-      $options = $spec[$arg_key];
-      if (empty($options['param'])) {
-        $dict[$arg_key] = true;
-      } else {
-        if ($ii == $size - 1) {
-          throw new ArcanistUsageException(
-            pht(
-              "Option '%s' requires a parameter.",
-              $arg));
-        }
-        if (!empty($options['repeat'])) {
-          $dict[$arg_key][] = $args[$ii + 1];
-        } else {
-          $dict[$arg_key] = $args[$ii + 1];
-        }
-        $ii++;
-      }
-    }
-
-    if ($more) {
-      if ($more_key) {
-        $dict[$more_key] = $more;
-      } else {
-        $example = reset($more);
-        throw new ArcanistUsageException(
-          pht(
-            "Unrecognized argument '%s'. Try '%s'.",
-            $example,
-            'arc help'));
-      }
-    }
-
-    foreach ($dict as $key => $value) {
-      if (empty($spec[$key]['conflicts'])) {
-        continue;
-      }
-      foreach ($spec[$key]['conflicts'] as $conflict => $more) {
-        if (isset($dict[$conflict])) {
-          if ($more) {
-            $more = ': '.$more;
-          } else {
-            $more = '.';
-          }
-          // TODO: We'll always display these as long-form, when the user might
-          // have typed them as short form.
-          throw new ArcanistUsageException(
-            pht(
-              "Arguments '%s' and '%s' are mutually exclusive",
-              "--{$key}",
-              "--{$conflict}").$more);
-        }
-      }
-    }
-
-    $this->arguments = $dict;
-
-    $this->didParseArguments();
-
-    return $this;
-  }
-
-  protected function didParseArguments() {
-    // Override this to customize workflow argument behavior.
   }
 
   final public function getWorkingCopy() {
@@ -1299,31 +1111,6 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     return $this->changeCache[$path];
-  }
-
-  final public function willRunWorkflow() {
-    $spec = $this->getCompleteArgumentSpecification();
-    foreach ($this->arguments as $arg => $value) {
-      if (empty($spec[$arg])) {
-        continue;
-      }
-      $options = $spec[$arg];
-      if (!empty($options['supports'])) {
-        $system_name = $this->getRepositoryAPI()->getSourceControlSystemName();
-        if (!in_array($system_name, $options['supports'])) {
-          $extended_info = null;
-          if (!empty($options['nosupport'][$system_name])) {
-            $extended_info = ' '.$options['nosupport'][$system_name];
-          }
-          throw new ArcanistUsageException(
-            pht(
-              "Option '%s' is not supported under %s.",
-              "--{$arg}",
-              $system_name).
-            $extended_info);
-        }
-      }
-    }
   }
 
   final protected function normalizeRevisionID($revision_id) {

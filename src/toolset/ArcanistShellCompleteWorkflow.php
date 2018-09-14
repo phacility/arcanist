@@ -5,22 +5,24 @@
  */
 final class ArcanistShellCompleteWorkflow extends ArcanistWorkflow {
 
+  public function supportsToolset(ArcanistToolset $toolset) {
+    return true;
+  }
+
   public function getWorkflowName() {
     return 'shell-complete';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **shell-complete** __--current__ __N__ -- [__argv__]
-EOTEXT
-      );
+  public function getWorkflowSynopses() {
+    return array(
+      pht('**shell-complete** __--current__ __N__ -- [__argv__]'),
+    );
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: bash, etc.
-          Implements shell completion. To use shell completion, source the
-          appropriate script from 'resources/shell/' in your .shellrc.
+  public function getWorkflowHelp() {
+    return pht(<<<EOTEXT
+Implements shell completion. To use shell completion, source the appropriate
+script from 'resources/shell/' in your .shellrc.
 EOTEXT
       );
   }

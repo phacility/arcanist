@@ -146,6 +146,10 @@ final class ArcanistConfigurationManager extends Phobject {
     return $this;
   }
 
+  public function getRuntimeConfig($key, $default = null) {
+    return idx($this->runtimeConfig, $key, $default);
+  }
+
 /* -(  Read/write config )--------------------------------------------------- */
 
   public function readLocalArcConfig() {

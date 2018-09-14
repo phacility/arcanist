@@ -9,46 +9,50 @@ final class ArcanistAliasWorkflow extends ArcanistWorkflow {
     return 'alias';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **alias**
-      **alias** __command__
-      **alias** __command__ __target__ -- [__options__]
-EOTEXT
-      );
+  public function supportsToolset(ArcanistToolset $toolset) {
+    return true;
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: cli
-          Create an alias from __command__ to __target__ (optionally, with
-          __options__). For example:
+  public function getWorkflowSynopses() {
+    return array(
+      pht('**alias**'),
+      pht('**alias** __command__'),
+      pht('**alias** __command__ __target__ -- [__options__]'),
+    );
+  }
 
-            arc alias fpatch patch -- --force
+  public function getWorkflowHelp() {
+    return pht(<<<EOTEXT
+Supports: cli
+Create an alias from __command__ to __target__ (optionally, with __options__).
+For example:
 
-          ...will create a new 'arc' command, 'arc fpatch', which invokes
-          'arc patch --force ...' when run. NOTE: use "--" before specifying
-          options!
+  %s alias fpatch patch -- --force
 
-          If you start an alias with "!", the remainder of the alias will be
-          invoked as a shell command. For example, if you want to implement
-          'arc ls', you can do so like this:
+...will create a new 'arc' command, 'arc fpatch', which invokes
+'arc patch --force ...' when run. NOTE: use "--" before specifying
+options!
 
-            arc alias ls '!ls'
+If you start an alias with "!", the remainder of the alias will be
+invoked as a shell command. For example, if you want to implement
+'arc ls', you can do so like this:
 
-          You can now run "arc ls" and it will behave like "ls". Of course, this
-          example is silly and would make your life worse.
+  %s alias ls '!ls'
 
-          You can not overwrite builtins, including 'alias' itself. The builtin
-          will always execute, even if it was added after your alias.
+You can now run "arc ls" and it will behave like "ls". Of course, this
+example is silly and would make your life worse.
 
-          To remove an alias, run:
+You can not overwrite builtins, including 'alias' itself. The builtin
+will always execute, even if it was added after your alias.
 
-            arc alias fpatch
+To remove an alias, run:
 
-          Without any arguments, 'arc alias' will list aliases.
+  arc alias fpatch
+
+Without any arguments, 'arc alias' will list aliases.
 EOTEXT
-      );
+    ,
+    $this->getToolsetName());
   }
 
   public function getArguments() {
@@ -75,7 +79,7 @@ EOTEXT
     $this->getConfigurationManager()->writeUserConfigurationFile($config);
   }
 
-  public function run() {
+  public function runWorkflow() {
     $aliases = self::getAliases($this->getConfigurationManager());
 
     $argv = $this->getArgument('argv');

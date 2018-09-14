@@ -68,7 +68,7 @@ EOTEXT
     );
   }
 
-  public function run() {
+  public function runWorkflow() {
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
       throw new ArcanistUsageException(

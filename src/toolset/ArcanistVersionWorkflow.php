@@ -5,26 +5,31 @@
  */
 final class ArcanistVersionWorkflow extends ArcanistWorkflow {
 
+  public function supportsToolset(ArcanistToolset $toolset) {
+    return true;
+  }
+
   public function getWorkflowName() {
     return 'version';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **version** [__options__]
-EOTEXT
-      );
+  public function getWorkflowSynopses() {
+    return array(
+      '**version**',
+    );
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(pht(<<<EOTEXT
-          Supports: cli
-          Shows the current version of arcanist.
+  public function getWorkflowHelp() {
+    return pht(<<<EOTEXT
+Shows the current version of **%s**.
 EOTEXT
-      ));
+      ,
+      $this->getToolsetKey());
   }
 
   public function run() {
+    // TODO: Show the toolset version, not just the "arc" version.
+
     $console = PhutilConsole::getConsole();
 
     if (!Filesystem::binaryExists('git')) {
