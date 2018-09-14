@@ -2,6 +2,7 @@
 
 abstract class ArcanistWorkflow extends Phobject {
 
+  private $runtime;
   private $toolset;
   private $arguments;
   private $configurationEngine;
@@ -37,10 +38,48 @@ abstract class ArcanistWorkflow extends Phobject {
     return true;
   }
 
+  protected function getWorkflowArguments() {
+    // TOOLSETS: Temporary!
+    return array();
+  }
+
+  protected function getWorkflowInformation() {
+    // TOOLSETS: Temporary!
+    return null;
+  }
+
+
   public function newPhutilWorkflow() {
-    return id(new ArcanistPhutilWorkflow())
+    $arguments = $this->getWorkflowArguments();
+    assert_instances_of($arguments, 'ArcanistWorkflowArgument');
+
+    $specs = mpull($arguments, 'getPhutilSpecification');
+
+    $phutil_workflow = id(new ArcanistPhutilWorkflow())
       ->setName($this->getWorkflowName())
-      ->setWorkflow($this);
+      ->setWorkflow($this)
+      ->setArguments($specs);
+
+    $information = $this->getWorkflowInformation();
+    if ($information) {
+
+      $examples = $information->getExamples();
+      if ($examples) {
+        $examples = implode("\n", $examples);
+        $phutil_workflow->setExamples($examples);
+      }
+
+      $help = $information->getHelp();
+      if (strlen($help)) {
+        // Unwrap linebreaks in the help text so we don't get weird formatting.
+        $help = preg_replace("/(?<=\S)\n(?=\S)/", " ", $help);
+
+        $phutil_workflow->setHelp($help);
+      }
+
+    }
+
+    return $phutil_workflow;
   }
 
   final public function getToolset() {
@@ -50,6 +89,19 @@ abstract class ArcanistWorkflow extends Phobject {
   final public function setToolset(ArcanistToolset $toolset) {
     $this->toolset = $toolset;
     return $this;
+  }
+
+  final public function setRuntime(ArcanistRuntime $runtime) {
+    $this->runtime = $runtime;
+    return $this;
+  }
+
+  final public function getRuntime() {
+    return $this->runtime;
+  }
+
+  final public function getConfig($key) {
+    return $this->getConfigurationSourceList()->getConfig($key);
   }
 
   final public function setConfigurationSourceList(
@@ -99,11 +151,17 @@ abstract class ArcanistWorkflow extends Phobject {
     return $err;
   }
 
-  final public function getArgument($key, $default = null) {
-    // TOOLSETS: This is a stub for now.
-    return $default;
+  final public function getArgument($key) {
+    return $this->arguments->getArg($key);
+  }
 
-    return $this->arguments->getArg($key, $default);
+  final protected function newWorkflowArgument($key) {
+    return id(new ArcanistWorkflowArgument())
+      ->setKey($key);
+  }
+
+  final protected function newWorkflowInformation() {
+    return new ArcanistWorkflowInformation();
   }
 
 }

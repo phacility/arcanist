@@ -15,16 +15,80 @@ final class ArcanistConfigurationSourceList
     return $this->sources;
   }
 
+  private function getSourcesWithScopes($scopes) {
+    if ($scopes !== null) {
+      $scopes = array_fuse($scopes);
+    }
+
+    $results = array();
+    foreach ($this->getSources() as $source) {
+      if ($scopes !== null) {
+        $scope = $source->getConfigurationSourceScope();
+        if ($scope === null) {
+          continue;
+        }
+        if (!isset($scopes[$scope])) {
+          continue;
+        }
+      }
+
+      $results[] = $source;
+    }
+
+    return $results;
+  }
+
+  public function getWritableSourceFromScope($scope) {
+    $sources = $this->getSourcesWithScopes(array($scope));
+
+    $writable = array();
+    foreach ($sources as $source) {
+      if (!$source->isWritableConfigurationSource()) {
+        continue;
+      }
+
+      $writable[] = $source;
+    }
+
+    if (!$writable) {
+      throw new Exception(
+        pht(
+          'Unable to write configuration: there is no writable configuration '.
+          'source in the "%s" scope.',
+          $scope));
+    }
+
+    if (count($writable) > 1) {
+      throw new Exception(
+        pht(
+          'Unable to write configuration: more than one writable source '.
+          'exists in the "%s" scope.',
+          $scope));
+    }
+
+    return head($writable);
+  }
+
   public function getConfig($key) {
     $option = $this->getConfigOption($key);
     $values = $this->getStorageValueList($key);
     return $option->getValueFromStorageValueList($values);
   }
 
+  public function getConfigFromScopes($key, array $scopes) {
+    $option = $this->getConfigOption($key);
+    $values = $this->getStorageValueListFromScopes($key, $scopes);
+    return $option->getValueFromStorageValueList($values);
+  }
+
   public function getStorageValueList($key) {
+    return $this->getStorageValueListFromScopes($key, null);
+  }
+
+  private function getStorageValueListFromScopes($key, $scopes) {
     $values = array();
 
-    foreach ($this->getSources() as $source) {
+    foreach ($this->getSourcesWithScopes($scopes) as $source) {
       if ($source->hasValueForKey($key)) {
         $value = $source->getValueForKey($key);
         $values[] = new ArcanistConfigurationSourceValue(
@@ -113,7 +177,13 @@ final class ArcanistConfigurationSourceList
             $source,
             $raw_value);
         } catch (Exception $ex) {
-          throw $ex;
+          throw new PhutilProxyException(
+            pht(
+              'Configuration value ("%s") defined in source "%s" is not '.
+              'valid.',
+              $key,
+              $source->getSourceDisplayName()),
+            $ex);
         }
       }
     }

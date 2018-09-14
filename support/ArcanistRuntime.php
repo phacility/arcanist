@@ -2,6 +2,8 @@
 
 final class ArcanistRuntime {
 
+  private $workflows;
+
   public function execute(array $argv) {
 
     try {
@@ -81,12 +83,14 @@ final class ArcanistRuntime {
     $args->parsePartial($toolset->getToolsetArguments());
 
     $workflows = $this->newWorkflows($toolset);
+    $this->workflows = $workflows;
 
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
 
       $workflow
+        ->setRuntime($this)
         ->setConfigurationEngine($config_engine)
         ->setConfigurationSourceList($config);
     }
@@ -104,12 +108,16 @@ final class ArcanistRuntime {
       throw new PhutilArgumentUsageException(pht('Choose a workflow!'));
     }
 
-    $result = $this->resolveAliases($workflows, $unconsumed_argv, $config);
-    if (is_int($result)) {
-      return $result;
-    }
+    $alias_effects = id(new ArcanistAliasEngine())
+      ->setRuntime($this)
+      ->setToolset($toolset)
+      ->setWorkflows($workflows)
+      ->setConfigurationSourceList($config)
+      ->resolveAliases($unconsumed_argv);
 
-    $args->setUnconsumedArgumentVector($result);
+    $result_argv = $this->applyAliasEffects($alias_effects, $unconsumed_argv);
+
+    $args->setUnconsumedArgumentVector($result_argv);
 
     return $args->parseWorkflows($phutil_workflows);
   }
@@ -468,70 +476,45 @@ final class ArcanistRuntime {
     return $map;
   }
 
-  private function resolveAliases(
-    array $workflows,
-    array $argv,
-    ArcanistConfigurationSourceList $config) {
-
-    return $argv;
-
-    $command = head($argv);
-
-    // If this is a match for a recognized workflow, just return the arguments
-    // unmodified. You aren't allowed to alias over real workflows.
-    if (isset($workflows[$command])) {
-      return $argv;
-    }
-
-    $aliases = ArcanistAliasWorkflow::getAliases($config);
-    list($new_command, $new_args) = ArcanistAliasWorkflow::resolveAliases(
-      $command,
-      $this,
-      array_slice($argv, 1),
-      $config);
-
-    // You can't alias something to itself, so if the new command isn't new,
-    // we're all done resolving aliases.
-    if ($new_command === $command) {
-      return $argv;
-    }
-
-    $full_alias = idx($aliases, $command, array());
-    $full_alias = implode(' ', $full_alias);
-
-    // Run shell command aliases.
-    if (ArcanistAliasWorkflow::isShellCommandAlias($new_command)) {
-      fwrite(
-        STDERR,
-        tsprintf(
-          '**<bg:green> %s </bg>** arc %s -> $ %s',
-          pht('ALIAS'),
-          $command,
-          $shell_cmd));
-
-      $shell_cmd = substr($full_alias, 1);
-
-      return phutil_passthru('%C %Ls', $shell_cmd, $args);
-    }
-
-    fwrite(
-      STDERR,
-      tsprintf(
-        '**<bg:green> %s </bg>** arc %s -> arc %s',
-        pht('ALIAS'),
-        $command,
-        $new_command));
-
-    $new_argv = array_merge(array($new_command), $new_args);
-
-    return $this->resolveAliases($workflows, $new_argv, $config);
-  }
-
   private function logTrace($label, $message) {
     echo tsprintf(
       "**<bg:magenta> %s </bg>** %s\n",
       $label,
       $message);
+  }
+
+  public function getWorkflows() {
+    return $this->workflows;
+  }
+
+  private function applyAliasEffects(array $effects, array $argv) {
+    assert_instances_of($effects, 'ArcanistAliasEffect');
+
+    $command = null;
+    $arguments = null;
+    foreach ($effects as $effect) {
+      $message = $effect->getMessage();
+
+      if ($message !== null) {
+        fprintf(
+          STDERR,
+          tsprintf(
+            "**<bg:yellow> %s </bg>** %s\n",
+            pht('ALIAS'),
+            $message));
+      }
+
+      if ($effect->getCommand()) {
+        $command = $effect->getCommand();
+        $arguments = $effect->getArguments();
+      }
+    }
+
+    if ($command !== null) {
+      $argv = array_merge(array($command), $arguments);
+    }
+
+    return $argv;
   }
 
 }

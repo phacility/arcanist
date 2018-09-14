@@ -3,12 +3,22 @@
 abstract class ArcanistConfigurationSource
   extends Phobject {
 
+  const SCOPE_USER = 'user';
+
   abstract public function getSourceDisplayName();
   abstract public function getAllKeys();
   abstract public function hasValueForKey($key);
   abstract public function getValueForKey($key);
 
+  public function getConfigurationSourceScope() {
+    return null;
+  }
+
   public function isStringSource() {
+    return false;
+  }
+
+  public function isWritableConfigurationSource() {
     return false;
   }
 

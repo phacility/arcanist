@@ -13,232 +13,186 @@ final class ArcanistAliasWorkflow extends ArcanistWorkflow {
     return true;
   }
 
-  public function getWorkflowSynopses() {
-    return array(
-      pht('**alias**'),
-      pht('**alias** __command__'),
-      pht('**alias** __command__ __target__ -- [__options__]'),
-    );
-  }
-
-  public function getWorkflowHelp() {
-    return pht(<<<EOTEXT
-Supports: cli
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
 Create an alias from __command__ to __target__ (optionally, with __options__).
-For example:
 
-  %s alias fpatch patch -- --force
+Aliases allow you to create shorthands for commands and sets of flags you
+commonly use, like defining "arc draft" as a shorthand for "arc diff --draft".
 
-...will create a new 'arc' command, 'arc fpatch', which invokes
-'arc patch --force ...' when run. NOTE: use "--" before specifying
-options!
+**Creating Aliases**
 
-If you start an alias with "!", the remainder of the alias will be
-invoked as a shell command. For example, if you want to implement
-'arc ls', you can do so like this:
+You can define "arc draft" as a shorthand for "arc diff --draft" like this:
 
-  %s alias ls '!ls'
+  $ arc alias draft diff -- --draft
 
-You can now run "arc ls" and it will behave like "ls". Of course, this
-example is silly and would make your life worse.
+Now, when you run "arc draft", the command will function like
+"arc diff --draft".
 
-You can not overwrite builtins, including 'alias' itself. The builtin
-will always execute, even if it was added after your alias.
+<bg:yellow> NOTE: </bg> Make sure you use "--" before specifying any flags you
+want to pass to the command! Otherwise, the flags will be interpreted as flags
+to "arc alias".
+
+**Listing Aliases**
+
+Without any arguments, "arc alias" will list aliases.
+
+**Removing Aliases**
 
 To remove an alias, run:
 
-  arc alias fpatch
+  $ arc alias <alias-name>
 
-Without any arguments, 'arc alias' will list aliases.
+You will be prompted to remove the alias.
+
+**Shell Commands**
+
+If you begin an alias with "!", the remainder of the alias will be invoked as
+a shell command. For example, if you want to implement "arc ls", you can do so
+like this:
+
+  $ arc alias ls '!ls'
+
+When run, "arc ls" will now behave like "ls".
+
+**Multiple Toolsets**
+
+This workflow supports any toolset, even though the examples in this help text
+use "arc". If you are working with another toolset, use the binary for that
+toolset define aliases for it:
+
+  $ phage alias ...
+
+Aliases are bound to the toolset which was used to define them. If you define
+an "arc draft" alias, that does not also define a "phage draft" alias.
+
+**Builtins**
+
+You can not overwrite the behavior of builtin workflows, including "alias"
+itself, and if you install a new workflow it will take precedence over any
+existing aliases with the same name.
 EOTEXT
-    ,
-    $this->getToolsetName());
+);
+
+    return $this->newWorkflowInformation()
+      ->addExample(pht('**alias**'))
+      ->addExample(pht('**alias** __command__'))
+      ->addExample(pht('**alias** __command__ __target__ -- [__options__]'))
+      ->setHelp($help);
   }
 
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      '*' => 'argv',
+      $this->newWorkflowArgument('json')
+        ->setHelp(pht('Output aliases in JSON format.')),
+      $this->newWorkflowArgument('argv')
+        ->setWildcard(true),
     );
   }
 
-  public static function getAliases(
-    ArcanistConfigurationManager $configuration_manager) {
-    $sources = $configuration_manager->getConfigFromAllSources('aliases');
-
-    $aliases = array();
-    foreach ($sources as $source) {
-      $aliases += $source;
-    }
-
-    return $aliases;
-  }
-
-  private function writeAliases(array $aliases) {
-    $config = $this->getConfigurationManager()->readUserConfigurationFile();
-    $config['aliases'] = $aliases;
-    $this->getConfigurationManager()->writeUserConfigurationFile($config);
-  }
-
   public function runWorkflow() {
-    $aliases = self::getAliases($this->getConfigurationManager());
-
     $argv = $this->getArgument('argv');
-    if (count($argv) == 0) {
-      $this->printAliases($aliases);
-    } else if (count($argv) == 1) {
-      $this->removeAlias($aliases, $argv[0]);
-    } else {
-      $arc_config = $this->getArcanistConfiguration();
-      $alias = $argv[0];
 
-      if ($arc_config->buildWorkflow($alias)) {
-        throw new ArcanistUsageException(
-          pht(
-            'You can not create an alias for "%s" because it is a '.
-            'builtin command. "%s" can only create new commands.',
-            "arc {$alias}",
-            'arc alias'));
-      }
+    $is_list = false;
+    $is_delete = false;
 
-      $new_alias = array_slice($argv, 1);
-
-      $command = implode(' ', $new_alias);
-      if (self::isShellCommandAlias($command)) {
-        echo tsprintf(
-          "%s\n",
-          pht(
-            'Aliased "%s" to shell command "%s".',
-            "arc {$alias}",
-            substr($command, 1)));
-      } else {
-        echo tsprintf(
-          "%s\n",
-          pht(
-            'Aliased "%s" to "%s".',
-            "arc {$alias}",
-            "arc {$command}"));
-      }
-
-      $aliases[$alias] = $new_alias;
-      $this->writeAliases($aliases);
+    if (!$argv) {
+      $is_list = true;
+    } else if (count($argv) === 1) {
+      $is_delete = true;
     }
+
+    $is_json = $this->getArgument('json');
+    if ($is_json && !$is_list) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'The "--json" argument may only be used when listing aliases.'));
+    }
+
+    if ($is_list) {
+      return $this->runListAliases();
+    }
+
+    if ($is_delete) {
+      return $this->runDeleteAlias($argv[1]);
+    }
+
+    return $this->runCreateAlias($argv);
+  }
+
+  private function runListAliases() {
+    // TOOLSETS: Actually list aliases.
+    return 1;
+  }
+
+  private function runDeleteAlias($alias) {
+    // TOOLSETS: Actually delete aliases.
+    return 1;
+  }
+
+  private function runCreateAlias(array $argv) {
+    $trigger = array_shift($argv);
+    $this->validateAliasTrigger($trigger);
+
+    $alias = id(new ArcanistAlias())
+      ->setToolset($this->getToolsetKey())
+      ->setTrigger($trigger)
+      ->setCommand($argv);
+
+    $aliases = $this->readAliasesForWrite();
+
+    // TOOLSETS: Check if the user already has an alias for this trigger, and
+    // prompt them to overwrite it. Needs prompting to work.
+
+    $aliases[] = $alias;
+
+    $this->writeAliases($aliases);
 
     return 0;
   }
 
-  public static function isShellCommandAlias($command) {
-    return preg_match('/^!/', $command);
-  }
+  private function validateAliasTrigger($trigger) {
+    $workflows = $this->getRuntime()->getWorkflows();
 
-  public static function resolveAliases(
-    $command,
-    ArcanistRuntime $config,
-    array $argv,
-    ArcanistConfigurationManager $configuration_manager) {
-
-    $aliases = self::getAliases($configuration_manager);
-    if (!isset($aliases[$command])) {
-      return array(null, $argv);
-    }
-
-    $new_command = head($aliases[$command]);
-
-    if (self::isShellCommandAlias($new_command)) {
-      return array($new_command, $argv);
-    }
-
-    $workflow = $config->buildWorkflow($new_command);
-    if (!$workflow) {
-      return array(null, $argv);
-    }
-
-    $alias_argv = array_slice($aliases[$command], 1);
-    foreach (array_reverse($alias_argv) as $alias_arg) {
-      if (!in_array($alias_arg, $argv)) {
-        array_unshift($argv, $alias_arg);
-      }
-    }
-
-    return array($new_command, $argv);
-  }
-
-  private function printAliases(array $aliases) {
-    if (!$aliases) {
-      echo tsprintf(
-        "%s\n",
-        pht('You have not defined any aliases yet.'));
-      return;
-    }
-
-    $table = id(new PhutilConsoleTable())
-      ->addColumn('input', array('title' => pht('Alias')))
-      ->addColumn('command', array('title' => pht('Command')))
-      ->addColumn('type', array('title' => pht('Type')));
-
-    ksort($aliases);
-
-    foreach ($aliases as $alias => $binding) {
-      $command = implode(' ', $binding);
-      if (self::isShellCommandAlias($command)) {
-        $command = substr($command, 1);
-        $type = pht('Shell Command');
-      } else {
-        $command = "arc {$command}";
-        $type = pht('Arcanist Command');
-      }
-
-      $row = array(
-        'input' => "arc {$alias}",
-        'type' => $type,
-        'command' => $command,
-      );
-
-      $table->addRow($row);
-    }
-
-    $table->draw();
-  }
-
-  private function removeAlias(array $aliases, $alias) {
-    if (empty($aliases[$alias])) {
-      echo tsprintf(
-        "%s\n",
-        pht('No alias "%s" to remove.', $alias));
-      return;
-    }
-
-    $command = implode(' ', $aliases[$alias]);
-
-    if (self::isShellCommandAlias($command)) {
-      echo tsprintf(
-        "%s\n",
+    if (isset($workflows[$trigger])) {
+      throw new PhutilArgumentUsageException(
         pht(
-          '"%s" is currently aliased to shell command "%s".',
-          "arc {$alias}",
-          substr($command, 1)));
-    } else {
-      echo tsprintf(
-        "%s\n",
-        pht(
-          '"%s" is currently aliased to "%s".',
-          "arc {$alias}",
-          "arc {$command}"));
+          'You can not define an alias for "%s" because it is a builtin '.
+          'workflow for the current toolset ("%s"). The "alias" workflow '.
+          'can only define new commands as aliases; it can not redefine '.
+          'existing commands to mean something else.',
+          $trigger,
+          $this->getToolsetKey()));
     }
+  }
 
+  private function getEditScope() {
+    return ArcanistConfigurationSource::SCOPE_USER;
+  }
 
-    $ok = phutil_console_confirm(pht('Delete this alias?'));
-    if (!$ok) {
-      throw new ArcanistUserAbortException();
-    }
+  private function getAliasesConfigKey() {
+    return ArcanistArcConfigurationEngineExtension::KEY_ALIASES;
+  }
 
-    unset($aliases[$alias]);
-    $this->writeAliases($aliases);
+  private function readAliasesForWrite() {
+    $key = $this->getAliasesConfigKey();
+    $scope = $this->getEditScope();
+    $source_list = $this->getConfigurationSourceList();
 
-    echo tsprintf(
-      "%s\n",
-      pht(
-        'Removed alias "%s".',
-        "arc {$alias}"));
+    return $source_list->getConfigFromScopes($key, array($scope));
+  }
+
+  private function writeAliases(array $aliases) {
+    assert_instances_of($aliases, 'ArcanistAlias');
+
+    $key = $this->getAliasesConfigKey();
+    $scope = $this->getEditScope();
+
+    $source_list = $this->getConfigurationSourceList();
+    $source = $source_list->getWritableSourceFromScope($scope);
+    $option = $source_list->getConfigOption($key);
+
+    $option->writeValue($source, $aliases);
   }
 
 }

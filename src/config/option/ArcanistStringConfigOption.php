@@ -15,4 +15,8 @@ final class ArcanistStringConfigOption
     return $value;
   }
 
+  public function getStorageValueFromValue($value) {
+    return $value;
+  }
+
 }

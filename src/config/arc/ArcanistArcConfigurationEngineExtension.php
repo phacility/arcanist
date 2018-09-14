@@ -5,6 +5,8 @@ final class ArcanistArcConfigurationEngineExtension
 
   const EXTENSIONKEY = 'arc';
 
+  const KEY_ALIASES = 'aliases';
+
   public function newConfigurationOptions() {
     // TOOLSETS: Restore "load", and maybe this other stuff.
 
@@ -47,12 +49,6 @@ final class ArcanistArcConfigurationEngineExtension
           'arc'),
         'default' => false,
         'example' => 'false',
-      ),
-
-      'aliases' => array(
-        'type' => 'aliases',
-        'help' => pht(
-          'Configured command aliases. Use "arc alias" to define aliases.'),
       ),
 
       'history.immutable' => array(
@@ -160,6 +156,14 @@ final class ArcanistArcConfigurationEngineExtension
           array(
             'https://phabricator.mycompany.com/',
           )),
+      id(new ArcanistAliasesConfigOption())
+        ->setKey(self::KEY_ALIASES)
+        ->setDefaultValue(array())
+        ->setSummary(pht('List of command aliases.'))
+        ->setHelp(
+          pht(
+            'Configured command aliases. Use the "alias" workflow to define '.
+            'aliases.')),
     );
   }
 

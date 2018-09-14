@@ -67,9 +67,17 @@ abstract class ArcanistConfigOption
   abstract public function getType();
 
   abstract public function getValueFromStorageValueList(array $list);
-  abstract public function getStorageValueFromStringValue($value);
   abstract public function getValueFromStorageValue($value);
   abstract public function getDisplayValueFromValue($value);
+  abstract public function getStorageValueFromValue($value);
+
+  public function getStorageValueFromStringValue($value) {
+    throw new Exception(
+      pht(
+        'This configuration option ("%s") does not support runtime definition '.
+        'with "--config".',
+        $this->getKey()));
+  }
 
   protected function getStorageValueFromSourceValue(
     ArcanistConfigurationSourceValue $source_value) {
@@ -84,5 +92,9 @@ abstract class ArcanistConfigOption
     return $value;
   }
 
+  public function writeValue(ArcanistConfigurationSource $source, $value) {
+    $value = $this->getStorageValueFromValue($value);
+    $source->setStorageValueForKey($this->getKey(), $value);
+  }
 
 }

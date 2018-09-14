@@ -29,4 +29,16 @@ abstract class ArcanistDictionaryConfigurationSource
     return $this->values[$key];
   }
 
+  public function setStorageValueForKey($key, $value) {
+    $this->values[$key] = $value;
+
+    $this->writeToStorage($this->values);
+
+    return $this;
+  }
+
+  protected function writeToStorage($values) {
+    throw new PhutilMethodNotImplementedException();
+  }
+
 }

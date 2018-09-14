@@ -1,70 +1,32 @@
 <?php
 
-/**
- * Create and update libphutil libraries.
- *
- * This workflow is unusual and involves re-executing 'arc liberate' as a
- * subprocess with `--remap` and `--verify`. This is because there is no way
- * to unload or reload a library, so every process is stuck with the library
- * definition it had when it first loaded. This is normally fine, but
- * problematic in this case because `arc liberate` modifies library definitions.
- */
 final class ArcanistLiberateWorkflow extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'liberate';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **liberate** [__path__]
+  public function getWorkflowInformation() {
+    // TOOLSETS: Expand this help.
+
+    $help = pht(<<<EOTEXT
+Create or update an Arcanist library.
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->addExample(pht('**liberate**'))
+      ->addExample(pht('**liberate** [__path__]'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: libphutil
-          Create or update a libphutil library, generating required metadata
-          files like \__init__.php.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'all' => array(
-        'help' => pht(
-          'Drop the module cache before liberating. This will completely '.
-          'reanalyze the entire library. Thorough, but slow!'),
-      ),
-      'force-update' => array(
-        'help' => pht(
-          'Force the library map to be updated, even in the presence of '.
-          'lint errors.'),
-      ),
-      'library-name' => array(
-        'param' => 'name',
-        'help' =>
-          pht('Use a flag for library name rather than awaiting user input.'),
-      ),
-      'remap' => array(
-        'hide' => true,
-        'help' => pht(
-          'Internal. Run the remap step of liberation. You do not need to '.
-          'run this unless you are debugging the workflow.'),
-      ),
-      'verify' => array(
-        'hide' => true,
-        'help' => pht(
-          'Internal. Run the verify step of liberation. You do not need to '.
-          'run this unless you are debugging the workflow.'),
-      ),
-      'upgrade' => array(
-        'hide'  => true,
-        'help'  => pht('Experimental. Upgrade library to v2.'),
-      ),
-      '*' => 'argv',
+      $this->newWorkflowArgument('clean')
+        ->setHelp(
+          pht('Perform a clean rebuild, ignoring caches. Thorough, but slow.')),
+      $this->newWorkflowArgument('argv')
+        ->setWildcard(true),
     );
   }
 
@@ -97,9 +59,6 @@ EOTEXT
       );
     }
 
-    $is_remap = $this->getArgument('remap');
-    $is_verify = $this->getArgument('verify');
-
     foreach ($paths as $path) {
       $this->liberatePath($path);
     }
@@ -122,19 +81,10 @@ EOTEXT
     $version = $this->getLibraryFormatVersion($path);
     switch ($version) {
       case 1:
-        if ($this->getArgument('upgrade')) {
-          return $this->upgradeLibrary($path);
-        }
         throw new ArcanistUsageException(
           pht(
-            "This library is using libphutil v1, which is no ".
-            "longer supported. Run '%s' to upgrade to v2.",
-            'arc liberate --upgrade'));
+            'This very old library is no longer supported.'));
       case 2:
-        if ($this->getArgument('upgrade')) {
-          throw new ArcanistUsageException(
-            pht("Can't upgrade a v2 library!"));
-        }
         return $this->liberateVersion2($path);
       default:
         throw new ArcanistUsageException(
@@ -165,23 +115,8 @@ EOTEXT
     return phutil_passthru(
       'php %s %C %s',
       $bin,
-      $this->getArgument('all') ? '--drop-cache' : '',
+      $this->getArgument('clean') ? '--drop-cache' : '',
       $path);
-  }
-
-  private function upgradeLibrary($path) {
-    $inits = id(new FileFinder($path))
-      ->withPath('*/__init__.php')
-      ->withType('f')
-      ->find();
-
-    echo pht('Removing %s files...', '__init__.php')."\n";
-    foreach ($inits as $init) {
-      Filesystem::remove($path.'/'.$init);
-    }
-
-    echo pht('Upgrading library to v2...')."\n";
-    $this->liberateVersion2($path);
   }
 
   private function liberateCreateDirectory($path) {

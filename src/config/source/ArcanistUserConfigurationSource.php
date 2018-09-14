@@ -7,6 +7,14 @@ final class ArcanistUserConfigurationSource
     return pht('User Config File');
   }
 
+  public function isWritableConfigurationSource() {
+    return true;
+  }
+
+  public function getConfigurationSourceScope() {
+    return ArcanistConfigurationSource::SCOPE_USER;
+  }
+
   public function didReadFilesystemValues(array $values) {
     // Before toolsets, the "~/.arcrc" file had separate top-level keys for
     // "config", "hosts", and "aliases". Transform this older file format into

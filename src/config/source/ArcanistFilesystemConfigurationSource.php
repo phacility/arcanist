@@ -35,4 +35,11 @@ abstract class ArcanistFilesystemConfigurationSource
     return $values;
   }
 
+  protected function writeToStorage($values) {
+    $content = id(new PhutilJSON())
+      ->encodeFormatted($values);
+
+    Filesystem::writeFile($this->path, $content);
+  }
+
 }
