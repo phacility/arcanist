@@ -75,6 +75,17 @@ final class ArcanistRuntime {
 
     $unconsumed_argv = $args->getUnconsumedArgumentVector();
 
+    if (!$unconsumed_argv) {
+      // TOOLSETS: This means the user just ran "arc" or some other top-level
+      // toolset without any workflow argument. We should give them a summary
+      // of the toolset, a list of workflows, and a pointer to "arc help" for
+      // more details.
+
+      // A possible exception is "arc --help", which should perhaps pass
+      // through and act like "arc help".
+      throw new PhutilArgumentUsageException(pht('Choose a workflow!'));
+    }
+
     $result = $this->resolveAliases($workflows, $unconsumed_argv, $config);
     if (is_int($result)) {
       return $result;

@@ -132,7 +132,7 @@ EOTEXT
 
   public static function resolveAliases(
     $command,
-    ArcanistConfiguration $config,
+    ArcanistRuntime $config,
     array $argv,
     ArcanistConfigurationManager $configuration_manager) {
 
