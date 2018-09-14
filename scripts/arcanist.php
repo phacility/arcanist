@@ -1,197 +1,32 @@
 #!/usr/bin/env php
 <?php
 
-sanity_check_environment();
+if (function_exists('pcntl_async_signals')) {
+  pcntl_async_signals(true);
+} else {
+  declare(ticks = 1);
+}
 
-require_once dirname(__FILE__).'/__init_script__.php';
+require_once dirname(dirname(__FILE__)).'/scripts/init/init-arcanist.php';
 
-ini_set('memory_limit', -1);
+$runtime = new ArcanistRuntime();
+return $runtime->execute($argv);
 
-$original_argv = $argv;
-$base_args = new PhutilArgumentParser($argv);
-$base_args->parseStandardArguments();
-$base_args->parsePartial(
-  array(
-    array(
-      'name'    => 'load-phutil-library',
-      'param'   => 'path',
-      'help'    => pht('Load a libphutil library.'),
-      'repeat'  => true,
-    ),
-    array(
-      'name'    => 'skip-arcconfig',
-    ),
-    array(
-      'name'    => 'arcrc-file',
-      'param'   => 'filename',
-    ),
-    array(
-      'name'    => 'conduit-uri',
-      'param'   => 'uri',
-      'help'    => pht('Connect to Phabricator install specified by __uri__.'),
-    ),
-    array(
-      'name' => 'conduit-token',
-      'param' => 'token',
-      'help' => pht('Use a specific authentication token.'),
-    ),
-    array(
-      'name' => 'anonymous',
-      'help' => pht('Run workflow as a public user, without authenticating.'),
-    ),
-    array(
-      'name'    => 'conduit-version',
-      'param'   => 'version',
-      'help'    => pht(
-        '(Developers) Mock client version in protocol handshake.'),
-    ),
-    array(
-      'name'    => 'conduit-timeout',
-      'param'   => 'timeout',
-      'help'    => pht('Set Conduit timeout (in seconds).'),
-    ),
-    array(
-      'name'   => 'config',
-      'param'  => 'key=value',
-      'repeat' => true,
-      'help'   => pht(
-        'Specify a runtime configuration value. This will take precedence '.
-        'over static values, and only affect the current arcanist invocation.'),
-    ),
-));
 
 $config_trace_mode = $base_args->getArg('trace');
 
 $force_conduit = $base_args->getArg('conduit-uri');
 $force_token = $base_args->getArg('conduit-token');
-$force_conduit_version = $base_args->getArg('conduit-version');
-$conduit_timeout = $base_args->getArg('conduit-timeout');
-$skip_arcconfig = $base_args->getArg('skip-arcconfig');
-$custom_arcrc = $base_args->getArg('arcrc-file');
 $is_anonymous = $base_args->getArg('anonymous');
 $load = $base_args->getArg('load-phutil-library');
 $help = $base_args->getArg('help');
 $args = array_values($base_args->getUnconsumedArgumentVector());
 
-$working_directory = getcwd();
 $console = PhutilConsole::getConsole();
 $config = null;
 $workflow = null;
 
 try {
-  if ($config_trace_mode) {
-    echo tsprintf(
-      "**<bg:magenta> %s </bg>** %s\n",
-      pht('ARGV'),
-      csprintf('%Ls', $original_argv));
-
-    $libraries = array(
-      'phutil',
-      'arcanist',
-    );
-
-    foreach ($libraries as $library_name) {
-      echo tsprintf(
-        "**<bg:magenta> %s </bg>** %s\n",
-        pht('LOAD'),
-        pht(
-          'Loaded "%s" from "%s".',
-          $library_name,
-          phutil_get_library_root($library_name)));
-    }
-  }
-
-  if (!$args) {
-    if ($help) {
-      $args = array('help');
-    } else {
-      throw new ArcanistUsageException(
-        pht('No command provided. Try `%s`.', 'arc help'));
-    }
-  } else if ($help) {
-    array_unshift($args, 'help');
-  }
-
-  $configuration_manager = new ArcanistConfigurationManager();
-  if ($custom_arcrc) {
-    $configuration_manager->setUserConfigurationFileLocation($custom_arcrc);
-  }
-
-  $global_config = $configuration_manager->readUserArcConfig();
-  $system_config = $configuration_manager->readSystemArcConfig();
-  $runtime_config = $configuration_manager->applyRuntimeArcConfig($base_args);
-
-  if ($skip_arcconfig) {
-    $working_copy = ArcanistWorkingCopyIdentity::newDummyWorkingCopy();
-  } else {
-    $working_copy =
-      ArcanistWorkingCopyIdentity::newFromPath($working_directory);
-  }
-  $configuration_manager->setWorkingCopyIdentity($working_copy);
-
-  // Load additional libraries, which can provide new classes like configuration
-  // overrides, linters and lint engines, unit test engines, etc.
-
-  // If the user specified "--load-phutil-library" one or more times from
-  // the command line, we load those libraries **instead** of whatever else
-  // is configured. This is basically a debugging feature to let you force
-  // specific libraries to load regardless of the state of the world.
-  if ($load) {
-    $console->writeLog(
-      "%s\n",
-      pht(
-        'Using `%s` flag, configuration will be ignored and configured '.
-        'libraries will not be loaded.',
-        '--load-phutil-library'));
-    // Load the flag libraries. These must load, since the user specified them
-    // explicitly.
-    arcanist_load_libraries(
-      $load,
-      $must_load = true,
-      $lib_source = pht('a "%s" flag', '--load-phutil-library'),
-      $working_copy);
-  } else {
-    // Load libraries in system 'load' config. In contrast to global config, we
-    // fail hard here because this file is edited manually, so if 'arc' breaks
-    // that doesn't make it any more difficult to correct.
-    arcanist_load_libraries(
-      idx($system_config, 'load', array()),
-      $must_load = true,
-      $lib_source = pht('the "%s" setting in system config', 'load'),
-      $working_copy);
-
-    // Load libraries in global 'load' config, as per "arc set-config load". We
-    // need to fail softly if these break because errors would prevent the user
-    // from running "arc set-config" to correct them.
-    arcanist_load_libraries(
-      idx($global_config, 'load', array()),
-      $must_load = false,
-      $lib_source = pht('the "%s" setting in global config', 'load'),
-      $working_copy);
-
-    // Load libraries in ".arcconfig". Libraries here must load.
-    arcanist_load_libraries(
-      $working_copy->getProjectConfig('load'),
-      $must_load = true,
-      $lib_source = pht('the "%s" setting in "%s"', 'load', '.arcconfig'),
-      $working_copy);
-
-    // Load libraries in ".arcconfig". Libraries here must load.
-    arcanist_load_libraries(
-      idx($runtime_config, 'load', array()),
-      $must_load = true,
-      $lib_source = pht('the %s argument', '--config "load=[...]"'),
-      $working_copy);
-  }
-
-  $user_config = $configuration_manager->readUserConfigurationFile();
-
-  $config_class = $working_copy->getProjectConfig('arcanist_configuration');
-  if ($config_class) {
-    $config = new $config_class();
-  } else {
-    $config = new ArcanistConfiguration();
-  }
 
   $command = strtolower($args[0]);
   $args = array_slice($args, 1);
@@ -210,13 +45,6 @@ try {
   // Git commit hooks) can detect that they're being run via `arc` and change
   // their behaviors.
   putenv('ARCANIST='.$command);
-
-  if ($force_conduit_version) {
-    $workflow->forceConduitVersion($force_conduit_version);
-  }
-  if ($conduit_timeout) {
-    $workflow->setConduitTimeout($conduit_timeout);
-  }
 
   $need_working_copy = $workflow->requiresWorkingCopy();
 
@@ -353,10 +181,6 @@ try {
     ->setBasicAuthUser($basic_user)
     ->setBasicAuthPass($basic_pass);
 
-  if ($conduit_timeout) {
-    $engine->setConduitTimeout($conduit_timeout);
-  }
-
   $workflow->setConduitEngine($engine);
 
   if ($need_auth) {
@@ -470,230 +294,6 @@ try {
 }
 
 
-/**
- * Perform some sanity checks against the possible diversity of PHP builds in
- * the wild, like very old versions and builds that were compiled with flags
- * that exclude core functionality.
- */
-function sanity_check_environment() {
-  // NOTE: We don't have phutil_is_windows() yet here.
-  $is_windows = (DIRECTORY_SEPARATOR != '/');
 
-  // We use stream_socket_pair() which is not available on Windows earlier.
-  $min_version = ($is_windows ? '5.3.0' : '5.2.3');
-  $cur_version = phpversion();
-  if (version_compare($cur_version, $min_version, '<')) {
-    die_with_bad_php(
-      "You are running PHP version '{$cur_version}', which is older than ".
-      "the minimum version, '{$min_version}'. Update to at least ".
-      "'{$min_version}'.");
-  }
 
-  if ($is_windows) {
-    $need_functions = array(
-      'curl_init'     => array('builtin-dll', 'php_curl.dll'),
-    );
-  } else {
-    $need_functions = array(
-      'curl_init'     => array(
-        'text',
-        "You need to install the cURL PHP extension, maybe with ".
-        "'apt-get install php5-curl' or 'yum install php53-curl' or ".
-        "something similar.",
-      ),
-      'json_decode'   => array('flag', '--without-json'),
-    );
-  }
 
-  $problems = array();
-
-  $config = null;
-  $show_config = false;
-  foreach ($need_functions as $fname => $resolution) {
-    if (function_exists($fname)) {
-      continue;
-    }
-
-    static $info;
-    if ($info === null) {
-      ob_start();
-      phpinfo(INFO_GENERAL);
-      $info = ob_get_clean();
-      $matches = null;
-      if (preg_match('/^Configure Command =>\s*(.*?)$/m', $info, $matches)) {
-        $config = $matches[1];
-      }
-    }
-
-    $generic = true;
-    list($what, $which) = $resolution;
-
-    if ($what == 'flag' && strpos($config, $which) !== false) {
-      $show_config = true;
-      $generic = false;
-      $problems[] =
-        "This build of PHP was compiled with the configure flag '{$which}', ".
-        "which means it does not have the function '{$fname}()'. This ".
-        "function is required for arc to run. Rebuild PHP without this flag. ".
-        "You may also be able to build or install the relevant extension ".
-        "separately.";
-    }
-
-    if ($what == 'builtin-dll') {
-      $generic = false;
-      $problems[] =
-        "Your install of PHP does not have the '{$which}' extension enabled. ".
-        "Edit your php.ini file and uncomment the line which reads ".
-        "'extension={$which}'.";
-    }
-
-    if ($what == 'text') {
-      $generic = false;
-      $problems[] = $which;
-    }
-
-    if ($generic) {
-      $problems[] =
-        "This build of PHP is missing the required function '{$fname}()'. ".
-        "Rebuild PHP or install the extension which provides '{$fname}()'.";
-    }
-  }
-
-  if ($problems) {
-    if ($show_config) {
-      $problems[] = "PHP was built with this configure command:\n\n{$config}";
-    }
-    die_with_bad_php(implode("\n\n", $problems));
-  }
-}
-
-function die_with_bad_php($message) {
-  // NOTE: We're bailing because PHP is broken. We can't call any library
-  // functions because they won't be loaded yet.
-
-  echo "\n";
-  echo 'PHP CONFIGURATION ERRORS';
-  echo "\n\n";
-  echo $message;
-  echo "\n\n";
-  exit(1);
-}
-
-function arcanist_load_libraries(
-  $load,
-  $must_load,
-  $lib_source,
-  ArcanistWorkingCopyIdentity $working_copy) {
-
-  if (!$load) {
-    return;
-  }
-
-  if (!is_array($load)) {
-    $error = pht(
-      'Libraries specified by %s are invalid; expected a list. '.
-      'Check your configuration.',
-      $lib_source);
-    $console = PhutilConsole::getConsole();
-    $console->writeErr("%s: %s\n", pht('WARNING'), $error);
-    return;
-  }
-
-  foreach ($load as $location) {
-
-    // Try to resolve the library location. We look in several places, in
-    // order:
-    //
-    //  1. Inside the working copy. This is for phutil libraries within the
-    //     project. For instance "library/src" will resolve to
-    //     "./library/src" if it exists.
-    //  2. In the same directory as the working copy. This allows you to
-    //     check out a library alongside a working copy and reference it.
-    //     If we haven't resolved yet, "library/src" will try to resolve to
-    //     "../library/src" if it exists.
-    //  3. Using normal libphutil resolution rules. Generally, this means
-    //     that it checks for libraries next to libphutil, then libraries
-    //     in the PHP include_path.
-    //
-    // Note that absolute paths will just resolve absolutely through rule (1).
-
-    $resolved = false;
-
-    // Check inside the working copy. This also checks absolute paths, since
-    // they'll resolve absolute and just ignore the project root.
-    $resolved_location = Filesystem::resolvePath(
-      $location,
-      $working_copy->getProjectRoot());
-    if (Filesystem::pathExists($resolved_location)) {
-      $location = $resolved_location;
-      $resolved = true;
-    }
-
-    // If we didn't find anything, check alongside the working copy.
-    if (!$resolved) {
-      $resolved_location = Filesystem::resolvePath(
-        $location,
-        dirname($working_copy->getProjectRoot()));
-      if (Filesystem::pathExists($resolved_location)) {
-        $location = $resolved_location;
-        $resolved = true;
-      }
-    }
-
-    $console = PhutilConsole::getConsole();
-    $console->writeLog(
-      "%s\n",
-      pht("Loading phutil library from '%s'...", $location));
-
-    $error = null;
-    try {
-      phutil_load_library($location);
-    } catch (PhutilBootloaderException $ex) {
-      $error = pht(
-        "Failed to load phutil library at location '%s'. This library ".
-        "is specified by %s. Check that the setting is correct and the ".
-        "library is located in the right place.",
-        $location,
-        $lib_source);
-      if ($must_load) {
-        throw new ArcanistUsageException($error);
-      } else {
-        fwrite(STDERR, phutil_console_wrap(
-          phutil_console_format("%s: %s\n",
-                                pht('WARNING'),
-                                $error)));
-      }
-    } catch (PhutilLibraryConflictException $ex) {
-      if ($ex->getLibrary() != 'arcanist') {
-        throw $ex;
-      }
-
-      // NOTE: If you are running `arc` against itself, we ignore the library
-      // conflict created by loading the local `arc` library (in the current
-      // working directory) and continue without loading it.
-
-      // This means we only execute code in the `arcanist/` directory which is
-      // associated with the binary you are running, whereas we would normally
-      // execute local code.
-
-      // This can make `arc` development slightly confusing if your setup is
-      // especially bizarre, but it allows `arc` to be used in automation
-      // workflows more easily. For some context, see PHI13.
-
-      $executing_directory = dirname(dirname(__FILE__));
-      $working_directory = dirname($location);
-
-      fwrite(
-        STDERR,
-        tsprintf(
-          "**<bg:yellow> %s </bg>** %s\n",
-          pht('VERY META'),
-          pht(
-            'You are running one copy of Arcanist (at path "%s") against '.
-            'another copy of Arcanist (at path "%s"). Code in the current '.
-            'working directory will not be loaded or executed.',
-            $executing_directory,
-            $working_directory)));
-    }
-  }
-}
