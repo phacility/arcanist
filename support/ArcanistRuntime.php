@@ -3,9 +3,14 @@
 final class ArcanistRuntime {
 
   public function execute(array $argv) {
-    $err = $this->checkEnvironment();
-    if ($err) {
-      return $err;
+
+    try {
+      $this->checkEnvironment();
+    } catch (Exception $ex) {
+      echo "CONFIGURATION ERROR\n\n";
+      echo $ex->getMessage();
+      echo "\n\n";
+      return 1;
     }
 
     PhutilTranslator::getInstance()
@@ -109,7 +114,8 @@ final class ArcanistRuntime {
         'minimum supported version ("%s"). Update PHP to continue.',
         $cur_version,
         $min_version);
-      return $this->fatalError($message);
+
+      throw new Exception($message);
     }
 
     if ($is_windows) {
@@ -190,17 +196,9 @@ final class ArcanistRuntime {
         $problems[] = "PHP was built with this configure command:\n\n{$config}";
       }
       $problems = implode("\n\n", $problems);
-      return $this->fatalError($problems);
+
+      throw new Exception($problems);
     }
-
-    return 0;
-  }
-
-  private function fatalError($message) {
-    echo "CONFIGURATION ERROR\n\n";
-    echo $message;
-    echo "\n\n";
-    return 1;
   }
 
   private function loadConfiguration(PhutilArgumentParser $args) {
