@@ -45,6 +45,14 @@ final class ArcanistRuntime {
         'repeat' => true,
         'help' => pht('Specify a runtime configuration value.'),
       ),
+      array(
+        'name' => 'config-file',
+        'param' => 'path',
+        'repeat' => true,
+        'help' => pht(
+          'Load one or more configuration files. If this flag is provided, '.
+          'the system and user configuration files are ignored.'),
+      ),
     );
 
     $args = id(new PhutilArgumentParser($argv))
@@ -202,9 +210,10 @@ final class ArcanistRuntime {
   }
 
   private function loadConfiguration(PhutilArgumentParser $args) {
-    $engine = new ArcanistConfigurationEngine();
+    $engine = id(new ArcanistConfigurationEngine())
+      ->setArguments($args);
 
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
+    $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory(getcwd());
     if ($working_copy) {
       $engine->setWorkingCopy($working_copy);
     }
@@ -214,28 +223,16 @@ final class ArcanistRuntime {
 
   private function loadLibraries(
     PhutilArgumentParser $args,
-    ArcanistConfigurationManager $config) {
+    ArcanistConfigurationSourceList $config) {
+
+    // TOOLSETS: Make this work again -- or replace it entirely with package
+    // management?
+    return;
 
     $is_trace = $args->getArg('trace');
 
-    if ($is_trace) {
-      $libraries = array(
-        'phutil',
-        'arcanist',
-      );
-
-      foreach ($libraries as $library_name) {
-        $this->logTrace(
-          pht('LOAD'),
-          pht(
-            'Loaded "%s" from "%s".',
-            $library_name,
-            phutil_get_library_root($library_name)));
-      }
-    }
-
     $load = array();
-    $working_copy = $config->getWorkingCopyIdentity();
+    $working_copy = $this->getWorkingCopy();
 
     $cli_libraries = $args->getArg('library');
     if ($cli_libraries) {
@@ -463,7 +460,7 @@ final class ArcanistRuntime {
   private function resolveAliases(
     array $workflows,
     array $argv,
-    ArcanistConfigurationManager $config) {
+    ArcanistConfigurationSourceList $config) {
 
     $command = head($argv);
 

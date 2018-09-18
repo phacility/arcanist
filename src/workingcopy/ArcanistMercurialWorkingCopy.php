@@ -11,7 +11,7 @@ final class ArcanistMercurialWorkingCopy
     $working_directory,
     $ancestor_directory) {
 
-    if (!Filesystem::pathExits($ancestor_directory.'/.hg')) {
+    if (!Filesystem::pathExists($ancestor_directory.'/.hg')) {
       return null;
     }
 

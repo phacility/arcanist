@@ -8,7 +8,7 @@ abstract class ArcanistWorkingCopy
 
   public static function newFromWorkingDirectory($path) {
     $working_types = id(new PhutilClassMapQuery())
-      ->setParentClass(__CLASS__)
+      ->setAncestorClass(__CLASS__)
       ->execute();
 
     // Find the outermost directory which is under version control. We go from

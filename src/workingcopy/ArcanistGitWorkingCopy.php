@@ -11,7 +11,7 @@ final class ArcanistGitWorkingCopy
     $working_directory,
     $ancestor_directory) {
 
-    if (!Filesystem::pathExits($ancestor_directory.'/.git')) {
+    if (!Filesystem::pathExists($ancestor_directory.'/.git')) {
       return null;
     }
 

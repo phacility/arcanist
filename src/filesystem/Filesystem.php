@@ -1054,7 +1054,8 @@ final class Filesystem extends Phobject {
     // separator, so we don't end up with "path//to///thing.c".
     $components = preg_replace(
       '('.preg_quote(DIRECTORY_SEPARATOR).'{2,})',
-      DIRECTORY_SEPARATOR);
+      DIRECTORY_SEPARATOR,
+      $components);
 
     return $components;
   }

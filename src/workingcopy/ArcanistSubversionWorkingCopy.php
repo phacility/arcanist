@@ -39,11 +39,11 @@ final class ArcanistSubversionWorkingCopy
     $working_directory,
     $ancestor_directory) {
 
-    if (!Filesystem::pathExits($ancestor_directory.'/.svn')) {
+    if (!Filesystem::pathExists($ancestor_directory.'/.svn')) {
       return null;
     }
 
-    return id(new self());
+    return new self();
   }
 
 
