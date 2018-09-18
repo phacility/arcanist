@@ -5,12 +5,12 @@
 // built-in symbol list through introspection.
 $builtins = phutil_symbols_get_builtins();
 
-require_once dirname(__FILE__).'/__init_script__.php';
+require_once dirname(dirname(__FILE__)).'/init/init-script.php';
 
 $args = new PhutilArgumentParser($argv);
 $args->setTagline(pht('identify symbols in a PHP source file'));
 $args->setSynopsis(<<<EOHELP
-    **phutil_symbols.php** [__options__] __path.php__
+    **library-symbols.php** [__options__] __path.php__
         Identify the symbols (clases, functions and interfaces) in a PHP
         source file. Symbols are divided into "have" symbols (symbols the file
         declares) and "need" symbols (symbols the file depends on). For example,
@@ -524,7 +524,7 @@ function phutil_symbols_get_builtins() {
 
   $compat = json_decode(
     file_get_contents(
-      dirname(__FILE__).'/../resources/php_compat_info.json'),
+      dirname(dirname(__FILE__)).'/../resources/php/php_compat_info.json'),
     true);
 
   foreach (array('functions', 'classes', 'interfaces') as $type) {

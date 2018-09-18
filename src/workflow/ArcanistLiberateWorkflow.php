@@ -73,51 +73,50 @@ EOTEXT
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
         pht(
-          "Provide only one path to '%s'. The path should be a directory ".
-          "where you want to create or update a libphutil library.",
-          'arc liberate'));
-    } else if (count($argv) == 0) {
-      $path = getcwd();
+          'Provide only one path to "arc liberate". The path should identify '.
+          'a directory where you want to create or update a library.'));
+    } else if (!$argv) {
+      $init_files = id(new FileFinder(getcwd()))
+        ->withPath('*/__phutil_library_init__.php')
+        ->find();
+
+      if (!$init_files) {
+        throw new ArcanistUsageException(
+          pht(
+            'Unable to find any libraries under the current working '.
+            'directory. To create a library, provide a path.'));
+      }
+
+      $paths = array();
+      foreach ($init_files as $init) {
+        $paths[] = Filesystem::resolvePath(dirname($init));
+      }
     } else {
-      $path = reset($argv);
+      $paths = array(
+        Filesystem::resolvePath(head($argv)),
+      );
     }
 
     $is_remap = $this->getArgument('remap');
     $is_verify = $this->getArgument('verify');
 
-    $path = Filesystem::resolvePath($path);
-
-    if (Filesystem::pathExists($path) && is_dir($path)) {
-      $init = id(new FileFinder($path))
-        ->withPath('*/__phutil_library_init__.php')
-        ->find();
-    } else {
-      $init = null;
+    foreach ($paths as $path) {
+      $this->liberatePath($path);
     }
 
-    if ($init) {
-      if (count($init) > 1) {
-        throw new ArcanistUsageException(
-          pht(
-            'Specified directory contains more than one libphutil library. '.
-            'Use a more specific path.'));
-      }
-      $path = Filesystem::resolvePath(dirname(reset($init)), $path);
-    } else {
-      $found = false;
-      foreach (Filesystem::walkToRoot($path) as $dir) {
-        if (Filesystem::pathExists($dir.'/__phutil_library_init__.php')) {
-          $path = $dir;
-          $found = true;
-          break;
-        }
-      }
-      if (!$found) {
-        echo pht("No library currently exists at that path...\n");
-        $this->liberateCreateDirectory($path);
-        $this->liberateCreateLibrary($path);
-        return;
-      }
+    return 0;
+  }
+
+  private function liberatePath($path) {
+    if (!Filesystem::pathExists($path.'/__phutil_library_init__.php')) {
+      echo tsprintf(
+        "%s\n",
+        pht(
+          'No library currently exists at the path "%s"...',
+          $path));
+      $this->liberateCreateDirectory($path);
+      $this->liberateCreateLibrary($path);
+      return;
     }
 
     $version = $this->getLibraryFormatVersion($path);
@@ -161,7 +160,7 @@ EOTEXT
   }
 
   private function liberateVersion2($path) {
-    $bin = $this->getScriptPath('scripts/phutil_rebuild_map.php');
+    $bin = $this->getScriptPath('scripts/library/library-map.php');
 
     return phutil_passthru(
       'php %s %C %s',
@@ -244,7 +243,7 @@ EOTEXT
 
 
   private function getScriptPath($script) {
-    $root = dirname(phutil_get_library_root('phutil'));
+    $root = dirname(phutil_get_library_root('arcanist'));
     return $root.'/'.$script;
   }
 

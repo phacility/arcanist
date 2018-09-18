@@ -183,7 +183,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
    * Load the library symbol cache, if it exists and is readable and valid.
    *
    * @return dict  Map of content hashes to cache of output from
-   *               `phutil_symbols.php`.
+   *               `library-symbols.php`.
    *
    * @task symbol
    */
@@ -256,7 +256,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
   }
 
   /**
-   * Build a future which returns a `phutil_symbols.php` analysis of a source
+   * Build a future which returns a `library-symbols.php` analysis of a source
    * file.
    *
    * @param  string  Relative path to the source file to analyze.
@@ -266,9 +266,11 @@ final class PhutilLibraryMapBuilder extends Phobject {
    */
   private function buildSymbolAnalysisFuture($file) {
     $absolute_file = $this->getPath($file);
-    $bin = dirname(__FILE__).'/../../scripts/phutil_symbols.php';
 
-    return new ExecFuture('php %s --ugly -- %s', $bin, $absolute_file);
+    $root = dirname(dirname(dirname(__FILE__)));
+    $bin = $root.'/scripts/library/library-symbols.php';
+
+    return new ExecFuture('php %R --ugly -- %R', $bin, $absolute_file);
   }
 
 
@@ -439,7 +441,7 @@ EOPHP;
     $symbol_cache = $this->loadSymbolCache();
 
     // If the XHPAST binary is not up-to-date, build it now. Otherwise,
-    // `phutil_symbols.php` will attempt to build the binary and will fail
+    // `library-symbols.php` will attempt to build the binary and will fail
     // miserably because it will be trying to build the same file multiple
     // times in parallel.
     if (!PhutilXHPASTBinary::isAvailable()) {
