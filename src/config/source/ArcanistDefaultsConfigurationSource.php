@@ -1,6 +1,17 @@
 <?php
 
 final class ArcanistDefaultsConfigurationSource
-  extends ArcanistConfigurationSource {
+  extends ArcanistDictionaryConfigurationSource {
+
+  public function getSourceDisplayName() {
+    return pht('Builtin Defaults');
+  }
+
+  public function __construct() {
+    $values = id(new ArcanistConfigurationEngine())
+      ->newDefaults();
+
+    parent::__construct($values);
+  }
 
 }

@@ -4,7 +4,8 @@ abstract class ArcanistWorkflow extends Phobject {
 
   private $toolset;
   private $arguments;
-
+  private $configurationEngine;
+  private $configurationSourceList;
 
   /**
    * Return the command used to invoke this workflow from the command like,
@@ -49,6 +50,26 @@ abstract class ArcanistWorkflow extends Phobject {
   final public function setToolset(ArcanistToolset $toolset) {
     $this->toolset = $toolset;
     return $this;
+  }
+
+  final public function setConfigurationSourceList(
+    ArcanistConfigurationSourceList $config) {
+    $this->configurationSourceList = $config;
+    return $this;
+  }
+
+  final public function getConfigurationSourceList() {
+    return $this->configurationSourceList;
+  }
+
+  final public function setConfigurationEngine(
+    ArcanistConfigurationEngine $configuration_engine) {
+    $this->configurationEngine = $configuration_engine;
+    return $this;
+  }
+
+  final public function getConfigurationEngine() {
+    return $this->configurationEngine;
   }
 
   final protected function getToolsetKey() {

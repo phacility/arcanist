@@ -65,9 +65,16 @@ final class ArcanistRuntime {
 
     $args->parsePartial($config_args, true);
 
-    $config = $this->loadConfiguration($args);
+    $config_engine = $this->loadConfiguration($args);
+    $config = $config_engine->newConfigurationSourceList();
 
     $this->loadLibraries($args, $config);
+
+    // Now that we've loaded libraries, we can validate configuration.
+    // Do this before continuing since configuration can impact other
+    // behaviors immediately and we want to catch any issues right away.
+    $config->setConfigOptions($config_engine->newConfigOptionsMap());
+    $config->validateConfiguration();
 
     $toolset = $this->newToolset($argv);
 
@@ -78,6 +85,10 @@ final class ArcanistRuntime {
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
+
+      $workflow
+        ->setConfigurationEngine($config_engine)
+        ->setConfigurationSourceList($config);
     }
 
     $unconsumed_argv = $args->getUnconsumedArgumentVector();
@@ -218,7 +229,7 @@ final class ArcanistRuntime {
       $engine->setWorkingCopy($working_copy);
     }
 
-    return $engine->newConfigurationSourceList();
+    return $engine;
   }
 
   private function loadLibraries(
@@ -461,6 +472,8 @@ final class ArcanistRuntime {
     array $workflows,
     array $argv,
     ArcanistConfigurationSourceList $config) {
+
+    return $argv;
 
     $command = head($argv);
 
