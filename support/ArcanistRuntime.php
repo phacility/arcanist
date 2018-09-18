@@ -35,7 +35,7 @@ final class ArcanistRuntime {
       array(
         'name' => 'library',
         'param' => 'path',
-        'help' => pht('Load a libphutil library.'),
+        'help' => pht('Load a library.'),
         'repeat' => true,
       ),
       array(
@@ -242,21 +242,6 @@ final class ArcanistRuntime {
       ));
 
     ini_set('include_path', $php_include_path);
-
-    // Load libphutil. Note that this has some side effects, including
-    // adjusting some PHP configuration values.
-    @include_once 'libphutil/scripts/__init_script__.php';
-
-    if (!@constant('__LIBPHUTIL__')) {
-      return $this->fatalError(
-        'Unable to load libphutil. Put "libphutil/" next to "arcanist/"; '.
-        'or update your PHP "include_path" to include the parent directory '.
-        'of "libphutil/"; or symlink "libphutil" into '.
-        '"arcanist/externals/includes/".');
-    }
-
-    // Load Arcanist.
-    phutil_load_library($arcanist_dir.'/src/');
 
     return 0;
   }
