@@ -272,13 +272,6 @@ final class ArcanistSettings extends Phobject {
           'matches staging uri.'),
         'default' => false,
       ),
-      'uber.differential.max_changes' => array(
-        'type' => 'int',
-        'help' => pht(
-          'The maximum number of changes to allow before prompting users with the '.
-          'large changes interactive input. '),
-        'default' => 250,
-      ),
     );
   }
 
