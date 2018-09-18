@@ -35,7 +35,7 @@ final class ArcanistRuntime {
   private function executeCore(array $argv) {
     $config_args = array(
       array(
-        'name' => 'load-phutil-library',
+        'name' => 'library',
         'param' => 'path',
         'help' => pht('Load a libphutil library.'),
         'repeat' => true,
@@ -299,10 +299,10 @@ final class ArcanistRuntime {
     $load = array();
     $working_copy = $config->getWorkingCopyIdentity();
 
-    $cli_libraries = $args->getArg('load-phutil-library');
+    $cli_libraries = $args->getArg('library');
     if ($cli_libraries) {
       $load[] = array(
-        '--load-phutil-library',
+        '--library',
         $cli_libraries,
       );
     } else {
