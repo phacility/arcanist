@@ -8,11 +8,6 @@ final class ArcanistRuntime {
       return $err;
     }
 
-    $err = $this->includeCoreLibraries();
-    if ($err) {
-      return $err;
-    }
-
     PhutilTranslator::getInstance()
       ->setLocale(PhutilLocale::loadLocale('en_US'))
       ->setTranslations(PhutilTranslation::getTranslationMapForLocale('en_US'));
@@ -26,6 +21,7 @@ final class ArcanistRuntime {
           "**%s:** %s\n",
           pht('Usage Exception'),
           $ex->getMessage()));
+
       return 77;
     }
   }
@@ -205,45 +201,6 @@ final class ArcanistRuntime {
     echo $message;
     echo "\n\n";
     return 1;
-  }
-
-  private function includeCoreLibraries() {
-    // Adjust 'include_path' to add locations where we'll search for libphutil.
-    // We look in these places:
-    //
-    //  - Next to 'arcanist/'.
-    //  - Anywhere in the normal PHP 'include_path'.
-    //  - Inside 'arcanist/externals/includes/'.
-    //
-    // When looking in these places, we expect to find a 'libphutil/' directory.
-
-    // The 'arcanist/' directory.
-    $arcanist_dir = dirname(dirname(__FILE__));
-
-    // The parent directory of 'arcanist/'.
-    $parent_dir = dirname($arcanist_dir);
-
-    // The 'arcanist/externals/includes/' directory.
-    $include_dir = implode(
-      DIRECTORY_SEPARATOR,
-      array(
-        $arcanist_dir,
-        'externals',
-        'includes',
-      ));
-
-    $php_include_path = ini_get('include_path');
-    $php_include_path = implode(
-      PATH_SEPARATOR,
-      array(
-        $parent_dir,
-        $php_include_path,
-        $include_dir,
-      ));
-
-    ini_set('include_path', $php_include_path);
-
-    return 0;
   }
 
   private function loadConfiguration(PhutilArgumentParser $args) {
