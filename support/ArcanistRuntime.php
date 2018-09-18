@@ -202,15 +202,14 @@ final class ArcanistRuntime {
   }
 
   private function loadConfiguration(PhutilArgumentParser $args) {
-    $configuration_manager = new ArcanistConfigurationManager();
+    $engine = new ArcanistConfigurationEngine();
 
-    $cwd = getcwd();
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($cwd);
-    $configuration_manager->setWorkingCopyIdentity($working_copy);
+    $working_copy = ArcanistWorkingCopyIdentity::newFromPath(getcwd());
+    if ($working_copy) {
+      $engine->setWorkingCopy($working_copy);
+    }
 
-    $configuration_manager->applyRuntimeArcConfig($args);
-
-    return $configuration_manager;
+    return $engine->newConfigurationSourceList();
   }
 
   private function loadLibraries(
