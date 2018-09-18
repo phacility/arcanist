@@ -660,14 +660,18 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $parts = explode("\0", $stdout);
     while (count($parts) > 1) {
       $entry = array_shift($parts);
-      $entry_parts = explode(' ', $entry);
+      $entry_parts = explode(' ', $entry, 2);
       if ($entry_parts[0] == '1') {
+        $entry_parts = explode(' ', $entry, 9);
         $path = $entry_parts[8];
       } else if ($entry_parts[0] == '2') {
+        $entry_parts = explode(' ', $entry, 10);
         $path = $entry_parts[9];
       } else if ($entry_parts[0] == 'u') {
+        $entry_parts = explode(' ', $entry, 11);
         $path = $entry_parts[10];
       } else if ($entry_parts[0] == '?') {
+        $entry_parts = explode(' ', $entry, 2);
         $result[$entry_parts[1]] = self::FLAG_UNTRACKED;
         continue;
       }

@@ -134,66 +134,59 @@ EOTEXT
   }
 
   protected function didParseArguments() {
-    $source = null;
-    $requested = 0;
-    if ($this->getArgument('revision')) {
-      $source = self::SOURCE_REVISION;
-      $requested++;
-    }
-    if ($this->getArgument('diff')) {
-      $source = self::SOURCE_DIFF;
-      $requested++;
-    }
-    if ($this->getArgument('arcbundle')) {
-      $source = self::SOURCE_BUNDLE;
-      $requested++;
-    }
-    if ($this->getArgument('patch')) {
-      $source = self::SOURCE_PATCH;
-      $requested++;
-    }
+    $arguments = array(
+      'revision' => self::SOURCE_REVISION,
+      'diff' => self::SOURCE_DIFF,
+      'arcbundle' => self::SOURCE_BUNDLE,
+      'patch' => self::SOURCE_PATCH,
+      'name' => self::SOURCE_REVISION,
+    );
 
-    $use_revision_id = null;
-    if ($this->getArgument('name')) {
-      $namev = $this->getArgument('name');
-      if (count($namev) > 1) {
-        throw new ArcanistUsageException(
-          pht('Specify at most one revision name.'));
+    $sources = array();
+    foreach ($arguments as $key => $source_type) {
+      $value = $this->getArgument($key);
+      if (!$value) {
+        continue;
       }
-      $source = self::SOURCE_REVISION;
-      $requested++;
 
-      $use_revision_id = $this->normalizeRevisionID(head($namev));
+      switch ($key) {
+        case 'revision':
+          $value = $this->normalizeRevisionID($value);
+          break;
+        case 'name':
+          if (count($value) > 1) {
+            throw new ArcanistUsageException(
+              pht('Specify at most one revision name.'));
+          }
+          $value = $this->normalizeRevisionID(head($value));
+          break;
+      }
+
+      $sources[] = array(
+        $source_type,
+        $value,
+      );
     }
 
-    if ($requested === 0) {
+    if (!$sources) {
       throw new ArcanistUsageException(
         pht(
-          "Specify one of '%s', '%s' (to select the current changes attached ".
-          "to a Differential revision), '%s' (to select a specific, ".
-          "out-of-date diff or a diff which is not attached to a revision), ".
-          "'%s' or '%s' to choose a patch source.",
-          'D12345',
-          '--revision <revision_id>',
-          '--diff <diff_id>',
-          '--arcbundle <file>',
-          '--patch <file>'));
-    } else if ($requested > 1) {
-      throw new ArcanistUsageException(
-        pht(
-          "Options '%s', '%s', '%s', '%s' and '%s' are not compatible. ".
-          "Choose exactly one patch source.",
-          'D12345',
-          '--revision',
-          '--diff',
-          '--arcbundle',
-          '--patch'));
+          'You must specify changes to apply to the working copy with '.
+          '"D12345", "--revision", "--diff", "--arcbundle", or "--patch".'));
     }
 
-    $this->source = $source;
-    $this->sourceParam = nonempty(
-      $use_revision_id,
-      $this->getArgument($source));
+    if (count($sources) > 1) {
+      throw new ArcanistUsageException(
+        pht(
+          'Options "D12345", "--revision", "--diff", "--arcbundle" and '.
+          '"--patch" are mutually exclusive. Choose exactly one patch '.
+          'source.'));
+    }
+
+    $source = head($sources);
+
+    $this->source = $source[0];
+    $this->sourceParam = $source[1];
   }
 
   public function requiresConduit() {

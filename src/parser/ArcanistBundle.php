@@ -15,6 +15,8 @@ final class ArcanistBundle extends Phobject {
   private $loadFileDataCallback;
   private $authorName;
   private $authorEmail;
+  private $byteLimit;
+  private $reservedBytes;
 
   public function setAuthorEmail($author_email) {
     $this->authorEmail = $author_email;
@@ -74,6 +76,15 @@ final class ArcanistBundle extends Phobject {
 
   public function getEncoding() {
     return $this->encoding;
+  }
+
+  public function setByteLimit($byte_limit) {
+    $this->byteLimit = $byte_limit;
+    return $this;
+  }
+
+  public function getByteLimit() {
+    return $this->byteLimit;
   }
 
   public function getBaseRevision() {
@@ -241,12 +252,13 @@ final class ArcanistBundle extends Phobject {
   }
 
   public function toUnifiedDiff() {
+    $this->reservedBytes = 0;
+
     $eol = $this->getEOL('unified');
 
     $result = array();
     $changes = $this->getChanges();
     foreach ($changes as $change) {
-
       $hunk_changes = $this->buildHunkChanges($change->getHunks(), $eol);
       if (!$hunk_changes) {
         continue;
@@ -299,6 +311,8 @@ final class ArcanistBundle extends Phobject {
   }
 
   public function toGitPatch() {
+    $this->reservedBytes = 0;
+
     $eol = $this->getEOL('git');
 
     $result = array();
@@ -649,6 +663,8 @@ final class ArcanistBundle extends Phobject {
         $n_len = $small_hunk->getNewLength();
         $corpus = $small_hunk->getCorpus();
 
+        $this->reserveBytes(strlen($corpus));
+
         // NOTE: If the length is 1 it can be omitted. Since git does this,
         // we also do it so that "arc export --git" diffs are as similar to
         // real git diffs as possible, which helps debug issues.
@@ -740,6 +756,20 @@ final class ArcanistBundle extends Phobject {
 
     $old_length = strlen($old_data);
 
+    // Here, and below, the binary will be emitted with base85 encoding. This
+    // encoding encodes each 4 bytes of input in 5 bytes of output, so we may
+    // need up to 5/4ths as many bytes to represent it.
+
+    // We reserve space up front because base85 encoding isn't super cheap. If
+    // the blob is enormous, we'd rather just bail out now before doing a ton
+    // of work and then throwing it away anyway.
+
+    // However, the data is compressed before it is emitted so we may actually
+    // end up using fewer bytes. For now, the allocator just assumes the worst
+    // case since it isn't important to be precise, but we could do a more
+    // exact job of this.
+    $this->reserveBytes($old_length * 5 / 4);
+
     if ($old_data === null) {
       $old_data = '';
       $old_sha1 = str_repeat('0', 40);
@@ -758,6 +788,7 @@ final class ArcanistBundle extends Phobject {
     }
 
     $new_length = strlen($new_data);
+    $this->reserveBytes($new_length * 5 / 4);
 
     if ($new_data === null) {
       $new_data = '';
@@ -781,37 +812,46 @@ final class ArcanistBundle extends Phobject {
 
   private function emitBinaryDiffBody($data) {
     $eol = $this->getEOL('git');
+    return self::newBase85Data($data, $eol);
+  }
 
-    if (!function_exists('gzcompress')) {
-      throw new Exception(
-        pht(
-          'This patch has binary data. The PHP zlib extension is required to '.
-          'apply patches with binary data to git. Install the PHP zlib '.
-          'extension to continue.'));
+  public static function newBase85Data($data, $eol, $mode = null) {
+    // The "32bit" and "64bit" modes are used by unit tests to verify that all
+    // of the encoding pathways here work identically. In these modes, we skip
+    // compression because `gzcompress()` may not be stable and we just want
+    // to test that the output matches some expected result.
+
+    if ($mode === null) {
+      if (!function_exists('gzcompress')) {
+        throw new Exception(
+          pht(
+            'This patch has binary data. The PHP zlib extension is required '.
+            'to apply patches with binary data to git. Install the PHP zlib '.
+            'extension to continue.'));
+      }
+
+      $input = gzcompress($data);
+      $is_64bit = (PHP_INT_SIZE >= 8);
+    } else {
+      switch ($mode) {
+        case '32bit':
+          $input = $data;
+          $is_64bit = false;
+          break;
+        case '64bit':
+          $input = $data;
+          $is_64bit = true;
+          break;
+        default:
+          throw new Exception(
+            pht(
+              'Unsupported base85 encoding mode "%s".',
+              $mode));
+      }
     }
 
     // See emit_binary_diff_body() in diff.c for git's implementation.
 
-    $buf = '';
-
-    $deflated = gzcompress($data);
-    $lines = str_split($deflated, 52);
-    foreach ($lines as $line) {
-      $len = strlen($line);
-      // The first character encodes the line length.
-      if ($len <= 26) {
-        $buf .= chr($len + ord('A') - 1);
-      } else {
-        $buf .= chr($len - 26 + ord('a') - 1);
-      }
-      $buf .= self::encodeBase85($line);
-      $buf .= $eol;
-    }
-
-    return $buf;
-  }
-
-  public static function encodeBase85($data) {
     // This is implemented awkwardly in order to closely mirror git's
     // implementation in base85.c
 
@@ -838,6 +878,9 @@ final class ArcanistBundle extends Phobject {
     //
     // (Since PHP overflows integer operations into floats, we don't need much
     // additional casting.)
+
+    // On 64 bit systems, we skip all this fanfare and just use integers. This
+    // is significantly faster.
 
     static $map = array(
       '0',
@@ -927,30 +970,85 @@ final class ArcanistBundle extends Phobject {
       '~',
     );
 
+    $len_map = array();
+    for ($ii = 0; $ii <= 52; $ii++) {
+      if ($ii <= 26) {
+        $len_map[$ii] = chr($ii + ord('A') - 1);
+      } else {
+        $len_map[$ii] = chr($ii - 26 + ord('a') - 1);
+      }
+    }
+
     $buf = '';
 
-    $pos = 0;
-    $bytes = strlen($data);
-    while ($bytes) {
-      $accum = 0;
-      for ($count = 24; $count >= 0; $count -= 8) {
-        $val = ord($data[$pos++]);
-        $val = $val * (1 << $count);
-        $accum = $accum + $val;
-        if (--$bytes == 0) {
-          break;
+    $lines = str_split($input, 52);
+    $final = (count($lines) - 1);
+
+    foreach ($lines as $idx => $line) {
+      if ($idx === $final) {
+        $len = strlen($line);
+      } else {
+        $len = 52;
+      }
+
+      // The first character encodes the line length.
+      $buf .= $len_map[$len];
+
+      $pos = 0;
+      while ($len) {
+        $accum = 0;
+        for ($count = 24; $count >= 0; $count -= 8) {
+          $val = ord($line[$pos++]);
+          $val = $val * (1 << $count);
+          $accum = $accum + $val;
+          if (--$len == 0) {
+            break;
+          }
         }
+
+        $slice = '';
+
+        // If we're in 64bit mode, we can just use integers. Otherwise, we
+        // need to use floating point math to avoid overflows.
+
+        if ($is_64bit) {
+          for ($count = 4; $count >= 0; $count--) {
+            $val = $accum % 85;
+            $accum = $accum / 85;
+            $slice .= $map[$val];
+          }
+        } else {
+          for ($count = 4; $count >= 0; $count--) {
+            $val = (int)fmod($accum, 85.0);
+            $accum = floor($accum / 85.0);
+            $slice .= $map[$val];
+          }
+        }
+
+        $buf .= strrev($slice);
       }
-      $slice = '';
-      for ($count = 4; $count >= 0; $count--) {
-        $val = (int)fmod($accum, 85.0);
-        $accum = floor($accum / 85.0);
-        $slice .= $map[$val];
-      }
-      $buf .= strrev($slice);
+
+      $buf .= $eol;
     }
 
     return $buf;
+  }
+
+  private function reserveBytes($bytes) {
+    $this->reservedBytes += $bytes;
+
+    if ($this->byteLimit) {
+      if ($this->reservedBytes > $this->byteLimit) {
+        throw new ArcanistDiffByteSizeException(
+          pht(
+            'This large diff requires more space than it is allowed to '.
+            'use (limited to %s bytes; needs more than %s bytes).',
+            new PhutilNumber($this->byteLimit),
+            new PhutilNumber($this->reservedBytes)));
+      }
+    }
+
+    return $this;
   }
 
 }
