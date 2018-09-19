@@ -178,6 +178,22 @@ final class ArcanistConfigurationEngine
     ArcanistConfigurationEngineExtension $extension,
     $is_alias_of = null) {
 
+    $reserved = array(
+      // The presence of this key is used to detect old "~/.arcrc" files, so
+      // configuration options may not use it.
+      'config',
+    );
+    $reserved = array_fuse($reserved);
+
+    if (isset($reserved[$key])) {
+      throw new Exception(
+        pht(
+          'Extension ("%s") defines invalid configuration with key "%s". '.
+          'This key is reserved.',
+          get_class($extension),
+          $key));
+    }
+
     $is_ok = preg_match('(^[a-z][a-z0-9._-]{2,}\z)', $key);
     if (!$is_ok) {
       if ($is_alias_of === null) {

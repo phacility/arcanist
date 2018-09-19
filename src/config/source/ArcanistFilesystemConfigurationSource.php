@@ -16,6 +16,8 @@ abstract class ArcanistFilesystemConfigurationSource
       }
     }
 
+    $values = $this->didReadFilesystemValues($values);
+
     parent::__construct($values);
   }
 
@@ -28,5 +30,9 @@ abstract class ArcanistFilesystemConfigurationSource
   }
 
   abstract public function getFileKindDisplayName();
+
+  protected function didReadFilesystemValues(array $values) {
+    return $values;
+  }
 
 }
