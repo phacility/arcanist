@@ -31,6 +31,8 @@ EOTEXT
   }
 
   public function runWorkflow() {
+    $log = $this->getLogEngine();
+
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
       throw new ArcanistUsageException(
@@ -38,6 +40,10 @@ EOTEXT
           'Provide only one path to "arc liberate". The path should identify '.
           'a directory where you want to create or update a library.'));
     } else if (!$argv) {
+      $log->writeStatus(
+        pht('SCAN'),
+        pht('Searching for libraries in the current working directory...'));
+
       $init_files = id(new FileFinder(getcwd()))
         ->withPath('*/__phutil_library_init__.php')
         ->find();
@@ -60,8 +66,15 @@ EOTEXT
     }
 
     foreach ($paths as $path) {
+      $log->writeStatus(
+        pht('WORK'),
+        pht('Updating library: %s', Filesystem::readablePath($path)));
       $this->liberatePath($path);
     }
+
+    $log->writeSuccess(
+      pht('DONE'),
+      pht('Updated %s librarie(s).', phutil_count($paths)));
 
     return 0;
   }

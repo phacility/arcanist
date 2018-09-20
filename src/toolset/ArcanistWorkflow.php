@@ -185,4 +185,8 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->conduitEngine;
   }
 
+  final protected function getLogEngine() {
+    return $this->getRuntime()->getLogEngine();
+  }
+
 }

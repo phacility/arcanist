@@ -22,18 +22,13 @@ abstract class ArcanistConfigurationSource
     return false;
   }
 
-  public function didReadUnknownOption($key) {
-    // TOOLSETS: Standardize this kind of messaging? On ArcanistRuntime?
-
-    fprintf(
-      STDERR,
-      tsprintf(
-        "<bg:yellow>** %s **</bg> %s\n",
-        pht('WARNING'),
-        pht(
-          'Ignoring unrecognized configuration option ("%s") from source: %s.',
-          $key,
-          $this->getSourceDisplayName())));
+  public function didReadUnknownOption(ArcanistRuntime $runtime, $key) {
+    $runtime->getLogEngine()->writeWarning(
+      pht('UNKNOWN CONFIGURATION'),
+      pht(
+        'Ignoring unrecognized configuration option ("%s") from source: %s.',
+        $key,
+        $this->getSourceDisplayName()));
   }
 
 }

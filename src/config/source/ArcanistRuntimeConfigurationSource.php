@@ -30,7 +30,7 @@ final class ArcanistRuntimeConfigurationSource
     parent::__construct($map);
   }
 
-  public function didReadUnknownOption($key) {
+  public function didReadUnknownOption(ArcanistRuntime $runtime, $key) {
     throw new PhutilArgumentUsageException(
       pht(
         'Configuration option ("%s") specified with "--config" flag is not '.

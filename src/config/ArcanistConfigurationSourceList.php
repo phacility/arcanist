@@ -131,7 +131,7 @@ final class ArcanistConfigurationSourceList
     return $this->configOptions;
   }
 
-  public function validateConfiguration() {
+  public function validateConfiguration(ArcanistRuntime $runtime) {
     $options = $this->getConfigOptions();
 
     $aliases = array();
@@ -158,7 +158,7 @@ final class ArcanistConfigurationSourceList
         // for config files we emit a warning; for "--config" we fatal.
 
         if (!$option) {
-          $source->didReadUnknownOption($key);
+          $source->didReadUnknownOption($runtime, $key);
           continue;
         }
 

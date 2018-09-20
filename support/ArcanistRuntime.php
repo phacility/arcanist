@@ -3,6 +3,7 @@
 final class ArcanistRuntime {
 
   private $workflows;
+  private $logEngine;
 
   public function execute(array $argv) {
 
@@ -19,28 +20,23 @@ final class ArcanistRuntime {
       ->setLocale(PhutilLocale::loadLocale('en_US'))
       ->setTranslations(PhutilTranslation::getTranslationMapForLocale('en_US'));
 
+    $log = new ArcanistLogEngine();
+    $this->logEngine = $log;
+
     try {
       return $this->executeCore($argv);
     } catch (ArcanistConduitException $ex) {
-      fwrite(
-        STDERR,
-        tsprintf(
-          "**%s:** %s\n",
-          pht('Conduit Exception'),
-          $ex->getMessage()));
+      $log->writeError(pht('CONDUIT'), $ex->getMessage());
     } catch (PhutilArgumentUsageException $ex) {
-      fwrite(
-        STDERR,
-        tsprintf(
-          "**%s:** %s\n",
-          pht('Usage Exception'),
-          $ex->getMessage()));
-
-      return 77;
+      $log->writeError(pht('USAGE EXCEPTION'), $ex->getMessage());
     }
+
+    return 1;
   }
 
   private function executeCore(array $argv) {
+    $log = $this->getLogEngine();
+
     $config_args = array(
       array(
         'name' => 'library',
@@ -68,9 +64,9 @@ final class ArcanistRuntime {
       ->parseStandardArguments();
 
     $is_trace = $args->getArg('trace');
-    if ($is_trace) {
-      $this->logTrace(pht('ARGV'), csprintf('%Ls', $argv));
-    }
+    $log->setShowTraceMessages($is_trace);
+
+    $log->writeTrace(pht('ARGV'), csprintf('%Ls', $argv));
 
     $args->parsePartial($config_args, true);
 
@@ -83,7 +79,7 @@ final class ArcanistRuntime {
     // Do this before continuing since configuration can impact other
     // behaviors immediately and we want to catch any issues right away.
     $config->setConfigOptions($config_engine->newConfigOptionsMap());
-    $config->validateConfiguration();
+    $config->validateConfiguration($this);
 
     $toolset = $this->newToolset($argv);
 
@@ -483,19 +479,18 @@ final class ArcanistRuntime {
     return $map;
   }
 
-  private function logTrace($label, $message) {
-    echo tsprintf(
-      "**<bg:magenta> %s </bg>** %s\n",
-      $label,
-      $message);
-  }
-
   public function getWorkflows() {
     return $this->workflows;
   }
 
+  public function getLogEngine() {
+    return $this->logEngine;
+  }
+
   private function applyAliasEffects(array $effects, array $argv) {
     assert_instances_of($effects, 'ArcanistAliasEffect');
+
+    $log = $this->getLogEngine();
 
     $command = null;
     $arguments = null;
@@ -503,12 +498,7 @@ final class ArcanistRuntime {
       $message = $effect->getMessage();
 
       if ($message !== null) {
-        fprintf(
-          STDERR,
-          tsprintf(
-            "**<bg:yellow> %s </bg>** %s\n",
-            pht('ALIAS'),
-            $message));
+        $log->writeInfo(pht('ALIAS'), $message);
       }
 
       if ($effect->getCommand()) {
