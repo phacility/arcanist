@@ -7,6 +7,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $arguments;
   private $configurationEngine;
   private $configurationSourceList;
+  private $conduitEngine;
 
   /**
    * Return the command used to invoke this workflow from the command like,
@@ -47,7 +48,6 @@ abstract class ArcanistWorkflow extends Phobject {
     // TOOLSETS: Temporary!
     return null;
   }
-
 
   public function newPhutilWorkflow() {
     $arguments = $this->getWorkflowArguments();
@@ -162,6 +162,27 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final protected function newWorkflowInformation() {
     return new ArcanistWorkflowInformation();
+  }
+
+  final protected function getConduitEngine() {
+    if (!$this->conduitEngine) {
+      $conduit_uri = $this->getConfig('phabricator.uri');
+
+      if (!strlen($conduit_uri)) {
+        throw new ArcanistNoURIConduitException(
+          pht(
+            'This workflow is trying to connect to the Phabricator API, but '.
+            'no Phabricator URI is configured. Run "arc help connect" for '.
+            'guidance.'));
+      }
+
+      $conduit_engine = id(new ArcanistConduitEngine())
+        ->setConduitURI($conduit_uri);
+
+      $this->conduitEngine = $conduit_engine;
+    }
+
+    return $this->conduitEngine;
   }
 
 }

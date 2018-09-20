@@ -6,10 +6,6 @@ final class ArcanistConduitEngine
   private $conduitURI;
   private $conduitToken;
 
-  private $conduitTimeout;
-  private $basicAuthUser;
-  private $basicAuthPass;
-
   private $client;
   private $callKey = 0;
   private $activeFutures = array();
@@ -35,33 +31,6 @@ final class ArcanistConduitEngine
 
   public function getConduitToken() {
     return $this->conduitToken;
-  }
-
-  public function setConduitTimeout($conduit_timeout) {
-    $this->conduitTimeout = $conduit_timeout;
-    return $this;
-  }
-
-  public function getConduitTimeout() {
-    return $this->conduitTimeout;
-  }
-
-  public function setBasicAuthUser($basic_auth_user) {
-    $this->basicAuthUser = $basic_auth_user;
-    return $this;
-  }
-
-  public function getBasicAuthUser() {
-    return $this->basicAuthUser;
-  }
-
-  public function setBasicAuthPass($basic_auth_pass) {
-    $this->basicAuthPass = $basic_auth_pass;
-    return $this;
-  }
-
-  public function getBasicAuthPass() {
-    return $this->basicAuthPass;
   }
 
   public function newCall($method, array $parameters) {
@@ -96,17 +65,6 @@ final class ArcanistConduitEngine
       $conduit_uri = $this->getConduitURI();
 
       $client = new ConduitClient($conduit_uri);
-
-      $timeout = $this->getConduitTimeout();
-      if ($timeout) {
-        $client->setTimeout($timeout);
-      }
-
-      $basic_user = $this->getBasicAuthUser();
-      $basic_pass = $this->getBasicAuthPass();
-      if ($basic_user !== null || $basic_pass !== null) {
-        $client->setBasicAuthCredentials($basic_user, $basic_pass);
-      }
 
       $token = $this->getConduitToken();
       if ($token) {

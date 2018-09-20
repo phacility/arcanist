@@ -21,6 +21,13 @@ final class ArcanistRuntime {
 
     try {
       return $this->executeCore($argv);
+    } catch (ArcanistConduitException $ex) {
+      fwrite(
+        STDERR,
+        tsprintf(
+          "**%s:** %s\n",
+          pht('Conduit Exception'),
+          $ex->getMessage()));
     } catch (PhutilArgumentUsageException $ex) {
       fwrite(
         STDERR,

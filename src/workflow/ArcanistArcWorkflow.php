@@ -33,7 +33,7 @@
  * @task  scratch   Scratch Files
  * @task  phabrep   Phabricator Repositories
  */
-abstract class ArcanistArcWorkflow extends ArcanistWorkflow {
+abstract class ArcanistArcWorkflow extends Phobject {
 
   const COMMIT_DISABLE = 0;
   const COMMIT_ALLOW = 1;

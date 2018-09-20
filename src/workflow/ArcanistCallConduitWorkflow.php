@@ -9,63 +9,54 @@ final class ArcanistCallConduitWorkflow extends ArcanistWorkflow {
     return 'call-conduit';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **call-conduit** __method__
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Make a call to Conduit, the Phabricator API.
+
+For example:
+
+  $ echo '{}' | arc call-conduit conduit.ping
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->addExample(pht('**call-conduit** __method__'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: http, https
-          Allows you to make a raw Conduit method call:
-
-            - Run this command from a working directory.
-            - Call parameters are REQUIRED and read as a JSON blob from stdin.
-            - Results are written to stdout as a JSON blob.
-
-          This workflow is primarily useful for writing scripts which integrate
-          with Phabricator. Examples:
-
-            $ echo '{}' | arc call-conduit conduit.ping
-            $ echo '{"phid":"PHID-FILE-xxxx"}' | arc call-conduit file.download
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      '*' => 'method',
+      $this->newWorkflowArgument('argv')
+        ->setWildcard(true),
     );
   }
 
-  protected function shouldShellComplete() {
-    return false;
-  }
+  public function runWorkflow() {
+    $argv = $this->getArgument('argv');
 
-  public function requiresConduit() {
-    return true;
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  public function run() {
-    $method = $this->getArgument('method', array());
-    if (count($method) !== 1) {
-      throw new ArcanistUsageException(
-        pht('Provide exactly one Conduit method name.'));
+    if (!$argv) {
+      // TOOLSETS: We should call "conduit.query" and list available methods
+      // here.
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Provide the name of the Conduit method you want to call on the '.
+          'command line.'));
+    } else if (count($argv) > 1) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Provide the name of only one method to call.'));
     }
-    $method = reset($method);
 
-    $console = PhutilConsole::getConsole();
+    $method = head($argv);
+
     if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
-      $console->writeErr(
-        "%s\n",
-        pht('Waiting for JSON parameters on stdin...'));
+      fprintf(
+        STDERR,
+        tsprintf(
+          "%s\n",
+          pht('Waiting for JSON parameters on stdin...')));
     }
+
     $params = @file_get_contents('php://stdin');
     try {
       $params = phutil_json_decode($params);
@@ -77,20 +68,24 @@ EOTEXT
     $error = null;
     $error_message = null;
     try {
-      $result = $this->getConduit()->callMethodSynchronous(
-        $method,
-        $params);
+      $result = $this->getConduitEngine()->resolveCall($method, $params);
     } catch (ConduitClientException $ex) {
+
+      // TOOLSETS: We should use "conduit.query" to suggest similar calls if
+      // it looks like the user called a method which does not exist.
+
       $error = $ex->getErrorCode();
       $error_message = $ex->getMessage();
       $result = null;
     }
 
-    echo json_encode(array(
-      'error'         => $error,
-      'errorMessage'  => $error_message,
-      'response'      => $result,
-    ))."\n";
+    echo id(new PhutilJSON())
+      ->encodeFormatted(
+        array(
+          'error' => $error,
+          'errorMessage' => $error_message,
+          'response' => $result,
+        ));
 
     return 0;
   }

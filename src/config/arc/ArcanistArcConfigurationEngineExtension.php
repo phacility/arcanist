@@ -92,17 +92,6 @@ final class ArcanistArcConfigurationEngineExtension
         'help' => pht('Command to use to invoke a web browser.'),
         'example' => '"gnome-www-browser"',
       ),
-      'http.basicauth.user' => array(
-        'type' => 'string',
-        'help' => pht('Username to use for basic auth over HTTP transports.'),
-        'example' => '"bob"',
-      ),
-      'http.basicauth.pass' => array(
-        'type' => 'string',
-        'help' => pht('Password to use for basic auth over HTTP transports.'),
-        'example' => '"bobhasasecret"',
-      ),
-
 */
 
 

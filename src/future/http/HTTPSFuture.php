@@ -321,7 +321,8 @@ final class HTTPSFuture extends BaseHTTPFuture {
       //   work, give up and yell at the user.
 
       if (!$this->getCABundle()) {
-        $caroot = dirname(phutil_get_library_root('phutil')).'/resources/ssl/';
+        $arcanist_root = dirname(phutil_get_library_root('arcanist'));
+        $caroot = $arcanist_root.'/resources/ssl/';
         $ini_val = ini_get('curl.cainfo');
         if (self::getGlobalCABundle()) {
           $this->setCABundleFromPath(self::getGlobalCABundle());
