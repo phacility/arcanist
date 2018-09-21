@@ -1,12 +1,9 @@
-if [[ -n ${ZSH_VERSION-} ]]; then
-  autoload -U +X bashcompinit && bashcompinit
-fi
-
-_arc ()
+_arcanist_complete_{{{BIN}}} ()
 {
-  CUR="${COMP_WORDS[COMP_CWORD]}"
   COMPREPLY=()
-  OPTS=$(echo | arc shell-complete --current ${COMP_CWORD} -- ${COMP_WORDS[@]})
+
+  CUR="${COMP_WORDS[COMP_CWORD]}"
+  OPTS=$(echo | {{{BIN}}} shell-complete --current ${COMP_CWORD} -- ${COMP_WORDS[@]} 2>/dev/null)
 
   if [ $? -ne 0 ]; then
     return $?
@@ -23,4 +20,4 @@ _arc ()
 
   COMPREPLY=( $(compgen -W "${OPTS}" -- ${CUR}) )
 }
-complete -F _arc -o filenames arc
+complete -F _arcanist_complete_{{{BIN}}} -o filenames {{{BIN}}}

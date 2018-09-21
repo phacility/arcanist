@@ -77,5 +77,13 @@ final class ArcanistLogEngine
     return $trace;
   }
 
+  public function writeHint($label, $message) {
+    return $this->writeMessage(
+      $this->newMessage()
+        ->setColor('cyan')
+        ->setLabel($label)
+        ->setMessage($message));
+  }
+
 }
 

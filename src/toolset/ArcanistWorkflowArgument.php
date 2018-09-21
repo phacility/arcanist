@@ -6,6 +6,8 @@ final class ArcanistWorkflowArgument
   private $key;
   private $help;
   private $wildcard;
+  private $parameter;
+  private $isPathArgument;
 
   public function setKey($key) {
     $this->key = $key;
@@ -34,6 +36,11 @@ final class ArcanistWorkflowArgument
       $spec['wildcard'] = true;
     }
 
+    $parameter = $this->getParameter();
+    if ($parameter !== null) {
+      $spec['param'] = $parameter;
+    }
+
     return $spec;
   }
 
@@ -44,6 +51,24 @@ final class ArcanistWorkflowArgument
 
   public function getHelp() {
     return $this->help;
+  }
+
+  public function setParameter($parameter) {
+    $this->parameter = $parameter;
+    return $this;
+  }
+
+  public function getParameter() {
+    return $this->parameter;
+  }
+
+  public function setIsPathArgument($is_path_argument) {
+    $this->isPathArgument = $is_path_argument;
+    return $this;
+  }
+
+  public function getIsPathArgument() {
+    return $this->isPathArgument;
   }
 
 }
