@@ -4,6 +4,9 @@ final class ArcanistRuntime {
 
   private $workflows;
   private $logEngine;
+  private $lastInterruptTime;
+
+  private $stack = array();
 
   public function execute(array $argv) {
 
@@ -67,6 +70,12 @@ final class ArcanistRuntime {
     $log->setShowTraceMessages($is_trace);
 
     $log->writeTrace(pht('ARGV'), csprintf('%Ls', $argv));
+
+    // We're installing the signal handler after parsing "--trace" so that it
+    // can emit debugging messages. This means there's a very small window at
+    // startup where signals have no special handling, but we couldn't really
+    // route them or do anything interesting with them anyway.
+    $this->installSignalHandler();
 
     $args->parsePartial($config_args, true);
 
@@ -513,5 +522,104 @@ final class ArcanistRuntime {
 
     return $argv;
   }
+
+  private function installSignalHandler() {
+    $log = $this->getLogEngine();
+
+    if (!function_exists('pcntl_signal')) {
+      $log->writeTrace(
+        pht('PCNTL'),
+        pht(
+          'Unable to install signal handler, pcntl_signal() unavailable. '.
+          'Continuing without signal handling.'));
+      return;
+    }
+
+    // NOTE: SIGHUP, SIGTERM and SIGWINCH are handled by "PhutilSignalRouter".
+    // This logic is largely similar to the logic there, but more specific to
+    // Arcanist workflows.
+
+    pcntl_signal(SIGINT, array($this, 'routeSignal'));
+  }
+
+  public function routeSignal($signo) {
+    switch ($signo) {
+      case SIGINT:
+        $this->routeInterruptSignal($signo);
+        break;
+    }
+  }
+
+  private function routeInterruptSignal($signo) {
+    $log = $this->getLogEngine();
+
+    $last_interrupt = $this->lastInterruptTime;
+    $now = microtime(true);
+    $this->lastInterruptTime = $now;
+
+    $should_exit = false;
+
+    // If we received another SIGINT recently, always exit. This implements
+    // "press ^C twice in quick succession to exit" regardless of what the
+    // workflow may decide to do.
+    $interval = 2;
+    if ($last_interrupt !== null) {
+      if ($now - $last_interrupt < $interval) {
+        $should_exit = true;
+      }
+    }
+
+    $handler = null;
+    if (!$should_exit) {
+
+      // Look for an interrupt handler in the current workflow stack.
+
+      $stack = $this->getWorkflowStack();
+      foreach ($stack as $workflow) {
+        if ($workflow->canHandleSignal($signo)) {
+          $handler = $workflow;
+          break;
+        }
+      }
+
+      // If no workflow in the current execution stack can handle an interrupt
+      // signal, just exit on the first interrupt.
+
+      if (!$handler) {
+        $should_exit = true;
+      }
+    }
+
+    if ($should_exit) {
+      $log->writeHint(
+        pht('INTERRUPT'),
+        pht('Interrupted by SIGINT (^C).'));
+      exit(128 + $signo);
+    }
+
+    $log->writeHint(
+      pht('INTERRUPT'),
+      pht('Press ^C again to exit.'));
+
+    $handler->handleSignal($signo);
+  }
+
+  public function pushWorkflow(ArcanistWorkflow $workflow) {
+    $this->stack[] = $workflow;
+    return $this;
+  }
+
+  public function popWorkflow() {
+    if (!$this->stack) {
+      throw new Exception(pht('Trying to pop an empty workflow stack!'));
+    }
+
+    return array_pop($this->stack);
+  }
+
+  public function getWorkflowStack() {
+    return $this->stack;
+  }
+
 
 }

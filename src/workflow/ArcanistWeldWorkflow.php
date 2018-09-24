@@ -1,36 +1,38 @@
 <?php
 
-final class ArcanistWeldWorkflow extends ArcanistWorkflow {
+final class ArcanistWeldWorkflow
+  extends ArcanistWorkflow {
 
   public function getWorkflowName() {
     return 'weld';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **weld** [options] __file__ __file__ ...
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Robustly fuse two or more files together. The resulting joint is much stronger
+than the one created by tools like __cat__.
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->addExample(pht('**weld** [__options__] __file__ __file__ ...'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Robustly fuse two or more files together. The resulting joint is
-          much stronger than the one created by tools like __cat__.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      '*' => 'files',
+      $this->newWorkflowArgument('files')
+        ->setIsPathArgument(true)
+        ->setWildcard(true),
     );
   }
 
-  public function run() {
+
+  public function runWorkflow() {
     $files = $this->getArgument('files');
+
     if (count($files) < 2) {
-      throw new ArcanistUsageException(
+      throw new PhutilArgumentUsageException(
         pht('Specify two or more files to weld together.'));
     }
 

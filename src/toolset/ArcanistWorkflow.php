@@ -129,8 +129,12 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function executeWorkflow(PhutilArgumentParser $args) {
+    $runtime = $this->getRuntime();
+
     $this->arguments = $args;
     $caught = null;
+
+    $runtime->pushWorkflow($this);
 
     try {
       $err = $this->runWorkflow($args);
@@ -143,6 +147,8 @@ abstract class ArcanistWorkflow extends Phobject {
     } catch (Exception $ex) {
       phlog($ex);
     }
+
+    $runtime->popWorkflow();
 
     if ($caught) {
       throw $caught;
@@ -187,6 +193,14 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final protected function getLogEngine() {
     return $this->getRuntime()->getLogEngine();
+  }
+
+  public function canHandleSignal($signo) {
+    return false;
+  }
+
+  public function handleSignal($signo) {
+    throw new PhutilMethodNotImplementedException();
   }
 
 }
