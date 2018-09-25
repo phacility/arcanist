@@ -150,8 +150,7 @@ final class PhutilTypeSpecTestCase extends PhutilTestCase {
     foreach ($map as $expect => $input) {
       $this->assertEqual(
         $expect,
-        PhutilTypeSpec::getTypeOf($input),
-        print_r($input, true));
+        PhutilTypeSpec::getTypeOf($input));
 
       PhutilTypeSpec::newFromString($expect)->check($input);
     }
