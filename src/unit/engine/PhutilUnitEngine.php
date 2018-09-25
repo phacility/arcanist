@@ -1,62 +1,16 @@
 <?php
 
-/**
- * Very basic unit test engine which runs libphutil tests.
- */
-final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
+final class PhutilUnitEngine
+  extends ArcanistUnitEngine {
 
-  public function getEngineConfigurationName() {
-    return 'phutil';
-  }
+  const ENGINETYPE = 'phutil';
 
-  protected function supportsRunAllTests() {
-    return true;
-  }
-
-  public function run() {
-    if ($this->getRunAllTests()) {
-      $run_tests = $this->getAllTests();
-    } else {
-      $run_tests = $this->getTestsForPaths();
-    }
-
-    if (!$run_tests) {
-      throw new ArcanistNoEffectException(pht('No tests to run.'));
-    }
-
-    $enable_coverage = $this->getEnableCoverage();
-
-    if ($enable_coverage !== false) {
-      if (!function_exists('xdebug_start_code_coverage')) {
-        if ($enable_coverage === true) {
-          throw new ArcanistUsageException(
-            pht(
-              'You specified %s but %s is not available, so '.
-              'coverage can not be enabled for %s.',
-              '--coverage',
-              'XDebug',
-              __CLASS__));
-        }
-      } else {
-        $enable_coverage = true;
-      }
-    }
+  public function runTests() {
+    $run_tests = $this->getAllTests();
 
     $test_cases = array();
-
     foreach ($run_tests as $test_class) {
-      $test_case = newv($test_class, array())
-        ->setEnableCoverage($enable_coverage)
-        ->setWorkingCopy($this->getWorkingCopy());
-
-      if ($this->getPaths()) {
-        $test_case->setPaths($this->getPaths());
-      }
-
-      if ($this->renderer) {
-        $test_case->setRenderer($this->renderer);
-      }
-
+      $test_case = newv($test_class, array());
       $test_cases[] = $test_case;
     }
 
@@ -66,7 +20,11 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
 
     $results = array();
     foreach ($test_cases as $test_case) {
-      $results[] = $test_case->run();
+      $result_list = $test_case->run();
+
+      $this->didRunTests($result_list);
+
+      $results[] = $result_list;
     }
     $results = array_mergev($results);
 
@@ -78,7 +36,7 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function getAllTests() {
-    $project_root = $this->getWorkingCopy()->getProjectRoot();
+    $project_root = $this->getPath();
 
     $symbols = id(new PhutilSymbolLoader())
       ->setType('class')

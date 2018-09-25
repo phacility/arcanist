@@ -651,6 +651,9 @@ abstract class PhutilTestCase extends Phobject {
   }
 
   final protected function getLink($method) {
+    // TOOLSETS: Restore this.
+    return null;
+
     $base_uri = $this
       ->getWorkingCopy()
       ->getProjectConfig('phabricator.uri');

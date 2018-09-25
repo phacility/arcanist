@@ -76,8 +76,7 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
     $failed = 0;
     $skipped = 0;
 
-    $test_case = id(new PhutilTestCaseTestCase())
-      ->setWorkingCopy($this->getWorkingCopy());
+    $test_case = new PhutilTestCaseTestCase();
 
     foreach ($test_case->run() as $result) {
       if ($result->getResult() == ArcanistUnitTestResult::RESULT_FAIL) {
@@ -161,8 +160,7 @@ final class PhutilUnitTestEngineTestCase extends PhutilTestCase {
       ),
     );
 
-    $test_engine = id(new PhutilUnitTestEngine())
-      ->setWorkingCopy($this->getWorkingCopy());
+    $test_engine = new PhutilUnitTestEngine();
 
     $library = phutil_get_current_library_name();
     $library_root = phutil_get_library_root($library);

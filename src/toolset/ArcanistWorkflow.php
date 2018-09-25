@@ -263,4 +263,8 @@ abstract class ArcanistWorkflow extends Phobject {
     return clone $prompt;
   }
 
+  protected function getWorkingCopy() {
+    return $this->getConfigurationEngine()->getWorkingCopy();
+  }
+
 }
