@@ -506,18 +506,8 @@ EOTEXT
         $complete[] = $alias->getTrigger();
       }
 
-      // Remove invalid possibilities. For example, if the user has typed
-      // "skun<tab>", it obviously can't complete to "zebra". We don't really
-      // need to do this filtering ourselves: the shell completion will
-      // automatically match things for us even if we emit impossible results.
-      // However, it's a little easier to debug the raw output if we clean it
-      // up here before printing it out.
       $partial = $argv[$pos];
-      foreach ($complete as $key => $candidate) {
-        if (strncmp($partial, $candidate, strlen($partial))) {
-          unset($complete[$key]);
-        }
-      }
+      $complete = $this->getMatches($complete, $partial);
 
       if ($complete) {
         return $this->suggestStrings($complete);
@@ -540,6 +530,7 @@ EOTEXT
 
       $arguments = $workflow->getWorkflowArguments();
       $arguments = mpull($arguments, null, 'getKey');
+      $current = idx($argv, $pos, '');
 
       $argument = null;
       $prev = idx($argv, $pos - 1, null);
@@ -554,7 +545,7 @@ EOTEXT
 
       if ($argument && strlen($argument->getParameter())) {
         if ($argument->getIsPathArgument()) {
-          return $this->suggestPaths();
+          return $this->suggestPaths($current);
         } else {
           return $this->suggestNothing();
         }
@@ -575,15 +566,7 @@ EOTEXT
         $flags[] = '--'.$argument->getKey();
       }
 
-      $current = idx($argv, $pos, '');
-      $matches = array();
-      if (strlen($current)) {
-        foreach ($flags as $possible) {
-          if (!strncmp($possible, $current, strlen($current))) {
-            $matches[] = $possible;
-          }
-        }
-      }
+      $matches = $this->getMatches($flags, $current);
 
       // If whatever the user is completing does not match the prefix of any
       // flag, try to autcomplete a wildcard argument if it has some kind of
@@ -597,7 +580,7 @@ EOTEXT
         // and Workflows.
 
         if ($wildcard->getIsPathArgument()) {
-          return $this->suggestPaths();
+          return $this->suggestPaths($current);
         }
       }
 
@@ -605,19 +588,51 @@ EOTEXT
     }
   }
 
-  private function suggestPaths() {
-    echo "FILE\n";
+  private function suggestPaths($prefix) {
+    // NOTE: We are returning a directive to the bash script to run "compgen"
+    // for us rather than running it ourselves. If we run:
+    //
+    //   compgen -A file -- %s
+    //
+    // ...from this context, it fails (exits with error code 1 and no output)
+    // if the prefix is "foo\ ", on my machine. See T9116 for some dicussion.
+    echo "<compgen:file>";
     return 0;
   }
 
   private function suggestNothing() {
-    echo "ARGUMENT\n";
-    return 0;
+    return $this->suggestStrings(array());
   }
 
   private function suggestStrings(array $strings) {
-    echo implode(' ', $strings)."\n";
+    sort($strings);
+    echo implode("\n", $strings);
     return 0;
+  }
+
+  private function getMatches(array $candidates, $prefix) {
+    $matches = array();
+
+    if (strlen($prefix)) {
+      foreach ($candidates as $possible) {
+        if (!strncmp($possible, $prefix, strlen($prefix))) {
+          $matches[] = $possible;
+        }
+      }
+
+      // If we matched nothing, try a case-insensitive match.
+      if (!$matches) {
+        foreach ($candidates as $possible) {
+          if (!strncasecmp($possible, $prefix, strlen($prefix))) {
+            $matches[] = $possible;
+          }
+        }
+      }
+    } else {
+      $matches = $candidates;
+    }
+
+    return $matches;
   }
 
 }
