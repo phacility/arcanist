@@ -155,6 +155,16 @@ EOTEXT
     $this->runAutocomplete();
   }
 
+  protected function newPrompts() {
+    return array(
+      $this->newPrompt('arc.shell-complete.install')
+        ->setDescription(
+          pht(
+            'Confirms writing to to "~/.profile" (or another similar file) '.
+            'to install shell completion.')),
+    );
+  }
+
   private function runInstall() {
     $log = $this->getLogEngine();
 
@@ -281,11 +291,9 @@ EOTEXT
       }
     }
 
-    // TOOLSETS: Generalize prompting.
-
-    if (!phutil_console_confirm($prompt, false)) {
-      throw new PhutilArgumentUsageException(pht('Aborted.'));
-    }
+    $this->getPrompt('arc.shell-complete.install')
+      ->setQuery($prompt)
+      ->execute();
 
     Filesystem::writeFile($file_path, $new_data);
 

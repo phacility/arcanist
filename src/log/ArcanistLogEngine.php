@@ -18,12 +18,19 @@ final class ArcanistLogEngine
     return new ArcanistLogMessage();
   }
 
+  private function writeBytes($bytes) {
+    fprintf(STDERR, '%s', $bytes);
+    return $this;
+  }
+
+  public function writeNewline() {
+    return $this->writeBytes("\n");
+  }
+
   public function writeMessage(ArcanistLogMessage $message) {
     $color = $message->getColor();
 
-    fprintf(
-      STDERR,
-      '%s',
+    $this->writeBytes(
       tsprintf(
         "**<bg:".$color."> %s </bg>** %s\n",
         $message->getLabel(),

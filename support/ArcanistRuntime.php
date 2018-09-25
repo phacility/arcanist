@@ -32,6 +32,8 @@ final class ArcanistRuntime {
       $log->writeError(pht('CONDUIT'), $ex->getMessage());
     } catch (PhutilArgumentUsageException $ex) {
       $log->writeError(pht('USAGE EXCEPTION'), $ex->getMessage());
+    } catch (ArcanistUserAbortException $ex) {
+      $log->writeError(pht('---'), $ex->getMessage());
     }
 
     return 1;
@@ -589,6 +591,11 @@ final class ArcanistRuntime {
         $should_exit = true;
       }
     }
+
+    // It's common for users to ^C on prompts. Write a newline before writing
+    // a response to the interrupt so the behavior is a little cleaner. This
+    // also avoids lines that read "^C [ INTERRUPT ] ...".
+    $log->writeNewline();
 
     if ($should_exit) {
       $log->writeHint(

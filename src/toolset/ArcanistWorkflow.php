@@ -8,6 +8,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $configurationEngine;
   private $configurationSourceList;
   private $conduitEngine;
+  private $promptMap;
 
   /**
    * Return the command used to invoke this workflow from the command like,
@@ -201,6 +202,65 @@ abstract class ArcanistWorkflow extends Phobject {
 
   public function handleSignal($signo) {
     throw new PhutilMethodNotImplementedException();
+  }
+
+  protected function newPrompts() {
+    return array();
+  }
+
+  protected function newPrompt($key) {
+    return id(new ArcanistPrompt())
+      ->setWorkflow($this)
+      ->setKey($key);
+  }
+
+  public function hasPrompt($key) {
+    $map = $this->getPromptMap();
+    return isset($map[$key]);
+  }
+
+  public function getPromptMap() {
+    if ($this->promptMap === null) {
+      $prompts = $this->newPrompts();
+      assert_instances_of($prompts, 'ArcanistPrompt');
+
+      $map = array();
+      foreach ($prompts as $prompt) {
+        $key = $prompt->getKey();
+
+        if (isset($map[$key])) {
+          throw new Exception(
+            pht(
+              'Workflow ("%s") generates two prompts with the same '.
+              'key ("%s"). Each prompt a workflow generates must have a '.
+              'unique key.',
+              get_class($this),
+              $key));
+        }
+
+        $map[$key] = $prompt;
+      }
+
+      $this->promptMap = $map;
+    }
+
+    return $this->promptMap;
+  }
+
+  protected function getPrompt($key) {
+    $map = $this->getPromptMap();
+
+    $prompt = idx($map, $key);
+    if (!$prompt) {
+      throw new Exception(
+        pht(
+          'Workflow ("%s") is requesting a prompt ("%s") but it did not '.
+          'generate any prompt with that name in "newPrompts()".',
+          get_class($this),
+          $key));
+    }
+
+    return clone $prompt;
   }
 
 }
