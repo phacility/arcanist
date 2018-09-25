@@ -46,6 +46,29 @@ final class ArcanistSubversionWorkingCopy
     return new self();
   }
 
+  protected function selectFromNestedWorkingCopies(array $candidates) {
+    // To select the best working copy in Subversion, we first walk up the
+    // tree looking for a working copy with an ".arcconfig" file. If we find
+    // one, this anchors us.
+
+    foreach (array_reverse($candidates) as $candidate) {
+      $arcconfig = $candidate->getPath('.arcconfig');
+      if (Filesystem::pathExists($arcconfig)) {
+        return $candidate;
+      }
+    }
+
+    // If we didn't find one, we select the outermost working copy. This is
+    // because older versions of Subversion (prior to 1.7) put a ".svn" file
+    // in every directory, and all versions of Subversion allow you to check
+    // out any subdirectory of the project as a working copy.
+
+    // We could possibly refine this by testing if the working copy was made
+    // with a recent version of Subversion and picking the deepest working copy
+    // if it was, similar to Git and Mercurial.
+
+    return head($candidates);
+  }
 
 }
 

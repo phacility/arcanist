@@ -11,16 +11,10 @@ abstract class ArcanistWorkingCopy
       ->setAncestorClass(__CLASS__)
       ->execute();
 
-    // Find the outermost directory which is under version control. We go from
-    // the top because:
-    //
-    //   - This gives us a more reasonable behavior if you embed one repository
-    //     inside another repository.
-    //   - This handles old Subversion working copies correctly. Before
-    //     SVN 1.7, Subversion put a ".svn/" directory in every subdirectory.
-
     $paths = Filesystem::walkToRoot($path);
     $paths = array_reverse($paths);
+
+    $candidates = array();
     foreach ($paths as $path_key => $ancestor_path) {
       foreach ($working_types as $working_type) {
 
@@ -34,8 +28,26 @@ abstract class ArcanistWorkingCopy
         $working_copy->path = $ancestor_path;
         $working_copy->workingDirectory = $path;
 
-        return $working_copy;
+        $candidates[] = $working_copy;
       }
+    }
+
+    // If we've found multiple candidate working copies, we need to pick one.
+    // We let the innermost working copy pick the best candidate from among
+    // candidates of the same type. The rules for Git and Mercurial differ
+    // slightly from the rules for Subversion.
+
+    if ($candidates) {
+      $deepest = last($candidates);
+
+      foreach ($candidates as $key => $candidate) {
+        if (get_class($candidate) != get_class($deepest)) {
+          unset($candidates[$key]);
+        }
+      }
+      $candidates = array_values($candidates);
+
+      return $deepest->selectFromNestedWorkingCopies($candidates);
     }
 
     return null;
@@ -90,6 +102,12 @@ abstract class ArcanistWorkingCopy
         $this->getMetadataDirectory(),
         $to_file,
       ));
+  }
+
+  protected function selectFromNestedWorkingCopies(array $candidates) {
+    // Normally, the best working copy in a stack is the deepest working copy.
+    // Subversion uses slightly different rules.
+    return last($candidates);
   }
 
 }
