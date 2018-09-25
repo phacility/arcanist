@@ -32,4 +32,8 @@ final class ArcanistWildConfigOption
     return $value;
   }
 
+  public function getStorageValueFromValue($value) {
+    return $value;
+  }
+
 }

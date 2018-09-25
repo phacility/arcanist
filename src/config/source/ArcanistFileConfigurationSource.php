@@ -1,11 +1,10 @@
 <?php
 
 final class ArcanistFileConfigurationSource
-  extends ArcanistConfigurationSource {
+  extends ArcanistFilesystemConfigurationSource {
 
   public function getFileKindDisplayName() {
     return pht('Config File');
   }
-
 
 }
