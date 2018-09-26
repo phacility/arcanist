@@ -175,13 +175,8 @@ final class ArcanistUnitTestResult extends Phobject {
   }
 
   public static function getAllResultCodes() {
-    return array(
-      self::RESULT_PASS,
-      self::RESULT_FAIL,
-      self::RESULT_SKIP,
-      self::RESULT_BROKEN,
-      self::RESULT_UNSOUND,
-    );
+    $map = self::getResultCodeSpecs();
+    return array_keys($map);
   }
 
   public static function getResultCodeName($result_code) {
@@ -205,31 +200,56 @@ final class ArcanistUnitTestResult extends Phobject {
     return idx($specs, $result_code);
   }
 
+  public function getANSIColor() {
+    $spec = $this->getResultMap();
+    return idx($spec, 'color.ansi', 'red');
+  }
+
+  public function getResultLabel() {
+    $spec = $this->getResultMap();
+    return idx($spec, 'label', $this->getResult());
+  }
+
+  private function getResultMap() {
+    $map = self::getResultCodeSpecs();
+    return idx($map, $this->getResult(), array());
+  }
+
   private static function getResultCodeSpecs() {
     return array(
       self::RESULT_PASS => array(
         'name' => pht('Pass'),
+        'label' => pht('PASS'),
+        'color.ansi' => 'green',
         'description' => pht(
           'The test passed.'),
       ),
       self::RESULT_FAIL => array(
         'name' => pht('Fail'),
+        'label' => pht('FAIL'),
+        'color.ansi' => 'red',
         'description' => pht(
           'The test failed.'),
       ),
       self::RESULT_SKIP => array(
         'name' => pht('Skip'),
+        'label' => pht('SKIP'),
+        'color.ansi' => 'cyan',
         'description' => pht(
           'The test was not executed.'),
       ),
       self::RESULT_BROKEN => array(
         'name' => pht('Broken'),
+        'label' => pht('BROKEN'),
+        'color.ansi' => 'red',
         'description' => pht(
           'The test failed in an abnormal or severe way. For example, the '.
           'harness crashed instead of reporting a failure.'),
       ),
       self::RESULT_UNSOUND => array(
         'name' => pht('Unsound'),
+        'label' => pht('UNSOUND'),
+        'color.ansi' => 'yellow',
         'description' => pht(
           'The test failed, but this change is probably not what broke it. '.
           'For example, it might have already been failing.'),
@@ -237,5 +257,15 @@ final class ArcanistUnitTestResult extends Phobject {
     );
   }
 
+  public function getDisplayName() {
+    $name = $this->getName();
+
+    $namespace = $this->getNamespace();
+    if (strlen($namespace)) {
+      $name = $namespace.'::'.$name;
+    }
+
+    return $name;
+  }
 
 }

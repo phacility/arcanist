@@ -23,7 +23,7 @@ EOTEXT
     return array(
       $this->newWorkflowArgument('commit')
         ->setParameter('commit'),
-      $this->newWorkflowArgument('format')
+      $this->newWorkflowArgument('sink')
         ->setParameter('format'),
       $this->newWorkflowArgument('everything'),
       $this->newWorkflowArgument('paths')
@@ -51,32 +51,40 @@ EOTEXT
     // though it is "arc unit --everything", and ignoring the "--commit" flag
     // and "paths" arguments.
 
-    $formatter = $this->newUnitFormatter();
-    $overseer->setFormatter($formatter);
+    $sinks = array();
+    $sinks[] = $this->newUnitSink();
+    $overseer->setSinks($sinks);
 
     $overseer->execute();
+
+    foreach ($sinks as $sink) {
+      $result = $sink->getOutput();
+      if ($result !== null) {
+        echo $result;
+      }
+    }
 
     return 0;
   }
 
-  private function newUnitFormatter() {
-    $formatters = ArcanistUnitFormatter::getAllUnitFormatters();
-    $format_key = $this->getArgument('format');
-    if (!strlen($format_key)) {
-      $format_key = ArcanistDefaultUnitFormatter::FORMATTER_KEY;
+  private function newUnitSink() {
+    $sinks = ArcanistUnitSink::getAllUnitSinks();
+    $sink_key = $this->getArgument('sink');
+    if (!strlen($sink_key)) {
+      $sink_key = ArcanistDefaultUnitSink::SINKKEY;
     }
 
-    $formatter = idx($formatters, $format_key);
-    if (!$formatter) {
+    $sink = idx($sinks, $sink_key);
+    if (!$sink) {
       throw new ArcanistUsageException(
         pht(
-          'Unit test output format ("%s") is unknown. Supported formats '.
+          'Unit test output sink ("%s") is unknown. Supported sinks '.
           'are: %s.',
-          $format_key,
-          implode(', ', array_keys($formatters))));
+          $sink_key,
+          implode(', ', array_keys($sinks))));
     }
 
-    return $formatter;
+    return $sink;
   }
 
 }

@@ -56,14 +56,7 @@ abstract class ArcanistUnitEngine
   abstract public function runTests();
 
   final protected function didRunTests(array $tests) {
-    assert_instances_of($tests, 'ArcanistUnitTestResult');
-
-    // TOOLSETS: Pass this stuff to result output so it can print progress or
-    // stream results.
-
-    foreach ($tests as $test) {
-      echo "Ran Test: ".$test->getNamespace().'::'.$test->getName()."\n";
-    }
+    return $this->getOverseer()->didRunTests($tests);
   }
 
 }

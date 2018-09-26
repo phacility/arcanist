@@ -5,9 +5,9 @@ final class ArcanistUnitOverseer
 
   private $directory;
   private $paths = array();
-  private $formatter;
+  private $sinks = array();
 
-  public function setPaths($paths) {
+  public function setPaths(array $paths) {
     $this->paths = $paths;
     return $this;
   }
@@ -16,13 +16,14 @@ final class ArcanistUnitOverseer
     return $this->paths;
   }
 
-  public function setFormatter(ArcanistUnitFormatter $formatter) {
-    $this->formatter = $formatter;
+  public function setSinks(array $sinks) {
+    assert_instances_of($sinks, 'ArcanistUnitSink');
+    $this->sinks = $sinks;
     return $this;
   }
 
-  public function getFormatter() {
-    return $this->formatter;
+  public function getSinks() {
+    return $this->sinks;
   }
 
   public function setDirectory($directory) {
@@ -50,7 +51,25 @@ final class ArcanistUnitOverseer
       }
     }
 
+    $this->didCompleteTests($results);
+
     return $results;
+  }
+
+  public function didRunTests(array $tests) {
+    assert_instances_of($tests, 'ArcanistUnitTestResult');
+
+    foreach ($this->getSinks() as $sink) {
+      $sink->sinkPartialResults($tests);
+    }
+  }
+
+  private function didCompleteTests(array $tests) {
+    assert_instances_of($tests, 'ArcanistUnitTestResult');
+
+    foreach ($this->getSinks() as $sink) {
+      $sink->sinkFinalResults($tests);
+    }
   }
 
   private function loadEngines() {
