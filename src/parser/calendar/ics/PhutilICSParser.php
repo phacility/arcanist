@@ -849,7 +849,7 @@ final class PhutilICSParser extends Phobject {
       );
 
       // Load the map of Windows timezones.
-      $root_path = dirname(phutil_get_library_root('phutil'));
+      $root_path = dirname(phutil_get_library_root('arcanist'));
       $windows_path = $root_path.'/resources/timezones/windows_timezones.json';
       $windows_data = Filesystem::readFile($windows_path);
       $windows_zones = phutil_json_decode($windows_data);

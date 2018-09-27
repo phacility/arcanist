@@ -95,8 +95,8 @@ final class PhutilDeferredLogTestCase extends PhutilTestCase {
   }
 
   public function testManyWriters() {
-    $root = phutil_get_library_root('phutil').'/../';
-    $bin = $root.'scripts/test/deferred_log.php';
+    $root = phutil_get_library_root('arcanist').'/../';
+    $bin = $root.'support/unit/deferred_log.php';
 
     $n_writers = 3;
     $n_lines   = 8;

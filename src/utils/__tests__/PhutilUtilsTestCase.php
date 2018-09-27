@@ -538,6 +538,7 @@ final class PhutilUtilsTestCase extends PhutilTestCase {
       } catch (Exception $ex) {
         $caught = $ex;
       }
+
       $this->assertTrue($caught instanceof PhutilJSONParserException);
     }
   }

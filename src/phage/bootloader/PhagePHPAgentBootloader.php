@@ -59,7 +59,7 @@ final class PhagePHPAgentBootloader extends PhageAgentBootloader {
       );
 
       $main_sequence = new PhutilBallOfPHP();
-      $root = phutil_get_library_root('phutil');
+      $root = phutil_get_library_root('arcanist');
       foreach ($files as $file) {
         $main_sequence->addFile($root.'/'.$file);
       }

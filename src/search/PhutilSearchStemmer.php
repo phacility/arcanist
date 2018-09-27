@@ -53,7 +53,7 @@ final class PhutilSearchStemmer
     static $loaded;
 
     if ($loaded === null) {
-      $root = dirname(phutil_get_library_root('phutil'));
+      $root = dirname(phutil_get_library_root('arcanist'));
       require_once $root.'/externals/porter-stemmer/src/Porter.php';
       $loaded = true;
     }
