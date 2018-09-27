@@ -70,5 +70,9 @@ final class ArcanistSubversionWorkingCopy
     return head($candidates);
   }
 
+  public function newRepositoryAPI() {
+    return new ArcanistSubversionAPI($this->getPath());
+  }
+
 }
 

@@ -18,5 +18,9 @@ final class ArcanistGitWorkingCopy
     return new self();
   }
 
+  public function newRepositoryAPI() {
+    return new ArcanistGitAPI($this->getPath());
+  }
+
 }
 

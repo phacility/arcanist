@@ -110,4 +110,6 @@ abstract class ArcanistWorkingCopy
     return last($candidates);
   }
 
+  abstract public function newRepositoryAPI();
+
 }

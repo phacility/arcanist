@@ -150,13 +150,11 @@ final class ArcanistBaseCommitParserTestCase extends PhutilTestCase {
     // isolation for repository-oriented test cases.
 
     $root = dirname(phutil_get_library_root('arcanist'));
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
-    $configuration_manager = new ArcanistConfigurationManager();
-    $configuration_manager->setWorkingCopyIdentity($working_copy);
-    $repo = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
-      $configuration_manager);
+    $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($root);
 
-    return new ArcanistBaseCommitParser($repo);
+    $api = $working_copy->newRepositoryAPI();
+
+    return new ArcanistBaseCommitParser($api);
   }
 
 }

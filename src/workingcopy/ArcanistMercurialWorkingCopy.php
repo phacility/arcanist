@@ -18,5 +18,9 @@ final class ArcanistMercurialWorkingCopy
     return new self();
   }
 
+  public function newRepositoryAPI() {
+    return new ArcanistMercurialAPI($this->getPath());
+  }
+
 }
 
