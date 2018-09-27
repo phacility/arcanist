@@ -33,8 +33,8 @@ final class ArcanistJSONLinter extends ArcanistLinter {
     return false;
   }
 
-  public function lintPath($path) {
-    $data = $this->getData($path);
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
 
     try {
       id(new PhutilJSONParser())->parse($data);

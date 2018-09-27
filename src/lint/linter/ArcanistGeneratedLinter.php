@@ -32,9 +32,8 @@ final class ArcanistGeneratedLinter extends ArcanistLinter {
     return false;
   }
 
-  public function lintPath($path) {
-    $data = $this->getData($path);
-    if (preg_match('/@'.'generated/', $data)) {
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    if (preg_match('/@'.'generated/', $path->getData())) {
       $this->stopAllLinters();
     }
   }

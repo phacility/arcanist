@@ -128,10 +128,21 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
     return count($this->rules);
   }
 
-  protected function resolveFuture($path, Future $future) {
-    $tree = $this->getXHPASTTreeForPath($path);
-    if (!$tree) {
-      $ex = $this->getXHPASTExceptionForPath($path);
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
+
+    try {
+      $future = PhutilXHPASTBinary::getParserFuture($data);
+
+      $tree = XHPASTTree::newFromDataAndResolvedExecFuture(
+        $data,
+        $future->resolve());
+
+      $root = $tree->getRootNode();
+
+      $root->buildSelectCache();
+      $root->buildTokenCache();
+    } catch (Exception $ex) {
       if ($ex instanceof XHPASTSyntaxErrorException) {
         $this->raiseLintAtLine(
           $ex->getErrorLine(),
@@ -147,8 +158,6 @@ final class ArcanistXHPASTLinter extends ArcanistBaseXHPASTLinter {
       }
       return;
     }
-
-    $root = $tree->getRootNode();
 
     foreach ($this->rules as $rule) {
       if ($this->isCodeEnabled($rule->getLintID())) {

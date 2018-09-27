@@ -35,8 +35,10 @@ final class ArcanistFilenameLinter extends ArcanistLinter {
     );
   }
 
-  public function lintPath($path) {
-    if (!preg_match('@^[a-z0-9./\\\\_-]+$@i', $path)) {
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    $path_name = $path->getPath();
+
+    if (!preg_match('@^[a-z0-9./\\\\_-]+$@i', $path_name)) {
       $this->raiseLintAtPath(
         self::LINT_BAD_FILENAME,
         pht(

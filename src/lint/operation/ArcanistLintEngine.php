@@ -1,52 +1,12 @@
 <?php
 
-/**
- * Manages lint execution. When you run 'arc lint' or 'arc diff', Arcanist
- * attempts to run lint rules using a lint engine.
- *
- * Lint engines are high-level strategic classes which do not contain any
- * actual linting rules. Linting rules live in `Linter` classes. The lint
- * engine builds and configures linters.
- *
- * Most modern linters can be configured with an `.arclint` file, which is
- * managed by the builtin @{class:ArcanistConfigurationDrivenLintEngine}.
- * Consult the documentation for more information on these files.
- *
- * In the majority of cases, you do not need to write a custom lint engine.
- * For example, to add new rules for a new language, write a linter instead.
- * However, if you have a very advanced or specialized use case, you can write
- * a custom lint engine by extending this class; custom lint engines are more
- * powerful but much more complex than the builtin engines.
- *
- * The lint engine is given a list of paths (generally, the paths that you
- * modified in your change) and determines which linters to run on them. The
- * linters themselves are responsible for actually analyzing file text and
- * finding warnings and errors. For example, if the modified paths include some
- * JS files and some Python files, you might want to run JSLint on the JS files
- * and PyLint on the Python files.
- *
- * You can also run multiple linters on a single file. For instance, you might
- * run one linter on all text files to make sure they don't have trailing
- * whitespace, or enforce tab vs space rules, or make sure there are enough
- * curse words in them.
- *
- * You can test an engine like this:
- *
- *   arc lint --engine YourLintEngineClassName --lintall some_file.py
- *
- * ...which will show you all the lint issues raised in the file.
- *
- * See @{article@phabricator:Arcanist User Guide: Customizing Lint, Unit Tests
- * and Workflows} for more information about configuring lint engines.
- */
-abstract class ArcanistLintEngine extends Phobject {
+abstract class ArcanistLintEngine
+  extends ArcanistOperationEngine {
 
   protected $workingCopy;
   protected $paths = array();
   protected $fileData = array();
 
-  protected $charToLine = array();
-  protected $lineToFirstChar = array();
   private $cachedResults;
   private $cacheVersion;
   private $repositoryVersion;
@@ -60,35 +20,16 @@ abstract class ArcanistLintEngine extends Phobject {
 
   private $linterResources = array();
 
-  public function __construct() {}
 
-  final public function setConfigurationManager(
-    ArcanistConfigurationManager $configuration_manager) {
-    $this->configurationManager = $configuration_manager;
-    return $this;
+  final public function getUnitEngineType() {
+    return $this->getPhobjectClassConstant('ENGINETYPE');
   }
 
-  final public function getConfigurationManager() {
-    return $this->configurationManager;
-  }
-
-  final public function setWorkingCopy(
-    ArcanistWorkingCopyIdentity $working_copy) {
-    $this->workingCopy = $working_copy;
-    return $this;
-  }
-
-  final public function getWorkingCopy() {
-    return $this->workingCopy;
-  }
-
-  final public function setPaths($paths) {
-    $this->paths = $paths;
-    return $this;
-  }
-
-  public function getPaths() {
-    return $this->paths;
+  public static function getAllLintEngines() {
+    return id(new PhutilClassMapQuery())
+      ->setAncestorClass(__CLASS__)
+      ->setUniqueMethod('getLintEngineType')
+      ->execute();
   }
 
   final public function setPathChangedLines($path, $changed) {
@@ -376,33 +317,6 @@ abstract class ArcanistLintEngine extends Phobject {
       $this->results[$path] = $result;
     }
     return $this->results[$path];
-  }
-
-  final public function getLineAndCharFromOffset($path, $offset) {
-    if (!isset($this->charToLine[$path])) {
-      $char_to_line = array();
-      $line_to_first_char = array();
-
-      $lines = explode("\n", $this->loadData($path));
-      $line_number = 0;
-      $line_start = 0;
-      foreach ($lines as $line) {
-        $len = strlen($line) + 1; // Account for "\n".
-        $line_to_first_char[] = $line_start;
-        $line_start += $len;
-        for ($ii = 0; $ii < $len; $ii++) {
-          $char_to_line[] = $line_number;
-        }
-        $line_number++;
-      }
-      $this->charToLine[$path] = $char_to_line;
-      $this->lineToFirstChar[$path] = $line_to_first_char;
-    }
-
-    $line = $this->charToLine[$path][$offset];
-    $char = $offset - $this->lineToFirstChar[$path][$line];
-
-    return array($line, $char);
   }
 
   protected function getCacheVersion() {

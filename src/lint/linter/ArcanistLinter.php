@@ -158,6 +158,19 @@ abstract class ArcanistLinter extends Phobject {
 /* -(  Executing Linters  )-------------------------------------------------- */
 
 
+  final public function lintPaths(array $paths) {
+    assert_instances_of($paths, 'ArcanistWorkingCopyPath');
+
+    $this->messages = array();
+
+    foreach ($paths as $path) {
+      $this->setActivePath($path);
+      $this->lintPath($path);
+    }
+
+    return $this->getLintMessages();
+  }
+
   /**
    * Hook called before a list of paths are linted.
    *
@@ -177,19 +190,7 @@ abstract class ArcanistLinter extends Phobject {
   }
 
 
-  /**
-   * Hook called for each path to be linted.
-   *
-   * Linters which are not parallelizable can do work here.
-   *
-   * Linters which are parallelizable may want to ignore this callback and
-   * implement @{method:willLintPaths} and @{method:didLintPaths} instead.
-   *
-   * @param string Path to lint.
-   * @return void
-   * @task exec
-   */
-  public function lintPath($path) {
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
     return;
   }
 
@@ -255,9 +256,7 @@ abstract class ArcanistLinter extends Phobject {
       $path = $this->getActivePath();
     }
 
-    list($line, $char) = $this->getEngine()->getLineAndCharFromOffset(
-      $path,
-      $offset);
+    list($line, $char) = $path->getLineAndCharFromOffset($offset);
 
     return array(
       'path' => $path,
@@ -388,10 +387,6 @@ abstract class ArcanistLinter extends Phobject {
   }
 
   final protected function addLintMessage(ArcanistLintMessage $message) {
-    $root = $this->getProjectRoot();
-    $path = Filesystem::resolvePath($message->getPath(), $root);
-    $message->setPath(Filesystem::readablePath($path, $root));
-
     $this->messages[] = $message;
     return $message;
   }
@@ -439,7 +434,7 @@ abstract class ArcanistLinter extends Phobject {
       $line = null;
       $char = null;
     } else {
-      list($line, $char) = $engine->getLineAndCharFromOffset($path, $offset);
+      list($line, $char) = $path->getLineAndCharFromOffset($offset);
     }
 
     return $this->raiseLintAtLine(
@@ -462,6 +457,9 @@ abstract class ArcanistLinter extends Phobject {
   }
 
   final protected function isCodeEnabled($code) {
+    // TOOLSETS: Restore this.
+    return true;
+
     $severity = $this->getLintMessageSeverity($code);
     return $this->getEngine()->isSeverityEnabled($severity);
   }

@@ -32,8 +32,8 @@ final class ArcanistNoLintLinter extends ArcanistLinter {
     return false;
   }
 
-  public function lintPath($path) {
-    $data = $this->getData($path);
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
     if (preg_match('/@'.'nolint/', $data)) {
       $this->stopAllLinters();
     }

@@ -3,7 +3,7 @@
 /**
  * @task sharing Sharing Parse Trees
  */
-abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
+abstract class ArcanistBaseXHPASTLinter extends ArcanistLinter {
 
   private $futures = array();
   private $trees = array();

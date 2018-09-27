@@ -91,44 +91,30 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       Filesystem::writeFile($tmp, $data);
       $full_path = (string)$tmp;
 
-      $mode = idx($config, 'mode');
+      $mode = idx($config, 'mode', 0644);
       if ($mode) {
         Filesystem::changePermissions($tmp, octdec($mode));
       }
 
-      $dir = dirname($full_path);
-      $path = basename($full_path);
+      $path_name = idx($config, 'path', $basename);
 
-      $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
-        $dir,
-        null,
-        pht('Unit Test'));
-      $configuration_manager = new ArcanistConfigurationManager();
-      $configuration_manager->setWorkingCopyIdentity($working_copy);
-
-
-      $engine = new ArcanistUnitTestableLintEngine();
-      $engine->setWorkingCopy($working_copy);
-      $engine->setConfigurationManager($configuration_manager);
-
-      $path_name = idx($config, 'path', $path);
-      $engine->setPaths(array($path_name));
-
-      $linter->addPath($path_name);
-      $linter->addData($path_name, $data);
+      $path = id(new ArcanistWorkingCopyPath())
+        ->setPath($path_name)
+        ->setMode($mode)
+        ->setData($data);
 
       foreach (idx($config, 'config', array()) as $key => $value) {
         $linter->setLinterConfigurationValue($key, $value);
       }
 
-      $engine->addLinter($linter);
-      $engine->addFileData($path_name, $data);
+      $messages = $linter->lintPaths(array($path));
 
-      $results = $engine->run();
-      $this->assertEqual(
-        1,
-        count($results),
-        pht('Expect one result returned by linter.'));
+      $result = id(new ArcanistLintResult())
+        ->setData($data);
+      foreach ($messages as $message) {
+        $result->addMessage($message);
+      }
+      $results = array($result);
 
       $assert_stopped = idx($config, 'stopped');
       if ($assert_stopped !== null) {
@@ -141,6 +127,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       }
 
       $result = reset($results);
+
       $patcher = ArcanistLintPatcher::newFromArcanistLintResult($result);
       $after_lint = $patcher->getModifiedFileContent();
     } catch (PhutilTestTerminatedException $ex) {

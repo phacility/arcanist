@@ -90,10 +90,11 @@ final class ArcanistTextLinter extends ArcanistLinter {
     );
   }
 
-  public function lintPath($path) {
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
     $this->lintEmptyFile($path);
 
-    if (!strlen($this->getData($path))) {
+    $data = $path->getData();
+    if (!strlen($data)) {
       // If the file is empty, don't bother; particularly, don't require
       // the user to add a newline.
       return;
@@ -124,32 +125,37 @@ final class ArcanistTextLinter extends ArcanistLinter {
     $this->lintEOFWhitespace($path);
   }
 
-  protected function lintEmptyFile($path) {
-    $data = $this->getData($path);
+  private function lintEmptyFile(ArcanistWorkingCopyPath $path) {
+    // If this file has any content, it isn't empty.
+    $data = $path->getData();
+    if (!preg_match('/^\s*$/', $data)) {
+      return;
+    }
 
     // It is reasonable for certain file types to be completely empty,
     // so they are excluded here.
-    switch ($filename = basename($this->getActivePath())) {
-      case '__init__.py':
-        return;
+    $basename = $path->getBasename();
 
-      default:
-        if (strlen($filename) && $filename[0] == '.') {
-          return;
-        }
+    // Allow empty "__init__.py", as this is legitimate in Python.
+    if ($basename === '__init__.py') {
+      return;
     }
 
-    if (preg_match('/^\s*$/', $data)) {
-      $this->raiseLintAtPath(
-        self::LINT_EMPTY_FILE,
-        pht("Empty files usually don't serve any useful purpose."));
-      $this->stopAllLinters();
+    // Allow empty ".gitkeep" and similar files.
+    if (isset($filename[0]) && $filename[0] == '.') {
+      return;
     }
+
+    $this->raiseLintAtPath(
+      self::LINT_EMPTY_FILE,
+      pht('Empty files usually do not serve any useful purpose.'));
+
+    $this->stopAllLinters();
   }
 
-  protected function lintNewlines($path) {
-    $data = $this->getData($path);
-    $pos  = strpos($this->getData($path), "\r");
+  private function lintNewlines(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
+    $pos = strpos($data, "\r");
 
     if ($pos !== false) {
       $this->raiseLintAtOffset(
@@ -165,8 +171,10 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintTabs($path) {
-    $pos = strpos($this->getData($path), "\t");
+  private function lintTabs(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
+    $pos = strpos($data, "\t");
+
     if ($pos !== false) {
       $this->raiseLintAtOffset(
         $pos,
@@ -176,11 +184,12 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintLineLength($path) {
-    $lines = explode("\n", $this->getData($path));
+  private function lintLineLength(ArcanistWorkingCopyPath $path) {
+    $lines = $path->getDataAsLines();
 
     $width = $this->maxLineLength;
     foreach ($lines as $line_idx => $line) {
+      $line = rtrim($line, "\n");
       if (strlen($line) > $width) {
         $this->raiseLintAtLine(
           $line_idx + 1,
@@ -196,8 +205,9 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintEOFNewline($path) {
-    $data = $this->getData($path);
+  private function lintEOFNewline(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
+
     if (!strlen($data) || $data[strlen($data) - 1] != "\n") {
       $this->raiseLintAtOffset(
         strlen($data),
@@ -208,8 +218,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintCharset($path) {
-    $data = $this->getData($path);
+  private function lintCharset(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
 
     $matches = null;
     $bad = '[^\x09\x0A\x20-\x7E]';
@@ -240,8 +250,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintTrailingWhitespace($path) {
-    $data = $this->getData($path);
+  private function lintTrailingWhitespace(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
 
     $matches = null;
     $preg = preg_match_all(
@@ -268,8 +278,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
-  protected function lintBOFWhitespace($path) {
-    $data = $this->getData($path);
+  private function lintBOFWhitespace(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
 
     $matches = null;
     $preg = preg_match(
@@ -293,8 +303,8 @@ final class ArcanistTextLinter extends ArcanistLinter {
       '');
   }
 
-  protected function lintEOFWhitespace($path) {
-    $data = $this->getData($path);
+  private function lintEOFWhitespace(ArcanistWorkingCopyPath $path) {
+    $data = $path->getData();
 
     $matches = null;
     $preg = preg_match(

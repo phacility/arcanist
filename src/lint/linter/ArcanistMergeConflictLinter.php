@@ -31,8 +31,8 @@ final class ArcanistMergeConflictLinter extends ArcanistLinter {
     );
   }
 
-  public function lintPath($path) {
-    $lines = phutil_split_lines($this->getData($path), false);
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    $lines = $path->getDataAsLines();
 
     foreach ($lines as $lineno => $line) {
       // An unresolved merge conflict will contain a series of seven

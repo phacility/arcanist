@@ -41,12 +41,10 @@ final class ArcanistChmodLinter extends ArcanistLinter {
     return true;
   }
 
-  public function lintPath($path) {
-    $engine = $this->getEngine();
-
-    if (is_executable($engine->getFilePathOnDisk($path))) {
-      if ($engine->isBinaryFile($path)) {
-        $mime = Filesystem::getMimeType($engine->getFilePathOnDisk($path));
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
+    if ($path->isExecutable()) {
+      if ($path->isBinary()) {
+        $mime = $path->getMimeType();
 
         switch ($mime) {
           // Archives
@@ -102,7 +100,7 @@ final class ArcanistChmodLinter extends ArcanistLinter {
             // Path is a binary file, which makes it a valid executable.
             return;
         }
-      } else if ($this->getShebang($path)) {
+      } else if ($this->hasShebang($path->getData())) {
         // Path contains a shebang, which makes it a valid executable.
         return;
       } else {
@@ -114,21 +112,19 @@ final class ArcanistChmodLinter extends ArcanistLinter {
     }
   }
 
-  /**
-   * Returns the path's shebang.
-   *
-   * @param  string
-   * @return string|null
-   */
-  private function getShebang($path) {
-    $line = head(phutil_split_lines($this->getEngine()->loadData($path), true));
-
-    $matches = array();
-    if (preg_match('/^#!(.*)$/', $line, $matches)) {
-      return $matches[1];
-    } else {
-      return null;
+  private function hasShebang($data) {
+    $lines = phutil_split_lines($data);
+    if (!$lines) {
+      return false;
     }
+
+    $line = head($lines);
+
+    if (preg_match('/^#!(.*)$/', $line)) {
+      return true;
+    }
+
+    return false;
   }
 
 }

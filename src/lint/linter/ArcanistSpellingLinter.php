@@ -54,8 +54,11 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
   }
 
   public function loadDictionary($path) {
-    $root = $this->getProjectRoot();
-    $path = Filesystem::resolvePath($path, $root);
+    // TOOLSETS: Restore the ability to reference resources relative to the
+    // project root.
+
+    // $root = $this->getProjectRoot();
+    // $path = Filesystem::resolvePath($path, $root);
 
     $dict = phutil_json_decode(Filesystem::readFile($path));
     PhutilTypeSpec::checkMap(
@@ -102,7 +105,7 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     );
   }
 
-  public function lintPath($path) {
+  protected function lintPath(ArcanistWorkingCopyPath $path) {
     // TODO: This is a bit hacky. If no dictionaries were specified, then add
     // the default dictionary.
     if (!$this->dictionaries) {
@@ -119,8 +122,13 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     }
   }
 
-  private function checkExactWord($path, $word, $correction) {
-    $text = $this->getData($path);
+  private function checkExactWord(
+    ArcanistWorkingCopyPath $path,
+    $word,
+    $correction) {
+
+    $text = $path->getData();
+
     $matches = array();
     $num_matches = preg_match_all(
       '#\b'.preg_quote($word, '#').'\b#i',
@@ -145,8 +153,13 @@ final class ArcanistSpellingLinter extends ArcanistLinter {
     }
   }
 
-  private function checkPartialWord($path, $word, $correction) {
-    $text = $this->getData($path);
+  private function checkPartialWord(
+    ArcanistWorkingCopyPath $path,
+    $word,
+    $correction) {
+
+    $text = $path->getData();
+
     $pos = 0;
     while ($pos < strlen($text)) {
       $next = stripos($text, $word, $pos);
