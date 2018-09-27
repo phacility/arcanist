@@ -34,11 +34,9 @@ final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
     $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
 
     $fixture_path = $fixture->getPath();
-    $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
-    $configuration_manager = new ArcanistConfigurationManager();
-    $configuration_manager->setWorkingCopyIdentity($working_copy);
-    $api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
-      $configuration_manager);
+    $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($fixture_path);
+
+    $api = $working_copy->newRepositoryAPI();
 
     $api->setBaseCommitArgumentRules('arc:this');
 
