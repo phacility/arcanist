@@ -111,14 +111,13 @@ EODIFF;
       execx('git reset --hard %s --', $commit_hash);
 
       $fixture_path = $fixture->getPath();
-      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($fixture_path);
+      $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory(
+        $fixture_path);
 
-      $configuration_manager = new ArcanistConfigurationManager();
-      $configuration_manager->setWorkingCopyIdentity($working_copy);
-      $repository_api = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
-        $configuration_manager);
+      $repository_api = $working_copy->newRepositoryAPI();
 
       $repository_api->setBaseCommitArgumentRules('arc:this');
+
       $diff = $repository_api->getFullGitDiff(
         $repository_api->getBaseCommit(),
         $repository_api->getHeadCommit());

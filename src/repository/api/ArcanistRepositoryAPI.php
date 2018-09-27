@@ -657,9 +657,8 @@ abstract class ArcanistRepositoryAPI extends Phobject {
       'user'    => '',
       'system'  => '',
     );
-    $all_sources = $this->configurationManager->getConfigFromAllSources('base');
 
-    $base_commit_rules = $all_sources + $base_commit_rules;
+    // TOOLSETS: Handle "base" configuration.
 
     $parser = new ArcanistBaseCommitParser($this);
     $commit = $parser->resolveBaseCommit($base_commit_rules);
