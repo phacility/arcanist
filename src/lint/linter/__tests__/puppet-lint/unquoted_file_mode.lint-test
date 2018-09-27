@@ -1,6 +1,0 @@
-file { '/var/log/syslog':
-  ensure => present,
-  mode   => 0644,
-}
-~~~~~~~~~~
-warning:3:13

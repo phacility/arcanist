@@ -1,6 +1,0 @@
-li {
-  float: left;
-  float left;
-}
-~~~~~~~~~~
-error:3:9

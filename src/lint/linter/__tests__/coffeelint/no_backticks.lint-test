@@ -1,3 +1,0 @@
-`with(document) alert(height);`
-~~~~~~~~~~
-error:1:

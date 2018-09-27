@@ -1,7 +1,0 @@
-<?php
-
-function f() {
-  this is bad syntax;
-}
-~~~~~~~~~
-error:4:

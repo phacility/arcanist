@@ -1,6 +1,0 @@
-var args = {};
-args['foo'] = 'bar';
-args['bar'] = 'baz';
-~~~~~~~~~~
-warning:2:5
-warning:3:5

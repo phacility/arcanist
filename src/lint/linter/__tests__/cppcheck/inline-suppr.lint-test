@@ -1,7 +1,0 @@
-void f() {
-    char arr[5];
-    // cppcheck-suppress arrayIndexOutOfBounds
-    // cppcheck-suppress unreadVariable
-    arr[10] = 0;
-}
-~~~~~~~~~~
