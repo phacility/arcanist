@@ -87,14 +87,8 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     $caught_exception = false;
 
     try {
-      $tmp = new TempFile($basename);
-      Filesystem::writeFile($tmp, $data);
-      $full_path = (string)$tmp;
-
-      $mode = idx($config, 'mode', 0644);
-      if ($mode) {
-        Filesystem::changePermissions($tmp, octdec($mode));
-      }
+      $mode = idx($config, 'mode', '0644');
+      $mode = octdec($mode);
 
       $path_name = idx($config, 'path', $basename);
 
