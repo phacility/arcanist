@@ -42,7 +42,6 @@ final class ExecFuture extends PhutilExecutableFuture {
   private $profilerCallID;
   private $killedByTimeout;
 
-  private $useWindowsFileStreams = false;
   private $windowsStdoutTempFile = null;
   private $windowsStderrTempFile = null;
 
@@ -177,21 +176,6 @@ final class ExecFuture extends PhutilExecutableFuture {
    */
   public function setReadBufferSize($read_buffer_size) {
     $this->readBufferSize = $read_buffer_size;
-    return $this;
-  }
-
-
-  /**
-   * Set whether to use non-blocking streams on Windows.
-   *
-   * @param bool Whether to use non-blocking streams.
-   * @return this
-   * @task config
-   */
-  public function setUseWindowsFileStreams($use_streams) {
-    if (phutil_is_windows()) {
-      $this->useWindowsFileStreams = $use_streams;
-    }
     return $this;
   }
 
@@ -576,6 +560,7 @@ final class ExecFuture extends PhutilExecutableFuture {
     // classes are always available.
 
     if (!$this->pipes) {
+      $is_windows = phutil_is_windows();
 
       // NOTE: See note above about Phage.
       if (class_exists('PhutilServiceProfiler')) {
@@ -599,18 +584,6 @@ final class ExecFuture extends PhutilExecutableFuture {
 
       $pipes = array();
 
-      if (phutil_is_windows()) {
-        // See T4395. proc_open under Windows uses "cmd /C [cmd]", which will
-        // strip the first and last quote when there aren't exactly two quotes
-        // (and some other conditions as well). This results in a command that
-        // looks like `command" "path to my file" "something something` which is
-        // clearly wrong. By surrounding the command string with quotes we can
-        // be sure this process is harmless.
-        if (strpos($unmasked_command, '"') !== false) {
-          $unmasked_command = '"'.$unmasked_command.'"';
-        }
-      }
-
       if ($this->hasEnv()) {
         $env = $this->getEnv();
       } else {
@@ -627,21 +600,31 @@ final class ExecFuture extends PhutilExecutableFuture {
       }
 
       $spec = self::$descriptorSpec;
-      if ($this->useWindowsFileStreams) {
-        $this->windowsStdoutTempFile = new TempFile();
-        $this->windowsStderrTempFile = new TempFile();
+      if ($is_windows) {
+        $stdout_file = new TempFile();
+        $stderr_file = new TempFile();
+
+        $stdout_handle = fopen($stdout_file, 'wb');
+        if (!$stdout_handle) {
+          throw new Exception(
+            pht(
+              'Unable to open stdout temporary file ("%s") for writing.',
+              $stdout_file));
+        }
+
+        $stderr_handle = fopen($stderr_file, 'wb');
+        if (!$stderr_handle) {
+          throw new Exception(
+            pht(
+              'Unable to open stderr temporary file ("%s") for writing.',
+              $stderr_file));
+        }
 
         $spec = array(
-          0 => self::$descriptorSpec[0],  // stdin
-          1 => fopen($this->windowsStdoutTempFile, 'wb'),  // stdout
-          2 => fopen($this->windowsStderrTempFile, 'wb'),  // stderr
+          0 => self::$descriptorSpec[0],
+          1 => $stdout_handle,
+          2 => $stderr_handle,
         );
-
-        if (!$spec[1] || !$spec[2]) {
-          throw new Exception(pht(
-            'Unable to create temporary files for '.
-            'Windows stdout / stderr streams'));
-        }
       }
 
       $proc = @proc_open(
@@ -649,23 +632,10 @@ final class ExecFuture extends PhutilExecutableFuture {
         $spec,
         $pipes,
         $cwd,
-        $env);
-
-      if ($this->useWindowsFileStreams) {
-        fclose($spec[1]);
-        fclose($spec[2]);
-        $pipes = array(
-          0 => head($pipes),  // stdin
-          1 => fopen($this->windowsStdoutTempFile, 'rb'),  // stdout
-          2 => fopen($this->windowsStderrTempFile, 'rb'),  // stderr
-        );
-
-        if (!$pipes[1] || !$pipes[2]) {
-          throw new Exception(pht(
-            'Unable to open temporary files for '.
-            'reading Windows stdout / stderr streams'));
-        }
-      }
+        $env,
+        array(
+          'bypass_shell' => true,
+        ));
 
       if ($trap) {
         $err = $trap->getErrorsAsString();
@@ -674,12 +644,56 @@ final class ExecFuture extends PhutilExecutableFuture {
         $err = error_get_last();
       }
 
+      if ($is_windows) {
+        fclose($stdout_handle);
+        fclose($stderr_handle);
+      }
+
       if (!is_resource($proc)) {
-        throw new Exception(
+        // When you run an invalid command on a Linux system, the "proc_open()"
+        // works and then the process (really a "/bin/sh -c ...") exits after
+        // it fails to resolve the command.
+
+        // When you run an invalid command on a Windows system, we bypass the
+        // shell and the "proc_open()" itself fails. Throw a "CommandException"
+        // here for consistency with the Linux behavior in this common failure
+        // case.
+
+        throw new CommandException(
           pht(
-            'Failed to `%s`: %s',
-            'proc_open()',
-            $err));
+            'Call to "proc_open()" to open a subprocess failed: %s',
+            $err),
+          $this->command,
+          1,
+          '',
+          '');
+      }
+
+      if ($is_windows) {
+        $stdout_handle = fopen($stdout_file, 'rb');
+        if (!$stdout_handle) {
+          throw new Exception(
+            pht(
+              'Unable to open stdout temporary file ("%s") for reading.',
+              $stdout_file));
+        }
+
+        $stderr_handle = fopen($stderr_file, 'rb');
+        if (!$stderr_handle) {
+          throw new Exception(
+            pht(
+              'Unable to open stderr temporary file ("%s") for reading.',
+              $stderr_file));
+        }
+
+        $pipes = array(
+          0 => $pipes[0],
+          1 => $stdout_handle,
+          2 => $stderr_handle,
+        );
+
+        $this->windowsStdoutTempFile = $stdout_file;
+        $this->windowsStderrTempFile = $stderr_file;
       }
 
       $this->pipes = $pipes;
@@ -687,11 +701,11 @@ final class ExecFuture extends PhutilExecutableFuture {
 
       list($stdin, $stdout, $stderr) = $pipes;
 
-      if (!phutil_is_windows()) {
+      if (!$is_windows) {
 
         // On Windows, we redirect process standard output and standard error
-        // through temporary files, and then use stream_select to determine
-        // if there's more data to read.
+        // through temporary files. Files don't block, so we don't need to make
+        // these streams nonblocking.
 
         if ((!stream_set_blocking($stdout, false)) ||
             (!stream_set_blocking($stderr, false)) ||
@@ -769,11 +783,6 @@ final class ExecFuture extends PhutilExecutableFuture {
     }
 
     if ($is_done) {
-      if ($this->useWindowsFileStreams) {
-        fclose($stdout);
-        fclose($stderr);
-      }
-
       // If the subprocess got nuked with `kill -9`, we get a -1 exitcode.
       // Upgrade this to a slightly more informative value by examining the
       // terminating signal code.
@@ -853,7 +862,10 @@ final class ExecFuture extends PhutilExecutableFuture {
       @proc_close($this->proc);
       $this->proc = null;
     }
-    $this->stdin  = null;
+    $this->stdin = null;
+
+    unset($this->windowsStdoutTempFile);
+    unset($this->windowsStderrTempFile);
 
     if ($this->profilerCallID !== null) {
       $profiler = PhutilServiceProfiler::getInstance();
