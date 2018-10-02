@@ -421,6 +421,12 @@ final class Filesystem extends Phobject {
       throw new Exception(pht('You must generate at least 1 byte of entropy.'));
     }
 
+    // Under PHP7, the "random_bytes()" function provides a simpler and more
+    // portable way to accomplish what the rest of this function accomplishes.
+    if (function_exists('random_bytes')) {
+      return random_bytes($number_of_bytes);
+    }
+
     // Try to use `openssl_random_pseudo_bytes()` if it's available. This source
     // is the most widely available source, and works on Windows/Linux/OSX/etc.
 
@@ -481,9 +487,8 @@ final class Filesystem extends Phobject {
         pht(
           '%s requires the PHP OpenSSL extension to be installed and enabled '.
           'to access an entropy source. On Windows, this extension is usually '.
-          'installed but not enabled by default. Enable it in your "s".',
-          __METHOD__.'()',
-          'php.ini'));
+          'installed but not enabled by default. Enable it in your "php.ini".',
+          __METHOD__.'()'));
     }
 
     throw new Exception(
