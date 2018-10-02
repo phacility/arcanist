@@ -32,7 +32,7 @@ final class PhutilXHPASTBinary extends Phobject {
       $command = 'make';
     }
 
-    $root = phutil_get_library_root('phutil');
+    $root = phutil_get_library_root('arcanist');
     $path = Filesystem::resolvePath($root.'/../support/xhpast');
 
     // Run the build.

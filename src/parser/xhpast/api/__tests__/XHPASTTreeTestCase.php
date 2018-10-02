@@ -6,6 +6,8 @@
 final class XHPASTTreeTestCase extends PhutilTestCase {
 
   public function testEvalStaticString() {
+    $this->assertExecutable('xhpast');
+
     $this->assertEval(1,    '1');
     $this->assertEval('a',  '"a"');
     $this->assertEval(-1.1, '-1.1');

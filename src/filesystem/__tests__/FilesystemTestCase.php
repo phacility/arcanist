@@ -111,21 +111,16 @@ final class FilesystemTestCase extends PhutilTestCase {
         array(),
       ),
 
-      'fictional paths work' => array(
-        '/x/y/z',
-        '/',
-        array(
-          '/x/y/z',
-          '/x/y',
-          '/x',
-          '/',
-        ),
-      ),
-
     );
 
     foreach ($test_cases as $test_case) {
       list($path, $root, $expected) = $test_case;
+
+      // On Windows, paths will have backslashes rather than forward slashes.
+      // Normalize our expectations to the path format for the environment.
+      foreach ($expected as $key => $epath) {
+        $expected[$key] = str_replace('/', DIRECTORY_SEPARATOR, $epath);
+      }
 
       $this->assertEqual(
         $expected,

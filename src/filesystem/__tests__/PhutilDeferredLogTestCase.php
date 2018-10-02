@@ -95,8 +95,7 @@ final class PhutilDeferredLogTestCase extends PhutilTestCase {
   }
 
   public function testManyWriters() {
-    $root = phutil_get_library_root('arcanist').'/../';
-    $bin = $root.'support/unit/deferred_log.php';
+    $bin = $this->getSupportExecutable('log');
 
     $n_writers = 3;
     $n_lines   = 8;
@@ -105,7 +104,11 @@ final class PhutilDeferredLogTestCase extends PhutilTestCase {
 
     $futures = array();
     for ($ii = 0; $ii < $n_writers; $ii++) {
-      $futures[] = new ExecFuture('%s %d %s', $bin, $n_lines, (string)$tmp);
+      $futures[] = new ExecFuture(
+        'php -f %R -- %d %s',
+        $bin,
+        $n_lines,
+        (string)$tmp);
     }
 
     id(new FutureIterator($futures))

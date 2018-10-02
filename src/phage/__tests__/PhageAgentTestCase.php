@@ -3,6 +3,10 @@
 final class PhageAgentTestCase extends PhutilTestCase {
 
   public function testPhagePHPAgent() {
+    if (phutil_is_windows()) {
+      $this->assertSkipped(pht('Phage does not target Windows.'));
+    }
+
     return $this->runBootloaderTests(new PhagePHPAgentBootloader());
   }
 

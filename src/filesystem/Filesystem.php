@@ -898,8 +898,23 @@ final class Filesystem extends Phobject {
     // This won't work if the file doesn't exist or is on an unreadable mount
     // or something crazy like that. Try to resolve a parent so we at least
     // cover the nonexistent file case.
-    $parts = explode(DIRECTORY_SEPARATOR, trim($path, DIRECTORY_SEPARATOR));
-    while (end($parts) !== false) {
+
+    // We're also normalizing path separators to whatever is normal for the
+    // environment.
+
+    if (phutil_is_windows()) {
+      $parts = trim($path, '/\\');
+      $parts = preg_split('([/\\\\])', $parts);
+
+      // Normalize the directory separators in the path. If we find a parent
+      // below, we'll overwrite this with a better resolved path.
+      $path = str_replace('/', '\\', $path);
+    } else {
+      $parts = trim($path, '/');
+      $parts = explode('/', $parts);
+    }
+
+    while ($parts) {
       array_pop($parts);
       if (phutil_is_windows()) {
         $attempt = implode(DIRECTORY_SEPARATOR, $parts);

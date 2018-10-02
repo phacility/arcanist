@@ -14,6 +14,8 @@ final class PhutilXHPASTSyntaxHighlighterTestCase extends PhutilTestCase {
   }
 
   public function testBuiltinClassnames() {
+    $this->assertExecutable('xhpast');
+
     $this->assertEqual(
       $this->read('builtin-classname.expect'),
       (string)$this->highlight($this->read('builtin-classname.source')),

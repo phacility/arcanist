@@ -3,8 +3,10 @@
 final class FutureIteratorTestCase extends PhutilTestCase {
 
   public function testAddingFuture() {
-    $future1 = new ExecFuture('cat');
-    $future2 = new ExecFuture('cat');
+    $bin = $this->getSupportExecutable('cat');
+
+    $future1 = new ExecFuture('php -f %R', $bin);
+    $future2 = new ExecFuture('php -f %R', $bin);
 
     $iterator = new FutureIterator(array($future1));
     $iterator->limit(2);

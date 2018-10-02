@@ -20,6 +20,8 @@ abstract class PhutilTestCase extends Phobject {
   private $paths;
   private $renderer;
 
+  private static $executables = array();
+
 
 /* -(  Making Test Assertions  )--------------------------------------------- */
 
@@ -110,15 +112,24 @@ abstract class PhutilTestCase extends Phobject {
 
     $output .= "\n";
 
+    static $have_diff;
+    if ($have_diff === null) {
+      $have_diff = Filesystem::binaryExists('diff');
+    }
+
     if (strpos($expect, "\n") === false && strpos($result, "\n") === false) {
       $output .= pht("Expected: %s\n  Actual: %s", $expect, $result);
-    } else {
+    } else if ($have_diff) {
       $output .= pht(
         "Expected vs Actual Output Diff\n%s",
         ArcanistDiffUtils::renderDifferences(
           $expect,
           $result,
           $lines = 0xFFFF));
+    } else {
+      // On systems without `diff`, including Windows, just show the raw
+      // values instead of using `diff` to compare them.
+      $output .= "EXPECTED\n{$expect}\n\nACTUAL\n{$result}\n";
     }
 
     $this->failTest($output);
@@ -750,5 +761,38 @@ abstract class PhutilTestCase extends Phobject {
     $this->failTest($output);
     throw new PhutilTestTerminatedException($output);
   }
+
+  final protected function assertExecutable($binary) {
+    if (!isset(self::$executables[$binary])) {
+      switch ($binary) {
+        case 'xhpast':
+          $ok = true;
+          if (!PhutilXHPASTBinary::isAvailable()) {
+            try {
+              PhutilXHPASTBinary::build();
+            } catch (Exception $ex) {
+              $ok = false;
+            }
+          }
+          break;
+        default:
+          $ok = Filesystem::binaryExists($binary);
+          break;
+      }
+
+      self::$executables[$binary] = $ok;
+    }
+
+    if (!self::$executables[$binary]) {
+      $this->assertSkipped(
+        pht('Required executable "%s" is not available.', $binary));
+    }
+  }
+
+  final protected function getSupportExecutable($executable) {
+    $root = dirname(phutil_get_library_root('arcanist'));
+    return $root.'/support/unit/'.$executable.'.php';
+  }
+
 
 }

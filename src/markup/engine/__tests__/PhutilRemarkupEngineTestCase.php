@@ -45,6 +45,12 @@ final class PhutilRemarkupEngineTestCase extends PhutilTestCase {
         $engine->setConfig('uri.base', 'http://www.example.com/');
         $engine->setConfig('uri.here', 'http://www.example.com/page/');
         break;
+      case 'quoted-code-block.txt':
+        // These tests depend on the syntax highlighting provided by "xhpast",
+        // so the output will differ if we're falling back to a different
+        // syntax highlighter.
+        $this->assertExecutable('xhpast');
+        break;
     }
 
     $actual_output = (string)$engine->markupText($input_remarkup);

@@ -24,6 +24,8 @@ class PhutilLibraryTestCase extends PhutilTestCase {
    * that all the library map is up-to-date.
    */
   public function testLibraryMap() {
+    $this->assertExecutable('xhpast');
+
     $root = $this->getLibraryRoot();
     $library = phutil_get_library_name_for_root($root);
 

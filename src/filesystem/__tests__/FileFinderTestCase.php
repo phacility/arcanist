@@ -125,6 +125,16 @@ final class FileFinderTestCase extends PhutilTestCase {
   }
 
   public function testFinderWithGlobMagic() {
+    if (phutil_is_windows()) {
+      // We can't write files with "\" since this is the path separator.
+      // We can't write files with "*" since Windows rejects them.
+      // This doesn't leave us too many interesting paths to test, so just
+      // skip this test case under Windows.
+      $this->assertSkipped(
+        pht(
+          'Windows can not write files with sufficiently absurd names.'));
+    }
+
     // Fill a temporary directory with all this magic garbage so we don't have
     // to check a bunch of files with backslashes in their names into version
     // control.
@@ -209,8 +219,12 @@ final class FileFinderTestCase extends PhutilTestCase {
   private function assertFinder($label, FileFinder $finder, $expect) {
     $modes = array(
       'php',
-      'shell',
     );
+
+    if (!phutil_is_windows()) {
+      $modes[] = 'shell';
+    }
+
     foreach ($modes as $mode) {
       $actual = id(clone $finder)
         ->setForceMode($mode)

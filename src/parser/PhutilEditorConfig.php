@@ -107,8 +107,15 @@ final class PhutilEditorConfig extends Phobject {
     $configs = $this->getEditorConfigs($path);
     $matches = array();
 
+    // Normalize directory separators to "/". The ".editorconfig" standard
+    // uses only "/" as a directory separator, not "\".
+    $path = str_replace(DIRECTORY_SEPARATOR, '/', $path);
+
     foreach ($configs as $config) {
       list($path_prefix, $editorconfig) = $config;
+
+      // Normalize path separators, as above.
+      $path_prefix = str_replace(DIRECTORY_SEPARATOR, '/', $path_prefix);
 
       foreach ($editorconfig as $glob => $properties) {
         if (!$glob) {
@@ -163,12 +170,11 @@ final class PhutilEditorConfig extends Phobject {
    * return list<pair<string, map>>
    */
   private function getEditorConfigs($path) {
-    $configs    = array();
-    $found_root = false;
-    $root       = $this->root;
+    $configs = array();
 
-    do {
-      $path = dirname($path);
+    $found_root = false;
+    $paths = Filesystem::walkToRoot($path, $this->root);
+    foreach ($paths as $path) {
       $file = $path.'/.editorconfig';
 
       if (!Filesystem::pathExists($file)) {
@@ -187,7 +193,7 @@ final class PhutilEditorConfig extends Phobject {
       if ($found_root) {
         break;
       }
-    } while ($path != $root && Filesystem::isDescendant($path, $root));
+    }
 
     return $configs;
   }

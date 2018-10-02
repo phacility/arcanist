@@ -3,33 +3,29 @@
 final class ArcanistRepositoryAPIStateTestCase extends PhutilTestCase {
 
   public function testGitStateParsing() {
-    if (Filesystem::binaryExists('git')) {
-      $this->parseState('git_basic.git.tgz');
-      $this->parseState('git_submodules_dirty.git.tgz');
-      $this->parseState('git_submodules_staged.git.tgz');
-      $this->parseState('git_spaces.git.tgz');
-    } else {
-      $this->assertSkipped(pht('Git is not installed'));
-    }
+    $this->assertExecutable('git');
+
+    $this->parseState('git_basic.git.tgz');
+    $this->parseState('git_submodules_dirty.git.tgz');
+    $this->parseState('git_submodules_staged.git.tgz');
+    $this->parseState('git_spaces.git.tgz');
   }
 
   public function testHgStateParsing() {
-    if (Filesystem::binaryExists('hg')) {
-      $this->parseState('hg_basic.hg.tgz');
-    } else {
-      $this->assertSkipped(pht('Mercurial is not installed'));
-    }
+    $this->assertExecutable('hg');
+
+    $this->parseState('hg_basic.hg.tgz');
   }
 
   public function testSvnStateParsing() {
-    if (Filesystem::binaryExists('svn')) {
-      $this->parseState('svn_basic.svn.tgz');
-    } else {
-      $this->assertSkipped(pht('Subversion is not installed'));
-    }
+    $this->assertExecutable('svn');
+
+    $this->parseState('svn_basic.svn.tgz');
   }
 
   private function parseState($test) {
+    $this->assertExecutable('tar');
+
     $dir = dirname(__FILE__).'/state/';
     $fixture = PhutilDirectoryFixture::newFromArchive($dir.'/'.$test);
 

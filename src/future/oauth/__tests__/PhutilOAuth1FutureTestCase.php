@@ -63,6 +63,10 @@ final class PhutilOAuth1FutureTestCase extends PhutilTestCase {
   }
 
   public function testOAuth1SigningWithJIRAExamples() {
+    if (!function_exists('openssl_pkey_get_private')) {
+      $this->assertSkipped(
+        pht('Required "openssl" extension is not installed.'));
+    }
 
     // NOTE: This is an emprically example against JIRA v6.0.6, in that the
     // code seems to work when actually authing. It primarily serves as a check
@@ -155,5 +159,6 @@ EOKEY;
       '5e63e65237e2b8078426996d5ef1a706',
       md5($future->getSignature()));
   }
+
 
 }

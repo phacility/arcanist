@@ -39,25 +39,33 @@ final class PhutilCsprintfTestCase extends PhutilTestCase {
   }
 
   public function testNoPowershell() {
-    if (!phutil_is_windows()) {
-      $cmd = csprintf('%s', '#');
-      $cmd->setEscapingMode(PhutilCommandString::MODE_DEFAULT);
-
-      $this->assertEqual(
-        '\'#\'',
-        (string)$cmd);
+    if (phutil_is_windows()) {
+      // TOOLSETS: Restructure this. We must skip because tests fail if they
+      // do not make any assertions.
+      $this->assertSkipped(
+        pht(
+          'This test can not currently run under Windows.'));
     }
+
+    $cmd = csprintf('%s', '#');
+    $cmd->setEscapingMode(PhutilCommandString::MODE_DEFAULT);
+
+    $this->assertEqual(
+      '\'#\'',
+      (string)$cmd);
   }
 
   public function testPasswords() {
+    $bin = $this->getSupportExecutable('echo');
+
     // Normal "%s" doesn't do anything special.
-    $command = csprintf('echo %s', 'hunter2trustno1');
+    $command = csprintf('php -f %R -- %s', $bin, 'hunter2trustno1');
     $this->assertTrue(strpos($command, 'hunter2trustno1') !== false);
 
     // "%P" takes a PhutilOpaqueEnvelope.
     $caught = null;
     try {
-      csprintf('echo %P', 'hunter2trustno1');
+      csprintf('php -f %R -- %P', $bin, 'hunter2trustno1');
     } catch (Exception $ex) {
       $caught = $ex;
     }
@@ -65,7 +73,10 @@ final class PhutilCsprintfTestCase extends PhutilTestCase {
 
 
     // "%P" masks the provided value.
-    $command = csprintf('echo %P', new PhutilOpaqueEnvelope('hunter2trustno1'));
+    $command = csprintf(
+      'php -f %R -- %P',
+      $bin,
+      new PhutilOpaqueEnvelope('hunter2trustno1'));
     $this->assertFalse(strpos($command, 'hunter2trustno1'));
 
 

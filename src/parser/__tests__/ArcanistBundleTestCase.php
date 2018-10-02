@@ -11,6 +11,8 @@ final class ArcanistBundleTestCase extends PhutilTestCase {
   }
 
   private function loadDiff($old, $new) {
+    $this->assertExecutable('diff');
+
     list($err, $stdout) = exec_manual(
       'diff --unified=65535 --label %s --label %s -- %s %s',
       'file 9999-99-99',

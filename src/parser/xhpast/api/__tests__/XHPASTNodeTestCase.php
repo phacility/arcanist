@@ -3,6 +3,8 @@
 final class XHPASTNodeTestCase extends PhutilTestCase {
 
   public function testGetStringVariables() {
+    $this->assertExecutable('xhpast');
+
     $this->assertStringVariables(array(), '""');
     $this->assertStringVariables(array(2 => 'abc'), '"$abc"');
     $this->assertStringVariables(array(), '"\$abc"');
@@ -20,6 +22,8 @@ final class XHPASTNodeTestCase extends PhutilTestCase {
   }
 
   private function assertStringVariables($expected, $string) {
+    $this->assertExecutable('xhpast');
+
     $statement = XHPASTTree::newStatementFromString($string);
     $this->assertEqual(
       $expected,
@@ -28,6 +32,8 @@ final class XHPASTNodeTestCase extends PhutilTestCase {
   }
 
   public function testGetNamespace() {
+    $this->assertExecutable('xhpast');
+
     $dir   = dirname(__FILE__).'/namespace/';
     $files = id(new FileFinder($dir))
       ->withType('f')

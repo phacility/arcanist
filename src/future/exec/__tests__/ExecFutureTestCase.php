@@ -6,15 +6,27 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // NOTE: This is mostly testing that we don't hang while doing an empty
     // write.
 
-    list($stdout) = id(new ExecFuture('cat'))->write('')->resolvex();
+    list($stdout) = $this->newCat()
+      ->write('')
+      ->resolvex();
 
     $this->assertEqual('', $stdout);
+  }
+
+  private function newCat() {
+    $bin = $this->getSupportExecutable('cat');
+    return new ExecFuture('php -f %R', $bin);
+  }
+
+  private function newSleep($duration) {
+    $bin = $this->getSupportExecutable('sleep');
+    return new ExecFuture('php -f %R -- %s', $bin, $duration);
   }
 
   public function testKeepPipe() {
     // NOTE: This is mostly testing the semantics of $keep_pipe in write().
 
-    list($stdout) = id(new ExecFuture('cat'))
+    list($stdout) = $this->newCat()
       ->write('', true)
       ->start()
       ->write('x', true)
@@ -30,14 +42,14 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // flushing a buffer.
 
     $data = str_repeat('x', 1024 * 1024 * 4);
-    list($stdout) = id(new ExecFuture('cat'))->write($data)->resolvex();
+    list($stdout) = $this->newCat()->write($data)->resolvex();
 
     $this->assertEqual($data, $stdout);
   }
 
   public function testBufferLimit() {
     $data = str_repeat('x', 1024 * 1024);
-    list($stdout) = id(new ExecFuture('cat'))
+    list($stdout) = $this->newCat()
       ->setStdoutSizeLimit(1024)
       ->write($data)
       ->resolvex();
@@ -49,7 +61,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // NOTE: This tests interactions between the resolve() timeout and the
     // ExecFuture timeout, which are similar but not identical.
 
-    $future = id(new ExecFuture('sleep 32000'))->start();
+    $future = $this->newSleep(32000)->start();
     $future->setTimeout(32000);
 
     // We expect this to return in 0.01s.
@@ -66,7 +78,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
   public function testTerminateWithoutStart() {
     // We never start this future, but it should be fine to kill a future from
     // any state.
-    $future = new ExecFuture('sleep 1');
+    $future = $this->newSleep(1);
     $future->resolveKill();
 
     $this->assertTrue(true);
@@ -76,7 +88,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // NOTE: This is partly testing that we choose appropriate select wait
     // times; this test should run for significantly less than 1 second.
 
-    $future = new ExecFuture('sleep 32000');
+    $future = $this->newSleep(32000);
     list($err) = $future->setTimeout(0.01)->resolve();
 
     $this->assertTrue($err > 0);
@@ -86,7 +98,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
   public function testMultipleTimeoutsTestShouldRunLessThan1Sec() {
     $futures = array();
     for ($ii = 0; $ii < 4; $ii++) {
-      $futures[] = id(new ExecFuture('sleep 32000'))->setTimeout(0.01);
+      $futures[] = $this->newSleep(32000)->setTimeout(0.01);
     }
 
     foreach (new FutureIterator($futures) as $future) {
@@ -100,8 +112,9 @@ final class ExecFutureTestCase extends PhutilTestCase {
   public function testMultipleResolves() {
     // It should be safe to call resolve(), resolvex(), resolveKill(), etc.,
     // as many times as you want on the same process.
+    $bin = $this->getSupportExecutable('echo');
 
-    $future = new ExecFuture('echo quack');
+    $future = new ExecFuture('php -f %R -- quack', $bin);
     $future->resolve();
     $future->resolvex();
     list($err) = $future->resolveKill();
@@ -114,7 +127,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
     $str_len_4 = 'abcd';
 
     // This is a write/read with no read buffer.
-    $future = new ExecFuture('cat');
+    $future = $this->newCat();
     $future->write($str_len_8);
 
     do {
@@ -131,7 +144,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
 
 
     // This is a write/read with a read buffer.
-    $future = new ExecFuture('cat');
+    $future = $this->newCat();
     $future->write($str_len_8);
 
     // Set the read buffer size.
