@@ -70,6 +70,13 @@ final class PhutilTerminalString extends Phobject {
       $value = preg_replace('/\r(?!\n)/', '<CR>', $value);
     }
 
+    // See T13209. If we print certain invalid unicode byte sequences to the
+    // terminal under "cmd.exe", the entire string is silently dropped. Avoid
+    // printing invalid sequences.
+    if (phutil_is_windows()) {
+      $value = phutil_utf8ize($value);
+    }
+
     return $value;
   }
 }
