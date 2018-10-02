@@ -160,23 +160,8 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
     $messages = array();
 
     foreach ($files as $file) {
-      $name = $file->getAttribute('name');
-      $arcPath = ltrim(str_replace(getcwd(), '', $name), '/');
-      if ($arcPath != $path) {
-        continue;
-      }
-      $changedLines = $this->getEngine()->getPathChangedLines($arcPath);
-      if ($changedLines) {
-        $changedLines = array_keys($changedLines);
-      } else {
-        $changedLines = array();
-      }
-
       foreach ($file->getElementsByTagName('error') as $child) {
         $line = $child->getAttribute('line');
-        if (!in_array($line, $changedLines)) {
-          continue;
-        }
 
         $code = str_replace('ShellCheck.', '', $child->getAttribute('source'));
         $this->defaultSeverityMap[$code] = $child->getAttribute('severity');
@@ -194,14 +179,6 @@ final class UberShellCheckLinter extends ArcanistExternalLinter {
       }
     }
 
-    // $messages can be empty even when shellcheck returns non empty list as
-    // errors that not in changed lines are filtered out. We add a disabled 
-    // lint message here to avoid exception being thrown in the super class.
-    if ($err == 1 && count($messages) == 0) {
-      $messages = [id(new ArcanistLintMessage())
-        ->setName($this->getLinterName())
-        ->setSeverity(ArcanistLintSeverity::SEVERITY_DISABLED)];
-    }
     return $messages;
   }
 }

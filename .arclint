@@ -1,6 +1,7 @@
 {
   "exclude": [
-    "(^externals/)"
+    "(^externals/)",
+    "(^.travis.yml$)"
   ],
   "linters": {
     "chmod": {

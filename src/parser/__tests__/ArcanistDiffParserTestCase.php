@@ -535,14 +535,7 @@ EOTEXT
         $this->assertEqual(1, count($changes));
         $change = head($changes);
         $this->assertEqual(
-          'file',
-          $change->getCurrentPath());
-        break;
-      case 'custom-prefixes-edit.gitdiff':
-        $this->assertEqual(1, count($changes));
-        $change = head($changes);
-        $this->assertEqual(
-          'file',
+          'dst/file',
           $change->getCurrentPath());
         break;
       case 'more-newlines.svndiff':
@@ -614,111 +607,81 @@ EOTEXT
     }
   }
 
-  public function testGitCommonFilenameExtraction() {
+  public function testGitPrefixStripping() {
     static $tests = array(
-      'a/filename.c b/filename.c'         => 'filename.c',
-      "a/filename.c b/filename.c\n"       => 'filename.c',
-      "a/filename.c b/filename.c\r\n"     => 'filename.c',
-      'filename.c filename.c'             => 'filename.c',
-      '1/filename.c 2/filename.c'         => 'filename.c',
-      '"a/\\"quotes\\"" "b/\\"quotes\\""' => '"quotes"',
-      '"a/\\"quotes and spaces\\"" "b/\\"quotes and spaces\\""' =>
-        '"quotes and spaces"',
-      '"a/\\342\\230\\203" "b/\\342\\230\\203"' =>
-         "\xE2\x98\x83",
-      'a/Core Data/filename.c b/Core Data/filename.c' =>
-         'Core Data/filename.c',
-      'some file with spaces.c some file with spaces.c' =>
-         'some file with spaces.c',
-      '"foo bar.c" foo bar.c'        => 'foo bar.c',
-      '"a/foo bar.c" b/foo bar.c'    => 'foo bar.c',
-      'src/file dst/file'            => 'file',
-
-      // Renames are handled by the "rename from ..." lines later in
-      // the diff, for simplicity of parsing; this is also how git
-      // itself handles it.
-      'a/foo.c b/bar.c'              => null,
-      'a/foo bar.c b/baz troz.c'     => null,
-      '"a/foo bar.c" b/baz troz.c'   => null,
-      'a/foo bar.c "b/baz troz.c"'   => null,
-      '"a/foo bar.c" "b/baz troz.c"' => null,
-      'filename file with spaces.c filename file with spaces.c' =>
-        'filename file with spaces.c',
+      'a/file.c'    => 'file.c',
+      'b/file.c'    => 'file.c',
+      'i/file.c'    => 'file.c',
+      'c/file.c'    => 'file.c',
+      'w/file.c'    => 'file.c',
+      'o/file.c'    => 'file.c',
+      '1/file.c'    => 'file.c',
+      '2/file.c'    => 'file.c',
+      'src/file.c'  => 'src/file.c',
+      'file.c'      => 'file.c',
     );
 
     foreach ($tests as $input => $expect) {
-      $result = ArcanistDiffParser::extractGitCommonFilename($input);
+      $this->assertEqual(
+        $expect,
+        ArcanistDiffParser::stripGitPathPrefix($input),
+        pht("Strip git prefix from '%s'.", $input));
+    }
+  }
+
+  public function testGitPathSplitting() {
+    static $tests = array(
+      'a/old.c b/new.c'       => array('old.c', 'new.c'),
+      "a/old.c b/new.c\n"     => array('old.c', 'new.c'),
+      "a/old.c b/new.c\r\n"   => array('old.c', 'new.c'),
+      'old.c new.c'           => array('old.c', 'new.c'),
+      '1/old.c 2/new.c'       => array('old.c', 'new.c'),
+      '"a/\\"quotes1\\"" "b/\\"quotes2\\""' => array(
+        '"quotes1"',
+        '"quotes2"',
+      ),
+      '"a/\\"quotes and spaces1\\"" "b/\\"quotes and spaces2\\""' => array(
+        '"quotes and spaces1"',
+        '"quotes and spaces2"',
+      ),
+      '"a/\\342\\230\\2031" "b/\\342\\230\\2032"' => array(
+        "\xE2\x98\x831",
+        "\xE2\x98\x832",
+      ),
+      'a/Core Data/old.c b/Core Data/new.c' => array(
+        'Core Data/old.c',
+        'Core Data/new.c',
+      ),
+      'some file with spaces.c some file with spaces.c' => array(
+        'some file with spaces.c',
+        'some file with spaces.c',
+      ),
+    );
+
+    foreach ($tests as $input => $expect) {
+      $result = ArcanistDiffParser::splitGitDiffPaths($input);
       $this->assertEqual(
         $expect,
         $result,
         pht('Split: %s', $input));
     }
-  }
 
 
-  public function runSingleRename($diffline, $from, $to, $old, $new) {
-    $str = "diff --git $diffline\nsimilarity index 95%\n"
-         ."rename from $from\nrename to $to\n";
-    $parser = new ArcanistDiffParser();
-    $changes = $parser->parseDiff($str);
-    $this->assertTrue(
-      $changes !== null,
-      pht("Parsed:\n%s", $str));
-    $this->assertEqual(
-      $old == $new ? 1 : 2, count($changes),
-      pht("Parsed one change:\n%s", $str));
-    $change = reset($changes);
-    $this->assertEqual(
-      array($old, $new),
-      array($change->getOldPath(), $change->getCurrentPath()),
-      pht('Split: %s', $diffline));
+    static $ambiguous = array(
+      'old file with spaces.c new file with spaces.c',
+    );
+
+    foreach ($ambiguous as $input) {
+      $caught = null;
+      try {
+        ArcanistDiffParser::splitGitDiffPaths($input);
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertTrue(
+        ($caught instanceof Exception),
+        pht('Ambiguous: %s', $input));
+    }
   }
 
-  public function testGitRenames() {
-    $this->runSingleRename('a/old.c b/new.c',
-                           'old.c',                   'new.c',
-                           'old.c',                   'new.c');
-    $this->runSingleRename('old.c new.c',
-                           'old.c',                   'new.c',
-                           'old.c',                   'new.c');
-    $this->runSingleRename('1/old.c 2/new.c',
-                           'old.c',                   'new.c',
-                           'old.c',                   'new.c');
-    $this->runSingleRename('from/file.c to/file.c',
-                           'from/file.c',             'to/file.c',
-                           'from/file.c',             'to/file.c');
-    $this->runSingleRename('"a/\\"quotes1\\"" "b/\\"quotes2\\""',
-                           '"\\"quotes1\\""',         '"\\"quotes2\\""',
-                           '"quotes1"',               '"quotes2"');
-    $this->runSingleRename('"a/\\"quotes spaces1\\"" "b/\\"quotes spaces2\\""',
-                           '"\\"quotes spaces1\\""',  '"\\"quotes spaces2\\""',
-                           '"quotes spaces1"',        '"quotes spaces2"');
-    $this->runSingleRename('"a/\\342\\230\\2031" "b/\\342\\230\\2032"',
-                           '"\\342\\230\\2031"',      '"\\342\\230\\2032"',
-                           "\xE2\x98\x831",           "\xE2\x98\x832");
-    $this->runSingleRename('a/Core Data/old.c b/Core Data/new.c',
-                           'Core Data/old.c',         'Core Data/new.c',
-                           'Core Data/old.c',         'Core Data/new.c');
-    $this->runSingleRename('file with spaces.c file with spaces.c',
-                           'file with spaces.c', 'file with spaces.c',
-                           'file with spaces.c', 'file with spaces.c');
-    $this->runSingleRename('a/non-quoted filename.c "b/quoted filename.c"',
-                           'non-quoted filename.c',   '"quoted filename.c"',
-                           'non-quoted filename.c',   'quoted filename.c');
-    $this->runSingleRename('non-quoted filename.c "quoted filename.c"',
-                           'non-quoted filename.c',   '"quoted filename.c"',
-                           'non-quoted filename.c',   'quoted filename.c');
-    $this->runSingleRename('"a/quoted filename.c" b/non quoted filename.c',
-                           '"quoted filename.c"',     'non quoted filename.c',
-                           'quoted filename.c',       'non quoted filename.c');
-    $this->runSingleRename('"quoted filename.c" non-quoted filename.c',
-                           '"quoted filename.c"',     'non-quoted filename.c',
-                           'quoted filename.c',       'non-quoted filename.c');
-    $this->runSingleRename('old file with spaces.c new file with spaces.c',
-                           'old file with spaces.c',  'new file with spaces.c',
-                           'old file with spaces.c',  'new file with spaces.c');
-    $this->runSingleRename('old file old file',
-                           'old file old',            'file',
-                           'old file old',            'file');
-  }
 }

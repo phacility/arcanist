@@ -1,4 +1,5 @@
+#!/bin/bash
 TEST=1
 TEST2=$TEST
 ~~~~~~~~~~
-error:2:1
+warning:3:1

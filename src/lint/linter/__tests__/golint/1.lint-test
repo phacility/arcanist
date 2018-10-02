@@ -14,5 +14,5 @@ func main() {
     }
 }
 ~~~~~~~~~~
-advice:7:6
-advice:12:12
+error:7:6
+error:12:12

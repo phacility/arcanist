@@ -13,25 +13,37 @@ final class UberFilesizeTestEngineTestCase extends PhutilTestCase {
 
     // no key
     $configuration_manager->setRuntimeConfig("key1", "value");
-    $this->assertException(ArcanistUsageException::class, array($filesize_test_engine, 'run'));
+    $this->assertException(
+      ArcanistUsageException::class, array($filesize_test_engine, 'run'));
 
     // invalid value
-    $configuration_manager->setRuntimeConfig(UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, "value");
-    $this->assertException(ArcanistUsageException::class, array($filesize_test_engine, 'run'));
+    $configuration_manager->setRuntimeConfig(
+      UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, 'value');
+    $this->assertException(
+      ArcanistUsageException::class, array($filesize_test_engine, 'run'));
 
     // invalid value
-    $configuration_manager->setRuntimeConfig(UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, "100a");
-    $this->assertException(ArcanistUsageException::class, array($filesize_test_engine, 'run'));
+    $configuration_manager->setRuntimeConfig(
+      UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, '100a');
+    $this->assertException(
+      ArcanistUsageException::class, array($filesize_test_engine, 'run'));
 
     // non-integer value
-    $configuration_manager->setRuntimeConfig(UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, "100");
-    $this->assertException(ArcanistUsageException::class, array($filesize_test_engine, 'run'));
+    $configuration_manager->setRuntimeConfig(
+      UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, '100');
+    $this->assertException(
+      ArcanistUsageException::class, array($filesize_test_engine, 'run'));
 
     // correct value, should pass
-    $configuration_manager->setRuntimeConfig(UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, 100);
+    $size = 9999999;
+    $configuration_manager->setRuntimeConfig(
+      UberFilesizeTestEngine::MAX_FILESIZE_LIMIT_KEY, $size);
     $result = $filesize_test_engine->run();
     $this->assertEqual(count($result), 1);
-    $this->assertEqual($result[0]->getResult(), ArcanistUnitTestResult::RESULT_PASS);
-    $this->assertEqual($result[0]->getName(), "All modified files are smaller than the limit (100).");
+
+    $this->assertEqual($result[0]->getResult(),
+      ArcanistUnitTestResult::RESULT_PASS);
+    $this->assertEqual($result[0]->getName(),
+      "All modified files are smaller than the limit ({$size}).");
   }
 }

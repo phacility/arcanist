@@ -1,9 +1,17 @@
 language: php
+addons:
+  apt:
+    packages:
+      - pep8
+      - pyflakes
+      - pylint
+install:
+  - git clone https://github.com/uber/libphutil.git ../libphutil
 php:
-  - '5.3'
-  - '5.4'
-  - '5.5'
+  # - '5.4'
+  # - '5.5'
   - '5.6'
   - '7.1'
   - '7.2'
-script: ./bin/arc unit --everything
+script:
+  - ./bin/arc unit --everything --no-coverage

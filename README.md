@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/uber/arcanist.svg?branch=master)](https://travis-ci.com/uber/arcanist)
+
 Arcanist is the command-line tool for [Phabricator](http://phabricator.org).
 It allows you to interact with Phabricator installs to send code for review,
 download patches, transfer files, view status, make API calls, and various other
