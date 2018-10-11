@@ -642,6 +642,24 @@ EODIFF;
         'disjoint-hunks.new')->toUnifiedDiff());
   }
 
+  public function testMergeHunks() {
+    // Hunks should merge if represented by sufficiently few unchanged
+    // lines.
+    $this->assertEqual(
+      $this->loadResource('merge-hunks.diff'),
+      $this->loadOneChangeBundle(
+        'merge-hunks.old',
+        'merge-hunks.new')->toUnifiedDiff());
+
+    // Hunks should not merge if they are separated by too many unchanged
+    // lines.
+    $this->assertEqual(
+      $this->loadResource('no-merge-hunks.diff'),
+      $this->loadOneChangeBundle(
+        'no-merge-hunks.old',
+        'no-merge-hunks.new')->toUnifiedDiff());
+  }
+
   public function testNonlocalTrailingNewline() {
     // Diffs without changes near the end of the file should not generate a
     // bogus, change-free hunk if the file has no trailing newline.

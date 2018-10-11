@@ -560,7 +560,16 @@ final class ArcanistBundle extends Phobject {
             }
           }
 
-          if ($jj - $last_change > (($context + 1) * 2)) {
+          // If the context value is "3" and there are 7 unchanged lines
+          // between the two changes, we could either generate one or two hunks
+          // and end up with the same number of output lines. If we generate
+          // one hunk, the middle line will be a line of source. If we generate
+          // two hunks, the middle line will be an "@@ -1,2 +3,4 @@" header.
+
+          // We choose to generate two hunks because this is the behavior of
+          // "diff -u". See PHI838.
+
+          if ($jj - $last_change >= ($context * 2 + 1)) {
             // We definitely aren't going to merge this with the next hunk, so
             // break out of the loop. We'll end the hunk at $break_here.
             break;
