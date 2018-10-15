@@ -21,14 +21,14 @@ final class ArcanistUnsafeDynamicStringXHPASTLinterRule
       'xhpast.dynamic-string.classes' => array(
         'type' => 'optional map<string, string>',
         'help' => pht(
-          'Classes which should should not be used because they represent the '.
+          'Classes which should not be used because they represent the '.
           'unsafe usage of dynamic strings.'),
       ),
       'xhpast.dynamic-string.functions' => array(
         'type' => 'optional map<string, string>',
         'help' => pht(
-          'Functions which should should not be used because they represent '.
-          'the unsafe usage of dynamic strings.'),
+          'Functions which should not be used because they represent the '.
+          'unsafe usage of dynamic strings.'),
       ),
     );
 
