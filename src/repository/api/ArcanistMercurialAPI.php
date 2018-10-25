@@ -460,12 +460,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       Filesystem::createDirectory(dirname($tmppath), 0755, true);
     }
 
+    // NOTE: The "%s%%p" construction passes a literal "%p" to Mercurial,
+    // which is a formatting directive for a repo-relative filepath. The
+    // particulars of the construction avoid Windows escaping issues. See
+    // PHI904.
+
     list($err, $stdout) = $this->execManualLocal(
-      'cat --rev %s --output %s -- %C',
+      'cat --rev %s --output %s%%p -- %Ls',
       $revision,
-      // %p is the formatter for the repo-relative filepath
-      $tmpdir.'/%p',
-      implode(' ', $paths));
+      $tmpdir.DIRECTORY_SEPARATOR,
+      $paths);
 
     $filedata = array();
     foreach ($paths as $path) {
