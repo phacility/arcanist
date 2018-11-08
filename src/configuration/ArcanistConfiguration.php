@@ -7,15 +7,15 @@
  * pointing to your subclass in your project configuration.
  *
  * When specified as the **arcanist_configuration** class in your project's
- * ##.arcconfig##, your subclass will be instantiated (instead of this class)
+ * `.arcconfig`, your subclass will be instantiated (instead of this class)
  * and be able to handle all the method calls. In particular, you can:
  *
- *    - create, replace, or disable workflows by overriding buildWorkflow()
- *      and buildAllWorkflows();
+ *    - create, replace, or disable workflows by overriding `buildWorkflow()`
+ *      and `buildAllWorkflows()`;
  *    - add additional steps before or after workflows run by overriding
- *      willRunWorkflow() or didRunWorkflow() or didAbortWorkflow(); and
+ *      `willRunWorkflow()` or `didRunWorkflow()` or `didAbortWorkflow()`; and
  *    - add new flags to existing workflows by overriding
- *      getCustomArgumentsForCommand().
+ *      `getCustomArgumentsForCommand()`.
  *
  * @concrete-extensible
  */
