@@ -188,6 +188,10 @@ EOTEXT
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
       ),
+      'nocpr' => array(
+        'help' => pht('Do not run CPR scripts. This will also be skipped '.
+                      'on --nolint'),
+      ),
       'nolint' => array(
         'help' => pht('Do not run lint.'),
         'conflicts' => array(
@@ -464,6 +468,8 @@ EOTEXT
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
+
+    $this->runCheckPromptResolveScripts();
 
     $server = $this->console->getServer();
     $server->setHandler(array($this, 'handleServerMessage'));
@@ -1185,6 +1191,108 @@ EOTEXT
     }
 
     return true;
+  }
+
+/* -(  Custom Check-Prompt-Resolve scripts  ) ------------------------------- */
+
+  /**
+   * @task checkPromptResolveScripts
+   */
+  private function runCheckPromptResolveScripts() {
+    // Skip this any time linting would be skipped, plus when explicitly
+    // passed --nocpr (meaning: run normal lint checks, but not CPR scripts).
+    if ($this->getArgument('nocpr') ||
+        $this->getArgument('nolint') ||
+        $this->getArgument('only') ||
+        $this->isRawDiffSource() ||
+        $this->getArgument('head')) {
+      return;
+    }
+
+    $cprScriptDefs = $this->getConfigurationManager()->getConfigFromAnySource(
+          'uber.differential.check_prompt_resolve'
+        );
+    if (is_null($cprScriptDefs)) {
+      return;
+    }
+    foreach ($cprScriptDefs as $cprDef) {
+      $fNames = ['check-script', 'prompt', 'default-to', 'resolve-script'];
+      foreach ($fNames as $fieldName) {
+        if (is_null($cprDef[$fieldName])) {
+          throw new ArcanistUsageException(
+                      pht("Malformed uber.differential.check_prompt_resolve ".
+                          "record: %s (must have \"%s\" field)",
+                          $cprDef, $fieldName));
+        }
+      }
+      $checkScript = $cprDef['check-script'];
+      $prompt = $cprDef['prompt'];
+      $defaultsToYes = $cprDef['default-to'];
+      $resolveScript = $cprDef['resolve-script'];
+      $err = phutil_passthru('%s', $checkScript);
+      if ($err == 0) {
+        continue; // Nothing to fix
+      }
+      $doResolve = phutil_console_confirm(
+                            $prompt, $default_no = !$defaultsToYes);
+      if (!$doResolve) {
+        echo phutil_console_format(
+                      "\n\n%s\n\n",
+                      pht("Continuing without running resolution script"));
+        continue;
+      }
+      // We run the resolution script
+      // (with stdin disabled so it can't be interfered with)
+      $err = phutil_passthru('%s < /dev/null', $resolveScript);
+      if ($err == 0) {
+        echo phutil_console_format(
+              "\n\n%s\n\n",
+              pht(
+                "Successfully ran resolution script '%s'\n",
+                $resolveScript)
+              );
+      } else {
+        echo phutil_console_format(
+              "\n\n%s\n%s\n\n",
+              pht(
+                "Ran resolution script '%s', but it returned an error.",
+                $resolveScript),
+              pht(
+                "This likely failed to resolve the issue. ".
+                "Continuing anyways.")
+                );
+        if(phutil_passthru('git reset --hard') != 0) {
+          echo phutil_console_format("\nFailed to clean changes.\n");
+          throw new ArcanistUserAbortException();
+        }
+        continue;
+      }
+      echo phutil_console_format(
+              "\n\n%s\n\n%\n",
+              pht(
+                "Resolution script changed the following files:"),
+              shell_exec('git status -s --untracked-files=no')
+              );
+      $doAmmend = phutil_console_confirm(
+                            "Apply changes?", $default_no = !$defaultsToYes);
+      if (!$doAmmend) {
+        echo phutil_console_format(
+                      "\n\n%s\n\n",
+                      pht("Undoing resolution script"));
+        if(phutil_passthru('git reset --hard') != 0) {
+          echo phutil_console_format("\nFailed to clean changes.\n");
+          throw new ArcanistUserAbortException();
+        }
+        continue;
+      }
+      if(phutil_passthru('git add -u && git commit --amend --no-edit') != 0) {
+          echo phutil_console_format("\nFailed to amend changes. ".
+            "IMPORTANT: Please check the state of your current local changes ".
+            "and last commit. This is an arc (CPR) error should not have ".
+            "happened.\n");
+          throw new ArcanistUserAbortException();
+      }
+    }
   }
 
 
