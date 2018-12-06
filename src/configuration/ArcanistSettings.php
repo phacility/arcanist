@@ -272,6 +272,13 @@ final class ArcanistSettings extends Phobject {
           'matches staging uri.'),
         'default' => false,
       ),
+      'uber.diff.prompt.allow-empty-binary' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, diff with empty binary upload will produce exceptions'.
+          'unless diff explicitly with `--skip-binaries` option'),
+          'default' => true,
+      ),
     );
   }
 

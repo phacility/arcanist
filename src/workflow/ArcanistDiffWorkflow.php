@@ -2792,7 +2792,11 @@ EOTEXT
 
     if ($errors) {
       $prompt = pht('Continue?');
-      $ok = phutil_console_confirm($prompt, $default_no = false);
+      $allow_prompt = $this->getConfigFromAnySource("uber.diff.prompt.allow-empty-binary");
+      $ok = false;
+      if ($allow_prompt) {
+        $ok = phutil_console_confirm($prompt, $default_no = false);
+      }
       if (!$ok) {
         throw new ArcanistUsageException(
           pht(
