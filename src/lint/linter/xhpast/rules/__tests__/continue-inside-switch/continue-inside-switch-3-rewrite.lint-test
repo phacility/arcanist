@@ -1,0 +1,26 @@
+<?php
+
+switch ($x) {
+  case 1:
+    continue;
+}
+
+switch ($x) {
+  case 1:
+    continue /* CRITICAL: Nuclear launch code is 1234. */ ;
+}
+~~~~~~~~~~
+error:5:5
+error:10:5
+~~~~~~~~~~
+<?php
+
+switch ($x) {
+  case 1:
+    break;
+}
+
+switch ($x) {
+  case 1:
+    break /* CRITICAL: Nuclear launch code is 1234. */ ;
+}
