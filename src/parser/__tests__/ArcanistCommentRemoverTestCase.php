@@ -27,6 +27,21 @@ The end.
 EOTEXT;
 
     $this->assertEqual($expect, ArcanistCommentRemover::removeComments($test));
+
+    $test = <<<EOTEXT
+Subscribers:
+#projectname
+
+# Instructional comments.
+EOTEXT;
+
+    $expect = <<<EOTEXT
+Subscribers:
+#projectname
+
+EOTEXT;
+
+    $this->assertEqual($expect, ArcanistCommentRemover::removeComments($test));
   }
 
 }
