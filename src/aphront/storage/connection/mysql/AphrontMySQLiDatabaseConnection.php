@@ -81,6 +81,11 @@ final class AphrontMySQLiDatabaseConnection
       $this->throwConnectionException($errno, $error, $user, $host);
     }
 
+    // See T13238. Attempt to prevent "LOAD DATA LOCAL INFILE", which allows a
+    // malicious server to ask the client for any file. At time of writing,
+    // this option MUST be set after "real_connect()" on all PHP versions.
+    $conn->options(MYSQLI_OPT_LOCAL_INFILE, 0);
+
     $this->connectionOpen = true;
 
     $ok = @$conn->set_charset('utf8mb4');
@@ -122,7 +127,36 @@ final class AphrontMySQLiDatabaseConnection
       return @$conn->reap_async_query();
     }
 
-    return @$conn->query($raw_query);
+    $trap = new PhutilErrorTrap();
+
+    $result = @$conn->query($raw_query);
+
+    $err = $trap->getErrorsAsString();
+    $trap->destroy();
+
+    // See T13238 and PHI1014. Sometimes, the call to "$conn->query()" may fail
+    // without setting an error code on the connection. One way to reproduce
+    // this is to use "LOAD DATA LOCAL INFILE" with "mysqli.allow_local_infile"
+    // disabled.
+
+    // If we have no result and no error code, raise a synthetic query error
+    // with whatever error message was raised as a local PHP warning.
+
+    if (!$result) {
+      $error_code = $this->getErrorCode($conn);
+      if (!$error_code) {
+        if (strlen($err)) {
+          $message = $err;
+         } else {
+          $message = pht(
+            'Call to "mysqli->query()" failed, but did not set an error '.
+            'code or emit an error message.');
+        }
+        $this->throwQueryCodeException(777777, $message);
+      }
+    }
+
+    return $result;
   }
 
   protected function rawQueries(array $raw_queries) {

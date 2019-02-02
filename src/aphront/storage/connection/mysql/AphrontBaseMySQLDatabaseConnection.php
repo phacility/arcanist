@@ -152,7 +152,10 @@ abstract class AphrontBaseMySQLDatabaseConnection
     return $result;
   }
 
-  public function executeRawQuery($raw_query) {
+  public function executeQuery(PhutilQueryString $query) {
+    $display_query = $query->getMaskedString();
+    $raw_query = $query->getUnmaskedString();
+
     $this->lastResult = null;
     $retries = max(1, $this->getConfiguration('retries', 3));
     while ($retries--) {
@@ -165,7 +168,7 @@ abstract class AphrontBaseMySQLDatabaseConnection
           array(
             'type'    => 'query',
             'config'  => $this->configuration,
-            'query'   => $raw_query,
+            'query'   => $display_query,
             'write'   => $is_write,
           ));
 
@@ -297,10 +300,10 @@ abstract class AphrontBaseMySQLDatabaseConnection
         throw new AphrontConnectionLostQueryException($message);
       case 2006: // Gone Away
         $more = pht(
-          "This error may occur if your MySQL '%s' or '%s' ".
-          "configuration values are set too low.",
-          'wait_timeout',
-          'max_allowed_packet');
+          'This error may occur if your configured MySQL "wait_timeout" or '.
+          '"max_allowed_packet" values are too small. This may also indicate '.
+          'that something used the MySQL "KILL <process>" command to kill '.
+          'the connection running the query.');
         throw new AphrontConnectionLostQueryException("{$message}\n\n{$more}");
       case 1213: // Deadlock
         throw new AphrontDeadlockQueryException($message);

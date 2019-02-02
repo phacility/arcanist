@@ -1014,7 +1014,19 @@ function phutil_fwrite_nonblocking_stream($stream, $bytes) {
   $write = array($stream);
   $except = array();
 
-  @stream_select($read, $write, $except, 0);
+  $result = @stream_select($read, $write, $except, 0);
+  if ($result === false) {
+    // See T13243. If the select is interrupted by a signal, it may return
+    // "false" indicating an underlying EINTR condition. In this case, the
+    // results (notably, "$write") are not usable because "stream_select()"
+    // didn't update them.
+
+    // In this case, treat this stream as blocked and tell the caller to
+    // retry, since EINTR is the only condition we're currently aware of that
+    // can cause "fread()" to return "0" and "stream_select()" to return
+    // "false" on the same stream.
+    return 0;
+  }
 
   if (!$write) {
     // The stream isn't writable, so we conclude that it probably really is
@@ -1134,6 +1146,29 @@ function phutil_units($description) {
   } else {
     return $quantity * $factor;
   }
+}
+
+
+/**
+ * Compute the number of microseconds that have elapsed since an earlier
+ * timestamp (from `microtime(true)`).
+ *
+ * @param double Microsecond-precision timestamp, from `microtime(true)`.
+ * @return int Elapsed microseconds.
+ */
+function phutil_microseconds_since($timestamp) {
+  if (!is_float($timestamp)) {
+    throw new Exception(
+      pht(
+        'Argument to "phutil_microseconds_since(...)" should be a value '.
+        'returned from "microtime(true)".'));
+  }
+
+  $delta = (microtime(true) - $timestamp);
+  $delta = 1000000 * $delta;
+  $delta = (int)$delta;
+
+  return $delta;
 }
 
 
@@ -1513,4 +1548,40 @@ function phutil_hashes_are_identical($u, $v) {
   }
 
   return ($bits === 0);
+}
+
+
+/**
+ * Build a query string from a dictionary.
+ *
+ * @param map<string, string> Dictionary of parameters.
+ * @return string HTTP query string.
+ */
+function phutil_build_http_querystring(array $parameters) {
+  // We want to encode in RFC3986 mode, but "http_build_query()" did not get
+  // a flag for that mode until PHP 5.4.0. This is equivalent to calling
+  // "http_build_query()" with the "PHP_QUERY_RFC3986" flag.
+
+  $query = array();
+  foreach ($parameters as $key => $value) {
+    $query[] = rawurlencode($key).'='.rawurlencode($value);
+  }
+  $query = implode($query, '&');
+
+  return $query;
+}
+
+function phutil_decode_mime_header($header) {
+  if (function_exists('iconv_mime_decode')) {
+    return iconv_mime_decode($header, 0, 'UTF-8');
+  }
+
+  if (function_exists('mb_decode_mimeheader')) {
+    return mb_decode_mimeheader($header);
+  }
+
+  throw new Exception(
+    pht(
+      'Unable to decode MIME header: install "iconv" or "mbstring" '.
+      'extension.'));
 }
