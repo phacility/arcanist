@@ -141,11 +141,11 @@ def main(stdscr):
 
     height, width = stdscr.getmaxyx()
 
-    if height < 15 or width < 30:
+    if height < 15 or width < 32:
         raise PowerOverwhelmingException(
-            "Your computer is not powerful enough to run 'arc anoid'. "
-            "It must support at least 30 columns and 15 rows of next-gen "
-            "full-color 3D graphics.")
+            'Your computer is not powerful enough to run "arc anoid". '
+            'It must support at least 32 columns and 15 rows of next-gen '
+            'full-color 3D graphics.')
 
     status = curses.newwin(1, width, 0, 0)
     height -= 1
@@ -194,7 +194,15 @@ def main(stdscr):
         status.addstr('%s/%s ' % (Block.killed, Block.total), curses.A_BOLD)
         status.addch(curses.ACS_VLINE)
         status.addstr(' DEATHS: ', curses.A_BOLD | curses.color_pair(4))
-        status.addstr('%s ' % Ball.killed, curses.A_BOLD)
+
+        # See T8693. At the minimum display size, we only have room to render
+        # two characters for the death count, so just display "99" if the
+        # player has more than 99 deaths.
+        display_deaths = Ball.killed
+        if (display_deaths > 99):
+            display_deaths = 99
+
+        status.addstr('%s ' % display_deaths, curses.A_BOLD)
         status.addch(curses.ACS_LTEE)
 
         if Block.killed == Block.total:
