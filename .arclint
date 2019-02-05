@@ -42,6 +42,10 @@
     "xhpast": {
       "type": "xhpast",
       "include": "(\\.php$)",
+      "exclude": [
+          "(^src/unit/engine/ConfigurableGolangTestEngine.php$)",
+          "(^src/unit/engine/ConfigurablePytestTestEngine.php$)"
+      ],
       "standard": "phutil.xhpast"
     }
   }
