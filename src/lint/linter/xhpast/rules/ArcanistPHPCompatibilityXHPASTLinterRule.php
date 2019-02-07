@@ -70,7 +70,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
           $symbol = $params->getChildByIndex(0);
 
           if (!$symbol->isStaticScalar()) {
-            continue;
+            break;
           }
 
           $symbol_name = $symbol->evalStatic();

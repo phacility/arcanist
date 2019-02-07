@@ -1,6 +1,6 @@
 <?php
 
-final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
+final class ConfigurableGolangTestEngine extends UberConfigurableTestEngine {
 
   private $projectRoot;
 
@@ -18,10 +18,7 @@ final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
   }
 
   public function buildTestFuture($junit_tmp, $cover_tmp) {
-    $paths = $this->getPaths();
-    $config_manager = $this->getConfigurationManager();
-    $coverage_command = $config_manager
-      ->getConfigFromAnySource('unit.golang.command');
+    $coverage_command = $this->getCoverageCommand('unit.golang.command');
     $cmd_line = csprintf($coverage_command, $junit_tmp, $cover_tmp);
 
     $future = new ExecFuture('%C', $cmd_line);
@@ -53,7 +50,6 @@ final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
     $coverage_dom = new DOMDocument();
     $coverage_dom->loadXML($coverage_data);
 
-    $paths = $this->getPaths();
     $reports = array();
     $classes = $coverage_dom->getElementsByTagName('class');
 
@@ -79,15 +75,14 @@ final class ConfigurableGolangTestEngine extends ArcanistUnitTestEngine {
       for ($ii = 0; $ii < $lines->length; $ii++) {
         $line = $lines->item($ii);
 
-        $next_line = intval($line->getAttribute('number'));
+        $next_line = (int)$line->getAttribute('number');
         for ($start_line; $start_line < $next_line; $start_line++) {
             $coverage .= 'N';
         }
 
-        if (intval($line->getAttribute('hits')) == 0) {
+        if ((int)$line->getAttribute('hits') == 0) {
             $coverage .= 'U';
-        }
-        else if (intval($line->getAttribute('hits')) > 0) {
+        } else if ((int)$line->getAttribute('hits') > 0) {
             $coverage .= 'C';
         }
 
