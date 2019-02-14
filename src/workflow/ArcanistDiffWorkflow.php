@@ -1820,17 +1820,56 @@ EOTEXT
           $this->checkRevisionOwnership(head($result));
           break;
         case 'reviewers':
-          $untils = array();
+          $away = array();
           foreach ($result as $user) {
-            if (idx($user, 'currentStatus') == 'away') {
-              $untils[] = $user['currentStatusUntil'];
+            if (idx($user, 'currentStatus') != 'away') {
+              continue;
             }
+
+            $username = $user['userName'];
+            $real_name = $user['realName'];
+
+            if (strlen($real_name)) {
+              $name = pht('%s (%s)', $username, $real_name);
+            } else {
+              $name = pht('%s', $username);
+            }
+
+            $away[] = array(
+              'name' => $name,
+              'until' => $user['currentStatusUntil'],
+            );
           }
-          if (count($untils) == count($reviewers)) {
-            $until = date('l, M j Y', min($untils));
-            $confirm = pht(
-              'All reviewers are away until %s. Continue anyway?',
-              $until);
+
+          if ($away) {
+            if (count($away) == count($reviewers)) {
+              $earliest_return = min(ipull($away, 'until'));
+
+              $message = pht(
+                'All reviewers are away until %s:',
+                date('l, M j Y', $earliest_return));
+            } else {
+              $message = pht('Some reviewers are currently away:');
+            }
+
+            echo tsprintf(
+              "%s\n\n",
+              $message);
+
+            $list = id(new PhutilConsoleList());
+            foreach ($away as $spec) {
+              $list->addItem(
+                pht(
+                  '%s (until %s)',
+                  $spec['name'],
+                  date('l, M j Y', $spec['until'])));
+            }
+
+            echo tsprintf(
+              '%B',
+              $list->drawConsoleString());
+
+            $confirm = pht('Continue even though reviewers are unavailable?');
             if (!phutil_console_confirm($confirm)) {
               throw new ArcanistUsageException(
                 pht('Specify available reviewers and retry.'));
