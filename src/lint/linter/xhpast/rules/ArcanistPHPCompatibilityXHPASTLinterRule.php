@@ -26,6 +26,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
     $whitelist = array(
       'class'    => array(),
       'function' => array(),
+      'constant' => array(),
     );
 
     $conditionals = $root->selectDescendantsOfType('n_IF');
@@ -51,6 +52,7 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
         case 'class_exists':
         case 'function_exists':
         case 'interface_exists':
+        case 'defined':
           $type = null;
           switch ($function_name) {
             case 'class_exists':
@@ -63,6 +65,10 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
 
             case 'interface_exists':
               $type = 'interface';
+              break;
+
+            case 'defined':
+              $type = 'constant';
               break;
           }
 
@@ -98,7 +104,6 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       $min = idx($version, 'php.min');
       $max = idx($version, 'php.max');
 
-      // Check if whitelisted.
       $whitelisted = false;
       foreach (idx($whitelist['function'], $name, array()) as $range) {
         if (array_intersect($range, array_keys($node->getTokens()))) {
@@ -178,18 +183,18 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       $version = idx($compat_info['classes'], $name, $version);
       $min = idx($version, 'php.min');
       $max = idx($version, 'php.max');
-        // Check if whitelisted.
-        $whitelisted = false;
-        foreach (idx($whitelist['class'], $name, array()) as $range) {
-          if (array_intersect($range, array_keys($node->getTokens()))) {
-            $whitelisted = true;
-            break;
-          }
-        }
 
-        if ($whitelisted) {
-          continue;
+      $whitelisted = false;
+      foreach (idx($whitelist['class'], $name, array()) as $range) {
+        if (array_intersect($range, array_keys($node->getTokens()))) {
+          $whitelisted = true;
+          break;
         }
+      }
+
+      if ($whitelisted) {
+        continue;
+      }
 
       if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
@@ -224,6 +229,18 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       $version = idx($compat_info['constants'], $name, array());
       $min = idx($version, 'php.min');
       $max = idx($version, 'php.max');
+
+      $whitelisted = false;
+      foreach (idx($whitelist['constant'], $name, array()) as $range) {
+        if (array_intersect($range, array_keys($node->getTokens()))) {
+          $whitelisted = true;
+          break;
+        }
+      }
+
+      if ($whitelisted) {
+        continue;
+      }
 
       if ($min && version_compare($min, $this->version, '>')) {
         $this->raiseLintAtNode(
