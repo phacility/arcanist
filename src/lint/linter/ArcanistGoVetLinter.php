@@ -26,9 +26,9 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
   public function getDefaultBinary() {
     $binary = 'go';
     if (Filesystem::binaryExists($binary)) {
-      // Vet is only accessible through 'go vet' or 'go tool vet'
+      // Vet is only accessible through 'go vet'
       // Let's manually try to find out if it's installed.
-      list($err, $stdout, $stderr) = exec_manual('go tool vet');
+      list($err, $stdout, $stderr) = exec_manual('go vet');
       if ($err === 3) {
         throw new ArcanistMissingLinterException(
           sprintf(
