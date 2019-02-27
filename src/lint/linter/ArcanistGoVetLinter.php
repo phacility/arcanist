@@ -53,7 +53,7 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array('tool', 'vet');
+    return array('vet');
   }
 
   public function getVersion() {
@@ -90,5 +90,4 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
 
     return $messages;
   }
-
 }
