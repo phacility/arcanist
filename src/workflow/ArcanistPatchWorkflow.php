@@ -741,21 +741,26 @@ EOTEXT
       $repository_api->execPassthru('submodule update --init --recursive');
 
       if ($this->shouldCommit()) {
+        $flags = array();
         if ($bundle->getFullAuthor()) {
-          $author_cmd = csprintf('--author=%s', $bundle->getFullAuthor());
-        } else {
-          $author_cmd = '';
+          $flags[] = csprintf('--author=%s', $bundle->getFullAuthor());
         }
 
         $commit_message = $this->getCommitMessage($bundle);
+
         $future = $repository_api->execFutureLocal(
-          'commit -a %C -F - --no-verify',
-          $author_cmd);
+          'commit -a %Ls -F - --no-verify',
+          $flags);
         $future->write($commit_message);
         $future->resolvex();
-        $verb = pht('committed');
+
+        $this->writeOkay(
+          pht('COMMITTED'),
+          pht('Successfully committed patch.'));
       } else {
-        $verb = pht('applied');
+        $this->writeOkay(
+          pht('APPLIED'),
+          pht('Successfully applied patch.'));
       }
 
       if ($this->canBranch() &&
@@ -765,18 +770,18 @@ EOTEXT
         // See PHI1083 and PHI648. Synchronize submodule state after mutating
         // the working copy.
 
-        $repository_api->execxLocal('checkout %s', $original_branch);
+        $repository_api->execxLocal('checkout %s --', $original_branch);
         $repository_api->execPassthru('submodule update --init --recursive');
 
         $ex = null;
         try {
-          $repository_api->execxLocal('cherry-pick %s', $new_branch);
+          $repository_api->execxLocal('cherry-pick -- %s', $new_branch);
           $repository_api->execPassthru('submodule update --init --recursive');
         } catch (Exception $ex) {
           // do nothing
         }
 
-        $repository_api->execxLocal('branch -D %s', $new_branch);
+        $repository_api->execxLocal('branch -D -- %s', $new_branch);
 
         if ($ex) {
           echo phutil_console_format(
@@ -786,10 +791,6 @@ EOTEXT
         }
       }
 
-      echo phutil_console_format(
-        "<bg:green>** %s **</bg> %s\n",
-        pht('OKAY'),
-        pht('Successfully %s patch.', $verb));
     } else if ($repository_api instanceof ArcanistMercurialAPI) {
       $future = $repository_api->execFutureLocal('import --no-commit -');
       $future->write($bundle->toGitPatch());
