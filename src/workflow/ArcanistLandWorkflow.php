@@ -1369,6 +1369,19 @@ EOTEXT
    * before landing if it does.
    */
   private function checkForBuildables($diff_phid) {
+    // Try to use the more modern check which respects the "Warn on Land"
+    // behavioral flag on build plans if we can. This newer check won't work
+    // unless the server is running code from March 2019 or newer since the
+    // API methods we need won't exist yet. We'll fall back to the older check
+    // if this one doesn't work out.
+    try {
+      $this->checkForBuildablesWithPlanBehaviors($diff_phid);
+    } catch (ArcanistUserAbortException $abort_ex) {
+      throw $abort_ex;
+    } catch (Exception $ex) {
+      // Continue with the older approach, below.
+    }
+
     // NOTE: Since Harbormaster is still beta and this stuff all got added
     // recently, just bail if we can't find a buildable. This is just an
     // advisory check intended to prevent human error.
@@ -1443,6 +1456,166 @@ EOTEXT
       pht('You can review build details here:'),
       pht('Harbormaster URI'),
       $buildable['uri']);
+
+    if (!phutil_console_confirm($prompt)) {
+      throw new ArcanistUserAbortException();
+    }
+  }
+
+  private function checkForBuildablesWithPlanBehaviors($diff_phid) {
+    // TODO: These queries should page through all results instead of fetching
+    // only the first page, but we don't have good primitives to support that
+    // in "master" yet.
+
+    $this->writeInfo(
+      pht('BUILDS'),
+      pht('Checking build status...'));
+
+    $raw_buildables = $this->getConduit()->callMethodSynchronous(
+      'harbormaster.buildable.search',
+      array(
+        'constraints' => array(
+          'objectPHIDs' => array(
+            $diff_phid,
+          ),
+          'manual' => false,
+        ),
+      ));
+
+    if (!$raw_buildables['data']) {
+      return;
+    }
+
+    $buildables = $raw_buildables['data'];
+    $buildable_phids = ipull($buildables, 'phid');
+
+    $raw_builds = $this->getConduit()->callMethodSynchronous(
+      'harbormaster.build.search',
+      array(
+        'constraints' => array(
+          'buildables' => $buildable_phids,
+        ),
+      ));
+
+    if (!$raw_builds['data']) {
+      return;
+    }
+
+    $builds = array();
+    foreach ($raw_builds['data'] as $raw_build) {
+      $build_ref = ArcanistBuildRef::newFromConduit($raw_build);
+      $build_phid = $build_ref->getPHID();
+      $builds[$build_phid] = $build_ref;
+    }
+
+    $plan_phids = mpull($builds, 'getBuildPlanPHID');
+    $plan_phids = array_values($plan_phids);
+
+    $raw_plans = $this->getConduit()->callMethodSynchronous(
+      'harbormaster.buildplan.search',
+      array(
+        'constraints' => array(
+          'phids' => $plan_phids,
+        ),
+      ));
+
+    $plans = array();
+    foreach ($raw_plans['data'] as $raw_plan) {
+      $plan_ref = ArcanistBuildPlanRef::newFromConduit($raw_plan);
+      $plan_phid = $plan_ref->getPHID();
+      $plans[$plan_phid] = $plan_ref;
+    }
+
+    $ongoing_builds = array();
+    $failed_builds = array();
+
+    $builds = msort($builds, 'getStatusSortVector');
+    foreach ($builds as $build_ref) {
+      $plan = idx($plans, $build_ref->getBuildPlanPHID());
+      if (!$plan) {
+        continue;
+      }
+
+      $plan_behavior = $plan->getBehavior('arc-land', 'always');
+      $if_building = ($plan_behavior == 'building');
+      $if_complete = ($plan_behavior == 'complete');
+      $if_never = ($plan_behavior == 'never');
+
+      // If the build plan "Never" warns when landing, skip it.
+      if ($if_never) {
+        continue;
+      }
+
+      // If the build plan warns when landing "If Complete" but the build is
+      // not complete, skip it.
+      if ($if_complete && !$build_ref->isComplete()) {
+        continue;
+      }
+
+      // If the build plan warns when landing "If Building" but the build is
+      // complete, skip it.
+      if ($if_building && $build_ref->isComplete()) {
+        continue;
+      }
+
+      // Ignore passing builds.
+      if ($build_ref->isPassed()) {
+        continue;
+      }
+
+      if (!$build_ref->isComplete()) {
+        $ongoing_builds[] = $build_ref;
+      } else {
+        $failed_builds[] = $build_ref;
+      }
+    }
+
+    if (!$ongoing_builds && !$failed_builds) {
+      return;
+    }
+
+    if ($failed_builds) {
+      $this->writeWarn(
+        pht('BUILD FAILURES'),
+        pht(
+          'Harbormaster failed to build the active diff for this revision:'));
+      $prompt = pht('Land revision anyway, despite build failures?');
+    } else if ($ongoing_builds) {
+      $this->writeWarn(
+        pht('ONGOING BUILDS'),
+        pht(
+          'Harbormaster is still building the active diff for this revision:'));
+      $prompt = pht('Land revision anyway, despite ongoing build?');
+    }
+
+    $show_builds = array_merge($failed_builds, $ongoing_builds);
+    echo "\n";
+    foreach ($show_builds as $build_ref) {
+      $ansi_color = $build_ref->getStatusANSIColor();
+      $status_name = $build_ref->getStatusName();
+      $object_name = $build_ref->getObjectName();
+      $build_name = $build_ref->getName();
+
+      echo tsprintf(
+        "    **<bg:".$ansi_color."> %s </bg>** %s: %s\n",
+        $status_name,
+        $object_name,
+        $build_name);
+    }
+
+    echo tsprintf(
+      "\n%s\n\n",
+      pht('You can review build details here:'));
+
+    foreach ($buildables as $buildable) {
+      $buildable_uri = id(new PhutilURI($this->getConduitURI()))
+        ->setPath(sprintf('/B%d', $buildable['id']));
+
+      echo tsprintf(
+        "          **%s**: __%s__\n",
+        pht('Buildable %d', $buildable['id']),
+        $buildable_uri);
+    }
 
     if (!phutil_console_confirm($prompt)) {
       throw new ArcanistUserAbortException();
