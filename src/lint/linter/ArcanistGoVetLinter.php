@@ -10,4 +10,10 @@ final class ArcanistGoVetLinter extends ArcanistNoopLinter {
   public function getLinterConfigurationName() {
     return 'govet';
   }
+
+  public function getLinterConfigurationOptions() {
+    // govet used to be a linter with options. noop defaults to no options.
+    // Restore by using the external linter superclass's default.
+    return ArcanistExternalLinter::getLinterConfigurationOptions();
+  }
 }
