@@ -89,6 +89,9 @@ final class ArcanistDiffUtils extends Phobject {
     $highlight_o = '<span class="bright">';
     $highlight_c = '</span>';
 
+    $depth_in = '<span class="depth-in">';
+    $depth_out = '<span class="depth-out">';
+
     $is_html = false;
     if ($str instanceof PhutilSafeHTML) {
       $is_html = true;
@@ -107,11 +110,23 @@ final class ArcanistDiffUtils extends Phobject {
           $stack = array_shift($intra_stack);
           $s = $e;
           $e += $stack[1];
-        } while ($stack[0] == 0);
+        } while ($stack[0] === 0);
+
+        switch ($stack[0]) {
+          case '>':
+            $open_tag = $depth_in;
+            break;
+          case '<':
+            $open_tag = $depth_out;
+            break;
+          default:
+            $open_tag = $highlight_o;
+            break;
+        }
       }
 
       if (!$highlight && !$tag && !$ent && $p == $s) {
-        $buf .= $highlight_o;
+        $buf .= $open_tag;
         $highlight = true;
       }
 
@@ -139,7 +154,7 @@ final class ArcanistDiffUtils extends Phobject {
       if ($tag && $str[$i] == '>') {
         $tag = false;
         if ($highlight) {
-          $buf .= $highlight_o;
+          $buf .= $open_tag;
         }
       }
 

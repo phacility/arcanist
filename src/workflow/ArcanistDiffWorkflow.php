@@ -1969,17 +1969,56 @@ EOTEXT
           $this->checkRevisionOwnership(head($result));
           break;
         case 'reviewers':
-          $untils = array();
+          $away = array();
           foreach ($result as $user) {
-            if (idx($user, 'currentStatus') == 'away') {
-              $untils[] = $user['currentStatusUntil'];
+            if (idx($user, 'currentStatus') != 'away') {
+              continue;
             }
+
+            $username = $user['userName'];
+            $real_name = $user['realName'];
+
+            if (strlen($real_name)) {
+              $name = pht('%s (%s)', $username, $real_name);
+            } else {
+              $name = pht('%s', $username);
+            }
+
+            $away[] = array(
+              'name' => $name,
+              'until' => $user['currentStatusUntil'],
+            );
           }
-          if (count($untils) == count($reviewers)) {
-            $until = date('l, M j Y', min($untils));
-            $confirm = pht(
-              'All reviewers are away until %s. Continue anyway?',
-              $until);
+
+          if ($away) {
+            if (count($away) == count($reviewers)) {
+              $earliest_return = min(ipull($away, 'until'));
+
+              $message = pht(
+                'All reviewers are away until %s:',
+                date('l, M j Y', $earliest_return));
+            } else {
+              $message = pht('Some reviewers are currently away:');
+            }
+
+            echo tsprintf(
+              "%s\n\n",
+              $message);
+
+            $list = id(new PhutilConsoleList());
+            foreach ($away as $spec) {
+              $list->addItem(
+                pht(
+                  '%s (until %s)',
+                  $spec['name'],
+                  date('l, M j Y', $spec['until'])));
+            }
+
+            echo tsprintf(
+              '%B',
+              $list->drawConsoleString());
+
+            $confirm = pht('Continue even though reviewers are unavailable?');
             if (!phutil_console_confirm($confirm)) {
               throw new ArcanistUsageException(
                 pht('Specify available reviewers and retry.'));
@@ -2289,8 +2328,8 @@ EOTEXT
     // we always get this 100% right, we're just trying to do something
     // reasonable.
 
-    $local = $this->loadActiveLocalCommitInfo();
-    $hashes = ipull($local, null, 'commit');
+    $hashes = $this->loadActiveDiffLocalCommitHashes();
+    $hashes = array_fuse($hashes);
 
     $usable = array();
     foreach ($commit_messages as $message) {
@@ -2337,8 +2376,8 @@ EOTEXT
       return null;
     }
 
-    $local = $this->loadActiveLocalCommitInfo();
-    $hashes = ipull($local, null, 'commit');
+    $hashes = $this->loadActiveDiffLocalCommitHashes();
+    $hashes = array_fuse($hashes);
 
     $usable = array();
     foreach ($messages as $rev => $message) {
@@ -2386,7 +2425,63 @@ EOTEXT
     return implode('', $default);
   }
 
-  private function loadActiveLocalCommitInfo() {
+  private function loadActiveDiffLocalCommitHashes() {
+    // The older "differential.querydiffs" method includes the full diff text,
+    // which can be very slow for large diffs. If we can, try to use
+    // "differential.diff.search" instead.
+
+    // We expect this to fail if the Phabricator version on the server is
+    // older than April 2018 (D19386), which introduced the "commits"
+    // attachment for "differential.revision.search".
+
+    // TODO: This can be optimized if we're able to learn the "revisionPHID"
+    // before we get here. See PHI1104.
+
+    try {
+      $revisions_raw = $this->getConduit()->callMethodSynchronous(
+        'differential.revision.search',
+        array(
+          'constraints' => array(
+            'ids' => array(
+              $this->revisionID,
+            ),
+          ),
+        ));
+
+      $revisions = $revisions_raw['data'];
+      $revision = head($revisions);
+      if ($revision) {
+        $revision_phid = $revision['phid'];
+
+        $diffs_raw = $this->getConduit()->callMethodSynchronous(
+          'differential.diff.search',
+          array(
+            'constraints' => array(
+              'revisionPHIDs' => array(
+                $revision_phid,
+              ),
+            ),
+            'attachments' => array(
+              'commits' => true,
+            ),
+            'limit' => 1,
+          ));
+
+        $diffs = $diffs_raw['data'];
+        $diff = head($diffs);
+
+        if ($diff) {
+          $commits = idxv($diff, array('attachments', 'commits', 'commits'));
+          if ($commits !== null) {
+            $hashes = ipull($commits, 'identifier');
+            return array_values($hashes);
+          }
+        }
+      }
+    } catch (Exception $ex) {
+      // If any of this fails, fall back to the older method below.
+    }
+
     $current_diff = $this->getConduit()->callMethodSynchronous(
       'differential.querydiffs',
       array(
@@ -2395,7 +2490,10 @@ EOTEXT
     $current_diff = head($current_diff);
 
     $properties = idx($current_diff, 'properties', array());
-    return idx($properties, 'local:commits', array());
+    $local = idx($properties, 'local:commits', array());
+    $hashes = ipull($local, 'commit');
+
+    return array_values($hashes);
   }
 
 
