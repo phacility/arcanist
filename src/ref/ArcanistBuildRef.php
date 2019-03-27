@@ -69,6 +69,10 @@ final class ArcanistBuildRef
     return $this->parameters['id'];
   }
 
+  public function getPHID() {
+    return $this->parameters['phid'];
+  }
+
   public function getName() {
     if (isset($this->parameters['fields']['name'])) {
       return $this->parameters['fields']['name'];
@@ -96,11 +100,32 @@ final class ArcanistBuildRef
     return pht('Build %d', $this->getID());
   }
 
+  public function getBuildPlanPHID() {
+    return idxv($this->parameters, array('fields', 'buildPlanPHID'));
+  }
+
+  public function isComplete() {
+    switch ($this->getStatus()) {
+      case 'passed':
+      case 'failed':
+      case 'aborted':
+      case 'error':
+      case 'deadlocked':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public function isPassed() {
+    return ($this->getStatus() === 'passed');
+  }
+
   public function getStatusSortVector() {
     $status = $this->getStatus();
 
     // For now, just sort passed builds first.
-    if ($this->getStatus() == 'passed') {
+    if ($this->isPassed()) {
       $status_class = 1;
     } else {
       $status_class = 2;
