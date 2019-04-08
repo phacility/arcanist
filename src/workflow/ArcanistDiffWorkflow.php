@@ -1956,6 +1956,8 @@ EOTEXT
         ));
     }
 
+    $this->uberValidateMandatoryFields($message); // UBER CODE
+
     foreach (new FutureIterator($futures) as $key => $future) {
       $result = $future->resolve();
       switch ($key) {
@@ -2027,6 +2029,13 @@ EOTEXT
           break;
       }
     }
+  }
+
+  // UBER CODE
+  private function uberValidateMandatoryFields($message) {
+    if (!$message instanceof ArcanistDifferentialCommitMessage) {
+      return;
+    }
 
     $config = $this->getConfigurationManager();
     $mandatory_fields = $config->getConfigFromAnySource(
@@ -2044,7 +2053,7 @@ EOTEXT
       }
     }
   }
-
+  // END UBER CODE
 
   /**
    * @task message
