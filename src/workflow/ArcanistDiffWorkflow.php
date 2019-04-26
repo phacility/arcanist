@@ -201,6 +201,10 @@ EOTEXT
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
       ),
+      'nointeractive' => array(
+        'help' => pht('This is being run by a script, try to make progress '.
+                      'through any non-critical user prompts.'),
+      ),
       'only' => array(
         'help' => pht(
           'Only generate a diff, without running lint, unit tests, or other '.
@@ -2020,10 +2024,14 @@ EOTEXT
               '%B',
               $list->drawConsoleString());
 
-            $confirm = pht('Continue even though reviewers are unavailable?');
-            if (!phutil_console_confirm($confirm)) {
-              throw new ArcanistUsageException(
-                pht('Specify available reviewers and retry.'));
+            if(!$this->getArgument('nointeractive')) {
+              $confirm = pht('Continue even though reviewers are unavailable?');
+              if (!phutil_console_confirm($confirm)) {
+                throw new ArcanistUsageException(
+                  pht('Specify available reviewers and retry.'));
+              }
+            } else {
+              echo tsprintf("Proceeding (due to --nointeractive)\n\n");
             }
           }
           break;
