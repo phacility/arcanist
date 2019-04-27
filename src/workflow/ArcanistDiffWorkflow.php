@@ -1233,7 +1233,10 @@ EOTEXT
       $prompt = $cprDef['prompt'];
       $defaultsToYes = $cprDef['default-to'];
       $resolveScript = $cprDef['resolve-script'];
-      $err = phutil_passthru('%s', $checkScript);
+      $projectRoot = $this->getWorkingCopy()->getProjectRoot();
+      $exec = new PhutilExecPassthru('%s', $checkScript);
+      $exec->setCWD($projectRoot);
+      $err = $exec->execute();
       if ($err == 0) {
         continue; // Nothing to fix
       }
@@ -1247,7 +1250,9 @@ EOTEXT
       }
       // We run the resolution script
       // (with stdin disabled so it can't be interfered with)
-      $err = phutil_passthru('%s < /dev/null', $resolveScript);
+      $exec = new PhutilExecPassthru('%s < /dev/null', $resolveScript);
+      $exec->setCWD($projectRoot);
+      $err = $exec->execute();
       if ($err == 0) {
         echo phutil_console_format(
               "\n\n%s\n\n",
