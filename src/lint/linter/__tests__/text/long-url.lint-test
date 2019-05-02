@@ -1,0 +1,12 @@
+    http://a.particularly.long.host.name.invalid./and/a/long/path
+// https://a.particularly.long.host.name.invalid./and/a/long/path
+# ftp://a.particularly.long.host.name.invalid./and/a/long/path
+A lot of text with just a short http://example.com/ url.
+~~~~~~~~~~
+warning:4:1
+~~~~~~~~~~
+~~~~~~~~~~
+{"config": {
+    "text.max-line-length": 40,
+    "text.allow-long-lines-with-urls": true
+}}

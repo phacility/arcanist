@@ -16,6 +16,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
   const LINT_EMPTY_FILE           = 10;
 
   private $maxLineLength = 80;
+  private $allowLongLinesWithURLs = true;
 
   public function getInfoName() {
     return pht('Basic Text Linter');
@@ -39,6 +40,12 @@ final class ArcanistTextLinter extends ArcanistLinter {
           'Adjust the maximum line length before a warning is raised. By '.
           'default, a warning is raised on lines exceeding 80 characters.'),
       ),
+      'text.allow-long-lines-with-urls' => array(
+        'type' => 'optional bool',
+        'help' => pht(
+          'If true, the default, lines which are too long because of a long '.
+          'URL are allowed.'),
+      ),
     );
 
     return $options + parent::getLinterConfigurationOptions();
@@ -49,10 +56,18 @@ final class ArcanistTextLinter extends ArcanistLinter {
     return $this;
   }
 
+  public function setAllowLongLinesWithURLs($new_length) {
+    $this->allowLongLinesWithURLs = $new_length;
+    return $this;
+  }
+
   public function setLinterConfigurationValue($key, $value) {
     switch ($key) {
       case 'text.max-line-length':
         $this->setMaxLineLength($value);
+        return;
+      case 'text.allow-long-lines-with-urls':
+        $this->setAllowLongLinesWithURLs($value);
         return;
     }
 
@@ -176,12 +191,28 @@ final class ArcanistTextLinter extends ArcanistLinter {
     }
   }
 
+  // Check whether the $line can be over $width characters because it contains
+  // a long URL.
+  private function allowLongLineException($line, $width) {
+    if ($this->allowLongLinesWithURLs &&
+        preg_match('/^(.*)(?:https?|ftp):\/\/\S*(.*)$/', $line, $matches)) {
+      $non_url_text = pcre_replace('/\s+/', '', $matches[1] . $matches[2]);
+      // We want to allow lines like "/* http://long/url */" but we don't want
+      // to allow lines like "# A long sentence with http://short/url" thus
+      // we're limiting number of non-white-space characters outside of the URL
+      // in the line.
+      return strlen($non_url_text) < 10;
+    }
+    return false;
+  }
+
   protected function lintLineLength($path) {
     $lines = explode("\n", $this->getData($path));
 
     $width = $this->maxLineLength;
     foreach ($lines as $line_idx => $line) {
-      if (strlen($line) > $width) {
+      if (strlen($line) > $width &&
+          !$this->allowLongLineException($line, $width)) {
         $this->raiseLintAtLine(
           $line_idx + 1,
           1,
