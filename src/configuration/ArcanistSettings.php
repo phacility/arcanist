@@ -279,12 +279,6 @@ final class ArcanistSettings extends Phobject {
           'unless diff explicitly with `--skip-binaries` option'),
           'default' => true,
       ),
-      'uber.arcanist.use_non_tag_refs' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'If true, arc will use non-tag refs for base and diff, both during arc diff and arc patch'),
-          'default' => false,
-      ),
     );
   }
 
