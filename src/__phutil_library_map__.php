@@ -458,6 +458,7 @@ phutil_register_library_map(array(
     'UberObjCStyleCheckLinter' => 'lint/linter/UberObjCStyleCheckLinter.php',
     'UberPupetLintLinter' => 'lint/linter/UberPupetLintLinter.php',
     'UberPythonImportsLinter' => 'lint/linter/UberPythonImportsLinter.php',
+    'UberRefProvider' => 'workflow/UberRefProvider.php',
     'UberRevertPlanTestEngine' => 'unit/engine/UberRevertPlanTestEngine.php',
     'UberShellCheckLinter' => 'lint/linter/UberShellCheckLinter.php',
     'UberShellCheckLinterTestCase' => 'lint/linter/__tests__/UberShellCheckLinterTestCase.php',
