@@ -12,6 +12,7 @@ final class ArcanistPatchWorkflow extends ArcanistDiffBasedWorkflow {
 
   private $source;
   private $sourceParam;
+  private $uberRefProvider; // UBER CODE
 
   public function getWorkflowName() {
     return 'patch';
@@ -388,6 +389,12 @@ EOTEXT
   }
 
   public function run() {
+    // UBER CODE
+    $this->uberRefProvider = new UberRefProvider(
+      $this->getConfigurationManager()->getConfigFromAnySource('uber.arcanist.use_non_tag_refs', false)
+    );
+    // UBER CODE END
+
     $source = $this->getSource();
     $param = $this->getSourceParam();
     try {
@@ -1193,22 +1200,33 @@ EOTEXT
     return $graph;
   }
 
+  // UBER CODE
   private function pullBaseTagFromStagingArea($id){
     list($success, $message, $staging, $staging_uri) = $this->validateStagingSetup();
     if (!$success) {
       return $message;
     }
     $prefix = idx($staging, 'prefix', 'phabricator');
-    $base_tag = "{$prefix}/base/{$id}";
-    echo pht('Fetching base tag from staging remote')."\n";
+    $base_tag = $this->uberRefProvider->getBaseRefName($prefix, $id);
+    echo pht('Fetching base ref "%s" from staging remote', $base_tag)."\n";
     $err = phutil_passthru(
           'git fetch --tag -n %s %s',
           $staging_uri,
           $base_tag);
+
     if ($err) {
-      $this->writeWarn(pht('STAGING TAG PULL FAILED'),
-          pht('Unable to pull tag from the staging area but proceeding !!'));
+      $base_tag = "{$prefix}/base/{$id}";
+      echo pht('Fetching base tag "%s" from staging remote', $base_tag)."\n";
+      $err = phutil_passthru(
+            'git fetch --tag -n %s %s',
+            $staging_uri,
+            $base_tag);
+      if ($err) {
+        $this->writeWarn(pht('STAGING TAG PULL FAILED'),
+            pht('Unable to pull tag from the staging area but proceeding !!'));
       }
+    }
     return self::SUCCESS;
   }
+  // UBER CODE END
 }
