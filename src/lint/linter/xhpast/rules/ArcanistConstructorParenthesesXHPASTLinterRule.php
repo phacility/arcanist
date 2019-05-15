@@ -20,7 +20,9 @@ final class ArcanistConstructorParenthesesXHPASTLinterRule
       $class  = $node->getChildByIndex(0);
       $params = $node->getChildByIndex(1);
 
-      if ($params->getTypeName() == 'n_EMPTY') {
+      if ($class->getTypeName() != 'n_CLASS_DECLARATION' &&
+        $params->getTypeName() == 'n_EMPTY') {
+
         $this->raiseLintAtNode(
           $class,
           pht('Use parentheses when invoking a constructor.'),
