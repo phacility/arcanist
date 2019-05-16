@@ -17,6 +17,9 @@ final class ArcanistUnnecessaryFinalModifierXHPASTLinterRule
     $classes = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
 
     foreach ($classes as $class) {
+      if ($class->getChildByIndex(0)->getTypeName() == 'n_EMPTY') {
+        continue;
+      }
       $attributes = $class->getChildOfType(0, 'n_CLASS_ATTRIBUTES');
       $is_final = false;
 

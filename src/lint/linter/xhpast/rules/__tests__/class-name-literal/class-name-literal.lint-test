@@ -11,6 +11,12 @@ class MyClass {
     return __CLASS__;
   }
 }
+
+$c = new class {
+  public function someMethod() {
+    return __CLASS__;
+  }
+};
 ~~~~~~~~~~
 advice:5:12
 advice:9:10
@@ -28,3 +34,9 @@ class MyClass {
     return __CLASS__;
   }
 }
+
+$c = new class {
+  public function someMethod() {
+    return __CLASS__;
+  }
+};

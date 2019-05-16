@@ -1376,6 +1376,7 @@ EOTEXT
     // if this one doesn't work out.
     try {
       $this->checkForBuildablesWithPlanBehaviors($diff_phid);
+      return;
     } catch (ArcanistUserAbortException $abort_ex) {
       throw $abort_ex;
     } catch (Exception $ex) {

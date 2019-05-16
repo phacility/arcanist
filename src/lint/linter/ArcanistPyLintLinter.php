@@ -38,7 +38,7 @@ final class ArcanistPyLintLinter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    $regex = '/^pylint (?P<version>\d+\.\d+\.\d+),/';
+    $regex = '/^pylint (?P<version>\d+\.\d+\.\d+)/';
     if (preg_match($regex, $stdout, $matches)) {
       return $matches['version'];
     } else {
