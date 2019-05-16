@@ -114,6 +114,7 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $path_name = idx($config, 'path', $path);
       $engine->setPaths(array($path_name));
 
+      $linter->setEngine($engine);
       $linter->addPath($path_name);
       $linter->addData($path_name, $data);
 

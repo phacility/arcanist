@@ -410,7 +410,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     return csprintf('%s', $path);
   }
 
-  final protected function buildFutures(array $paths) {
+  protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 
     $bin = csprintf('%C %Ls', $executable, $this->getCommandFlags());
@@ -428,7 +428,7 @@ abstract class ArcanistExternalLinter extends ArcanistFutureLinter {
     return $futures;
   }
 
-  final protected function resolveFuture($path, Future $future) {
+  protected function resolveFuture($path, Future $future) {
     list($err, $stdout, $stderr) = $future->resolve();
     if ($err && !$this->shouldExpectCommandErrors()) {
       $future->resolvex();

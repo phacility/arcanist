@@ -3,6 +3,7 @@
 new Foo;
 new Bar();
 new Foo\Bar;
+new class {};
 ~~~~~~~~~~
 advice:3:5
 advice:5:5
@@ -12,3 +13,4 @@ advice:5:5
 new Foo();
 new Bar();
 new Foo\Bar();
+new class {};
