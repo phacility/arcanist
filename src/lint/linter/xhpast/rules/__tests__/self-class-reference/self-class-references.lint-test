@@ -16,7 +16,7 @@ $c = new class {
   }
 };
 ~~~~~~~~~~
-warning:5:16
+warning:5:16:XHP95:Self Class Reference
 ~~~~~~~~~~
 <?php
 

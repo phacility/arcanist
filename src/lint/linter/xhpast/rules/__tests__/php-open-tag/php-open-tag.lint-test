@@ -3,7 +3,7 @@ garbage garbage
 
 ?>
 ~~~~~~~~~~
-error:1:1
+error:1:1:XHP15:Expected Open Tag
 ~~~~~~~~~~
 garbage garbage
 <?php

@@ -1,6 +1,6 @@
 The quick brown fox jumps over the lazy dog.
 ~~~~~~~~~~
-warning:1:1
+warning:1:1:TXT3:Line Too Long
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"config": {"text.max-line-length": 40}}

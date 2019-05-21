@@ -9,10 +9,10 @@ continue 0;
 continue 1;
 continue 1 + foo() * $bar;
 ~~~~~~~~~~
-error:4:7
-error:6:7
-error:8:10
-error:10:10
+error:4:7:XHP45:PHP Compatibility
+error:6:7:XHP45:PHP Compatibility
+error:8:10:XHP45:PHP Compatibility
+error:10:10:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"config": {"xhpast.php-version": "5.4.0"}}

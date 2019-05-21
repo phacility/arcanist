@@ -2,4 +2,4 @@ function main() {
   return 'Hello, World!';
 };
 ~~~~~~~~~~
-warning:3:2
+warning:3:2:W032

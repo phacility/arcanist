@@ -2,4 +2,4 @@
 
 function __lambda_func() {}
 ~~~~~~~~~~
-error:3:1
+error:3:1:XHP68:`__lambda_func` Function

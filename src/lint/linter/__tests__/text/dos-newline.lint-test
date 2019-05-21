@@ -1,7 +1,7 @@
 The quick brown fox
 jumps over the lazy dog.
 ~~~~~~~~~~
-error:1:1
+error:1:1:TXT1:DOS Newlines
 ~~~~~~~~~~
 The quick brown fox
 jumps over the lazy dog.

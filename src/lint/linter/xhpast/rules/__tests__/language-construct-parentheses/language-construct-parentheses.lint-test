@@ -18,16 +18,16 @@ require ('baz.php');
 require_once ('baz.php');
 echo ('baz');
 ~~~~~~~~~~
-warning:9:8
-warning:10:13
-warning:11:8
-warning:12:13
-warning:13:5
-warning:15:9
-warning:16:14
-warning:17:9
-warning:18:14
-warning:19:6
+warning:9:8:XHP46:Language Construct Parentheses
+warning:10:13:XHP46:Language Construct Parentheses
+warning:11:8:XHP46:Language Construct Parentheses
+warning:12:13:XHP46:Language Construct Parentheses
+warning:13:5:XHP46:Language Construct Parentheses
+warning:15:9:XHP46:Language Construct Parentheses
+warning:16:14:XHP46:Language Construct Parentheses
+warning:17:9:XHP46:Language Construct Parentheses
+warning:18:14:XHP46:Language Construct Parentheses
+warning:19:6:XHP46:Language Construct Parentheses
 ~~~~~~~~~~
 <?php
 

@@ -24,4 +24,4 @@ abstract class SomeAbstractClass {
   abstract public function __toString();
 }
 ~~~~~~~~~~
-error:6:7
+error:6:7:XHP67:Throwing Exception in `__toString` Method

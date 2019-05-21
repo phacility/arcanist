@@ -13,7 +13,7 @@ pht(
   "This string also requires \123\345 double quotes, but ".
   "this string does not. Here, they are used for consistency.");
 ~~~~~~~~~~
-advice:4:1
+advice:4:1:XHP41:Unnecessary Double Quotes
 ~~~~~~~~~~
 <?php
 

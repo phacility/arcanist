@@ -3,5 +3,5 @@
     </lang>
 </languages>
 ~~~~~~~~~~
-error:3:16
-error:4:1
+error:3:16:XML76:LibXML Error
+error:4:1:XML5:LibXML Error

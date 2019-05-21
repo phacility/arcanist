@@ -4,8 +4,8 @@ echo (double)0;
 echo (int) 1;
 echo (string)  2;
 ~~~~~~~~~~
-advice:4:11
-advice:5:14
+advice:4:11:XHP66:Cast Spacing
+advice:5:14:XHP66:Cast Spacing
 ~~~~~~~~~~
 <?php
 

@@ -3,4 +3,4 @@ class SomeClass {
   abstract public function someMethod();
 }
 ~~~~~~~~~~
-error:2:1
+error:2:1:XHP113:`class` Containing `abstract` Methods Must Be Declared `abstract`

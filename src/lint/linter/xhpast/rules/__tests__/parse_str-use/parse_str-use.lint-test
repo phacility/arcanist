@@ -4,4 +4,4 @@ $params = array();
 parse_str('foo=bar', $params);
 parse_str('foo=bar');
 ~~~~~~~~~~
-error:5:1
+error:5:1:XHP80:Questionable Use of `parse_str`

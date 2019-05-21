@@ -4,4 +4,4 @@ interface SomeInterface {
   abstract public function someMethod();
 }
 ~~~~~~~~~~
-error:4:3
+error:4:3:XHP118:`interface` Methods Cannot Be Marked `abstract`

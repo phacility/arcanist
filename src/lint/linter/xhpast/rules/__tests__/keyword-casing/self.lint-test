@@ -10,7 +10,7 @@ class Foo extends Bar {
   }
 }
 ~~~~~~~~~~
-warning:5:12
+warning:5:12:XHP40:Keyword Conventions
 ~~~~~~~~~~
 <?php
 

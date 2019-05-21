@@ -11,8 +11,8 @@ function g()
 
 function h(){}
 ~~~~~~~~~~
-warning:7:13
-warning:12:13
+warning:7:13:XHP24:Brace Placement
+warning:12:13:XHP24:Brace Placement
 ~~~~~~~~~~
 <?php
 

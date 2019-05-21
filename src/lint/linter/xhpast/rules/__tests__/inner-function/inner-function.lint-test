@@ -11,4 +11,4 @@ function my_func($foo) {
   function () {};
 }
 ~~~~~~~~~~
-warning:5:5
+warning:5:5:XHP59:Inner Functions

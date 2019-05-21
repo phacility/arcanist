@@ -1,5 +1,5 @@
 /* jshint maxerr: 1 */
 console.log('foobar')
 ~~~~~~~~~~
-disabled:2:22
-warning:2:22
+disabled:2:22:E043
+warning:2:22:W033

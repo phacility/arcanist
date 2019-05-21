@@ -16,10 +16,10 @@ array(
   $x=>$y,
 );
 ~~~~~~~~~~
-warning:4:9
-warning:5:10
-warning:6:9
-warning:16:5
+warning:4:9:XHP27:Space Around Binary Operator
+warning:5:10:XHP27:Space Around Binary Operator
+warning:6:9:XHP27:Space Around Binary Operator
+warning:16:5:XHP27:Space Around Binary Operator
 ~~~~~~~~~~
 <?php
 

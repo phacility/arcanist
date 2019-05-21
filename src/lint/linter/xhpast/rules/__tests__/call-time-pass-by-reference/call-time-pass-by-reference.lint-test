@@ -25,9 +25,9 @@ $foo(&$myvar);
 array_walk(array(), function () use (&$x) {});
 MyClass::myfunc(array(&$x, &$y));
 ~~~~~~~~~~
-error:10:8
-error:13:15
-error:16:17
-error:19:24
-error:19:39
-error:23:6
+error:10:8:XHP53:Call-Time Pass-By-Reference
+error:13:15:XHP53:Call-Time Pass-By-Reference
+error:16:17:XHP53:Call-Time Pass-By-Reference
+error:19:24:XHP53:Call-Time Pass-By-Reference
+error:19:39:XHP53:Call-Time Pass-By-Reference
+error:23:6:XHP53:Call-Time Pass-By-Reference

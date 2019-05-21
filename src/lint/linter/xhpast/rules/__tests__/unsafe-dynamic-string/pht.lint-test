@@ -21,11 +21,11 @@ $a
 EOT
 );
 ~~~~~~~~~~
-error:6:1
-error:8:1
-error:9:1
-error:11:1
-error:19:1
+error:6:1:XHP86:Unsafe Usage of Dynamic String
+error:8:1:XHP86:Unsafe Usage of Dynamic String
+error:9:1:XHP86:Unsafe Usage of Dynamic String
+error:11:1:XHP86:Unsafe Usage of Dynamic String
+error:19:1:XHP86:Unsafe Usage of Dynamic String
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

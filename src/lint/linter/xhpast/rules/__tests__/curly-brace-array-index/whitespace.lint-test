@@ -1,7 +1,7 @@
 <?php
 $x { 'key' /* comment */ };
 ~~~~~~~~~~
-warning:2:1
+warning:2:1:XHP119:Curly Brace Array Index
 ~~~~~~~~~~
 <?php
 $x [ 'key' /* comment */ ];

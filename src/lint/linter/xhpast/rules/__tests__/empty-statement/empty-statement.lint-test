@@ -10,8 +10,8 @@ function z() {
 
 }
 ~~~~~~~~~~
-advice:7:14
-advice:8:14
+advice:7:14:XHP47:Empty Block Statement
+advice:8:14:XHP47:Empty Block Statement
 ~~~~~~~~~~
 <?php
 

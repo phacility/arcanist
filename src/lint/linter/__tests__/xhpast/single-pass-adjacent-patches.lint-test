@@ -6,8 +6,12 @@ function f(                                                             ) {
   g( );
 }
 ~~~~~~~~~~
-warning:5:12
-warning:6:5
+warning:5:12:XHP38:Declaration Formatting
+warning:5:12:XHP25:Spaces Inside Parentheses
+warning:5:12:XHP25:Spaces Inside Parentheses
+warning:6:5:XHP37:Call Formatting
+warning:6:5:XHP25:Spaces Inside Parentheses
+warning:6:5:XHP25:Spaces Inside Parentheses
 ~~~~~~~~~~
 <?php
 

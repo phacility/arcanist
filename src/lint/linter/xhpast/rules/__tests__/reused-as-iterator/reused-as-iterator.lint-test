@@ -63,5 +63,5 @@ function k($stuff, $thing) {
   foreach ($other as $item) {}
 }
 ~~~~~~~~~~
-error:43:22
-error:53:22
+error:43:22:XHP32:Variable Reused As Iterator
+error:53:22:XHP32:Variable Reused As Iterator

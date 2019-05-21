@@ -4,4 +4,4 @@ interface SomeInterface {
   public function someMethod() {}
 }
 ~~~~~~~~~~
-error:4:32
+error:4:32:XHP114:`interface` Method Cannot Contain Body

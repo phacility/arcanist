@@ -20,9 +20,9 @@ if (SomeClass::someStaticMethod($param)) {}
 $var = 'some_func';
 if ($var()) {}
 ~~~~~~~~~~
-error:5:3
-error:7:3
-error:12:7
+error:5:3:XHP45:PHP Compatibility
+error:7:3:XHP45:PHP Compatibility
+error:12:7:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

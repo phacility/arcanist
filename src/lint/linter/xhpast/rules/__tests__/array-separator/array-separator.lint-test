@@ -34,12 +34,12 @@ array(
   2,
   3, /* comment */ );
 ~~~~~~~~~~
-advice:4:14
-advice:13:3
-advice:17:3
-advice:27:3
-advice:31:3
-advice:35:20
+advice:4:14:XHP48:Array Separator
+advice:13:3:XHP48:Array Separator
+advice:17:3:XHP48:Array Separator
+advice:27:3:XHP48:Array Separator
+advice:31:3:XHP48:Array Separator
+advice:35:20:XHP48:Array Separator
 ~~~~~~~~~~
 <?php
 

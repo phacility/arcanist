@@ -9,10 +9,10 @@ $b;
 $a.   // This should be okay.
 $b;
 ~~~~~~~~~~
-warning:4:3
-warning:4:5
-warning:5:4
-warning:6:3
+warning:4:3:XHP44:Concatenation Spacing
+warning:4:5:XHP44:Concatenation Spacing
+warning:5:4:XHP44:Concatenation Spacing
+warning:6:3:XHP44:Concatenation Spacing
 ~~~~~~~~~~
 <?php
 

@@ -3,7 +3,7 @@
 csprintf('x');
 csprintf($x);
 ~~~~~~~~~~
-error:4:1
+error:4:1:XHP86:Unsafe Usage of Dynamic String
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

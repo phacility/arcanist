@@ -1,7 +1,7 @@
 <?php
 intval($x / 2) + 1;
 ~~~~~~~~~~
-advice:2:1
+advice:2:1:XHP105:Function Call Should Be Type Cast
 ~~~~~~~~~~
 <?php
 (int)($x / 2) + 1;

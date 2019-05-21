@@ -3,7 +3,7 @@
 $x ++;
 $y--;
 ~~~~~~~~~~
-warning:3:3
+warning:3:3:XHP75:Space Before Unary Postfix Operator
 ~~~~~~~~~~
 <?php
 

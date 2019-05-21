@@ -3,8 +3,8 @@ intval($x);
 intval($x, 8);
 intval($x, 10);
 ~~~~~~~~~~
-advice:2:1
-advice:4:1
+advice:2:1:XHP105:Function Call Should Be Type Cast
+advice:4:1:XHP105:Function Call Should Be Type Cast
 ~~~~~~~~~~
 <?php
 (int)$x;

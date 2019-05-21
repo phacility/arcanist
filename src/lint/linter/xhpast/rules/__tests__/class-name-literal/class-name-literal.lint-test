@@ -18,8 +18,8 @@ $c = new class {
   }
 };
 ~~~~~~~~~~
-advice:5:12
-advice:9:10
+advice:5:12:XHP62:Class Name Literal
+advice:9:10:XHP62:Class Name Literal
 ~~~~~~~~~~
 <?php
 

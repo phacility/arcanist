@@ -120,11 +120,11 @@ function closure4() {
   $a++; // Reuse of $a
 }
 ~~~~~~~~~~
-warning:6:3
-warning:12:8
-warning:18:10
-warning:27:20
-warning:33:3
-warning:52:3
-warning:110:5
-warning:120:3
+warning:6:3:XHP39:Reuse of Iterator References
+warning:12:8:XHP39:Reuse of Iterator References
+warning:18:10:XHP39:Reuse of Iterator References
+warning:27:20:XHP39:Reuse of Iterator References
+warning:33:3:XHP39:Reuse of Iterator References
+warning:52:3:XHP39:Reuse of Iterator References
+warning:110:5:XHP39:Reuse of Iterator References
+warning:120:3:XHP39:Reuse of Iterator References

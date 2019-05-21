@@ -6,4 +6,4 @@ class SomeClass {
   public $z;
 }
 ~~~~~~~~~~
-advice:6:3
+advice:6:3:XHP130:Use of `public` Properties

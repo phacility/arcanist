@@ -5,5 +5,5 @@ function foo() {
   global $x, $y;
 }
 ~~~~~~~~~~
-warning:3:1
-warning:5:3
+warning:3:1:XHP79:Global Variables
+warning:5:3:XHP79:Global Variables

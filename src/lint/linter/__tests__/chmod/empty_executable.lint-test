@@ -1,5 +1,5 @@
 ~~~~~~~~~~
-warning::
+warning:0:0:CHMOD1:Invalid Executable
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"mode": "0755"}

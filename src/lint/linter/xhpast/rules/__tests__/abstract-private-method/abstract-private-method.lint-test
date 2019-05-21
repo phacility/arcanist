@@ -3,4 +3,4 @@ abstract class SomeClass {
   private abstract function someMethod();
 }
 ~~~~~~~~~~
-error:3:3
+error:3:3:XHP107:`abstract` Method Cannot Be Declared `private`

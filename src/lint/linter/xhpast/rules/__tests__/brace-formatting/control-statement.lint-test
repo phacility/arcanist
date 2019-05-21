@@ -22,17 +22,17 @@ else {}
 
 if ($x) {}else{}
 ~~~~~~~~~~
-warning:3:7
-warning:6:20
-warning:9:10
-warning:12:11
-warning:15:9
-warning:16:6
-warning:17:4
-warning:19:11
-warning:20:16
-warning:23:11
-warning:23:15
+warning:3:7:XHP24:Brace Placement
+warning:6:20:XHP24:Brace Placement
+warning:9:10:XHP24:Brace Placement
+warning:12:11:XHP24:Brace Placement
+warning:15:9:XHP24:Brace Placement
+warning:16:6:XHP24:Brace Placement
+warning:17:4:XHP24:Brace Placement
+warning:19:11:XHP24:Brace Placement
+warning:20:16:XHP24:Brace Placement
+warning:23:11:XHP24:Brace Placement
+warning:23:15:XHP24:Brace Placement
 ~~~~~~~~~~
 <?php
 

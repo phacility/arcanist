@@ -4,10 +4,10 @@ is_a($x, 'SomeClass');
 is_a($x, '\\SomeClass');
 is_a($x, '\\'.'Some'.'Class');
 ~~~~~~~~~~
-advice:2:1
-advice:3:1
-advice:4:1
-advice:5:1
+advice:2:1:XHP111:`is_a` Should Be `instanceof`
+advice:3:1:XHP111:`is_a` Should Be `instanceof`
+advice:4:1:XHP111:`is_a` Should Be `instanceof`
+advice:5:1:XHP111:`is_a` Should Be `instanceof`
 ~~~~~~~~~~
 <?php
 $x instanceof $y;
