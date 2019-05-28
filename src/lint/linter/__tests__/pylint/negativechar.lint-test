@@ -3,4 +3,4 @@
 """
 Useless string """
 ~~~~~~~~~~
-warning:4:0 See T9257.
+warning:4:0:W0105:Pointless String Statement

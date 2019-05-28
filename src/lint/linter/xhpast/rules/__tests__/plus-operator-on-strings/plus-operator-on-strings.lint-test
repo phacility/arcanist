@@ -5,6 +5,6 @@
 'a' + $x;
 $x + $y + $z + 'q' + 0;
 ~~~~~~~~~~
-error:4:1
-error:5:1
-error:6:1
+error:4:1:XHP21:Not String Concatenation
+error:5:1:XHP21:Not String Concatenation
+error:6:1:XHP21:Not String Concatenation

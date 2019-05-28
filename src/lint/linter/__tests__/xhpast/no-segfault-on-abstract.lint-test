@@ -3,5 +3,5 @@
 abstract class A {}
 final class F {}
 ~~~~~~~~~~
-disabled:3:1
-disabled:4:1
+disabled:3:1:XHP88:Class Not Extending `Phobject`
+disabled:4:1:XHP88:Class Not Extending `Phobject`

@@ -3,5 +3,5 @@ x = 'y'
 def hello():
     return foo
 ~~~~~~~~~~
-error:3:1
-error:4:12
+error:3:1:E302
+error:4:12:F821

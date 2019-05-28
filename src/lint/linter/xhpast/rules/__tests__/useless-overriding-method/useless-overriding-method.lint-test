@@ -22,6 +22,6 @@ final class MyClass extends SomeOtherClass {
   }
 }
 ~~~~~~~~~~
-advice:4:3
-advice:8:3
-advice:16:3
+advice:4:3:XHP63:Useless Overriding Method
+advice:8:3:XHP63:Useless Overriding Method
+advice:16:3:XHP63:Useless Overriding Method

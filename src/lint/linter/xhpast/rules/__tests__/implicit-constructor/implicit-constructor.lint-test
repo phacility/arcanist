@@ -6,4 +6,4 @@ final class Platypus {
   }
 }
 ~~~~~~~~~~
-error:4:19
+error:4:19:XHP10:Implicit Constructor

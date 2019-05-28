@@ -7,4 +7,4 @@
 >>>>>>> branch2
 }
 ~~~~~~~~~~
-error:5:1
+error:5:1:MERGECONFLICT1:Unresolved merge conflict

@@ -25,16 +25,16 @@ f(function ($x ) {});
 f(function ($x ) use ($z) {});
 f(function ($x)use($z) {});
 ~~~~~~~~~~
-warning:4:14
-warning:5:11
-warning:8:15
-warning:13:23
-warning:16:31
-warning:19:33
-warning:24:15
-warning:25:15
-warning:26:16
-warning:26:19
+warning:4:14:XHP38:Declaration Formatting
+warning:5:11:XHP38:Declaration Formatting
+warning:8:15:XHP38:Declaration Formatting
+warning:13:23:XHP38:Declaration Formatting
+warning:16:31:XHP38:Declaration Formatting
+warning:19:33:XHP38:Declaration Formatting
+warning:24:15:XHP38:Declaration Formatting
+warning:25:15:XHP38:Declaration Formatting
+warning:26:16:XHP38:Declaration Formatting
+warning:26:19:XHP38:Declaration Formatting
 ~~~~~~~~~~
 <?php
 

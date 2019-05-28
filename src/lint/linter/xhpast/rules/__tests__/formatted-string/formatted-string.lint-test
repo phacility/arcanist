@@ -12,11 +12,11 @@ queryfx(null, 'x', 'y');
 
 foobar(null, null, '%s');
 ~~~~~~~~~~
-error:3:1
-error:7:1
-error:8:1
-error:11:1
-error:13:1
+error:3:1:XHP54:Formatted String
+error:7:1:XHP54:Formatted String
+error:8:1:XHP54:Formatted String
+error:11:1:XHP54:Formatted String
+error:13:1:XHP54:Formatted String
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

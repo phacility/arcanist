@@ -5,4 +5,4 @@ class SomeClass {
   }
 }
 ~~~~~~~~~~
-warning:4:5
+warning:4:5:XHP92:Unexpected `return` Value

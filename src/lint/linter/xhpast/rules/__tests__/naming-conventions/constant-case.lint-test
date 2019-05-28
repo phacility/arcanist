@@ -7,6 +7,6 @@ class Foo {
   const bar = 'baz';
 }
 ~~~~~~~~~~
-warning:3:8
-warning:4:7
-warning:7:9
+warning:3:8:XHP9:Naming Conventions
+warning:4:7:XHP9:Naming Conventions
+warning:7:9:XHP9:Naming Conventions

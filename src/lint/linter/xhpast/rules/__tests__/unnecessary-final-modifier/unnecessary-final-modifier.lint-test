@@ -6,4 +6,4 @@ final class Foo {
 }
 $c = new class {};
 ~~~~~~~~~~
-advice:5:3
+advice:5:3:XHP55:Unnecessary Final Modifier

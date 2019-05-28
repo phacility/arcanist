@@ -3,7 +3,7 @@ namespace SomeNamespace;
 use X\Y\Z;
 use \X\Y\Z;
 ~~~~~~~~~~
-warning:4:5
+warning:4:5:XHP97:`use` Statement Namespace Prefix
 ~~~~~~~~~~
 <?php
 namespace SomeNamespace;

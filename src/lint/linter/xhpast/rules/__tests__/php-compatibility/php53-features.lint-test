@@ -11,13 +11,13 @@ $a = 'stdClass';
 $a::m();
 echo __DIR__;
 ~~~~~~~~~~
-error:3:1
-error:4:1
-error:5:3
-error:6:3
-error:7:1
-error:9:1
-error:12:6
+error:3:1:XHP45:PHP Compatibility
+error:4:1:XHP45:PHP Compatibility
+error:5:3:XHP45:PHP Compatibility
+error:6:3:XHP45:PHP Compatibility
+error:7:1:XHP45:PHP Compatibility
+error:9:1:XHP45:PHP Compatibility
+error:12:6:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

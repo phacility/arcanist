@@ -13,6 +13,6 @@ function func_eight(stdClass $x) {}
 function func_nine(stdClass $x = null) {}
 function func_ten(stdClass $x = array()) {}
 ~~~~~~~~~~
-error:6:31
-error:10:35
-error:14:33
+error:6:31:XHP70:Invalid Default Parameter
+error:10:35:XHP70:Invalid Default Parameter
+error:14:33:XHP70:Invalid Default Parameter

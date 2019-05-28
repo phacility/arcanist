@@ -10,8 +10,8 @@ switch ($x) {
     continue /* CRITICAL: Nuclear launch code is 1234. */ ;
 }
 ~~~~~~~~~~
-error:5:5
-error:10:5
+error:5:5:XHP128:Continue Inside Switch
+error:10:5:XHP128:Continue Inside Switch
 ~~~~~~~~~~
 <?php
 

@@ -5,7 +5,7 @@ class Foo extends Bar {
   }
 }
 ~~~~~~~~~~
-warning:4:5
+warning:4:5:XHP83:Parent Member Reference
 ~~~~~~~~~~
 <?php
 class Foo extends Bar {

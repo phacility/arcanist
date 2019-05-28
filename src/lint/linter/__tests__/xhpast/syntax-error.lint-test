@@ -1,4 +1,4 @@
 <?php
 char *buf = null;
 ~~~~~~~~~~
-error:2:1
+error:2:1:XHP1:PHP Syntax Error!

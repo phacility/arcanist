@@ -13,4 +13,4 @@ namespace X {
   echo 2;
 }
 ~~~~~~~~~~
-error:9:1
+error:9:1:XHP98:`namespace` Statement Must Be The First Statement

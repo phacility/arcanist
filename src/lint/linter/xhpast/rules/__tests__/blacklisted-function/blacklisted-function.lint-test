@@ -2,7 +2,7 @@
 
 eval('evil code');
 ~~~~~~~~~~
-error:3:1
+error:3:1:XHP51:Use of Blacklisted Function
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

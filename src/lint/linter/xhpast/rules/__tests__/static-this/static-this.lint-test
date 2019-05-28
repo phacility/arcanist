@@ -9,4 +9,4 @@ final class A {
   }
 }
 ~~~~~~~~~~
-error:8:5
+error:8:5:XHP13:Use of `$this` in Static Context

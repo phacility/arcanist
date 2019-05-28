@@ -5,9 +5,9 @@ sizeof($x);
 die();
 sizeOf($x);
 ~~~~~~~~~~
-advice:4:1
-advice:5:1
-advice:6:1
+advice:4:1:XHP65:Alias Functions
+advice:5:1:XHP65:Alias Functions
+advice:6:1:XHP65:Alias Functions
 ~~~~~~~~~~
 <?php
 

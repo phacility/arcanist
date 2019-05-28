@@ -5,8 +5,8 @@ try
 catch (Exception $x)
 {}
 ~~~~~~~~~~
-warning:3:4
-warning:5:21
+warning:3:4:XHP24:Brace Placement
+warning:5:21:XHP24:Brace Placement
 ~~~~~~~~~~
 <?php
 

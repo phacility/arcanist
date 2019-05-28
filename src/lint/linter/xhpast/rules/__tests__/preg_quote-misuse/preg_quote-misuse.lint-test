@@ -7,5 +7,5 @@ function foo($bar) {
   preg_quote('moo', '/');
 }
 ~~~~~~~~~~
-advice:4:3 Wrong number of arguments to preg_quote()
-advice:6:3 Wrong number of arguments to preg_quote()
+advice:4:3:XHP14:Misuse of `preg_quote`
+advice:6:3:XHP14:Misuse of `preg_quote`

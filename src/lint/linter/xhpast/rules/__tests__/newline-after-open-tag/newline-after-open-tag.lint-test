@@ -8,8 +8,8 @@ phpinfo();
 <?
 phpinfo();
 ~~~~~~~~~~
-advice:4:6
-advice:8:3
+advice:4:6:XHP81:Newline After PHP Open Tag
+advice:8:3:XHP81:Newline After PHP Open Tag
 ~~~~~~~~~~
 <?php phpinfo() ?>
 <?    phpinfo(); ?>

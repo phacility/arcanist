@@ -25,12 +25,12 @@ final class SomeClass extends Phobject {
 [];
 
 ~~~~~~~~~~
-error:3:5
-error:4:9
-error:12:7
-error:18:7
-error:23:1
-error:25:1
+error:3:5:XHP45:PHP Compatibility
+error:4:9:XHP45:PHP Compatibility
+error:12:7:XHP45:PHP Compatibility
+error:18:7:XHP45:PHP Compatibility
+error:23:1:XHP45:PHP Compatibility
+error:25:1:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

@@ -21,22 +21,22 @@ some_call( /* respect authorial intent */ $b,
   $a // if comments are present
   );
 ~~~~~~~~~~
-warning:3:5
-warning:3:8
-warning:4:3
-warning:5:3
-warning:7:21
-warning:7:24
-warning:13:6
-warning:13:30
-warning:14:10
-warning:14:19
-warning:15:12
-warning:15:15
-warning:17:21
-warning:17:24
-warning:19:10
-warning:19:25
+warning:3:5:XHP25:Spaces Inside Parentheses
+warning:3:8:XHP25:Spaces Inside Parentheses
+warning:4:3:XHP25:Spaces Inside Parentheses
+warning:5:3:XHP25:Spaces Inside Parentheses
+warning:7:21:XHP25:Spaces Inside Parentheses
+warning:7:24:XHP25:Spaces Inside Parentheses
+warning:13:6:XHP25:Spaces Inside Parentheses
+warning:13:30:XHP25:Spaces Inside Parentheses
+warning:14:10:XHP25:Spaces Inside Parentheses
+warning:14:19:XHP25:Spaces Inside Parentheses
+warning:15:12:XHP25:Spaces Inside Parentheses
+warning:15:15:XHP25:Spaces Inside Parentheses
+warning:17:21:XHP25:Spaces Inside Parentheses
+warning:17:24:XHP25:Spaces Inside Parentheses
+warning:19:10:XHP25:Spaces Inside Parentheses
+warning:19:25:XHP25:Spaces Inside Parentheses
 ~~~~~~~~~~
 <?php
 

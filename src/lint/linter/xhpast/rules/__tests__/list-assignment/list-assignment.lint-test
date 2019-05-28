@@ -3,9 +3,9 @@
 list($x, $y, , ,) = array();
 list($x, $y, , , $z) = array();
 ~~~~~~~~~~
-warning:3:12
-warning:3:14
-warning:3:16
+warning:3:12:XHP77:List Assignment
+warning:3:14:XHP77:List Assignment
+warning:3:16:XHP77:List Assignment
 ~~~~~~~~~~
 <?php
 

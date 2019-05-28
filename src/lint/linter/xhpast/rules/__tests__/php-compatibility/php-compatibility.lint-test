@@ -3,8 +3,8 @@
 define_syslog_variables();
 var_dump(STREAM_ENFORCE_SAFE_MODE);
 ~~~~~~~~~~
-error:3:1
-error:4:10
+error:3:1:XHP45:PHP Compatibility
+error:4:10:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

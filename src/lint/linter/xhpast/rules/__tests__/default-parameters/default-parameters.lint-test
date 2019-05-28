@@ -8,5 +8,5 @@ class MyClass {
   public function myMethod($x, $y = null, $z) {}
 }
 ~~~~~~~~~~
-warning:4:13
-warning:8:27
+warning:4:13:XHP60:Default Parameters
+warning:8:27:XHP60:Default Parameters
