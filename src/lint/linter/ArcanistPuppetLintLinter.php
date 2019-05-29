@@ -53,6 +53,22 @@ final class ArcanistPuppetLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
+    $installed_version = $this->getVersion();
+    $last_linenumber_version = '2.0.2';
+
+    if (version_compare($installed_version, $last_linenumber_version, '>')) {
+      return array(
+        '--error-level=all',
+        sprintf('--log-format=%s', implode('|', array(
+          '%{line}',
+          '%{column}',
+          '%{kind}',
+          '%{check}',
+          '%{message}',
+        ))),
+      );
+    }
+
     return array(
       '--error-level=all',
       sprintf('--log-format=%s', implode('|', array(
