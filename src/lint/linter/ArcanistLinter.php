@@ -210,6 +210,20 @@ abstract class ArcanistLinter extends Phobject {
     return;
   }
 
+  /**
+   * Get chunk size for the linter.
+   *
+   * @{class:ArcanistLintEngine} will split large path list into chunks
+   * when linting in order to have bounded memory usage.
+   * This limit controls the chunk size.
+   * When this is explicitly set to null, size will be unbounded.
+   *
+   * @return int Linting paths chunk size.
+   */
+  public function getChunkSizeLimit() {
+    return 32;
+  }
+
   public function getLinterPriority() {
     return 1.0;
   }
