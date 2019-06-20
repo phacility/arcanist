@@ -1465,7 +1465,7 @@ EOTEXT
 
     $console->writeOut($message."\n\n");
 
-    $builds = msort($builds, 'getStatusSortVector');
+    $builds = msortv($builds, 'getStatusSortVector');
     foreach ($builds as $build) {
       $ansi_color = $build->getStatusANSIColor();
       $status_name = $build->getStatusName();
