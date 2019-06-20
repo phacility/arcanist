@@ -1465,7 +1465,7 @@ EOTEXT
 
     $console->writeOut($message."\n\n");
 
-    $builds = msort($builds, 'getStatusSortVector');
+    $builds = msortv($builds, 'getStatusSortVector');
     foreach ($builds as $build) {
       $ansi_color = $build->getStatusANSIColor();
       $status_name = $build->getStatusName();
@@ -1557,7 +1557,7 @@ EOTEXT
     $ongoing_builds = array();
     $failed_builds = array();
 
-    $builds = msort($builds, 'getStatusSortVector');
+    $builds = msortv($builds, 'getStatusSortVector');
     foreach ($builds as $build_ref) {
       $plan = idx($plans, $build_ref->getBuildPlanPHID());
       if (!$plan) {
