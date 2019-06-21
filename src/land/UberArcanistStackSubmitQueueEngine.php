@@ -353,11 +353,16 @@ final class UberArcanistStackSubmitQueueEngine
     list($out) = $api->execxLocal(
       'config --get remote.%s.url',
       $this->getTargetRemote());
-
     $remoteUrl = trim($out);
+
+    list($out) = $api->execxLocal(
+      'config --get remote.%s.pushurl',
+      $this->getTargetRemote());
+    $remotePushUrl = trim($out);
+
     $stack = $this->generateRevisionDiffMappingForLanding();
     $statusUrl = $this->submitQueueClient->submitMergeStackRequest(
-      $remoteUrl,
+      $remotePushUrl ? $remotePushUrl : $remoteUrl,
       $stack,
       $this->shouldShadow,
       $this->getTargetOnto());
