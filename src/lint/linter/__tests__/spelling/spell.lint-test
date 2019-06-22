@@ -10,11 +10,11 @@ didn't remove acording
 Added ZZZZsupermnZZZZ
 Added full batmn batmnZZZZ
 ~~~~~~~~~~
-warning:2:1
-warning:4:10
-warning:5:15
-warning:7:7
-warning:7:12
-warning:9:15
-warning:10:11
-warning:11:12
+warning:2:1:SPELL1:Possible Spelling Mistake
+warning:4:10:SPELL2:Possible Spelling Mistake
+warning:5:15:SPELL2:Possible Spelling Mistake
+warning:7:7:SPELL2:Possible Spelling Mistake
+warning:7:12:SPELL2:Possible Spelling Mistake
+warning:9:15:SPELL1:Possible Spelling Mistake
+warning:10:11:SPELL2:Possible Spelling Mistake
+warning:11:12:SPELL1:Possible Spelling Mistake

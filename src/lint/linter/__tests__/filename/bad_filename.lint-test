@@ -1,5 +1,5 @@
 ~~~~~~~~~~
-error::
+error:0:0:NAME1:Bad Filename
 ~~~~~~~~~~
 ~~~~~~~~~~
 {"path": "bad@filename"}

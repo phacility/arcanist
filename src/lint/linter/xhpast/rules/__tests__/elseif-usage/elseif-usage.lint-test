@@ -8,7 +8,7 @@ if (true) {
   echo 'baz';
 }
 ~~~~~~~~~~
-advice:5:3
+advice:5:3:XHP42:`elseif` Usage
 ~~~~~~~~~~
 <?php
 

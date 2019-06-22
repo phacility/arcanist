@@ -11,8 +11,8 @@ class SomeClass {
   abstract final public function baz() {}
 }
 ~~~~~~~~~~
-error:5:10
-error:6:10
-error:7:11
-error:10:10
-error:11:12
+error:5:10:XHP72:Invalid Modifiers
+error:6:10:XHP72:Invalid Modifiers
+error:7:11:XHP72:Invalid Modifiers
+error:10:10:XHP72:Invalid Modifiers
+error:11:12:XHP72:Invalid Modifiers

@@ -50,22 +50,22 @@ function j() {
   $mIxEdCaSe = 1;
 }
 ~~~~~~~~~~
-warning:3:13
-warning:4:9
-warning:4:9
-warning:4:16
-warning:4:16
-warning:5:13
-warning:5:17
-warning:6:19
-warning:6:21
-warning:6:25
-warning:9:11
-warning:11:10
-warning:11:13
-warning:21:13
-warning:24:3
-warning:25:3
-warning:26:3
-warning:28:3
-warning:50:3
+warning:3:13:XHP9:Naming Conventions
+warning:4:9:XHP9:Naming Conventions
+warning:4:9:XHP9:Naming Conventions
+warning:4:16:XHP9:Naming Conventions
+warning:4:16:XHP9:Naming Conventions
+warning:5:13:XHP9:Naming Conventions
+warning:5:17:XHP9:Naming Conventions
+warning:6:19:XHP9:Naming Conventions
+warning:6:21:XHP9:Naming Conventions
+warning:6:25:XHP9:Naming Conventions
+warning:9:11:XHP9:Naming Conventions
+warning:11:10:XHP9:Naming Conventions
+warning:11:13:XHP9:Naming Conventions
+warning:21:13:XHP9:Naming Conventions
+warning:24:3:XHP9:Naming Conventions
+warning:25:3:XHP9:Naming Conventions
+warning:26:3:XHP9:Naming Conventions
+warning:28:3:XHP9:Naming Conventions
+warning:50:3:XHP9:Naming Conventions

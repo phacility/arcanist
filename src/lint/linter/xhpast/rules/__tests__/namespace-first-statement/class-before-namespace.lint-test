@@ -2,4 +2,4 @@
 class X {}
 namespace X;
 ~~~~~~~~~~
-error:2:1
+error:2:1:XHP98:`namespace` Statement Must Be The First Statement

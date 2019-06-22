@@ -1,7 +1,7 @@
 <?php
 $x[$y{'key'}];
 ~~~~~~~~~~
-warning:2:4
+warning:2:4:XHP119:Curly Brace Array Index
 ~~~~~~~~~~
 <?php
 $x[$y['key']];

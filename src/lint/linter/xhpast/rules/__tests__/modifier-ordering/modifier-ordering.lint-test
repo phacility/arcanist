@@ -9,9 +9,9 @@ class Foo {
   static final public function foobar() {}
 }
 ~~~~~~~~~~
-advice:5:3
-advice:7:3
-advice:9:3
+advice:5:3:XHP71:Modifier Ordering
+advice:7:3:XHP71:Modifier Ordering
+advice:9:3:XHP71:Modifier Ordering
 ~~~~~~~~~~
 <?php
 

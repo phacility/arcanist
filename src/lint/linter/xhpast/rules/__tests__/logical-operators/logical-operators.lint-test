@@ -8,8 +8,8 @@ $x && $y;
 $x or $y;
 $x || $y;
 ~~~~~~~~~~
-advice:6:4
-advice:8:4
+advice:6:4:XHP58:Logical Operators
+advice:8:4:XHP58:Logical Operators
 ~~~~~~~~~~
 <?php
 

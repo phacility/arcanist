@@ -24,19 +24,19 @@ if ($x instanceof z &&$w) {}
 if ($x instanceof z && $w) {}
 f(1,2);
 ~~~~~~~~~~
-warning:4:3
-warning:5:4
-warning:6:3
-warning:8:3
-warning:9:3
-warning:10:4
-warning:11:3
-warning:12:3
-warning:14:14
-warning:21:52
-warning:22:54
-warning:23:21
-warning:25:4
+warning:4:3:XHP27:Space Around Binary Operator
+warning:5:4:XHP27:Space Around Binary Operator
+warning:6:3:XHP27:Space Around Binary Operator
+warning:8:3:XHP27:Space Around Binary Operator
+warning:9:3:XHP27:Space Around Binary Operator
+warning:10:4:XHP27:Space Around Binary Operator
+warning:11:3:XHP27:Space Around Binary Operator
+warning:12:3:XHP27:Space Around Binary Operator
+warning:14:14:XHP27:Space Around Binary Operator
+warning:21:52:XHP27:Space Around Binary Operator
+warning:22:54:XHP27:Space Around Binary Operator
+warning:23:21:XHP27:Space Around Binary Operator
+warning:25:4:XHP27:Space Around Binary Operator
 ~~~~~~~~~~
 <?php
 

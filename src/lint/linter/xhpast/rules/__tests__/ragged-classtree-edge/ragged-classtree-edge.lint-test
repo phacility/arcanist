@@ -9,4 +9,4 @@ final class C extends Phobject {}
  */
 class D extends Phobject {}
 ~~~~~~~~~~
-disabled:3:7
+disabled:3:7:XHP87:Class Not `abstract` Or `final`

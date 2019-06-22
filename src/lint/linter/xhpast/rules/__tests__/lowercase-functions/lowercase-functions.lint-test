@@ -3,7 +3,7 @@
 var_dump('');
 Var_Dump('');
 ~~~~~~~~~~
-advice:4:1
+advice:4:1:XHP61:Lowercase Functions
 ~~~~~~~~~~
 <?php
 

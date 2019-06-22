@@ -75,8 +75,8 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $config,
       array(
         'config' => 'optional map<string, wild>',
-        'path' => 'optional string',
         'mode' => 'optional string',
+        'path' => 'optional string',
         'stopped' => 'optional bool',
       ));
 
@@ -171,81 +171,131 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     $this->compareTransform($xform, $after_lint);
   }
 
-  private function compareLint($file, $expect, ArcanistLintResult $result) {
-    $seen = array();
-    $raised = array();
-    $message_map = array();
+  private function compareLint($file, $expect, ArcanistLintResult $results) {
+    $expected_results = new ArcanistLintResult();
 
-    foreach ($result->getMessages() as $message) {
-      $sev = $message->getSeverity();
-      $line = $message->getLine();
-      $char = $message->getChar();
-      $code = $message->getCode();
-      $name = $message->getName();
-      $message_key = $sev.':'.$line.':'.$char;
-      $message_map[$message_key] = $message;
-      $seen[] = $message_key;
-      $raised[] = sprintf(
-        '  %s: %s %s',
-        pht('%s at line %d, char %d', $sev, $line, $char),
-        $code,
-        $name);
-    }
     $expect = trim($expect);
     if ($expect) {
       $expect = explode("\n", $expect);
     } else {
       $expect = array();
     }
-    foreach ($expect as $key => $expected) {
-      $expect[$key] = head(explode(' ', $expected));
+
+    foreach ($expect as $result) {
+      $parts = explode(':', $result);
+
+      $message = new ArcanistLintMessage();
+
+      $severity = idx($parts, 0);
+      $line     = idx($parts, 1);
+      $char     = idx($parts, 2);
+      $code     = idx($parts, 3);
+
+      if ($severity !== null) {
+        $message->setSeverity($severity);
+      }
+
+      if ($line !== null) {
+        $message->setLine($line);
+      }
+
+      if ($char !== null) {
+        $message->setChar($char);
+      }
+
+      if ($code !== null) {
+        $message->setCode($code);
+      }
+
+      $expected_results->addMessage($message);
     }
 
-    $expect = array_fill_keys($expect, true);
-    $seen   = array_fill_keys($seen, true);
+    $missing    = array();
+    $surprising = $results->getMessages();
 
-    if (!$raised) {
-      $raised = array(pht('No messages.'));
+    // TODO: Make this more efficient.
+    foreach ($expected_results->getMessages() as $expected_message) {
+      $found = false;
+
+      foreach ($results->getMessages() as $ii => $actual_message) {
+        if (!self::compareLintMessageProperty(
+          $expected_message->getSeverity(),
+          $actual_message->getSeverity())) {
+
+          continue;
+        }
+
+        if (!self::compareLintMessageProperty(
+          $expected_message->getLine(),
+          $actual_message->getLine())) {
+
+          continue;
+        }
+
+        if (!self::compareLintMessageProperty(
+          $expected_message->getChar(),
+          $actual_message->getChar())) {
+
+          continue;
+        }
+
+        if (!self::compareLintMessageProperty(
+          $expected_message->getCode(),
+          $actual_message->getCode())) {
+
+          continue;
+        }
+
+        $found = true;
+        unset($surprising[$ii]);
+      }
+
+      if (!$found) {
+        $missing[] = $expected_message;
+      }
     }
-    $raised = sprintf(
-      "%s:\n%s",
-      pht('Actually raised'),
-      implode("\n", $raised));
 
-    foreach (array_diff_key($expect, $seen) as $missing => $ignored) {
-      $missing = explode(':', $missing);
-      $sev = array_shift($missing);
-      $pos = $missing;
+    if ($missing || $surprising) {
+      $expected = pht('EXPECTED MESSAGES');
+      if ($missing) {
+        foreach ($missing as $message) {
+          $expected .= sprintf(
+            "\n  %s: %s %s",
+            pht(
+              '%s at line %d, char %d',
+              $message->getSeverity(),
+              $message->getLine(),
+              $message->getChar()),
+            $message->getCode(),
+            $message->getName());
+        }
+      } else {
+        $expected .= "\n  ".pht('No messages');
+      }
 
-      $this->assertFailure(
-        pht(
-          "In '%s', expected lint to raise %s on line %d at char %d, ".
-          "but no %s was raised. %s",
-          $file,
-          $sev,
-          idx($pos, 0),
-          idx($pos, 1),
-          $sev,
-          $raised));
-    }
+      $actual = pht('UNEXPECTED MESSAGES');
+      if ($surprising) {
+        foreach ($surprising as $message) {
+          $actual .= sprintf(
+            "\n  %s: %s %s",
+            pht(
+              '%s at line %d, char %d',
+              $message->getSeverity(),
+              $message->getLine(),
+              $message->getChar()),
+            $message->getCode(),
+            $message->getName());
+        }
+      } else {
+        $actual .= "\n  ".pht('No messages');
+      }
 
-    foreach (array_diff_key($seen, $expect) as $surprising => $ignored) {
-      $message = $message_map[$surprising];
-      $message_info = $message->getDescription();
-
-      list($sev, $line, $char) = explode(':', $surprising);
       $this->assertFailure(
         sprintf(
-          "%s:\n\n%s\n\n%s",
-          pht(
-            "In '%s', lint raised %s on line %d at char %d, ".
-            "but nothing was expected",
-            $file,
-            $sev,
-            $line,
-            $char),
-          $message_info,
-          $raised));
+          "%s\n\n%s\n\n%s",
+          pht("Lint failed for '%s'.", $file),
+          $expected,
+          $actual));
     }
   }
 
@@ -257,6 +307,20 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $expected,
       $actual,
       pht('File as patched by lint did not match the expected patched file.'));
+  }
+
+  /**
+   * Compare properties of @{class:ArcanistLintMessage} instances.
+   *
+   * The expectation is that if one (or both) of the properties is null, then
+   * we don't care about its value.
+   *
+   * @param  wild
+   * @param  wild
+   * @return bool
+   */
+  private static function compareLintMessageProperty($x, $y) {
+    return $x === null || $y === null || $x === $y;
   }
 
 }

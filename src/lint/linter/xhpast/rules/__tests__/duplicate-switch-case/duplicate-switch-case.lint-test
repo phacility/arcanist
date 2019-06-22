@@ -25,5 +25,5 @@ switch ($x) {
     break;
 }
 ~~~~~~~~~~
-error:16:3
-error:23:7
+error:16:3:XHP50:Duplicate Case Statements
+error:23:7:XHP50:Duplicate Case Statements

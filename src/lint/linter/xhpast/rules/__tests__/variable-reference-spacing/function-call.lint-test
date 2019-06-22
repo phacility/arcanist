@@ -4,8 +4,8 @@ $x = & some_function();
 $x = &
         some_function();
 ~~~~~~~~~~
-warning:3:7
-warning:4:7
+warning:3:7:XHP123:Variable Reference Spacing
+warning:4:7:XHP123:Variable Reference Spacing
 ~~~~~~~~~~
 <?php
 $x = &some_function();

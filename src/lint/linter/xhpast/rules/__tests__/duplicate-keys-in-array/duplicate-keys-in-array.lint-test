@@ -35,9 +35,9 @@ $f = array(
   $a => 'var2',
 );
 ~~~~~~~~~~
-error:6:3
-error:9:3
-error:16:3
-error:21:3
-error:26:3
-error:35:3
+error:6:3:XHP22:Duplicate Keys in Array
+error:9:3:XHP22:Duplicate Keys in Array
+error:16:3:XHP22:Duplicate Keys in Array
+error:21:3:XHP22:Duplicate Keys in Array
+error:26:3:XHP22:Duplicate Keys in Array
+error:35:3:XHP22:Duplicate Keys in Array

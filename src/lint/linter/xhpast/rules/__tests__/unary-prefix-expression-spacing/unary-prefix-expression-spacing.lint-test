@@ -4,8 +4,8 @@ $f = @ fopen($path, 'rb');
 @fclose($f);
 exit ();
 ~~~~~~~~~~
-warning:3:7
-warning:5:5
+warning:3:7:XHP73:Space After Unary Prefix Operator
+warning:5:5:XHP73:Space After Unary Prefix Operator
 ~~~~~~~~~~
 <?php
 

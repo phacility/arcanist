@@ -4,6 +4,6 @@
 
 The quick brown fox jumps over the lazy dog.
 ~~~~~~~~~~
-autofix:1:1
+autofix:1:1:TXT8:Leading Whitespace at BOF
 ~~~~~~~~~~
 The quick brown fox jumps over the lazy dog.

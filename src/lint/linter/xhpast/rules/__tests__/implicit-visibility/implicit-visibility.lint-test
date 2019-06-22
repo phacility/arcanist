@@ -11,10 +11,10 @@ final class Foo {
   private $z;
 }
 ~~~~~~~~~~
-advice:5:3
-advice:6:3
-advice:9:3
-advice:10:3
+advice:5:3:XHP52:Implicit Method Visibility
+advice:6:3:XHP52:Implicit Method Visibility
+advice:9:3:XHP52:Implicit Method Visibility
+advice:10:3:XHP52:Implicit Method Visibility
 ~~~~~~~~~~
 <?php
 

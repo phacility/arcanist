@@ -2,4 +2,4 @@
 return;
 ?>
 ~~~~~~~~~~
-error:3:1
+error:3:1:XHP8:Use of Close Tag `?>`

@@ -186,19 +186,19 @@ function some_func($x, $y) {
   };
 }
 ~~~~~~~~~~
-error:28:3
-error:42:5
-error:43:7
-error:44:5
-error:45:5
-error:46:10
-error:87:3 This stuff is basically testing the lexer/parser for function decls.
-error:104:15 Variables in instance derefs should be checked, static should not.
-error:118:3 isset() and empty() should not trigger errors.
-error:122:3 Should only warn once in this function.
-error:144:8
-error:150:9
-error:164:9
-error:171:5
-error:178:10
-error:185:14
+error:28:3:XHP5:Use of Undeclared Variable
+error:42:5:XHP5:Use of Undeclared Variable
+error:43:7:XHP5:Use of Undeclared Variable
+error:44:5:XHP5:Use of Undeclared Variable
+error:45:5:XHP5:Use of Undeclared Variable
+error:46:10:XHP5:Use of Undeclared Variable
+error:87:3:XHP5:Use of Undeclared Variable
+error:104:15:XHP5:Use of Undeclared Variable
+error:118:3:XHP5:Use of Undeclared Variable
+error:122:3:XHP5:Use of Undeclared Variable
+error:144:8:XHP5:Use of Undeclared Variable
+error:150:9:XHP5:Use of Undeclared Variable
+error:164:9:XHP5:Use of Undeclared Variable
+error:171:5:XHP5:Use of Undeclared Variable
+error:178:10:XHP5:Use of Undeclared Variable
+error:185:14:XHP5:Use of Undeclared Variable
