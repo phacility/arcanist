@@ -939,7 +939,7 @@ EOTEXT
           'is not guaranteed to work. Continue anyway?');
         $okay = phutil_console_confirm($issue, true);
       } else {
-        $phids = $graph->getTopographicallySortedNodes();
+        $phids = $graph->getNodesInTopologicalOrder();
         $phids = array_reverse($phids);
         $okay = true;
       }
