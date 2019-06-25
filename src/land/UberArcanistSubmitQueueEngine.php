@@ -97,18 +97,13 @@ class UberArcanistSubmitQueueEngine
     list($out) = $api->execxLocal(
       'config --get remote.%s.url',
       $this->getTargetRemote());
+
     $remoteUrl = trim($out);
-
-    list($out) = $api->execxLocal(
-      'config --get remote.%s.pushurl',
-      $this->getTargetRemote());
-    $remotePushUrl = trim($out);
-
     // Get the latest revision as we could have updated the diff
     // as a result of arc diff
     $revision = $this->getRevision();
     $statusUrl = $this->submitQueueClient->submitMergeRequest(
-      $remotePushUrl ? $remotePushUrl : $remoteUrl,
+      $remoteUrl,
       $revision['diffs'][0],
       $revision['id'],
       $this->shouldShadow,
