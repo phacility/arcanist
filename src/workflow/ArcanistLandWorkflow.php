@@ -1587,7 +1587,9 @@ EOTEXT
     $repository_api = $this->getRepositoryAPI();
     $repository_api->execxLocal('checkout %s', $this->oldBranch);
     if ($this->isGit) {
-      $repository_api->execxLocal('submodule update --init --recursive');
+        if ($repository_api->uberHasGitSubmodules()) {
+            $repository_api->execxLocal('submodule update --init --recursive');
+        }
     }
     echo pht(
       "Switched back to %s %s.\n",
