@@ -350,11 +350,8 @@ final class UberArcanistStackSubmitQueueEngine
       pht('PUSHING'),
       pht('Pushing changes to Submit Queue.'));
     $api = $this->getRepositoryAPI();
-    list($out) = $api->execxLocal(
-      'config --get remote.%s.url',
-      $this->getTargetRemote());
+    $remoteUrl = $api->uberGetGitRemotePushUrl($this->getTargetRemote());
 
-    $remoteUrl = trim($out);
     $stack = $this->generateRevisionDiffMappingForLanding();
     $statusUrl = $this->submitQueueClient->submitMergeStackRequest(
       $remoteUrl,
