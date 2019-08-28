@@ -127,6 +127,15 @@ EOTEXT
           'update' => true,
         ),
       ),
+      'uber-merge-using-staging-tag' => array(
+        'supports' => array('git'),
+        'help' => pht(
+          'Fetch the staging tag and merge.'),
+        'conflicts' => array(
+          'update' => true,
+          'uber-use-staging-git-tags' => true,
+        ),
+      ),
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
@@ -235,6 +244,11 @@ EOTEXT
 
   private function shouldUseStagingGitTags() {
     $allow_tags = $this->getArgument('uber-use-staging-git-tags', false);
+    return $allow_tags;
+  }
+
+  private function shouldMergeUsingStagingGitTag() {
+    $allow_tags = $this->getArgument('uber-merge-using-staging-tag', false);
     return $allow_tags;
   }
 
@@ -421,9 +435,12 @@ EOTEXT
             $param);
           break;
         case self::SOURCE_DIFF:
-          if ($this->shouldUseStagingGitTags()) {
-            $this->pullBaseTagFromStagingArea($param);
-          }
+          if ($this->shouldMergeUsingStagingGitTag()) {
+            $this->mergeBranchFromStagingArea($param);
+            return 0;
+          } elseif ($this->shouldUseStagingGitTags()) {
+              $this->pullBaseTagFromStagingArea($param);
+            }
           $bundle = $this->loadDiffBundleFromConduit(
             $this->getConduit(),
             $param);
@@ -439,7 +456,6 @@ EOTEXT
         throw $ex;
       }
     }
-
     $try_encoding = nonempty($this->getArgument('encoding'), null);
     if (!$try_encoding) {
       if ($this->requiresConduit()) {
@@ -501,7 +517,6 @@ EOTEXT
           $original_branch = $repository_api->getCanonicalRevisionName('.');
         }
       }
-
       $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
     if (!$has_base_revision && $this->shouldApplyDependencies()) {
@@ -1225,6 +1240,33 @@ EOTEXT
         $this->writeWarn(pht('STAGING TAG PULL FAILED'),
             pht('Unable to pull tag from the staging area but proceeding !!'));
       }
+    }
+    return self::SUCCESS;
+  }
+
+  private function mergeBranchFromStagingArea($id){
+    list($success,
+      $message, $staging, $staging_uri) = $this->validateStagingSetup();
+    if (!$success) {
+      throw new ArcanistUsageException(pht($message));
+    }
+    $prefix = idx($staging, 'prefix', 'phabricator');
+    $diff_tag = $this->uberRefProvider->getDiffRefName($prefix, $id);
+    echo pht('Fetching diff ref "%s" from staging remote', $diff_tag)."\n";
+    // https://stackoverflow.com/questions/41813643/why-is-git-fetch-not-fetching-any-tags
+    $err = phutil_passthru(
+      'git fetch --tag -n %s %s:%s',
+      $staging_uri,
+      $diff_tag, $diff_tag);
+    if ($err) {
+      $this->writeWarn(pht('STAGING TAG PULL FAILED'),
+        pht('Unable to pull tag from the staging area but proceeding !!'));
+    }
+    $err = phutil_passthru('git merge --no-ff %s --no-edit', $diff_tag);
+    if ($err) {
+      $this->writeWarn(pht('MERGE TAG FAILED'),
+        pht('Unable to merge tag'));
+      throw new ArcanistUsageException(pht($message));
     }
     return self::SUCCESS;
   }
