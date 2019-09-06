@@ -1415,18 +1415,7 @@ EOTEXT
         'Holding change in **%s**: it has NOT been pushed yet.',
         $this->onto)."\n");
     } else {
-      $sirmixalot_enrolled = $this->getConfigFromAnySource(
-        'uber.sirmixalot.enrolled',
-        false);
-      // check, if this repo is enrolled to sirmixalot service
-      if ($sirmixalot_enrolled) {
-        // if repo is enrolled, land change on a specific remote branch
-        $remote_landed_branch = sprintf('landed/%s', date("YmdHis"));
-        $landed_branch = sprintf("HEAD:%s", $remote_landed_branch);
-      } else {
-        $remote_landed_branch = $landed_branch = $this->onto;
-      }
-      echo pht('Pushing change to %s', $remote_landed_branch), "\n\n";
+      echo pht('Pushing change...'), "\n\n";
 
       chdir($repository_api->getPath());
 
@@ -1434,17 +1423,8 @@ EOTEXT
         $err = phutil_passthru('git svn dcommit');
         $cmd = 'git svn dcommit';
       } else if ($this->isGit) {
-        $err = phutil_passthru(
-          'git push %s %s',
-          $this->remote,
-          $landed_branch);
+        $err = phutil_passthru('git push %s %s', $this->remote, $this->onto);
         $cmd = 'git push';
-        if ($sirmixalot_enrolled) {
-          // clean up current branch (the one used for merging). if we don't,
-          // current branch will have landed commits that are not on branch's
-          // remote origin (future 'arc float' executions will fail)
-          $repository_api->execxLocal('reset --hard HEAD^');
-        }
       } else if ($this->isHgSvn) {
         // hg-svn doesn't support 'push -r', so we do a normal push
         // which hg-svn modifies to only push the current branch and
