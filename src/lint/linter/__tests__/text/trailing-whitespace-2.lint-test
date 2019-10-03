@@ -3,11 +3,11 @@ consectetur adipiscing elit.
 Phasellus sodales nibh erat,	
 in hendrerit nulla dictum interdum.	
 ~~~~~~~~~~
-error:1:28
-autofix:1:28
-autofix:2:29
-autofix:3:29
-autofix:4:36
+error:1:28:TXT2:Tab Literal
+autofix:1:28:TXT6:Trailing Whitespace
+autofix:2:29:TXT6:Trailing Whitespace
+autofix:3:29:TXT6:Trailing Whitespace
+autofix:4:36:TXT6:Trailing Whitespace
 ~~~~~~~~~~
 Lorem ipsum dolor sit amet,
 consectetur adipiscing elit.

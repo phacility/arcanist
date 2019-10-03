@@ -84,13 +84,13 @@ switch ($x) {
     throw_exception();
 }
 ~~~~~~~~~~
-warning:41:3
-warning:48:3
-warning:53:3
-warning:57:3
-warning:66:3
-warning:71:3
-warning:75:3
+warning:41:3:XHP30:Implicit Fallthrough
+warning:48:3:XHP30:Implicit Fallthrough
+warning:53:3:XHP30:Implicit Fallthrough
+warning:57:3:XHP30:Implicit Fallthrough
+warning:66:3:XHP30:Implicit Fallthrough
+warning:71:3:XHP30:Implicit Fallthrough
+warning:75:3:XHP30:Implicit Fallthrough
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

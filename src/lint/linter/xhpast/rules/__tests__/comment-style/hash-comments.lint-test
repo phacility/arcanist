@@ -21,11 +21,11 @@
 /** yes */
 /**** yes ****/
 ~~~~~~~~~~
-error:3:1
-error:4:1
-error:6:1
-error:7:11
-error:16:1
+error:3:1:XHP18:Comment Style
+error:4:1:XHP18:Comment Style
+error:6:1:XHP18:Comment Style
+error:7:11:XHP18:Comment Style
+error:16:1:XHP18:Comment Style
 ~~~~~~~~~~
 <?php
 

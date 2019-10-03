@@ -18,9 +18,9 @@ EODOC
   );
 f (1);
 ~~~~~~~~~~
-warning:4:4
-warning:9:4
-warning:19:2
+warning:4:4:XHP37:Call Formatting
+warning:9:4:XHP37:Call Formatting
+warning:19:2:XHP37:Call Formatting
 ~~~~~~~~~~
 <?php
 

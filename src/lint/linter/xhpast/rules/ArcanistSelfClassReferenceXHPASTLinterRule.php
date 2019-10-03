@@ -17,6 +17,9 @@ final class ArcanistSelfClassReferenceXHPASTLinterRule
     $class_declarations = $root->selectDescendantsOfType('n_CLASS_DECLARATION');
 
     foreach ($class_declarations as $class_declaration) {
+      if ($class_declaration->getChildByIndex(1)->getTypeName() == 'n_EMPTY') {
+        continue;
+      }
       $class_name = $class_declaration
         ->getChildOfType(1, 'n_CLASS_NAME')
         ->getConcreteString();

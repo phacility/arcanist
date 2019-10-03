@@ -17,14 +17,14 @@ NeW C();
 
 echo __file__;
 ~~~~~~~~~~
-warning:6:1
-warning:7:1
-warning:8:1
-warning:9:1
-warning:11:1
-warning:13:22
-warning:16:1
-warning:18:6
+warning:6:1:XHP40:Keyword Conventions
+warning:7:1:XHP40:Keyword Conventions
+warning:8:1:XHP40:Keyword Conventions
+warning:9:1:XHP40:Keyword Conventions
+warning:11:1:XHP40:Keyword Conventions
+warning:13:22:XHP40:Keyword Conventions
+warning:16:1:XHP40:Keyword Conventions
+warning:18:6:XHP40:Keyword Conventions
 ~~~~~~~~~~
 <?php
 

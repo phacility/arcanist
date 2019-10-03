@@ -228,9 +228,6 @@ abstract class ArcanistLinter extends Phobject {
     return 1.0;
   }
 
-  /**
-   * TODO: This should be `final`.
-   */
   public function setCustomSeverityMap(array $map) {
     $this->customSeverityMap = $map;
     return $this;
@@ -241,7 +238,7 @@ abstract class ArcanistLinter extends Phobject {
     return $this;
   }
 
-  final public function setCustomSeverityRules(array $rules) {
+  public function setCustomSeverityRules(array $rules) {
     $this->customSeverityRules = $rules;
     return $this;
   }

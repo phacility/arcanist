@@ -16,8 +16,8 @@ $skip_cache = $a || $b;
 $skip_cache = false && something();
 $skip_cache = f();
 ~~~~~~~~~~
-error:3:5
-error:5:5
-error:7:5
-error:14:15
-error:16:15
+error:3:5:XHP20:Tautological Expression
+error:5:5:XHP20:Tautological Expression
+error:7:5:XHP20:Tautological Expression
+error:14:15:XHP20:Tautological Expression
+error:16:15:XHP20:Tautological Expression

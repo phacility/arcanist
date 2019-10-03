@@ -13,12 +13,12 @@ MyClass :: myMethod();
 MyClass::$myProperty;
 MyClass :: $myProperty;
 ~~~~~~~~~~
-warning:6:14
-warning:6:17
-warning:11:8
-warning:11:11
-warning:14:8
-warning:14:11
+warning:6:14:XHP96:Paamayim Nekudotayim Spacing
+warning:6:17:XHP96:Paamayim Nekudotayim Spacing
+warning:11:8:XHP96:Paamayim Nekudotayim Spacing
+warning:11:11:XHP96:Paamayim Nekudotayim Spacing
+warning:14:8:XHP96:Paamayim Nekudotayim Spacing
+warning:14:11:XHP96:Paamayim Nekudotayim Spacing
 ~~~~~~~~~~
 <?php
 

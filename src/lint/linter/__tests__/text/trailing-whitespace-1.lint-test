@@ -1,8 +1,8 @@
 The quick brown fox 
 jumps over the lazy dog. 
 ~~~~~~~~~~
-autofix:1:20
-autofix:2:25
+autofix:1:20:TXT6:Trailing Whitespace
+autofix:2:25:TXT6:Trailing Whitespace
 ~~~~~~~~~~
 The quick brown fox
 jumps over the lazy dog.

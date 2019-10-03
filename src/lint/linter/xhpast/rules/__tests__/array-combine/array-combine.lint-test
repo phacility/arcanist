@@ -3,4 +3,4 @@
 array_combine($x, $x);
 array_combine($x, $y);
 ~~~~~~~~~~
-disabled:3:1
+disabled:3:1:XHP84:`array_combine()` Unreliable

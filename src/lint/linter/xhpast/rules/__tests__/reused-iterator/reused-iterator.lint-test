@@ -50,9 +50,9 @@ foreach ($list as $thing) {
   }
 }
 ~~~~~~~~~~
-error:4:11
-error:10:11
-error:16:11
-error:22:11
-error:36:7
-error:48:7
+error:4:11:XHP23:Reuse of Iterator Variable
+error:10:11:XHP23:Reuse of Iterator Variable
+error:16:11:XHP23:Reuse of Iterator Variable
+error:22:11:XHP23:Reuse of Iterator Variable
+error:36:7:XHP23:Reuse of Iterator Variable
+error:48:7:XHP23:Reuse of Iterator Variable

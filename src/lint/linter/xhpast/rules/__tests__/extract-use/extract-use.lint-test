@@ -2,4 +2,4 @@
 
 extract();
 ~~~~~~~~~~
-error:3:1
+error:3:1:XHP4:Use of `extract`

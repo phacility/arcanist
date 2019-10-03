@@ -3,5 +3,5 @@
 08;
 -08;
 ~~~~~~~~
-error:3:1
-error:4:2
+error:3:1:XHP125:Invalid Octal Numeric Scalar
+error:4:2:XHP125:Invalid Octal Numeric Scalar

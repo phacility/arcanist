@@ -26,18 +26,18 @@ do {
 
 try {} catch(Exception $ex) {}
 ~~~~~~~~~~
-warning:3:1
-warning:4:1
-warning:5:1
-warning:6:1
-warning:7:1
-warning:8:1
-warning:8:6
-warning:9:1
-warning:14:3
-warning:15:3
-warning:25:3
-warning:27:8
+warning:3:1:XHP26:Space After Control Statement
+warning:4:1:XHP26:Space After Control Statement
+warning:5:1:XHP26:Space After Control Statement
+warning:6:1:XHP26:Space After Control Statement
+warning:7:1:XHP26:Space After Control Statement
+warning:8:1:XHP26:Space After Control Statement
+warning:8:6:XHP26:Space After Control Statement
+warning:9:1:XHP26:Space After Control Statement
+warning:14:3:XHP26:Space After Control Statement
+warning:15:3:XHP26:Space After Control Statement
+warning:25:3:XHP26:Space After Control Statement
+warning:27:8:XHP26:Space After Control Statement
 ~~~~~~~~~~
 <?php
 

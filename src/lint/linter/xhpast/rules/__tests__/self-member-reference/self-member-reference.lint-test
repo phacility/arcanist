@@ -9,7 +9,7 @@ class Foo extends Bar {
   }
 }
 ~~~~~~~~~~
-warning:7:10
+warning:7:10:XHP57:Self Member Reference
 ~~~~~~~~~~
 <?php
 

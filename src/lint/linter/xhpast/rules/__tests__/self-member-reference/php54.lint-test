@@ -10,7 +10,7 @@ final class SomeClass extends Phobject {
   }
 }
 ~~~~~~~~~~
-warning:6:7
+warning:6:7:XHP57:Self Member Reference
 ~~~~~~~~~~
 <?php
 

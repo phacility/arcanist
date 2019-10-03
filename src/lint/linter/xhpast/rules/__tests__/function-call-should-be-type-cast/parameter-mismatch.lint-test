@@ -3,7 +3,7 @@
 // we don't provide an autofix.
 strval($x, $y);
 ~~~~~~~~~~
-advice:4:1
+advice:4:1:XHP105:Function Call Should Be Type Cast
 ~~~~~~~~~~
 <?php
 // If the function call doesn't have exactly one parameter,

@@ -20,12 +20,12 @@ array(
 array('quack',
 );
 ~~~~~~~~~~
-warning:4:5
-warning:4:8
-warning:8:18
-warning:12:17
-warning:12:32
-warning:20:7
+warning:4:5:XHP76:Array Element
+warning:4:8:XHP76:Array Element
+warning:8:18:XHP76:Array Element
+warning:12:17:XHP76:Array Element
+warning:12:32:XHP76:Array Element
+warning:20:7:XHP76:Array Element
 ~~~~~~~~~~
 <?php
 

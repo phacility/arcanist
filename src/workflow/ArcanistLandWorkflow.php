@@ -436,6 +436,33 @@ EOTEXT
     return null;
   }
 
+  private function getGitSvnTrunk() {
+    if (!$this->isGitSvn) {
+      return null;
+    }
+
+    // See T13293, this depends on the options passed when cloning.
+    // On any error we return `trunk`, which was the previous default.
+
+    $repository_api = $this->getRepositoryAPI();
+    list($err, $refspec) = $repository_api->execManualLocal(
+      'config svn-remote.svn.fetch');
+
+    if ($err) {
+      return 'trunk';
+    }
+
+    $refspec = rtrim(substr($refspec, strrpos($refspec, ':') + 1));
+
+    $prefix = 'refs/remotes/';
+    if (substr($refspec, 0, strlen($prefix)) !== $prefix) {
+      return 'trunk';
+    }
+
+    $refspec = substr($refspec, strlen($prefix));
+    return $refspec;
+  }
+
   private function readEngineArguments() {
     // NOTE: This is hard-coded for Git right now.
     // TODO: Clean this up and move it into LandEngines.
@@ -620,7 +647,7 @@ EOTEXT
 
     $this->ontoRemoteBranch = $this->onto;
     if ($this->isGitSvn) {
-      $this->ontoRemoteBranch = 'trunk';
+      $this->ontoRemoteBranch = $this->getGitSvnTrunk();
     } else if ($this->isGit) {
       $this->ontoRemoteBranch = $this->remote.'/'.$this->onto;
     }
@@ -1610,6 +1637,7 @@ EOTEXT
     // if this one doesn't work out.
     try {
       $this->checkForBuildablesWithPlanBehaviors($diff_phid);
+      return;
     } catch (ArcanistUserAbortException $abort_ex) {
       throw $abort_ex;
     } catch (Exception $ex) {
@@ -1671,7 +1699,7 @@ EOTEXT
 
     $console->writeOut($message."\n\n");
 
-    $builds = msort($builds, 'getStatusSortVector');
+    $builds = msortv($builds, 'getStatusSortVector');
     foreach ($builds as $build) {
       $ansi_color = $build->getStatusANSIColor();
       $status_name = $build->getStatusName();
@@ -1775,7 +1803,7 @@ EOTEXT
     $ongoing_builds = array();
     $failed_builds = array();
 
-    $builds = msort($builds, 'getStatusSortVector');
+    $builds = msortv($builds, 'getStatusSortVector');
     foreach ($builds as $build_ref) {
       $plan = idx($plans, $build_ref->getBuildPlanPHID());
       if (!$plan) {

@@ -4,4 +4,4 @@ function f() {
   $this = "cannot be re-assigned";
 }
 ~~~~~~~~~
-error:4:
+error:4:0:PHP2:Fatal Error

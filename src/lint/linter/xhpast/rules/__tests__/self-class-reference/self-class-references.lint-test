@@ -9,8 +9,14 @@ class Foo extends Bar {
     return new self();
   }
 }
+
+$c = new class {
+  public function newInstance() {
+    return new self();
+  }
+};
 ~~~~~~~~~~
-warning:5:16
+warning:5:16:XHP95:Self Class Reference
 ~~~~~~~~~~
 <?php
 
@@ -23,3 +29,9 @@ class Foo extends Bar {
     return new self();
   }
 }
+
+$c = new class {
+  public function newInstance() {
+    return new self();
+  }
+};

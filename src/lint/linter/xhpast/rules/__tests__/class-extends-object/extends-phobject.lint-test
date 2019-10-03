@@ -4,4 +4,4 @@ abstract class A extends Phobject {}
 final class B extends A {}
 final class C {}
 ~~~~~~~~~~
-disabled:5:1
+disabled:5:1:XHP88:Class Not Extending `Phobject`

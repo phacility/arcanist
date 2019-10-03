@@ -6,8 +6,8 @@ baz()
 
      ;
 ~~~~~~~~~~
-advice:4:6
-advice:5:6
+advice:4:6:XHP43:Semicolon Spacing
+advice:5:6:XHP43:Semicolon Spacing
 ~~~~~~~~~~
 <?php
 

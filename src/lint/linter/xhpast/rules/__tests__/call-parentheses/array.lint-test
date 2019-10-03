@@ -4,9 +4,9 @@ array ( 1, 2, 3 );
 list ( $x, $y ) = array();
 [ 1, 2 , 3 ];
 ~~~~~~~~~~
-warning:3:6
-warning:4:5
-warning:4:14
+warning:3:6:XHP37:Call Formatting
+warning:4:5:XHP37:Call Formatting
+warning:4:14:XHP37:Call Formatting
 ~~~~~~~~~~
 <?php
 

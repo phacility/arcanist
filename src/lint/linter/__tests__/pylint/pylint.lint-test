@@ -2,6 +2,8 @@ import sys, os
 
 x += 1
 ~~~~~~~~~~
-warning:1:0
-advice:1:0
-error:3:0
+advice:1:0:C0111:Missing Docstring
+advice:1:0:C0410:Multiple Imports
+warning:1:0:W0611:Unused Import
+warning:1:0:W0611:Unused Import
+error:3:0:E0602:Undefined Variable

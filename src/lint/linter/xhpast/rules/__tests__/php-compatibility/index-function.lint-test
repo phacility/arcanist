@@ -2,7 +2,7 @@
 
 f()[0];
 ~~~~~~~~~~
-error:3:5
+error:3:5:XHP45:PHP Compatibility
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

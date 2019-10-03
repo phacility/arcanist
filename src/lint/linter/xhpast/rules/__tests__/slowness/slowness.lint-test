@@ -8,7 +8,7 @@
 (strstr('a', 'b') === false);
 (strstr('a', 'b') === 'b');
 ~~~~~~~~~~
-warning:3:2
-warning:4:2
-warning:5:8
-warning:8:2
+warning:3:2:XHP36:Slow Construct
+warning:4:2:XHP36:Slow Construct
+warning:5:8:XHP36:Slow Construct
+warning:8:2:XHP36:Slow Construct
