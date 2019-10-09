@@ -25,7 +25,7 @@ final class ICFlowSummary extends PhutilConsoleView {
   public function getValues() {
     $flow = $this->workspace;
     $graph = $flow->getTrackingGraph();
-    $nodes = $graph->getTopologicalSortedNodes();
+    $nodes = $graph->getNodesInTopologicalOrder();
     $current_feature = $flow->getCurrentFeature();
 
     $flow
