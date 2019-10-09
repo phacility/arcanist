@@ -66,7 +66,10 @@ EOTEXT
 
         $parent_branch = $graph->getUpstream($branch_name);
         if ($parent_revision = $this->getRevisionForBranch($parent_branch)) {
-          $parents[$revision['phid']][] = $parent_revision['phid'];
+          // do not add yourself as dependency
+          if ($parent_revision['phid'] != $revision['phid']) {
+            $parents[$revision['phid']][] = $parent_revision['phid'];
+          }
         }
       }
 
