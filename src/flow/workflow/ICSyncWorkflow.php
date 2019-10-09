@@ -61,11 +61,15 @@ EOTEXT
       foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
         $revision = $this->getRevisionForBranch($branch_name);
         if (!$revision || ($graph->getDepth($branch_name) < 2)) {
+
           continue;
         }
 
         $parent_branch = $graph->getUpstream($branch_name);
+	$this->consoleConfirm($parent_branch);
+	$this->consoleConfirm($this->getRevisionForBranch($parent_branch));
         if ($parent_revision = $this->getRevisionForBranch($parent_branch)) {
+     
           $parents[$revision['phid']][] = $parent_revision['phid'];
         }
       }
