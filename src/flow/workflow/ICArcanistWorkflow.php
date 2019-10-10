@@ -207,40 +207,6 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     return $results;
   }
 
-  protected function getDiffs() {
-    if (!$this->diffs) {
-      $this->diffs = $this->loadDiffs($this->getRevisions());
-    }
-    return $this->diffs;
-  }
-
-  protected function loadDiffs(array $revisions) {
-    if ($this->isOffline()) {
-      return [];
-    }
-    $git = $this->getRepositoryAPI();
-    $diffs = ipull($revisions, 'activeDiff', 'activeDiffPHID');
-    $calls = [];
-    foreach ($diffs as $diff_phid => $diff) {
-      $diff_id = idx($diff, 'id');
-      $scratch_filename = "$diff_phid.diff";
-      $scratch_path = $git->getScratchFilePath($scratch_filename);
-      $diffs[$diff_phid]['rawDiffScratchFilename'] = $scratch_filename;
-      if (!Filesystem::pathExists($scratch_path)) {
-        $calls[$diff_phid] = $this->getConduit()->callMethod('differential.getrawdiff', [
-          'diffID' => $diff_id,
-        ]);
-      }
-    }
-
-    foreach (new FutureIterator($calls) as $diff_phid => $future) {
-      $scratch_filename = $diffs[$diff_phid]['rawDiffScratchFilename'];
-      $git->writeScratchFile($scratch_filename, $future->resolve());
-    }
-
-    return ipull($diffs, null, 'revisionID');
-  }
-
   protected function checkoutBranch($name, $silent = false) {
     $api = $this->getRepositoryAPI();
 
@@ -341,30 +307,6 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     }
 
     return $graph;
-  }
-
-  protected function graftRevisions(array $revisions, $force = false) {
-    $diffs = $this->loadDiffs($revisions);
-    foreach ($revisions as $revision) {
-      $id = $revision['id'];
-      $diff = $diffs[$id];
-      if (!$base_branch_name = idx($diff, 'branch')) {
-        $base_branch_name = 'D'.$id;
-      }
-      $branch_name = $this->generateBranchName($base_branch_name);
-      $this->checkoutBranch($branch_name, true);
-      $patch_args = [
-        '--revision',
-        $id,
-        '--nobranch',
-        '--skip-dependencies',
-      ];
-      if ($force) {
-        array_push($patch_args, '--force');
-      }
-      $patch_workflow = $this->buildChildWorkflow('patch', $patch_args);
-      $patch_workflow->run();
-    }
   }
 
   protected function syncGraftedRevisions(array $branch_names) {
