@@ -33,7 +33,7 @@ final class ICFlowStatusField extends ICFlowField {
         $status = 'Queue Rejected';
       }
     }
-    $color = idx([
+    $color = idx(array(
       'Closed'          => 'cyan',
       'Needs Review'    => 'magenta',
       'Needs Revision'  => 'yellow',
@@ -43,7 +43,7 @@ final class ICFlowStatusField extends ICFlowField {
       'Queue Applied'   => 'green',
       'In Queue'        => 'blue',
       'Queue Rejected'  => 'red',
-    ], $status, 'default');
+    ), $status, 'default');
     return array(
       'color' => $color,
       'status' => $status,

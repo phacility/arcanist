@@ -14,17 +14,17 @@ final class ICFlowConfigurationManager extends Phobject {
   private function getConfig() {
     if ($this->writtenConfig === null) {
       $user_config = $this->arcanistConfig->readUserArcConfig();
-      $this->writtenConfig = idx($user_config, 'flow', []);
+      $this->writtenConfig = idx($user_config, 'flow', array());
     }
     return $this->writtenConfig;
   }
 
   private function getFieldConfigs() {
-    return idx($this->getConfig(), 'fields', []);
+    return idx($this->getConfig(), 'fields', array());
   }
 
   private function getFieldConfig($field) {
-    return idx($this->getFieldConfigs(), $field, []);
+    return idx($this->getFieldConfigs(), $field, array());
   }
 
   private function getFieldConfigOption($field, $option) {
@@ -59,7 +59,7 @@ final class ICFlowConfigurationManager extends Phobject {
   public function getAllFields() {
     $field_configs = $this->getFieldConfigs();
     $field_keys = ICFlowField::getAllFieldKeys();
-    $fields = [];
+    $fields = array();
     foreach ($field_keys as $field_key) {
       $field = ICFlowField::newField($field_key);
       if ($field_config = idx($field_configs, $field_key)) {

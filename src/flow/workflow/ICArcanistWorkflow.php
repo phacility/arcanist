@@ -3,16 +3,18 @@
 /**
  * Base class that workflows within rIC should extend from.
  *
- * It mainly eases the process of collecting information about a users remote and local data, like
- * users revisions, diffs, branches and queue submissions.  It's very common to need to inspect
- * both the local and remote state of these things, but usually also relatively tedious.
+ * It mainly eases the process of collecting information about a users remote
+ * and local data, like users revisions, diffs, branches and queue submissions.
+ * It's very common to need to inspect both the local and remote state of
+ * these things, but usually also relatively tedious.
  *
- * Methods use a naming convention to distinguish the reading of data which has been cached for
- * the duration of script execution vs loading live data.
+ * Methods use a naming convention to distinguish the reading of data which has
+ * been cached for the duration of script execution vs loading live data.
  *
- *   - `getSomething`   if this has been called before during execution, returns the cached result,
- *                      otherwise it loads it
- *   - `loadSomething`  always loads the data, never cached, does not update the cached result
+ *   - `getSomething`   if this has been called before during execution,
+ *                      returns the cached result, otherwise it loads it
+ *   - `loadSomething`  always loads the data, never cached, does not update
+ *                      the cached result
  */
 abstract class ICArcanistWorkflow extends ArcanistWorkflow {
 
@@ -25,7 +27,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   private $diffs;
 
   public function getSupportedRevisionControlSystems() {
-    return ['git'];
+    return array('git');
   }
 
   public function requiresAuthentication() {
@@ -37,11 +39,11 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   protected function searchMethodForID($method, $id) {
-    $rval = $this->getConduit()->callMethodSynchronous($method, [
-      'constraints' => [
-        'ids' => [(int)$id],
-      ],
-    ]);
+    $rval = $this->getConduit()->callMethodSynchronous($method, array(
+      'constraints' => array(
+        'ids' => array((int)$id),
+      ),
+    ));
     if (!idx($rval, 'data')) {
       throw new ArcanistUsageException(pht(
         'No results for id %s from %s.',
@@ -60,18 +62,6 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
 
   protected function loadGitBranchGraph() {
     return $this->getFlow()->getTrackingGraph();
-  }
-
-  protected function beginDangerousWorkspaceModifications() {
-    if ($this->guard !== null) {
-      throw new Exception('Already performing dangerous workspace modifications!');
-    }
-    $this->guard = new ICGitWorkspaceGuard($this->getGitAPI());
-  }
-
-  protected function endDangerousWorkspaceModifications() {
-    $this->guard->unguard();
-    $this->guard = null;
   }
 
   protected function getFlow() {
@@ -109,7 +99,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   protected function loadCommitInfo(array $branches) {
     $repository_api = $this->getRepositoryAPI();
 
-    $futures = [];
+    $futures = array();
     foreach ($branches as $branch) {
       // NOTE: "-s" is an option deep in git's diff argument parser that
       // doesn't seem to have much documentation and has no long form. It
@@ -128,12 +118,12 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
       list($info) = $future->resolvex();
       list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
 
-      $branch = $branches[$name] + [
+      $branch = $branches[$name] + array(
         'hash' => $hash,
         'desc' => $desc,
         'tree' => $tree,
         'epoch' => (int)$epoch,
-      ];
+      );
 
       try {
         $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
@@ -153,7 +143,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   protected function getRevisionForBranch($branch_name) {
-    $branch = idx($this->getBranches(), $branch_name, []);
+    $branch = idx($this->getBranches(), $branch_name, array());
     if (!$revision_id = idx($branch, 'revisionID')) {
       return false;
     }
@@ -168,38 +158,36 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   protected function loadRevisions(array $branches) {
-    $ids = [];
-    $hashes = [];
+    $ids = array();
+    $hashes = array();
 
     foreach ($branches as $branch) {
       if ($branch['revisionID']) {
         $ids[] = $branch['revisionID'];
       }
-      $hashes[] = ['gtcm', $branch['hash']];
-      $hashes[] = ['gttr', $branch['tree']];
+      $hashes[] = array('gtcm', $branch['hash']);
+      $hashes[] = array('gttr', $branch['tree']);
     }
 
-    $params = [];
-    $results = array();
     $futures = array();
     if ($ids) {
-      $future = $this->getConduit()->callMethod('differential.query', array('ids' => $ids));
-      $future->start();
-      $futures[] = $future;
-
+      $futures[] = $this->getConduit()
+        ->callMethod('differential.query', array('ids' => $ids))->start();
     }
 
     if ($hashes) {
-      $future = $this->getConduit()->callMethod('differential.query', array('commitHashes' => $hashes));
-      $future->start();
-      $futures[]=$future;
+      $futures[] = $this->getConduit()
+        ->callMethod('differential.query',
+                     array('commitHashes' => $hashes))->start();
     }
 
+    $results = array();
     foreach ($futures as $future) {
       foreach ($future->resolve() as $value) {
         $results[$value['id']] = $value;
       }
     }
+
     return $results;
   }
 
@@ -228,7 +216,8 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
       if ($err) {
         throw new ArcanistUsageException(phutil_console_format(pht(
           "Cannot switch to another branch if changes would be overwritten.\n".
-          "\t\t Either commit or stash changes in order to change to **'{$name}'**.\n")));
+          "\t\tEither commit or stash changes in order to change to ".
+          "**'{%s}'**.\n"), $name));
       }
     }
 
@@ -243,28 +232,28 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
       ->setFields($fields);
 
     $values = $summary->getValues();
-    $out = [];
+    $out = array();
     foreach ($values as $name => $data) {
       $fields = idx($data, 'fields');
-      $monogram = idxv($fields, ['monogram', 'revision-id']);
-      $ahead = (int)idxv($data, ['tracking', 'ahead']);
-      $render_ahead = $ahead ?: '';
-      $behind = (int)idxv($data, ['tracking', 'behind']);
-      $render_behind = $behind ?: '';
+      $monogram = idxv($fields, array('monogram', 'revision-id'));
+      $ahead = (int)idxv($data, array('tracking', 'ahead'));
+      $render_ahead = $ahead ? $ahead : '';
+      $behind = (int)idxv($data, array('tracking', 'behind'));
+      $render_behind = $behind ? $behind : '';
       $render_monogram = $monogram ? 'D'.$monogram : '';
-      $out[] = [
+      $out[] = array(
         'name'      => $name,
-        'current'   => idxv($fields, ['current', 'current']),
-        'status'    => ''.idxv($fields, ['status', 'status']),
-        'desc'      => idxv($fields, ['description', 'description']),
-        'color'     => idxv($fields, ['status', 'color']),
+        'current'   => idxv($fields, array('current', 'current')),
+        'status'    => ''.idxv($fields, array('status', 'status')),
+        'desc'      => idxv($fields, array('description', 'description')),
+        'color'     => idxv($fields, array('status', 'color')),
         'monogram'  => $render_monogram,
-        'hash'      => idxv($fields, ['hash', 'hash']),
-        'stale'     => idxv($fields, ['hash', 'stale']),
+        'hash'      => idxv($fields, array('hash', 'hash')),
+        'stale'     => idxv($fields, array('hash', 'stale')),
         'ahead'     => $render_ahead,
         'behind'    => $render_behind,
-        'upstream'  => idxv($data, ['tracking', 'upstream']),
-      ];
+        'upstream'  => idxv($data, array('tracking', 'upstream')),
+      );
     }
 
     return $out;
@@ -283,20 +272,20 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   protected function buildDependencyGraph($revision_id) {
     $graph = null;
     if ($revision_id) {
-      $revisions = $this->getConduit()->callMethodSynchronous('differential.query', [
-        'ids' => [$revision_id],
-      ]);
+      $revisions = $this->getConduit()
+        ->callMethodSynchronous('differential.query',
+                                array('ids' => array($revision_id)));
       if ($revisions) {
         $revision = head($revisions);
-        $rev_auxiliary = idx($revision, 'auxiliary', []);
-        $phids = idx($rev_auxiliary, 'phabricator:depends-on', []);
+        $rev_auxiliary = idx($revision, 'auxiliary', array());
+        $phids = idx($rev_auxiliary, 'phabricator:depends-on', array());
         if ($phids) {
           $revision_phid = $revision['phid'];
           $graph = (new ArcanistDifferentialDependencyGraph())
             ->setConduit($this->getConduit())
             ->setRepositoryAPI($this->getRepositoryAPI())
             ->setStartPHID($revision_phid)
-            ->addNodes([$revision_phid => $phids])
+            ->addNodes(array($revision_phid => $phids))
             ->loadGraph();
         }
       }
@@ -310,30 +299,35 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     $graph = $this->loadGitBranchGraph();
     foreach ($branch_names as $branch_name) {
       $revision = $this->getRevisionForBranch($branch_name);
-      $this->writeInfo(pht('Patching latest revision onto branch "%s"', $branch_name), '');
+      $this->writeInfo(pht('Patching latest revision onto branch "%s"',
+                           $branch_name), '');
       $this->checkoutBranch($branch_name, true);
 
       try {
-        $base_revision = idxv($revision, ['activeDiff', 'sourceControlBaseRevision']);
+        $base_revision = idxv($revision, array(
+        'activeDiff',
+                                               'sourceControlBaseRevision',
+        ));
         $git->execxLocal('reset --hard %s', $base_revision);
-      } catch(CommandException $e) {
-        // the source control base revision doesn't exist in this working copy. this
-        // typically occurs when this branch is a child dependency of another grafted
-        // branch, so reset to the parent.
+      } catch (CommandException $e) {
+        // the source control base revision doesn't exist in this working copy.
+        // this typically occurs when this branch is a child dependency of
+        // another grafted branch, so reset to the parent.
         if ($upstream = $graph->getUpstream($branch_name)) {
           $git->execxLocal('reset --hard %s', $upstream);
         } else {
-          throw new Exception(pht('Cannot determine base revision for branch "%s".', $branch_name));
+          throw new Exception(pht('Cannot determine base revision for branch '.
+                                  '"%s".', $branch_name));
         }
       }
 
-      $patch_workflow = $this->buildChildWorkflow('patch', [
+      $patch_workflow = $this->buildChildWorkflow('patch', array(
         '--revision',
         $revision['id'],
         '--nobranch',
         '--skip-dependencies',
         '--force',
-      ]);
+      ));
       $patch_workflow->run();
     }
   }

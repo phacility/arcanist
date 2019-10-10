@@ -28,13 +28,13 @@ EOTEXT
   }
 
   public function getArguments() {
-    return [
-      'halt-on-conflict' => [
-        'help' => "Rather than aborting any rebase attempts, cascade will drop the user\n".
-                  "into the conflicted branch in a rebase state.",
+    return array(
+      'halt-on-conflict' => array(
+        'help' => "Rather than aborting any rebase attempts, cascade will drop".
+                  " the user\n into the conflicted branch in a rebase state.",
         'short' => 'hc',
-      ],
-    ];
+      ),
+    );
   }
 
   public function run() {
@@ -45,10 +45,11 @@ EOTEXT
   private function cascade() {
     $graph = $this->loadGitBranchGraph();
     $api = $this->getRepositoryAPI();
-    if($this->isInRebase($api)) {
+    if ($this->isInRebase($api)) {
       throw new ArcanistUsageException(
         phutil_console_format(" You are in a rebase process currently.\n".
-                              " Get more information about this by running:\n\n".
+                              " Get more information about this by running:".
+                              "\n\n".
                               "      git status\n\n".
                               " To abort the current rebase, run:\n\n".
                               "      git rebase --abort\n\n".
@@ -64,7 +65,7 @@ EOTEXT
 
   private function isInRebase($api) {
     list($err, $stdout) = $api->execManualLocal('status');
-    $in_rebase = strpos($stdout, "rebase in progress;") !== false;
+    $in_rebase = strpos($stdout, 'rebase in progress;') !== false;
     return $in_rebase;
   }
 
@@ -87,17 +88,18 @@ EOTEXT
           $conflict = $this->extractConflictFromRebase($stdout);
           throw new ArcanistUsageException(
             phutil_console_format(" <fg:red>%s</fg>\n".
-                                  " Navigate to that file to correct the conflict, then run:\n\n".
-                                  "        git add <file(s)>\n".
-                                  "        git rebase --continue\n\n".
-                                  " Then continue on with cascading. To abort this process, run:\n\n".
-                                  "        git rebase --abort\n\n".
-                                  " You are now in branch '**%s**'.\n", $conflict, $child_branch));
+              " Navigate to that file to correct the conflict, then run:\n\n".
+              "        git add <file(s)>\n".
+              "        git rebase --continue\n\n".
+              " Then continue on with cascading. To abort this process, run:".
+              "\n\n".
+              "        git rebase --abort\n\n".
+              " You are now in branch '**%s**'.\n", $conflict, $child_branch));
         } else {
           $api->execxLocal('rebase --abort');
           continue;
         }
-        
+
       } else {
         echo phutil_console_format(" <fg:green>%s</fg>\n", 'OK');
       }
@@ -112,7 +114,8 @@ EOTEXT
   }
 
   private function extractConflictFromRebase($stdout) {
-    // Find conflict, only take the line it is enumerated on using 
+    // Find conflict, only take the line it is enumerated on using
+    $result = null;
     preg_match("/CONFLICT(.*)\n/sU", $stdout, $result);
     return rtrim(head($result));
   }

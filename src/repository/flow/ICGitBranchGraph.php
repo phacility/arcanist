@@ -20,7 +20,7 @@ final class ICGitBranchGraph extends AbstractDirectedGraph {
   }
 
   public function getDownstreams($branch) {
-    $downstreams = idx($this->getNodes(), $branch, []);
+    $downstreams = idx($this->getNodes(), $branch, array());
     array_multisort($downstreams);
     return $downstreams;
   }
@@ -28,7 +28,7 @@ final class ICGitBranchGraph extends AbstractDirectedGraph {
   public function getSiblings($branch) {
     $parent = $this->getUpstream($branch);
     if (!$parent) {
-      return [];
+      return array();
     }
     $siblings = $this->getDownstreams($parent);
     $branch_index = array_search($branch, $siblings);
@@ -38,9 +38,9 @@ final class ICGitBranchGraph extends AbstractDirectedGraph {
 
   protected function loadEdges(array $nodes) {
     $known = $this->getNodes();
-    $edges = [];
+    $edges = array();
     foreach ($nodes as $node) {
-      $edges[$node] = idx($known, $node, []);
+      $edges[$node] = idx($known, $node, array());
     }
     return $edges;
   }

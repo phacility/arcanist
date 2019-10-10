@@ -24,16 +24,17 @@ final class ICFlowOwnerField extends ICFlowField {
 
   protected function getFutures(ICFlowWorkspace $workspace) {
     $features = $workspace->getFeatures();
-    $author_phids = array_unique(array_filter(mpull($features, 'getAuthorPHID')));
+    $author_phids = array_unique(array_filter(mpull($features,
+                                                    'getAuthorPHID')));
     if (!$author_phids) {
-      return [];
+      return array();
     }
-    $user_search = $workspace->getConduit()->callMethod('user.search', [
-        'constraints' => [
+    $user_search = $workspace->getConduit()->callMethod('user.search', array(
+        'constraints' => array(
           'phids' => array_values($author_phids),
-        ],
-      ]);
-    return ['user_search' => $user_search];
+        ),
+      ));
+    return array('user_search' => $user_search);
   }
 
   protected function renderValues(array $values) {
@@ -44,7 +45,7 @@ final class ICFlowOwnerField extends ICFlowField {
     if ($author_phid = $feature->getAuthorPHID()) {
       if ($user = $this->getUser($author_phid)) {
         return array(
-          'username' => idxv($user, ['fields', 'username'], ''),
+          'username' => idxv($user, array('fields', 'username'), ''),
         );
       }
     }
@@ -53,8 +54,8 @@ final class ICFlowOwnerField extends ICFlowField {
 
   private function getUser($phid) {
     if ($this->users === null) {
-      $users = $this->getFutureResult('user_search', []);
-      $users = idx($users, 'data', []);
+      $users = $this->getFutureResult('user_search', array());
+      $users = idx($users, 'data', array());
       $this->users = ipull($users, null, 'phid');
     }
     return idx($this->users, $phid);

@@ -16,7 +16,8 @@ final class ICFlowRefMissingFieldException extends Exception {
   public function __construct($field, $method) {
 
     $message = pht(
-      'Ref does not have a value for "%s", this field is required in order to call "%s".',
+      'Ref does not have a value for "%s", this field is required in order to '.
+      'call "%s".',
       $field,
       $method);
 

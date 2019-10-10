@@ -13,7 +13,8 @@ final class ICGitAPI extends Phobject {
   }
 
   public function getParentSha($sha) {
-    list($err, $stdout) = $this->api->execManualLocal("rev-parse --verify $sha^");
+    list($err, $stdout) = $this->api->execManualLocal(
+      "rev-parse --verify $sha^");
     if ($err) {
       return ArcanistGitAPI::GIT_MAGIC_ROOT_COMMIT;
     }
@@ -28,7 +29,7 @@ final class ICGitAPI extends Phobject {
       'for-each-ref --format=%s %s',
       $format,
       $pattern);
-    $results = [];
+    $results = array();
     $delimiter = "\1{$column_id}\1";
     $break = "\1$row_id\1";
     $lines = explode($break, $stdout);
@@ -38,7 +39,7 @@ final class ICGitAPI extends Phobject {
         $line = substr($line, 1);
       }
       $field_values = explode($delimiter, $line, count($fields));
-      $result = [];
+      $result = array();
       foreach ($fields as $field_index => $field_name) {
         $result[$field_name] = $field_values[$field_index];
       }
@@ -53,7 +54,7 @@ final class ICGitAPI extends Phobject {
 
   public function apply($diff) {
     if (!$diff) {
-      return ['', ''];
+      return array('', '');
     }
     $future = $this->api->execFutureLocal('apply');
     $future->write($diff);
@@ -88,15 +89,16 @@ final class ICGitAPI extends Phobject {
   // --( Parsing `git status --porcelain` )------------------------------------
 
   public function getAllEditsAndFiles() {
-    return $this->parseStatus(array("C","R","U","M","A","D","?")); // like CRU-mad, bro?
+    // like CRU-mad, bro?
+    return $this->parseStatus(array('C', 'R', 'U', 'M', 'A', 'D', '?'));
   }
 
   public function getNewFiles() {
-    return $this->parseStatus(array("A", "D", "?"));
+    return $this->parseStatus(array('A', 'D', '?'));
   }
 
   public function getNewEdits() {
-    return $this->parseStatus(array("U", "R", "M"));
+    return $this->parseStatus(array('U', 'R', 'M'));
   }
 
   public function parseStatus($codes) {
@@ -104,18 +106,19 @@ final class ICGitAPI extends Phobject {
     $code_end = 2;
     $filename_start = 3;
 
-    list($err, $stdout, $stderr) = $this->api->execManualLocal("status --porcelain");
+    list($err, $stdout, $stderr) = $this->api
+      ->execManualLocal('status --porcelain');
 
     $lines = explode("\n", $stdout);
     $files = array();
     foreach ($lines as $line) {
       $status = substr($line, 0, $code_end);
-      if ($status[0] === "D") {
+      if ($status[0] === 'D') {
         // Special case for when file is removed via `git rm`:
         // The file is already staged, attempting to do so again will crash
         continue;
       }
-      foreach($codes as $code) {
+      foreach ($codes as $code) {
         if (strpos($status, $code) !== false) {
           array_push($files, substr($line, $filename_start));
           break;
@@ -129,8 +132,9 @@ final class ICGitAPI extends Phobject {
   // --( Parsing `git log` )---------------------------------------------------
 
   public function doesRevisionExistInLog($rid) {
-    list($err, $stdout) = $this->api->execManualLocal("log -E --grep '^Differential Revision:.*D{$rid}$'");
-    return ($stdout !== "");
+    list($err, $stdout) = $this->api
+      ->execManualLocal("log -E --grep '^Differential Revision:.*D{$rid}$'");
+    return ($stdout !== '');
   }
 
   public function getCommitCount() {
@@ -146,7 +150,8 @@ final class ICGitAPI extends Phobject {
 
   public function checkoutBranch($name) {
     // Regular checkout
-    list($err, $stdout, $stderr) = $this->api->execManualLocal("checkout %s", $name);
+    list($err, $stdout, $stderr) = $this->api
+      ->execManualLocal('checkout %s', $name);
     echo $stdout;
     if ($err) {
       throw new ArcanistUsageException($stderr);
@@ -155,7 +160,8 @@ final class ICGitAPI extends Phobject {
 
   public function createAndCheckoutBranchFromHead($name) {
     // Creates new branch tracking HEAD, checkout
-    list($err, $stdout, $stderr) = $this->api->execManualLocal("checkout --track -b %s", $name);
+    list($err, $stdout, $stderr) = $this->api
+      ->execManualLocal('checkout --track -b %s', $name);
     echo $stdout;
     if ($err) {
       throw new ArcanistUsageException($stderr);
@@ -169,14 +175,16 @@ final class ICGitAPI extends Phobject {
     if (in_array($name, ipull($branches, 'name'))) {
       // Branch already exists in tree
       throw new ArcanistUsageException(phutil_console_format(pht(
-        "A branch with the name **'%s'** already exists in your tree.\n", $name)));
+        "A branch with the name **'%s'** already exists in your ".
+        "tree.\n", $name)));
     } else if (!in_array($upstream, ipull($branches, 'name'))) {
       // Upstream doesn't exist in tree
       throw new ArcanistUsageException(phutil_console_format(pht(
         "Upstream branch **'%s'** does not exist.\n", $upstream)));
     }
 
-    list($err, $stdout, $stderr) = $this->api->execManualLocal("checkout --track -b %s %s", $name, $upstream);
+    list($err, $stdout, $stderr) = $this->api
+      ->execManualLocal('checkout --track -b %s %s', $name, $upstream);
     echo $stdout;
     if ($err) {
       throw new ArcanistUsageException($stderr);

@@ -3,9 +3,9 @@
 final class ICConsoleTree extends PhutilConsoleView {
   private $table;
   private $treeColumn = null;
-  private $children = [];
-  private $parents = [];
-  private $rows = [];
+  private $children = array();
+  private $parents = array();
+  private $rows = array();
   private $hasAddedRows = false;
   private $branchLength = 3;
 
@@ -18,7 +18,8 @@ final class ICConsoleTree extends PhutilConsoleView {
   public function setTable(PhutilConsoleTable $table) {
     if ($this->table) {
         throw new LogicException(
-          'You cannot set the table for a console tree more than once, or after adding columns.');
+          'You cannot set the table for a console tree more than once, or '.
+          'after adding columns.');
     }
     $this->table = $table;
 
@@ -47,7 +48,9 @@ final class ICConsoleTree extends PhutilConsoleView {
     return $this->table->drawView();
   }
 
-  protected function descend($node, $depth = 0, array $open_depths = [], $leaf = false) {
+  protected function descend($node, $depth = 0, array $open_depths = array(),
+    $leaf = false) {
+
     $children = $this->children[$node];
     list($row, $meta) = $this->rows[$node];
     $meta_tree = idx($meta, $this->treeColumn);
@@ -67,7 +70,7 @@ final class ICConsoleTree extends PhutilConsoleView {
 
   public static function drawTreeColumn($name, $depth, $leaf, $suffix) {
     $console = new self();
-    $tree = $console->formatTreeColumn($name, $depth, [], $leaf);
+    $tree = $console->formatTreeColumn($name, $depth, array(), $leaf);
     return tsprintf('%s**%s**%s', $tree, $name, $suffix);
   }
 
@@ -94,7 +97,8 @@ final class ICConsoleTree extends PhutilConsoleView {
 
   public function addColumn($key, array $column, $is_tree = false) {
     if ($is_tree && $this->treeColumn) {
-      throw new LogicException('Only one column may be used to display the tree.');
+      throw new LogicException('Only one column may be used to display the '.
+                               'tree.');
     } else if ($is_tree) {
       $this->treeColumn = $key;
     }
@@ -103,18 +107,20 @@ final class ICConsoleTree extends PhutilConsoleView {
     return $this;
   }
 
-  public function addRow(array $data, $parent = null, array $meta = []) {
+  public function addRow(array $data, $parent = null, array $meta = array()) {
     if (!$this->treeColumn) {
-      throw new LogicException('You must add one column specified as the tree column.');
+      throw new LogicException('You must add one column specified as the tree '.
+                               'column.');
     }
 
     $node = idx($data, $this->treeColumn);
     if (!$node || idx($this->rows, $node)) {
-      throw new LogicException('All rows must have a unique value for their tree column.');
+      throw new LogicException('All rows must have a unique value for their '.
+                               'tree column.');
     }
-    $this->rows[$node] = [$data, $meta];
+    $this->rows[$node] = array($data, $meta);
     if (!idx($this->children, $node)) {
-      $this->children[$node] = [];
+      $this->children[$node] = array();
     }
     if ($parent) {
       $this->children[$parent][] = $node;

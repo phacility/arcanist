@@ -42,8 +42,10 @@ abstract class ICFlowBaseWorkflow extends ICArcanistWorkflow {
     }
     if ($root_branch !== $configured_root) {
       $confirm = phutil_console_confirm(
-        pht('Would you like to use %s as the default root branch for your workspace? '.
-            'All `flow` operations involving a root branch will use this branch by default.',
+        pht('Would you like to use %s as the default root branch for '.
+            'your workspace? '.
+            'All `flow` operations involving a root branch will use this '.
+            'branch by default.',
             phutil_console_format('**%s**', $root_branch)));
       if ($confirm) {
         $config->setConfigValue('default.root', $root_branch);

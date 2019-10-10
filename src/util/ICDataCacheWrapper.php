@@ -26,7 +26,7 @@ final class ICDataCacheWrapper extends PhutilKeyValueCacheProxy {
   }
 
   private function getShortKeyMap(array $keys) {
-    $map = [];
+    $map = array();
     foreach ($keys as $key) {
       $map[$this->getShortKey($key)] = $key;
     }
@@ -35,7 +35,7 @@ final class ICDataCacheWrapper extends PhutilKeyValueCacheProxy {
 
   public function getKeys(array $keys) {
     $map = $this->getShortKeyMap($keys);
-    $values = [];
+    $values = array();
     foreach ($this->getProxy()->getKeys(array_keys($map)) as $key => $value) {
       $values[$map[$key]] = call_user_func($this->unserializeCallback, $value);
     }
@@ -44,7 +44,7 @@ final class ICDataCacheWrapper extends PhutilKeyValueCacheProxy {
 
 
   public function setKeys(array $keys, $ttl = null) {
-    $values = [];
+    $values = array();
     foreach ($keys as $key => $value) {
       $values[$this->getShortKey($key)] = call_user_func(
         $this->serializeCallback,

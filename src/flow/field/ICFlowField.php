@@ -2,7 +2,7 @@
 
 abstract class ICFlowField extends Phobject {
 
-  private $futureResults = [];
+  private $futureResults = array();
   private $cache;
   private $configuration;
 
@@ -40,10 +40,10 @@ abstract class ICFlowField extends Phobject {
   }
 
   final protected function getDefaultConfiguration() {
-    return [
+    return array(
       'enabled' => $this->isDefaultField(),
       'order' => $this->getDefaultFieldOrder(),
-    ];
+    );
   }
 
   public function validateOption($option, $value) {
@@ -53,7 +53,7 @@ abstract class ICFlowField extends Phobject {
   }
 
   protected function getOptions() {
-    return [];
+    return array();
   }
 
   protected function getOptionValue($option) {
@@ -102,7 +102,7 @@ abstract class ICFlowField extends Phobject {
   }
 
   protected function getFutures(ICFlowWorkspace $workspace) {
-    return [];
+    return array();
   }
 
   private function setFutureResult($key, $value) {
@@ -115,7 +115,7 @@ abstract class ICFlowField extends Phobject {
   }
 
   public function getTableColumn() {
-    return ['title' => ''];
+    return array('title' => '');
   }
 
   final public static function getAllFieldKeys() {
@@ -148,22 +148,22 @@ abstract class ICFlowField extends Phobject {
     array $fields,
     ICFlowWorkspace $workspace) {
 
-    assert_instances_of($fields, 'ICFlowField');
+    assert_instances_of($fields, __CLASS__);
     $fields = mpull($fields, null, 'getFieldKey');
-    $futures = [];
+    $futures = array();
     $profiler = PhutilServiceProfiler::getInstance();
-    $all_id = $profiler->beginServiceCall([
-      'type' => "flow-futures",
-    ]);
+    $all_id = $profiler->beginServiceCall(array(
+      'type' => 'flow-futures',
+    ));
     foreach ($fields as $field_key => $field) {
-      $id = $profiler->beginServiceCall([
+      $id = $profiler->beginServiceCall(array(
         'type' => "flow-futures:{$field_key}",
-      ]);
+      ));
       foreach ($field->getFutures($workspace) as $future_key => $future) {
         $field_future_key = "{$field_key}:{$future_key}";
         $futures[$field_future_key] = $future;
       }
-      $profiler->endServiceCall($id, []);
+      $profiler->endServiceCall($id, array());
     }
     $iterator = new FutureIterator($futures);
     foreach ($iterator as $field_future_key => $future) {
@@ -173,11 +173,11 @@ abstract class ICFlowField extends Phobject {
       $field = $fields[$field_key];
       $field->setFutureResult($future_key, $future->resolve());
     }
-    $profiler->endServiceCall($all_id, []);
+    $profiler->endServiceCall($all_id, array());
   }
 
   final public function renderInformation() {
-    $option_summaries = [];
+    $option_summaries = array();
     foreach ($this->getOptions() as $option => $info) {
       $option_summaries[] = tsprintf(
         "    **%s**\n\n%B\n\n      value: %s\n\n",

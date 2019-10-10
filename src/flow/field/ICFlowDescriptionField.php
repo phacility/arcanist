@@ -27,14 +27,14 @@ final class ICFlowDescriptionField extends ICFlowField {
   }
 
   protected function getOptions() {
-    return array_merge(parent::getOptions(), [
-      'length' => [
+    return array_merge(parent::getOptions(), array(
+      'length' => array(
         'summary' => pht(
           'Truncate display of descriptions exceeding this many characters. '.
           'Must be between 1 and 80, defaults to 50.'),
         'default' => 50,
-      ],
-    ]);
+      ),
+    ));
   }
 
   protected function renderValues(array $values) {

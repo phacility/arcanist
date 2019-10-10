@@ -74,17 +74,17 @@ final class ICFlowWorkspace extends Phobject {
 
   public function cacheHeadDiffs(array $shas) {
     $shas = array_unique($shas);
-    $keys = [];
+    $keys = array();
     foreach ($shas as $sha) {
       $keys[$sha] = "head-diff-{$sha}";
     }
     $existing_shas = $this->cache->getKeys($keys);
-    $rval = [];
+    $rval = array();
     foreach ($keys as $sha => $cache_key) {
       $diff = idx($existing_shas, $cache_key);
       if ($diff === null) {
-        $parentSha = $this->git->getParentSha($sha);
-        $diff = $this->git->getAPI()->getFullGitDiff($parentSha, $sha);
+        $parent_sha = $this->git->getParentSha($sha);
+        $diff = $this->git->getAPI()->getFullGitDiff($parent_sha, $sha);
         $this->cache->setKey($cache_key, $diff, 60 * 60 * 24 * 7);
       }
       $rval[$sha] = $diff;
@@ -94,18 +94,19 @@ final class ICFlowWorkspace extends Phobject {
 
   private function cacheActiveDiffs(array $diff_ids) {
     $diff_ids = array_unique($diff_ids);
-    $keys = [];
+    $keys = array();
     foreach ($diff_ids as $diff_id) {
       $keys[$diff_id] = "active-diff-{$diff_id}";
     }
     $existing_ids = $this->cache->getKeys($keys);
-    $rval = [];
+    $rval = array();
     foreach ($keys as $diff_id => $cache_key) {
       $diff = idx($existing_ids, $cache_key);
       if ($diff === null) {
-        $diff = $this->conduit->callMethodSynchronous('differential.getrawdiff', [
-          'diffID' => $diff_id,
-        ]);
+        $diff = $this->conduit->callMethodSynchronous('differential.getrawdiff',
+          array(
+            'diffID' => $diff_id,
+        ));
         $this->cache->setKey($cache_key, $diff, 60 * 60 * 24 * 7);
       }
       $rval[$diff_id] = $diff;
@@ -149,27 +150,27 @@ final class ICFlowWorkspace extends Phobject {
 
   private function differentialQuerySearchResults(array $ids) {
     if (!$ids) {
-      return [[], []];
+      return array(array(), array());
     }
     $conduit = $this->conduit;
-    $query_future = $conduit->callMethod('differential.query', [
+    $query_future = $conduit->callMethod('differential.query', array(
         'ids' => $ids,
-      ]);
+      ));
     $query_future->start();
-    $search_future = $conduit->callMethod('differential.revision.search', [
-        'constraints' => [
+    $search_future = $conduit->callMethod('differential.revision.search', array(
+        'constraints' => array(
           'ids' => $ids,
-        ],
-        'attachments' => [
+        ),
+        'attachments' => array(
           'queue-submissions' => true,
-        ],
-      ]);
+        ),
+      ));
     $search_future->start();
     $query_results = $query_future->resolve();
     $query_results = ipull($query_results, null, 'id');
     $search_results = $search_future->resolve();
     $search_results = ipull(idx($search_results, 'data'), null, 'id');
-    return [$query_results, $search_results];
+    return array($query_results, $search_results);
   }
 
   public function loadRevisions() {
@@ -179,13 +180,13 @@ final class ICFlowWorkspace extends Phobject {
       $ids = array_values(array_unique(mpull(
         $revision_features,
         'getRevisionID')));
-      list ($query_results, $search_results) =
+      list($query_results, $search_results) =
         $this->differentialQuerySearchResults($ids);
       foreach ($features as $feature) {
         $rev_id = $feature->getRevisionID();
-        $rev_data = $rev_id ? idx($query_results, $rev_id, []) : null;
+        $rev_data = $rev_id ? idx($query_results, $rev_id, array()) : null;
         $feature->attachRevisionData($rev_data);
-        $search_data = $rev_id ? idx($search_results, $rev_id, []) : null;
+        $search_data = $rev_id ? idx($search_results, $rev_id, array()) : null;
         $feature->attachSearchData($search_data);
       }
       $this->revisionsLoaded = true;
@@ -195,8 +196,8 @@ final class ICFlowWorkspace extends Phobject {
 
   private function getHeadRefs() {
     if (!$this->headRefs) {
-      $this->headRefs = [];
-      $head_refs = $this->git->forEachRef([
+      $this->headRefs = array();
+      $head_refs = $this->git->forEachRef(array(
         'refname',
         'refname:short',
         'upstream',
@@ -210,7 +211,7 @@ final class ICFlowWorkspace extends Phobject {
         'subject',
         'body',
         'committerdate:raw',
-      ], 'refs/heads');
+      ), 'refs/heads');
       foreach ($head_refs as $ref) {
         $this->headRefs[] = ICFlowRef::newFromFields($ref);
       }
@@ -224,7 +225,7 @@ final class ICFlowWorkspace extends Phobject {
   }
 
   private function getAllFeatures() {
-    $features = [];
+    $features = array();
     foreach ($this->getHeadRefs() as $head) {
       $features[] = ICFlowFeature::newFromHead($head);
     }
@@ -235,7 +236,7 @@ final class ICFlowWorkspace extends Phobject {
     if ($terminus == null) {
       return $this->getChildFeatures($root);
     }
-    $features = [];
+    $features = array();
     $base = idx($this->getHeadRefs(), $terminus);
     if (!$base) {
       throw new UnexpectedValueException(
@@ -257,8 +258,8 @@ final class ICFlowWorkspace extends Phobject {
       throw new UnexpectedValueException(
         pht('Invalid root branch specified: %s', $root));
     }
-    $features = [];
-    $current_level = [$root];
+    $features = array();
+    $current_level = array($root);
     $graph = $this->getTrackingGraph();
     while ($current_level) {
       $next_level = array();
@@ -278,7 +279,8 @@ final class ICFlowWorkspace extends Phobject {
   public function getFeatures() {
     if (!$this->features) {
       if ($this->rootBranch || $this->terminalBranch) {
-        $this->features = $this->getFeaturesBetween($this->rootBranch, $this->terminalBranch);
+        $this->features = $this->getFeaturesBetween($this->rootBranch,
+          $this->terminalBranch);
       } else {
         $this->features = $this->getAllFeatures();
       }
@@ -295,7 +297,7 @@ final class ICFlowWorkspace extends Phobject {
   }
 
   public function getTrackingGraph() {
-    $tracking = [];
+    $tracking = array();
     foreach ($this->getHeadRefs() as $ref) {
       if (in_array($ref->getUpstream(), $this->getRefNames())) {
         $tracking[$ref->getName()] = $ref->getUpstream();
@@ -304,7 +306,7 @@ final class ICFlowWorkspace extends Phobject {
     $tracking = igroup($tracking, null);
     $graph = new ICGitBranchGraph();
     foreach ($tracking as $upstream => $downstreams) {
-      $graph->addNodes([$upstream => array_keys($downstreams)]);
+      $graph->addNodes(array($upstream => array_keys($downstreams)));
     }
     return $graph->loadGraph();
   }

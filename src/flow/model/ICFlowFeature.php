@@ -14,7 +14,8 @@ final class ICFlowFeature extends Phobject {
     $feature = new self();
     $feature->head = $head;
     try {
-      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($head->getBody());
+      $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
+        $head->getBody());
       $feature->differentialCommitMessage = $message;
     } catch (ArcanistUsageException $e) {
       $feature->differentialCommitMessage = null;
@@ -75,7 +76,7 @@ final class ICFlowFeature extends Phobject {
   }
 
   public function getSearchAttachment($name) {
-    $attachments = $this->getSearchField('attachments', []);
+    $attachments = $this->getSearchField('attachments', array());
     return idx($attachments, $name);
   }
 

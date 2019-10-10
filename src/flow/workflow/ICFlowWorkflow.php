@@ -35,19 +35,19 @@ EOTEXT
           name using your current branch as its upstream.  If the branch
           __name__ does exist, it checks out that branch.
 
-          With __name__ and __upstream__, it creates a branch with an 
-          upstream determined by the user. 
+          With __name__ and __upstream__, it creates a branch with an
+          upstream determined by the user.
 EOTEXT
       );
   }
 
   public function getArguments() {
-    return [
-      'json' => [
+    return array(
+      'json' => array(
         'help' => pht('Report results in JSON format.'),
-      ],
+      ),
       '*' => 'branch',
-    ];
+    );
   }
 
   public function run() {
@@ -67,10 +67,12 @@ EOTEXT
         $git_api->createAndCheckoutBranch($name, $upstream);
       } else {
         throw new ArcanistUsageException(phutil_console_format(pht(
-                                             "Invalid branch arguments:\n".
-                                             " - **No branches** to display your current tree\n".
-                                             " - **One branch** to either switch to an existing branch, or checkout a new branch from HEAD\n".
-                                             " - **Two branches** to declare what branch the new branch will track from, and checkout that new branch.\n")));
+          "Invalid branch arguments:\n".
+          " - **No branches** to display your current tree\n".
+          " - **One branch** to either switch to an existing branch, or ".
+          "checkout a new branch from HEAD\n".
+          " - **Two branches** to declare what branch the new branch will ".
+          "track from, and checkout that new branch.\n")));
       }
       return 0;
     }

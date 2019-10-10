@@ -4,7 +4,7 @@ final class ICFlowSummary extends PhutilConsoleView {
 
   private $workspace;
   private $branchLength = 2;
-  private $fields = [];
+  private $fields = array();
 
   public function setWorkspace(ICFlowWorkspace $workspace) {
     $this->workspace = $workspace;
@@ -33,24 +33,24 @@ final class ICFlowSummary extends PhutilConsoleView {
       ->loadHeadDiffs()
       ->loadActiveDiffs();
 
-    $features = [];
+    $features = array();
     foreach ($nodes as $branch) {
       if (in_array($branch, $flow->getFeatureNames())) {
         $features[] = $flow->getFeature($branch);
       }
     }
     ICFlowField::resolveFutures($this->fields, $flow);
-    $feature_values = [];
+    $feature_values = array();
     foreach ($features as $feature) {
-      list ($ahead, $behind) = $feature->getHead()->getTracking();
-      $values = [
-        'tracking' => [
+      list($ahead, $behind) = $feature->getHead()->getTracking();
+      $values = array(
+        'tracking' => array(
           'upstream' => $graph->getUpstream($feature->getName()),
           'depth' => $graph->getDepth($feature->getName()),
           'ahead' => $ahead,
           'behind' => $behind,
-        ],
-      ];
+        ),
+      );
       foreach ($this->fields as $field) {
         $values['fields'][$field->getFieldKey()] = $field->getValues($feature);
       }
@@ -63,8 +63,11 @@ final class ICFlowSummary extends PhutilConsoleView {
     $table = (new PhutilConsoleTable())
       ->setShowHeader(false)
       ->setPadding(1)
-      ->addColumn('current', ['title' => '', 'align' => PhutilConsoleTable::ALIGN_CENTER])
-      ->addColumn('name',    ['title' => '']);
+      ->addColumn('current', array(
+        'title' => '',
+        'align' => PhutilConsoleTable::ALIGN_CENTER,
+      ))
+      ->addColumn('name',    array('title' => ''));
 
     foreach ($this->fields as $field) {
       $table->addColumn($field->getFieldKey(), $field->getTableColumn());
@@ -84,8 +87,7 @@ final class ICFlowSummary extends PhutilConsoleView {
             'flow branch branchname',
             $current_feature->getName())
         :
-          ''
-        ;
+          '';
       return tsprintf(
         "%s\n%s\n",
         pht('No local tracking branches.'),
@@ -97,7 +99,7 @@ final class ICFlowSummary extends PhutilConsoleView {
       ->loadHeadDiffs()
       ->loadActiveDiffs();
 
-    $features = [];
+    $features = array();
     foreach ($nodes as $branch) {
       if (in_array($branch, $flow->getFeatureNames())) {
         $features[] = $flow->getFeature($branch);
@@ -105,11 +107,11 @@ final class ICFlowSummary extends PhutilConsoleView {
     }
     ICFlowField::resolveFutures($this->fields, $flow);
     $profiler = PhutilServiceProfiler::getInstance();
-    $id = $profiler->beginServiceCall([
-      'type' => "flow-summary",
-    ]);
+    $id = $profiler->beginServiceCall(array(
+      'type' => 'flow-summary',
+    ));
     foreach ($features as $feature) {
-      $data = [];
+      $data = array();
       $ref = $feature->getHead();
       $data['current'] = $this->renderCurrent($feature);
       $data['name'] = $this->renderBranch($feature, $graph, $nodes);
@@ -125,7 +127,7 @@ final class ICFlowSummary extends PhutilConsoleView {
       }
       $table->addRow($data);
     }
-    $profiler->endServiceCall($id, []);
+    $profiler->endServiceCall($id, array());
     return $table;
   }
 
@@ -155,15 +157,15 @@ final class ICFlowSummary extends PhutilConsoleView {
         }
         $siblings = $this->lowerSiblings($upstream, $branch, $graph, $nodes);
         $column = count($siblings) ? '|' : ' ';
-        $box_line = $this->drawGraphColumn($column) . $box_line;
+        $box_line = $this->drawGraphColumn($column).$box_line;
       }
     }
 
-    list ($ahead, $behind) = $feature->getHead()->getTracking();
+    list($ahead, $behind) = $feature->getHead()->getTracking();
     if ($behind || $ahead) {
       $separator = $ahead && $behind ? ':' : '';
-      $behind = $behind ?: '';
-      $ahead = $ahead ?: '';
+      $behind = $behind ? $behind: '';
+      $ahead = $ahead ? $ahead: '';
       $skew = tsprintf(
         '<fg:red>%s</fg>%s<fg:green>%s</fg>',
         $behind,
@@ -195,7 +197,7 @@ final class ICFlowSummary extends PhutilConsoleView {
 
     $current_index = array_search($current_branch, $nodes);
     if ($current_index === count($nodes) - 1) {
-      return [];
+      return array();
     }
     $lower_branches = array_slice($nodes, $current_index + 1);
     $siblings = $graph->getSiblings($check_branch);

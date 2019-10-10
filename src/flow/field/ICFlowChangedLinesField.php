@@ -2,7 +2,7 @@
 
 final class ICFlowChangedLinesField extends ICFlowField {
 
-  private $changedLines = [];
+  private $changedLines = array();
   private $maxDelStrlen = 0;
 
   public function getFieldKey() {
@@ -31,10 +31,10 @@ final class ICFlowChangedLinesField extends ICFlowField {
             $add_lines += $hunk->getAddLines();
             $del_lines += $hunk->getDelLines();
           }
-          $add_del = [
+          $add_del = array(
             'add' => $add_lines,
             'del' => $del_lines,
-          ];
+          );
           $this->cacheSet($cache_key, $add_del);
         }
 
@@ -45,7 +45,7 @@ final class ICFlowChangedLinesField extends ICFlowField {
       }
     }
     $this->maxDelStrlen = strlen(pht('%s', new PhutilNumber($max_del_lines)));
-    return [];
+    return array();
   }
 
   protected function renderValues(array $values) {
@@ -63,7 +63,7 @@ final class ICFlowChangedLinesField extends ICFlowField {
 
   public function getValues(ICFlowFeature $feature) {
     $changed_lines = idx($this->changedLines, $feature->getName());
-    return $changed_lines ?: null;
+    return $changed_lines ? $changed_lines : null;
   }
 
 }

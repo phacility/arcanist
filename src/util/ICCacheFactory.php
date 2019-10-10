@@ -2,12 +2,12 @@
 
 final class ICCacheFactory extends Phobject {
 
-  private $caches = [];
+  private $caches = array();
   private $namespace;
   private $enableProfiler = true;
 
   public function addCaches(array $caches) {
-    $this->caches = array_mergev([$this->caches, $caches]);
+    $this->caches = array_mergev(array($this->caches, $caches));
     return $this;
   }
 

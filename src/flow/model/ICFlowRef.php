@@ -25,15 +25,15 @@ final class ICFlowRef extends Phobject {
   public function getTracking() {
     $field = $this->assertField('upstream:track');
     if (!$field) {
-      return [0, 0];
+      return array(0, 0);
     }
-    $ahead_matches = [];
+    $ahead_matches = array();
     preg_match('/ahead ([0-9]+)/', $field, $ahead_matches);
     $ahead = idx($ahead_matches, 1, 0);
-    $behind_matches = [];
+    $behind_matches = array();
     preg_match('/behind ([0-9]+)/', $field, $behind_matches);
     $behind = idx($behind_matches, 1, 0);
-    return [$ahead, $behind];
+    return array($ahead, $behind);
   }
 
   public function getEpoch() {

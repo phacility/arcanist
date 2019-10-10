@@ -29,7 +29,7 @@ final class ICFlowQueueSubmissionField extends ICFlowField {
     if ($status === 'Closed') {
       return null;
     }
-    $submission_ids = [];
+    $submission_ids = array();
     foreach ($submissions as $submission) {
       $submission_id = (int)$submission['id'];
       $submission_ids[$submission_id] = $submission_id;
