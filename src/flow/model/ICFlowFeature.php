@@ -22,10 +22,6 @@ final class ICFlowFeature extends Phobject {
     return $feature;
   }
 
-  public static function getStagingRefName($uniqid, $name) {
-    return "refs/tags/integrator/flow/{$uniqid}/{$name}";
-  }
-
   public function getRevisionField($index, $default = null) {
     if (!$this->revision) {
       return null;

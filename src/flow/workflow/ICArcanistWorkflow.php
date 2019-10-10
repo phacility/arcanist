@@ -29,22 +29,11 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   public function requiresAuthentication() {
-    if ($this->isOffline()) {
-      $this->writeWarn(
-        pht('OFFLINE'),
-        pht('No api calls can be made to Phabricator.'));
-      return false;
-    }
     return true;
   }
 
   public function requiresRepositoryAPI() {
     return true;
-  }
-
-  public function isOffline() {
-    return (bool)$this->getConfigurationManager()
-      ->getConfigFromAnySource('offline');
   }
 
   protected function searchMethodForID($method, $id) {
@@ -179,9 +168,6 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   protected function loadRevisions(array $branches) {
-    if ($this->isOffline()) {
-      return [];
-    }
     $ids = [];
     $hashes = [];
 
@@ -194,16 +180,26 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     }
 
     $params = [];
-
+    $results = array();
+    $futures = array();
     if ($ids) {
-      $params['ids'] = $ids;
+      $future = $this->getConduit()->callMethod('differential.query', array('ids' => $ids));
+      $future->start();
+      $futures[] = $future;
+
     }
 
     if ($hashes) {
-      $params['commitHashes'] = $hashes;
+      $future = $this->getConduit()->callMethod('differential.query', array('commitHashes' => $hashes));
+      $future->start();
+      $futures[]=$future;
     }
 
-    $results = $this->getConduit()->callMethodSynchronous('integrator.flow', $params);
+    foreach ($futures as $future) {
+      foreach ($future->resolve() as $value) {
+        $results[$value['id']] = $value;
+      }
+    }
     return $results;
   }
 
@@ -286,7 +282,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
 
   protected function buildDependencyGraph($revision_id) {
     $graph = null;
-    if (!$this->isOffline() && $revision_id) {
+    if ($revision_id) {
       $revisions = $this->getConduit()->callMethodSynchronous('differential.query', [
         'ids' => [$revision_id],
       ]);
