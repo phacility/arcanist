@@ -1,0 +1,18 @@
+<?php
+
+// This is the correct argument order.
+implode(' ', $x);
+
+// This is the legacy argument order which warns in PHP 7.4+.
+implode($x, ' ');
+
+// No warning: we can't statically tell which one is the glue.
+implode($x, $y);
+
+// No warning: these are likely wrong, but not a glue order problem.
+implode();
+implode($x);
+implode($x, $y, $z);
+
+~~~~~~~~~~
+error:7:1:XHP129:Implode With Glue First
