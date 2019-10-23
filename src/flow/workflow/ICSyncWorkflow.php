@@ -215,8 +215,6 @@ EOTEXT
             'D'.$revision_id,
             '--message',
             $message,
-            '--skip-set-dependency',
-            '--skip-decompose',
           );
           if ($branch_status[$branch_name] == $changes_planned) {
             array_push($diff_args, '--plan-changes');
