@@ -570,7 +570,11 @@ EOTEXT
       }
     } else {
       $revision['diffid'] = $this->getDiffID();
-
+      // UBER CODE
+      if ($this->getArgument('plan-changes')) {
+          $revision['fields']['plan-changes'] = true;
+      }
+      // UBER CODE END
       if ($commit_message->getRevisionID()) {
         $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
