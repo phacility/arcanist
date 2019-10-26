@@ -1550,4 +1550,31 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $path;
   }
 
+  public function isPerforceRemote($remote_name) {
+    // See T13434. In Perforce workflows, "git p4 clone" creates "p4" refs
+    // under "refs/remotes/", but does not define a real remote named "p4".
+
+    // We treat this remote as though it were a real remote during "arc land",
+    // but it does not respond to commands like "git remote show p4", so we
+    // need to handle it specially.
+
+    if ($remote_name !== 'p4') {
+      return false;
+    }
+
+    $remote_dir = $this->getMetadataPath().'/refs/remotes/p4';
+    if (!Filesystem::pathExists($remote_dir)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public function isPushableRemote($remote_name) {
+    list($err, $stdout) = $this->execManualLocal(
+      'remote get-url --push -- %s',
+      $remote_name);
+    return !$err;
+  }
+
 }
