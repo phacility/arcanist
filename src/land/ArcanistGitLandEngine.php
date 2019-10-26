@@ -9,6 +9,14 @@ final class ArcanistGitLandEngine
   private $mergedRef;
   private $restoreWhenDestroyed;
 
+  public function parseArguments() {
+    $onto = $this->getEngineOnto();
+    $this->setTargetOnto($onto);
+
+    $remote = $this->getEngineRemote();
+    $this->setTargetRemote($remote);
+  }
+
   public function execute() {
     $this->verifySourceAndTargetExist();
     $this->fetchTarget();
@@ -613,6 +621,116 @@ final class ArcanistGitLandEngine
       'refs/heads/'.$ref);
 
     return !$err;
+  }
+
+  private function getEngineOnto() {
+    $source_ref = $this->getSourceRef();
+
+    $onto = $this->getOntoArgument();
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected with the "--onto" flag.',
+          $onto));
+      return $onto;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($source_ref);
+
+    if ($path->getLength()) {
+      $cycle = $path->getCycle();
+      if ($cycle) {
+        $this->writeWarn(
+          pht('LOCAL CYCLE'),
+          pht(
+            'Local branch tracks an upstream, but following it leads to a '.
+            'local cycle; ignoring branch upstream.'));
+
+        echo tsprintf(
+          "\n    %s\n\n",
+          implode(' -> ', $cycle));
+
+      } else {
+        if ($path->isConnectedToRemote()) {
+          $onto = $path->getRemoteBranchName();
+          $this->writeInfo(
+            pht('TARGET'),
+            pht(
+              'Landing onto "%s", selected by following tracking branches '.
+              'upstream to the closest remote.',
+              $onto));
+          return $onto;
+        } else {
+          $this->writeInfo(
+            pht('NO PATH TO UPSTREAM'),
+            pht(
+              'Local branch tracks an upstream, but there is no path '.
+              'to a remote; ignoring branch upstream.'));
+        }
+      }
+    }
+
+    $workflow = $this->getWorkflow();
+
+    $config_key = 'arc.land.onto.default';
+    $onto = $workflow->getConfigFromAnySource($config_key);
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected by "%s" configuration.',
+          $onto,
+          $config_key));
+      return $onto;
+    }
+
+    $onto = 'master';
+    $this->writeInfo(
+      pht('TARGET'),
+      pht(
+        'Landing onto "%s", the default target under git.',
+        $onto));
+
+    return $onto;
+  }
+
+  private function getEngineRemote() {
+    $source_ref = $this->getSourceRef();
+
+    $remote = $this->getRemoteArgument();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected with the "--remote" flag.',
+          $remote));
+      return $remote;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($source_ref);
+
+    $remote = $path->getRemoteRemoteName();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected by following tracking branches '.
+          'upstream to the closest remote.',
+          $remote));
+      return $remote;
+    }
+
+    $remote = 'origin';
+    $this->writeInfo(
+      pht('REMOTE'),
+      pht(
+        'Using remote "%s", the default remote under git.',
+        $remote));
+
+    return $remote;
   }
 
 }
