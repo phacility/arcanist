@@ -139,9 +139,34 @@ final class ArcanistGitLandEngine
       $this->getTargetFullRef());
 
     if ($err) {
-      throw new Exception(
+      $this->writeWarn(
+        pht('TARGET'),
         pht(
-          'Branch "%s" does not exist in remote "%s".',
+          'No local ref exists for branch "%s" in remote "%s", attempting '.
+          'fetch...',
+          $this->getTargetOnto(),
+          $this->getTargetRemote()));
+
+      $api->execManualLocal(
+        'fetch %s %s --',
+        $this->getTargetRemote(),
+        $this->getTargetOnto());
+
+      list($err) = $api->execManualLocal(
+        'rev-parse --verify %s',
+        $this->getTargetFullRef());
+      if ($err) {
+        throw new Exception(
+          pht(
+            'Branch "%s" does not exist in remote "%s".',
+            $this->getTargetOnto(),
+            $this->getTargetRemote()));
+      }
+
+      $this->writeInfo(
+        pht('FETCHED'),
+        pht(
+          'Fetched branch "%s" from remote "%s".',
           $this->getTargetOnto(),
           $this->getTargetRemote()));
     }
