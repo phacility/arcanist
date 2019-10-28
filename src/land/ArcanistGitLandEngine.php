@@ -45,6 +45,14 @@ final class ArcanistGitLandEngine
         pht(
           'Operating in Git/Perforce mode after selecting a Perforce '.
           'remote.'));
+
+      if (!$this->getShouldSquash()) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Perforce mode does not support the "merge" land strategy. '.
+            'Use the "squash" land strategy when landing to a Perforce '.
+            'remote (you can use "--squash" to select this strategy).'));
+      }
     }
 
     $this->setTargetRemote($remote);
@@ -334,7 +342,7 @@ final class ArcanistGitLandEngine
       $flags_argv[] = '--conflict=quit';
 
       $err = $api->execPassthru(
-        '%LR p4 submit %LR --commit %s --',
+        '%LR p4 submit %LR --commit %R --',
         $config_argv,
         $flags_argv,
         $this->mergedRef);
