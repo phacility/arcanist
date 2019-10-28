@@ -279,6 +279,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     $do_write = false;
     $default_relative = null;
     $working_copy = $this->getWorkingCopyIdentity();
+
     if ($working_copy) {
       $default_relative = $working_copy->getProjectConfig(
         'git.default-relative-commit');
@@ -290,6 +291,12 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
           'git.default-relative-commit',
           '.arcconfig'));
     }
+
+    // UBER CODE
+    if ($this->readScratchFile('uses-arc-flow') === 'true') {
+      $default_relative = null;
+    }
+    // UBER CODE END
 
     if (!$default_relative) {
       list($err, $upstream) = $this->execManualLocal(

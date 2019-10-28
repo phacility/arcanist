@@ -74,6 +74,7 @@ EOTEXT
           " - **Two branches** to declare what branch the new branch will ".
           "track from, and checkout that new branch.\n")));
       }
+      $this->markFlowUsage();
       return 0;
     }
 
@@ -96,4 +97,8 @@ EOTEXT
     return 0;
   }
 
+  private function markFlowUsage() {
+    $git = $this->getRepositoryAPI();
+    $git->writeScratchFile('uses-arc-flow', 'true');
+  }
 }
