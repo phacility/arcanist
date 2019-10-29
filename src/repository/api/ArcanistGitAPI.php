@@ -464,15 +464,27 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    */
   public function getFullGitDiff($base, $head = null) {
     $options = $this->getDiffFullOptions();
+    $config_options = array();
+
+    // See T13432. Disable the rare "diff.suppressBlankEmpty" configuration
+    // option, which discards the " " (space) change type prefix on unchanged
+    // blank lines. At time of writing the parser does not handle these
+    // properly, but generating a more-standard diff is generally desirable
+    // even if a future parser handles this case more gracefully.
+
+    $config_options[] = '-c';
+    $config_options[] = 'diff.suppressBlankEmpty=false';
 
     if ($head !== null) {
       list($stdout) = $this->execxLocal(
-        "diff {$options} %s %s --",
+        "%LR diff {$options} %s %s --",
+        $config_options,
         $base,
         $head);
     } else {
       list($stdout) = $this->execxLocal(
-        "diff {$options} %s --",
+        "%LR diff {$options} %s --",
+        $config_options,
         $base);
     }
 
