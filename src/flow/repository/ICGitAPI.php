@@ -191,4 +191,21 @@ final class ICGitAPI extends Phobject {
     }
   }
 
+  public function getGitCommitLog($base, $head) {
+    list($stdout) = $this->api->execxLocal(
+      'log --first-parent --format=medium %s..%s',
+      $base,
+      $head);
+    return $stdout;
+  }
+
+  // check if rev actually exists
+  public function revParseVerify($rev) {
+    list($err, $stdout, $stderr) = $this->api
+      ->execManualLocal('rev-parse --verify %s', $rev);
+    if ($err) {
+      return false;
+    }
+    return true;
+  }
 }

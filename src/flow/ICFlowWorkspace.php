@@ -227,7 +227,7 @@ final class ICFlowWorkspace extends Phobject {
   private function getAllFeatures() {
     $features = array();
     foreach ($this->getHeadRefs() as $head) {
-      $features[] = ICFlowFeature::newFromHead($head);
+      $features[] = ICFlowFeature::newFromHead($head, $this->getGitAPI());
     }
     return mpull($features, null, 'getName');
   }
@@ -243,7 +243,7 @@ final class ICFlowWorkspace extends Phobject {
         pht('Invalid terminal branch specified: %s', $terminus));
     }
     do {
-      $features[] = ICFlowFeature::newFromHead($base);
+      $features[] = ICFlowFeature::newFromHead($base, $this->getGitAPI());
       if ($base->getName() === $root) {
         break;
       }
@@ -268,7 +268,7 @@ final class ICFlowWorkspace extends Phobject {
         foreach ($graph->getDownstreams($branch_name) as $child_branch) {
           $next_level[] = $child_branch;
         }
-        $features[] = ICFlowFeature::newFromHead($ref);
+        $features[] = ICFlowFeature::newFromHead($ref, $this->getGitAPI());
       }
       $current_level = $next_level;
     }
@@ -309,6 +309,18 @@ final class ICFlowWorkspace extends Phobject {
       $graph->addNodes(array($upstream => array_keys($downstreams)));
     }
     return $graph->loadGraph();
+  }
+
+  // fetches branches which have broken upstream
+  public function getBrokenBranches() {
+    $branches = array();
+    foreach ($this->getHeadRefs() as $ref) {
+      if ($ref->getUpstream() &&
+          !$this->getGitAPI()->revParseVerify($ref->getUpstream())) {
+        $branches[] = $ref->getName();
+      }
+    }
+    return $branches;
   }
 
 }

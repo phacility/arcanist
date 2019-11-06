@@ -10,15 +10,39 @@ final class ICFlowFeature extends Phobject {
 
   private function __construct() {}
 
-  public static function newFromHead(ICFlowRef $head) {
+  public static function newFromHead(ICFlowRef $head, ICGitAPI $git) {
     $feature = new self();
     $feature->head = $head;
-    try {
+    $feature->differentialCommitMessage = null;
+    $upstream = $head->getUpstream();
+    // we're not interested in branches which have no upstream
+    if (!$upstream) {
+      return $feature;
+    }
+    // if upstream branch doesn't exists - treat master as upstream
+    if (!$git->revParseVerify($upstream)) {
+      $upstream = 'master';
+    }
+    // get all git logs from HEAD to upstream branch it will be used to find
+    // closest match differential revision
+    $logs = $git->getGitCommitLog($upstream, $head->getObjectName());
+    if (strlen($logs) == 0) {
+      $logs = $git->getGitCommitLog(sprintf('%s^', $upstream),
+                                    $head->getObjectName());
+      if (strlen($logs) == 0) {
+        return $feature;
+      }
+    }
+
+    $parser = new ArcanistDiffParser();
+    $logs = $parser->parseDiff($logs);
+    foreach ($logs as $log) {
       $message = ArcanistDifferentialCommitMessage::newFromRawCorpus(
-        $head->getBody());
-      $feature->differentialCommitMessage = $message;
-    } catch (ArcanistUsageException $e) {
-      $feature->differentialCommitMessage = null;
+        $log->getMetadata('message'));
+      if ($message->getRevisionID() != null) {
+        $feature->differentialCommitMessage = $message;
+        break;
+      }
     }
     return $feature;
   }

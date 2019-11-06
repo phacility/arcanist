@@ -64,6 +64,10 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     return $this->getFlow()->getTrackingGraph();
   }
 
+  protected function loadBrokenBranches() {
+    return $this->getFlow()->getBrokenBranches();
+  }
+
   protected function getFlow() {
     if (!$this->flow) {
       $this->flow = (new ICFlowWorkspace())

@@ -88,6 +88,7 @@ EOTEXT
     $deleted = array();
     $closed = array();
     $abandoned = array();
+    $orphaned = $this->loadBrokenBranches();
     foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
       if ($printed_branches[$branch_name]['status'] == 'Deleted') {
         $deleted[] = $branch_name;
@@ -115,6 +116,17 @@ EOTEXT
             $parent,
             $orphaned_branch);
         }
+      }
+    }
+
+    if (!$skip_recover && $orphaned && $this->consoleConfirm(tsprintf(
+        "The branches listed below:\n%s\nno longer have valid ".
+        "upstream\n\n Attach these branches to 'master'?",
+        implode($orphaned, "\n")))) {
+      foreach ($orphaned as $orphan) {
+        $git->execxLocal(
+          'branch --set-upstream-to=master %s',
+          $orphan);
       }
     }
 
