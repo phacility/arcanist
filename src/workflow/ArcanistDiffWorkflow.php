@@ -1207,6 +1207,7 @@ EOTEXT
     return true;
   }
 
+  // UBER CODE
 /* -(  Custom Check-Prompt-Resolve scripts  ) ------------------------------- */
 
   /**
@@ -1223,35 +1224,36 @@ EOTEXT
       return;
     }
 
-    $cprScriptDefs = $this->getConfigurationManager()->getConfigFromAnySource(
+    $cpr_script_defs = $this->getConfigurationManager()->getConfigFromAnySource(
           'uber.differential.check_prompt_resolve'
         );
-    if (is_null($cprScriptDefs)) {
+    if (is_null($cpr_script_defs)) {
       return;
     }
-    foreach ($cprScriptDefs as $cprDef) {
-      $fNames = ['check-script', 'prompt', 'default-to', 'resolve-script'];
-      foreach ($fNames as $fieldName) {
-        if (is_null($cprDef[$fieldName])) {
+    foreach ($cpr_script_defs as $cpr_def) {
+      $f_names =
+        array('check-script', 'prompt', 'default-to', 'resolve-script');
+      foreach ($f_names as $field_name) {
+        if (is_null($cpr_def[$field_name])) {
           throw new ArcanistUsageException(
                       pht("Malformed uber.differential.check_prompt_resolve ".
                           "record: %s (must have \"%s\" field)",
-                          $cprDef, $fieldName));
+                          $cpr_def, $field_name));
         }
       }
-      $checkScript = $cprDef['check-script'];
-      $prompt = $cprDef['prompt'];
-      $defaultsToYes = $cprDef['default-to'];
-      $resolveScript = $cprDef['resolve-script'];
+      $check_script = $cpr_def['check-script'];
+      $prompt = $cpr_def['prompt'];
+      $defaults_to_yes = $cpr_def['default-to'];
+      $resolve_script = $cpr_def['resolve-script'];
       $projectRoot = $this->getWorkingCopy()->getProjectRoot();
-      $exec = new PhutilExecPassthru('%s', $checkScript);
+      $exec = new PhutilExecPassthru('%s', $check_script);
       $exec->setCWD($projectRoot);
       $err = $exec->execute();
       if ($err == 0) {
         continue; // Nothing to fix
       }
       $doResolve = phutil_console_confirm(
-                            $prompt, $default_no = !$defaultsToYes);
+                            $prompt, $default_no = !$defaults_to_yes);
       if (!$doResolve) {
         echo phutil_console_format(
                       "\n\n%s\n\n",
@@ -1260,7 +1262,7 @@ EOTEXT
       }
       // We run the resolution script
       // (with stdin disabled so it can't be interfered with)
-      $exec = new PhutilExecPassthru('%s < /dev/null', $resolveScript);
+      $exec = new PhutilExecPassthru('%s < /dev/null', $resolve_script);
       $exec->setCWD($projectRoot);
       $err = $exec->execute();
       if ($err == 0) {
@@ -1268,14 +1270,13 @@ EOTEXT
               "\n\n%s\n\n",
               pht(
                 "Successfully ran resolution script '%s'\n",
-                $resolveScript)
-              );
+                $resolve_script));
       } else {
         echo phutil_console_format(
               "\n\n%s\n%s\n\n",
               pht(
                 "Ran resolution script '%s', but it returned an error.",
-                $resolveScript),
+                $resolve_script),
               pht(
                 "This likely failed to resolve the issue. ".
                 "Continuing anyways.")
@@ -1293,7 +1294,7 @@ EOTEXT
               shell_exec('git status -s --untracked-files=no')
               );
       $doAmmend = phutil_console_confirm(
-                            "Apply changes?", $default_no = !$defaultsToYes);
+                            'Apply changes?', $default_no = !$defaults_to_yes);
       if (!$doAmmend) {
         echo phutil_console_format(
                       "\n\n%s\n\n",
@@ -1314,6 +1315,7 @@ EOTEXT
     }
   }
 
+  // UBER CODE END
 
 /* -(  Lint and Unit Tests  )------------------------------------------------ */
 
@@ -2066,12 +2068,12 @@ EOTEXT
 
     if (!is_null($mandatory_fields)) {
       foreach ($mandatory_fields as $mandatory_field){
-        $fieldName = $mandatory_field['field_name'];
-        $field = $message->getFieldValue($fieldName);
+        $field_name = $mandatory_field['field_name'];
+        $field = $message->getFieldValue($field_name);
         if (empty($field)) {
-          $fieldMessage = $mandatory_field['field_message'];
+          $field_message = $mandatory_field['field_message'];
           throw new ArcanistUsageException(
-            pht($fieldMessage));
+            pht('%s', $field_message));
         }
       }
     }
