@@ -167,16 +167,6 @@ final class ArcanistSettings extends Phobject {
         'help' => pht(
           'Configured command aliases. Use "arc alias" to define aliases.'),
       ),
-      'uber.sirmixalot.enrolled' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'If true, the setting will enable sirmixalot enrollment for this '.
-          'repo. This means that the merged commit produced while landing a '.
-          'diff will be put to `%s` branch instead of the master branch.',
-          'landed/TIMESTAMP'),
-        'default' => false,
-        'example' => 'true',
-      ),
       'uber.land.buildables-check' => array(
         'type' => 'bool',
         'help' => pht(
