@@ -51,7 +51,9 @@ EOTEXT
       throw new ArcanistUsageException(
         'You must provide a revision (eg D123) as an argument.');
     }
-    $revision = $this->integratorFlowEmulator(array($revision_id));
+    $revision = $this->integratorFlowEmulator(array($revision_id),
+                                              array(),
+                                              array(), true);
     $revision = head($revision);
     if (!$revision) {
       throw new ArcanistUsageException(pht('No revision "%s" found.',
