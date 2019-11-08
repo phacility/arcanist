@@ -436,7 +436,10 @@ EOTEXT
           break;
         case self::SOURCE_DIFF:
           if ($this->shouldMergeUsingStagingGitTag()) {
-            $this->mergeBranchFromStagingArea($param);
+            $bundle = $this->loadDiffBundleFromConduit(
+              $this->getConduit(),
+              $param);
+            $this->mergeBranchFromStagingArea($param, $bundle);
             return 0;
           } elseif ($this->shouldUseStagingGitTags()) {
               $this->pullBaseTagFromStagingArea($param);
@@ -1244,7 +1247,7 @@ EOTEXT
     return self::SUCCESS;
   }
 
-  private function mergeBranchFromStagingArea($id){
+  private function mergeBranchFromStagingArea($id, $bundle) {
     list($success,
       $message, $staging, $staging_uri) = $this->validateStagingSetup();
     if (!$success) {
@@ -1268,6 +1271,31 @@ EOTEXT
         pht('Unable to merge tag'));
       throw new ArcanistUsageException(pht($message));
     }
+
+    if ($this->shouldCommit()) {
+      $flags = array();
+      if ($bundle->getFullAuthor()) {
+        $flags[] = csprintf('--author=%s', $bundle->getFullAuthor());
+      }
+
+      $commit_message = $this->getCommitMessage($bundle);
+
+      $repository_api = $this->getRepositoryAPI();
+      $future = $repository_api->execFutureLocal(
+        'commit --amend %Ls -F - --no-verify',
+        $flags);
+      $future->write($commit_message);
+      $future->resolvex();
+
+      $this->writeOkay(
+        pht('COMMITTED'),
+        pht('Successfully committed patch.'));
+    } else {
+      $this->writeOkay(
+        pht('APPLIED'),
+        pht('Successfully applied patch.'));
+    }
+
     return self::SUCCESS;
   }
   // UBER CODE END
