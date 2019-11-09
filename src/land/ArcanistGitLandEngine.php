@@ -8,6 +8,55 @@ final class ArcanistGitLandEngine
   private $sourceCommit;
   private $mergedRef;
   private $restoreWhenDestroyed;
+  private $isGitPerforce;
+
+  private function setIsGitPerforce($is_git_perforce) {
+    $this->isGitPerforce = $is_git_perforce;
+    return $this;
+  }
+
+  private function getIsGitPerforce() {
+    return $this->isGitPerforce;
+  }
+
+  public function parseArguments() {
+    $api = $this->getRepositoryAPI();
+
+    $onto = $this->getEngineOnto();
+    $this->setTargetOnto($onto);
+
+    $remote = $this->getEngineRemote();
+
+    $is_pushable = $api->isPushableRemote($remote);
+    $is_perforce = $api->isPerforceRemote($remote);
+
+    if (!$is_pushable && !$is_perforce) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'No pushable remote "%s" exists. Use the "--remote" flag to choose '.
+          'a valid, pushable remote to land changes onto.',
+          $remote));
+    }
+
+    if ($is_perforce) {
+      $this->setIsGitPerforce(true);
+      $this->writeWarn(
+        pht('P4 MODE'),
+        pht(
+          'Operating in Git/Perforce mode after selecting a Perforce '.
+          'remote.'));
+
+      if (!$this->getShouldSquash()) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Perforce mode does not support the "merge" land strategy. '.
+            'Use the "squash" land strategy when landing to a Perforce '.
+            'remote (you can use "--squash" to select this strategy).'));
+      }
+    }
+
+    $this->setTargetRemote($remote);
+  }
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -98,9 +147,34 @@ final class ArcanistGitLandEngine
       $this->getTargetFullRef());
 
     if ($err) {
-      throw new Exception(
+      $this->writeWarn(
+        pht('TARGET'),
         pht(
-          'Branch "%s" does not exist in remote "%s".',
+          'No local ref exists for branch "%s" in remote "%s", attempting '.
+          'fetch...',
+          $this->getTargetOnto(),
+          $this->getTargetRemote()));
+
+      $api->execManualLocal(
+        'fetch %s %s --',
+        $this->getTargetRemote(),
+        $this->getTargetOnto());
+
+      list($err) = $api->execManualLocal(
+        'rev-parse --verify %s',
+        $this->getTargetFullRef());
+      if ($err) {
+        throw new Exception(
+          pht(
+            'Branch "%s" does not exist in remote "%s".',
+            $this->getTargetOnto(),
+            $this->getTargetRemote()));
+      }
+
+      $this->writeInfo(
+        pht('FETCHED'),
+        pht(
+          'Fetched branch "%s" from remote "%s".',
           $this->getTargetOnto(),
           $this->getTargetRemote()));
     }
@@ -124,25 +198,45 @@ final class ArcanistGitLandEngine
 
     $ref = $this->getTargetFullRef();
 
-    $this->writeInfo(
-      pht('FETCH'),
-      pht('Fetching %s...', $ref));
-
     // NOTE: Although this output isn't hugely useful, we need to passthru
     // instead of using a subprocess here because `git fetch` may prompt the
     // user to enter a password if they're fetching over HTTP with basic
     // authentication. See T10314.
 
-    $err = $api->execPassthru(
-      'fetch --quiet -- %s %s',
-      $this->getTargetRemote(),
-      $this->getTargetOnto());
+    if ($this->getIsGitPerforce()) {
+      $this->writeInfo(
+        pht('P4 SYNC'),
+        pht('Synchronizing "%s" from Perforce...', $ref));
 
-    if ($err) {
-      throw new ArcanistUsageException(
-        pht(
-          'Fetch failed! Fix the error and run "%s" again.',
-          'arc land'));
+      $sync_ref = sprintf(
+        'refs/remotes/%s/%s',
+        $this->getTargetRemote(),
+        $this->getTargetOnto());
+
+      $err = $api->execPassthru(
+        'p4 sync --silent --branch %R --',
+        $sync_ref);
+
+      if ($err) {
+        throw new ArcanistUsageException(
+          pht(
+            'Perforce sync failed! Fix the error and run "arc land" again.'));
+      }
+    } else {
+      $this->writeInfo(
+        pht('FETCH'),
+        pht('Fetching "%s"...', $ref));
+
+      $err = $api->execPassthru(
+        'fetch --quiet -- %s %s',
+        $this->getTargetRemote(),
+        $this->getTargetOnto());
+
+      if ($err) {
+        throw new ArcanistUsageException(
+          pht(
+            'Fetch failed! Fix the error and run "arc land" again.'));
+      }
     }
   }
 
@@ -212,21 +306,68 @@ final class ArcanistGitLandEngine
   private function pushChange() {
     $api = $this->getRepositoryAPI();
 
-    $this->writeInfo(
-      pht('PUSHING'),
-      pht('Pushing changes to "%s".', $this->getTargetFullRef()));
+    if ($this->getIsGitPerforce()) {
+      $this->writeInfo(
+        pht('SUBMITTING'),
+        pht('Submitting changes to "%s".', $this->getTargetFullRef()));
 
-    $err = $api->execPassthru(
-      'push -- %s %s:%s',
-      $this->getTargetRemote(),
-      $this->mergedRef,
-      $this->getTargetOnto());
+      $config_argv = array();
 
-    if ($err) {
-      throw new ArcanistUsageException(
-        pht(
-          'Push failed! Fix the error and run "%s" again.',
-          'arc land'));
+      // Skip the "git p4 submit" interactive editor workflow. We expect
+      // the commit message that "arc land" has built to be satisfactory.
+      $config_argv[] = '-c';
+      $config_argv[] = 'git-p4.skipSubmitEdit=true';
+
+      // Skip the "git p4 submit" confirmation prompt if the user does not edit
+      // the submit message.
+      $config_argv[] = '-c';
+      $config_argv[] = 'git-p4.skipSubmitEditCheck=true';
+
+      $flags_argv = array();
+
+      // Disable implicit "git p4 rebase" as part of submit. We're allowing
+      // the implicit "git p4 sync" to go through since this puts us in a
+      // state which is generally similar to the state after "git push", with
+      // updated remotes.
+
+      // We could do a manual "git p4 sync" with a more narrow "--branch"
+      // instead, but it's not clear that this is beneficial.
+      $flags_argv[] = '--disable-rebase';
+
+      // Detect moves and submit them to Perforce as move operations.
+      $flags_argv[] = '-M';
+
+      // If we run into a conflict, abort the operation. We expect users to
+      // fix conflicts and run "arc land" again.
+      $flags_argv[] = '--conflict=quit';
+
+      $err = $api->execPassthru(
+        '%LR p4 submit %LR --commit %R --',
+        $config_argv,
+        $flags_argv,
+        $this->mergedRef);
+
+      if ($err) {
+        throw new ArcanistUsageException(
+          pht(
+            'Submit failed! Fix the error and run "arc land" again.'));
+      }
+    } else {
+      $this->writeInfo(
+        pht('PUSHING'),
+        pht('Pushing changes to "%s".', $this->getTargetFullRef()));
+
+      $err = $api->execPassthru(
+        'push -- %s %s:%s',
+        $this->getTargetRemote(),
+        $this->mergedRef,
+        $this->getTargetOnto());
+
+      if ($err) {
+        throw new ArcanistUsageException(
+          pht(
+            'Push failed! Fix the error and run "arc land" again.'));
+      }
     }
   }
 
@@ -332,39 +473,53 @@ final class ArcanistGitLandEngine
       return;
     }
 
-    if (!$path->isConnectedToRemote()) {
-      $this->writeInfo(
-        pht('UPDATE'),
-        pht(
-          'Local branch "%s" is not connected to a remote, staying on '.
-          'detached HEAD.',
-          $local_branch));
-      return;
+    $is_perforce = $this->getIsGitPerforce();
+
+    if ($is_perforce) {
+      // If we're in Perforce mode, we don't expect to have a meaningful
+      // path to the remote: the "p4" remote is not a real remote, and
+      // "git p4" commands do not configure branch upstreams to provide
+      // a path.
+
+      // Just pretend the target branch is connected directly to the remote,
+      // since this is effectively the behavior of Perforce and appears to
+      // do the right thing.
+      $cascade_branches = array($local_branch);
+    } else {
+      if (!$path->isConnectedToRemote()) {
+        $this->writeInfo(
+          pht('UPDATE'),
+          pht(
+            'Local branch "%s" is not connected to a remote, staying on '.
+            'detached HEAD.',
+            $local_branch));
+        return;
+      }
+
+      $remote_remote = $path->getRemoteRemoteName();
+      $remote_branch = $path->getRemoteBranchName();
+
+      $remote_actual = $remote_remote.'/'.$remote_branch;
+      $remote_expect = $this->getTargetFullRef();
+      if ($remote_actual != $remote_expect) {
+        $this->writeInfo(
+          pht('UPDATE'),
+          pht(
+            'Local branch "%s" is connected to a remote ("%s") other than '.
+            'the target remote ("%s"), staying on detached HEAD.',
+            $local_branch,
+            $remote_actual,
+            $remote_expect));
+        return;
+      }
+
+      // If we get this far, we have a sequence of branches which ultimately
+      // connect to the remote. We're going to try to update them all in reverse
+      // order, from most-upstream to most-local.
+
+      $cascade_branches = $path->getLocalBranches();
+      $cascade_branches = array_reverse($cascade_branches);
     }
-
-    $remote_remote = $path->getRemoteRemoteName();
-    $remote_branch = $path->getRemoteBranchName();
-
-    $remote_actual = $remote_remote.'/'.$remote_branch;
-    $remote_expect = $this->getTargetFullRef();
-    if ($remote_actual != $remote_expect) {
-      $this->writeInfo(
-        pht('UPDATE'),
-        pht(
-          'Local branch "%s" is connected to a remote ("%s") other than '.
-          'the target remote ("%s"), staying on detached HEAD.',
-          $local_branch,
-          $remote_actual,
-          $remote_expect));
-      return;
-    }
-
-    // If we get this far, we have a sequence of branches which ultimately
-    // connect to the remote. We're going to try to update them all in reverse
-    // order, from most-upstream to most-local.
-
-    $cascade_branches = $path->getLocalBranches();
-    $cascade_branches = array_reverse($cascade_branches);
 
     // First, check if any of them are ahead of the remote.
 
@@ -428,7 +583,12 @@ final class ArcanistGitLandEngine
       }
     }
 
-    if ($cascade_targets) {
+    if ($is_perforce) {
+      // In Perforce, we've already set the remote to the right state with an
+      // implicit "git p4 sync" during "git p4 submit", and "git pull" isn't a
+      // meaningful operation. We're going to skip this step and jump down to
+      // the "git reset --hard" below to get everything into the right state.
+    } else if ($cascade_targets) {
       $this->writeInfo(
         pht('UPDATE'),
         pht(
@@ -445,7 +605,10 @@ final class ArcanistGitLandEngine
             $cascade_branch));
 
         $api->execxLocal('checkout %s --', $cascade_branch);
-        $api->execxLocal('pull --');
+        $api->execxLocal(
+          'pull %s %s --',
+          $this->getTargetRemote(),
+          $cascade_branch);
       }
 
       if (!$local_ahead) {
@@ -473,8 +636,9 @@ final class ArcanistGitLandEngine
 
   private function destroyLocalBranch() {
     $api = $this->getRepositoryAPI();
+    $source_ref = $this->getSourceRef();
 
-    if ($this->getSourceRef() == $this->getTargetOnto()) {
+    if ($source_ref == $this->getTargetOnto()) {
       // If we landed a branch into a branch with the same name, so don't
       // destroy it. This prevents us from cleaning up "master" if you're
       // landing master into itself.
@@ -483,20 +647,32 @@ final class ArcanistGitLandEngine
 
     // TODO: Maybe this should also recover the proper upstream?
 
+    // See T10321. If we were not landing a branch, don't try to clean it up.
+    // This happens most often when landing from a detached HEAD.
+    $is_branch = $this->isBranch($source_ref);
+    if (!$is_branch) {
+      echo tsprintf(
+        "%s\n",
+        pht(
+          '(Source "%s" is not a branch, leaving working copy as-is.)',
+          $source_ref));
+      return;
+    }
+
     $recovery_command = csprintf(
       'git checkout -b %R %R',
-      $this->getSourceRef(),
+      $source_ref,
       $this->sourceCommit);
 
     echo tsprintf(
       "%s\n",
-      pht('Cleaning up branch "%s"...', $this->getSourceRef()));
+      pht('Cleaning up branch "%s"...', $source_ref));
 
     echo tsprintf(
       "%s\n",
       pht('(Use `%s` if you want it back.)', $recovery_command));
 
-    $api->execxLocal('branch -D -- %s', $this->getSourceRef());
+    $api->execxLocal('branch -D -- %s', $source_ref);
   }
 
   /**
@@ -556,16 +732,27 @@ final class ArcanistGitLandEngine
   }
 
   private function didHoldChanges() {
-    $this->writeInfo(
-      pht('HOLD'),
-      pht(
-        'Holding change locally, it has not been pushed.'));
+    if ($this->getIsGitPerforce()) {
+      $this->writeInfo(
+        pht('HOLD'),
+        pht(
+          'Holding change locally, it has not been submitted.'));
 
-    $push_command = csprintf(
-      '$ git push -- %R %R:%R',
-      $this->getTargetRemote(),
-      $this->mergedRef,
-      $this->getTargetOnto());
+      $push_command = csprintf(
+        '$ git p4 submit -M --commit %R --',
+        $this->mergedRef);
+    } else {
+      $this->writeInfo(
+        pht('HOLD'),
+        pht(
+          'Holding change locally, it has not been pushed.'));
+
+      $push_command = csprintf(
+        '$ git push -- %R %R:%R',
+        $this->getTargetRemote(),
+        $this->mergedRef,
+        $this->getTargetOnto());
+    }
 
     $restore_command = csprintf(
       '$ git checkout %R --',
@@ -574,9 +761,9 @@ final class ArcanistGitLandEngine
     echo tsprintf(
       "\n%s\n\n".
       "%s\n\n".
-      "    %s\n\n".
+      "    **%s**\n\n".
       "%s\n\n".
-      "    %s\n\n".
+      "    **%s**\n\n".
       "%s\n",
       pht(
         'This local working copy now contains the merged changes in a '.
@@ -584,12 +771,143 @@ final class ArcanistGitLandEngine
       pht('You can push the changes manually with this command:'),
       $push_command,
       pht(
-        'You can go back to how things were before you ran `arc land` with '.
+        'You can go back to how things were before you ran "arc land" with '.
         'this command:'),
       $restore_command,
       pht(
         'Local branches have not been changed, and are still in exactly the '.
         'same state as before.'));
+  }
+
+  private function isBranch($ref) {
+    $api = $this->getRepositoryAPI();
+
+    list($err) = $api->execManualLocal(
+      'show-ref --verify --quiet -- %R',
+      'refs/heads/'.$ref);
+
+    return !$err;
+  }
+
+  private function getEngineOnto() {
+    $source_ref = $this->getSourceRef();
+
+    $onto = $this->getOntoArgument();
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected with the "--onto" flag.',
+          $onto));
+      return $onto;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($source_ref);
+
+    if ($path->getLength()) {
+      $cycle = $path->getCycle();
+      if ($cycle) {
+        $this->writeWarn(
+          pht('LOCAL CYCLE'),
+          pht(
+            'Local branch tracks an upstream, but following it leads to a '.
+            'local cycle; ignoring branch upstream.'));
+
+        echo tsprintf(
+          "\n    %s\n\n",
+          implode(' -> ', $cycle));
+
+      } else {
+        if ($path->isConnectedToRemote()) {
+          $onto = $path->getRemoteBranchName();
+          $this->writeInfo(
+            pht('TARGET'),
+            pht(
+              'Landing onto "%s", selected by following tracking branches '.
+              'upstream to the closest remote.',
+              $onto));
+          return $onto;
+        } else {
+          $this->writeInfo(
+            pht('NO PATH TO UPSTREAM'),
+            pht(
+              'Local branch tracks an upstream, but there is no path '.
+              'to a remote; ignoring branch upstream.'));
+        }
+      }
+    }
+
+    $workflow = $this->getWorkflow();
+
+    $config_key = 'arc.land.onto.default';
+    $onto = $workflow->getConfigFromAnySource($config_key);
+    if ($onto !== null) {
+      $this->writeInfo(
+        pht('TARGET'),
+        pht(
+          'Landing onto "%s", selected by "%s" configuration.',
+          $onto,
+          $config_key));
+      return $onto;
+    }
+
+    $onto = 'master';
+    $this->writeInfo(
+      pht('TARGET'),
+      pht(
+        'Landing onto "%s", the default target under git.',
+        $onto));
+
+    return $onto;
+  }
+
+  private function getEngineRemote() {
+    $source_ref = $this->getSourceRef();
+
+    $remote = $this->getRemoteArgument();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected with the "--remote" flag.',
+          $remote));
+      return $remote;
+    }
+
+    $api = $this->getRepositoryAPI();
+    $path = $api->getPathToUpstream($source_ref);
+
+    $remote = $path->getRemoteRemoteName();
+    if ($remote !== null) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using remote "%s", selected by following tracking branches '.
+          'upstream to the closest remote.',
+          $remote));
+      return $remote;
+    }
+
+    $remote = 'p4';
+    if ($api->isPerforceRemote($remote)) {
+      $this->writeInfo(
+        pht('REMOTE'),
+        pht(
+          'Using Perforce remote "%s". The existence of this remote implies '.
+          'this working copy was synchronized from a Perforce repository.',
+          $remote));
+      return $remote;
+    }
+
+    $remote = 'origin';
+    $this->writeInfo(
+      pht('REMOTE'),
+      pht(
+        'Using remote "%s", the default remote under Git.',
+        $remote));
+
+    return $remote;
   }
 
 }

@@ -13,6 +13,8 @@ abstract class ArcanistLandEngine extends Phobject {
   private $shouldSquash;
   private $shouldDeleteRemote;
   private $shouldPreview;
+  private $remoteArgument;
+  private $ontoArgument;
 
   // TODO: This is really grotesque.
   private $buildMessageCallback;
@@ -117,6 +119,25 @@ abstract class ArcanistLandEngine extends Phobject {
     return $this->commitMessageFile;
   }
 
+  final public function setRemoteArgument($remote_argument) {
+    $this->remoteArgument = $remote_argument;
+    return $this;
+  }
+
+  final public function getRemoteArgument() {
+    return $this->remoteArgument;
+  }
+
+  final public function setOntoArgument($onto_argument) {
+    $this->ontoArgument = $onto_argument;
+    return $this;
+  }
+
+  final public function getOntoArgument() {
+    return $this->ontoArgument;
+  }
+
+  abstract public function parseArguments();
   abstract public function execute();
 
   abstract protected function getLandingCommits();
