@@ -84,7 +84,7 @@ final class ICFlowSummary extends PhutilConsoleView {
           pht(
             'Issue `%s` in order to create a new local tracking branch '.
             'starting from your current branch (%s).',
-            'flow branch branchname',
+            'arc flow [branchname] [upstream_branch]',
             $current_feature->getName())
         :
           '';
