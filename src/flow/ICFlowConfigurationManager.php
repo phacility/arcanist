@@ -85,34 +85,4 @@ final class ICFlowConfigurationManager extends Phobject {
     $this->setConfig($config);
     return $this;
   }
-
-  public function configureFields(array $field_keys) {
-    $all_keys = ICFlowField::getAllFieldKeys();
-    $non_fields = array_diff($field_keys, $all_keys);
-    if ($non_fields) {
-      throw new Exception(pht(
-        'Invalid field names specified: %s',
-        implode(', ', $non_fields)));
-    }
-    foreach ($all_keys as $field_key) {
-      if (in_array($field_key, $field_keys)) {
-        $index = array_search($field_key, $field_keys);
-        $this->setFieldConfigOption($field_key, 'order', $index);
-        $this->setFieldConfigOption($field_key, 'enabled', true);
-      } else {
-        $this->setFieldConfigOption($field_key, 'enabled', false);
-      }
-    }
-  }
-
-  public function configureFieldOption($field, $option, $value) {
-    $all_fields = $this->getAllFields();
-    $instance = idx($all_fields, $field);
-    if (!$instance) {
-      throw new Exception(pht('No field named "%s" exists.', $field));
-    }
-    $value = $instance->validateOption($option, $value);
-    $this->setFieldConfigOption($field, $option, $value);
-  }
-
 }

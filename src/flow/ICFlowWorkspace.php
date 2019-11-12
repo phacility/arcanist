@@ -31,31 +31,6 @@ final class ICFlowWorkspace extends Phobject {
     return $this->git;
   }
 
-  /**
-   * Defines what should be considered the root branch of this
-   * workspace.
-   *
-   * If there is also a 'terminal' branch set for this workspace,
-   * only nodes between the root and the terminus will be
-   * included in workspace operations.
-   */
-  public function setRootBranch($root) {
-    $this->rootBranch = $root;
-    $this->features = null;
-    return $this;
-  }
-
-  /**
-   * Defines the lowest leaf node that this workspace should concern
-   * itself with. Only features which this branch derives from will
-   * be included in workspace operations.
-   */
-  public function setTerminalBranch($terminal) {
-    $this->terminalBranch = $terminal;
-    $this->features = null;
-    return $this;
-  }
-
   public function setCache(PhutilKeyValueCache $cache) {
     $this->cache = $cache;
     return $this;
