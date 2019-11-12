@@ -58,16 +58,18 @@ EOTEXT
         "\n\nProceed assigning dependencies?"))) {
       $parents = array();
       foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
-        $revision = $this->getRevisionForBranch($branch_name);
-        if (!$revision || ($graph->getDepth($branch_name) < 2)) {
+        $feature = $this->getFeature($branch_name);
+        if (!$feature || ($graph->getDepth($branch_name) < 2)) {
           continue;
         }
 
         $parent_branch = $graph->getUpstream($branch_name);
-        if ($parent_revision = $this->getRevisionForBranch($parent_branch)) {
+        if ($parent_feature = $this->getFeature($parent_branch)) {
           // do not add yourself as dependency
-          if ($parent_revision['phid'] != $revision['phid']) {
-            $parents[$revision['phid']][] = $parent_revision['phid'];
+          if ($parent_feature->getRevisionPHID() !=
+              $feature->getRevisionPHID()) {
+            $parents[$feature->getRevisionPHID()][] =
+              $parent_feature->getRevisionPHID();
           }
         }
       }
@@ -107,18 +109,18 @@ EOTEXT
     $grafted_parent_branches = array();
 
     foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
-      $revision = $this->getRevisionForBranch($branch_name);
+      $feature = $this->getFeature($branch_name);
 
-      if (!$revision || !$revision['authorPHID']) {
+      if (!$feature || !$feature->getAuthorPHID()) {
         // no revision or author
         continue;
       }
 
-      if ($revision['authorPHID'] === $this->getUserPHID()) {
+      if ($feature->getAuthorPHID() === $this->getUserPHID()) {
         // the revision belongs to the current user. only update
         // it if the revision is open.
-        if (!$this->isAnyClosedStatus($revision)) {
-          $revision_id = idx($revision, 'id');
+        if (!$this->isAnyClosedStatus($feature)) {
+          $revision_id = $feature->getRevisionID();
           if (array_key_exists($revision_id, $authored_branches)) {
             echo "\n";
             $this->writeWarn('WARNING', phutil_console_format(pht(
@@ -249,14 +251,13 @@ EOTEXT
     $table->draw();
   }
 
-  private function isAnyClosedStatus($revision) {
-    $status = idx($revision, 'statusName');
+  private function isAnyClosedStatus(ICFlowFeature $feature) {
     $closed_statuses = array_map(
       'ArcanistDifferentialRevisionStatus::getNameForRevisionStatus', array(
         ArcanistDifferentialRevisionStatus::CLOSED,
         ArcanistDifferentialRevisionStatus::ABANDONED,
       ));
-    return in_array($status, $closed_statuses);
+    return in_array($feature->getRevisionStatusName(), $closed_statuses);
   }
 
 }

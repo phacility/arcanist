@@ -86,79 +86,13 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     return $this->flowConfig;
   }
 
-  protected function getBranches() {
-    if (!$this->branches) {
-      $repository_api = $this->getRepositoryAPI();
-      $branches = $repository_api->getAllBranches();
-      if (!$branches) {
-        throw new ArcanistUsageException(
-          pht('No branches in this working copy.'));
-      }
-
-      $this->branches = $this->loadCommitInfo($branches);
-    }
-    return $this->branches;
-  }
-
-  protected function loadCommitInfo(array $branches) {
-    $repository_api = $this->getRepositoryAPI();
-
-    $futures = array();
-    foreach ($branches as $branch) {
-      // NOTE: "-s" is an option deep in git's diff argument parser that
-      // doesn't seem to have much documentation and has no long form. It
-      // suppresses any diff output.
-      $futures[$branch['name']] = $repository_api->execFutureLocal(
-        'show -s --format=%C %s --',
-        '%H%x01%ct%x01%T%x01%s%x01%s%n%n%b',
-        $branch['name']);
-    }
-
-    $branches = ipull($branches, null, 'name');
-
-    $futures = id(new FutureIterator($futures))
-      ->limit(16);
-    foreach ($futures as $name => $future) {
-      list($info) = $future->resolvex();
-      list($hash, $epoch, $tree, $desc, $text) = explode("\1", trim($info), 5);
-
-      $branch = $branches[$name] + array(
-        'hash' => $hash,
-        'desc' => $desc,
-        'tree' => $tree,
-        'epoch' => (int)$epoch,
-      );
-
-      try {
-        $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-        $id = $message->getRevisionID();
-
-        $branch['revisionID'] = $id;
-      } catch (ArcanistUsageException $ex) {
-        // In case of invalid commit message which fails the parsing,
-        // do nothing.
-        $branch['revisionID'] = null;
-      }
-
-      $branches[$name] = $branch;
-    }
-
-    return $branches;
-  }
-
-  protected function getRevisionForBranch($branch_name) {
-    $branch = idx($this->getBranches(), $branch_name, array());
-    if (!$revision_id = idx($branch, 'revisionID')) {
+  protected function getFeature($branch_name) {
+    $feature = $this->getFlow()->getFeature($branch_name);
+    if (!$feature || !$feature->getRevisionID()) {
       return false;
     }
-    return idx($this->getRevisions(), $revision_id);
-  }
-
-  protected function getRevisions() {
-    if (!$this->revisions) {
-      $this->revisions = $this->loadRevisions($this->getBranches());
-    }
-    return $this->revisions;
+    $this->getFlow()->loadRevisions();
+    return $feature;
   }
 
   protected function integratorFlowEmulator($ids = array(), $phids = array(),
@@ -203,20 +137,6 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     }
 
     return $results;
-  }
-
-  protected function loadRevisions(array $branches) {
-    $ids = array();
-    $hashes = array();
-
-    foreach ($branches as $branch) {
-      if ($branch['revisionID']) {
-        $ids[] = $branch['revisionID'];
-      }
-      $hashes[] = array('gtcm', $branch['hash']);
-      $hashes[] = array('gttr', $branch['tree']);
-    }
-    return $this->integratorFlowEmulator($ids, array(), $hashes);
   }
 
   protected function checkoutBranch($name, $silent = false) {
@@ -361,10 +281,10 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   protected function generateBranchName($base) {
-    $branches = $this->getBranches();
+    $branches = $this->getRepositoryAPI()->getAllBranches();
     $branch_name = $base;
     $index = 0;
-    while (idx($branches, $branch_name)) {
+    while (isset($branches[$branch_name])) {
       $branch_name = $base.'_'.++$index;
     }
     return $branch_name;
