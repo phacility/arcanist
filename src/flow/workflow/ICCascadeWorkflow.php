@@ -59,7 +59,13 @@ EOTEXT
     $branch_name = $api->getBranchName();
     echo "Cascading children of current branch.\n";
     echo ICConsoleTree::drawTreeColumn($branch_name, 0, false, '').PHP_EOL;
-    $this->rebaseChildren($graph, $branch_name);
+    if (!$this->rebaseChildren($graph, $branch_name)) {
+      $this->writeWarn("WARNING", phutil_console_format('Some of cascading rebases failed, '.
+                                 'you can run <fg:red>arc cascade '.
+                                 '--halt-on-conflict</fg> which will halt at '.
+                                 'failure point'.PHP_EOL));
+    }
+
     $this->checkoutBranch($branch_name);
   }
 
@@ -72,6 +78,7 @@ EOTEXT
   private function rebaseChildren(ICGitBranchGraph $graph, $branch_name) {
     $api = $this->getRepositoryAPI();
     $downstreams = $graph->getDownstreams($branch_name);
+    $had_conflict = false;
     foreach ($downstreams as $index => $child_branch) {
       echo ICConsoleTree::drawTreeColumn(
         $child_branch,
@@ -97,6 +104,7 @@ EOTEXT
               " You are now in branch '**%s**'.\n", $conflict, $child_branch));
         } else {
           $api->execxLocal('rebase --abort');
+          $had_conflict = true;
           continue;
         }
 
@@ -104,8 +112,11 @@ EOTEXT
         echo phutil_console_format(" <fg:green>%s</fg>\n", 'OK');
       }
 
-      $this->rebaseChildren($graph, $child_branch);
+      if (!$this->rebaseChildren($graph, $child_branch)) {
+        $had_conflict = true;
+      }
     }
+    return !$had_conflict;
   }
 
   private function userHaltConfig() {
