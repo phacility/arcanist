@@ -3,7 +3,7 @@
 final class ICFlowFeature extends Phobject {
 
   private $head;
-  private $differentialCommitMessage;
+  private $differentialCommitMessage = null;
   private $revision;
   private $search;
   private $activeDiff;
@@ -13,25 +13,29 @@ final class ICFlowFeature extends Phobject {
   public static function newFromHead(ICFlowRef $head, ICGitAPI $git) {
     $feature = new self();
     $feature->head = $head;
-    $feature->differentialCommitMessage = null;
     $upstream = $head->getUpstream();
     // we're not interested in branches which have no upstream
-    if (!$upstream) {
+    // nor master
+    if (!$upstream || $head->getName() == 'master') {
       return $feature;
     }
     // if upstream branch doesn't exists - treat master as upstream
     if (!$git->revParseVerify($upstream)) {
+      echo phutil_console_format("Branch <fg:green>%s</fg> is based on ".
+                                 "<fg:red>%s</fg>, but the upstream is gone. ".
+                                 "Try running `arc tidy` to fix upsteam. ".
+                                 "Trying to show changes based on master ".
+                                 "branch.\n",
+                                 $head->getName(), $upstream);
       $upstream = 'master';
     }
     // get all git logs from HEAD to upstream branch it will be used to find
     // closest match differential revision
     $logs = $git->getGitCommitLog($upstream, $head->getObjectName());
     if (strlen($logs) == 0) {
-      $logs = $git->getGitCommitLog(sprintf('%s^', $upstream),
-                                    $head->getObjectName());
-      if (strlen($logs) == 0) {
+        // most likely it is branch which was not yet arc diff'ed, do not try
+        // to resolve too hard
         return $feature;
-      }
     }
 
     $parser = new ArcanistDiffParser();
