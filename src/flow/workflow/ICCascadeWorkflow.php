@@ -31,7 +31,7 @@ EOTEXT
     return array(
       'halt-on-conflict' => array(
         'help' => "Rather than aborting any rebase attempts, cascade will drop".
-                  " the user\n into the conflicted branch in a rebase state.",
+                  " the user\ninto the conflicted branch in a rebase state.",
         'short' => 'hc',
       ),
     );
@@ -75,6 +75,21 @@ EOTEXT
     return $in_rebase;
   }
 
+  private function rebaseForkPoint($branch_name, $child_branch) {
+    return $this->getRepositoryAPI()->execManualLocal(
+      'rebase --fork-point %s %s',
+      $branch_name,
+      $child_branch);
+  }
+
+  private function rebaseOnto($branch_name, $base, $child_branch) {
+    return $this->getRepositoryAPI()->execManualLocal(
+      'rebase --onto %s %s %s',
+      $branch_name,
+      $base,
+      $child_branch);
+  }
+
   private function rebaseChildren(ICGitBranchGraph $graph, $branch_name) {
     $api = $this->getRepositoryAPI();
     $downstreams = $graph->getDownstreams($branch_name);
@@ -85,10 +100,22 @@ EOTEXT
         $graph->getDepth($child_branch),
         false,
         '');
-      list($err, $stdout, $stderr) = $api->execManualLocal(
-        'rebase --fork-point %s %s',
-        $branch_name,
-        $child_branch);
+      list($err, $stdout, $stderr) = $this->rebaseForkPoint($branch_name,
+                                                            $child_branch);
+      if ($err) {
+        // feature contains hash of point where differential revision
+        // started, we can use it to rebase out changes
+        $feature = $this->getFeature($child_branch);
+        if ($feature) {
+          echo ' usual `git rebase` flow failed, trying different '.
+               "technique (rebase --onto)";
+          $api->execxLocal('rebase --abort');
+          $this->rebaseOnto($branch_name,
+                            $feature->getRevisionBaseCommit().'^',
+                            $child_branch);
+        }
+      }
+
       if ($err) {
         echo phutil_console_format(" <fg:red>%s</fg>\n", 'FAIL');
         if ($this->getArgument('halt-on-conflict') || $this->userHaltConfig()) {
@@ -107,7 +134,6 @@ EOTEXT
           $had_conflict = true;
           continue;
         }
-
       } else {
         echo phutil_console_format(" <fg:green>%s</fg>\n", 'OK');
       }
