@@ -30,6 +30,13 @@ EOTEXT
       'arcanist' => dirname(phutil_get_library_root('arcanist')),
     );
 
+    $supported_branches = array(
+      'master',
+      'stable',
+      'experimental',
+    );
+    $supported_branches = array_fuse($supported_branches);
+
     foreach ($roots as $lib => $root) {
       echo phutil_console_format(
         "%s\n",
@@ -76,18 +83,16 @@ EOTEXT
       }
 
       $branch_name = $repository->getBranchName();
-      if ($branch_name != 'master' && $branch_name != 'stable') {
+      if (!isset($supported_branches[$branch_name])) {
         throw new ArcanistUsageException(
           pht(
-            "%s must be on either branch '%s' or '%s' to be automatically ".
-            "upgraded. ".
-            "This copy of %s (in '%s') is on branch '%s'.",
-            $lib,
-            'master',
-            'stable',
+            'Library "%s" (in "%s") is on branch "%s", but this branch is '.
+            'not supported for automatic upgrades. Supported branches are: '.
+            '%s.',
             $lib,
             $root,
-            $branch_name));
+            $branch_name,
+            implode(', ', array_keys($supported_branches))));
       }
 
       chdir($root);
