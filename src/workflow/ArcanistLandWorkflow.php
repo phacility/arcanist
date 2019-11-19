@@ -869,7 +869,7 @@ EOTEXT
             "not present on '%s':\n\n".
             "%s\n".
             'If you want all these diffs to be landed to Submit Queue atomically, '.
-            'use arc stack.\n Alternatively, you can '.
+            "use arc stack.\n Alternatively, you can ".
             'separate these revisions onto different branches, or use '.
             '--revision <id> to use the commit message from <id> '.
             'and land them all.',
