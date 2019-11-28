@@ -110,7 +110,7 @@ EOTEXT
           echo ' usual `git rebase` flow failed, trying different '.
                "technique (rebase --onto)";
           $api->execxLocal('rebase --abort');
-          $this->rebaseOnto($branch_name,
+          list($err, $stdout, $stderr) = $this->rebaseOnto($branch_name,
                             $feature->getRevisionBaseCommit().'^',
                             $child_branch);
         }
