@@ -180,7 +180,7 @@ final class UberArcanistStackSubmitQueueEngine
       if (!$verbose) {
         try {
           $this->runCommandSilently(array('echo', 'y', '|', 'git', 'rebase', pht('%s', $ontoBranch)),
-                                          $this->getUsesArcFlow());
+                                          !$this->getUsesArcFlow());
         } catch (Exception $e) {
           if (!$this->getUsesArcFlow()) {
             throw $e;
