@@ -11,6 +11,7 @@ class UberArcanistSubmitQueueEngine
   private $submitQueueRegex;
   private $tbr;
   private $submitQueueTags;
+  private $usesArcFlow;
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -112,9 +113,10 @@ class UberArcanistSubmitQueueEngine
       pht('Please use "%s" to track your changes', $statusUrl));
   }
 
-  public function __construct($submitQueueClient, $conduit) {
+  public function __construct($submitQueueClient, $conduit, $usesArcFlow = false) {
     $this->submitQueueClient = $submitQueueClient;
     $this->conduit = $conduit;
+    $this->usesArcFlow = $usesArcFlow;
   }
 
   final public function getRevision() {
@@ -295,5 +297,9 @@ class UberArcanistSubmitQueueEngine
 
   protected function validate() {
     assert(!empty($this->revision));
+  }
+
+  public function getUsesArcFlow() {
+    return $this->usesArcFlow;
   }
 }

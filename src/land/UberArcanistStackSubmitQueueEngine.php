@@ -178,18 +178,39 @@ final class UberArcanistStackSubmitQueueEngine
         echo phutil_console_format(pht('Rebasing **%s** onto **%s**', $targetBranch, $ontoBranch) . "\n");
       }
       if (!$verbose) {
-        $this->runCommandSilently(array("echo", "y", "|", "git","rebase", pht("%s", $ontoBranch)));
+        try {
+          $this->runCommandSilently(array('echo', 'y', '|', 'git', 'rebase', pht('%s', $ontoBranch)),
+                                          $this->getUsesArcFlow());
+        } catch (Exception $e) {
+          if (!$this->getUsesArcFlow()) {
+            throw $e;
+          }
+          $this->writeInfo('ARC_REBASE',
+            pht('Unable to use standard rebase, trying alternative - rebase --onto %s %s^',  $ontoBranch, $targetBranch));
+          $repository_api->execxLocal('rebase --abort');
+          $repository_api->reloadWorkingCopy();
+          $this->runCommandSilently(array('echo', 'y', '|', 'git', 'rebase', '--onto', pht('%s', $ontoBranch), pht('%s^', $targetBranch)));
+        }
       } else {
         $err = phutil_passthru('git rebase %s', $ontoBranch);
         if ($err) {
-          throw new ArcanistUsageException(pht(
-            "'%s' failed. You can abort with '%s', or resolve conflicts " .
-            "and use '%s' to continue forward. After resolving the rebase, " .
-            "run '%s'.",
-            sprintf('git rebase %s', $ontoBranch),
-            'git rebase --abort',
-            'git rebase --continue',
-            'arc diff'));
+          if ($this->getUsesArcFlow()) {
+            $this->writeInfo('ARC_REBASE',
+              pht('Unable to use standard rebase, trying alternative - rebase --onto %s %s^',  $ontoBranch, $targetBranch));
+            $repository_api->execxLocal('rebase --abort');
+            $repository_api->reloadWorkingCopy();
+            $err = phutil_passthru('git rebase --onto %s %s^', $ontoBranch, $targetBranch);
+          }
+          if ($err) {
+            throw new ArcanistUsageException(pht(
+              "'%s' failed. You can abort with '%s', or resolve conflicts ".
+              "and use '%s' to continue forward. After resolving the rebase, ".
+              "run '%s'.",
+              sprintf('git rebase %s', $ontoBranch),
+              'git rebase --abort',
+              'git rebase --continue',
+              'arc diff'));
+          }
         }
       }
       $repository_api->reloadWorkingCopy();
@@ -222,7 +243,7 @@ final class UberArcanistStackSubmitQueueEngine
     }
   }
 
-  private function runCommandSilently($cmdArr) {
+  private function runCommandSilently($cmdArr, $print_output = true) {
     $stdoutFile = tempnam("/tmp", "arc_stack_out_");
     $stderrFile = tempnam("/tmp", "arc_stack_err_");
     $cmd = null;
@@ -233,8 +254,10 @@ final class UberArcanistStackSubmitQueueEngine
       $this->debugLog("Executing cmd (%s)\n", $cmd);
       $this->execxLocal($cmd);
     } catch (Exception $exp) {
-      echo pht("Command failed (%s) Output : \n%s\nError : \n%s\n",$cmd,
-        file_get_contents($stdoutFile), file_get_contents($stderrFile));
+      if ($print_output === true) {
+        echo pht("Command failed (%s) Output : \n%s\nError : \n%s\n", $cmd,
+          file_get_contents($stdoutFile), file_get_contents($stderrFile));
+      }
       throw $exp;
     } finally {
       unlink($stderrFile);

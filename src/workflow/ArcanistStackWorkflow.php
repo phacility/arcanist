@@ -28,6 +28,7 @@ final class ArcanistStackWorkflow extends ArcanistWorkflow {
   private $revision_ids; // Stack of revision-ids
   private $messageFile;
   private $traceModeEnabled;
+  private $usesArcFlow;
 
   const REFTYPE_BRANCH = 'branch';
   const REFTYPE_BOOKMARK = 'bookmark';
@@ -343,7 +344,9 @@ EOTEXT
       $this->uberRunUnit();
     }
 
-    $engine = new UberArcanistStackSubmitQueueEngine($this->submitQueueClient, $this->getConduit());
+    $engine = new UberArcanistStackSubmitQueueEngine($this->submitQueueClient,
+                                                     $this->getConduit(),
+                                                     $this->getUsesArcFlow());
     $this->readEngineArguments();
     $this->requireCleanWorkingCopy();
     $should_hold = $this->getArgument('hold');
@@ -593,6 +596,7 @@ EOTEXT
           $this->getConduit()->getConduitToken());
       $this->submitQueueTags = $this->getConfigFromAnySource('uber.land.submitqueue.tags');
     }
+    $this->usesArcFlow = $this->readScratchFile('uses-arc-flow') == 'true';
   }
 
   private function findRevisions() {
@@ -863,5 +867,9 @@ EOTEXT
     if ( $this->traceModeEnabled) {
       echo phutil_console_format(call_user_func_array('pht', $message));
     }
+  }
+
+  public function getUsesArcFlow() {
+    return $this->usesArcFlow;
   }
 }
