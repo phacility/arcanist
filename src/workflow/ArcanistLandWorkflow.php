@@ -947,7 +947,9 @@ EOTEXT
     // UBER CODE
     // Check if all paths were reviewed by reviewers listed on METADATA files.
     // If this check throws an exception - silently pass.
-    $this->uberMetadataReviewersCheck($rev_id);
+    if (getenv("ARC_BETA") == "1") {
+      $this->uberMetadataReviewersCheck($rev_id);
+    }
     // UBER CODE END
 
     if ($state_warning !== null) {
