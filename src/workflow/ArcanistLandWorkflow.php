@@ -910,6 +910,7 @@ EOTEXT
       }
     }
 
+    // UBER CODE
     $uber_prevent_unaccepted_changes = $this->getConfigFromAnySource(
       'uber.land.prevent-unaccepted-changes',
       false);
@@ -917,6 +918,7 @@ EOTEXT
       throw new ArcanistUsageException(
         pht("Revision '%s' has not been accepted.", "D{$rev_id}: {$rev_title}"));
     }
+    // UBER CODE END
 
     $state_warning = null;
     $state_header = null;
@@ -941,6 +943,12 @@ EOTEXT
         $full_name,
         pht('Accepted'));
     }
+
+    // UBER CODE
+    // Check if all paths were reviewed by reviewers listed on METADATA files.
+    // If this check throws an exception - silently pass.
+    $this->uberMetadataReviewersCheck($rev_id);
+    // UBER CODE END
 
     if ($state_warning !== null) {
       $prompt = pht('Land revision in the wrong state?');
@@ -1938,5 +1946,101 @@ EOTEXT
     return $refs;
   }
 
+  /**
+   * Check if the revision has all necessary accepts from required reviewers.
+   *
+   * Example of response which should be handled:
+   * {
+   *   "pass": false,
+   *   "info": null,
+   *   "groups": [
+   *     {
+   *       "paths": [
+   *         "banana.txt",
+   *         "apple/orange/teest",
+   *         "apple/stuff.test",
+   *         "carrot.txt"
+   *       ],
+   *       "reviewers": [
+   *         {
+   *           "groups": [
+   *             "group"
+   *           ],
+   *           "users": [
+   *             "user1",
+   *             "user2"
+   *           ]
+   *         }
+   *       ]
+   *     }
+   *   ],
+   *   "revision": "123"
+   * }
+   */
+  private function uberMetadataReviewersCheck($rev_id) {
+    try {
+      $uber_metadata_unreviewed_paths = $this->getConduit()->callMethodSynchronous(
+        'uber_metadata.unreviewed_paths',
+        array(
+          'revisionid' => $rev_id,
+        ));
+      if (array_key_exists('pass', $uber_metadata_unreviewed_paths)
+        && false === $uber_metadata_unreviewed_paths['pass']
+      ) {
+
+        id(new PhutilConsoleWarning('WARNING', pht(
+          'Revision contains paths which were not reviewed by METADATA '.
+          'reviewers. Likely land operation will be blocked.'
+        )))->draw();
+
+        $console = PhutilConsole::getConsole();
+        foreach ($uber_metadata_unreviewed_paths['groups'] as $group) {
+          $reviewers = [];
+          if (isset($group['reviewers'][0])) {
+            if (!empty($group['reviewers'][0]['groups'])) {
+              $reviewers = array_map(function($v) {
+                return '#'.$v;
+              }, $group['reviewers'][0]['groups']);
+            }
+            if (!empty($group['reviewers'][0]['users'])) {
+              $users = array_map(function($v) {
+                return '@'.$v;
+              }, $group['reviewers'][0]['users']);
+              $reviewers = array_merge($reviewers, $users);
+            }
+          }
+          $suggestion = pht('No suggested reviewers were found');
+          if (!empty($reviewers)) {
+            $suggestion = tsprintf(
+              '**Suggested reviewers:** ' . implode(', ', $reviewers));
+          }
+          $console->writeOut("\n      " . $suggestion . "\n");
+
+          foreach ($group['paths'] as $key => $path) {
+            $console->writeOut("      - <fg:red>%s</fg>\n", $path);
+            if ($key == 3) {
+              $console->writeOut("      - (and more)...\n");
+              break;
+            }
+          }
+        }
+
+        $prompt = pht('Continue anyway?');
+        $ok = phutil_console_confirm($prompt);
+        if (!$ok) {
+          throw new ArcanistUserAbortException();
+        }
+      }
+    } catch (ArcanistUserAbortException $e) {
+      throw $e; // pass this exception.
+    } catch (Exception $e) {
+      $warning = pht(
+        'Failed perform check if revision was reviewed by all required '.
+        'reviewers defined on METADATA files. This validation will be '.
+        'performed during `git push` operation.'
+      );
+      id(new PhutilConsoleWarning('WARNING', $warning))->draw();
+    }
+  }
 
 }
