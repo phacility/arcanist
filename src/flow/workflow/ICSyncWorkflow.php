@@ -17,7 +17,9 @@ EOTEXT
     return phutil_console_format(
       "\n          Synchronizes revisions and revision metadata between your ".
       "local working copy and the\n".
-      "          remote install.\n");
+      "          remote install. If no options are passed it will refresh ".
+      "dependencies and revisions.\n          Synchronization is always started".
+      ' from master branch');
   }
 
   public function getArguments() {
@@ -42,8 +44,12 @@ EOTEXT
   }
 
   public function run() {
-    $dependencies = $this->getArgument('dependencies');
-    $revisions = $this->getArgument('revisions');
+    $dependencies = $this->getArgument('dependencies', false);
+    $revisions = $this->getArgument('revisions', false);
+    if (!$dependencies && !$revisions) {
+      $dependencies = true;
+      $revisions = true;
+    }
     $graph = $this->loadGitBranchGraph();
     $this->drawFlowTree();
 
