@@ -199,7 +199,7 @@ EOTEXT
       $this->renderBranchTable($authored_branches);
       if ($this->consoleConfirm('Update each remote revision to match the '.
                                 'current local branch state?')) {
-        $prompt = pht('Enter an update message for your revisions: ');
+        $prompt = pht('Enter an update message for your revisions:');
         if (!$message = phutil_console_prompt($prompt)) {
           throw new ArcanistUsageException('Update message is required.');
         }
