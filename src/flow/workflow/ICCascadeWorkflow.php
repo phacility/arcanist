@@ -12,7 +12,7 @@ final class ICCascadeWorkflow extends ICFlowBaseWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **cascade** [--halt-on-conflict]
+      **cascade** [--halt-on-conflict] [rootbranch]
 EOTEXT
       );
   }
@@ -21,7 +21,8 @@ EOTEXT
     return phutil_console_format(<<<EOTEXT
 
           Automates the process of rebasing and patching local working branches
-          and their associated differential diffs.
+          and their associated differential diffs. Cascades from current branch
+          if branch is not specified.
 
 EOTEXT
       );
@@ -34,6 +35,7 @@ EOTEXT
                   " the user\ninto the conflicted branch in a rebase state.",
         'short' => 'hc',
       ),
+      '*' => 'branch',
     );
   }
 
@@ -55,9 +57,14 @@ EOTEXT
                               "      git rebase --abort\n\n".
                               " Aborting cascade.\n"));
     }
-
-    $branch_name = $api->getBranchName();
-    echo "Cascading children of current branch.\n";
+    $branch_name = idx($this->getArgument('branch'), 0, null);
+    if (!$branch_name) {
+       $branch_name = $api->getBranchName();
+       echo "Cascading children of current branch.\n";
+    } else {
+       echo phutil_console_format('Cascading children of <fg:green>%s</fg> '.
+                                  "branch.\n", $branch_name);
+    }
     echo ICConsoleTree::drawTreeColumn($branch_name, 0, false, '').PHP_EOL;
     if (!$this->rebaseChildren($graph, $branch_name)) {
       $this->writeWarn("WARNING", phutil_console_format('Some of cascading rebases failed, '.
