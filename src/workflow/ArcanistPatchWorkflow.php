@@ -498,6 +498,13 @@ EOTEXT
         $repository_api->execManualLocal('fetch --quiet --all');
         $has_base_revision = $repository_api->hasLocalCommit(
           $bundle->getBaseRevision());
+        // UBER CODE
+        if (!$has_base_revision) {
+          $this->pullFromAllRemotesUntilFound($bundle->getBaseRevision());
+          $has_base_revision = $repository_api->hasLocalCommit(
+            $bundle->getBaseRevision());
+        }
+        // UBER CODE
       }
     }
 
@@ -1247,11 +1254,36 @@ EOTEXT
     return self::SUCCESS;
   }
 
+  // fetches hash from any remote repository configured and also from
+  // staging if repository has one
+  private function pullFromAllRemotesUntilFound($hash) {
+    if (!$hash) {
+      return;
+    }
+    $remotes = array();
+    list($success, $message, $staging, $staging_uri) =
+      $this->validateStagingSetup();
+    if ($success) {
+      $remotes[] = $staging_uri;
+    }
+    $repository_api = $this->getRepositoryAPI();
+    list($err, $stdin, $stderr) = $repository_api->execManualLocal('remote');
+    if (!$err) {
+      $remotes = array_merge($remotes, array_filter(explode(PHP_EOL, $stdin)));
+    }
+    foreach ($remotes as $remote) {
+      $repository_api->execManualLocal('fetch %s %s', $remote, $hash);
+      if ($repository_api->hasLocalCommit($hash)) {
+        break;
+      }
+    }
+  }
+
   private function mergeBranchFromStagingArea($id, $bundle) {
     list($success,
       $message, $staging, $staging_uri) = $this->validateStagingSetup();
     if (!$success) {
-      throw new ArcanistUsageException(pht($message));
+      throw new ArcanistUsageException($message);
     }
     $prefix = idx($staging, 'prefix', 'phabricator');
     $diff_tag = $this->uberRefProvider->getDiffRefName($prefix, $id);
@@ -1269,7 +1301,7 @@ EOTEXT
     if ($err) {
       $this->writeWarn(pht('MERGE TAG FAILED'),
         pht('Unable to merge tag'));
-      throw new ArcanistUsageException(pht($message));
+      throw new ArcanistUsageException($message);
     }
 
     if ($this->shouldCommit()) {
