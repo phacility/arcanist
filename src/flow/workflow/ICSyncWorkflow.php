@@ -37,6 +37,22 @@ EOTEXT
           "to another author, pull the latest remote revision from the ".
           "remote to the local branch."),
       ),
+      'no-unit' => array(
+        'help' => pht('Do not run unit tests.'),
+      ),
+      'no-lint' => array(
+        'help' => pht('Do not run lint.'),
+      ),
+      'plan-changes' => array(
+        'help' => pht(
+          'Create or update a revision without requesting a code review.'),
+      ),
+      'excuse' => array(
+        'param' => 'excuse',
+        'help' => pht(
+          'Provide a prepared in advance excuse for any lints/tests '.
+          'shall they fail.'),
+      ),
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
@@ -100,13 +116,28 @@ EOTEXT
     }
 
     if ($revisions) {
-      $this->runRevisionSync();
+      $extra_diff_args = array();
+      if ($this->getArgument('no-unit')) {
+        $extra_diff_args[] = '--no-unit';
+      }
+      if ($this->getArgument('no-lint')) {
+        $extra_diff_args[] = '--no-lint';
+      }
+      if ($this->getArgument('plan-changes')) {
+        $extra_diff_args[] = '--plan-changes';
+      }
+      if ($this->getArgument('excuse')) {
+        $extra_diff_args[] = '--excuse';
+        $extra_diff_args[] = $this->getArgument('excuse');
+      }
+
+      $this->runRevisionSync($extra_diff_args);
     }
 
     return 0;
   }
 
-  protected function runRevisionSync() {
+  protected function runRevisionSync($extra_diff_args = array()) {
     $git = $this->getRepositoryAPI();
     $graph = $this->loadGitBranchGraph();
     $initial_branch = $git->getBranchName();
@@ -227,6 +258,7 @@ EOTEXT
             '--message',
             $message,
           );
+          $diff_args = array_merge($diff_args, $extra_diff_args);
           if ($branch_status[$branch_name] == $changes_planned) {
             array_push($diff_args, '--plan-changes');
           }
