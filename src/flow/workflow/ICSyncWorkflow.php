@@ -8,7 +8,7 @@ final class ICSyncWorkflow extends ICArcanistWorkflow {
 
   public function getCommandSynopses() {
     return phutil_console_format(<<<EOTEXT
-      **sync**
+      **sync** [rootbranch]
 EOTEXT
       );
   }
@@ -18,8 +18,8 @@ EOTEXT
       "\n          Synchronizes revisions and revision metadata between your ".
       "local working copy and the\n".
       "          remote install. If no options are passed it will refresh ".
-      "dependencies and revisions.\n          Synchronization is always started".
-      ' from master branch');
+      "dependencies and revisions.\n          Synchronization by default is ".
+      'started from master branch, you can specify different root branch');
   }
 
   public function getArguments() {
@@ -40,16 +40,19 @@ EOTEXT
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
+      '*' => 'branch',
     );
   }
 
   public function run() {
     $dependencies = $this->getArgument('dependencies', false);
     $revisions = $this->getArgument('revisions', false);
+    $branch = idx($this->getArgument('branch', false), 0, 'master');
     if (!$dependencies && !$revisions) {
       $dependencies = true;
       $revisions = true;
     }
+    $this->setRootBranch($branch);
     $graph = $this->loadGitBranchGraph();
     $this->drawFlowTree();
 

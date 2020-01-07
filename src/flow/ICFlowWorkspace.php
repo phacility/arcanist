@@ -10,7 +10,7 @@ final class ICFlowWorkspace extends Phobject {
   private $cache;
   private $headRefs;
   private $features;
-  private $rootBranch = null;
+  private $rootBranch = 'master';
   private $terminalBranch = null;
 
   public function setConduit(ConduitClient $conduit) {
@@ -24,6 +24,11 @@ final class ICFlowWorkspace extends Phobject {
 
   public function setGitAPI(ICGitAPI $git) {
     $this->git = $git;
+    return $this;
+  }
+
+  public function setRootBranch($root_branch) {
+    $this->rootBranch = $root_branch;
     return $this;
   }
 
@@ -283,7 +288,27 @@ final class ICFlowWorkspace extends Phobject {
     foreach ($tracking as $upstream => $downstreams) {
       $graph->addNodes(array($upstream => array_keys($downstreams)));
     }
-    return $graph->loadGraph();
+    if ($this->rootBranch == 'master') {
+      return $graph->loadGraph();
+    } else {
+      // build truncated graph
+      $edges = array();
+      foreach ($graph->getNodes() as $upstream => $downstream) {
+        $edges[$upstream] = $downstream;
+      }
+      $truncated_graph = new ICGitBranchGraph();
+      $truncated_graph->addNodes(
+        array($this->rootBranch => idx($edges, $this->rootBranch, array())));
+
+      $to_visit = idx($edges, $this->rootBranch, array());
+      while (!empty($to_visit)) {
+        $branch = array_pop($to_visit);
+        $to_visit = array_merge($to_visit, idx($edges, $branch, array()));
+        $truncated_graph->addNodes(
+          array($branch => idx($edges, $branch, array())));
+      }
+      return $truncated_graph->loadGraph();
+    }
   }
 
   // fetches branches which have broken upstream
