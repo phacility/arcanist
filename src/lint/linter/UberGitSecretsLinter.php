@@ -22,36 +22,14 @@ final class UberGitSecretsLinter extends ArcanistExternalLinter {
     return 'git-secrets';
   }
 
-  public function getLinterConfigurationOptions() {
-    $options = array(
-      'binary' => array(
-        'type' => 'optional string',
-        'help' => 'git-secrets binary to execute',
-      ),
-    );
-
-    return $options + parent::getLinterConfigurationOptions();
-  }
-
-  public function setLinterConfigurationValue($key, $value) {
-    switch ($key) {
-      case 'binary':
-        $this->setBinary($value);
-        return;
-
-      default:
-        return parent::setLinterConfigurationValue($key, $value);
-    }
-  }
-
   public function getDefaultBinary() {
     return '/usr/local/etc/git-secrets/git-secrets';
   }
 
   public function getInstallInstructions() {
     return pht(
-      'Install git-secrets with `%s`.',
-      'sudo chef-client');
+      'In a monorepo, git-secrets should already be present alongside other'.
+      'tooling. To install for use in another repo, use `sudo chef-client`.');
   }
 
   protected function getMandatoryFlags() {
