@@ -554,27 +554,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       }
     }
 
-    // "git ls-remote --get-url" is the appropriate plumbing to get the remote
-    // URI. "git config remote.origin.url", on the other hand, may not be as
-    // accurate (for example, it does not take into account possible URL
-    // rewriting rules set by the user through "url.<base>.insteadOf"). However,
-    // the --get-url flag requires git 1.7.5.
-    $version = $this->getGitVersion();
-    if (version_compare($version, '1.7.5', '>=')) {
-      list($stdout) = $this->execxLocal('ls-remote --get-url %s', $remote);
-    } else {
-      list($stdout) = $this->execxLocal('config %s', "remote.{$remote}.url");
-    }
-
-    $uri = rtrim($stdout);
-    // ls-remote echos the remote name (ie 'origin') if no remote URI is found
-    // TODO: In 2.7.0 (circa 2016) git introduced `git remote get-url`
-    // with saner error handling.
-    if (!$uri || $uri === $remote) {
-      return null;
-    }
-
-    return $uri;
+    return $this->getGitRemoteFetchURI($remote);
   }
 
   public function getSourceControlPath() {
@@ -1583,10 +1563,110 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function isPushableRemote($remote_name) {
+    $uri = $this->getGitRemotePushURI($remote_name);
+    return ($uri !== null);
+  }
+
+  private function getGitRemoteFetchURI($remote_name) {
+    return $this->getGitRemoteURI($remote_name, $for_push = false);
+  }
+
+  private function getGitRemotePushURI($remote_name) {
+    return $this->getGitRemoteURI($remote_name, $for_push = true);
+  }
+
+  private function getGitRemoteURI($remote_name, $for_push) {
+    $remote_uri = $this->loadGitRemoteURI($remote_name, $for_push);
+
+    if ($remote_uri !== null) {
+      $remote_uri = rtrim($remote_uri);
+      if (!strlen($remote_uri)) {
+        $remote_uri = null;
+      }
+    }
+
+    return $remote_uri;
+  }
+
+  private function loadGitRemoteURI($remote_name, $for_push) {
+    // Try to identify the best URI for a given remote. This is complicated
+    // because remotes may have different "push" and "fetch" URIs, may
+    // rewrite URIs with "insteadOf" configuration, and different versions
+    // of Git support different URI resolution commands.
+
+    // Remotes may also have more than one URI of a given type, but we ignore
+    // those cases here.
+
+    // Start with "git remote get-url [--push]". This is the simplest and
+    // most accurate command, but was introduced most recently in Git's
+    // history.
+
+    $argv = array();
+    if ($for_push) {
+      $argv[] = '--push';
+    }
+
     list($err, $stdout) = $this->execManualLocal(
-      'remote get-url --push -- %s',
+      'remote get-url %Ls -- %s',
+      $argv,
       $remote_name);
-    return !$err;
+    if (!$err) {
+      return $stdout;
+    }
+
+    // See T13481. If "git remote get-url [--push]" failed, it might be because
+    // the remote does not exist, but it might also be because the version of
+    // Git is too old to support "git remote get-url", which was introduced
+    // in Git 2.7 (circa late 2015).
+
+    $git_version = $this->getGitVersion();
+    if (version_compare($git_version, '2.7', '>=')) {
+      // This version of Git should support "git remote get-url --push", but
+      // the command failed, so conclude this is not a valid remote and thus
+      // there is no remote URI.
+      return null;
+    }
+
+    // If we arrive here, we're in a version of Git which is too old to
+    // support "git remote get-url [--push]". We're going to fall back to
+    // older and less accurate mechanisms for figuring out the remote URI.
+
+    // The first mechanism we try is "git ls-remote --get-url". This exists
+    // in Git 1.7.5 or newer. It only gives us the fetch URI, so this result
+    // will be incorrect if a remote has different fetch and push URIs.
+    // However, this is very rare, and this result is almost always correct.
+
+    list($err, $stdout) = $this->execManualLocal(
+      'ls-remote --get-url -- %s',
+      $remote_name);
+    if (!$err) {
+      // The "git ls-remote --get-url" command just echoes the remote name
+      // (like "origin") if no remote URI is found. Treat this like a failure.
+      $output_is_input = (rtrim($stdout) === $remote_name);
+      if (!$output_is_input) {
+        return $stdout;
+      }
+    }
+
+    if (version_compare($git_version, '1.7.5', '>=')) {
+      // This version of Git should support "git ls-remote --get-url", but
+      // the command failed (or echoed the input), so conclude the remote
+      // really does not exist.
+      return null;
+    }
+
+    // Fall back to the very old "git config -- remote.origin.url" command.
+    // This does not give us push URLs and does not resolve "insteadOf"
+    // aliases, but still works in the simplest (and most common) cases.
+
+    list($err, $stdout) = $this->execManualLocal(
+      'config -- %s',
+      sprintf('remote.%s.url', $remote_name));
+    if (!$err) {
+      return $stdout;
+    }
+
+    return null;
   }
 
 }
