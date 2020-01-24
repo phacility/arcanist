@@ -1636,8 +1636,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // will be incorrect if a remote has different fetch and push URIs.
     // However, this is very rare, and this result is almost always correct.
 
+    // Note that some old versions of Git do not parse "--" in this command
+    // properly. We omit it since it doesn't seem like there's anything
+    // dangerous an attacker can do even if they can choose a remote name to
+    // intentionally cause an argument misparse.
+
+    // This will cause the command to behave incorrectly for remotes with
+    // names which are also valid flags, like "--quiet".
+
     list($err, $stdout) = $this->execManualLocal(
-      'ls-remote --get-url -- %s',
+      'ls-remote --get-url %s',
       $remote_name);
     if (!$err) {
       // The "git ls-remote --get-url" command just echoes the remote name
