@@ -203,6 +203,10 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
         'ahead'     => $render_ahead,
         'behind'    => $render_behind,
         'upstream'  => idxv($data, array('tracking', 'upstream')),
+        'open-comments' => idxv($fields, array(
+          'open-comments',
+          'open-comments',
+        )),
       );
     }
 
