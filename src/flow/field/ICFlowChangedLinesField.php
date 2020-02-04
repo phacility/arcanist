@@ -16,8 +16,12 @@ final class ICFlowChangedLinesField extends ICFlowField {
 
   protected function getFutures(ICFlowWorkspace $workspace) {
     $max_del_lines = 0;
+    $git = $workspace->getGitAPI();
     foreach ($workspace->getFeatures() as $branch => $feature) {
       $local_diff = $feature->getHead()->getHeadDiff();
+      if ($feature->getRevisionFirstCommit()) {
+         $local_diff = $git->getAPI()->getFullGitDiff($feature->getRevisionFirstCommit()."^", $feature->getHead()->getObjectName());
+      }
       if ($local_diff) {
         $md5 = md5($local_diff);
         $cache_key = "diff-{$md5}-add-del";

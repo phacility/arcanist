@@ -6,7 +6,7 @@ final class ICFlowFeature extends Phobject {
   private $differentialCommitMessage = null;
   // commit sha which has differential commit message, essentially where
   // differential revision starts
-  private $revisionBaseCommit = null;
+  private $revisionFirstCommit = null;
   private $revision;
   private $search;
   private $activeDiff;
@@ -48,7 +48,7 @@ final class ICFlowFeature extends Phobject {
         $log->getMetadata('message'));
       if ($message->getRevisionID() != null) {
         $feature->differentialCommitMessage = $message;
-        $feature->revisionBaseCommit = $log->getCommitHash();
+        $feature->revisionFirstCommit = $log->getCommitHash();
         break;
       }
     }
@@ -95,8 +95,8 @@ final class ICFlowFeature extends Phobject {
     return $this->differentialCommitMessage->getRevisionID();
   }
 
-  public function getRevisionBaseCommit() {
-    return $this->revisionBaseCommit;
+  public function getRevisionFirstCommit() {
+    return $this->revisionFirstCommit;
   }
 
   public function getSearchField($index, $default = null) {
