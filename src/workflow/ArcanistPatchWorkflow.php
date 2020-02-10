@@ -500,6 +500,7 @@ EOTEXT
           $bundle->getBaseRevision());
         // UBER CODE
         if (!$has_base_revision) {
+          $this->authenticateConduit();
           $this->pullFromAllRemotesUntilFound($bundle->getBaseRevision());
           $has_base_revision = $repository_api->hasLocalCommit(
             $bundle->getBaseRevision());
@@ -530,6 +531,7 @@ EOTEXT
       $new_branch = $this->createBranch($bundle, $has_base_revision);
     }
     if (!$has_base_revision && $this->shouldApplyDependencies()) {
+      $this->authenticateConduit(); // UBER CODE
       $this->applyDependencies($bundle);
     }
 
