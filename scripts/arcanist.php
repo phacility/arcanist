@@ -81,7 +81,6 @@ try {
       csprintf('%Ls', $original_argv));
 
     $libraries = array(
-      'phutil',
       'arcanist',
     );
 
@@ -621,7 +620,7 @@ function arcanist_load_libraries(
 
     $error = null;
     try {
-      phutil_load_library($location);
+      require_once $location.'/__phutil_library_init__.php';
     } catch (PhutilBootloaderException $ex) {
       $error = pht(
         "Failed to load phutil library at location '%s'. This library ".

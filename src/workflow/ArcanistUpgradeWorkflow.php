@@ -26,7 +26,6 @@ EOTEXT
 
   public function run() {
     $roots = array(
-      'libphutil' => dirname(phutil_get_library_root('phutil')),
       'arcanist' => dirname(phutil_get_library_root('arcanist')),
     );
 

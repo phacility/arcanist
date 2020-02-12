@@ -161,12 +161,17 @@ EOTEXT
   }
 
   private function liberateVersion2($path) {
-    $bin = $this->getScriptPath('scripts/phutil_rebuild_map.php');
+    $bin = $this->getScriptPath('support/lib/rebuild-map.php');
+
+    $argv = array();
+    if ($this->getArgument('all')) {
+      $argv[] = '--drop-cache';
+    }
 
     return phutil_passthru(
-      'php %s %C %s',
+      'php -f %s -- %Ls %s',
       $bin,
-      $this->getArgument('all') ? '--drop-cache' : '',
+      $argv,
       $path);
   }
 
@@ -244,7 +249,7 @@ EOTEXT
 
 
   private function getScriptPath($script) {
-    $root = dirname(phutil_get_library_root('phutil'));
+    $root = dirname(phutil_get_library_root('arcanist'));
     return $root.'/'.$script;
   }
 

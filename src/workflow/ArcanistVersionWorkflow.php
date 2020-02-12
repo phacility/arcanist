@@ -36,7 +36,6 @@ EOTEXT
 
     $roots = array(
       'arcanist' => dirname(phutil_get_library_root('arcanist')),
-      'libphutil' => dirname(phutil_get_library_root('phutil')),
     );
 
     foreach ($roots as $lib => $root) {

@@ -1,3 +1,3 @@
 <?php
 
-phutil_register_library('arcanist', __FILE__);
+require_once dirname(__FILE__).'/init/init-library.php';

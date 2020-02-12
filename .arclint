@@ -36,7 +36,19 @@
       "exclude": "(^resources/spelling/.*\\.json$)"
     },
     "text": {
-      "type": "text"
+      "type": "text",
+      "exclude": [
+        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect))"
+      ]
+    },
+    "text-without-length": {
+      "type": "text",
+      "include": [
+        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect))"
+      ],
+      "severity": {
+        "3": "disabled"
+      }
     },
     "xhpast": {
       "type": "xhpast",
