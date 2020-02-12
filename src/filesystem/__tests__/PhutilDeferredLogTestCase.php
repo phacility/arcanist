@@ -94,28 +94,6 @@ final class PhutilDeferredLogTestCase extends PhutilTestCase {
     $this->assertTrue($caught instanceof Exception);
   }
 
-  public function testManyWriters() {
-    $root = phutil_get_library_root('arcanist').'/../';
-    $bin = $root.'scripts/test/deferred_log.php';
-
-    $n_writers = 3;
-    $n_lines   = 8;
-
-    $tmp = new TempFile();
-
-    $futures = array();
-    for ($ii = 0; $ii < $n_writers; $ii++) {
-      $futures[] = new ExecFuture('%s %d %s', $bin, $n_lines, (string)$tmp);
-    }
-
-    id(new FutureIterator($futures))
-      ->resolveAll();
-
-    $this->assertEqual(
-      str_repeat("abcdefghijklmnopqrstuvwxyz\n", $n_writers * $n_lines),
-      Filesystem::readFile($tmp));
-  }
-
   public function testNoWrite() {
     $tmp = new TempFile();
 
