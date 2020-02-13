@@ -36,7 +36,7 @@ final class ArcanistAlias extends Phobject {
     $is_list = false;
     $is_dict = false;
     if ($value && is_array($value)) {
-      if (array_keys($value) === range(0, count($value) - 1)) {
+      if (phutil_is_natural_list($value)) {
         $is_list = true;
       } else {
         $is_dict = true;

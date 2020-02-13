@@ -521,7 +521,7 @@ final class ArcanistRuntime {
       $message = $effect->getMessage();
 
       if ($message !== null) {
-        $log->writeInfo(pht('ALIAS'), $message);
+        $log->writeHint(pht('ALIAS'), $message);
       }
 
       if ($effect->getCommand()) {

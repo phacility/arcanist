@@ -172,15 +172,31 @@ final class ArcanistAliasEngine
     }
 
     $alias = array_pop($toolset_matches);
-    foreach ($toolset_matches as $ignored_match) {
+
+    if ($toolset_matches) {
+      $source = $alias->getConfigurationSource();
+
       $results[] = $this->newEffect(ArcanistAliasEffect::EFFECT_IGNORED)
         ->setMessage(
           pht(
             'Multiple configuration sources define an alias for "%s %s". '.
-            'The definition in "%s" will be ignored.',
+            'The last definition in the most specific source ("%s") will '.
+            'be used.',
             $toolset_key,
             $command,
-            $ignored_match->getConfigurationSource()->getSourceDisplayName()));
+            $source->getSourceDisplayName()));
+
+      foreach ($toolset_matches as $ignored_match) {
+        $source = $ignored_match->getConfigurationSource();
+
+        $results[] = $this->newEffect(ArcanistAliasEffect::EFFECT_IGNORED)
+          ->setMessage(
+            pht(
+              'A definition of "%s %s" in "%s" will be ignored.',
+              $toolset_key,
+              $command,
+              $source->getSourceDisplayName()));
+      }
     }
 
     if ($alias->isShellCommandAlias()) {
@@ -227,14 +243,17 @@ final class ArcanistAliasEngine
       return $results;
     }
 
+    $display_argv = (string)csprintf('%LR', $alias_argv);
+
     $results[] = $this->newEffect(ArcanistAliasEffect::EFFECT_ALIAS)
       ->setMessage(
         pht(
-          '%s %s -> %s %s',
+          '%s %s -> %s %s %s',
           $toolset_key,
           $command,
           $toolset_key,
-          $alias_command));
+          $alias_command,
+          $display_argv));
 
     $argv = array_merge($alias_argv, $argv);
 

@@ -24,7 +24,7 @@ phutil_register_library_map(array(
     'ArcanistAliasEngine' => 'toolset/ArcanistAliasEngine.php',
     'ArcanistAliasFunctionXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistAliasFunctionXHPASTLinterRule.php',
     'ArcanistAliasFunctionXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistAliasFunctionXHPASTLinterRuleTestCase.php',
-    'ArcanistAliasWorkflow' => 'workflow/ArcanistAliasWorkflow.php',
+    'ArcanistAliasWorkflow' => 'toolset/workflow/ArcanistAliasWorkflow.php',
     'ArcanistAliasesConfigOption' => 'config/option/ArcanistAliasesConfigOption.php',
     'ArcanistAmendWorkflow' => 'workflow/ArcanistAmendWorkflow.php',
     'ArcanistAnoidWorkflow' => 'workflow/ArcanistAnoidWorkflow.php',

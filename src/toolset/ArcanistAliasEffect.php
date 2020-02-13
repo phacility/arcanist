@@ -17,6 +17,7 @@ final class ArcanistAliasEffect
   const EFFECT_NOTFOUND = 'not-found';
   const EFFECT_CYCLE = 'cycle';
   const EFFECT_STACK = 'stack';
+  const EFFECT_IGNORED = 'ignored';
 
   public function setType($type) {
     $this->type = $type;

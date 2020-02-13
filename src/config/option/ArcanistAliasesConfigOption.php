@@ -22,7 +22,18 @@ final class ArcanistAliasesConfigOption
 
   protected function didReadStorageValueList(array $list) {
     assert_instances_of($list, 'ArcanistConfigurationSourceValue');
-    return mpull($list, 'getValue');
+
+    $results = array();
+    foreach ($list as $spec) {
+      $source = $spec->getConfigurationSource();
+      $value = $spec->getValue();
+
+      $value->setConfigurationSource($source);
+
+      $results[] = $value;
+    }
+
+    return $results;
   }
 
   public function getDisplayValueFromValue($value) {
