@@ -141,6 +141,8 @@ EOTEXT
         throw new ArcanistUsageException(
           pht("Unknown library version '%s'!", $version));
     }
+
+    echo tsprintf("%s\n", pht('Done.'));
   }
 
   private function getLibraryFormatVersion($path) {

@@ -1,1 +1,10 @@
-../scripts/phage.php
+#!/usr/bin/env php
+<?php
+
+if (function_exists('pcntl_async_signals')) {
+  pcntl_async_signals(true);
+} else {
+  declare(ticks = 1);
+}
+
+return require_once dirname(__DIR__).'/support/init/init-arcanist.php';

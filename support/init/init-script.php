@@ -56,6 +56,20 @@ function __arcanist_init_script__() {
     ini_set($config_key, $config_value);
   }
 
+  $php_version = phpversion();
+  $min_version = '5.5.0';
+  if (version_compare($php_version, $min_version, '<')) {
+    echo sprintf(
+      'UPGRADE PHP: '.
+      'The installed version of PHP ("%s") is too old to run Arcanist. '.
+      'Update PHP to at least the minimum required version ("%s").',
+      $php_version,
+      $min_version);
+    echo "\n";
+
+    exit(1);
+  }
+
   if (!ini_get('date.timezone')) {
     // If the timezone isn't set, PHP issues a warning whenever you try to parse
     // a date (like those from Git or Mercurial logs), even if the date contains

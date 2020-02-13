@@ -108,6 +108,10 @@ abstract class ArcanistWorkflow extends Phobject {
    */
   abstract public function getCommandHelp();
 
+  final public function supportsToolset($toolset) {
+    return ($toolset === 'arc');
+  }
+
 
 /* -(  Conduit  )------------------------------------------------------------ */
 

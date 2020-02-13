@@ -1,21 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/env php
+<?php
 
-# NOTE: This file is a wrapper script instead of a symlink so it will work in
-# the Git Bash environment in Windows.
+if (function_exists('pcntl_async_signals')) {
+  pcntl_async_signals(true);
+} else {
+  declare(ticks = 1);
+}
 
-# Do bash magic to resolve the real location of this script through aliases,
-# symlinks, etc.
-SOURCE="${BASH_SOURCE[0]}";
-while [ -h "$SOURCE" ]; do
-  LINK="$(readlink "$SOURCE")";
-  if [ "${LINK:0:1}" == "/" ]; then
-    # absolute symlink
-    SOURCE="$LINK"
-  else
-    # relative symlink
-    SOURCE="$(cd -P "$(dirname "$SOURCE")" && pwd)/$LINK"
-  fi
-done;
-DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
-
-exec "$DIR/../scripts/arcanist.php" "$@"
+return require_once dirname(__DIR__).'/support/init/init-arcanist.php';
