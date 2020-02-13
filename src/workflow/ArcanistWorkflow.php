@@ -115,6 +115,86 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->configurationSourceList;
   }
 
+  public function newPhutilWorkflow() {
+    $arguments = $this->getWorkflowArguments();
+    assert_instances_of($arguments, 'ArcanistWorkflowArgument');
+
+    $specs = mpull($arguments, 'getPhutilSpecification');
+
+    $phutil_workflow = id(new ArcanistPhutilWorkflow())
+      ->setName($this->getWorkflowName())
+      ->setWorkflow($this)
+      ->setArguments($specs);
+
+    $information = $this->getWorkflowInformation();
+    if ($information) {
+
+      $examples = $information->getExamples();
+      if ($examples) {
+        $examples = implode("\n", $examples);
+        $phutil_workflow->setExamples($examples);
+      }
+
+      $help = $information->getHelp();
+      if (strlen($help)) {
+        // Unwrap linebreaks in the help text so we don't get weird formatting.
+        $help = preg_replace("/(?<=\S)\n(?=\S)/", ' ', $help);
+
+        $phutil_workflow->setHelp($help);
+      }
+
+    }
+
+    return $phutil_workflow;
+  }
+
+  final protected function newWorkflowArgument($key) {
+    return id(new ArcanistWorkflowArgument())
+      ->setKey($key);
+  }
+
+  final protected function newWorkflowInformation() {
+    return new ArcanistWorkflowInformation();
+  }
+
+  final public function executeWorkflow(PhutilArgumentParser $args) {
+    $runtime = $this->getRuntime();
+
+    $this->arguments = $args;
+    $caught = null;
+
+    $runtime->pushWorkflow($this);
+
+    try {
+      $err = $this->runWorkflow($args);
+    } catch (Exception $ex) {
+      $caught = $ex;
+    }
+
+    try {
+      $this->runWorkflowCleanup();
+    } catch (Exception $ex) {
+      phlog($ex);
+    }
+
+    $runtime->popWorkflow();
+
+    if ($caught) {
+      throw $caught;
+    }
+
+    return $err;
+  }
+
+  final protected function getLogEngine() {
+    return $this->getRuntime()->getLogEngine();
+  }
+
+  protected function runWorkflowCleanup() {
+    // TOOLSETS: Do we need this?
+    return;
+  }
+
   public function __construct() {}
 
   public function run() {
@@ -662,7 +742,12 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function getArgument($key, $default = null) {
-    return idx($this->arguments, $key, $default);
+    // TOOLSETS: Remove this legacy code.
+    if (is_array($this->arguments)) {
+      return idx($this->arguments, $key, $default);
+    }
+
+    return $this->arguments->getArg($key);
   }
 
   final public function getPassedArguments() {

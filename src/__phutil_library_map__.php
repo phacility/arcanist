@@ -1205,7 +1205,7 @@ phutil_register_library_map(array(
     'ArcanistLanguageConstructParenthesesXHPASTLinterRuleTestCase' => 'ArcanistXHPASTLinterRuleTestCase',
     'ArcanistLesscLinter' => 'ArcanistExternalLinter',
     'ArcanistLesscLinterTestCase' => 'ArcanistExternalLinterTestCase',
-    'ArcanistLiberateWorkflow' => 'ArcanistWorkflow',
+    'ArcanistLiberateWorkflow' => 'ArcanistArcWorkflow',
     'ArcanistLintEngine' => 'Phobject',
     'ArcanistLintMessage' => 'Phobject',
     'ArcanistLintMessageTestCase' => 'PhutilTestCase',

@@ -5,7 +5,7 @@ abstract class ArcanistArcWorkflow
 
   public function supportsToolset(ArcanistToolset $toolset) {
     $key = $toolset->getToolsetKey();
-    return ($key === 'arc');
+    return ($key === ArcanistArcToolset::TOOLSETKEY);
   }
 
 }
