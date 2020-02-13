@@ -205,7 +205,13 @@ EOTEXT;
 
       try {
         PhutilConsoleFormatter::disableANSI(true);
-        $actual = $renderer->renderLintResult($result);
+
+        $tmp = new TempFile();
+        $renderer->setOutputPath($tmp);
+        $renderer->renderLintResult($result);
+        $actual = Filesystem::readFile($tmp);
+        unset($tmp);
+
         PhutilConsoleFormatter::disableANSI(false);
       } catch (Exception $ex) {
         PhutilConsoleFormatter::disableANSI(false);

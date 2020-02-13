@@ -1,9 +1,8 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
+
+  const RENDERERKEY = 'xml';
 
   private $writer;
 
@@ -14,11 +13,11 @@ final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
     $this->writer->setIndentString('  ');
   }
 
-  public function renderPreamble() {
+  public function willRenderResults() {
     $this->writer->startDocument('1.0', 'UTF-8');
     $this->writer->startElement('checkstyle');
     $this->writer->writeAttribute('version', '4.3');
-    return $this->writer->flush();
+    $this->writeOut($this->writer->flush());
   }
 
   public function renderLintResult(ArcanistLintResult $result) {
@@ -39,17 +38,13 @@ final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
     }
 
     $this->writer->endElement();
-    return $this->writer->flush();
+    $this->writeOut($this->writer->flush());
   }
 
-  public function renderOkayResult() {
-    return '';
-  }
-
-  public function renderPostamble() {
+  public function didRenderResults() {
     $this->writer->endElement();
     $this->writer->endDocument();
-    return $this->writer->flush();
+    $this->writeOut($this->writer->flush());
   }
 
   private function getStringForSeverity($severity) {

@@ -1,9 +1,8 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistJSONLintRenderer extends ArcanistLintRenderer {
+
+  const RENDERERKEY = 'json';
 
   const LINES_OF_CONTEXT = 3;
 
@@ -25,11 +24,7 @@ final class ArcanistJSONLintRenderer extends ArcanistLintRenderer {
       $output[$path][] = $dictionary;
     }
 
-    return json_encode($output)."\n";
-  }
-
-  public function renderOkayResult() {
-    return '';
+    $this->writeOut(json_encode($output)."\n");
   }
 
 }

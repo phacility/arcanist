@@ -1,9 +1,8 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistCompilerLintRenderer extends ArcanistLintRenderer {
+
+  const RENDERERKEY = 'compiler';
 
   public function renderLintResult(ArcanistLintResult $result) {
     $lines = array();
@@ -25,11 +24,7 @@ final class ArcanistCompilerLintRenderer extends ArcanistLintRenderer {
         $description);
     }
 
-    return implode('', $lines);
-  }
-
-  public function renderOkayResult() {
-    return '';
+    $this->writeOut(implode('', $lines));
   }
 
 }
