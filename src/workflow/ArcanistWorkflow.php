@@ -72,11 +72,54 @@ abstract class ArcanistWorkflow extends Phobject {
   private $changeCache = array();
   private $conduitEngine;
 
+  private $toolset;
+  private $runtime;
+  private $configurationEngine;
+  private $configurationSourceList;
+
+  final public function setToolset(ArcanistToolset $toolset) {
+    $this->toolset = $toolset;
+    return $this;
+  }
+
+  final public function getToolset() {
+    return $this->toolset;
+  }
+
+  final public function setRuntime(ArcanistRuntime $runtime) {
+    $this->runtime = $runtime;
+    return $this;
+  }
+
+  final public function getRuntime() {
+    return $this->runtime;
+  }
+
+  final public function setConfigurationEngine(
+    ArcanistConfigurationEngine $engine) {
+    $this->configurationEngine = $engine;
+    return $this;
+  }
+
+  final public function getConfigurationEngine() {
+    return $this->configurationEngine;
+  }
+
+  final public function setConfigurationSourceList(
+    ArcanistConfigurationSourceList $list) {
+    $this->configurationSourceList = $list;
+    return $this;
+  }
+
+  final public function getConfigurationSourceList() {
+    return $this->configurationSourceList;
+  }
 
   public function __construct() {}
 
-
-  abstract public function run();
+  public function run() {
+    throw new PhutilMethodNotImplementedException();
+  }
 
   /**
    * Finalizes any cleanup operations that need to occur regardless of
@@ -99,17 +142,21 @@ abstract class ArcanistWorkflow extends Phobject {
    *
    * @return string  6-space indented list of available command synopses.
    */
-  abstract public function getCommandSynopses();
+  public function getCommandSynopses() {
+    return array();
+  }
 
   /**
    * Return console formatted string with command help printed in `arc help`.
    *
    * @return string  10-space indented help to use the command.
    */
-  abstract public function getCommandHelp();
+  public function getCommandHelp() {
+    return null;
+  }
 
-  final public function supportsToolset($toolset) {
-    return ($toolset === 'arc');
+  public function supportsToolset(ArcanistToolset $toolset) {
+    return false;
   }
 
 
