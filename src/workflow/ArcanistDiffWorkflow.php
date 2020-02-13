@@ -21,6 +21,8 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
+  private $revisionTransactions;
+  private $revisionIsDraft;
 
   const STAGING_PUSHED = 'pushed';
   const STAGING_USER_SKIP = 'user.skip';
@@ -113,8 +115,7 @@ EOTEXT
         'param' => 'commit',
         'help' => pht('Read revision information from a specific commit.'),
         'conflicts' => array(
-          'only'    => null,
-          'preview' => null,
+          'only' => null,
           'update'  => null,
         ),
       ),
@@ -176,14 +177,10 @@ EOTEXT
             '%s can not be used with %s.',
             '--create',
             '--edit'),
-          'only'    => pht(
+          'only' => pht(
             '%s can not be used with %s.',
             '--create',
             '--only'),
-          'preview' => pht(
-            '%s can not be used with %s.',
-            '--create',
-            '--preview'),
           'update'  => pht(
             '%s can not be used with %s.',
             '--create',
@@ -193,6 +190,18 @@ EOTEXT
       'update' => array(
         'param' => 'revision_id',
         'help'  => pht('Always update a specific revision.'),
+      ),
+      'draft' => array(
+        'help' => pht(
+          'Create a draft revision so you can look over your changes before '.
+          'involving anyone else. Other users will not be notified about the '.
+          'revision until you later use "Request Review" to publish it. You '.
+          'can still share the draft by giving someone the link.'),
+        'conflicts' => array(
+          'edit' => null,
+          'only' => null,
+          'update' => null,
+        ),
       ),
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
@@ -208,37 +217,11 @@ EOTEXT
       ),
       'only' => array(
         'help' => pht(
-          'Only generate a diff, without running lint, unit tests, or other '.
-          'auxiliary steps. See also %s.',
-          '--preview'),
-        'conflicts' => array(
-          'preview'   => null,
-          'message'   => pht('%s does not affect revisions.', '--only'),
-          'edit'      => pht('%s does not affect revisions.', '--only'),
-          'lintall'   => pht('%s suppresses lint.', '--only'),
-          'advice'    => pht('%s suppresses lint.', '--only'),
-          'apply-patches' => pht('%s suppresses lint.', '--only'),
-          'never-apply-patches' => pht('%s suppresses lint.', '--only'),
-        ),
-      ),
-      'preview' => array(
-        'help' => pht(
           'Instead of creating or updating a revision, only create a diff, '.
-          'which you may later attach to a revision. This still runs lint '.
-          'unit tests. See also %s.',
-          '--only'),
+          'which you may later attach to a revision.'),
         'conflicts' => array(
-          'only'      => null,
-          'edit'      => pht('%s does affect revisions.', '--preview'),
-          'message'   => pht('%s does not update any revision.', '--preview'),
-        ),
-      ),
-      'plan-changes' => array(
-        'help' => pht(
-          'Create or update a revision without requesting a code review.'),
-        'conflicts' => array(
-          'only'     => pht('%s does not affect revisions.', '--only'),
-          'preview'  => pht('%s does not affect revisions.', '--preview'),
+          'edit'      => pht('%s does affect revisions.', '--only'),
+          'message'   => pht('%s does not update any revision.', '--only'),
         ),
       ),
       'encoding' => array(
@@ -351,8 +334,7 @@ EOTEXT
         'conflicts' => array(
           'use-commit-message'  => true,
           'update'              => true,
-          'only'                => true,
-          'preview'             => true,
+          'only' => true,
           'raw'                 => true,
           'raw-command'         => true,
           'message-file'        => true,
@@ -362,8 +344,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add reviewers.'),
         'conflicts' => array(
-          'only'    => true,
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -371,8 +352,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add CCs.'),
         'conflicts' => array(
-          'only'    => true,
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -392,20 +372,6 @@ EOTEXT
           'svn' => pht('Subversion does not use base commits.'),
         ),
         'supports' => array('git', 'hg'),
-      ),
-      'no-diff' => array(
-        'help' => pht(
-          'Only run lint and unit tests. Intended for internal use.'),
-      ),
-      'cache' => array(
-        'param' => 'bool',
-        'help' => pht(
-          '%d to disable lint cache, %d to enable (default).',
-          0,
-          1),
-        'passthru' => array(
-          'lint' => true,
-        ),
       ),
       'coverage' => array(
         'help' => pht('Always enable coverage information.'),
@@ -456,14 +422,6 @@ EOTEXT
     $this->console = PhutilConsole::getConsole();
 
     $this->runRepositoryAPISetup();
-
-    if ($this->getArgument('no-diff')) {
-      $this->removeScratchFile('diff-result.json');
-      $data = $this->runLintUnit();
-      $this->writeScratchJSONFile('diff-result.json', $data);
-      return 0;
-    }
-
     $this->runDiffSetupBasics();
 
     $commit_message = $this->buildCommitMessage();
@@ -566,9 +524,34 @@ EOTEXT
         $this->openURIsInBrowser(array($diff_info['uri']));
       }
     } else {
+      $is_draft = $this->getArgument('draft');
       $revision['diffid'] = $this->getDiffID();
 
       if ($commit_message->getRevisionID()) {
+        if ($is_draft) {
+          // TODO: In at least some cases, we could raise this earlier in the
+          // workflow to save users some time before the workflow aborts.
+          if ($this->revisionIsDraft) {
+            $this->writeWarn(
+              pht('ALREADY A DRAFT'),
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision is already a draft. You only need to '.
+                'provide the "--draft" flag when creating a revision. Draft '.
+                'revisions are not published until you explicitly request '.
+                'review from the web UI.',
+                $commit_message->getRevisionMonogram()));
+          } else {
+            throw new ArcanistUsageException(
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision has already been published for review. '.
+                'You can not turn a revision back into a draft once it has '.
+                'been published.',
+                $commit_message->getRevisionMonogram()));
+          }
+        }
+
         $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
           $revision);
@@ -579,18 +562,70 @@ EOTEXT
           $this->writeScratchJSONFile($file, $messages);
         }
 
+        $result_uri = $result['uri'];
+        $result_id = $result['revisionid'];
+
         echo pht('Updated an existing Differential revision:')."\n";
       } else {
-        $revision = $this->dispatchWillCreateRevisionEvent($revision);
+        // NOTE: We're either using "differential.revision.edit" (preferred)
+        // if we can, or falling back to "differential.createrevision"
+        // (the older way) if not.
 
-        $result = $conduit->callMethodSynchronous(
-          'differential.createrevision',
-          $revision);
+        $xactions = $this->revisionTransactions;
+        if ($xactions) {
+          $xactions[] = array(
+            'type' => 'update',
+            'value' => $diff_info['phid'],
+          );
+
+          if ($is_draft) {
+            $xactions[] = array(
+              'type' => 'draft',
+              'value' => true,
+            );
+          }
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.revision.edit',
+            array(
+              'transactions' => $xactions,
+            ));
+
+          $result_id = idxv($result, array('object', 'id'));
+          if (!$result_id) {
+            throw new Exception(
+              pht(
+                'Expected a revision ID to be returned by '.
+                '"differential.revision.edit".'));
+          }
+
+          // TODO: This is hacky, but we don't currently receive a URI back
+          // from "differential.revision.edit".
+          $result_uri = id(new PhutilURI($this->getConduitURI()))
+            ->setPath('/D'.$result_id);
+        } else {
+          if ($is_draft) {
+            throw new ArcanistUsageException(
+              pht(
+                'You have specified "--draft", but the version of Phabricator '.
+                'on the server is too old to support draft revisions. Omit '.
+                'the flag or upgrade the server software.'));
+          }
+
+          $revision = $this->dispatchWillCreateRevisionEvent($revision);
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.createrevision',
+            $revision);
+
+          $result_uri = $result['uri'];
+          $result_id = $result['revisionid'];
+        }
 
         $revised_message = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
           array(
-            'revision_id' => $result['revisionid'],
+            'revision_id' => $result_id,
           ));
 
         if ($this->shouldAmend()) {
@@ -608,21 +643,11 @@ EOTEXT
         echo pht('Created a new Differential revision:')."\n";
       }
 
-      $uri = $result['uri'];
+      $uri = $result_uri;
       echo phutil_console_format(
         "        **%s** __%s__\n\n",
         pht('Revision URI:'),
         $uri);
-
-      if ($this->getArgument('plan-changes')) {
-        $conduit->callMethodSynchronous(
-          'differential.createcomment',
-          array(
-            'revision_id' => $result['revisionid'],
-            'action' => 'rethink',
-          ));
-        echo pht('Planned changes to the revision.')."\n";
-      }
 
       if ($this->shouldOpenCreatedObjectsInBrowser()) {
         $this->openURIsInBrowser(array($uri));
@@ -706,6 +731,7 @@ EOTEXT
     $revision = array(
       'fields' => $message->getFields(),
     );
+    $xactions = $message->getTransactions();
 
     if ($revision_id) {
 
@@ -760,6 +786,7 @@ EOTEXT
       }
 
       $revision['fields'] = $new_message->getFields();
+      $xactions = $new_message->getTransactions();
 
       $revision['id'] = $revision_id;
       $this->revisionID = $revision_id;
@@ -782,6 +809,8 @@ EOTEXT
       }
     }
 
+    $this->revisionTransactions = $xactions;
+
     return $revision;
   }
 
@@ -802,8 +831,7 @@ EOTEXT
       return true;
     }
 
-    return $this->getArgument('preview') ||
-           $this->getArgument('only');
+    return $this->getArgument('only');
   }
 
   private function generateAffectedPaths() {
@@ -1224,7 +1252,6 @@ EOTEXT
    */
   private function runLint() {
     if ($this->getArgument('nolint') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistLintWorkflow::RESULT_SKIP;
@@ -1305,7 +1332,6 @@ EOTEXT
    */
   private function runUnit() {
     if ($this->getArgument('nounit') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistUnitWorkflow::RESULT_SKIP;
@@ -1449,7 +1475,7 @@ EOTEXT
    * @task message
    */
   private function buildCommitMessage() {
-    if ($this->getArgument('preview') || $this->getArgument('only')) {
+    if ($this->getArgument('only')) {
       return null;
     }
 
@@ -1766,6 +1792,12 @@ EOTEXT
     }
 
     $this->checkRevisionOwnership($revision);
+
+    // TODO: Save this status to improve a prompt later. See PHI458. This is
+    // extra awful until we move to "differential.revision.search" because
+    // the "differential.query" method doesn't return a real draft status for
+    // compatibility.
+    $this->revisionIsDraft = (idx($revision, 'statusName') === 'Draft');
 
     $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
