@@ -16,8 +16,8 @@ final class PhutilJSONParser extends Phobject {
   }
 
   public function parse($json) {
-    $jsonlint_root = phutil_get_library_root('arcanist');
-    $jsonlint_root = $jsonlint_root.'/../externals/jsonlint';
+    $arcanist_root = phutil_get_library_root('arcanist');
+    $jsonlint_root = $arcanist_root.'/../externals/jsonlint';
 
     require_once $jsonlint_root.'/src/Seld/JsonLint/JsonParser.php';
     require_once $jsonlint_root.'/src/Seld/JsonLint/Lexer.php';

@@ -49,6 +49,7 @@ final class PhutilSymbolLoader {
   private $pathPrefix;
 
   private $suppressLoad;
+  private $continueOnFailure;
 
 
   /**
@@ -148,6 +149,10 @@ final class PhutilSymbolLoader {
     return $this;
   }
 
+  public function setContinueOnFailure($continue) {
+    $this->continueOnFailure = $continue;
+    return $this;
+  }
 
 /* -(  Load  )--------------------------------------------------------------- */
 
@@ -250,19 +255,55 @@ final class PhutilSymbolLoader {
     }
 
     if (!$this->suppressLoad) {
+      // Loading a class may trigger the autoloader to load more classes
+      // (usually, the parent class), so we need to keep track of whether we
+      // are currently loading in "continue on failure" mode. Otherwise, we'll
+      // fail anyway if we fail to load a parent class.
+
+      // The driving use case for the "continue on failure" mode is to let
+      // "arc liberate" run so it can rebuild the library map, even if you have
+      // made changes to Workflow or Config classes which it must load before
+      // it can operate. If we don't let it continue on failure, it is very
+      // difficult to remove or move Workflows.
+
+      static $continue_depth = 0;
+      if ($this->continueOnFailure) {
+        $continue_depth++;
+      }
+
       $caught = null;
-      foreach ($symbols as $symbol) {
+      foreach ($symbols as $key => $symbol) {
         try {
           $this->loadSymbol($symbol);
         } catch (Exception $ex) {
+          // If we failed to load this symbol, remove it from the results.
+          // Otherwise, we may fatal below when trying to reflect it.
+          unset($symbols[$key]);
+
           $caught = $ex;
         }
       }
+
+      $should_continue = ($continue_depth > 0);
+
+      if ($this->continueOnFailure) {
+        $continue_depth--;
+      }
+
       if ($caught) {
         // NOTE: We try to load everything even if we fail to load something,
         // primarily to make it possible to remove functions from a libphutil
         // library without breaking library startup.
-        throw $caught;
+        if ($should_continue) {
+          // We may not have `pht()` yet.
+          fprintf(
+            STDERR,
+            "%s: %s\n",
+            'IGNORING CLASS LOAD FAILURE',
+            $caught->getMessage());
+        } else {
+          throw $caught;
+        }
       }
     }
 
@@ -386,11 +427,11 @@ final class PhutilSymbolLoader {
     $load_failed = null;
     if ($is_function) {
       if (!function_exists($name)) {
-        $load_failed = 'function';
+        $load_failed = pht('function');
       }
     } else {
       if (!class_exists($name, false) && !interface_exists($name, false)) {
-        $load_failed = 'class/interface';
+        $load_failed = pht('class or interface');
       }
     }
 
@@ -400,13 +441,14 @@ final class PhutilSymbolLoader {
         $name,
         $load_failed,
         pht(
-          'The symbol map for library "%s" (at "%s") claims this symbol '.
-          '(of type "%s") is defined in "%s", but loading that source file '.
-          'did not cause the symbol to become defined.',
+          "The symbol map for library '%s' (at '%s') claims this %s is ".
+          "defined in '%s', but loading that source file did not cause the ".
+          "%s to become defined.",
           $lib_name,
           $lib_path,
           $load_failed,
-          $where));
+          $where,
+          $load_failed));
     }
   }
 

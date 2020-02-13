@@ -2,7 +2,7 @@
 <?php
 
 $root = dirname(dirname(dirname(__FILE__)));
-require_once $root.'/scripts/init/init-script.php';
+require_once $root.'/support/init/init-script.php';
 
 PhutilXHPASTBinary::build();
 

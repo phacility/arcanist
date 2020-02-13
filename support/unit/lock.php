@@ -1,7 +1,8 @@
 #!/usr/bin/env php
 <?php
 
-require_once dirname(__FILE__).'/../../scripts/init/init-script.php';
+$arcanist_root = dirname(dirname(dirname(__FILE__)));
+require_once $arcanist_root.'/support/init/init-script.php';
 
 $args = new PhutilArgumentParser($argv);
 $args->setTagline(pht('acquire and hold a lockfile'));

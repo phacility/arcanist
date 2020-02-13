@@ -127,6 +127,12 @@ final class FilesystemTestCase extends PhutilTestCase {
     foreach ($test_cases as $test_case) {
       list($path, $root, $expected) = $test_case;
 
+      // On Windows, paths will have backslashes rather than forward slashes.
+      // Normalize our expectations to the path format for the environment.
+      foreach ($expected as $key => $epath) {
+        $expected[$key] = str_replace('/', DIRECTORY_SEPARATOR, $epath);
+      }
+
       $this->assertEqual(
         $expected,
         Filesystem::walkToRoot($path, $root));

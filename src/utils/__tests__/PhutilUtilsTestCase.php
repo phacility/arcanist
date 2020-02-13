@@ -570,6 +570,7 @@ final class PhutilUtilsTestCase extends PhutilTestCase {
       } catch (Exception $ex) {
         $caught = $ex;
       }
+
       $this->assertTrue($caught instanceof PhutilJSONParserException);
     }
   }
@@ -964,6 +965,5 @@ final class PhutilUtilsTestCase extends PhutilTestCase {
       $this->assertEqual($expect, phutil_is_natural_list($value));
     }
   }
-
 
 }

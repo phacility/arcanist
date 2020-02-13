@@ -43,7 +43,9 @@ final class LinesOfALargeExecFutureTestCase extends PhutilTestCase {
   }
 
   private function writeAndRead($write, $read) {
-    $future = new ExecFuture('cat');
+    $bin = $this->getSupportExecutable('cat');
+    $future = new ExecFuture('php -f %R', $bin);
+
     $future->write($write);
 
     $lines = array();

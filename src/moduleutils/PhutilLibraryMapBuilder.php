@@ -183,7 +183,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
    * Load the library symbol cache, if it exists and is readable and valid.
    *
    * @return dict  Map of content hashes to cache of output from
-   *               `phutil_symbols.php`.
+   *               `extract-symbols.php`.
    *
    * @task symbol
    */
@@ -256,7 +256,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
   }
 
   /**
-   * Build a future which returns a `phutil_symbols.php` analysis of a source
+   * Build a future which returns a `extract-symbols.php` analysis of a source
    * file.
    *
    * @param  string  Relative path to the source file to analyze.
@@ -442,7 +442,7 @@ EOPHP;
     $symbol_cache = $this->loadSymbolCache();
 
     // If the XHPAST binary is not up-to-date, build it now. Otherwise,
-    // `phutil_symbols.php` will attempt to build the binary and will fail
+    // `extract-symbols.php` will attempt to build the binary and will fail
     // miserably because it will be trying to build the same file multiple
     // times in parallel.
     if (!PhutilXHPASTBinary::isAvailable()) {

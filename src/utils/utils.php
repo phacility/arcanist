@@ -1065,8 +1065,8 @@ function phutil_fwrite_nonblocking_stream($stream, $bytes) {
   // the stream, write to it again if PHP claims that it's writable, and
   // consider the pipe broken if the write fails.
 
-  // (Signals received signals during the "fwrite()" do not appear to affect
-  // anything, see D20083.)
+  // (Signals received during the "fwrite()" do not appear to affect anything,
+  // see D20083.)
 
   $read = array();
   $write = array($stream);

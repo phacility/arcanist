@@ -45,7 +45,8 @@ final class PhutilPHPObjectProtocolChannelTestCase extends PhutilTestCase {
   }
 
   public function testCloseExecWriteChannel() {
-    $future = new ExecFuture('cat');
+    $bin = $this->getSupportExecutable('cat');
+    $future = new ExecFuture('php -f %R', $bin);
 
     // If this test breaks, we want to explode, not hang forever.
     $future->setTimeout(5);

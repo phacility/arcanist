@@ -149,6 +149,34 @@ function phutil_is_utf8_slowly($string, $only_bmp = false) {
         continue;
       }
       return false;
+    } else if ($chr == 0xED) {
+      // See T11525. Some sequences in this block are surrogate codepoints
+      // that are reserved for use in UTF16. We should reject them.
+      $codepoint = ($chr & 0x0F) << 12;
+      ++$ii;
+      if ($ii >= $len) {
+        return false;
+      }
+      $chr = ord($string[$ii]);
+      $codepoint += ($chr & 0x3F) << 6;
+      if ($chr >= 0x80 && $chr <= 0xBF) {
+        ++$ii;
+        if ($ii >= $len) {
+          return false;
+        }
+        $chr = ord($string[$ii]);
+        $codepoint += ($chr & 0x3F);
+
+        if ($codepoint >= 0xD800 && $codepoint <= 0xDFFF) {
+          // Reject these surrogate codepoints.
+          return false;
+        }
+
+        if ($chr >= 0x80 && $chr <= 0xBF) {
+          continue;
+        }
+      }
+      return false;
     } else if ($chr > 0xE0 && $chr <= 0xEF) {
       ++$ii;
       if ($ii >= $len) {

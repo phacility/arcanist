@@ -6,7 +6,7 @@
 $builtins = phutil_symbols_get_builtins();
 
 $root = dirname(dirname(dirname(__FILE__)));
-require_once $root.'/scripts/init/init-script.php';
+require_once $root.'/support/init/init-script.php';
 
 $args = new PhutilArgumentParser($argv);
 $args->setTagline(pht('identify symbols in a PHP source file'));

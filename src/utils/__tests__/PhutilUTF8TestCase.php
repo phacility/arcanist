@@ -61,6 +61,13 @@ final class PhutilUTF8TestCase extends PhutilTestCase {
     );
 
     foreach ($map as $input => $expect) {
+      if ($input !== $expect) {
+        $this->assertEqual(
+          false,
+          phutil_is_utf8_slowly($input),
+          pht('Slowly reject overlong form of: %s', $input));
+      }
+
       $actual = phutil_utf8ize($input);
       $this->assertEqual(
         $expect,
@@ -77,6 +84,13 @@ final class PhutilUTF8TestCase extends PhutilTestCase {
     );
 
     foreach ($map as $input => $expect) {
+      if ($input !== $expect) {
+        $this->assertEqual(
+          false,
+          phutil_is_utf8_slowly($input),
+          pht('Slowly reject surrogate: %s', $input));
+      }
+
       $actual = phutil_utf8ize($input);
       $this->assertEqual(
         $expect,

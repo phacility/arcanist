@@ -45,6 +45,7 @@ final class PhutilClassMapQuery extends Phobject {
   private $filterNull = false;
   private $uniqueMethod;
   private $sortMethod;
+  private $continueOnFailure;
 
   // NOTE: If you add more configurable properties here, make sure that
   // cache key construction in getCacheKey() is updated properly.
@@ -162,6 +163,10 @@ final class PhutilClassMapQuery extends Phobject {
     return $this;
   }
 
+  public function setContinueOnFailure($continue) {
+    $this->continueOnFailure = $continue;
+    return $this;
+  }
 
 /* -(  Executing the Query  )------------------------------------------------ */
 
@@ -236,6 +241,7 @@ final class PhutilClassMapQuery extends Phobject {
 
     $objects = id(new PhutilSymbolLoader())
       ->setAncestorClass($ancestor)
+      ->setContinueOnFailure($this->continueOnFailure)
       ->loadObjects();
 
     // Apply the "expand" mechanism, if it is configured.
