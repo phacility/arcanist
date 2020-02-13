@@ -36,6 +36,10 @@ $base_args->parsePartial(
       'help' => pht('Use a specific authentication token.'),
     ),
     array(
+      'name' => 'anonymous',
+      'help' => pht('Run workflow as a public user, without authenticating.'),
+    ),
+    array(
       'name'    => 'conduit-version',
       'param'   => 'version',
       'help'    => pht(
@@ -64,6 +68,7 @@ $force_conduit_version = $base_args->getArg('conduit-version');
 $conduit_timeout = $base_args->getArg('conduit-timeout');
 $skip_arcconfig = $base_args->getArg('skip-arcconfig');
 $custom_arcrc = $base_args->getArg('arcrc-file');
+$is_anonymous = $base_args->getArg('anonymous');
 $load = $base_args->getArg('load-phutil-library');
 $help = $base_args->getArg('help');
 $args = array_values($base_args->getUnconsumedArgumentVector());
@@ -323,6 +328,10 @@ try {
     $conduit_token = $force_token;
   }
 
+  if ($is_anonymous) {
+    $conduit_token = null;
+  }
+
   $description = implode(' ', $original_argv);
   $credentials = array(
     'user' => $user_name,
@@ -331,6 +340,23 @@ try {
     'token' => $conduit_token,
   );
   $workflow->setConduitCredentials($credentials);
+
+  $basic_user = $configuration_manager->getConfigFromAnySource(
+    'http.basicauth.user');
+  $basic_pass = $configuration_manager->getConfigFromAnySource(
+    'http.basicauth.pass');
+
+  $engine = id(new ArcanistConduitEngine())
+    ->setConduitURI($conduit_uri)
+    ->setConduitToken($conduit_token)
+    ->setBasicAuthUser($basic_user)
+    ->setBasicAuthPass($basic_pass);
+
+  if ($conduit_timeout) {
+    $engine->setConduitTimeout($conduit_timeout);
+  }
+
+  $workflow->setConduitEngine($engine);
 
   if ($need_auth) {
     if ((!$user_name || !$certificate) && (!$conduit_token)) {
@@ -408,7 +434,7 @@ try {
     fwrite(STDERR, phutil_console_format(
       "**%s** %s\n",
       pht('Usage Exception:'),
-      $ex->getMessage()));
+      rtrim($ex->getMessage())));
   }
 
   if ($config) {

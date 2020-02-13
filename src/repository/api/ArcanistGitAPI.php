@@ -1090,6 +1090,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $result[] = array(
           'current' => ($branch === $current),
           'name' => $branch,
+          'ref' => $ref,
           'hash' => $hash,
           'tree' => $tree,
           'epoch' => (int)$epoch,
@@ -1102,17 +1103,46 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $result;
   }
 
+  public function getAllBranchRefs() {
+    $branches = $this->getAllBranches();
+
+    $refs = array();
+    foreach ($branches as $branch) {
+      $commit_ref = $this->newCommitRef()
+        ->setCommitHash($branch['hash'])
+        ->setTreeHash($branch['tree'])
+        ->setCommitEpoch($branch['epoch'])
+        ->attachMessage($branch['text']);
+
+      $refs[] = $this->newBranchRef()
+        ->setBranchName($branch['name'])
+        ->setRefName($branch['ref'])
+        ->setIsCurrentBranch($branch['current'])
+        ->attachCommitRef($commit_ref);
+    }
+
+    return $refs;
+  }
+
+  public function getBaseCommitRef() {
+    $base_commit = $this->getBaseCommit();
+
+    if ($base_commit === self::GIT_MAGIC_ROOT_COMMIT) {
+      return null;
+    }
+
+    $base_message = $this->getCommitMessage($base_commit);
+
+    // TODO: We should also pull the tree hash.
+
+    return $this->newCommitRef()
+      ->setCommitHash($base_commit)
+      ->attachMessage($base_message);
+  }
+
   public function getWorkingCopyRevision() {
     list($stdout) = $this->execxLocal('rev-parse HEAD');
     return rtrim($stdout, "\n");
-  }
-
-  public function getUnderlyingWorkingCopyRevision() {
-    list($err, $stdout) = $this->execManualLocal('svn find-rev HEAD');
-    if (!$err && $stdout) {
-      return rtrim($stdout, "\n");
-    }
-    return $this->getWorkingCopyRevision();
   }
 
   public function isHistoryDefaultImmutable() {
