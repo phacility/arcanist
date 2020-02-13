@@ -471,7 +471,7 @@ phutil_register_library_map(array(
     'ArcanistVariableReferenceSpacingXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistVariableReferenceSpacingXHPASTLinterRuleTestCase.php',
     'ArcanistVariableVariableXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistVariableVariableXHPASTLinterRule.php',
     'ArcanistVariableVariableXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistVariableVariableXHPASTLinterRuleTestCase.php',
-    'ArcanistVersionWorkflow' => 'workflow/ArcanistVersionWorkflow.php',
+    'ArcanistVersionWorkflow' => 'toolset/workflow/ArcanistVersionWorkflow.php',
     'ArcanistWeldWorkflow' => 'workflow/ArcanistWeldWorkflow.php',
     'ArcanistWhichWorkflow' => 'workflow/ArcanistWhichWorkflow.php',
     'ArcanistWildConfigOption' => 'config/option/ArcanistWildConfigOption.php',

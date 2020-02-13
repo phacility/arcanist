@@ -168,32 +168,21 @@ final class ArcanistRuntime {
     // NOTE: We don't have phutil_is_windows() yet here.
     $is_windows = (DIRECTORY_SEPARATOR != '/');
 
-    // We use stream_socket_pair() which is not available on Windows earlier.
-    $min_version = ($is_windows ? '5.3.0' : '5.2.3');
-    $cur_version = phpversion();
-    if (version_compare($cur_version, $min_version, '<')) {
-      $message = sprintf(
-        'You are running a version of PHP ("%s"), which is older than the '.
-        'minimum supported version ("%s"). Update PHP to continue.',
-        $cur_version,
-        $min_version);
-
-      throw new Exception($message);
-    }
+    // NOTE: There's a hard PHP version check earlier, in "init-script.php".
 
     if ($is_windows) {
       $need_functions = array(
-        'curl_init'     => array('builtin-dll', 'php_curl.dll'),
+        'curl_init' => array('builtin-dll', 'php_curl.dll'),
       );
     } else {
       $need_functions = array(
-        'curl_init'     => array(
+        'curl_init' => array(
           'text',
           "You need to install the cURL PHP extension, maybe with ".
           "'apt-get install php5-curl' or 'yum install php53-curl' or ".
           "something similar.",
         ),
-        'json_decode'   => array('flag', '--without-json'),
+        'json_decode' => array('flag', '--without-json'),
       );
     }
 
@@ -483,6 +472,7 @@ final class ArcanistRuntime {
   private function newWorkflows(ArcanistToolset $toolset) {
     $workflows = id(new PhutilClassMapQuery())
       ->setAncestorClass('ArcanistWorkflow')
+      ->setContinueOnFailure(true)
       ->execute();
 
     foreach ($workflows as $key => $workflow) {
