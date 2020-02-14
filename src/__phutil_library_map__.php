@@ -402,7 +402,7 @@ phutil_register_library_map(array(
     'ArcanistSetConfigWorkflow' => 'workflow/ArcanistSetConfigWorkflow.php',
     'ArcanistSetting' => 'configuration/ArcanistSetting.php',
     'ArcanistSettings' => 'configuration/ArcanistSettings.php',
-    'ArcanistShellCompleteWorkflow' => 'workflow/ArcanistShellCompleteWorkflow.php',
+    'ArcanistShellCompleteWorkflow' => 'toolset/workflow/ArcanistShellCompleteWorkflow.php',
     'ArcanistSingleLintEngine' => 'lint/engine/ArcanistSingleLintEngine.php',
     'ArcanistSlownessXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistSlownessXHPASTLinterRule.php',
     'ArcanistSlownessXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistSlownessXHPASTLinterRuleTestCase.php',

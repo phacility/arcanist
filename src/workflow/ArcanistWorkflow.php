@@ -2275,4 +2275,8 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->getToolset()->getToolsetKey();
   }
 
+  final public function getConfig($key) {
+    return $this->getConfigurationSourceList()->getConfig($key);
+  }
+
 }
