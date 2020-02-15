@@ -78,6 +78,8 @@ final class PhutilArgumentParser extends Phobject {
   private $synopsis;
   private $workflows;
   private $showHelp;
+  private $requireArgumentTerminator = false;
+  private $sawTerminator = false;
 
   const PARSE_ERROR_CODE = 77;
 
@@ -129,8 +131,20 @@ final class PhutilArgumentParser extends Phobject {
     $specs = PhutilArgumentSpecification::newSpecsFromList($specs);
     $this->mergeSpecs($specs);
 
-    $specs_by_name  = mpull($specs, null, 'getName');
-    $specs_by_short = mpull($specs, null, 'getShortAlias');
+    // Wildcard arguments have a name like "argv", but we don't want to
+    // parse a corresponding flag like "--argv". Filter them out before
+    // building a list of available flags.
+    $non_wildcard = array();
+    foreach ($specs as $spec_key => $spec) {
+      if ($spec->getWildcard()) {
+        continue;
+      }
+
+      $non_wildcard[$spec_key] = $spec;
+    }
+
+    $specs_by_name  = mpull($non_wildcard, null, 'getName');
+    $specs_by_short = mpull($non_wildcard, null, 'getShortAlias');
     unset($specs_by_short[null]);
 
     $argv = $this->argv;
@@ -144,6 +158,7 @@ final class PhutilArgumentParser extends Phobject {
         // Non-string argument; pass it through as-is.
       } else if ($arg == '--') {
         // This indicates "end of flags".
+        $this->sawTerminator = true;
         break;
       } else if ($arg == '-') {
         // This is a normal argument (e.g., stdin).
@@ -174,7 +189,8 @@ final class PhutilArgumentParser extends Phobject {
           $corrections = PhutilArgumentSpellingCorrector::newFlagCorrector()
             ->correctSpelling($arg, $options);
 
-          if (count($corrections) == 1) {
+          $should_autocorrect = $this->shouldAutocorrect();
+          if (count($corrections) == 1 && $should_autocorrect) {
             $corrected = head($corrections);
 
             $this->logMessage(
@@ -206,7 +222,7 @@ final class PhutilArgumentParser extends Phobject {
             if ($param_name === null) {
               throw new PhutilArgumentUsageException(
                 pht(
-                  "Argument '%s' does not take a parameter.",
+                  'Argument "%s" does not take a parameter.',
                   "{$pre}{$arg}"));
             }
           } else {
@@ -218,7 +234,7 @@ final class PhutilArgumentParser extends Phobject {
               } else {
                 throw new PhutilArgumentUsageException(
                   pht(
-                    "Argument '%s' requires a parameter.",
+                    'Argument "%s" requires a parameter.',
                     "{$pre}{$arg}"));
               }
             } else {
@@ -230,7 +246,7 @@ final class PhutilArgumentParser extends Phobject {
             if (array_key_exists($spec->getName(), $this->results)) {
               throw new PhutilArgumentUsageException(
                 pht(
-                  "Argument '%s' was provided twice.",
+                  'Argument "%s" was provided twice.',
                   "{$pre}{$arg}"));
             }
           }
@@ -247,7 +263,7 @@ final class PhutilArgumentParser extends Phobject {
 
               throw new PhutilArgumentUsageException(
                 pht(
-                  "Argument '%s' conflicts with argument '%s'%s",
+                  'Argument "%s" conflicts with argument "%s"%s',
                   "{$pre}{$arg}",
                   "--{$conflict}",
                   $reason));
@@ -279,6 +295,7 @@ final class PhutilArgumentParser extends Phobject {
     }
 
     $this->argv = array_values($argv);
+
     return $this;
   }
 
@@ -300,10 +317,20 @@ final class PhutilArgumentParser extends Phobject {
   public function parseFull(array $specs) {
     $this->parseInternal($specs, true, false);
 
-    if (count($this->argv)) {
-      $arg = head($this->argv);
+    // If we have remaining unconsumed arguments other than a single "--",
+    // fail.
+    $argv = $this->filterWildcardArgv($this->argv);
+    if ($argv) {
       throw new PhutilArgumentUsageException(
-        pht("Unrecognized argument '%s'.", $arg));
+        pht(
+          'Unrecognized argument "%s".',
+          head($argv)));
+    }
+
+    if ($this->getRequireArgumentTerminator()) {
+      if (!$this->sawTerminator) {
+        throw new ArcanistMissingArgumentTerminatorException();
+      }
     }
 
     if ($this->showHelp) {
@@ -408,7 +435,8 @@ final class PhutilArgumentParser extends Phobject {
       $corrected = PhutilArgumentSpellingCorrector::newCommandCorrector()
         ->correctSpelling($flow, array_keys($this->workflows));
 
-      if (count($corrected) == 1) {
+      $should_autocorrect = $this->shouldAutocorrect();
+      if (count($corrected) == 1 && $should_autocorrect) {
         $corrected = head($corrected);
 
         $this->logMessage(
@@ -551,7 +579,7 @@ final class PhutilArgumentParser extends Phobject {
     if ($xprofile) {
       if (!function_exists('xhprof_enable')) {
         throw new Exception(
-          pht("To use '%s', you must install XHProf.", '--xprofile'));
+          pht('To use "--xprofile", you must install XHProf.'));
       }
 
       xhprof_enable(0);
@@ -580,7 +608,7 @@ final class PhutilArgumentParser extends Phobject {
   public function getArg($name) {
     if (empty($this->specs[$name])) {
       throw new PhutilArgumentSpecificationException(
-        pht("No specification exists for argument '%s'!", $name));
+        pht('No specification exists for argument "%s"!', $name));
     }
 
     if (idx($this->results, $name) !== null) {
@@ -602,6 +630,14 @@ final class PhutilArgumentParser extends Phobject {
 
 /* -(  Command Help  )------------------------------------------------------- */
 
+  public function setRequireArgumentTerminator($require) {
+    $this->requireArgumentTerminator = $require;
+    return $this;
+  }
+
+  public function getRequireArgumentTerminator() {
+    return $this->requireArgumentTerminator;
+  }
 
   public function setSynopsis($synopsis) {
     $this->synopsis = $synopsis;
@@ -750,8 +786,8 @@ final class PhutilArgumentParser extends Phobject {
 
         throw new PhutilArgumentUsageException(
           pht(
-            "Argument '%s' is unrecognized. Use '%s' to indicate ".
-            "the end of flags.",
+            'Argument "%s" is unrecognized. Use "%s" to indicate '.
+            'the end of flags.',
             $value,
             '--'));
       }
@@ -778,7 +814,9 @@ final class PhutilArgumentParser extends Phobject {
 
       if (isset($this->specs[$name])) {
         throw new PhutilArgumentSpecificationException(
-          pht("Two argument specifications have the same name ('%s').", $name));
+          pht(
+            'Two argument specifications have the same name ("%s").',
+            $name));
       }
 
       $short = $spec->getShortAlias();
@@ -786,7 +824,7 @@ final class PhutilArgumentParser extends Phobject {
         if (isset($short_map[$short])) {
           throw new PhutilArgumentSpecificationException(
             pht(
-              "Two argument specifications have the same short alias ('%s').",
+              'Two argument specifications have the same short alias ("%s").',
               $short));
         }
         $short_map[$short] = $spec;
@@ -811,13 +849,15 @@ final class PhutilArgumentParser extends Phobject {
         if (empty($this->specs[$conflict])) {
           throw new PhutilArgumentSpecificationException(
             pht(
-              "Argument '%s' conflicts with unspecified argument '%s'.",
+              'Argument "%s" conflicts with unspecified argument "%s".',
               $name,
               $conflict));
         }
         if ($conflict == $name) {
           throw new PhutilArgumentSpecificationException(
-            pht("Argument '%s' conflicts with itself!", $name));
+            pht(
+              'Argument "%s" conflicts with itself!',
+              $name));
         }
       }
     }
@@ -925,11 +965,15 @@ final class PhutilArgumentParser extends Phobject {
         "%B\n%s",
         $message,
         pht(
-          'For details on available commands, run `%s`.',
+          'For details on available commands, run "%s".',
           "{$binary} help"));
     }
 
     throw new PhutilArgumentUsageException($message);
+  }
+
+  private function shouldAutocorrect() {
+    return !phutil_is_noninteractive();
   }
 
 }

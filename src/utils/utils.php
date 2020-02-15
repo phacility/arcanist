@@ -1918,3 +1918,11 @@ function phutil_escape_uri_path_component($string) {
 function phutil_unescape_uri_path_component($string) {
   return rawurldecode($string);
 }
+
+function phutil_is_noninteractive() {
+  if (function_exists('posix_isatty') && !posix_isatty(STDIN)) {
+    return true;
+  }
+
+  return false;
+}

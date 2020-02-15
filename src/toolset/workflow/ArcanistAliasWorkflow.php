@@ -145,6 +145,8 @@ EOTEXT
     // TOOLSETS: Check if the user already has an alias for this trigger, and
     // prompt them to overwrite it. Needs prompting to work.
 
+    // TOOLSETS: Don't let users set aliases which don't resolve to anything.
+
     $aliases[] = $alias;
 
     $this->writeAliases($aliases);

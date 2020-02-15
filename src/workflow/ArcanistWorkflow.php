@@ -2282,4 +2282,8 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->getConfigurationSourceList()->getConfig($key);
   }
 
+  final public function canHandleSignal($signo) {
+    return false;
+  }
+
 }

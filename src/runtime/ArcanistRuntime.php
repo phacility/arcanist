@@ -68,6 +68,14 @@ final class ArcanistRuntime {
     $args = id(new PhutilArgumentParser($argv))
       ->parseStandardArguments();
 
+    // If we can test whether STDIN is a TTY, and it isn't, require that "--"
+    // appear in the argument list. This is intended to make it very hard to
+    // write unsafe scripts on top of Arcanist.
+
+    if (phutil_is_noninteractive()) {
+      $args->setRequireArgumentTerminator(true);
+    }
+
     $is_trace = $args->getArg('trace');
     $log->setShowTraceMessages($is_trace);
 
@@ -138,6 +146,29 @@ final class ArcanistRuntime {
 
     try {
       return $args->parseWorkflowsFull($phutil_workflows);
+    } catch (ArcanistMissingArgumentTerminatorException $terminator_exception) {
+      $log->writeHint(
+        pht('USAGE'),
+        pht(
+          '"%s" is being run noninteractively, but the argument list is '.
+          'missing "--" to indicate end of flags.',
+          $toolset->getToolsetKey()));
+
+      $log->writeHint(
+        pht('USAGE'),
+        pht(
+          'When running noninteractively, you MUST provide "--" to all '.
+          'commands (even if they take no arguments).'));
+
+      $log->writeHint(
+        pht('USAGE'),
+        tsprintf(
+          '%s <__%s__>',
+          pht('Learn More:'),
+          'https://phurl.io/u/noninteractive'));
+
+      throw new PhutilArgumentUsageException(
+        pht('Missing required "--" in argument list.'));
     } catch (PhutilArgumentUsageException $usage_exception) {
 
       // TODO: This is very, very hacky; we're trying to let errors like

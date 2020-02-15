@@ -87,8 +87,20 @@ EOTEXT
     $u = rtrim($u, "\r\n");
     $v = rtrim($v, "\r\n");
 
-    $u = phutil_utf8v_combined($u);
-    $v = phutil_utf8v_combined($v);
+    // If the inputs are UTF8, split glyphs (so two valid UTF8 inputs always
+    // produce a sensible, valid UTF8 output). If they aren't, split bytes.
+
+    if (phutil_is_utf8($u)) {
+      $u = phutil_utf8v_combined($u);
+    } else {
+      $u = str_split($u);
+    }
+
+    if (phutil_is_utf8($v)) {
+      $v = phutil_utf8v_combined($v);
+    } else {
+      $v = str_split($v);
+    }
 
     $len = max(count($u), count($v));
 
