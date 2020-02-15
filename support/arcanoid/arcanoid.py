@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import sys
 import time
 import select
@@ -17,10 +17,10 @@ class Block:
     total = 0
 
     def __init__(self, x, y, w, h, c):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+        self.x = int(round(x))
+        self.y = int(round(y))
+        self.w = int(round(w))
+        self.h = int(round(h))
         self.fmt = curses.A_BOLD | curses.color_pair(c)
         self.alive = True
         for i in range(self.x, self.x + self.w):
@@ -48,8 +48,8 @@ class Ball:
     killed = 0
 
     def __init__(self, x, y, vx, vy):
-        self.x = x
-        self.y = y
+        self.x = int(round(x))
+        self.y = int(round(y))
         self.vx = vx
         self.vy = vy
         Ball.alive = True
@@ -58,6 +58,8 @@ class Ball:
         return True
 
     def encounter(self, dx, dy):
+        dx = int(round(dx))
+        dy = int(round(dy))
         ent = grid[self.y + dy + 1][self.x + dx + 1]
         if ent and not ent.collide(self):
             self.vx -= 2 * dx
@@ -84,8 +86,8 @@ class Ball:
 
 class Ship:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x = int(round(x))
+        self.y = int(round(y))
         self.hw = 10
         self.v = 4
         self.last = 1
@@ -164,7 +166,7 @@ def main(stdscr):
 
     colors = [ 1, 3, 2, 6, 4, 5 ]
     h = height / 10
-    for x in range(1, width / 7 - 1):
+    for x in range(1, int(width / 7) - 1):
         for y in range(1, 7):
             entities.append(Block(x * 7,
                                   y * h + x / 2 % 2,

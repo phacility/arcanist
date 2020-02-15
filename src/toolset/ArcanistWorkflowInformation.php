@@ -4,6 +4,7 @@ final class ArcanistWorkflowInformation
   extends Phobject {
 
   private $help;
+  private $synopsis;
   private $examples = array();
 
   public function setHelp($help) {
@@ -22,6 +23,15 @@ final class ArcanistWorkflowInformation
 
   public function getExamples() {
     return $this->examples;
+  }
+
+  public function setSynopsis($synopsis) {
+    $this->synopsis = $synopsis;
+    return $this;
+  }
+
+  public function getSynopsis() {
+    return $this->synopsis;
   }
 
 }

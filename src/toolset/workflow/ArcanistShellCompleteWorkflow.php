@@ -60,6 +60,7 @@ EOTEXT
 );
 
     return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Install shell completion.'))
       ->setHelp($help);
   }
 

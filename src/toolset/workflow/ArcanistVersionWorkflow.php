@@ -22,6 +22,7 @@ EOTEXT
 );
 
     return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Show toolset version information.'))
       ->addExample(pht('**version**'))
       ->setHelp($help);
   }

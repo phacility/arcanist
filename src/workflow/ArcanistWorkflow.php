@@ -128,6 +128,10 @@ abstract class ArcanistWorkflow extends Phobject {
 
     $information = $this->getWorkflowInformation();
     if ($information) {
+      $synopsis = $information->getSynopsis();
+      if (strlen($synopsis)) {
+        $phutil_workflow->setSynopsis($synopsis);
+      }
 
       $examples = $information->getExamples();
       if ($examples) {
@@ -142,7 +146,6 @@ abstract class ArcanistWorkflow extends Phobject {
 
         $phutil_workflow->setHelp($help);
       }
-
     }
 
     return $phutil_workflow;

@@ -16,6 +16,8 @@ EOTEXT
 );
 
     return $this->newWorkflowInformation()
+      ->setSynopsis(
+        pht('Create or update an Arcanist library.'))
       ->addExample(pht('**liberate**'))
       ->addExample(pht('**liberate** [__path__]'))
       ->setHelp($help);

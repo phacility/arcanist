@@ -75,9 +75,10 @@ EOTEXT
 );
 
     return $this->newWorkflowInformation()
+      ->setSynopsis(
+        pht('Create and modify command aliases.'))
       ->addExample(pht('**alias**'))
-      ->addExample(pht('**alias** __command__'))
-      ->addExample(pht('**alias** __command__ __target__ -- [__options__]'))
+      ->addExample(pht('**alias** __command__ __target__ -- [__arguments__]'))
       ->setHelp($help);
   }
 

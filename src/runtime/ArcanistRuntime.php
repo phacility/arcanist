@@ -139,11 +139,14 @@ final class ArcanistRuntime {
     try {
       return $args->parseWorkflowsFull($phutil_workflows);
     } catch (PhutilArgumentUsageException $usage_exception) {
-      $log->writeHint(
-        pht('(::)'),
-        pht(
-          'Workflow is unrecognized by modern "arc", falling through '.
-          'to classic mode.'));
+
+      // TODO: This is very, very hacky; we're trying to let errors like
+      // "you passed the wrong arguments" through but fall back to classic
+      // mode if the workflow itself doesn't exist.
+      if (!preg_match('/invalid command/i', $usage_exception->getMessage())) {
+        throw $usage_exception;
+      }
+
     }
 
     $arcanist_root = phutil_get_library_root('arcanist');
