@@ -1401,7 +1401,7 @@ phutil_register_library_map(array(
     'ArcanistUnsafeDynamicStringXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
     'ArcanistUnsafeDynamicStringXHPASTLinterRuleTestCase' => 'ArcanistXHPASTLinterRuleTestCase',
     'ArcanistUpgradeWorkflow' => 'ArcanistArcWorkflow',
-    'ArcanistUploadWorkflow' => 'ArcanistWorkflow',
+    'ArcanistUploadWorkflow' => 'ArcanistArcWorkflow',
     'ArcanistUsageException' => 'Exception',
     'ArcanistUseStatementNamespacePrefixXHPASTLinterRule' => 'ArcanistXHPASTLinterRule',
     'ArcanistUseStatementNamespacePrefixXHPASTLinterRuleTestCase' => 'ArcanistXHPASTLinterRuleTestCase',

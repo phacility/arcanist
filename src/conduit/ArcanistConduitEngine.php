@@ -7,8 +7,6 @@ final class ArcanistConduitEngine
   private $conduitToken;
 
   private $conduitTimeout;
-  private $basicAuthUser;
-  private $basicAuthPass;
 
   private $client;
   private $callKey = 0;
@@ -44,24 +42,6 @@ final class ArcanistConduitEngine
 
   public function getConduitTimeout() {
     return $this->conduitTimeout;
-  }
-
-  public function setBasicAuthUser($basic_auth_user) {
-    $this->basicAuthUser = $basic_auth_user;
-    return $this;
-  }
-
-  public function getBasicAuthUser() {
-    return $this->basicAuthUser;
-  }
-
-  public function setBasicAuthPass($basic_auth_pass) {
-    $this->basicAuthPass = $basic_auth_pass;
-    return $this;
-  }
-
-  public function getBasicAuthPass() {
-    return $this->basicAuthPass;
   }
 
   public function newCall($method, array $parameters) {
@@ -100,12 +80,6 @@ final class ArcanistConduitEngine
       $timeout = $this->getConduitTimeout();
       if ($timeout) {
         $client->setTimeout($timeout);
-      }
-
-      $basic_user = $this->getBasicAuthUser();
-      $basic_pass = $this->getBasicAuthPass();
-      if ($basic_user !== null || $basic_pass !== null) {
-        $client->setBasicAuthCredentials($basic_user, $basic_pass);
       }
 
       $token = $this->getConduitToken();
@@ -148,10 +122,10 @@ final class ArcanistConduitEngine
           'Run in a working copy with "phabricator.uri" set in ".arcconfig".'))
       ->addItem(
         pht(
-          'Set a default URI with `arc set-config default <uri>`.'))
+          'Set a default URI with `arc set-config phabricator.uri <uri>`.'))
       ->addItem(
         pht(
-          'Specify a URI explicitly with `--conduit-uri=<uri>`.'));
+          'Specify a URI explicitly with `--config phabricator.uri=<uri>`.'));
 
     $block = id(new PhutilConsoleBlock())
       ->addParagraph(

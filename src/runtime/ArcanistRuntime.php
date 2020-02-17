@@ -107,6 +107,8 @@ final class ArcanistRuntime {
     $workflows = $this->newWorkflows($toolset);
     $this->workflows = $workflows;
 
+    $conduit_engine = $this->newConduitEngine($config);
+
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
@@ -114,7 +116,8 @@ final class ArcanistRuntime {
       $workflow
         ->setRuntime($this)
         ->setConfigurationEngine($config_engine)
-        ->setConfigurationSourceList($config);
+        ->setConfigurationSourceList($config)
+        ->setConduitEngine($conduit_engine);
     }
 
 
@@ -671,6 +674,51 @@ final class ArcanistRuntime {
 
   public function getWorkflowStack() {
     return $this->stack;
+  }
+
+  private function newConduitEngine(ArcanistConfigurationSourceList $config) {
+
+    $conduit_uri = $config->getConfig('phabricator.uri');
+    if ($conduit_uri === null) {
+      $conduit_uri = $config->getConfig('default');
+    }
+
+    if ($conduit_uri) {
+      // Set the URI path to '/api/'. TODO: Originally, I contemplated letting
+      // you deploy Phabricator somewhere other than the domain root, but ended
+      // up never pursuing that. We should get rid of all "/api/" silliness
+      // in things users are expected to configure. This is already happening
+      // to some degree, e.g. "arc install-certificate" does it for you.
+      $conduit_uri = new PhutilURI($conduit_uri);
+      $conduit_uri->setPath('/api/');
+      $conduit_uri = phutil_string_cast($conduit_uri);
+    }
+
+    $engine = new ArcanistConduitEngine();
+
+    if ($conduit_uri !== null) {
+      $engine->setConduitURI($conduit_uri);
+    }
+
+    // TODO: This isn't using "getConfig()" because we aren't defining a
+    // real config entry for the moment.
+
+    $hosts = array();
+
+    $hosts_list = $config->getStorageValueList('hosts');
+    foreach ($hosts_list as $hosts_config) {
+      $hosts += $hosts_config->getValue();
+    }
+
+    $host_config = idx($hosts, $conduit_uri, array());
+    $user_name = idx($host_config, 'user');
+    $conduit_token = idx($host_config, 'token');
+
+    if ($conduit_token !== null) {
+      $engine->setConduitToken($conduit_token);
+    }
+
+    return $engine;
   }
 
 }

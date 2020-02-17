@@ -25,22 +25,14 @@
  */
 final class ArcanistFileUploader extends Phobject {
 
-  private $conduit;
+  private $conduitEngine;
   private $files = array();
 
 
 /* -(  Configuring the Uploader  )------------------------------------------- */
 
-
-  /**
-   * Provide a Conduit client to choose which server to upload files to.
-   *
-   * @param ConduitClient Configured client.
-   * @return this
-   * @task config
-   */
-  public function setConduitClient(ConduitClient $conduit) {
-    $this->conduit = $conduit;
+  public function setConduitEngine(ArcanistConduitEngine $engine) {
+    $this->conduitEngine = $engine;
     return $this;
   }
 
@@ -99,8 +91,8 @@ final class ArcanistFileUploader extends Phobject {
    * @task upload
    */
   public function uploadFiles() {
-    if (!$this->conduit) {
-      throw new PhutilInvalidStateException('setConduitClient');
+    if (!$this->conduitEngine) {
+      throw new PhutilInvalidStateException('setConduitEngine');
     }
 
     $files = $this->files;
@@ -113,7 +105,7 @@ final class ArcanistFileUploader extends Phobject {
       }
     }
 
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
     $futures = array();
     foreach ($files as $key => $file) {
       $params = $this->getUploadParameters($file) + array(
@@ -126,7 +118,11 @@ final class ArcanistFileUploader extends Phobject {
         $params['deleteAfterEpoch'] = $delete_after;
       }
 
-      $futures[$key] = $conduit->callMethod('file.allocate', $params);
+      // TOOLSETS: This should be a real future, but ConduitEngine and
+      // ConduitCall are currently built oddly and return pretend futures.
+
+      $futures[$key] = new ImmediateFuture(
+        $conduit->resolveCall('file.allocate', $params));
     }
 
     $iterator = id(new FutureIterator($futures))->limit(4);
@@ -219,9 +215,9 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function uploadChunks(ArcanistFileDataRef $file, $file_phid) {
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
 
-    $chunks = $conduit->callMethodSynchronous(
+    $chunks = $conduit->resolveCall(
       'file.querychunks',
       array(
         'filePHID' => $file_phid,
@@ -262,7 +258,7 @@ final class ArcanistFileUploader extends Phobject {
     foreach ($remaining as $chunk) {
       $data = $file->readBytes($chunk['byteStart'], $chunk['byteEnd']);
 
-      $conduit->callMethodSynchronous(
+      $conduit->resolveCall(
         'file.uploadchunk',
         array(
           'filePHID' => $file_phid,
@@ -282,11 +278,11 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function uploadData(ArcanistFileDataRef $file) {
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
 
     $data = $file->readBytes(0, $file->getByteSize());
 
-    return $conduit->callMethodSynchronous(
+    return $conduit->resolveCall(
       'file.upload',
       $this->getUploadParameters($file) + array(
         'data_base64' => base64_encode($data),
