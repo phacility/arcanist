@@ -79,14 +79,6 @@ final class ArcanistArcConfigurationEngineExtension
           "behind HTTPS signed by your organization's internal CA."),
         'example' => 'support/yourca.pem',
       ),
-      'https.blindly-trust-domains' => array(
-        'type' => 'list',
-        'help' => pht(
-          'List of domains to blindly trust SSL certificates for. '.
-          'Disables peer verification.'),
-        'default' => array(),
-        'example' => '["secure.mycompany.com"]',
-      ),
       'browser' => array(
         'type' => 'string',
         'help' => pht('Command to use to invoke a web browser.'),

@@ -45,7 +45,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $conduitURI;
   private $conduitCredentials;
   private $conduitAuthenticated;
-  private $forcedConduitVersion;
   private $conduitTimeout;
 
   private $userPHID;
@@ -319,12 +318,6 @@ abstract class ArcanistWorkflow extends Phobject {
       $this->conduit->setTimeout($this->conduitTimeout);
     }
 
-    $user = $this->getConfigFromAnySource('http.basicauth.user');
-    $pass = $this->getConfigFromAnySource('http.basicauth.pass');
-    if ($user !== null && $pass !== null) {
-      $this->conduit->setBasicAuthCredentials($user, $pass);
-    }
-
     return $this;
   }
 
@@ -364,49 +357,13 @@ abstract class ArcanistWorkflow extends Phobject {
 
 
   /**
-   * Force arc to identify with a specific Conduit version during the
-   * protocol handshake. This is primarily useful for development (especially
-   * for sending diffs which bump the client Conduit version), since the client
-   * still actually speaks the builtin version of the protocol.
-   *
-   * Controlled by the --conduit-version flag.
-   *
-   * @param int Version the client should pretend to be.
-   * @return this
-   * @task conduit
-   */
-  final public function forceConduitVersion($version) {
-    $this->forcedConduitVersion = $version;
-    return $this;
-  }
-
-
-  /**
    * Get the protocol version the client should identify with.
    *
    * @return int Version the client should claim to be.
    * @task conduit
    */
   final public function getConduitVersion() {
-    return nonempty($this->forcedConduitVersion, 6);
-  }
-
-
-  /**
-   * Override the default timeout for Conduit.
-   *
-   * Controlled by the --conduit-timeout flag.
-   *
-   * @param float Timeout, in seconds.
-   * @return this
-   * @task conduit
-   */
-  final public function setConduitTimeout($timeout) {
-    $this->conduitTimeout = $timeout;
-    if ($this->conduit) {
-      $this->conduit->setConduitTimeout($timeout);
-    }
-    return $this;
+    return 6;
   }
 
 

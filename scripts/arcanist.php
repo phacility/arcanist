@@ -56,9 +56,6 @@ $base_args->parsePartial(
       'repeat'  => true,
     ),
     array(
-      'name'    => 'skip-arcconfig',
-    ),
-    array(
       'name'    => 'arcrc-file',
       'param'   => 'filename',
     ),
@@ -77,17 +74,6 @@ $base_args->parsePartial(
       'help' => pht('Run workflow as a public user, without authenticating.'),
     ),
     array(
-      'name'    => 'conduit-version',
-      'param'   => 'version',
-      'help'    => pht(
-        '(Developers) Mock client version in protocol handshake.'),
-    ),
-    array(
-      'name'    => 'conduit-timeout',
-      'param'   => 'timeout',
-      'help'    => pht('Set Conduit timeout (in seconds).'),
-    ),
-    array(
       'name'   => 'config',
       'param'  => 'key=value',
       'repeat' => true,
@@ -101,9 +87,6 @@ $config_trace_mode = $base_args->getArg('trace');
 
 $force_conduit = $base_args->getArg('conduit-uri');
 $force_token = $base_args->getArg('conduit-token');
-$force_conduit_version = $base_args->getArg('conduit-version');
-$conduit_timeout = $base_args->getArg('conduit-timeout');
-$skip_arcconfig = $base_args->getArg('skip-arcconfig');
 $custom_arcrc = $base_args->getArg('arcrc-file');
 $is_anonymous = $base_args->getArg('anonymous');
 $load = $base_args->getArg('load-phutil-library');
@@ -157,12 +140,8 @@ try {
   $system_config = $configuration_manager->readSystemArcConfig();
   $runtime_config = $configuration_manager->applyRuntimeArcConfig($base_args);
 
-  if ($skip_arcconfig) {
-    $working_copy = ArcanistWorkingCopyIdentity::newDummyWorkingCopy();
-  } else {
-    $working_copy =
-      ArcanistWorkingCopyIdentity::newFromPath($working_directory);
-  }
+  $working_copy =
+    ArcanistWorkingCopyIdentity::newFromPath($working_directory);
   $configuration_manager->setWorkingCopyIdentity($working_copy);
 
   // Load additional libraries, which can provide new classes like configuration
@@ -221,13 +200,7 @@ try {
   }
 
   $user_config = $configuration_manager->readUserConfigurationFile();
-
-  $config_class = $working_copy->getProjectConfig('arcanist_configuration');
-  if ($config_class) {
-    $config = new $config_class();
-  } else {
-    $config = new ArcanistConfiguration();
-  }
+  $config = new ArcanistConfiguration();
 
   $command = strtolower($args[0]);
   $args = array_slice($args, 1);
@@ -246,13 +219,6 @@ try {
   // Git commit hooks) can detect that they're being run via `arc` and change
   // their behaviors.
   putenv('ARCANIST='.$command);
-
-  if ($force_conduit_version) {
-    $workflow->forceConduitVersion($force_conduit_version);
-  }
-  if ($conduit_timeout) {
-    $workflow->setConduitTimeout($conduit_timeout);
-  }
 
   $need_working_copy = $workflow->requiresWorkingCopy();
 
@@ -378,20 +344,9 @@ try {
   );
   $workflow->setConduitCredentials($credentials);
 
-  $basic_user = $configuration_manager->getConfigFromAnySource(
-    'http.basicauth.user');
-  $basic_pass = $configuration_manager->getConfigFromAnySource(
-    'http.basicauth.pass');
-
   $engine = id(new ArcanistConduitEngine())
     ->setConduitURI($conduit_uri)
-    ->setConduitToken($conduit_token)
-    ->setBasicAuthUser($basic_user)
-    ->setBasicAuthPass($basic_pass);
-
-  if ($conduit_timeout) {
-    $engine->setConduitTimeout($conduit_timeout);
-  }
+    ->setConduitToken($conduit_token);
 
   $workflow->setConduitEngine($engine);
 
