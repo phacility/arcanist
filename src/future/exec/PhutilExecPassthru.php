@@ -20,28 +20,10 @@
  */
 final class PhutilExecPassthru extends PhutilExecutableFuture {
 
-
-  private $command;
   private $passthruResult;
 
 
 /* -(  Executing Passthru Commands  )---------------------------------------- */
-
-
-  /**
-   * Build a new passthru command.
-   *
-   *   $exec = new PhutilExecPassthru('ls %s', $dir);
-   *
-   * @param string Command pattern. See @{function:csprintf}.
-   * @param ...    Pattern arguments.
-   *
-   * @task command
-   */
-  public function __construct($pattern /* , ... */) {
-    $args = func_get_args();
-    $this->command = call_user_func_array('csprintf', $args);
-  }
 
 
   /**
@@ -52,7 +34,7 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
    * @task command
    */
   public function execute() {
-    $command = $this->command;
+    $command = $this->getCommand();
 
     $profiler = PhutilServiceProfiler::getInstance();
     $call_id = $profiler->beginServiceCall(
@@ -65,11 +47,7 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     $spec  = array(STDIN, STDOUT, STDERR);
     $pipes = array();
 
-    if ($command instanceof PhutilCommandString) {
-      $unmasked_command = $command->getUnmaskedString();
-    } else {
-      $unmasked_command = $command;
-    }
+    $unmasked_command = $command->getUnmaskedString();
 
     if ($this->hasEnv()) {
       $env = $this->getEnv();

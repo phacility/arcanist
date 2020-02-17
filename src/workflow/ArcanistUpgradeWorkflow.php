@@ -1,30 +1,31 @@
 <?php
 
-/**
- * Upgrade arcanist itself.
- */
-final class ArcanistUpgradeWorkflow extends ArcanistWorkflow {
+final class ArcanistUpgradeWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'upgrade';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **upgrade**
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Upgrade Arcanist to the latest version.
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Upgrade Arcanist to the latest version.'))
+      ->addExample(pht('**upgrade**'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: cli
-          Upgrade arcanist and libphutil to the latest versions.
-EOTEXT
-      );
+  public function getWorkflowArguments() {
+    return array();
   }
 
-  public function run() {
+  public function runWorkflow() {
+    $log = $this->getLogEngine();
+
     $roots = array(
       'arcanist' => dirname(phutil_get_library_root('arcanist')),
     );
@@ -32,41 +33,46 @@ EOTEXT
     $supported_branches = array(
       'master',
       'stable',
-      'experimental',
     );
     $supported_branches = array_fuse($supported_branches);
 
-    foreach ($roots as $lib => $root) {
-      echo phutil_console_format(
-        "%s\n",
-        pht('Upgrading %s...', $lib));
+    foreach ($roots as $library => $root) {
+      $log->writeStatus(
+        pht('PREPARING'),
+        pht(
+          'Preparing to upgrade "%s"...',
+          $library));
 
-      $working_copy = ArcanistWorkingCopyIdentity::newFromPath($root);
-      $configuration_manager = clone $this->getConfigurationManager();
-      $configuration_manager->setWorkingCopyIdentity($working_copy);
-      $repository = ArcanistRepositoryAPI::newAPIFromConfigurationManager(
-        $configuration_manager);
+      $is_git = false;
 
-      if (!Filesystem::pathExists($repository->getMetadataPath())) {
-        throw new ArcanistUsageException(
-          pht(
-            "%s must be in its git working copy to be automatically upgraded. ".
-            "This copy of %s (in '%s') is not in a git working copy.",
-            $lib,
-            $lib,
-            $root));
+      $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($root);
+      if ($working_copy) {
+        $repository_api = $working_copy->newRepositoryAPI();
+        if ($repository_api instanceof ArcanistGitAPI) {
+          $is_git = true;
+        }
       }
 
-      $this->setRepositoryAPI($repository);
+      if (!$is_git) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'The "arc upgrade" workflow uses "git pull" to upgrade '.
+            'Arcanist, but the "arcanist/" directory  (in "%s") is not a Git '.
+            'working copy. You must leave "arcanist/" as a Git '.
+            'working copy to use "arc upgrade".',
+            $root));
+      }
 
       // NOTE: Don't use requireCleanWorkingCopy() here because it tries to
       // amend changes and generally move the workflow forward. We just want to
       // abort if there are local changes and make the user sort things out.
-      $uncommitted = $repository->getUncommittedStatus();
+      $uncommitted = $repository_api->getUncommittedStatus();
       if ($uncommitted) {
         $message = pht(
-          'You have uncommitted changes in the working copy for this '.
-          'library:');
+          'You have uncommitted changes in the working copy ("%s") for this '.
+          'library ("%s"):',
+          $root,
+          $library);
 
         $list = id(new PhutilConsoleList())
           ->setWrap(false)
@@ -75,29 +81,45 @@ EOTEXT
         id(new PhutilConsoleBlock())
           ->addParagraph($message)
           ->addList($list)
+          ->addParagraph(
+            pht(
+              'Discard these changes before running "arc upgrade".'))
           ->draw();
 
-        throw new ArcanistUsageException(
-          pht('`arc upgrade` can only upgrade clean working copies.'));
+        throw new PhutilArgumentUsageException(
+          pht('"arc upgrade" can only upgrade clean working copies.'));
       }
 
-      $branch_name = $repository->getBranchName();
+      $branch_name = $repository_api->getBranchName();
       if (!isset($supported_branches[$branch_name])) {
-        throw new ArcanistUsageException(
+        throw new PhutilArgumentUsageException(
           pht(
             'Library "%s" (in "%s") is on branch "%s", but this branch is '.
             'not supported for automatic upgrades. Supported branches are: '.
             '%s.',
-            $lib,
+            $library,
             $root,
             $branch_name,
             implode(', ', array_keys($supported_branches))));
       }
 
-      chdir($root);
+      $log->writeStatus(
+        pht('UPGRADING'),
+        pht(
+          'Upgrading "%s" (on branch "%s").',
+          $library,
+          $branch_name));
+
+      $command = csprintf(
+        'git pull --rebase origin -- %R',
+        $branch_name);
+
+      $future = (new PhutilExecPassthru($command))
+        ->setCWD($root);
 
       try {
-        execx('git pull --rebase');
+        $this->newCommand($future)
+          ->execute();
       } catch (Exception $ex) {
         // If we failed, try to go back to the old state, then throw the
         // original exception.
@@ -106,10 +128,10 @@ EOTEXT
       }
     }
 
-    echo phutil_console_format(
-      "**%s** %s\n",
-      pht('Updated!'),
-      pht('Your copy of arc is now up to date.'));
+    $log->writeSuccess(
+      pht('UPGRADED'),
+      pht('Your copy of Arcanist is now up to date.'));
+
     return 0;
   }
 

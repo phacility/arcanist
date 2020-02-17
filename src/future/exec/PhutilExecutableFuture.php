@@ -5,10 +5,38 @@
  */
 abstract class PhutilExecutableFuture extends Future {
 
-
+  private $command;
   private $env;
   private $cwd;
 
+  final public function __construct($pattern /* , ... */) {
+    $args = func_get_args();
+
+    if ($pattern instanceof PhutilCommandString) {
+      if (count($args) !== 1) {
+        throw new Exception(
+          pht(
+            'Command (of class "%s") was constructed with a '.
+            '"PhutilCommandString", but also passed arguments. '.
+            'When using a preprebuilt command, you must not pass '.
+            'arguments.',
+            get_class($this)));
+      }
+      $this->command = $pattern;
+    } else {
+      $this->command = call_user_func_array('csprintf', $args);
+    }
+
+    $this->didConstruct();
+  }
+
+  protected function didConstruct() {
+    return;
+  }
+
+  final public function getCommand() {
+    return $this->command;
+  }
 
   /**
    * Set environmental variables for the command.

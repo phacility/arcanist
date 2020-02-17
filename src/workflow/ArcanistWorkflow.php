@@ -2243,4 +2243,10 @@ abstract class ArcanistWorkflow extends Phobject {
     return false;
   }
 
+  final public function newCommand(PhutilExecutableFuture $future) {
+    return id(new ArcanistCommand())
+      ->setLogEngine($this->getLogEngine())
+      ->setExecutableFuture($future);
+  }
+
 }

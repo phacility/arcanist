@@ -33,7 +33,6 @@ final class ExecFuture extends PhutilExecutableFuture {
 
   private $stdoutPos    = 0;
   private $stderrPos    = 0;
-  private $command      = null;
 
   private $readBufferSize;
   private $stdoutSizeLimit = PHP_INT_MAX;
@@ -55,40 +54,11 @@ final class ExecFuture extends PhutilExecutableFuture {
     2 => array('pipe', 'w'),  // stderr
   );
 
-
-/* -(  Creating ExecFutures  )----------------------------------------------- */
-
-
-  /**
-   * Create a new ExecFuture.
-   *
-   *   $future = new ExecFuture('wc -l %s', $file_path);
-   *
-   * @param string  `sprintf()`-style command string which will be passed
-   *                through @{function:csprintf} with the rest of the arguments.
-   * @param ...     Zero or more additional arguments for @{function:csprintf}.
-   * @return ExecFuture ExecFuture for running the specified command.
-   * @task create
-   */
-  public function __construct($command) {
-    $argv = func_get_args();
-    $this->command = call_user_func_array('csprintf', $argv);
+  protected function didConstruct() {
     $this->stdin = new PhutilRope();
   }
 
-
 /* -(  Command Information  )------------------------------------------------ */
-
-
-  /**
-   * Retrieve the raw command to be executed.
-   *
-   * @return string Raw command.
-   * @task info
-   */
-  public function getCommand() {
-    return $this->command;
-  }
 
 
   /**
@@ -349,7 +319,7 @@ final class ExecFuture extends PhutilExecutableFuture {
   public function resolvex($timeout = null) {
     list($err, $stdout, $stderr) = $this->resolve($timeout);
     if ($err) {
-      $cmd = $this->command;
+      $cmd = $this->getCommand();
 
       if ($this->getWasKilledByTimeout()) {
         // NOTE: The timeout can be a float and PhutilNumber only handles
@@ -385,7 +355,7 @@ final class ExecFuture extends PhutilExecutableFuture {
   public function resolveJSON($timeout = null) {
     list($stdout, $stderr) = $this->resolvex($timeout);
     if (strlen($stderr)) {
-      $cmd = $this->command;
+      $cmd = $this->getCommand();
       throw new CommandException(
         pht(
           "JSON command '%s' emitted text to stderr when none was expected: %d",
@@ -399,7 +369,7 @@ final class ExecFuture extends PhutilExecutableFuture {
     try {
       return phutil_json_decode($stdout);
     } catch (PhutilJSONParserException $ex) {
-      $cmd = $this->command;
+      $cmd = $this->getCommand();
       throw new CommandException(
         pht(
           "JSON command '%s' did not produce a valid JSON object on stdout: %s",
@@ -579,7 +549,7 @@ final class ExecFuture extends PhutilExecutableFuture {
         $this->profilerCallID = $profiler->beginServiceCall(
           array(
             'type'    => 'exec',
-            'command' => (string)$this->command,
+            'command' => phutil_string_cast($this->getCommand()),
           ));
       }
 
@@ -588,10 +558,8 @@ final class ExecFuture extends PhutilExecutableFuture {
         $this->start = microtime(true);
       }
 
-      $unmasked_command = $this->command;
-      if ($unmasked_command instanceof PhutilCommandString) {
-        $unmasked_command = $unmasked_command->getUnmaskedString();
-      }
+      $unmasked_command = $this->getCommand();
+      $unmasked_command = $unmasked_command->getUnmaskedString();
 
       $pipes = array();
 
@@ -674,7 +642,7 @@ final class ExecFuture extends PhutilExecutableFuture {
           pht(
             'Call to "proc_open()" to open a subprocess failed: %s',
             $err),
-          $this->command,
+          $this->getCommand(),
           1,
           '',
           '');
