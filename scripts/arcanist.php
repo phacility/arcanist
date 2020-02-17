@@ -5,6 +5,43 @@ sanity_check_environment();
 
 require_once dirname(__FILE__).'/__init_script__.php';
 
+/**
+ * Adjust 'include_path' to add locations where we'll search for libraries.
+ * We look in these places:
+ *
+ *  - Next to 'arcanist/'.
+ *  - Anywhere in the normal PHP 'include_path'.
+ *  - Inside 'arcanist/externals/includes/'.
+ */
+function arcanist_adjust_php_include_path() {
+  // The 'arcanist/' directory.
+  $arcanist_dir = dirname(dirname(__FILE__));
+
+  // The parent directory of 'arcanist/'.
+  $parent_dir = dirname($arcanist_dir);
+
+  // The 'arcanist/externals/includes/' directory.
+  $include_dir = implode(
+    DIRECTORY_SEPARATOR,
+    array(
+      $arcanist_dir,
+      'externals',
+      'includes',
+    ));
+
+  $php_include_path = ini_get('include_path');
+  $php_include_path = implode(
+    PATH_SEPARATOR,
+    array(
+      $parent_dir,
+      $php_include_path,
+      $include_dir,
+    ));
+
+  ini_set('include_path', $php_include_path);
+}
+arcanist_adjust_php_include_path();
+
 ini_set('memory_limit', -1);
 
 $original_argv = $argv;
@@ -646,7 +683,7 @@ function arcanist_load_libraries(
 
     $error = null;
     try {
-      require_once $location.'/__phutil_library_init__.php';
+      phutil_load_library($location);
     } catch (PhutilBootloaderException $ex) {
       $error = pht(
         "Failed to load phutil library at location '%s'. This library ".
