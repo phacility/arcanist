@@ -1,10 +1,11 @@
 <?php
 
 abstract class PhageWorkflow
-  extends PhutilArgumentWorkflow {
+  extends ArcanistWorkflow {
 
-  public function isExecutable() {
-    return true;
+  public function supportsToolset(ArcanistToolset $toolset) {
+    $key = $toolset->getToolsetKey();
+    return ($key === PhageToolset::TOOLSETKEY);
   }
 
 }

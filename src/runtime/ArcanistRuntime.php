@@ -92,7 +92,7 @@ final class ArcanistRuntime {
     $config_engine = $this->loadConfiguration($args);
     $config = $config_engine->newConfigurationSourceList();
 
-    $this->loadLibraries($args, $config);
+    $this->loadLibraries($config_engine, $config, $args);
 
     // Now that we've loaded libraries, we can validate configuration.
     // Do this before continuing since configuration can impact other
@@ -300,91 +300,70 @@ final class ArcanistRuntime {
   }
 
   private function loadLibraries(
-    PhutilArgumentParser $args,
-    ArcanistConfigurationSourceList $config) {
+    ArcanistConfigurationEngine $engine,
+    ArcanistConfigurationSourceList $config,
+    PhutilArgumentParser $args) {
 
-    // TOOLSETS: Make this work again -- or replace it entirely with package
-    // management?
-    return;
-
-    $is_trace = $args->getArg('trace');
-
-    $load = array();
-    $working_copy = $this->getWorkingCopy();
+    $sources = array();
 
     $cli_libraries = $args->getArg('library');
     if ($cli_libraries) {
-      $load[] = array(
-        '--library',
-        $cli_libraries,
-      );
+      $sources = array();
+      foreach ($cli_libraries as $cli_library) {
+        $sources[] = array(
+          'type' => 'flag',
+          'library-source' => $cli_library,
+        );
+      }
     } else {
-      $system_config = $config->readSystemArcConfig();
-      $load[] = array(
-        $config->getSystemArcConfigLocation(),
-        idx($system_config, 'load', array()),
-      );
-
-      $global_config = $config->readUserArcConfig();
-      $load[] = array(
-        $config->getUserConfigurationFileLocation(),
-        idx($global_config, 'load', array()),
-      );
-
-      $load[] = array(
-        '.arcconfig',
-        $working_copy->getProjectConfig('load'),
-      );
-
-      $load[] = array(
-        // TODO: We could explain exactly where this is coming from more
-        // clearly.
-        './.../arc/config',
-        $working_copy->getLocalConfig('load'),
-      );
-
-      $load[] = array(
-        '--config load=...',
-        $config->getRuntimeConfig('load', array()),
-      );
+      $items = $config->getStorageValueList('load');
+      foreach ($items as $item) {
+        foreach ($item->getValue() as $library_path) {
+          $sources[] = array(
+            'type' => 'config',
+            'config-source' => $item->getConfigurationSource(),
+            'library-source' => $library_path,
+          );
+        }
+      }
     }
 
-    foreach ($load as $spec) {
-      list($source, $libraries) = $spec;
-      if ($is_trace) {
-        $this->logTrace(
-          pht('LOAD'),
-          pht(
-            'Loading libraries from "%s"...',
-            $source));
+    foreach ($sources as $spec) {
+      $library_source = $spec['library-source'];
+
+      switch ($spec['type']) {
+        case 'flag':
+          $description = pht('runtime --library flag');
+          break;
+        case 'config':
+          $config_source = $spec['config-source'];
+          $description = pht(
+            'Configuration (%s)',
+            $config_source->getSourceDisplayName());
+          break;
       }
 
-      if (!$libraries) {
-        if ($is_trace) {
-          $this->logTrace(pht('NONE'), pht('Nothing to load.'));
-        }
-        continue;
-      }
-
-      if (!is_array($libraries)) {
-        throw new PhutilArgumentUsageException(
-          pht(
-            'Libraries specified by "%s" are not formatted correctly. '.
-            'Expected a list of paths. Check your configuration.',
-            $source));
-      }
-
-      foreach ($libraries as $library) {
-        $this->loadLibrary($source, $library, $working_copy, $is_trace);
-      }
+      $this->loadLibrary($engine, $library_source, $description);
     }
   }
 
   private function loadLibrary(
-    $source,
+    ArcanistConfigurationEngine $engine,
     $location,
-    ArcanistWorkingCopyIdentity $working_copy,
-    $is_trace) {
+    $description) {
+
+    // TODO: This is a legacy system that should be replaced with package
+    // management.
+
+    $log = $this->getLogEngine();
+    $working_copy = $engine->getWorkingCopy();
+    if ($working_copy) {
+      $working_copy_root = $working_copy->getPath();
+      $working_directory = $working_copy->getWorkingDirectory();
+    } else {
+      $working_copy_root = null;
+      $working_directory = getcwd();
+    }
 
     // Try to resolve the library location. We look in several places, in
     // order:
@@ -406,30 +385,44 @@ final class ArcanistRuntime {
 
     // Check inside the working copy. This also checks absolute paths, since
     // they'll resolve absolute and just ignore the project root.
-    $resolved_location = Filesystem::resolvePath(
-      $location,
-      $working_copy->getProjectRoot());
-    if (Filesystem::pathExists($resolved_location)) {
-      $location = $resolved_location;
-      $resolved = true;
-    }
-
-    // If we didn't find anything, check alongside the working copy.
-    if (!$resolved) {
+    if ($working_copy_root !== null) {
       $resolved_location = Filesystem::resolvePath(
         $location,
-        dirname($working_copy->getProjectRoot()));
+        $working_copy_root);
+      if (Filesystem::pathExists($resolved_location)) {
+        $location = $resolved_location;
+        $resolved = true;
+      }
+
+      // If we didn't find anything, check alongside the working copy.
+      if (!$resolved) {
+        $resolved_location = Filesystem::resolvePath(
+          $location,
+          dirname($working_copy_root));
+        if (Filesystem::pathExists($resolved_location)) {
+          $location = $resolved_location;
+          $resolved = true;
+        }
+      }
+    }
+
+    // Look beside "arcanist/". This is rule (3) above.
+
+    if (!$resolved) {
+      $arcanist_root = phutil_get_library_root('arcanist');
+      $arcanist_root = dirname($arcanist_root);
+      $resolved_location = Filesystem::resolvePath(
+        $location,
+        $arcanist_root);
       if (Filesystem::pathExists($resolved_location)) {
         $location = $resolved_location;
         $resolved = true;
       }
     }
 
-    if ($is_trace) {
-      $this->logTrace(
-        pht('LOAD'),
-        pht('Loading phutil library from "%s"...', $location));
-    }
+    $log->writeTrace(
+      pht('LOAD'),
+      pht('Loading library from "%s"...', $location));
 
     $error = null;
     try {
@@ -445,7 +438,7 @@ final class ArcanistRuntime {
             'is specified by "%s". Check that the setting is correct and '.
             'the library is located in the right place.',
             $location,
-            $source)));
+            $description)));
 
       $prompt = pht('Continue without loading library?');
       if (!phutil_console_confirm($prompt)) {
