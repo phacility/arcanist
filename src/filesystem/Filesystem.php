@@ -1119,7 +1119,7 @@ final class Filesystem extends Phobject {
   }
 
   public static function concatenatePaths(array $components) {
-    $components = implode($components, DIRECTORY_SEPARATOR);
+    $components = implode(DIRECTORY_SEPARATOR, $components);
 
     // Replace any extra sequences of directory separators with a single
     // separator, so we don't end up with "path//to///thing.c".

@@ -90,7 +90,7 @@ EOTEXT
         "%s\n",
         pht(
           "Valid status options are:\n\t%s",
-          implode($this->getStatusOptions(), ', ')));
+          implode(', ', $this->getStatusOptions())));
       return 0;
     }
     $ids = $this->getArgument('task_id');

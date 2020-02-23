@@ -14,5 +14,10 @@ implode();
 implode($x);
 implode($x, $y, $z);
 
+// This should raise a warning by guessing that "DIRECTORY_SEPARATOR" is
+// glue.
+implode($path_list, DIRECTORY_SEPARATOR);
+
 ~~~~~~~~~~
 error:7:1:XHP129:Implode With Glue First
+error:19:1:XHP129:Implode With Glue First
