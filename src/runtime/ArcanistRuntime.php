@@ -410,7 +410,7 @@ final class ArcanistRuntime {
 
     if (!$resolved) {
       $arcanist_root = phutil_get_library_root('arcanist');
-      $arcanist_root = dirname($arcanist_root);
+      $arcanist_root = dirname(dirname($arcanist_root));
       $resolved_location = Filesystem::resolvePath(
         $location,
         $arcanist_root);
@@ -427,23 +427,6 @@ final class ArcanistRuntime {
     $error = null;
     try {
       phutil_load_library($location);
-    } catch (PhutilBootloaderException $ex) {
-      fwrite(
-        STDERR,
-        '%s',
-        tsprintf(
-          "**<bg:red> %s </bg>** %s\n",
-          pht(
-            'Failed to load phutil library at location "%s". This library '.
-            'is specified by "%s". Check that the setting is correct and '.
-            'the library is located in the right place.',
-            $location,
-            $description)));
-
-      $prompt = pht('Continue without loading library?');
-      if (!phutil_console_confirm($prompt)) {
-        throw $ex;
-      }
     } catch (PhutilLibraryConflictException $ex) {
       if ($ex->getLibrary() != 'arcanist') {
         throw $ex;
@@ -462,19 +445,42 @@ final class ArcanistRuntime {
       // workflows more easily. For some context, see PHI13.
 
       $executing_directory = dirname(dirname(__FILE__));
-      $working_directory = dirname($location);
 
-      fwrite(
-        STDERR,
-        tsprintf(
-          "**<bg:yellow> %s </bg>** %s\n",
-          pht('VERY META'),
-          pht(
-            'You are running one copy of Arcanist (at path "%s") against '.
-            'another copy of Arcanist (at path "%s"). Code in the current '.
-            'working directory will not be loaded or executed.',
-            $executing_directory,
-            $working_directory)));
+      $log->writeWarn(
+        pht('VERY META'),
+        pht(
+          'You are running one copy of Arcanist (at path "%s") against '.
+          'another copy of Arcanist (at path "%s"). Code in the current '.
+          'working directory will not be loaded or executed.',
+          $executing_directory,
+          $working_directory));
+    } catch (PhutilBootloaderException $ex) {
+      $log->writeError(
+        pht('LIBRARY ERROR'),
+        pht(
+          'Failed to load library at location "%s". This library '.
+          'is specified by "%s". Check that the library is up to date.',
+          $location,
+          $description));
+
+      $prompt = pht('Continue without loading library?');
+      if (!phutil_console_confirm($prompt)) {
+        throw $ex;
+      }
+    } catch (Exception $ex) {
+      $log->writeError(
+        pht('LOAD ERROR'),
+        pht(
+          'Failed to load library at location "%s". This library is '.
+          'specified by "%s". Check that the setting is correct and the '.
+          'library is located in the right place.',
+          $location,
+          $description));
+
+      $prompt = pht('Continue without loading library?');
+      if (!phutil_console_confirm($prompt)) {
+        throw $ex;
+      }
     }
   }
 

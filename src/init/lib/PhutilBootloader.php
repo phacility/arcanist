@@ -207,6 +207,10 @@ final class PhutilBootloader {
     $this->executeInclude($path);
   }
 
+  public function loadLibrary($path) {
+    $this->executeInclude($path.'/__phutil_library_init__.php');
+  }
+
   private function executeInclude($path) {
     // Include the source using `include_once`, but convert any warnings or
     // recoverable errors into exceptions.

@@ -49,5 +49,5 @@ function phutil_deprecated($what, $why) {
 }
 
 function phutil_load_library($path) {
-  require_once $path.'/__phutil_library_init__.php';
+  PhutilBootloader::getInstance()->loadLibrary($path);
 }
