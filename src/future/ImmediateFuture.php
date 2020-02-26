@@ -7,7 +7,7 @@
 final class ImmediateFuture extends Future {
 
   public function __construct($result) {
-    $this->result = $result;
+    $this->setResult($result);
   }
 
   public function isReady() {

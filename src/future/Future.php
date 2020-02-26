@@ -7,7 +7,9 @@
  */
 abstract class Future extends Phobject {
 
-  protected $result;
+  private $hasResult = false;
+  private $result;
+
   protected $exception;
 
   /**
@@ -80,22 +82,6 @@ abstract class Future extends Phobject {
 
 
   /**
-   * Retrieve the final result of the future. This method will be called after
-   * the future is ready (as per @{method:isReady}) but before results are
-   * passed back to the caller. The major use of this function is that you can
-   * override it in subclasses to do postprocessing or error checking, which is
-   * particularly useful if building application-specific futures on top of
-   * primitive transport futures (like @{class:CurlFuture} and
-   * @{class:ExecFuture}) which can make it tricky to hook this logic into the
-   * main pipeline.
-   *
-   * @return mixed   Final resolution of this future.
-   */
-  protected function getResult() {
-    return $this->result;
-  }
-
-  /**
    * Default amount of time to wait on stream select for this future. Normally
    * 1 second is fine, but if the future has a timeout sooner than that it
    * should return the amount of time left before the timeout.
@@ -107,6 +93,40 @@ abstract class Future extends Phobject {
   public function start() {
     $this->isReady();
     return $this;
+  }
+
+  /**
+   * Retrieve the final result of the future.
+   *
+   * @return wild Final resolution of this future.
+   */
+  final protected function getResult() {
+    if (!$this->hasResult()) {
+      throw new Exception(
+        pht(
+          'Future has not yet resolved. Resolve futures before retrieving '.
+          'results.'));
+    }
+
+    return $this->result;
+  }
+
+  final protected function setResult($result) {
+    if ($this->hasResult()) {
+      throw new Exception(
+        pht(
+          'Future has already resolved. Futures may not resolve more than '.
+          'once.'));
+    }
+
+    $this->hasResult = true;
+    $this->result = $result;
+
+    return $this;
+  }
+
+  final protected function hasResult() {
+    return $this->hasResult;
   }
 
 }

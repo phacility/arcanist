@@ -180,8 +180,9 @@ final class HTTPFuture extends BaseHTTPFuture {
 
     if (!$socket) {
       $this->stateReady = true;
-      $this->result = $this->buildErrorResult(
-        HTTPFutureTransportResponseStatus::ERROR_CONNECTION_FAILED);
+      $this->setResult(
+        $this->buildErrorResult(
+          HTTPFutureTransportResponseStatus::ERROR_CONNECTION_FAILED));
       return null;
     }
 
@@ -209,16 +210,19 @@ final class HTTPFuture extends BaseHTTPFuture {
     $this->stateReady = true;
 
     if ($timeout) {
-      $this->result = $this->buildErrorResult(
-        HTTPFutureTransportResponseStatus::ERROR_TIMEOUT);
+      $this->setResult(
+        $this->buildErrorResult(
+          HTTPFutureTransportResponseStatus::ERROR_TIMEOUT));
     } else if (!$this->stateConnected) {
-      $this->result = $this->buildErrorResult(
-        HTTPFutureTransportResponseStatus::ERROR_CONNECTION_REFUSED);
+      $this->setResult(
+        $this->buildErrorResult(
+          HTTPFutureTransportResponseStatus::ERROR_CONNECTION_REFUSED));
     } else if (!$this->stateWriteComplete) {
-      $this->result = $this->buildErrorResult(
-        HTTPFutureTransportResponseStatus::ERROR_CONNECTION_FAILED);
+      $this->setResult(
+        $this->buildErrorResult(
+          HTTPFutureTransportResponseStatus::ERROR_CONNECTION_FAILED));
     } else {
-      $this->result = $this->parseRawHTTPResponse($this->response);
+      $this->setResult($this->parseRawHTTPResponse($this->response));
     }
 
     $profiler = PhutilServiceProfiler::getInstance();

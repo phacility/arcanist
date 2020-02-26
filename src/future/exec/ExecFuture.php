@@ -381,22 +381,25 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @task resolve
    */
   public function resolveKill() {
-    if (!$this->result) {
+    if (!$this->hasResult()) {
       $signal = 9;
 
       if ($this->proc) {
         proc_terminate($this->proc, $signal);
       }
 
-      $this->result = array(
+      $result = array(
         128 + $signal,
         $this->stdout,
         $this->stderr,
       );
+
+      $this->setResult($result);
+
       $this->closeProcess();
     }
 
-    return $this->result;
+    return $this->getResult();
   }
 
 
@@ -764,11 +767,14 @@ final class ExecFuture extends PhutilExecutableFuture {
         }
       }
 
-      $this->result = array(
+      $result = array(
         $err,
         $this->stdout,
         $this->stderr,
       );
+
+      $this->setResult($result);
+
       $this->closeProcess();
       return true;
     }
@@ -839,11 +845,18 @@ final class ExecFuture extends PhutilExecutableFuture {
     unset($this->windowsStderrTempFile);
 
     if ($this->profilerCallID !== null) {
+      if ($this->hasResult()) {
+        $result = $this->getResult();
+        $err = idx($result, 0);
+      } else {
+        $err = null;
+      }
+
       $profiler = PhutilServiceProfiler::getInstance();
       $profiler->endServiceCall(
         $this->profilerCallID,
         array(
-          'err' => $this->result ? idx($this->result, 0) : null,
+          'err' => $err,
         ));
       $this->profilerCallID = null;
     }

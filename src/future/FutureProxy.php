@@ -31,7 +31,9 @@ abstract class FutureProxy extends Future {
   }
 
   public function resolve() {
-    $this->getProxiedFuture()->resolve();
+    $result = $this->getProxiedFuture()->resolve();
+    $result = $this->didReceiveResult($result);
+    $this->setResult($result);
     return $this->getResult();
   }
 
@@ -50,15 +52,6 @@ abstract class FutureProxy extends Future {
 
   public function getWriteSockets() {
     return $this->getProxiedFuture()->getWriteSockets();
-  }
-
-  protected function getResult() {
-    if ($this->result === null) {
-      $result = $this->getProxiedFuture()->resolve();
-      $result = $this->didReceiveResult($result);
-      $this->result = $result;
-    }
-    return $this->result;
   }
 
   public function start() {

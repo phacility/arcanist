@@ -20,8 +20,6 @@
  */
 final class PhutilExecPassthru extends PhutilExecutableFuture {
 
-  private $passthruResult;
-
 
 /* -(  Executing Passthru Commands  )---------------------------------------- */
 
@@ -105,15 +103,12 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     // full control of the console. We're just implementing the interfaces to
     // make it easier to share code with ExecFuture.
 
-    if ($this->passthruResult === null) {
-      $this->passthruResult = $this->execute();
+    if (!$this->hasResult()) {
+      $result = $this->execute();
+      $this->setResult($result);
     }
 
     return true;
-  }
-
-  protected function getResult() {
-    return $this->passthruResult;
   }
 
 }
