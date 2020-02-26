@@ -9,8 +9,7 @@ abstract class Future extends Phobject {
 
   private $hasResult = false;
   private $result;
-
-  protected $exception;
+  private $exception;
 
   /**
    * Is this future's process complete? Specifically, can this future be
@@ -37,23 +36,34 @@ abstract class Future extends Phobject {
           'timeout.'));
     }
 
-    $graph = new FutureIterator(array($this));
-    $graph->resolveAll();
+    if (!$this->hasResult()) {
+      $graph = new FutureIterator(array($this));
+      $graph->resolveAll();
+    }
 
-    if ($this->exception) {
-      throw $this->exception;
+    if ($this->hasException()) {
+      throw $this->getException();
     }
 
     return $this->getResult();
   }
 
-  public function setException(Exception $ex) {
-    $this->exception = $ex;
-    return $this;
-  }
+  final public function updateFuture() {
+    if ($this->hasException()) {
+      return;
+    }
 
-  public function getException() {
-    return $this->exception;
+    if ($this->hasResult()) {
+      return;
+    }
+
+    try {
+      $this->isReady();
+    } catch (Exception $ex) {
+      $this->setException($ex);
+    } catch (Throwable $ex) {
+      $this->setException($ex);
+    }
   }
 
   /**
@@ -125,8 +135,23 @@ abstract class Future extends Phobject {
     return $this;
   }
 
-  final protected function hasResult() {
+  final public function hasResult() {
     return $this->hasResult;
   }
+
+  final private function setException($exception) {
+    // NOTE: The parameter may be an Exception or a Throwable.
+    $this->exception = $exception;
+    return $this;
+  }
+
+  final private function getException() {
+    return $this->exception;
+  }
+
+  final public function hasException() {
+    return ($this->exception !== null);
+  }
+
 
 }

@@ -180,6 +180,7 @@ final class FutureIterator extends Phobject implements Iterator {
     $this->isTimeout = false;
 
     $check = $this->getWorkingSet();
+
     $resolve = null;
     do {
       $read_sockets    = array();
@@ -188,48 +189,49 @@ final class FutureIterator extends Phobject implements Iterator {
       $wait_time       = 1;
       foreach ($check as $wait => $key) {
         $future = $this->futures[$key];
-        try {
-          if ($future->getException()) {
+
+        $future->updateFuture();
+
+        if ($future->hasException()) {
+          if ($resolve === null) {
             $resolve = $wait;
-            continue;
           }
-          if ($future->isReady()) {
-            if ($resolve === null) {
-              $resolve = $wait;
-            }
-            continue;
-          }
+          continue;
+        }
 
-          $got_sockets = false;
-          $socks = $future->getReadSockets();
-          if ($socks) {
-            $got_sockets = true;
-            foreach ($socks as $socket) {
-              $read_sockets[] = $socket;
-            }
+        if ($future->hasResult()) {
+          if ($resolve === null) {
+            $resolve = $wait;
           }
+          continue;
+        }
 
-          $socks = $future->getWriteSockets();
-          if ($socks) {
-            $got_sockets = true;
-            foreach ($socks as $socket) {
-              $write_sockets[] = $socket;
-            }
+        $got_sockets = false;
+        $socks = $future->getReadSockets();
+        if ($socks) {
+          $got_sockets = true;
+          foreach ($socks as $socket) {
+            $read_sockets[] = $socket;
           }
+        }
 
-          // If any currently active future had neither read nor write sockets,
-          // we can't wait for the current batch of items using sockets.
-          if (!$got_sockets) {
-            $can_use_sockets = false;
-          } else {
-            $wait_time = min($wait_time, $future->getDefaultWait());
+        $socks = $future->getWriteSockets();
+        if ($socks) {
+          $got_sockets = true;
+          foreach ($socks as $socket) {
+            $write_sockets[] = $socket;
           }
-        } catch (Exception $ex) {
-          $this->futures[$key]->setException($ex);
-          $resolve = $wait;
-          break;
+        }
+
+        // If any currently active future had neither read nor write sockets,
+        // we can't wait for the current batch of items using sockets.
+        if (!$got_sockets) {
+          $can_use_sockets = false;
+        } else {
+          $wait_time = min($wait_time, $future->getDefaultWait());
         }
       }
+
       if ($resolve === null) {
 
         // Check for a setUpdateInterval() timeout.
@@ -253,6 +255,7 @@ final class FutureIterator extends Phobject implements Iterator {
 
     $this->key = $this->wait[$resolve];
     unset($this->wait[$resolve]);
+
     $this->updateWorkingSet();
   }
 
