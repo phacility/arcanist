@@ -7,8 +7,6 @@
  */
 abstract class Future extends Phobject {
 
-  protected static $handlerInstalled = null;
-
   protected $result;
   protected $exception;
 
@@ -37,22 +35,13 @@ abstract class Future extends Phobject {
           'timeout.'));
     }
 
-    $wait = $this->getDefaultWait();
-    do {
-      $this->checkException();
-      if ($this->isReady()) {
-        break;
-      }
+    $graph = new FutureIterator(array($this));
+    $graph->resolveAll();
 
-      $read = $this->getReadSockets();
-      $write = $this->getWriteSockets();
+    if ($this->exception) {
+      throw $this->exception;
+    }
 
-      if ($read || $write) {
-        self::waitForSockets($read, $write, $wait);
-      }
-    } while (true);
-
-    $this->checkException();
     return $this->getResult();
   }
 
@@ -64,17 +53,6 @@ abstract class Future extends Phobject {
   public function getException() {
     return $this->exception;
   }
-
-
-  /**
-   * If an exception was set by setException(), throw it.
-   */
-  private function checkException() {
-    if ($this->exception) {
-      throw $this->exception;
-    }
-  }
-
 
   /**
    * Retrieve a list of sockets which we can wait to become readable while
@@ -98,56 +76,6 @@ abstract class Future extends Phobject {
    */
   public function getWriteSockets() {
     return array();
-  }
-
-
-  /**
-   * Wait for activity on one of several sockets.
-   *
-   * @param  list  List of sockets expected to become readable.
-   * @param  list  List of sockets expected to become writable.
-   * @param  float Timeout, in seconds.
-   * @return void
-   */
-  public static function waitForSockets(
-    array $read_list,
-    array $write_list,
-    $timeout = 1) {
-    if (!self::$handlerInstalled) {
-      //  If we're spawning child processes, we need to install a signal handler
-      //  here to catch cases like execing '(sleep 60 &) &' where the child
-      //  exits but a socket is kept open. But we don't actually need to do
-      //  anything because the SIGCHLD will interrupt the stream_select(), as
-      //  long as we have a handler registered.
-      if (function_exists('pcntl_signal')) {
-        if (!pcntl_signal(SIGCHLD, array(__CLASS__, 'handleSIGCHLD'))) {
-          throw new Exception(pht('Failed to install signal handler!'));
-        }
-      }
-      self::$handlerInstalled = true;
-    }
-
-    $timeout_sec = (int)$timeout;
-    $timeout_usec = (int)(1000000 * ($timeout - $timeout_sec));
-
-    $exceptfds = array();
-    $ok = @stream_select(
-      $read_list,
-      $write_list,
-      $exceptfds,
-      $timeout_sec,
-      $timeout_usec);
-
-    if ($ok === false) {
-      // Hopefully, means we received a SIGCHLD. In the worst case, we degrade
-      // to a busy wait.
-    }
-  }
-
-  public static function handleSIGCHLD($signo) {
-    // This function is a dummy, we just need to have some handler registered
-    // so that PHP will get interrupted during stream_select(). If we don't
-    // register a handler, stream_select() won't fail.
   }
 
 

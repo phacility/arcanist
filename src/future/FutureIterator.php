@@ -63,9 +63,7 @@ final class FutureIterator extends Phobject implements Iterator {
    * @task basics
    */
   public function resolveAll() {
-    foreach ($this as $future) {
-      $future->resolve();
-    }
+    iterator_to_array($this);
   }
 
   /**
@@ -246,7 +244,7 @@ final class FutureIterator extends Phobject implements Iterator {
         }
 
         if ($can_use_sockets) {
-          Future::waitForSockets($read_sockets, $write_sockets, $wait_time);
+          $this->waitForSockets($read_sockets, $write_sockets, $wait_time);
         } else {
           usleep(1000);
         }
@@ -323,5 +321,59 @@ final class FutureIterator extends Phobject implements Iterator {
       }
     }
   }
+
+
+  /**
+   * Wait for activity on one of several sockets.
+   *
+   * @param  list  List of sockets expected to become readable.
+   * @param  list  List of sockets expected to become writable.
+   * @param  float Timeout, in seconds.
+   * @return void
+   */
+  private function waitForSockets(
+    array $read_list,
+    array $write_list,
+    $timeout = 1.0) {
+
+    static $handler_installed = false;
+
+    if (!$handler_installed) {
+      // If we're spawning child processes, we need to install a signal handler
+      // here to catch cases like execing '(sleep 60 &) &' where the child
+      // exits but a socket is kept open. But we don't actually need to do
+      // anything because the SIGCHLD will interrupt the stream_select(), as
+      // long as we have a handler registered.
+      if (function_exists('pcntl_signal')) {
+        if (!pcntl_signal(SIGCHLD, array(__CLASS__, 'handleSIGCHLD'))) {
+          throw new Exception(pht('Failed to install signal handler!'));
+        }
+      }
+      $handler_installed = true;
+    }
+
+    $timeout_sec = (int)$timeout;
+    $timeout_usec = (int)(1000000 * ($timeout - $timeout_sec));
+
+    $exceptfds = array();
+    $ok = @stream_select(
+      $read_list,
+      $write_list,
+      $exceptfds,
+      $timeout_sec,
+      $timeout_usec);
+
+    if ($ok === false) {
+      // Hopefully, means we received a SIGCHLD. In the worst case, we degrade
+      // to a busy wait.
+    }
+  }
+
+  public static function handleSIGCHLD($signo) {
+    // This function is a dummy, we just need to have some handler registered
+    // so that PHP will get interrupted during "stream_select()". If we don't
+    // register a handler, "stream_select()" won't fail.
+  }
+
 
 }
