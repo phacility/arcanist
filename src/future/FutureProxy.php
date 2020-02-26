@@ -30,8 +30,8 @@ abstract class FutureProxy extends Future {
     return $this->getProxiedFuture()->isReady();
   }
 
-  public function resolve($timeout = null) {
-    $this->getProxiedFuture()->resolve($timeout);
+  public function resolve() {
+    $this->getProxiedFuture()->resolve();
     return $this->getResult();
   }
 

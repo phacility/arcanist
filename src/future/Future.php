@@ -25,13 +25,19 @@ abstract class Future extends Phobject {
    * Resolve a future and return its result, blocking until the result is ready
    * if necessary.
    *
-   * @param  float Optional timeout after which resolution will pause and
-   *               execution will return to the caller.
-   * @return mixed Future result, or null if the timeout is hit.
+   * @return wild Future result.
    */
-  public function resolve($timeout = null) {
-    $start = microtime(true);
-    $wait  = $this->getDefaultWait();
+  public function resolve() {
+    $args = func_get_args();
+    if (count($args)) {
+      throw new Exception(
+        pht(
+          'Parameter "timeout" to "Future->resolve()" is no longer '.
+          'supported. Update the caller so it no longer passes a '.
+          'timeout.'));
+    }
+
+    $wait = $this->getDefaultWait();
     do {
       $this->checkException();
       if ($this->isReady()) {
@@ -40,17 +46,6 @@ abstract class Future extends Phobject {
 
       $read = $this->getReadSockets();
       $write = $this->getWriteSockets();
-
-      if ($timeout !== null) {
-        $elapsed = microtime(true) - $start;
-
-        if ($elapsed > $timeout) {
-          $this->checkException();
-          return null;
-        } else {
-          $wait = $timeout - $elapsed;
-        }
-      }
 
       if ($read || $write) {
         self::waitForSockets($read, $write, $wait);

@@ -1717,9 +1717,9 @@ abstract class ArcanistWorkflow extends Phobject {
     return $parser;
   }
 
-  final protected function resolveCall(ConduitFuture $method, $timeout = null) {
+  final protected function resolveCall(ConduitFuture $method) {
     try {
-      return $method->resolve($timeout);
+      return $method->resolve();
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
         echo phutil_console_wrap(

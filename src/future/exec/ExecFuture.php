@@ -231,15 +231,7 @@ final class ExecFuture extends PhutilExecutableFuture {
   /**
    * Permanently discard the stdout and stderr buffers and reset the read
    * cursors. This is basically useful only if you are streaming a large amount
-   * of data from some process:
-   *
-   *   $future = new ExecFuture('zcat huge_file.gz');
-   *   do {
-   *     $done = $future->resolve(0.1);   // Every 100ms,
-   *     list($stdout) = $future->read(); // read output...
-   *     echo $stdout;                    // send it somewhere...
-   *     $future->discardBuffers();       // and then free the buffers.
-   *   } while ($done === null);
+   * of data from some process.
    *
    * Conceivably you might also need to do this if you're writing a client using
    * @{class:ExecFuture} and `netcat`, but you probably should not do that.
@@ -316,8 +308,8 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @return pair  <$stdout, $stderr> pair.
    * @task resolve
    */
-  public function resolvex($timeout = null) {
-    list($err, $stdout, $stderr) = $this->resolve($timeout);
+  public function resolvex() {
+    list($err, $stdout, $stderr) = $this->resolve();
     if ($err) {
       $cmd = $this->getCommand();
 
@@ -352,8 +344,8 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @return array PHP array, decoded from JSON command output.
    * @task resolve
    */
-  public function resolveJSON($timeout = null) {
-    list($stdout, $stderr) = $this->resolvex($timeout);
+  public function resolveJSON() {
+    list($stdout, $stderr) = $this->resolvex();
     if (strlen($stderr)) {
       $cmd = $this->getCommand();
       throw new CommandException(

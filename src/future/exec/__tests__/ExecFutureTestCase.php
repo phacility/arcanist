@@ -59,13 +59,18 @@ final class ExecFutureTestCase extends PhutilTestCase {
 
   public function testResolveTimeoutTestShouldRunLessThan1Sec() {
     // NOTE: This tests interactions between the resolve() timeout and the
-    // ExecFuture timeout, which are similar but not identical.
+    // resolution timeout, which are somewhat similar but not identical.
 
     $future = $this->newSleep(32000)->start();
     $future->setTimeout(32000);
 
     // We expect this to return in 0.01s.
-    $result = $future->resolve(0.01);
+    $iterator = (new FutureIterator(array($future)))
+      ->setUpdateInterval(0.01);
+    foreach ($iterator as $resolved_result) {
+      $result = $resolved_result;
+      break;
+    }
     $this->assertEqual($result, null);
 
     // We expect this to now force the time out / kill immediately. If we don't
