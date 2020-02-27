@@ -7,4 +7,4 @@ if (function_exists('pcntl_async_signals')) {
   declare(ticks = 1);
 }
 
-return require_once dirname(__DIR__).'/support/init/init-arcanist.php';
+require_once dirname(__DIR__).'/support/init/init-arcanist.php';
