@@ -530,23 +530,12 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @task internal
    */
   public function isReady() {
-    // NOTE: We have soft dependencies on PhutilServiceProfiler and
-    // PhutilErrorTrap here. These dependencies are soft to avoid the need to
-    // build them into the Phage agent. Under normal circumstances, these
-    // classes are always available.
+    // NOTE: We have a soft dependencies on PhutilErrorTrap here, to avoid
+    // the need to build it into the Phage agent. Under normal circumstances,
+    // this class are always available.
 
     if (!$this->pipes) {
       $is_windows = phutil_is_windows();
-
-      // NOTE: See note above about Phage.
-      if (class_exists('PhutilServiceProfiler')) {
-        $profiler = PhutilServiceProfiler::getInstance();
-        $this->profilerCallID = $profiler->beginServiceCall(
-          array(
-            'type'    => 'exec',
-            'command' => phutil_string_cast($this->getCommand()),
-          ));
-      }
 
       if (!$this->start) {
         // We might already have started the timer via initiating resolution.
@@ -843,23 +832,6 @@ final class ExecFuture extends PhutilExecutableFuture {
 
     unset($this->windowsStdoutTempFile);
     unset($this->windowsStderrTempFile);
-
-    if ($this->profilerCallID !== null) {
-      if ($this->hasResult()) {
-        $result = $this->getResult();
-        $err = idx($result, 0);
-      } else {
-        $err = null;
-      }
-
-      $profiler = PhutilServiceProfiler::getInstance();
-      $profiler->endServiceCall(
-        $this->profilerCallID,
-        array(
-          'err' => $err,
-        ));
-      $this->profilerCallID = null;
-    }
   }
 
 
@@ -957,5 +929,26 @@ final class ExecFuture extends PhutilExecutableFuture {
       }
     }
   }
+
+  protected function getServiceProfilerStartParameters() {
+    return array(
+      'type' => 'exec',
+      'command' => phutil_string_cast($this->getCommand()),
+    );
+  }
+
+  protected function getServiceProfilerResultParameters() {
+    if ($this->hasResult()) {
+      $result = $this->getResult();
+      $err = idx($result, 0);
+    } else {
+      $err = null;
+    }
+
+    return array(
+      'err' => $err,
+    );
+  }
+
 
 }

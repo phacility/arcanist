@@ -34,14 +34,6 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
   public function execute() {
     $command = $this->getCommand();
 
-    $profiler = PhutilServiceProfiler::getInstance();
-    $call_id = $profiler->beginServiceCall(
-      array(
-        'type'    => 'exec',
-        'subtype' => 'passthru',
-        'command' => $command,
-      ));
-
     $spec  = array(STDIN, STDOUT, STDERR);
     $pipes = array();
 
@@ -85,12 +77,6 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
 
     $err = proc_close($proc);
 
-    $profiler->endServiceCall(
-      $call_id,
-      array(
-        'err' => $err,
-      ));
-
     return $err;
   }
 
@@ -109,6 +95,28 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     }
 
     return true;
+  }
+
+
+
+  protected function getServiceProfilerStartParameters() {
+    return array(
+      'type' => 'exec',
+      'subtype' => 'passthru',
+      'command' => phutil_string_cast($this->getCommand()),
+    );
+  }
+
+  protected function getServiceProfilerResultParameters() {
+    if ($this->hasResult()) {
+      $err = $this->getResult();
+    } else {
+      $err = null;
+    }
+
+    return array(
+      'err' => $err,
+    );
   }
 
 }

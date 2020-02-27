@@ -13,6 +13,7 @@ abstract class Future extends Phobject {
   private $result;
   private $exception;
   private $futureKey;
+  private $serviceProfilerCallID;
 
   /**
    * Is this future's process complete? Specifically, can this future be
@@ -60,6 +61,7 @@ abstract class Future extends Phobject {
     }
     $this->hasStarted = true;
 
+    $this->startServiceProfiler();
     $this->isReady();
   }
 
@@ -96,7 +98,48 @@ abstract class Future extends Phobject {
           'than once.'));
     }
     $this->hasEnded = true;
+
+    $this->endServiceProfiler();
   }
+
+  private function startServiceProfiler() {
+
+    // NOTE: This is a soft dependency so that we don't need to build the
+    // ServiceProfiler into the Phage agent. Normally, this class is always
+    // available.
+
+    if (!class_exists('PhutilServiceProfiler')) {
+      return;
+    }
+
+    $params = $this->getServiceProfilerStartParameters();
+
+    $profiler = PhutilServiceProfiler::getInstance();
+    $call_id = $profiler->beginServiceCall($params);
+
+    $this->serviceProfilerCallID = $call_id;
+  }
+
+  private function endServiceProfiler() {
+    $call_id = $this->serviceProfilerCallID;
+    if ($call_id === null) {
+      return;
+    }
+
+    $params = $this->getServiceProfilerResultParameters();
+
+    $profiler = PhutilServiceProfiler::getInstance();
+    $profiler->endServiceCall($call_id, $params);
+  }
+
+  protected function getServiceProfilerStartParameters() {
+    return array();
+  }
+
+  protected function getServiceProfilerResultParameters() {
+    return array();
+  }
+
 
   /**
    * Retrieve a list of sockets which we can wait to become readable while

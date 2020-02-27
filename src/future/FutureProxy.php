@@ -63,6 +63,14 @@ abstract class FutureProxy extends Future {
     return $this;
   }
 
+  protected function getServiceProfilerStartParameters() {
+    return $this->getProxiedFuture()->getServiceProfilerStartParameters();
+  }
+
+  protected function getServiceProfilerResultParameters() {
+    return $this->getProxiedFuture()->getServiceProfilerResultParameters();
+  }
+
   abstract protected function didReceiveResult($result);
 
 }

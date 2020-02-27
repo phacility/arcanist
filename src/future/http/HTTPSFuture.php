@@ -211,13 +211,9 @@ final class HTTPSFuture extends BaseHTTPFuture {
       $uri_object = new PhutilURI($uri);
       $proxy = PhutilHTTPEngineExtension::buildHTTPProxyURI($uri_object);
 
-      $profiler = PhutilServiceProfiler::getInstance();
-      $this->profilerCallID = $profiler->beginServiceCall(
-        array(
-          'type' => 'http',
-          'uri' => $uri,
-          'proxy' => (string)$proxy,
-        ));
+      // TODO: Currently, the "proxy" is not passed to the ServiceProfiler
+      // because of changes to how ServiceProfiler is integrated. It would
+      // be nice to pass it again.
 
       if (!self::$multi) {
         self::$multi = curl_multi_init();
@@ -526,9 +522,6 @@ final class HTTPSFuture extends BaseHTTPFuture {
       }
     }
 
-    $profiler = PhutilServiceProfiler::getInstance();
-    $profiler->endServiceCall($this->profilerCallID, array());
-
     return true;
   }
 
@@ -819,6 +812,13 @@ final class HTTPSFuture extends BaseHTTPFuture {
 
   private function isDownload() {
    return ($this->downloadPath !== null);
+  }
+
+  protected function getServiceProfilerStartParameters() {
+    return array(
+      'type' => 'http',
+      'uri' => phutil_string_cast($this->getURI()),
+    );
   }
 
 }
