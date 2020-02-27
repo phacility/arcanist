@@ -61,7 +61,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // NOTE: This tests interactions between the resolve() timeout and the
     // resolution timeout, which are somewhat similar but not identical.
 
-    $future = $this->newSleep(32000)->start();
+    $future = $this->newSleep(32000);
     $future->setTimeout(32000);
 
     // We expect this to return in 0.01s.
@@ -77,7 +77,7 @@ final class ExecFutureTestCase extends PhutilTestCase {
     // do this, we'll hang when exiting until our subprocess exits (32000
     // seconds!)
     $future->setTimeout(0.01);
-    $future->resolve();
+    $iterator->resolveAll();
   }
 
   public function testTerminateWithoutStart() {

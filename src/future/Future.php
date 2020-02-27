@@ -8,8 +8,11 @@
 abstract class Future extends Phobject {
 
   private $hasResult = false;
+  private $hasStarted = false;
+  private $hasEnded = false;
   private $result;
   private $exception;
+  private $futureKey;
 
   /**
    * Is this future's process complete? Specifically, can this future be
@@ -36,16 +39,28 @@ abstract class Future extends Phobject {
           'timeout.'));
     }
 
+    if ($this->hasException()) {
+      throw $this->getException();
+    }
+
     if (!$this->hasResult()) {
       $graph = new FutureIterator(array($this));
       $graph->resolveAll();
     }
 
-    if ($this->hasException()) {
-      throw $this->getException();
-    }
-
     return $this->getResult();
+  }
+
+  final public function startFuture() {
+    if ($this->hasStarted) {
+      throw new Exception(
+        pht(
+          'Future has already started; futures can not start more '.
+          'than once.'));
+    }
+    $this->hasStarted = true;
+
+    $this->isReady();
   }
 
   final public function updateFuture() {
@@ -66,11 +81,28 @@ abstract class Future extends Phobject {
     }
   }
 
+  final public function endFuture() {
+    if (!$this->hasException() && !$this->hasResult()) {
+      throw new Exception(
+        pht(
+          'Trying to end a future which has no exception and no result. '.
+          'Futures must resolve before they can be ended.'));
+    }
+
+    if ($this->hasEnded) {
+      throw new Exception(
+        pht(
+          'Future has already ended; futures can not end more '.
+          'than once.'));
+    }
+    $this->hasEnded = true;
+  }
+
   /**
    * Retrieve a list of sockets which we can wait to become readable while
    * a future is resolving. If your future has sockets which can be
    * `select()`ed, return them here (or in @{method:getWriteSockets}) to make
-   * the resolve loop  do a `select()`. If you do not return sockets in either
+   * the resolve loop do a `select()`. If you do not return sockets in either
    * case, you'll get a busy wait.
    *
    * @return list  A list of sockets which we expect to become readable.
@@ -153,5 +185,27 @@ abstract class Future extends Phobject {
     return ($this->exception !== null);
   }
 
+  final public function setFutureKey($key) {
+    if ($this->futureKey !== null) {
+      throw new Exception(
+        pht(
+          'Future already has a key ("%s") assigned.',
+          $key));
+    }
+
+    $this->futureKey = $key;
+
+    return $this;
+  }
+
+  final public function getFutureKey() {
+    static $next_key = 1;
+
+    if ($this->futureKey === null) {
+      $this->futureKey = sprintf('Future/%d', $next_key++);
+    }
+
+    return $this->futureKey;
+  }
 
 }
