@@ -680,7 +680,13 @@ final class ArcanistRuntime {
 
     $conduit_uri = $config->getConfig('phabricator.uri');
     if ($conduit_uri === null) {
-      $conduit_uri = $config->getConfig('default');
+      // For now, read this older config from raw storage. There is currently
+      // no definition of this option in the "toolsets" config list, and it
+      // would be nice to get rid of it.
+      $default_list = $config->getStorageValueList('default');
+      if ($default_list) {
+        $conduit_uri = last($default_list)->getValue();
+      }
     }
 
     if ($conduit_uri) {
