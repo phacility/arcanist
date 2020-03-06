@@ -60,6 +60,10 @@ EOTEXT
     $branch_name = idx($this->getArgument('branch'), 0, null);
     if (!$branch_name) {
        $branch_name = $api->getBranchName();
+       if (!$branch_name) {
+           throw new ArcanistUsageException('Unable to find a branch, are you '.
+             'in `Detached HEAD` state?');
+       }
        echo "Cascading children of current branch.\n";
     } else {
        echo phutil_console_format('Cascading children of <fg:green>%s</fg> '.
