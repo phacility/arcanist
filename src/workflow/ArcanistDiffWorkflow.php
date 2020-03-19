@@ -2900,6 +2900,9 @@ EOTEXT
       'uri' => $staging_uri,
     );
 
+    list($stdout) = execx('git ls-files -z -- %s', ':(attr:filter=lfs)');
+    $is_lfs = strpos($stdout, "\0") !== false;
+
     // If the base commit is a real commit, we're going to push it. We don't
     // use this, but pushing it to a ref reduces the amount of redundant work
     // that Git does on later pushes by helping it figure out that the remote
@@ -2923,7 +2926,7 @@ EOTEXT
     $refs[] = array(
       'ref' => $diff_tag,
       'type' => 'diff',
-      'commit' => $commit,
+      'commit' => $is_lfs ? $base_commit : $commit,
       'remote' => $remote,
     );
 
@@ -2947,6 +2950,14 @@ EOTEXT
         pht(
           'Failed to push changes to staging area. Correct the issue, or '.
           'use --skip-staging to skip this step.'));
+    }
+
+    if ($is_lfs) {
+      $ref = '+'.$commit.':'.$diff_tag;
+      $err = phutil_passthru(
+        'git push -- %s %s',
+        $staging_uri,
+        $ref);
     }
 
     return $refs;
