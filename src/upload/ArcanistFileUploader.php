@@ -5,7 +5,7 @@
  *
  *   // Create a new uploader.
  *   $uploader = id(new ArcanistFileUploader())
- *     ->setConduitClient($conduit);
+ *     ->setConduitEngine($conduit);
  *
  *   // Queue one or more files to be uploaded.
  *   $file = id(new ArcanistFileDataRef())
@@ -77,7 +77,7 @@ final class ArcanistFileUploader extends Phobject {
    * Upload files to the server.
    *
    * This transfers all files which have been queued with @{method:addFiles}
-   * over the Conduit link configured with @{method:setConduitClient}.
+   * over the Conduit link configured with @{method:setConduitEngine}.
    *
    * This method returns a map of all file data references. If references were
    * added with an explicit key when @{method:addFile} was called, the key is

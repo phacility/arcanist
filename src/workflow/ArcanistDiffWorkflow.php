@@ -2742,7 +2742,7 @@ EOTEXT
     }
 
     $uploader = id(new ArcanistFileUploader())
-      ->setConduitClient($this->getConduit());
+      ->setConduitEngine($this->getConduitEngine());
 
     foreach ($need_upload as $key => $spec) {
       $ref = id(new ArcanistFileDataRef())
