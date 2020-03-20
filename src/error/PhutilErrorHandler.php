@@ -195,6 +195,33 @@ final class PhutilErrorHandler extends Phobject {
       return false;
     }
 
+    // See T13499. If this is a user error arising from "trigger_error()" or
+    // similar, route it through normal error handling: this is probably the
+    // best match to authorial intent, since the code could choose to throw
+    // an exception instead if it wanted that behavior. Phabricator does not
+    // use "trigger_error()" so we never normally expect to reach this
+    // block in first-party code.
+
+    if (($num === E_USER_ERROR) ||
+        ($num === E_USER_WARNING) ||
+        ($num === E_USER_NOTICE)) {
+
+      $trace = debug_backtrace();
+      array_shift($trace);
+      self::dispatchErrorMessage(
+        self::ERROR,
+        $str,
+        array(
+          'file'       => $file,
+          'line'       => $line,
+          'context'    => $ctx,
+          'error_code' => $num,
+          'trace'      => $trace,
+        ));
+
+      return;
+    }
+
     // Convert typehint failures into exceptions.
     if (preg_match('/^Argument (\d+) passed to (\S+) must be/', $str)) {
       throw new InvalidArgumentException($str);
@@ -221,18 +248,19 @@ final class PhutilErrorHandler extends Phobject {
       throw new RuntimeException($str);
     }
 
-    $trace = debug_backtrace();
-    array_shift($trace);
-    self::dispatchErrorMessage(
-      self::ERROR,
-      $str,
-      array(
-        'file'       => $file,
-        'line'       => $line,
-        'context'    => $ctx,
-        'error_code' => $num,
-        'trace'      => $trace,
-      ));
+    // Convert undefined indexes into exceptions.
+    if (preg_match('/^Undefined index: /', $str)) {
+      throw new RuntimeException($str);
+    }
+
+    // Convert undefined offsets into exceptions.
+    if (preg_match('/^Undefined offset: /', $str)) {
+      throw new RuntimeException($str);
+    }
+
+    // See T13499. Convert all other runtime errors not handled in a more
+    // specific way into runtime exceptions.
+    throw new RuntimeException($str);
   }
 
   /**
