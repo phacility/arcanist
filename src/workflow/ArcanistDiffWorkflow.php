@@ -2900,7 +2900,7 @@ EOTEXT
       'uri' => $staging_uri,
     );
 
-    list($stdout) = execx('git ls-files -z -- %s', ':(attr:filter=lfs)');
+    list($stdout) = $api->execxLocal('ls-files -z -- %s', ':(attr:filter=lfs)');
     $is_lfs = strpos($stdout, "\0") !== false;
 
     // If the base commit is a real commit, we're going to push it. We don't
