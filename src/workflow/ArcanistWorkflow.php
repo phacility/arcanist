@@ -2069,13 +2069,19 @@ abstract class ArcanistWorkflow extends Phobject {
 
   protected function openURIsInBrowser(array $uris) {
     $browser = $this->getBrowserCommand();
+
+    // The "browser" may actually be a list of arguments.
+    if (!is_array($browser)) {
+      $browser = array($browser);
+    }
+
     foreach ($uris as $uri) {
-      $err = phutil_passthru('%s %s', $browser, $uri);
+      $err = phutil_passthru('%LR %R', $browser, $uri);
       if ($err) {
         throw new ArcanistUsageException(
           pht(
-            "Failed to open '%s' in browser ('%s'). ".
-            "Check your 'browser' config option.",
+            'Failed to open URI "%s" in browser ("%s"). '.
+            'Check your "browser" config option.',
             $uri,
             $browser));
       }
@@ -2089,19 +2095,29 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     if (phutil_is_windows()) {
-      return 'start';
+      // See T13504. We now use "bypass_shell", so "start" alone is no longer
+      // a valid binary to invoke directly.
+      return array(
+        'cmd',
+        '/c',
+        'start',
+      );
     }
 
-    $candidates = array('sensible-browser', 'xdg-open', 'open');
+    $candidates = array(
+      'sensible-browser' => array('sensible-browser'),
+      'xdg-open' => array('xdg-open'),
+      'open' => array('open', '--'),
+    );
 
     // NOTE: The "open" command works well on OS X, but on many Linuxes "open"
     // exists and is not a browser. For now, we're just looking for other
     // commands first, but we might want to be smarter about selecting "open"
     // only on OS X.
 
-    foreach ($candidates as $cmd) {
+    foreach ($candidates as $cmd => $argv) {
       if (Filesystem::binaryExists($cmd)) {
-        return $cmd;
+        return $argv;
       }
     }
 

@@ -605,6 +605,9 @@ final class ExecFuture extends PhutilExecutableFuture {
         $trap->destroy();
       } else {
         $err = error_get_last();
+        if ($err) {
+          $err = $err['message'];
+        }
       }
 
       if ($is_windows) {
@@ -618,18 +621,21 @@ final class ExecFuture extends PhutilExecutableFuture {
         // it fails to resolve the command.
 
         // When you run an invalid command on a Windows system, we bypass the
-        // shell and the "proc_open()" itself fails. Throw a "CommandException"
-        // here for consistency with the Linux behavior in this common failure
-        // case.
+        // shell and the "proc_open()" itself fails. See also T13504. Fail the
+        // future immediately, acting as though it exited with an error code
+        // for consistency with Linux.
 
-        throw new CommandException(
+        $result = array(
+          1,
+          '',
           pht(
             'Call to "proc_open()" to open a subprocess failed: %s',
             $err),
-          $this->getCommand(),
-          1,
-          '',
-          '');
+        );
+
+        $this->setResult($result);
+
+        return true;
       }
 
       if ($is_windows) {

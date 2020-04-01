@@ -68,14 +68,21 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     $trap->destroy();
 
     if (!is_resource($proc)) {
-      throw new Exception(
-        pht(
-          'Failed to passthru %s: %s',
-          'proc_open()',
-          $errors));
+      // See T13504. When "proc_open()" is given a command with a binary
+      // that isn't available on Windows with "bypass_shell", the function
+      // fails entirely.
+      if (phutil_is_windows()) {
+        $err = 1;
+      } else {
+        throw new Exception(
+          pht(
+            'Failed to passthru %s: %s',
+            'proc_open()',
+            $errors));
+      }
+    } else {
+      $err = proc_close($proc);
     }
-
-    $err = proc_close($proc);
 
     return $err;
   }
