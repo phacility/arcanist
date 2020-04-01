@@ -58,12 +58,8 @@ final class FutureIterator
   public function __construct(array $futures) {
     assert_instances_of($futures, 'Future');
 
-    $respect_keys = !phutil_is_natural_list($futures);
-
     foreach ($futures as $map_key => $future) {
-      if ($respect_keys) {
-        $future->setFutureKey($map_key);
-      }
+      $future->setFutureKey($map_key);
       $this->addFuture($future);
     }
   }

@@ -14,6 +14,7 @@ abstract class Future extends Phobject {
   private $exception;
   private $futureKey;
   private $serviceProfilerCallID;
+  private static $nextKey = 1;
 
   /**
    * Is this future's process complete? Specifically, can this future be
@@ -242,10 +243,8 @@ abstract class Future extends Phobject {
   }
 
   final public function getFutureKey() {
-    static $next_key = 1;
-
     if ($this->futureKey === null) {
-      $this->futureKey = sprintf('Future/%d', $next_key++);
+      $this->futureKey = sprintf('Future/%d', self::$nextKey++);
     }
 
     return $this->futureKey;
