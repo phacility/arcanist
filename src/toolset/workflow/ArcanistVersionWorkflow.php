@@ -48,15 +48,23 @@ EOTEXT
     );
 
     foreach ($roots as $lib => $root) {
-      $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($root);
-      $repository_api = $working_copy->newRepositoryAPI();
+      $is_git = false;
 
-      if (!$repository_api instanceof ArcanistGitAPI) {
-        throw new ArcanistUsageException(
+      $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($root);
+      if ($working_copy) {
+        $repository_api = $working_copy->newRepositoryAPI();
+        if ($repository_api instanceof ArcanistGitAPI) {
+          $is_git = true;
+        }
+      }
+
+      if (!$is_git) {
+        throw new PhutilArgumentUsageException(
           pht(
-            'Library "%s" is not a Git working copy, so no version '.
+            'Library "%s" (at "%s") is not a Git working copy, so no version '.
             'information can be provided.',
-            $lib));
+            $lib,
+            Filesystem::readablePath($root)));
       }
 
       // NOTE: Carefully execute these commands in a way that works on Windows
