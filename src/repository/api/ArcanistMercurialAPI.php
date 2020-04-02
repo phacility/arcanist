@@ -13,36 +13,29 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $supportsPhases;
 
   protected function buildLocalFuture(array $argv) {
-    // Mercurial has a "defaults" feature which basically breaks automation by
-    // allowing the user to add random flags to any command. This feature is
-    // "deprecated" and "a bad idea" that you should "forget ... existed"
-    // according to project lead Matt Mackall:
-    //
-    //  http://markmail.org/message/hl3d6eprubmkkqh5
-    //
-    // There is an HGPLAIN environmental variable which enables "plain mode"
-    // and hopefully disables this stuff.
+    $env = $this->getMercurialEnvironmentVariables();
 
-    if (phutil_is_windows()) {
-      $argv[0] = 'set HGPLAIN=1 & hg '.$argv[0];
-    } else {
-      $argv[0] = 'HGPLAIN=1 hg '.$argv[0];
-    }
+    $argv[0] = 'hg '.$argv[0];
 
-    $future = newv('ExecFuture', $argv);
-    $future->setCWD($this->getPath());
+    $future = newv('ExecFuture', $argv)
+      ->setEnv($env)
+      ->setCWD($this->getPath());
+
     return $future;
   }
 
   public function execPassthru($pattern /* , ... */) {
     $args = func_get_args();
-    if (phutil_is_windows()) {
-      $args[0] = 'hg '.$args[0];
-    } else {
-      $args[0] = 'HGPLAIN=1 hg '.$args[0];
-    }
 
-    return call_user_func_array('phutil_passthru', $args);
+    $env = $this->getMercurialEnvironmentVariables();
+
+    $args[0] = 'hg '.$args[0];
+
+    $passthru = newv('PhutilExecPassthru', $args)
+      ->setEnv($env)
+      ->setCWD($this->getPath());
+
+    return $passthru->resolve();
   }
 
   public function getSourceControlSystemName() {
@@ -616,29 +609,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $parser->parseDiff($diff);
   }
 
-  public function supportsLocalBranchMerge() {
-    return true;
-  }
-
-  public function performLocalBranchMerge($branch, $message) {
-    if ($branch) {
-      $err = phutil_passthru(
-        '(cd %s && HGPLAIN=1 hg merge --rev %s && hg commit -m %s)',
-        $this->getPath(),
-        $branch,
-        $message);
-    } else {
-      $err = phutil_passthru(
-        '(cd %s && HGPLAIN=1 hg merge && hg commit -m %s)',
-        $this->getPath(),
-        $message);
-    }
-
-    if ($err) {
-      throw new ArcanistUsageException(pht('Merge failed!'));
-    }
-  }
-
   public function getFinalizedRevisionMessage() {
     return pht(
       "You may now push this commit upstream, as appropriate (e.g. with ".
@@ -1131,6 +1101,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     return null;
+  }
+
+  private function getMercurialEnvironmentVariables() {
+    $env = array();
+
+    // Mercurial has a "defaults" feature which basically breaks automation by
+    // allowing the user to add random flags to any command. This feature is
+    // "deprecated" and "a bad idea" that you should "forget ... existed"
+    // according to project lead Matt Mackall:
+    //
+    //  http://markmail.org/message/hl3d6eprubmkkqh5
+    //
+    // There is an HGPLAIN environmental variable which enables "plain mode"
+    // and hopefully disables this stuff.
+
+    $env['HGPLAIN'] = 1;
+
+    return $env;
   }
 
 }

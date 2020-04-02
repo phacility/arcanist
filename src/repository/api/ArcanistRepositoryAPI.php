@@ -394,12 +394,6 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  abstract public function supportsLocalBranchMerge();
-
-  public function performLocalBranchMerge($branch, $message) {
-    throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
   public function getFinalizedRevisionMessage() {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
