@@ -23,7 +23,7 @@ final class ConfigurablePytestTestEngine extends UberConfigurableTestEngine {
 
   public function buildTestFuture($junit_tmp, $cover_tmp) {
     $coverage_command = $this->getCoverageCommand('unit.pytest.command');
-    $cmd_line = csprintf($coverage_command, $junit_tmp);
+    $cmd_line = csprintf($coverage_command, $junit_tmp, $cover_tmp);
 
     return new ExecFuture('%C', $cmd_line);
   }
