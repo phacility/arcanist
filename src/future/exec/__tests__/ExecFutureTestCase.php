@@ -127,6 +127,53 @@ final class ExecFutureTestCase extends PhutilTestCase {
     $this->assertEqual(0, $err);
   }
 
+  public function testEscaping() {
+    $inputs = array(
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      '!@#$%^&*()-=_+`~,.<>/?[]{};\':"|',
+      '',
+      ' ',
+      'x y',
+      '%PATH%',
+      '"',
+      '""',
+      'a "b" c',
+      '\\',
+      '\\a',
+      'a\\',
+      '\\a\\',
+      'a\\a',
+      '\\\\',
+      '\\"',
+    );
+
+    $bin = $this->getSupportExecutable('echo');
+
+    foreach ($inputs as $input) {
+      if (!is_array($input)) {
+        $input = array($input);
+      }
+
+      list($stdout) = execx(
+        'php -f %R -- %Ls',
+        $bin,
+        $input);
+
+      $stdout = explode("\n", $stdout);
+      $output = array();
+      foreach ($stdout as $line) {
+        $output[] = stripcslashes($line);
+      }
+
+      $this->assertEqual(
+        $input,
+        $output,
+        pht(
+          'Arguments are preserved for input: %s',
+          implode(' ', $input)));
+    }
+  }
+
   public function testReadBuffering() {
     $str_len_8 = 'abcdefgh';
     $str_len_4 = 'abcd';

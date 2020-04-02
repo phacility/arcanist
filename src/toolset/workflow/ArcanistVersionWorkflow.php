@@ -67,14 +67,12 @@ EOTEXT
             Filesystem::readablePath($root)));
       }
 
-      // NOTE: Carefully execute these commands in a way that works on Windows
-      // until T8298 is properly fixed. See PHI52.
-
-      list($commit) = $repository_api->execxLocal('log -1 --format=%%H');
+      list($commit) = $repository_api->execxLocal(
+        'log -1 --format=%s',
+        '%ct%x01%H');
       $commit = trim($commit);
 
-      list($timestamp) = $repository_api->execxLocal('log -1 --format=%%ct');
-      $timestamp = trim($timestamp);
+      list($timestamp, $commit) = explode("\1", $commit);
 
       $console->writeOut(
         "%s %s (%s)\n",
