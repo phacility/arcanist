@@ -1926,3 +1926,7 @@ function phutil_is_noninteractive() {
 
   return false;
 }
+
+function phutil_encode_log($message) {
+  return addcslashes($message, "\0..\37\\\177..\377");
+}

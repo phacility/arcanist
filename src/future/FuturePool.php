@@ -34,6 +34,10 @@ final class FuturePool
     return $this;
   }
 
+  public function getFutures() {
+    return $this->futures;
+  }
+
   public function hasFutures() {
     return (bool)$this->futures;
   }

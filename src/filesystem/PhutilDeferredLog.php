@@ -229,7 +229,7 @@ final class PhutilDeferredLog extends Phobject {
       if ($saw_percent) {
         $saw_percent = false;
         if (array_key_exists($c, $map)) {
-          $result .= addcslashes($map[$c], "\0..\37\\\177..\377");
+          $result .= phutil_encode_log($map[$c]);
         } else {
           $result .= '-';
         }

@@ -4,27 +4,28 @@ final class PhagePHPAgent extends Phobject {
 
   private $stdin;
   private $master;
-  private $exec = array();
+  private $futurePool;
 
   public function __construct($stdin) {
     $this->stdin = $stdin;
   }
 
   public function execute() {
-    while (true) {
-      if ($this->exec) {
-        $iterator = new FutureIterator($this->exec);
-        $iterator->setUpdateInterval(0.050);
-        foreach ($iterator as $key => $future) {
-          if ($future === null) {
-            foreach ($this->exec as $read_key => $read_future) {
-              $this->readFuture($read_key, $read_future);
-            }
+    $future_pool = $this->getFuturePool();
 
+    while (true) {
+      if ($future_pool->hasFutures()) {
+        while ($future_pool->hasFutures()) {
+          $future = $future_pool->resolve();
+
+          if ($future === null) {
+            foreach ($future_pool->getFutures() as $read_future) {
+              $this->readFuture($read_future);
+            }
             break;
-          } else {
-            $this->resolveFuture($key, $future);
           }
+
+          $this->resolveFuture($future);
         }
       } else {
         PhutilChannel::waitForAny(array($this->getMaster()));
@@ -32,6 +33,22 @@ final class PhagePHPAgent extends Phobject {
 
       $this->processInput();
     }
+  }
+
+  private function getFuturePool() {
+    if (!$this->futurePool) {
+      $this->futurePool = $this->newFuturePool();
+    }
+    return $this->futurePool;
+  }
+
+  private function newFuturePool() {
+    $future_pool = new FuturePool();
+
+    $future_pool->getIteratorTemplate()
+      ->setUpdateInterval(0.050);
+
+    return $future_pool;
   }
 
   private function getMaster() {
@@ -77,9 +94,10 @@ final class PhagePHPAgent extends Phobject {
           $future->setTimeout(ceil($timeout));
         }
 
-        $future->isReady();
+        $future->setFutureKey($key);
 
-        $this->exec[$key] = $future;
+        $this->getFuturePool()
+          ->addFuture($future);
         break;
       case 'EXIT':
         $this->terminateAgent();
@@ -87,8 +105,9 @@ final class PhagePHPAgent extends Phobject {
     }
   }
 
-  private function readFuture($key, ExecFuture $future) {
+  private function readFuture(ExecFuture $future) {
     $master = $this->getMaster();
+    $key = $future->getFutureKey();
 
     list($stdout, $stderr) = $future->read();
     $future->discardBuffers();
@@ -114,7 +133,8 @@ final class PhagePHPAgent extends Phobject {
     }
   }
 
-  private function resolveFuture($key, ExecFuture $future) {
+  private function resolveFuture(ExecFuture $future) {
+    $key = $future->getFutureKey();
     $result = $future->resolve();
     $master = $this->getMaster();
 
@@ -127,8 +147,6 @@ final class PhagePHPAgent extends Phobject {
         'stderr'  => $result[2],
         'timeout' => (bool)$future->getWasKilledByTimeout(),
       ));
-
-    unset($this->exec[$key]);
   }
 
   public function __destruct() {
@@ -136,9 +154,12 @@ final class PhagePHPAgent extends Phobject {
   }
 
   private function terminateAgent() {
-    foreach ($this->exec as $key => $future) {
+    $pool = $this->getFuturePool();
+
+    foreach ($pool->getFutures() as $future) {
       $future->resolveKill();
     }
+
     exit(0);
   }
 

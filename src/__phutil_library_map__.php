@@ -866,6 +866,7 @@ phutil_register_library_map(array(
     'phutil_decode_mime_header' => 'utils/utils.php',
     'phutil_deprecated' => 'init/lib/moduleutils.php',
     'phutil_describe_type' => 'utils/utils.php',
+    'phutil_encode_log' => 'utils/utils.php',
     'phutil_error_listener_example' => 'error/phlog.php',
     'phutil_escape_uri' => 'utils/utils.php',
     'phutil_escape_uri_path_component' => 'utils/utils.php',

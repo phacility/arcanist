@@ -43,7 +43,16 @@ final class PhutilJSONProtocolChannel extends PhutilProtocolChannel {
    * @task protocol
    */
   protected function encodeMessage($message) {
-    $message = json_encode($message);
+    if (!is_array($message)) {
+      throw new Exception(
+        pht(
+          'JSON protocol message must be an array, got some other '.
+          'type ("%s").',
+          phutil_describe_type($message)));
+    }
+
+    $message = phutil_json_encode($message);
+
     $len = sprintf(
       '%0'.self::SIZE_LENGTH.'.'.self::SIZE_LENGTH.'d',
       strlen($message));
@@ -66,6 +75,21 @@ final class PhutilJSONProtocolChannel extends PhutilProtocolChannel {
         case self::MODE_LENGTH:
           $len = substr($this->buf, 0, self::SIZE_LENGTH);
           $this->buf = substr($this->buf, self::SIZE_LENGTH);
+
+          if (!preg_match('/^\d+\z/', $len)) {
+            $full_buffer = $len.$this->buf;
+            $full_length = strlen($full_buffer);
+
+            throw new Exception(
+              pht(
+                'Protocol channel expected %s-character, zero-padded '.
+                'numeric frame length, got something else ("%s"). Full '.
+                'buffer (of length %s) begins: %s',
+                new PhutilNumber(self::SIZE_LENGTH),
+                phutil_encode_log($len),
+                new PhutilNumber($full_length),
+                phutil_encode_log(substr($len.$this->buf, 0, 128))));
+          }
 
           $this->mode = self::MODE_OBJECT;
           $this->byteLengthOfNextChunk = (int)$len;
