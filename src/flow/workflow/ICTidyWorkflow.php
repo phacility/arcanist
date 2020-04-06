@@ -90,6 +90,9 @@ EOTEXT
     $abandoned = array();
     $orphaned = $this->loadBrokenBranches();
     foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
+      if (!idx($printed_branches, $branch_name)) {
+        continue;
+      }
       if ($printed_branches[$branch_name]['status'] == 'Deleted') {
         $deleted[] = $branch_name;
       }
