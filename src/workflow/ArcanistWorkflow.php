@@ -126,6 +126,20 @@ abstract class ArcanistWorkflow extends Phobject {
       ->setArguments($specs);
 
     $information = $this->getWorkflowInformation();
+
+    if ($information !== null) {
+      if (!($information instanceof ArcanistWorkflowInformation)) {
+        throw new Exception(
+          pht(
+            'Expected workflow ("%s", of class "%s") to return an '.
+            '"ArcanistWorkflowInformation" object from call to '.
+            '"getWorkflowInformation()", got %s.',
+            $this->getWorkflowName(),
+            get_class($this),
+            phutil_describe_type($information)));
+      }
+    }
+
     if ($information) {
       $synopsis = $information->getSynopsis();
       if (strlen($synopsis)) {
@@ -2255,8 +2269,12 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->getConfigurationSourceList()->getConfig($key);
   }
 
-  final public function canHandleSignal($signo) {
+  public function canHandleSignal($signo) {
     return false;
+  }
+
+  public function handleSignal($signo) {
+    return;
   }
 
   final public function newCommand(PhutilExecutableFuture $future) {

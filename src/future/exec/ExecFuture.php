@@ -752,20 +752,29 @@ final class ExecFuture extends PhutilExecutableFuture {
     }
 
     if ($is_done) {
+      $signal_info = null;
+
       // If the subprocess got nuked with `kill -9`, we get a -1 exitcode.
       // Upgrade this to a slightly more informative value by examining the
       // terminating signal code.
       $err = $status['exitcode'];
       if ($err == -1) {
         if ($status['signaled']) {
-          $err = 128 + $status['termsig'];
+          $signo = $status['termsig'];
+
+          $err = 128 + $signo;
+
+          $signal_info = pht(
+            "<Process was terminated by signal %s (%d).>\n\n",
+            phutil_get_signal_name($signo),
+            $signo);
         }
       }
 
       $result = array(
         $err,
         $this->stdout,
-        $this->stderr,
+        $signal_info.$this->stderr,
       );
 
       $this->setResult($result);
