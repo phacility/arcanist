@@ -321,4 +321,8 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     $this->rootBranch = $root_branch;
     return $this;
   }
+
+  public function clearFlowWorkspace() {
+    $this->flow = null;
+  }
 }
