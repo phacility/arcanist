@@ -33,8 +33,8 @@ EOTEXT
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
-      'skip-landed' => array(
-        'help' => pht('Do not try to patch landed/closed diffs.'),
+      'patch-landed' => array(
+        'help' => pht('Try to patch landed/closed diffs.'),
       ),
     );
   }
@@ -43,7 +43,7 @@ EOTEXT
     $api = $this->getRepositoryAPI();
     $git_api = new ICGitAPI($api);
     $force = $this->getArgument('force', false);
-    $skip = $this->getArgument('skip-landed', false);
+    $patch_landed = $this->getArgument('patch-landed', false);
     $revision_name = trim((string)idx($this->getArgument('revision'), 0));
     $id_matches = array();
     preg_match('/^D(?P<id>[1-9]\d*)$/i', $revision_name, $id_matches);
@@ -81,7 +81,7 @@ EOTEXT
     $ordered_revisions = array();
     foreach ($sorted_node_indexes as $node_index) {
       $rid = idxv($revisions, array($node_index, 'id'));
-      if ($git_api->doesRevisionExistInLog($rid) && $skip) {
+      if ($git_api->doesRevisionExistInLog($rid) && !$patch_landed) {
             echo phutil_console_format(pht('**D%s** is already present in '.
                                            "your working copy, skipping...\n",
                                            $rid));
