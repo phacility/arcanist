@@ -205,7 +205,7 @@ pass
         > " "
         > as
         > " "
-        * "<INVALID TYPE \"0\">"
+        * n_STRING
          > protected
         * n_EMPTY
        > " "

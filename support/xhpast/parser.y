@@ -1335,7 +1335,7 @@ trait_modifiers:
   }
 |  member_modifier  {
     $$ = NNEW(n_METHOD_MODIFIER_LIST);
-    $$->appendChild(NTYPE($1, n_STRING));
+    $$->appendChild($1);
   }
 ;
 
@@ -1370,14 +1370,20 @@ method_modifiers:
 non_empty_member_modifiers:
   member_modifier {
     $$ = NNEW(n_CLASS_MEMBER_MODIFIER_LIST);
-    $$->appendChild(NTYPE($1, n_STRING));
+    $$->appendChild($1);
   }
 | non_empty_member_modifiers member_modifier {
-    $$ = $1->appendChild(NTYPE($2, n_STRING));
+    $$ = $1->appendChild($2);
   }
 ;
 
 member_modifier:
+  basic_member_modifier {
+    $$ = NTYPE($1, n_STRING);
+  }
+;
+
+basic_member_modifier:
   T_PUBLIC
 | T_PROTECTED
 | T_PRIVATE
