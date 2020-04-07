@@ -1,9 +1,16 @@
 #!/usr/bin/env php
 <?php
 
-require_once dirname(__FILE__).'/../../scripts/__init_script__.php';
+$arcanist_root = dirname(dirname(dirname(dirname(__FILE__))));
+require_once $arcanist_root.'/support/init/init-script.php';
+
+$xhpast_root = dirname(dirname(__FILE__));
+
+$hpp_outpath = $xhpast_root.'/node_names.hpp';
+$php_outpath = $xhpast_root.'/parser_nodes.php';
 
 $offset = 9000;
+
 $nodes = array(
   'n_PROGRAM',
   'n_SYMBOL_NAME',
@@ -132,9 +139,9 @@ $hpp = '';
 foreach ($nodes as $node => $value) {
   $hpp .= "#define {$node} {$value}\n";
 }
-Filesystem::writeFile(
-  Filesystem::resolvePath('node_names.hpp', dirname(__FILE__)),
-  $hpp);
+
+
+Filesystem::writeFile($hpp_outpath, $hpp);
 echo pht('Wrote C++ definition.')."\n";
 
 $at = '@';
@@ -158,7 +165,7 @@ $php .= <<<EOPHP
 }
 
 EOPHP;
-Filesystem::writeFile(
-  Filesystem::resolvePath('parser_nodes.php', dirname(__FILE__)),
-  $php);
+
+Filesystem::writeFile($php_outpath, $php);
+
 echo pht('Wrote PHP definition.')."\n";

@@ -1,6 +1,7 @@
 BISONFLAGS = --verbose --name-prefix xhpast
 CPPFLAGS   = -fPIC -Wall
 FLEXFLAGS  = -CFr
+XHPAST_VERSION := $(shell ./bin/xhpast-generate-version.php)
 
 ifdef DEBUG
 	BISONFLAGS += --debug
@@ -64,7 +65,7 @@ endif
 %.o: %.cpp
 	$(CXX) -c $(CPPFLAGS) -o $@ $<
 
-node_names.hpp parser_nodes.php: generate_nodes.php
+node_names.hpp parser_nodes.php: bin/xhpast-generate-nodes.php
 	php -f $<
 
 parser.yacc.o: scanner.lex.hpp
@@ -74,4 +75,4 @@ libxhpast.a: scanner.lex.o parser.yacc.o
 	$(AR) -crs $@ $^
 
 xhpast: xhpast.cpp libxhpast.a
-	$(CXX) $(CPPFLAGS) -o $@ $^
+	$(CXX) $(CPPFLAGS) -D XHPAST_VERSION='"$(XHPAST_VERSION)"' -o $@ $^

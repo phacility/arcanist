@@ -9,10 +9,13 @@ int xhpastparse(void*, xhpast::Node **);
 int xhpast_process(std::string &in);
 void print_node(xhpast::Node *node);
 
+#ifndef XHPAST_VERSION
+#error Define XHPAST_VERSION when building XHPAST.
+#endif
+
 int main(int argc, char* argv[]) {
   if (argc != 1) {
-    // Coupling: modify also src/parser/xhpast/bin/PhutilXHPASTBinary.php
-    cout << "7.1.4\n";
+    cout << XHPAST_VERSION << "\n";
     return 0;
   }
 
