@@ -1051,8 +1051,8 @@ non_empty_parameter_list:
 
 parameter:
   T_ELLIPSIS T_VARIABLE {
-    $$ = NTYPE($1, n_UNPACK);
-    $$->appendChild(NTYPE($2, n_VARIABLE));
+    NTYPE($1, n_UNPACK);
+    $$ = $1->appendChild(NTYPE($2, n_VARIABLE));
   }
 | T_VARIABLE {
     $$ = NTYPE($1, n_VARIABLE);
@@ -1111,7 +1111,8 @@ non_empty_function_call_parameter_list:
 argument:
   expr
 | T_ELLIPSIS expr {
-    $$ = NNEW(n_UNPACK)->appendChild($1);
+    NTYPE($1, n_UNPACK);
+    $$ = $1->appendChild($2);
   }
 | '&' w_variable {
     NTYPE($1, n_VARIABLE_REFERENCE);
