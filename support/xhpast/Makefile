@@ -1,4 +1,4 @@
-BISONFLAGS = --verbose -Wall
+BISONFLAGS = --verbose --name-prefix xhpast
 CPPFLAGS   = -fPIC -Wall
 FLEXFLAGS  = -CFr
 

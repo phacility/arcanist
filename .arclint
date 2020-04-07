@@ -38,7 +38,7 @@
     "text": {
       "type": "text",
       "exclude": [
-        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect))"
+        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect)|/Makefile\\z)"
       ]
     },
     "text-without-length": {
@@ -48,6 +48,15 @@
       ],
       "severity": {
         "3": "disabled"
+      }
+    },
+    "text-without-tabs": {
+      "type": "text",
+      "include": [
+        "(/Makefile\\z)"
+      ],
+      "severity": {
+        "2": "disabled"
       }
     },
     "xhpast": {
