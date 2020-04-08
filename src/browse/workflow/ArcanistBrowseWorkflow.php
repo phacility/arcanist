@@ -3,70 +3,62 @@
 /**
  * Browse files or objects in the Phabricator web interface.
  */
-final class ArcanistBrowseWorkflow extends ArcanistWorkflow {
+final class ArcanistBrowseWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'browse';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **browse** [__options__] __path__ ...
-      **browse** [__options__] __object__ ...
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Open a file or object (like a task or revision) in a local web browser.
+
+  $ arc browse README   # Open a file in Diffusion.
+  $ arc browse T123     # View a task.
+  $ arc browse HEAD     # View a symbolic commit.
+
+To choose a browser binary to invoke, use:
+
+  $ arc set-config browser __browser-binary__
+
+If no browser is set, the command will try to guess which browser to use.
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Open a file or object in a local web browser.'))
+      ->addExample('**browse** [options] -- __target__ ...')
+      ->addExample('**browse** -- __file-name__')
+      ->addExample('**browse** -- __object-name__')
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: git, hg, svn
-          Open a file or object (like a task or revision) in your web browser.
-
-            $ arc browse README   # Open a file in Diffusion.
-            $ arc browse T123     # View a task.
-            $ arc browse HEAD     # View a symbolic commit.
-
-          Set the 'browser' value using 'arc set-config' to select a browser. If
-          no browser is set, the command will try to guess which browser to use.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'branch' => array(
-        'param' => 'branch_name',
-        'help' => pht(
-          'Default branch name to view on server. Defaults to "%s".',
-          'master'),
-      ),
-      'types' => array(
-        'param' => 'types',
-        'aliases' => array('type'),
-        'help' => pht(
-          'Parse arguments with particular types.'),
-      ),
-      'force' => array(
-        'help' => pht(
-          '(DEPRECATED) Obsolete, use "--types path" instead.'),
-      ),
-      '*' => 'targets',
+      $this->newWorkflowArgument('branch')
+        ->setParameter('branch-name')
+        ->setHelp(
+          pht(
+            'Default branch name to view on server. Defaults to "%s".',
+            'master')),
+      $this->newWorkflowArgument('types')
+        ->setParameter('type-list')
+        ->setHelp(
+          pht(
+            'Force targets to be interpreted as naming particular types of '.
+            'resources.')),
+      $this->newWorkflowArgument('force')
+        ->setHelp(
+          pht(
+            '(DEPRECATED) Obsolete, use "--types path" instead.')),
+      $this->newWorkflowArgument('targets')
+        ->setIsPathArgument(true)
+        ->setWildcard(true),
     );
   }
 
-  public function desiresWorkingCopy() {
-    return true;
-  }
-
-  public function desiresRepositoryAPI() {
-    return true;
-  }
-
-  public function run() {
-    $conduit = $this->getConduitEngine();
-
-    $console = PhutilConsole::getConsole();
-
+  public function runWorkflow() {
     $targets = $this->getArgument('targets');
     $targets = array_fuse($targets);
 

@@ -1,11 +1,7 @@
 <?php
 
-/**
- * Displays user's Git branches or Mercurial bookmarks.
- *
- * @concrete-extensible
- */
-class ArcanistFeatureWorkflow extends ArcanistWorkflow {
+class ArcanistFeatureWorkflow
+  extends ArcanistArcWorkflow {
 
   private $branches;
 
@@ -13,62 +9,51 @@ class ArcanistFeatureWorkflow extends ArcanistWorkflow {
     return 'feature';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **feature** [__options__]
-      **feature** __name__ [__start__]
-EOTEXT
-      );
-  }
-
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: git, hg
-          A wrapper on 'git branch' or 'hg bookmark'.
-
-          Without __name__, it lists the available branches and their revision
-          status.
-
-          With __name__, it creates or checks out a branch. If the branch
-          __name__ doesn't exist and is in format D123 then the branch of
-          revision D123 is checked out. Use __start__ to specify where the new
-          branch will start. Use 'arc.feature.start.default' to set the default
-          feature start location.
-EOTEXT
-      );
-  }
-
-  public function requiresRepositoryAPI() {
-    return true;
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'view-all' => array(
-        'help' => pht('Include closed and abandoned revisions.'),
-      ),
-      'by-status' => array(
-        'help' => pht('Sort branches by status instead of time.'),
-      ),
-      'output' => array(
-        'param' => 'format',
-        'support' => array(
-          'json',
-        ),
-        'help' => pht(
-          "With '%s', show features in machine-readable JSON format.",
-          'json'),
-      ),
-      '*' => 'branch',
+      $this->newWorkflowArgument('view-all')
+        ->setHelp(pht('Include closed and abandoned revisions.')),
+      $this->newWorkflowArgument('by-status')
+        ->setParameter('status')
+        ->setHelp(pht('Sort branches by status instead of time.')),
+      $this->newWorkflowArgument('output')
+        ->setParameter('format')
+        ->setHelp(
+          pht(
+            'With "json", show features in machine-readable JSON format.')),
+      $this->newWorkflowArgument('branch')
+        ->setWildcard(true),
     );
   }
 
-  public function getSupportedRevisionControlSystems() {
-    return array('git', 'hg');
+  public function getWorkflowInformation() {
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Wrapper on "git branch" or "hg bookmark".'))
+      ->addExample(pht('**feature** [__options__]'))
+      ->addExample(pht('**feature** __name__ [__start__]'))
+      ->setHelp(
+        pht(<<<EOHELP
+A wrapper on 'git branch' or 'hg bookmark'.
+
+Without __name__, it lists the available branches and their revision status.
+
+With __name__, it creates or checks out a branch. If the branch __name__
+doesn't exist and is in format D123 then the branch of revision D123 is
+checked out. Use __start__ to specify where the new branch will start. Use
+'arc.feature.start.default' to set the default feature start location.
+EOHELP
+          ));
   }
 
-  public function run() {
+  public function runWorkflow() {
+    $working_copy = $this->getWorkingCopy();
+
     $repository_api = $this->getRepositoryAPI();
+    if (!$repository_api) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'This command must be run in a Git or Mercurial working copy.'));
+    }
 
     $names = $this->getArgument('branch');
     if ($names) {

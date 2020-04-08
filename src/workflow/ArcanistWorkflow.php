@@ -336,6 +336,16 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function getConfigFromAnySource($key) {
+    $source_list = $this->getConfigurationSourceList();
+    if ($source_list) {
+      $value_list = $source_list->getStorageValueList($key);
+      if ($value_list) {
+        return last($value_list)->getValue();
+      }
+
+      return null;
+    }
+
     return $this->configurationManager->getConfigFromAnySource($key);
   }
 
@@ -884,6 +894,14 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function getWorkingCopy() {
+    $configuration_engine = $this->getConfigurationEngine();
+    if ($configuration_engine) {
+      $working_copy = $configuration_engine->getWorkingCopy();
+      $working_path = $working_copy->getWorkingDirectory();
+
+      return ArcanistWorkingCopyIdentity::newFromPath($working_path);
+    }
+
     $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
     if (!$working_copy) {
       $workflow = get_class($this);
@@ -911,6 +929,12 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function getRepositoryAPI() {
+    $configuration_engine = $this->getConfigurationEngine();
+    if ($configuration_engine) {
+      $working_copy = $configuration_engine->getWorkingCopy();
+      return $working_copy->getRepositoryAPI();
+    }
+
     if (!$this->repositoryAPI) {
       $workflow = get_class($this);
       throw new Exception(
@@ -2232,7 +2256,7 @@ abstract class ArcanistWorkflow extends Phobject {
       $query->setRepositoryRef($repository_ref);
     }
 
-    $working_copy = $this->getConfigurationManager()->getWorkingCopyIdentity();
+    $working_copy = $this->getWorkingCopy();
     if ($working_copy) {
       $working_ref = $this->newWorkingCopyStateRef();
       $query->setWorkingCopyRef($working_ref);
@@ -2242,12 +2266,17 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function getRepositoryRef() {
-    if (!$this->getConfigurationManager()->getWorkingCopyIdentity()) {
-      return null;
-    }
+    $configuration_engine = $this->getConfigurationEngine();
+    if ($configuration_engine) {
+      // This is a toolset workflow and can always build a repository ref.
+    } else {
+      if (!$this->getConfigurationManager()->getWorkingCopyIdentity()) {
+        return null;
+      }
 
-    if (!$this->repositoryAPI) {
-      return null;
+      if (!$this->repositoryAPI) {
+        return null;
+      }
     }
 
     if (!$this->repositoryRef) {
