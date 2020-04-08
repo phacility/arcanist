@@ -100,6 +100,7 @@ final class ArcanistHardpointTask
         $generator->next();
       }
 
+      $generator_result = null;
       if ($generator->valid()) {
         $result = $generator->current();
 
@@ -152,17 +153,25 @@ final class ArcanistHardpointTask
           return true;
         }
 
-        throw new Exception(
-          pht(
-            'Hardpoint generator (for query "%s") yielded an unexpected '.
-            'value. Generators may only yield "Future" or '.
-            '"ArcanistHardpointRequest" objects, got "%s".',
-            get_class($query),
-            phutil_describe_type($result)));
+        if ($result instanceof ArcanistHardpointTaskResult) {
+          $generator_result = $result;
+        } else {
+          throw new Exception(
+            pht(
+              'Hardpoint generator (for query "%s") yielded an unexpected '.
+              'value (of type "%s").',
+              get_class($query),
+              phutil_describe_type($result)));
+        }
       }
 
       $this->generator = null;
-      $result = $generator->getReturn();
+
+      if ($generator_result !== null) {
+        $result = $generator_result->getValue();
+      } else {
+        $result = $generator->getReturn();
+      }
 
       $this->attachResult($result);
 

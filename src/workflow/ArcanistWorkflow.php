@@ -76,6 +76,8 @@ abstract class ArcanistWorkflow extends Phobject {
   private $configurationEngine;
   private $configurationSourceList;
 
+  private $hardpointEngine;
+
   final public function setToolset(ArcanistToolset $toolset) {
     $this->toolset = $toolset;
     return $this;
@@ -2327,6 +2329,42 @@ abstract class ArcanistWorkflow extends Phobject {
     return id(new ArcanistCommand())
       ->setLogEngine($this->getLogEngine())
       ->setExecutableFuture($future);
+  }
+
+  final protected function loadHardpoints(
+    array $objects,
+    array $requests) {
+
+    $engine = $this->getHardpointEngine();
+
+    $requests = $engine->requestHardpoints(
+      $objects,
+      $requests);
+
+    // TODO: Wait for only the required requests.
+    $engine->waitForRequests(array());
+  }
+
+  private function getHardpointEngine() {
+    if ($this->hardpointEngine === null) {
+      $this->hardpointEngine = $this->newHardpointEngine();
+    }
+    return $this->hardpointEngine;
+  }
+
+  private function newHardpointEngine() {
+    $engine = new ArcanistHardpointEngine();
+
+    $queries = ArcanistWorkflowHardpointQuery::getAllQueries();
+
+    foreach ($queries as $key => $query) {
+      $queries[$key] = id(clone $query)
+        ->setWorkflow($this);
+    }
+
+    $engine->setQueries($queries);
+
+    return $engine;
   }
 
 }

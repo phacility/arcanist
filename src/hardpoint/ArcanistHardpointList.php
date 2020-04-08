@@ -46,6 +46,10 @@ final class ArcanistHardpointList
     return isset($this->attached[$hardpoint]);
   }
 
+  public function getHardpoints() {
+    return $this->hardpoints;
+  }
+
   public function getHardpointDefinition($object, $hardpoint) {
     if (!$this->hasHardpoint($object, $hardpoint)) {
       throw new Exception(

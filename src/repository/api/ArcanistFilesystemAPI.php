@@ -82,7 +82,7 @@ final class ArcanistFilesystemAPI
   }
 
   public function getRemoteURI() {
-    throw new PhutilMethodNotImplementedException();
+    return null;
   }
 
   public function supportsLocalCommits() {
@@ -90,7 +90,9 @@ final class ArcanistFilesystemAPI
   }
 
   protected function buildLocalFuture(array $argv) {
-    throw new PhutilMethodNotImplementedException();
+    $future = newv('ExecFuture', $argv);
+    $future->setCWD($this->getPath());
+    return $future;
   }
 
   public function supportsCommitRanges() {

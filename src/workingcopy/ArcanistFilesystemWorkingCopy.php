@@ -14,7 +14,7 @@ final class ArcanistFilesystemWorkingCopy
   }
 
   protected function newRepositoryAPI() {
-    return new ArcanistFilesystemAPI();
+    return new ArcanistFilesystemAPI($this->getPath());
   }
 
   public function getProjectConfigurationFilePath() {

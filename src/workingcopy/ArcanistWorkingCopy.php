@@ -57,7 +57,7 @@ abstract class ArcanistWorkingCopy
 
     $working_copy = new ArcanistFilesystemWorkingCopy();
 
-    self::configureWorkingCopy($working_copy, $ancestor_path, $path);
+    self::configureWorkingCopy($working_copy, $path, $path);
 
     return $working_copy;
   }
