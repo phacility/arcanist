@@ -774,6 +774,13 @@ EOTEXT
           'Build failures:');
         $prompt = pht('Land revision anyway, despite build failures?');
         break;
+      case 'preparing':
+        $message = pht(
+          'Harbormaster is still preparing build for the active diff for this '.
+          'revision. ');
+        $prompt = pht('Land revision anyway, despite build being prepared for '.
+                      'execution?');
+        break;
       default:
         // If we don't recognize the status, just bail.
         return false;
