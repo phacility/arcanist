@@ -5,6 +5,7 @@ abstract class ArcanistWorkingCopy
 
   private $path;
   private $workingDirectory;
+  private $repositoryAPI;
 
   public static function newFromWorkingDirectory($path) {
     $working_types = id(new PhutilClassMapQuery())
@@ -25,8 +26,7 @@ abstract class ArcanistWorkingCopy
           continue;
         }
 
-        $working_copy->path = $ancestor_path;
-        $working_copy->workingDirectory = $path;
+        self::configureWorkingCopy($working_copy, $ancestor_path, $path);
 
         $candidates[] = $working_copy;
       }
@@ -50,7 +50,16 @@ abstract class ArcanistWorkingCopy
       return $deepest->selectFromNestedWorkingCopies($candidates);
     }
 
-    return null;
+    // If we haven't found a legitimate working copy that belongs to a
+    // supported version control system, return a "filesystem" working copy.
+    // This allows some commands to work as expected even if run outside
+    // of a real working copy.
+
+    $working_copy = new ArcanistFilesystemWorkingCopy();
+
+    self::configureWorkingCopy($working_copy, $ancestor_path, $path);
+
+    return $working_copy;
   }
 
   abstract protected function newWorkingCopyFromDirectories(
@@ -110,6 +119,23 @@ abstract class ArcanistWorkingCopy
     return last($candidates);
   }
 
-  abstract public function newRepositoryAPI();
+  final public function getRepositoryAPI() {
+    if (!$this->repositoryAPI) {
+      $this->repositoryAPI = $this->newRepositoryAPI();
+    }
+
+    return $this->repositoryAPI;
+  }
+
+  abstract protected function newRepositoryAPI();
+
+  private static function configureWorkingCopy(
+    ArcanistWorkingCopy $working_copy,
+    $ancestor_path,
+    $path) {
+
+    $working_copy->path = $ancestor_path;
+    $working_copy->workingDirectory = $path;
+  }
 
 }

@@ -48,15 +48,10 @@ EOTEXT
     );
 
     foreach ($roots as $lib => $root) {
-      $is_git = false;
-
       $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory($root);
-      if ($working_copy) {
-        $repository_api = $working_copy->newRepositoryAPI();
-        if ($repository_api instanceof ArcanistGitAPI) {
-          $is_git = true;
-        }
-      }
+
+      $repository_api = $working_copy->getRepositoryAPI();
+      $is_git = ($repository_api instanceof ArcanistGitAPI);
 
       if (!$is_git) {
         throw new PhutilArgumentUsageException(
