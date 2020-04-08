@@ -66,8 +66,6 @@ final class ArcanistConduitCall
       $this->newFuture();
     }
 
-    $this->getEngine()->resolveFuture($this->getKey());
-
     return $this->resolveFuture();
   }
 

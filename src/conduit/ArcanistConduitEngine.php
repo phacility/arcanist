@@ -5,13 +5,8 @@ final class ArcanistConduitEngine
 
   private $conduitURI;
   private $conduitToken;
-
   private $conduitTimeout;
-
   private $client;
-  private $callKey = 0;
-  private $activeFutures = array();
-  private $resolvedFutures = array();
 
   public function isCallable() {
     return ($this->conduitURI !== null);
@@ -49,10 +44,7 @@ final class ArcanistConduitEngine
       $this->raiseURIException();
     }
 
-    $next_key = ++$this->callKey;
-
     return id(new ArcanistConduitCall())
-      ->setKey($next_key)
       ->setEngine($this)
       ->setMethod($method)
       ->setParameters($parameters);
@@ -67,7 +59,7 @@ final class ArcanistConduitEngine
     $parameters = $call->getParameters();
 
     $future = $this->getClient()->callMethod($method, $parameters);
-    $this->activeFutures[$call->getKey()] = $future;
+
     return $future;
   }
 
@@ -89,30 +81,6 @@ final class ArcanistConduitEngine
     }
 
     return $client;
-  }
-
-  public function resolveFuture($key) {
-    if (isset($this->resolvedFutures[$key])) {
-      return;
-    }
-
-    if (!isset($this->activeFutures[$key])) {
-      throw new Exception(
-        pht(
-          'No future with key "%s" is present in pool.',
-          $key));
-    }
-
-    $iterator = new FutureIterator($this->activeFutures);
-    foreach ($iterator as $future_key => $future) {
-      $this->resolvedFutures[$future_key] = $future;
-      unset($this->activeFutures[$future_key]);
-      if ($future_key == $key) {
-        break;
-      }
-    }
-
-    return;
   }
 
   private function raiseURIException() {
