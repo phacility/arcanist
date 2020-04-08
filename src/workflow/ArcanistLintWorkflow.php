@@ -146,7 +146,7 @@ EOTEXT
 
   public function run() {
     $console = PhutilConsole::getConsole();
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
     $configuration_manager = $this->getConfigurationManager();
 
     $engine = $this->newLintEngine($this->getArgument('engine'));

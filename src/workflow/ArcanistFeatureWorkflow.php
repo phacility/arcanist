@@ -46,8 +46,6 @@ EOHELP
   }
 
   public function runWorkflow() {
-    $working_copy = $this->getWorkingCopy();
-
     $repository_api = $this->getRepositoryAPI();
     if (!$repository_api) {
       throw new PhutilArgumentUsageException(

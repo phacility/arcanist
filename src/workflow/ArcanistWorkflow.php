@@ -895,6 +895,23 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final public function getWorkingCopy() {
     $configuration_engine = $this->getConfigurationEngine();
+
+    // TOOLSETS: Remove this once all workflows are toolset workflows.
+    if (!$configuration_engine) {
+      throw new Exception(
+        pht(
+          'This workflow has not yet been updated to Toolsets and can '.
+          'not retrieve a modern WorkingCopy object. Use '.
+          '"getWorkingCopyIdentity()" to retrieve a previous-generation '.
+          'object.'));
+    }
+
+    return $configuration_engine->getWorkingCopy();
+  }
+
+
+  final public function getWorkingCopyIdentity() {
+    $configuration_engine = $this->getConfigurationEngine();
     if ($configuration_engine) {
       $working_copy = $configuration_engine->getWorkingCopy();
       $working_path = $working_copy->getWorkingDirectory();
@@ -1573,7 +1590,7 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     if ($paths) {
-      $working_copy = $this->getWorkingCopy();
+      $working_copy = $this->getWorkingCopyIdentity();
       foreach ($paths as $key => $path) {
         $full_path = Filesystem::resolvePath($path);
         if (!Filesystem::pathExists($full_path)) {
@@ -2012,7 +2029,7 @@ abstract class ArcanistWorkflow extends Phobject {
    * @return ArcanistLintEngine Constructed engine.
    */
   protected function newLintEngine($engine_class = null) {
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
     $config = $this->getConfigurationManager();
 
     if (!$engine_class) {
@@ -2063,7 +2080,7 @@ abstract class ArcanistWorkflow extends Phobject {
    * @return ArcanistUnitTestEngine Constructed engine.
    */
   protected function newUnitTestEngine($engine_class = null) {
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
     $config = $this->getConfigurationManager();
 
     if (!$engine_class) {
@@ -2234,7 +2251,7 @@ abstract class ArcanistWorkflow extends Phobject {
   final protected function newWorkingCopyStateRef() {
     $ref = new ArcanistWorkingCopyStateRef();
 
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
     $ref->setRootDirectory($working_copy->getProjectRoot());
 
     return $ref;
@@ -2256,7 +2273,7 @@ abstract class ArcanistWorkflow extends Phobject {
       $query->setRepositoryRef($repository_ref);
     }
 
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
     if ($working_copy) {
       $working_ref = $this->newWorkingCopyStateRef();
       $query->setWorkingCopyRef($working_ref);
