@@ -143,24 +143,11 @@ final class ConduitClient extends Phobject {
 
     // Always use the cURL-based HTTPSFuture, for proxy support and other
     // protocol edge cases that HTTPFuture does not support.
-    $core_future = new HTTPSFuture($uri);
+    $core_future = new HTTPSFuture($uri, $data);
     $core_future->addHeader('Host', $this->getHostStringForHeader());
 
     $core_future->setMethod('POST');
     $core_future->setTimeout($this->timeout);
-
-    // See T13507. If possible, try to compress requests. We always expect
-    // Phabricator to be able to accept "Content-Encoding: gzip" requests.
-    $can_gzip = function_exists('gzencode');
-    if ($can_gzip) {
-      $gzip_data = phutil_build_http_querystring($data);
-      $gzip_data = gzencode($gzip_data);
-
-      $core_future->addHeader('Content-Encoding', 'gzip');
-      $core_future->setData($gzip_data);
-    } else {
-      $core_future->setData($data);
-    }
 
     if ($this->username !== null) {
       $core_future->setHTTPBasicAuthCredentials(
