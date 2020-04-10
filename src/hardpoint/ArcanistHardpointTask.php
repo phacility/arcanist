@@ -171,6 +171,19 @@ final class ArcanistHardpointTask
         $result = $generator_result->getValue();
       } else {
         $result = $generator->getReturn();
+
+        if ($result instanceof ArcanistHardpointTaskResult) {
+          throw new Exception(
+            pht(
+              'Generator (for query "%s") returned an '.
+              '"ArcanistHardpointTaskResult" object, which is not a valid '.
+              'thing to return from a generator.'.
+              "\n\n".
+              'This almost always means the generator implementation has a '.
+              '"return $this->yield..." statement which should be '.
+              'a "yield $this->yield..." instead.',
+              get_class($query)));
+        }
       }
 
       $this->attachResult($result);

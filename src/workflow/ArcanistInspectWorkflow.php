@@ -21,7 +21,7 @@ EOTEXT
 
   public function getWorkflowArguments() {
     return array(
-      $this->newWorkflowArgument('all')
+      $this->newWorkflowArgument('explore')
         ->setHelp(pht('Load all object hardpoints.')),
       $this->newWorkflowArgument('objects')
         ->setWildcard(true),
@@ -29,7 +29,7 @@ EOTEXT
   }
 
   public function runWorkflow() {
-    $is_all = $this->getArgument('all');
+    $is_explore = $this->getArgument('explore');
     $objects = $this->getArgument('objects');
 
     $inspectors = ArcanistRefInspector::getAllInspectors();
@@ -88,7 +88,7 @@ EOTEXT
       $all_refs[] = $ref;
     }
 
-    if ($is_all) {
+    if ($is_explore) {
       foreach ($ref_lists as $ref_class => $refs) {
         $ref = head($refs);
 
