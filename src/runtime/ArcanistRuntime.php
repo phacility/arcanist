@@ -141,6 +141,12 @@ final class ArcanistRuntime {
       ->setConfigurationSourceList($config)
       ->resolveAliases($unconsumed_argv);
 
+    foreach ($alias_effects as $alias_effect) {
+      if ($alias_effect->getType() === ArcanistAliasEffect::EFFECT_SHELL) {
+        return $this->executeShellAlias($alias_effect);
+      }
+    }
+
     $result_argv = $this->applyAliasEffects($alias_effects, $unconsumed_argv);
 
     $args->setUnconsumedArgumentVector($result_argv);
@@ -725,6 +731,17 @@ final class ArcanistRuntime {
     }
 
     return $engine;
+  }
+
+  private function executeShellAlias(ArcanistAliasEffect $effect) {
+    $log = $this->getLogEngine();
+
+    $message = $effect->getMessage();
+    if ($message !== null) {
+      $log->writeHint(pht('SHELL ALIAS'), $message);
+    }
+
+    return phutil_passthru('%Ls', $effect->getArguments());
   }
 
 }

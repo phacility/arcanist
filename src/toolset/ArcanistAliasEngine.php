@@ -199,21 +199,30 @@ final class ArcanistAliasEngine
       }
     }
 
+    $alias_argv = $alias->getCommand();
+    $alias_command = array_shift($alias_argv);
+
     if ($alias->isShellCommandAlias()) {
+      $shell_command = substr($alias_command, 1);
+
+      $shell_argv = array_merge(
+        array($shell_command),
+        $alias_argv,
+        $argv);
+
+      $shell_display = csprintf('%Ls', $shell_argv);
+
       $results[] = $this->newEffect(ArcanistAliasEffect::EFFECT_SHELL)
         ->setMessage(
           pht(
             '%s %s -> $ %s',
             $toolset_key,
             $command,
-            $alias->getShellCommand()))
-        ->setCommand($command)
-        ->setArgv($argv);
+            $shell_display))
+        ->setArguments($shell_argv);
+
       return $results;
     }
-
-    $alias_argv = $alias->getCommand();
-    $alias_command = array_shift($alias_argv);
 
     if (isset($stack[$alias_command])) {
 
