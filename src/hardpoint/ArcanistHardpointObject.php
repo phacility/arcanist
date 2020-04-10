@@ -64,6 +64,14 @@ abstract class ArcanistHardpointObject
       ->setHardpointKey($hardpoint_key);
   }
 
+  final protected function newTemplateHardpoint(
+    $hardpoint_key,
+    ArcanistHardpoint $template) {
+
+    return id(clone $template)
+      ->setHardpointKey($hardpoint_key);
+  }
+
 
   final public function getHardpointList() {
     if ($this->hardpointList === null) {

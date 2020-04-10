@@ -54,11 +54,13 @@ EOTEXT
     $ref_lists = array();
     foreach ($objects as $description) {
       $matches = null;
-      if (!preg_match('/^(\w+)(?:\(([^)]+)\))?\z/', $description, $matches)) {
+      $pattern = '/^([\w-]+)(?:\(([^)]+)\))?\z/';
+      if (!preg_match($pattern, $description, $matches)) {
         throw new PhutilArgumentUsageException(
           pht(
             'Object specification "%s" is unknown, expected a specification '.
-            'like "commit(HEAD)".'));
+            'like "commit(HEAD)".',
+            $description));
       }
 
       $function = $matches[1];
@@ -149,11 +151,21 @@ EOTEXT
     if ($ref->hasAttachedHardpoint($hardpoint_key)) {
       $mode = '*';
       $value = $ref->getHardpoint($hardpoint_key);
+
       if ($value instanceof ArcanistRefPro) {
         $children[] = $value;
+      } else if (is_array($value)) {
+        foreach ($value as $key => $child) {
+          if ($child instanceof ArcanistRefPro) {
+            $children[] = $child;
+          } else {
+            $values[] = $value;
+          }
+        }
       } else {
         $values[] = $value;
       }
+
     } else {
       $mode = 'o';
     }

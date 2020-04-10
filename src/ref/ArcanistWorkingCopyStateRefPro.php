@@ -4,7 +4,6 @@ final class ArcanistWorkingCopyStateRefPro
   extends ArcanistRefPro {
 
   const HARDPOINT_COMMITREF = 'commitRef';
-  const HARDPOINT_BRANCHREF = 'branchRef';
   const HARDPOINT_REVISIONREFS = 'revisionRefs';
 
   public function getRefDisplayName() {
@@ -14,22 +13,15 @@ final class ArcanistWorkingCopyStateRefPro
   }
 
   protected function newHardpoints() {
+    $object_list = new ArcanistObjectListHardpoint();
     return array(
       $this->newHardpoint(self::HARDPOINT_COMMITREF),
-      $this->newHardpoint(self::HARDPOINT_BRANCHREF),
-      $this->newVectorHardpoint(self::HARDPOINT_REVISIONREFS),
+      $this->newTemplateHardpoint(self::HARDPOINT_REVISIONREFS, $object_list),
     );
   }
 
-  public function attachBranchRef(ArcanistBranchRef $branch_ref) {
-    return $this->attachHardpoint(self::HARDPOINT_BRANCHREF, $branch_ref);
-  }
-
-  public function getBranchRef() {
-    return $this->getHardpoint(self::HARDPOINT_BRANCHREF);
-  }
-
-  public function setCommitRef(ArcanistCommitRef $commit_ref) {
+  // TODO: This should be "attachCommitRef()".
+  public function setCommitRef(ArcanistCommitRefPro $commit_ref) {
     return $this->attachHardpoint(self::HARDPOINT_COMMITREF, $commit_ref);
   }
 

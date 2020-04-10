@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistGitCommitMessageHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistWorkflowGitHardpointQuery {
 
   public function getHardpoints() {
     return array(
@@ -11,11 +11,6 @@ final class ArcanistGitCommitMessageHardpointQuery
 
   protected function canLoadRef(ArcanistRefPro $ref) {
     return ($ref instanceof ArcanistCommitRefPro);
-  }
-
-  protected function canLoadHardpoint() {
-    $api = $this->getRepositoryAPI();
-    return ($api instanceof ArcanistGitAPI);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
