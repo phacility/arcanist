@@ -673,6 +673,36 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return new ArcanistBranchRef();
   }
 
+  final public function getCurrentCommitRef() {
+    $commit_hash = $this->newCurrentCommitHash();
+    return $this->newCommitRef()
+      ->setCommitHash($commit_hash);
+  }
+
+  protected function newCurrentCommitRef() {
+    $commit_hash = $this->newCurrentCommitHash();
+    return $this->newCommitRefForSymbol($commit_hash);
+  }
+
+  protected function newCommitRefForSymbol() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  protected function newCurrentCommitHash() {
+    throw new ArcanistCapabilityNotSupportedException($this);
+  }
+
+  final public function getCurrentWorkingCopyStateRef() {
+    return $this->newCurrentWorkingCopyStateRef();
+  }
+
+  protected function newCurrentWorkingCopyStateRef() {
+    $commit_ref = $this->getCurrentCommitRef();
+
+    return id(new ArcanistWorkingCopyStateRef())
+      ->setCommitRef($commit_ref);
+  }
+
   final public function newFuture($pattern /* , ... */) {
     $args = func_get_args();
     return $this->buildLocalFuture($args)
