@@ -10,10 +10,6 @@ final class ArcanistRepositoryRef
     return pht('Remote Repository');
   }
 
-  public function defineHardpoints() {
-    return array();
-  }
-
   public function setPHID($phid) {
     $this->phid = $phid;
     return $this;

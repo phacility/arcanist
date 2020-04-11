@@ -10,10 +10,6 @@ final class ArcanistBrowseURIRef
     return pht('Browse URI "%s"', $this->getURI());
   }
 
-  public function defineHardpoints() {
-    return array();
-  }
-
   public function setURI($uri) {
     $this->uri = $uri;
     return $this;

@@ -10,10 +10,6 @@ final class ArcanistRevisionRef
     return pht('Revision %s', $this->getMonogram());
   }
 
-  public function defineHardpoints() {
-    return array();
-  }
-
   public static function newFromConduit(array $dict) {
     $ref = new self();
     $ref->parameters = $dict;
