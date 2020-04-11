@@ -226,7 +226,10 @@ EOTEXT
 
     $log->writeSuccess(
       pht('INSTALL'),
-      pht('Installing shell completion support for "%s".', $shell));
+      pht(
+        'Installing shell completion support for "%s" into "%s".',
+        $shell,
+        $file_display));
 
     if ($replace) {
       $replace_pos = $matches[0][1];
