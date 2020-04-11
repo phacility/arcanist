@@ -2299,8 +2299,16 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function loadHardpoints(
-    array $objects,
-    array $requests) {
+    $objects,
+    $requests) {
+
+    if (!is_array($objects)) {
+      $objects = array($objects);
+    }
+
+    if (!is_array($requests)) {
+      $requests = array($requests);
+    }
 
     $engine = $this->getHardpointEngine();
 

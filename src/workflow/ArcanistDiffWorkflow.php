@@ -3062,12 +3062,8 @@ EOTEXT
       ->setCommitRef($base_ref);
 
     $this->loadHardpoints(
-      array(
-        $state_ref,
-      ),
-      array(
-        ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS,
-      ));
+      $state_ref,
+      ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS);
 
     $revision_refs = $state_ref->getRevisionRefs();
     $viewer_phid = $this->getUserPHID();

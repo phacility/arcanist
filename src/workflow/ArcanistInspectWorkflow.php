@@ -98,9 +98,7 @@ EOTEXT
         if ($hardpoints) {
           $hardpoint_keys = mpull($hardpoints, 'getHardpointKey');
 
-          $this->loadHardpoints(
-            $refs,
-            $hardpoint_keys);
+          $this->loadHardpoints($refs, $hardpoint_keys);
         }
       }
     }

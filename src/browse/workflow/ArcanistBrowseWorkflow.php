@@ -120,9 +120,7 @@ EOTEXT
 
     $this->loadHardpoints(
       $refs,
-      array(
-        ArcanistBrowseRef::HARDPOINT_URIS,
-      ));
+      ArcanistBrowseRef::HARDPOINT_URIS);
 
     $zero_hits = array();
     $open_uris = array();

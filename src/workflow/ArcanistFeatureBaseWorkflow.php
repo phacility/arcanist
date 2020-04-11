@@ -79,10 +79,7 @@ EOHELP
 
     $this->loadHardpoints(
       ipull($states, 'state'),
-      array(
-        ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS,
-      ));
-
+      ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS);
 
     $this->printBranches($states);
 
