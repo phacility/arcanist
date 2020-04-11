@@ -5,12 +5,12 @@ final class ArcanistBrowseCommitHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistBrowseRefPro::HARDPOINT_COMMITREFS,
+      ArcanistBrowseRef::HARDPOINT_COMMITREFS,
     );
   }
 
-  protected function canLoadRef(ArcanistRefPro $ref) {
-    return ($ref instanceof ArcanistBrowseRefPro);
+  protected function canLoadRef(ArcanistRef $ref) {
+    return ($ref instanceof ArcanistBrowseRef);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
@@ -53,7 +53,7 @@ final class ArcanistBrowseCommitHardpointQuery
     $results = array();
     foreach ($commit_map as $commit_identifier => $ref_keys) {
       foreach ($ref_keys as $key) {
-        $commit_ref = id(new ArcanistCommitRefPro())
+        $commit_ref = id(new ArcanistCommitRef())
           ->setCommitHash($commit_identifier);
         $results[$key][] = $commit_ref;
       }

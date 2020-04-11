@@ -14,7 +14,7 @@ final class ArcanistBrowseRevisionURIHardpointQuery
     yield $this->yieldRequests(
       $refs,
       array(
-        ArcanistBrowseRefPro::HARDPOINT_COMMITREFS,
+        ArcanistBrowseRef::HARDPOINT_COMMITREFS,
       ));
 
     $states = array();
@@ -22,7 +22,7 @@ final class ArcanistBrowseRevisionURIHardpointQuery
     foreach ($refs as $key => $ref) {
       foreach ($ref->getCommitRefs() as $commit_ref) {
         $hash = $commit_ref->getCommitHash();
-        $states[$hash] = id(new ArcanistWorkingCopyStateRefPro())
+        $states[$hash] = id(new ArcanistWorkingCopyStateRef())
           ->setCommitRef($commit_ref);
         $map[$hash][] = $key;
       }

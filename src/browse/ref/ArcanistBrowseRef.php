@@ -3,24 +3,21 @@
 final class ArcanistBrowseRef
   extends ArcanistRef {
 
+  const HARDPOINT_URIS = 'uris';
+  const HARDPOINT_COMMITREFS = 'commitRefs';
+
   private $token;
-  private $types;
+  private $types = array();
   private $branch;
 
-  public function getRefIdentifier() {
+  public function getRefDisplayName() {
     return pht('Browse Query "%s"', $this->getToken());
   }
 
-  public function defineHardpoints() {
+  protected function newHardpoints() {
     return array(
-      'commitRefs' => array(
-        'type' => 'ArcanistCommitRef',
-        'vector' => true,
-      ),
-      'uris' => array(
-        'type' => 'ArcanistBrowseURIRef',
-        'vector' => true,
-      ),
+      $this->newVectorHardpoint(self::HARDPOINT_COMMITREFS),
+      $this->newVectorHardpoint(self::HARDPOINT_URIS),
     );
   }
 
@@ -62,11 +59,11 @@ final class ArcanistBrowseRef
   }
 
   public function getURIs() {
-    return $this->getHardpoint('uris');
+    return $this->getHardpoint(self::HARDPOINT_URIS);
   }
 
   public function getCommitRefs() {
-    return $this->getHardpoint('commitRefs');
+    return $this->getHardpoint(self::HARDPOINT_COMMITREFS);
   }
 
 }

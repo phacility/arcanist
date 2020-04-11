@@ -107,23 +107,22 @@ EOTEXT
       }
     }
 
-    $loaders = ArcanistBrowseURIHardpointLoader::getAllBrowseLoaders();
-    foreach ($loaders as $key => $loader) {
-      $loaders[$key] = clone $loader;
-    }
+    // TODO: The "Path" and "Commit" queries should regain the ability to warn
+    // when this command is not run in a working copy that belongs to a
+    // recognized repository, so they won't ever be able to resolve things.
 
-    $query = $this->newRefQuery($refs)
-      ->needHardpoints(
-        array(
-          'uris',
-        ))
-      ->setLoaders($loaders);
+    // TODO: When you run "arc browse" with no arguments, we should either
+    // take you to the repository home page or show help.
 
-    foreach ($loaders as $loader) {
-      $loader->willLoadBrowseURIRefs($refs);
-    }
+    // TODO: When you "arc browse something/like/a/path.c" but it does not
+    // exist on disk, it is not resolved unless you explicitly use "--type
+    // path". This should be explained more clearly again.
 
-    $query->execute();
+    $this->loadHardpoints(
+      $refs,
+      array(
+        ArcanistBrowseRef::HARDPOINT_URIS,
+      ));
 
     $zero_hits = array();
     $open_uris = array();
@@ -220,10 +219,6 @@ EOTEXT
               'Unable to resolve argument "%s".',
               $ref->getToken()));
         }
-      }
-
-      foreach ($loaders as $loader) {
-        $loader->didFailToLoadBrowseURIRefs($refs);
       }
     }
 

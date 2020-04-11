@@ -3,56 +3,34 @@
 final class ArcanistWorkingCopyStateRef
   extends ArcanistRef {
 
-  private $rootDirectory;
+  const HARDPOINT_COMMITREF = 'commitRef';
+  const HARDPOINT_REVISIONREFS = 'revisionRefs';
 
-  public function getRefIdentifier() {
+  public function getRefDisplayName() {
     // TODO: This could check attached hardpoints and render something more
     // insightful.
     return pht('Working Copy State');
   }
 
-  public function defineHardpoints() {
+  protected function newHardpoints() {
+    $object_list = new ArcanistObjectListHardpoint();
     return array(
-      'commitRef' => array(
-        'type' => 'ArcanistCommitRef',
-      ),
-      'branchRef' => array(
-        'type' => 'ArcanistBranchRef',
-      ),
-      'revisionRefs' => array(
-        'type' => 'ArcanistRevisionRef',
-        'vector' => true,
-      ),
+      $this->newHardpoint(self::HARDPOINT_COMMITREF),
+      $this->newTemplateHardpoint(self::HARDPOINT_REVISIONREFS, $object_list),
     );
   }
 
-  public function setRootDirectory($root_directory) {
-    $this->rootDirectory = $root_directory;
-    return $this;
-  }
-
-  public function getRootDirectory() {
-    return $this->rootDirectory;
-  }
-
-  public function attachBranchRef(ArcanistBranchRef $branch_ref) {
-    return $this->attachHardpoint('branchRef', $branch_ref);
-  }
-
-  public function getBranchRef() {
-    return $this->getHardpoint('branchRef');
-  }
-
+  // TODO: This should be "attachCommitRef()".
   public function setCommitRef(ArcanistCommitRef $commit_ref) {
-    return $this->attachHardpoint('commitRef', $commit_ref);
+    return $this->attachHardpoint(self::HARDPOINT_COMMITREF, $commit_ref);
   }
 
   public function getCommitRef() {
-    return $this->getHardpoint('commitRef');
+    return $this->getHardpoint(self::HARDPOINT_COMMITREF);
   }
 
   public function getRevisionRefs() {
-    return $this->getHardpoint('revisionRefs');
+    return $this->getHardpoint(self::HARDPOINT_REVISIONREFS);
   }
 
   public function getRevisionRef() {
@@ -71,52 +49,6 @@ final class ArcanistWorkingCopyStateRef
 
   public function hasAmbiguousRevisionRefs() {
     return (count($this->getRevisionRefs()) > 1);
-  }
-
-  protected function canReadHardpoint($hardpoint) {
-    switch ($hardpoint) {
-      case 'commitRef':
-        // If we have a branch ref, we can try to read the commit ref from the
-        // branch ref.
-        if ($this->hasAttachedHardpoint('branchRef')) {
-          if ($this->getBranchRef()->hasAttachedHardpoint('commitRef')) {
-            return true;
-          }
-        }
-        break;
-    }
-
-    return false;
-  }
-
-  protected function readHardpoint($hardpoint) {
-    switch ($hardpoint) {
-      case 'commitRef':
-        return $this->getBranchRef()->getCommitRef();
-    }
-
-    return parent::readHardpoint($hardpoint);
-  }
-
-  protected function mergeHardpoint($hardpoint, array $src, array $new) {
-    if ($hardpoint == 'revisionRefs') {
-      $src = mpull($src, null, 'getID');
-      $new = mpull($new, null, 'getID');
-
-      foreach ($new as $id => $ref) {
-        if (isset($src[$id])) {
-          foreach ($ref->getSources() as $source) {
-            $src[$id]->addSource($source);
-          }
-        } else {
-          $src[$id] = $ref;
-        }
-      }
-
-      return array_values($src);
-    }
-
-    return parent::mergeHardpoint($hardpoint, $src, $new);
   }
 
 }

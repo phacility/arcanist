@@ -38,7 +38,7 @@ abstract class ArcanistWorkflowHardpointQuery
       return false;
     }
 
-    if (!$object instanceof ArcanistRefPro) {
+    if (!$object instanceof ArcanistRef) {
       return false;
     }
 
@@ -49,7 +49,7 @@ abstract class ArcanistWorkflowHardpointQuery
     return true;
   }
 
-  abstract protected function canLoadRef(ArcanistRefPro $ref);
+  abstract protected function canLoadRef(ArcanistRef $ref);
 
   final public function yieldConduit($method, array $parameters) {
     $conduit_engine = $this->getWorkflow()
@@ -74,7 +74,7 @@ abstract class ArcanistWorkflowHardpointQuery
   }
 
   final public function yieldValue(array $refs, $value) {
-    assert_instances_of($refs, 'ArcanistRefPro');
+    assert_instances_of($refs, 'ArcanistRef');
 
     $keys = array_keys($refs);
     $map = array_fill_keys($keys, $value);

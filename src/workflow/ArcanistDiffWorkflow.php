@@ -3051,18 +3051,23 @@ EOTEXT
   }
 
   private function getDependsOnRevisionRef() {
+    // TODO: Restore this behavior after updating for toolsets. Loading the
+    // required hardpoints currently depends on a "WorkingCopy" existing.
+    return null;
+
     $api = $this->getRepositoryAPI();
     $base_ref = $api->getBaseCommitRef();
 
-    $state_ref = $this->newWorkingCopyStateRef()
+    $state_ref = id(new ArcanistWorkingCopyStateRef())
       ->setCommitRef($base_ref);
 
-    $this->newRefQuery(array($state_ref))
-      ->needHardpoints(
-        array(
-          'revisionRefs',
-        ))
-      ->execute();
+    $this->loadHardpoints(
+      array(
+        $state_ref,
+      ),
+      array(
+        ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS,
+      ));
 
     $revision_refs = $state_ref->getRevisionRefs();
     $viewer_phid = $this->getUserPHID();

@@ -5,19 +5,19 @@ final class ArcanistGitWorkingCopyRevisionHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistWorkingCopyStateRefPro::HARDPOINT_REVISIONREFS,
+      ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS,
     );
   }
 
-  protected function canLoadRef(ArcanistRefPro $ref) {
-    return ($ref instanceof ArcanistWorkingCopyStateRefPro);
+  protected function canLoadRef(ArcanistRef $ref) {
+    return ($ref instanceof ArcanistWorkingCopyStateRef);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
     yield $this->yieldRequests(
       $refs,
       array(
-        ArcanistWorkingCopyStateRefPro::HARDPOINT_COMMITREF,
+        ArcanistWorkingCopyStateRef::HARDPOINT_COMMITREF,
       ));
 
     $hashes = array();
@@ -60,7 +60,7 @@ final class ArcanistGitWorkingCopyRevisionHardpointQuery
           continue;
         }
 
-        $revision_ref = ArcanistRevisionRefPro::newFromConduit($dict);
+        $revision_ref = ArcanistRevisionRef::newFromConduit($dict);
         foreach ($revision_hashes as $revision_hash) {
           $hash_key = $this->getHashKey($revision_hash);
           $state_refs = idx($map, $hash_key, array());

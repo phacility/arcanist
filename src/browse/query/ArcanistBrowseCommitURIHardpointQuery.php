@@ -5,33 +5,6 @@ final class ArcanistBrowseCommitURIHardpointQuery
 
   const BROWSETYPE = 'commit';
 
-  public function willLoadBrowseURIRefs(array $refs) {
-    $refs = $this->getRefsWithSupportedTypes($refs);
-
-    if (!$refs) {
-      return;
-    }
-
-    $query = $this->getQuery();
-
-    $working_ref = $query->getWorkingCopyRef();
-    if (!$working_ref) {
-      // If we aren't in a working copy, don't warn about this.
-      return;
-    }
-
-    $repository_ref = $this->getQuery()->getRepositoryRef();
-    if (!$repository_ref) {
-      echo pht(
-        'NO REPOSITORY: Unable to determine which repository this working '.
-        'copy belongs to, so arguments can not be resolved as commits. Use '.
-        '"%s" to understand how repositories are resolved.',
-        'arc which');
-      echo "\n";
-      return;
-    }
-  }
-
   public function loadHardpoint(array $refs, $hardpoint) {
     $refs = $this->getRefsWithSupportedTypes($refs);
     if (!$refs) {
@@ -41,7 +14,7 @@ final class ArcanistBrowseCommitURIHardpointQuery
     yield $this->yieldRequests(
       $refs,
       array(
-        ArcanistBrowseRefPro::HARDPOINT_COMMITREFS,
+        ArcanistBrowseRef::HARDPOINT_COMMITREFS,
       ));
 
     $commit_refs = array();
@@ -54,7 +27,7 @@ final class ArcanistBrowseCommitURIHardpointQuery
     yield $this->yieldRequests(
       $commit_refs,
       array(
-        ArcanistCommitRefPro::HARDPOINT_UPSTREAM,
+        ArcanistCommitRef::HARDPOINT_UPSTREAM,
       ));
 
     $results = array();

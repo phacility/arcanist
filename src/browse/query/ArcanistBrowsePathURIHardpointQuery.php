@@ -5,60 +5,6 @@ final class ArcanistBrowsePathURIHardpointQuery
 
   const BROWSETYPE = 'path';
 
-  public function willLoadBrowseURIRefs(array $refs) {
-    $refs = $this->getRefsWithSupportedTypes($refs);
-    if (!$refs) {
-      return;
-    }
-
-    $query = $this->getQuery();
-
-    $working_ref = $query->getWorkingCopyRef();
-    if (!$working_ref) {
-      echo pht(
-        'NO WORKING COPY: The current directory is not a repository '.
-        'working copy, so arguments can not be resolved as paths. Run '.
-        'this command inside a working copy to resolve paths.');
-      echo "\n";
-      return;
-    }
-
-    $repository_ref = $query->getRepositoryRef();
-    if (!$repository_ref) {
-      echo pht(
-        'NO REPOSITORY: Unable to determine which repository this working '.
-        'copy belongs to, so arguments can not be resolved as paths. Use '.
-        '"%s" to understand how repositories are resolved.',
-        'arc which');
-      echo "\n";
-      return;
-    }
-  }
-
-  public function didFailToLoadBrowseURIRefs(array $refs) {
-    $refs = $this->getRefsWithSupportedTypes($refs);
-    if (!$refs) {
-      return;
-    }
-
-    $query = $this->getQuery();
-
-    $working_ref = $query->getWorkingCopyRef();
-    if (!$working_ref) {
-      return;
-    }
-
-    $repository_ref = $query->getRepositoryRef();
-    if (!$repository_ref) {
-      return;
-    }
-
-    echo pht(
-      'Use "--types path" to force arguments to be interpreted as paths.');
-    echo "\n";
-  }
-
-
   public function loadHardpoint(array $refs, $hardpoint) {
     $refs = $this->getRefsWithSupportedTypes($refs);
     if (!$refs) {

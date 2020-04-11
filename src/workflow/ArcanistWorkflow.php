@@ -2250,15 +2250,6 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->conduitEngine;
   }
 
-  final protected function newWorkingCopyStateRef() {
-    $ref = new ArcanistWorkingCopyStateRef();
-
-    $working_copy = $this->getWorkingCopyIdentity();
-    $ref->setRootDirectory($working_copy->getProjectRoot());
-
-    return $ref;
-  }
-
   final protected function newRefQuery(array $refs) {
     assert_instances_of($refs, 'ArcanistRef');
 

@@ -9,18 +9,17 @@ final class ArcanistCommitRef
   private $authorEpoch;
   private $upstream;
 
-  public function getRefIdentifier() {
-    return pht('Commit %s', $this->getCommitHash());
+  const HARDPOINT_MESSAGE = 'message';
+  const HARDPOINT_UPSTREAM = 'upstream';
+
+  public function getRefDisplayName() {
+    return pht('Commit "%s"', $this->getCommitHash());
   }
 
-  public function defineHardpoints() {
+  protected function newHardpoints() {
     return array(
-      'message' => array(
-        'type' => 'string',
-      ),
-      'upstream' => array(
-        'type' => 'wild',
-      ),
+      $this->newHardpoint(self::HARDPOINT_MESSAGE),
+      $this->newHardpoint(self::HARDPOINT_UPSTREAM),
     );
   }
 
@@ -70,11 +69,11 @@ final class ArcanistCommitRef
   }
 
   public function attachMessage($message) {
-    return $this->attachHardpoint('message', $message);
+    return $this->attachHardpoint(self::HARDPOINT_MESSAGE, $message);
   }
 
   public function getMessage() {
-    return $this->getHardpoint('message');
+    return $this->getHardpoint(self::HARDPOINT_MESSAGE);
   }
 
   public function getURI() {
@@ -82,7 +81,7 @@ final class ArcanistCommitRef
   }
 
   private function getUpstreamProperty($key, $default = null) {
-    $upstream = $this->getHardpoint('upstream');
+    $upstream = $this->getHardpoint(self::HARDPOINT_UPSTREAM);
 
     if (!$upstream) {
       return $default;

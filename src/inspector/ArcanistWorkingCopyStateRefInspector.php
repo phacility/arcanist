@@ -16,10 +16,10 @@ final class ArcanistWorkingCopyStateRefInspector
     }
 
     $commit_hash = $argv[0];
-    $commit_ref = id(new ArcanistCommitRefPro())
+    $commit_ref = id(new ArcanistCommitRef())
       ->setCommitHash($commit_hash);
 
-    return id(new ArcanistWorkingCopyStateRefPro())
+    return id(new ArcanistWorkingCopyStateRef())
       ->setCommitRef($commit_ref);
   }
 

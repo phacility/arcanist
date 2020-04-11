@@ -6,7 +6,7 @@ final class ArcanistRevisionRef
   private $parameters;
   private $sources = array();
 
-  public function getRefIdentifier() {
+  public function getRefDisplayName() {
     return pht('Revision %s', $this->getMonogram());
   }
 
@@ -50,6 +50,10 @@ final class ArcanistRevisionRef
 
   public function getID() {
     return idx($this->parameters, 'id');
+  }
+
+  public function getPHID() {
+    return idx($this->parameters, 'phid');
   }
 
   public function getName() {

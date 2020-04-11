@@ -9,12 +9,12 @@ abstract class ArcanistBrowseURIHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistBrowseRefPro::HARDPOINT_URIS,
+      ArcanistBrowseRef::HARDPOINT_URIS,
     );
   }
 
-  protected function canLoadRef(ArcanistRefPro $ref) {
-    return ($ref instanceof ArcanistBrowseRefPro);
+  protected function canLoadRef(ArcanistRef $ref) {
+    return ($ref instanceof ArcanistBrowseRef);
   }
 
   public function getRefsWithSupportedTypes(array $refs) {
@@ -42,7 +42,7 @@ abstract class ArcanistBrowseURIHardpointQuery
   }
 
   final protected function newBrowseURIRef() {
-    return id(new ArcanistBrowseURIRefPro())
+    return id(new ArcanistBrowseURIRef())
       ->setType($this->getSupportedBrowseType());
   }
 

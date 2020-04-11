@@ -15,7 +15,7 @@ final class ArcanistCommitRefInspector
           'commit hash.'));
     }
 
-    return id(new ArcanistCommitRefPro())
+    return id(new ArcanistCommitRef())
       ->setCommitHash($argv[0]);
   }
 

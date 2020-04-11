@@ -117,7 +117,7 @@ EOTEXT
     return 0;
   }
 
-  private function describeRef(ArcanistRefPro $ref, $depth) {
+  private function describeRef(ArcanistRef $ref, $depth) {
     $indent = str_repeat(' ', $depth);
 
     $out = array();
@@ -139,7 +139,7 @@ EOTEXT
   }
 
   private function describeHardpoint(
-    ArcanistRefPro $ref,
+    ArcanistRef $ref,
     ArcanistHardpoint $hardpoint,
     $depth) {
     $indent = str_repeat(' ', $depth);
@@ -152,11 +152,11 @@ EOTEXT
       $mode = '*';
       $value = $ref->getHardpoint($hardpoint_key);
 
-      if ($value instanceof ArcanistRefPro) {
+      if ($value instanceof ArcanistRef) {
         $children[] = $value;
       } else if (is_array($value)) {
         foreach ($value as $key => $child) {
-          if ($child instanceof ArcanistRefPro) {
+          if ($child instanceof ArcanistRef) {
             $children[] = $child;
           } else {
             $values[] = $value;

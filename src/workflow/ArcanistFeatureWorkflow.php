@@ -71,17 +71,22 @@ EOHELP
     }
 
     $states = array();
-    foreach ($branches as $branch) {
-      $states[] = $this->newWorkingCopyStateRef()
-        ->attachBranchRef($branch);
+    foreach ($branches as $branch_key => $branch) {
+      $state_ref = id(new ArcanistWorkingCopyStateRef())
+        ->setCommitRef($branch->getCommitRef());
+
+      $states[] = array(
+        'branch' => $branch,
+        'state' => $state_ref,
+      );
     }
 
-    $this->newRefQuery($states)
-      ->needHardpoints(
-        array(
-          'revisionRefs',
-        ))
-      ->execute();
+    $this->loadHardpoints(
+      ipull($states, 'state'),
+      array(
+        ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS,
+      ));
+
 
     $this->printBranches($states);
 
@@ -177,8 +182,9 @@ EOHELP
     );
 
     $out = array();
-    foreach ($states as $state) {
-      $branch = $state->getBranchRef();
+    foreach ($states as $objects) {
+      $state = $objects['state'];
+      $branch = $objects['branch'];
 
       $revision = null;
       if ($state->hasAmbiguousRevisionRefs()) {

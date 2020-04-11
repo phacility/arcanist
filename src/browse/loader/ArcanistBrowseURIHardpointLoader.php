@@ -19,10 +19,6 @@ abstract class ArcanistBrowseURIHardpointLoader
     return ($hardpoint == 'uris');
   }
 
-  public function willLoadBrowseURIRefs(array $refs) {
-    return;
-  }
-
   public function didFailToLoadBrowseURIRefs(array $refs) {
     return;
   }

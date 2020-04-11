@@ -5,19 +5,19 @@ final class ArcanistWorkingCopyCommitHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistWorkingCopyStateRefPro::HARDPOINT_COMMITREF,
+      ArcanistWorkingCopyStateRef::HARDPOINT_COMMITREF,
     );
   }
 
-  protected function canLoadRef(ArcanistRefPro $ref) {
-    return ($ref instanceof ArcanistWorkingCopyStateRefPro);
+  protected function canLoadRef(ArcanistRef $ref) {
+    return ($ref instanceof ArcanistWorkingCopyStateRef);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
     yield $this->yieldRequests(
       $refs,
       array(
-        ArcanistWorkingCopyStateRefPro::HARDPOINT_BRANCHREF,
+        ArcanistWorkingCopyStateRef::HARDPOINT_BRANCHREF,
       ));
 
     $branch_refs = mpull($refs, 'getBranchRef');
@@ -25,7 +25,7 @@ final class ArcanistWorkingCopyCommitHardpointQuery
     yield $this->yieldRequests(
       $branch_refs,
       array(
-        ArcanistBranchRefPro::HARDPOINT_COMMITREF,
+        ArcanistBranchRef::HARDPOINT_COMMITREF,
       ));
 
     $results = array();

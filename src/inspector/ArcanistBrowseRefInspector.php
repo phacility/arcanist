@@ -15,7 +15,7 @@ final class ArcanistBrowseRefInspector
           'token.'));
     }
 
-    return id(new ArcanistBrowseRefPro())
+    return id(new ArcanistBrowseRef())
       ->setToken($argv[0]);
   }
 

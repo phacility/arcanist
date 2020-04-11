@@ -3,19 +3,19 @@
 final class ArcanistBranchRef
   extends ArcanistRef {
 
+  const HARDPOINT_COMMITREF = 'commitRef';
+
   private $branchName;
   private $refName;
   private $isCurrentBranch;
 
-  public function getRefIdentifier() {
+  public function getRefDisplayName() {
     return pht('Branch %s', $this->getBranchName());
   }
 
-  public function defineHardpoints() {
+  protected function newHardpoints() {
     return array(
-      'commitRef' => array(
-        'type' => 'ArcanistCommitRef',
-      ),
+      $this->newHardpoint(self::HARDPOINT_COMMITREF),
     );
   }
 
@@ -47,11 +47,11 @@ final class ArcanistBranchRef
   }
 
   public function attachCommitRef(ArcanistCommitRef $ref) {
-    return $this->attachHardpoint('commitRef', $ref);
+    return $this->attachHardpoint(self::HARDPOINT_COMMITREF, $ref);
   }
 
   public function getCommitRef() {
-    return $this->getHardpoint('commitRef');
+    return $this->getHardpoint(self::HARDPOINT_COMMITREF);
   }
 
 }

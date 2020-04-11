@@ -5,12 +5,12 @@ final class ArcanistGitCommitMessageHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistCommitRefPro::HARDPOINT_MESSAGE,
+      ArcanistCommitRef::HARDPOINT_MESSAGE,
     );
   }
 
-  protected function canLoadRef(ArcanistRefPro $ref) {
-    return ($ref instanceof ArcanistCommitRefPro);
+  protected function canLoadRef(ArcanistRef $ref) {
+    return ($ref instanceof ArcanistCommitRef);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
