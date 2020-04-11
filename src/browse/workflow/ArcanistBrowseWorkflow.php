@@ -82,7 +82,7 @@ EOTEXT
         pht(
           'Argument "--force" for "arc browse" is deprecated. Use '.
           '"--type %s" instead.',
-          ArcanistBrowsePathURIHardpointLoader::BROWSETYPE));
+          ArcanistBrowsePathURIHardpointQuery::BROWSETYPE));
     }
 
     $types = $this->getArgument('types');
@@ -90,7 +90,7 @@ EOTEXT
       $types = preg_split('/[\s,]+/', $types);
     } else {
       if ($is_force) {
-        $types = array(ArcanistBrowsePathURIHardpointLoader::BROWSETYPE);
+        $types = array(ArcanistBrowsePathURIHardpointQuery::BROWSETYPE);
       } else {
         $types = array();
       }
