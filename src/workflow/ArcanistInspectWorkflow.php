@@ -51,7 +51,6 @@ EOTEXT
     }
 
     $all_refs = array();
-    $ref_lists = array();
     foreach ($objects as $description) {
       $matches = null;
       $pattern = '/^([\w-]+)(?:\(([^)]+)\))?\z/';
@@ -84,23 +83,11 @@ EOTEXT
 
       $ref = $inspector->newInspectRef($arguments);
 
-      $ref_lists[get_class($ref)][] = $ref;
       $all_refs[] = $ref;
     }
 
     if ($is_explore) {
-      foreach ($ref_lists as $ref_class => $refs) {
-        $ref = head($refs);
-
-        $hardpoint_list = $ref->getHardpointList();
-        $hardpoints = $hardpoint_list->getHardpoints();
-
-        if ($hardpoints) {
-          $hardpoint_keys = mpull($hardpoints, 'getHardpointKey');
-
-          $this->loadHardpoints($refs, $hardpoint_keys);
-        }
-      }
+      $this->exploreRefs($all_refs);
     }
 
     $list = array();
@@ -212,6 +199,90 @@ EOTEXT
       $indent,
       $display_value);
     return $out;
+  }
+
+  private function exploreRefs(array $refs) {
+    $seen = array();
+    $look = $refs;
+
+    while ($look) {
+      $ref_map = $this->getRefsByClass($look);
+      $look = array();
+
+      $children = $this->inspectHardpoints($ref_map);
+
+      foreach ($children as $child) {
+        $hash = spl_object_hash($child);
+
+        if (isset($seen[$hash])) {
+          continue;
+        }
+
+        $seen[$hash] = true;
+        $look[] = $child;
+      }
+    }
+  }
+
+  private function getRefsByClass(array $refs) {
+    $ref_lists = array();
+    foreach ($refs as $ref) {
+      $ref_lists[get_class($ref)][] = $ref;
+    }
+
+    foreach ($ref_lists as $ref_class => $refs) {
+      $typical_ref = head($refs);
+
+      $hardpoint_list = $typical_ref->getHardpointList();
+      $hardpoints = $hardpoint_list->getHardpoints();
+
+      if (!$hardpoints) {
+        unset($ref_lists[$ref_class]);
+        continue;
+      }
+
+      $hardpoint_keys = mpull($hardpoints, 'getHardpointKey');
+
+      $ref_lists[$ref_class] = array(
+        'keys' => $hardpoint_keys,
+        'refs' => $refs,
+      );
+    }
+
+    return $ref_lists;
+  }
+
+  private function inspectHardpoints(array $ref_lists) {
+    foreach ($ref_lists as $ref_class => $spec) {
+      $refs = $spec['refs'];
+      $keys = $spec['keys'];
+
+      $this->loadHardpoints($refs, $keys);
+    }
+
+    $child_refs = array();
+
+    foreach ($ref_lists as $ref_class => $spec) {
+      $refs = $spec['refs'];
+      $keys = $spec['keys'];
+      foreach ($refs as $ref) {
+        foreach ($keys as $key) {
+          $value = $ref->getHardpoint($key);
+
+          if (!is_array($value)) {
+            $value = array($value);
+          }
+
+          foreach ($value as $child) {
+            if ($child instanceof ArcanistRef) {
+              $child_refs[] = $child;
+            }
+          }
+        }
+      }
+    }
+
+    return $child_refs;
   }
 
 }

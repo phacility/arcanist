@@ -5,7 +5,7 @@ final class ArcanistGitCommitSymbolCommitHardpointQuery
 
   public function getHardpoints() {
     return array(
-      ArcanistCommitSymbolRef::HARDPOINT_COMMIT,
+      ArcanistCommitSymbolRef::HARDPOINT_OBJECT,
     );
   }
 

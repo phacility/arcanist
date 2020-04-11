@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistCommitRefInspector
+final class ArcanistCommitSymbolRefInspector
   extends ArcanistRefInspector {
 
   public function getInspectFunctionName() {
@@ -12,11 +12,11 @@ final class ArcanistCommitRefInspector
       throw new PhutilArgumentUsageException(
         pht(
           'Expected exactly one argument to "commit(...)" with a '.
-          'commit hash.'));
+          'commit symbol.'));
     }
 
-    return id(new ArcanistCommitRef())
-      ->setCommitHash($argv[0]);
+    return id(new ArcanistCommitSymbolRef())
+      ->setSymbol($argv[0]);
   }
 
 }

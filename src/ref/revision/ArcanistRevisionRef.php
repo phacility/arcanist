@@ -3,11 +3,19 @@
 final class ArcanistRevisionRef
   extends ArcanistRef {
 
+  const HARDPOINT_COMMITMESSAGE = 'ref.revision.commitmessage';
+
   private $parameters;
   private $sources = array();
 
   public function getRefDisplayName() {
     return pht('Revision %s', $this->getMonogram());
+  }
+
+  protected function newHardpoints() {
+    return array(
+      $this->newHardpoint(self::HARDPOINT_COMMITMESSAGE),
+    );
   }
 
   public static function newFromConduit(array $dict) {
@@ -45,7 +53,7 @@ final class ArcanistRevisionRef
   }
 
   public function getID() {
-    return idx($this->parameters, 'id');
+    return (int)idx($this->parameters, 'id');
   }
 
   public function getPHID() {
