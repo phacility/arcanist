@@ -673,4 +673,10 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return new ArcanistBranchRef();
   }
 
+  final public function newFuture($pattern /* , ... */) {
+    $args = func_get_args();
+    return $this->buildLocalFuture($args)
+      ->setResolveOnError(false);
+  }
+
 }

@@ -309,30 +309,9 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @task resolve
    */
   public function resolvex() {
-    list($err, $stdout, $stderr) = $this->resolve();
-    if ($err) {
-      $cmd = $this->getCommand();
-
-      if ($this->getWasKilledByTimeout()) {
-        // NOTE: The timeout can be a float and PhutilNumber only handles
-        // integers, so just use "%s" to render it.
-        $message = pht(
-          'Command killed by timeout after running for more than %s seconds.',
-          $this->terminateTimeout);
-      } else {
-        $message = pht('Command failed with error #%d!', $err);
-      }
-
-      throw new CommandException(
-        $message,
-        $cmd,
-        $err,
-        $stdout,
-        $stderr);
-    }
-    return array($stdout, $stderr);
+    $result = $this->resolve();
+    return $this->raiseResultError($result);
   }
-
 
   /**
    * Resolve a command you expect to return valid JSON. Works like
@@ -388,18 +367,54 @@ final class ExecFuture extends PhutilExecutableFuture {
         proc_terminate($this->proc, $signal);
       }
 
+      $this->closeProcess();
+
       $result = array(
         128 + $signal,
         $this->stdout,
         $this->stderr,
       );
 
-      $this->setResult($result);
-
-      $this->closeProcess();
+      $this->recordResult($result);
     }
 
     return $this->getResult();
+  }
+
+  private function recordResult(array $result) {
+    $resolve_on_error = $this->getResolveOnError();
+    if (!$resolve_on_error) {
+      $result = $this->raiseResultError($result);
+    }
+
+    $this->setResult($result);
+  }
+
+  private function raiseResultError($result) {
+    list($err, $stdout, $stderr) = $result;
+
+    if ($err) {
+      $cmd = $this->getCommand();
+
+      if ($this->getWasKilledByTimeout()) {
+        // NOTE: The timeout can be a float and PhutilNumber only handles
+        // integers, so just use "%s" to render it.
+        $message = pht(
+          'Command killed by timeout after running for more than %s seconds.',
+          $this->terminateTimeout);
+      } else {
+        $message = pht('Command failed with error #%d!', $err);
+      }
+
+      throw new CommandException(
+        $message,
+        $cmd,
+        $err,
+        $stdout,
+        $stderr);
+    }
+
+    return array($stdout, $stderr);
   }
 
 
@@ -633,7 +648,7 @@ final class ExecFuture extends PhutilExecutableFuture {
             $err),
         );
 
-        $this->setResult($result);
+        $this->recordResult($result);
 
         return true;
       }
@@ -777,7 +792,7 @@ final class ExecFuture extends PhutilExecutableFuture {
         $signal_info.$this->stderr,
       );
 
-      $this->setResult($result);
+      $this->recordResult($result);
 
       $this->closeProcess();
       return true;

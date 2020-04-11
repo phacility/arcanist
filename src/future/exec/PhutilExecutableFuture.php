@@ -8,6 +8,7 @@ abstract class PhutilExecutableFuture extends Future {
   private $command;
   private $env;
   private $cwd;
+  private $resolveOnError = true;
 
   final public function __construct($pattern /* , ... */) {
     $args = func_get_args();
@@ -32,6 +33,15 @@ abstract class PhutilExecutableFuture extends Future {
 
   protected function didConstruct() {
     return;
+  }
+
+  final public function setResolveOnError($resolve_on_error) {
+    $this->resolveOnError = $resolve_on_error;
+    return $this;
+  }
+
+  final public function getResolveOnError() {
+    return $this->resolveOnError;
   }
 
   final public function getCommand() {
