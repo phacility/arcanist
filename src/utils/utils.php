@@ -1927,6 +1927,14 @@ function phutil_is_noninteractive() {
   return false;
 }
 
+function phutil_is_interactive() {
+  if (function_exists('posix_isatty') && posix_isatty(STDIN)) {
+    return true;
+  }
+
+  return false;
+}
+
 function phutil_encode_log($message) {
   return addcslashes($message, "\0..\37\\\177..\377");
 }
