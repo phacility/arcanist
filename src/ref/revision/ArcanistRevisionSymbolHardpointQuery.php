@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistRevisionSymbolHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistRuntimeHardpointQuery {
 
   public function getHardpoints() {
     return array(

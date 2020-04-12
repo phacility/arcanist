@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistWorkingCopyCommitHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistRuntimeHardpointQuery {
 
   public function getHardpoints() {
     return array(

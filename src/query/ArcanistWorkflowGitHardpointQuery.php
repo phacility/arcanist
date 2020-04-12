@@ -1,7 +1,7 @@
 <?php
 
 abstract class ArcanistWorkflowGitHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistRuntimeHardpointQuery {
 
   final protected function canLoadHardpoint() {
     $api = $this->getRepositoryAPI();

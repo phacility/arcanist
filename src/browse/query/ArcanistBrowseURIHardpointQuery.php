@@ -1,7 +1,7 @@
 <?php
 
 abstract class ArcanistBrowseURIHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistRuntimeHardpointQuery {
 
   public function getSupportedBrowseType() {
     return $this->getPhobjectClassConstant('BROWSETYPE', 32);

@@ -8,7 +8,7 @@ final class ArcanistUserRef
   private $parameters;
 
   public function getRefDisplayName() {
-    return pht('User "%s"', $this->getUsername());
+    return pht('User "%s"', $this->getMonogram());
   }
 
   public static function newFromConduit(array $parameters) {
@@ -29,6 +29,18 @@ final class ArcanistUserRef
     return self::newFromConduit($parameters);
   }
 
+  public function getID() {
+    return idx($this->parameters, 'id');
+  }
+
+  public function getPHID() {
+    return idx($this->parameters, 'phid');
+  }
+
+  public function getMonogram() {
+    return '@'.$this->getUsername();
+  }
+
   public function getUsername() {
     return idxv($this->parameters, array('fields', 'username'));
   }
@@ -38,7 +50,7 @@ final class ArcanistUserRef
   }
 
   public function getDisplayRefObjectName() {
-    return '@'.$this->getUsername();
+    return $this->getMonogram();
   }
 
   public function getDisplayRefTitle() {

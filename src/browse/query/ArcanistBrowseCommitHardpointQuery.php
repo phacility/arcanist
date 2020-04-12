@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistBrowseCommitHardpointQuery
-  extends ArcanistWorkflowHardpointQuery {
+  extends ArcanistRuntimeHardpointQuery {
 
   public function getHardpoints() {
     return array(

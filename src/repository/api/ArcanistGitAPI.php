@@ -1687,4 +1687,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return null;
   }
 
+  protected function newCurrentCommitSymbol() {
+    return 'HEAD';
+  }
+
 }

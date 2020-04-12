@@ -8,6 +8,12 @@ final class ArcanistRuntime {
 
   private $stack = array();
 
+  private $viewer;
+  private $hardpointEngine;
+  private $symbolEngine;
+  private $conduitEngine;
+  private $workingCopy;
+
   public function execute(array $argv) {
 
     try {
@@ -108,6 +114,7 @@ final class ArcanistRuntime {
     $this->workflows = $workflows;
 
     $conduit_engine = $this->newConduitEngine($config);
+    $this->conduitEngine = $conduit_engine;
 
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
@@ -301,9 +308,14 @@ final class ArcanistRuntime {
       ->setArguments($args);
 
     $working_copy = ArcanistWorkingCopy::newFromWorkingDirectory(getcwd());
-    if ($working_copy) {
-      $engine->setWorkingCopy($working_copy);
-    }
+
+    $engine->setWorkingCopy($working_copy);
+
+    $this->workingCopy = $working_copy;
+
+    $working_copy
+      ->getRepositoryAPI()
+      ->setRuntime($this);
 
     return $engine;
   }
@@ -682,6 +694,10 @@ final class ArcanistRuntime {
     return $this->stack;
   }
 
+  public function getCurrentWorkflow() {
+    return last($this->stack);
+  }
+
   private function newConduitEngine(ArcanistConfigurationSourceList $config) {
 
     $conduit_uri = $config->getConfig('phabricator.uri');
@@ -742,6 +758,83 @@ final class ArcanistRuntime {
     }
 
     return phutil_passthru('%Ls', $effect->getArguments());
+  }
+
+  public function getSymbolEngine() {
+    if ($this->symbolEngine === null) {
+      $this->symbolEngine = $this->newSymbolEngine();
+    }
+    return $this->symbolEngine;
+  }
+
+  private function newSymbolEngine() {
+    return id(new ArcanistSymbolEngine())
+      ->setWorkflow($this);
+  }
+
+  public function getHardpointEngine() {
+    if ($this->hardpointEngine === null) {
+      $this->hardpointEngine = $this->newHardpointEngine();
+    }
+    return $this->hardpointEngine;
+  }
+
+  private function newHardpointEngine() {
+    $engine = new ArcanistHardpointEngine();
+
+    $queries = ArcanistRuntimeHardpointQuery::getAllQueries();
+
+    foreach ($queries as $key => $query) {
+      $queries[$key] = id(clone $query)
+        ->setRuntime($this);
+    }
+
+    $engine->setQueries($queries);
+
+    return $engine;
+  }
+
+  public function getViewer() {
+    if (!$this->viewer) {
+      $viewer = $this->getSymbolEngine()
+        ->loadUserForSymbol('viewer()');
+
+      // TODO: Deal with anonymous stuff.
+      if (!$viewer) {
+        throw new Exception(pht('No viewer!'));
+      }
+
+      $this->viewer = $viewer;
+    }
+
+    return $this->viewer;
+  }
+
+  public function loadHardpoints($objects, $requests) {
+    if (!is_array($objects)) {
+      $objects = array($objects);
+    }
+
+    if (!is_array($requests)) {
+      $requests = array($requests);
+    }
+
+    $engine = $this->getHardpointEngine();
+
+    $requests = $engine->requestHardpoints(
+      $objects,
+      $requests);
+
+    // TODO: Wait for only the required requests.
+    $engine->waitForRequests(array());
+  }
+
+  public function getWorkingCopy() {
+    return $this->workingCopy;
+  }
+
+  public function getConduitEngine() {
+    return $this->conduitEngine;
   }
 
 }

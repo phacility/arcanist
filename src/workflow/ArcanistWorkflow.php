@@ -76,9 +76,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $configurationEngine;
   private $configurationSourceList;
 
-  private $viewer;
-  private $hardpointEngine;
-  private $symbolEngine;
   private $promptMap;
 
   final public function setToolset(ArcanistToolset $toolset) {
@@ -2303,45 +2300,7 @@ abstract class ArcanistWorkflow extends Phobject {
   final public function loadHardpoints(
     $objects,
     $requests) {
-
-    if (!is_array($objects)) {
-      $objects = array($objects);
-    }
-
-    if (!is_array($requests)) {
-      $requests = array($requests);
-    }
-
-    $engine = $this->getHardpointEngine();
-
-    $requests = $engine->requestHardpoints(
-      $objects,
-      $requests);
-
-    // TODO: Wait for only the required requests.
-    $engine->waitForRequests(array());
-  }
-
-  private function getHardpointEngine() {
-    if ($this->hardpointEngine === null) {
-      $this->hardpointEngine = $this->newHardpointEngine();
-    }
-    return $this->hardpointEngine;
-  }
-
-  private function newHardpointEngine() {
-    $engine = new ArcanistHardpointEngine();
-
-    $queries = ArcanistWorkflowHardpointQuery::getAllQueries();
-
-    foreach ($queries as $key => $query) {
-      $queries[$key] = id(clone $query)
-        ->setWorkflow($this);
-    }
-
-    $engine->setQueries($queries);
-
-    return $engine;
+    return $this->getRuntime()->loadHardpoints($objects, $requests);
   }
 
   protected function newPrompts() {
@@ -2404,31 +2363,11 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final protected function getSymbolEngine() {
-    if ($this->symbolEngine === null) {
-      $this->symbolEngine = $this->newSymbolEngine();
-    }
-    return $this->symbolEngine;
-  }
-
-  private function newSymbolEngine() {
-    return id(new ArcanistSymbolEngine())
-      ->setWorkflow($this);
+    return $this->getRuntime()->getSymbolEngine();
   }
 
   final protected function getViewer() {
-    if (!$this->viewer) {
-      $viewer = $this->getSymbolEngine()
-        ->loadUserForSymbol('viewer()');
-
-      // TODO: Deal with anonymous stuff.
-      if (!$viewer) {
-        throw new Exception(pht('No viewer!'));
-      }
-
-      $this->viewer = $viewer;
-    }
-
-    return $this->viewer;
+    return $this->getRuntime()->getViewer();
   }
 
 }

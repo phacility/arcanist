@@ -79,6 +79,10 @@ final class ArcanistRevisionRef
     return $this->sources;
   }
 
+  public function getCommitMessage() {
+    return $this->getHardpoint(self::HARDPOINT_COMMITMESSAGE);
+  }
+
   public function getDisplayRefObjectName() {
     return $this->getMonogram();
   }

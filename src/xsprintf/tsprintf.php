@@ -38,6 +38,23 @@ function xsprintf_terminal($userdata, &$pattern, &$pos, &$value, &$length) {
     case 'R':
       $type = 's';
       break;
+    case 'W':
+      $value = PhutilTerminalString::escapeStringValue($value, true);
+      $value = phutil_console_wrap($value);
+      $type = 's';
+      break;
+    case '!':
+      $value = tsprintf('<bg:yellow>** <!> %s **</bg>', $value);
+      $value = PhutilTerminalString::escapeStringValue($value, false);
+      $type = 's';
+      break;
+    default:
+      throw new Exception(
+        pht(
+          'Unsupported escape sequence "%s" found in pattern: %s',
+          $type,
+          $pattern));
+      break;
   }
 
   $pattern[$pos] = $type;

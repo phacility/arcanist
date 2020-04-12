@@ -1,22 +1,22 @@
 <?php
 
-abstract class ArcanistWorkflowHardpointQuery
+abstract class ArcanistRuntimeHardpointQuery
   extends ArcanistHardpointQuery {
 
-  private $workflow;
+  private $runtime;
   private $canLoadHardpoint;
 
-  final public function setWorkflow(ArcanistWorkflow $workflow) {
-    $this->workflow = $workflow;
+  final public function setRuntime(ArcanistRuntime $runtime) {
+    $this->runtime = $runtime;
     return $this;
   }
 
-  final public function getWorkflow() {
-    return $this->workflow;
+  final public function getRuntime() {
+    return $this->runtime;
   }
 
   final public function getWorkingCopy() {
-    return $this->getWorkflow()->getWorkingCopy();
+    return $this->getRuntime()->getWorkingCopy();
   }
 
   final public function getRepositoryAPI() {
@@ -52,7 +52,7 @@ abstract class ArcanistWorkflowHardpointQuery
   abstract protected function canLoadRef(ArcanistRef $ref);
 
   final public function newConduitSearch($method, $constraints) {
-    $conduit_engine = $this->getWorkflow()
+    $conduit_engine = $this->getRuntime()
       ->getConduitEngine();
 
     $conduit_future = id(new ConduitSearchFuture())
@@ -69,7 +69,7 @@ abstract class ArcanistWorkflowHardpointQuery
   }
 
   final public function newConduit($method, $parameters) {
-    $conduit_engine = $this->getWorkflow()
+    $conduit_engine = $this->getRuntime()
       ->getConduitEngine();
 
     $call_object = $conduit_engine->newCall($method, $parameters);
@@ -84,7 +84,10 @@ abstract class ArcanistWorkflowHardpointQuery
   }
 
   final public function yieldRepositoryRef() {
-    $workflow = $this->getWorkflow();
+    // TODO: This should probably move to Runtime.
+
+    $runtime = $this->getRuntime();
+    $workflow = $runtime->getCurrentWorkflow();
 
     // TODO: This is currently a blocking request, but should yield to the
     // hardpoint engine in the future.
