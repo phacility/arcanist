@@ -113,7 +113,7 @@ final class ArcanistRuntime {
     $workflows = $this->newWorkflows($toolset);
     $this->workflows = $workflows;
 
-    $conduit_engine = $this->newConduitEngine($config);
+    $conduit_engine = $this->newConduitEngine($config, $args);
     $this->conduitEngine = $conduit_engine;
 
     $phutil_workflows = array();
@@ -698,16 +698,34 @@ final class ArcanistRuntime {
     return last($this->stack);
   }
 
-  private function newConduitEngine(ArcanistConfigurationSourceList $config) {
+  private function newConduitEngine(
+    ArcanistConfigurationSourceList $config,
+    PhutilArgumentParser $args) {
 
-    $conduit_uri = $config->getConfig('phabricator.uri');
-    if ($conduit_uri === null) {
-      // For now, read this older config from raw storage. There is currently
-      // no definition of this option in the "toolsets" config list, and it
-      // would be nice to get rid of it.
-      $default_list = $config->getStorageValueList('default');
-      if ($default_list) {
-        $conduit_uri = last($default_list)->getValue();
+    try {
+      $force_uri = $args->getArg('conduit-uri');
+    } catch (PhutilArgumentSpecificationException $ex) {
+      $force_uri = null;
+    }
+
+    try {
+      $force_token = $args->getArg('conduit-token');
+    } catch (PhutilArgumentSpecificationException $ex) {
+      $force_token = null;
+    }
+
+    if ($force_uri !== null) {
+      $conduit_uri = $force_uri;
+    } else {
+      $conduit_uri = $config->getConfig('phabricator.uri');
+      if ($conduit_uri === null) {
+        // For now, read this older config from raw storage. There is currently
+        // no definition of this option in the "toolsets" config list, and it
+        // would be nice to get rid of it.
+        $default_list = $config->getStorageValueList('default');
+        if ($default_list) {
+          $conduit_uri = last($default_list)->getValue();
+        }
       }
     }
 
@@ -731,16 +749,19 @@ final class ArcanistRuntime {
     // TODO: This isn't using "getConfig()" because we aren't defining a
     // real config entry for the moment.
 
-    $hosts = array();
+    if ($force_token !== null) {
+      $conduit_token = $force_token;
+    } else {
+      $hosts = array();
 
-    $hosts_list = $config->getStorageValueList('hosts');
-    foreach ($hosts_list as $hosts_config) {
-      $hosts += $hosts_config->getValue();
+      $hosts_list = $config->getStorageValueList('hosts');
+      foreach ($hosts_list as $hosts_config) {
+        $hosts += $hosts_config->getValue();
+      }
+
+      $host_config = idx($hosts, $conduit_uri, array());
+      $conduit_token = idx($host_config, 'token');
     }
-
-    $host_config = idx($hosts, $conduit_uri, array());
-    $user_name = idx($host_config, 'user');
-    $conduit_token = idx($host_config, 'token');
 
     if ($conduit_token !== null) {
       $engine->setConduitToken($conduit_token);

@@ -48,6 +48,17 @@ final class ArcanistSymbolEngine
       $symbols);
   }
 
+  public function loadFileForSymbol($symbol) {
+    $refs = $this->loadFilesForSymbols(array($symbol));
+    return head($refs)->getObject();
+  }
+
+  public function loadFilesForSymbols(array $symbols) {
+    return $this->loadRefsForSymbols(
+      new ArcanistFileSymbolRef(),
+      $symbols);
+  }
+
   public function loadRefsForSymbols(
     ArcanistSymbolRef $template,
     array $symbols) {
