@@ -76,7 +76,9 @@ abstract class ArcanistWorkflow extends Phobject {
   private $configurationEngine;
   private $configurationSourceList;
 
+  private $viewer;
   private $hardpointEngine;
+  private $symbolEngine;
   private $promptMap;
 
   final public function setToolset(ArcanistToolset $toolset) {
@@ -2298,7 +2300,7 @@ abstract class ArcanistWorkflow extends Phobject {
       ->setExecutableFuture($future);
   }
 
-  final protected function loadHardpoints(
+  final public function loadHardpoints(
     $objects,
     $requests) {
 
@@ -2399,6 +2401,34 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     return clone $prompt;
+  }
+
+  final protected function getSymbolEngine() {
+    if ($this->symbolEngine === null) {
+      $this->symbolEngine = $this->newSymbolEngine();
+    }
+    return $this->symbolEngine;
+  }
+
+  private function newSymbolEngine() {
+    return id(new ArcanistSymbolEngine())
+      ->setWorkflow($this);
+  }
+
+  final protected function getViewer() {
+    if (!$this->viewer) {
+      $viewer = $this->getSymbolEngine()
+        ->loadUserForSymbol('viewer()');
+
+      // TODO: Deal with anonymous stuff.
+      if (!$viewer) {
+        throw new Exception(pht('No viewer!'));
+      }
+
+      $this->viewer = $viewer;
+    }
+
+    return $this->viewer;
   }
 
 }

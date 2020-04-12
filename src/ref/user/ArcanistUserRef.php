@@ -34,8 +34,6 @@ final class ArcanistUserRef
   }
 
   public function getRealName() {
-    var_dump($this->parameters);
-
     return idxv($this->parameters, array('fields', 'realName'));
   }
 

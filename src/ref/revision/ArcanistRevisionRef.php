@@ -1,7 +1,9 @@
 <?php
 
 final class ArcanistRevisionRef
-  extends ArcanistRef {
+  extends ArcanistRef
+  implements
+    ArcanistDisplayRefInterface {
 
   const HARDPOINT_COMMITMESSAGE = 'ref.revision.commitmessage';
 
@@ -75,6 +77,14 @@ final class ArcanistRevisionRef
 
   public function getSources() {
     return $this->sources;
+  }
+
+  public function getDisplayRefObjectName() {
+    return $this->getMonogram();
+  }
+
+  public function getDisplayRefTitle() {
+    return $this->getName();
   }
 
 }

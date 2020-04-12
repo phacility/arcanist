@@ -14,6 +14,12 @@ final class ArcanistUserSymbolRef
     return pht('User Symbol "%s"', $this->getSymbol());
   }
 
+  protected function newCacheKeyParts() {
+    return array(
+      sprintf('type(%s)', $this->type),
+    );
+  }
+
   public function getSymbolType() {
     return $this->type;
   }

@@ -76,6 +76,17 @@ final class ArcanistGitCommitSymbolCommitHardpointQuery
       $results[$key] = $hash_map[$symbol];
     }
 
+    foreach ($results as $key => $result) {
+      if ($result === null) {
+        continue;
+      }
+
+      $ref = id(new ArcanistCommitRef())
+        ->setCommitHash($result);
+
+      $results[$key] = $ref;
+    }
+
     yield $this->yieldMap($results);
   }
 

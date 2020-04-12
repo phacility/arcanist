@@ -4,6 +4,7 @@ abstract class ArcanistSymbolRef
   extends ArcanistRef {
 
   private $symbol;
+  private $cacheKey;
 
   const HARDPOINT_OBJECT = 'ref.symbol.object';
 
@@ -24,6 +25,27 @@ abstract class ArcanistSymbolRef
     return $this->symbol;
   }
 
+  final public function getSymbolEngineCacheKey() {
+    if ($this->cacheKey === null) {
+      $parts = array();
+      $parts[] = sprintf('class(%s)', get_class($this));
+
+      foreach ($this->newCacheKeyParts() as $part) {
+        $parts[] = $part;
+      }
+
+      $parts[] = $this->getSymbol();
+
+      $this->cacheKey = implode('.', $parts);
+    }
+
+    return $this->cacheKey;
+  }
+
+  protected function newCacheKeyParts() {
+    return array();
+  }
+
   final public function attachObject(ArcanistRef $object) {
     return $this->attachHardpoint(self::HARDPOINT_OBJECT, $object);
   }
@@ -35,7 +57,5 @@ abstract class ArcanistSymbolRef
   protected function resolveSymbol($symbol) {
     return $symbol;
   }
-
-
 
 }
