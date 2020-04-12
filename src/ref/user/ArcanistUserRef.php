@@ -1,7 +1,9 @@
 <?php
 
 final class ArcanistUserRef
-  extends ArcanistRef {
+  extends ArcanistRef
+  implements
+    ArcanistDisplayRefInterface {
 
   private $parameters;
 
@@ -21,6 +23,7 @@ final class ArcanistUserRef
 
     $parameters['fields'] = array(
       'username' => idx($parameters, 'userName'),
+      'realName' => idx($parameters, 'realName'),
     );
 
     return self::newFromConduit($parameters);
@@ -28,6 +31,26 @@ final class ArcanistUserRef
 
   public function getUsername() {
     return idxv($this->parameters, array('fields', 'username'));
+  }
+
+  public function getRealName() {
+    var_dump($this->parameters);
+
+    return idxv($this->parameters, array('fields', 'realName'));
+  }
+
+  public function getDisplayRefObjectName() {
+    return '@'.$this->getUsername();
+  }
+
+  public function getDisplayRefTitle() {
+    $real_name = $this->getRealName();
+
+    if (strlen($real_name)) {
+      $real_name = sprintf('(%s)', $real_name);
+    }
+
+    return $real_name;
   }
 
 }

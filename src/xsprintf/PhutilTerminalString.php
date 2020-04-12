@@ -16,23 +16,47 @@ final class PhutilTerminalString extends Phobject {
   }
 
   public function applyWrap() {
-    $string = (string)$this;
+    $string = phutil_string_cast($this);
     $string = phutil_console_wrap($string);
     return new self($string);
   }
 
   public function applyIndent($depth, $with_prefix = true) {
-    $string = (string)$this;
+    $string = phutil_string_cast($this);
     $string = phutil_console_wrap($string, $depth, $with_prefix);
     return new self($string);
   }
 
   public static function escapeStringValue($value, $allow_whitespace) {
     if ($value instanceof PhutilTerminalString) {
-      return (string)$value;
+      return phutil_string_cast($value);
     }
 
-    $value = (string)$value;
+    if ($value instanceof ArcanistTerminalStringInterface) {
+      $value = $value->newTerminalString();
+      return self::escapeStringValue($value, $allow_whitespace);
+    }
+
+    if ($value === null) {
+      return '';
+    }
+
+    if (is_array($value)) {
+      if (!$value) {
+        return '';
+      }
+
+      $parts = array();
+
+      foreach ($value as $part) {
+        $part = self::escapeStringValue($part, $allow_whitespace);
+        $parts[] = $part;
+      }
+
+      return implode('', $parts);
+    }
+
+    $value = phutil_string_cast($value);
 
     static $escape_map;
     if ($escape_map === null) {

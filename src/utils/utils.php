@@ -1930,3 +1930,31 @@ function phutil_is_noninteractive() {
 function phutil_encode_log($message) {
   return addcslashes($message, "\0..\37\\\177..\377");
 }
+
+/**
+ * Insert a value in between each pair of elements in a list.
+ *
+ * Keys in the input list are preserved.
+ */
+function phutil_glue(array $list, $glue) {
+  if (!$list) {
+    return $list;
+  }
+
+  $last_key = last_key($list);
+
+  $keys = array();
+  $values = array();
+
+  $tmp = $list;
+
+  foreach ($list as $key => $ignored) {
+    $keys[] = $key;
+    if ($key !== $last_key) {
+      $tmp[] = $glue;
+      $keys[] = last_key($tmp);
+    }
+  }
+
+  return array_select_keys($tmp, $keys);
+}

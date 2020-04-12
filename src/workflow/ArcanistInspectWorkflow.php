@@ -93,9 +93,9 @@ EOTEXT
     $list = array();
     foreach ($all_refs as $ref) {
       $out = $this->describeRef($ref, 0);
-      $list[] = implode('', $out);
+      $list[] = $out;
     }
-    $list = implode("\n", $list);
+    $list = phutil_glue($list, "\n");
 
     echo tsprintf('%B', $list);
 
@@ -106,6 +106,7 @@ EOTEXT
     $indent = str_repeat(' ', $depth);
 
     $out = array();
+
     $out[] = tsprintf(
       "%s+ [%s] %s\n",
       $indent,
