@@ -51,13 +51,35 @@ abstract class ArcanistWorkflowHardpointQuery
 
   abstract protected function canLoadRef(ArcanistRef $ref);
 
-  final public function yieldConduit($method, array $parameters) {
+  final public function newConduitSearch($method, $constraints) {
+    $conduit_engine = $this->getWorkflow()
+      ->getConduitEngine();
+
+    $conduit_future = id(new ConduitSearchFuture())
+      ->setConduitEngine($conduit_engine)
+      ->setMethod($method)
+      ->setConstraints($constraints);
+
+    return $conduit_future;
+  }
+
+  final public function yieldConduitSearch($method, $constraints) {
+    $conduit_future = $this->newConduitSearch($method, $constraints);
+    return $this->yieldFuture($conduit_future);
+  }
+
+  final public function newConduit($method, $parameters) {
     $conduit_engine = $this->getWorkflow()
       ->getConduitEngine();
 
     $call_object = $conduit_engine->newCall($method, $parameters);
     $call_future = $conduit_engine->newFuture($call_object);
 
+    return $call_future;
+  }
+
+  final public function yieldConduit($method, array $parameters) {
+    $call_future = $this->newConduit($method, $parameters);
     return $this->yieldFuture($call_future);
   }
 

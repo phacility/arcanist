@@ -53,7 +53,7 @@ EOTEXT
     $all_refs = array();
     foreach ($objects as $description) {
       $matches = null;
-      $pattern = '/^([\w-]+)(?:\(([^)]+)\))?\z/';
+      $pattern = '/^([\w-]+)(?:\((.*)\))?\z/';
       if (!preg_match($pattern, $description, $matches)) {
         throw new PhutilArgumentUsageException(
           pht(
