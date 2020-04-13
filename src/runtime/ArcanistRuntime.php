@@ -9,6 +9,7 @@ final class ArcanistRuntime {
   private $stack = array();
 
   private $viewer;
+  private $toolset;
   private $hardpointEngine;
   private $symbolEngine;
   private $conduitEngine;
@@ -107,6 +108,7 @@ final class ArcanistRuntime {
     $config->validateConfiguration($this);
 
     $toolset = $this->newToolset($argv);
+    $this->setToolset($toolset);
 
     $args->parsePartial($toolset->getToolsetArguments());
 
@@ -118,13 +120,13 @@ final class ArcanistRuntime {
 
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
-      $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
-
       $workflow
         ->setRuntime($this)
         ->setConfigurationEngine($config_engine)
         ->setConfigurationSourceList($config)
         ->setConduitEngine($conduit_engine);
+
+      $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
     }
 
 
@@ -856,6 +858,15 @@ final class ArcanistRuntime {
 
   public function getConduitEngine() {
     return $this->conduitEngine;
+  }
+
+  public function setToolset($toolset) {
+    $this->toolset = $toolset;
+    return $this;
+  }
+
+  public function getToolset() {
+    return $this->toolset;
   }
 
 }

@@ -166,6 +166,47 @@ abstract class ArcanistWorkflow extends Phobject {
     return $phutil_workflow;
   }
 
+  final public function newLegacyPhutilWorkflow() {
+    $phutil_workflow = id(new ArcanistPhutilWorkflow())
+      ->setName($this->getWorkflowName());
+
+    $arguments = $this->getArguments();
+
+    $specs = array();
+    foreach ($arguments as $key => $argument) {
+      if ($key == '*') {
+        $key = $argument;
+        $argument = array(
+          'wildcard' => true,
+        );
+      }
+
+      unset($argument['paramtype']);
+      unset($argument['supports']);
+      unset($argument['nosupport']);
+      unset($argument['passthru']);
+      unset($argument['conflict']);
+
+      $spec = array(
+        'name' => $key,
+      ) + $argument;
+
+      $specs[] = $spec;
+    }
+
+    $phutil_workflow->setArguments($specs);
+
+    $synopses = $this->getCommandSynopses();
+    $phutil_workflow->setSynopsis($synopses);
+
+    $help = $this->getCommandHelp();
+    if (strlen($help)) {
+      $phutil_workflow->setHelp($help);
+    }
+
+    return $phutil_workflow;
+  }
+
   final protected function newWorkflowArgument($key) {
     return id(new ArcanistWorkflowArgument())
       ->setKey($key);

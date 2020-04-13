@@ -8,7 +8,8 @@ final class ArcanistHelpWorkflow
   }
 
   public function newPhutilWorkflow() {
-    return new PhutilHelpArgumentWorkflow();
+    return id(new PhutilHelpArgumentWorkflow())
+      ->setRuntime($this->getRuntime());
   }
 
   public function supportsToolset(ArcanistToolset $toolset) {

@@ -627,6 +627,16 @@ final class PhutilArgumentParser extends Phobject {
     return $this;
   }
 
+  public function setWorkflows($workflows) {
+    $workflows = mpull($workflows, null, 'getName');
+    $this->workflows = $workflows;
+    return $this;
+  }
+
+  public function getWorkflows() {
+    return $this->workflows;
+  }
+
 
 /* -(  Command Help  )------------------------------------------------------- */
 
