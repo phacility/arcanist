@@ -44,13 +44,7 @@ EOTEXT
     }
     $method = head($method);
 
-    if (phutil_is_interactive()) {
-      echo tsprintf(
-        "%s\n",
-        pht('Waiting for JSON parameters on stdin...'));
-    }
-
-    $params = @file_get_contents('php://stdin');
+    $params = $this->readStdin();
     try {
       $params = phutil_json_decode($params);
     } catch (PhutilJSONParserException $ex) {

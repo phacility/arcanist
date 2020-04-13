@@ -1,144 +1,136 @@
 <?php
 
-/**
- * Upload a chunk of text to the Paste application, or download one.
- */
-final class ArcanistPasteWorkflow extends ArcanistWorkflow {
-
-  private $id;
-  private $language;
-  private $title;
-  private $json;
+final class ArcanistPasteWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'paste';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **paste** [--title __title__] [--lang __language__] [--json]
-      **paste** __id__ [--json]
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Share and grab text using the Paste application. To create a paste,
+use stdin to provide the text:
+
+  $ cat list_of_ducks.txt | arc paste
+
+To retrieve a paste, specify the paste ID:
+
+  $ arc paste P123
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->addExample('**paste** [__options__] --')
+      ->addExample('**paste** [__options__] -- __object__')
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: text
-          Share and grab text using the Paste application. To create a paste,
-          use stdin to provide the text:
-
-            $ cat list_of_ducks.txt | arc paste
-
-          To retrieve a paste, specify the paste ID:
-
-            $ arc paste P123
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'title' => array(
-        'param' => 'title',
-        'help' => pht('Title for the paste.'),
-      ),
-      'lang' => array(
-        'param' => 'language',
-        'help' => pht('Language for syntax highlighting.'),
-      ),
-      'json' => array(
-        'help' => pht('Output in JSON format.'),
-      ),
-      '*' => 'argv',
+      $this->newWorkflowArgument('title')
+        ->setParameter('title')
+        ->setHelp(pht('Title for the paste.')),
+      $this->newWorkflowArgument('lang')
+        ->setParameter('language')
+        ->setHelp(pht('Language for the paste.')),
+      $this->newWorkflowArgument('json')
+        ->setHelp(pht('Output in JSON format.')),
+      $this->newWorkflowArgument('argv')
+        ->setWildcard(true),
     );
   }
 
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  protected function didParseArguments() {
-    $this->json     = $this->getArgument('json');
-    $this->language = $this->getArgument('lang');
-    $this->title    = $this->getArgument('title');
+  public function runWorkflow() {
+    $set_language = $this->getArgument('lang');
+    $set_title = $this->getArgument('title');
 
     $argv = $this->getArgument('argv');
     if (count($argv) > 1) {
-      throw new ArcanistUsageException(
-        pht('Specify only one paste to retrieve.'));
-    } else if (count($argv) == 1) {
-      $id = $argv[0];
-      if (!preg_match('/^P?\d+/', $id)) {
-        throw new ArcanistUsageException(
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Specify only one paste to retrieve.'));
+    }
+
+    $symbols = $this->getSymbolEngine();
+
+    if (count($argv) === 1) {
+      if ($set_language !== null) {
+        throw new PhutilArgumentUsageException(
           pht(
-            'Specify a paste ID, like %s.',
-            'P123'));
+            'Flag "--lang" is not supported when reading pastes.'));
       }
-      $this->id = (int)ltrim($id, 'P');
 
-      if ($this->language || $this->title) {
-        throw new ArcanistUsageException(
+      if ($set_title !== null) {
+        throw new PhutilArgumentUsageException(
           pht(
-            'Use options %s and %s only when creating pastes.',
-            '--lang',
-            '--title'));
+            'Flag "--title" is not supported when reading pastes.'));
       }
-    }
-  }
 
-  public function run() {
-    if ($this->id) {
-      return $this->getPaste();
-    } else {
-      return $this->createPaste();
-    }
-  }
+      $paste_symbol = $argv[0];
 
-  private function getPaste() {
-    $conduit = $this->getConduit();
-
-    $info = $conduit->callMethodSynchronous(
-      'paste.query',
-      array(
-        'ids' => array($this->id),
-      ));
-    $info = head($info);
-
-    if ($this->json) {
-      echo json_encode($info)."\n";
-    } else {
-      echo $info['content'];
-      if (!preg_match('/\\n$/', $info['content'])) {
-        // If there's no newline, add one, since it looks stupid otherwise. If
-        // you want byte-for-byte equivalence you can use `--json`.
-        echo "\n";
+      $paste_ref = $symbols->loadPasteForSymbol($paste_symbol);
+      if (!$paste_ref) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Paste "%s" does not exist, or you do not have access '.
+            'to see it.'));
       }
+
+      echo $paste_ref->getContent();
+
+      return 0;
     }
 
-    return 0;
-  }
+    $content = $this->readStdin();
 
-  private function createPaste() {
-    $conduit = $this->getConduit();
+    $xactions = array();
 
-    if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
-      $this->writeStatusMessage(pht('Reading paste from stdin...')."\n");
+    if ($set_title === null) {
+      $set_title = pht('Command-Line Input');
     }
 
-    $info = $conduit->callMethodSynchronous(
-      'paste.create',
-      array(
-        'content' => file_get_contents('php://stdin'),
-        'title' => $this->title,
-        'language' => $this->language,
-      ));
+    $xactions[] = array(
+      'type' => 'title',
+      'value' => $set_title,
+    );
 
-    if ($this->getArgument('json')) {
-      echo json_encode($info)."\n";
-    } else {
-      echo $info['objectName'].': '.$info['uri']."\n";
+    if ($set_language !== null) {
+      $xactions[] = array(
+        'type' => 'language',
+        'value' => $set_language,
+      );
     }
+
+    $xactions[] = array(
+      'type' => 'text',
+      'value' => $content,
+    );
+
+    $method = 'paste.edit';
+
+    $parameters = array(
+      'transactions' => $xactions,
+    );
+
+    $conduit_engine = $this->getConduitEngine();
+    $conduit_call = $conduit_engine->newCall($method, $parameters);
+    $conduit_future = $conduit_engine->newFuture($conduit_call);
+    $result = $conduit_future->resolve();
+
+    $paste_phid = idxv($result, array('object', 'phid'));
+    $paste_ref = $symbols->loadPasteForSymbol($paste_phid);
+
+    $log = $this->getLogEngine();
+
+    $log->writeSuccess(
+      pht('DONE'),
+      pht('Created a new paste.'));
+
+    echo tsprintf(
+      '%s',
+      $paste_ref->newDisplayRef()
+        ->setURI($paste_ref->getURI()));
 
     return 0;
   }

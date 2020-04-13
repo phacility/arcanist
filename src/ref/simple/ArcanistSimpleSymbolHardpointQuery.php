@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistFileSymbolHardpointQuery
+final class ArcanistSimpleSymbolHardpointQuery
   extends ArcanistRuntimeHardpointQuery {
 
   public function getHardpoints() {
@@ -10,7 +10,7 @@ final class ArcanistFileSymbolHardpointQuery
   }
 
   protected function canLoadRef(ArcanistRef $ref) {
-    return ($ref instanceof ArcanistFileSymbolRef);
+    return ($ref instanceof ArcanistSimpleSymbolRef);
   }
 
   public function loadHardpoint(array $refs, $hardpoint) {
@@ -19,23 +19,31 @@ final class ArcanistFileSymbolHardpointQuery
 
     foreach ($refs as $key => $ref) {
       switch ($ref->getSymbolType()) {
-        case ArcanistFileSymbolRef::TYPE_ID:
+        case ArcanistSimpleSymbolRef::TYPE_ID:
           $id_map[$key] = $ref->getSymbol();
           break;
-        case ArcanistFileSymbolRef::TYPE_PHID:
+        case ArcanistSimpleSymbolRef::TYPE_PHID:
           $phid_map[$key] = $ref->getSymbol();
           break;
       }
     }
 
+    $template_ref = head($refs);
+
+    $conduit_method =
+      $template_ref->getSimpleSymbolConduitSearchMethodName();
+    $conduit_attachments =
+      $template_ref->getSimpleSymbolConduitSearchAttachments();
+
     $futures = array();
 
     if ($id_map) {
       $id_future = $this->newConduitSearch(
-        'file.search',
+        $conduit_method,
         array(
           'ids' => array_values(array_fuse($id_map)),
-        ));
+        ),
+        $conduit_attachments);
 
       $futures[] = $id_future;
     } else {
@@ -44,10 +52,11 @@ final class ArcanistFileSymbolHardpointQuery
 
     if ($phid_map) {
       $phid_future = $this->newConduitSearch(
-        'file.search',
+        $ref->getSimpleSymbolConduitSearchMethodName(),
         array(
          'phids' => array_values(array_fuse($phid_map)),
-        ));
+        ),
+        $conduit_attachments);
 
       $futures[] = $phid_future;
     } else {
@@ -76,12 +85,16 @@ final class ArcanistFileSymbolHardpointQuery
       }
     }
 
+    $object_ref = $template_ref->newSimpleSymbolObjectRef();
+
     foreach ($result_map as $key => $raw_result) {
       if ($raw_result === null) {
         continue;
       }
 
-      $result_map[$key] = ArcanistFileRef::newFromConduit($raw_result);
+      $result_map[$key] = call_user_func_array(
+        array(get_class($object_ref), 'newFromConduit'),
+        array($raw_result));
     }
 
     yield $this->yieldMap($result_map);

@@ -52,7 +52,6 @@ abstract class ArcanistWorkflow extends Phobject {
   private $repositoryAPI;
   private $configurationManager;
   private $arguments = array();
-  private $passedArguments = array();
   private $command;
 
   private $stashed;
@@ -777,10 +776,6 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->arguments->getArg($key);
   }
 
-  final public function getPassedArguments() {
-    return $this->passedArguments;
-  }
-
   final public function getCompleteArgumentSpecification() {
     $spec = $this->getArguments();
     $arc_config = $this->getArcanistConfiguration();
@@ -791,8 +786,6 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
   final public function parseArguments(array $args) {
-    $this->passedArguments = $args;
-
     $spec = $this->getCompleteArgumentSpecification();
 
     $dict = array();
@@ -2409,6 +2402,23 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final protected function getViewer() {
     return $this->getRuntime()->getViewer();
+  }
+
+  final protected function readStdin() {
+    $log = $this->getLogEngine();
+    $log->writeWaitingForInput();
+
+    // NOTE: We can't just "file_get_contents()" here because signals don't
+    // interrupt it. If the user types "^C", we want to interrupt the read.
+
+    $raw_handle = fopen('php://stdin', 'rb');
+    $stdin = new PhutilSocketChannel($raw_handle);
+
+    while ($stdin->update()) {
+      PhutilChannel::waitForAny(array($stdin));
+    }
+
+    return $stdin->read();
   }
 
 }

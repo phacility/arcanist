@@ -1,30 +1,36 @@
 <?php
 
-final class ArcanistRevisionSymbolRef
+final class ArcanistPasteSymbolRef
   extends ArcanistSimpleSymbolRef {
 
   public function getRefDisplayName() {
-    return pht('Revision Symbol "%s"', $this->getSymbol());
+    return pht('Paste Symbol "%s"', $this->getSymbol());
   }
 
   protected function getSimpleSymbolPrefixPattern() {
-    return '[Dd]?';
+    return '[Pp]?';
   }
 
   protected function getSimpleSymbolPHIDType() {
-    return 'DREV';
+    return 'PSTE';
   }
 
   public function getSimpleSymbolConduitSearchMethodName() {
-    return 'differential.revision.search';
+    return 'paste.search';
+  }
+
+  public function getSimpleSymbolConduitSearchAttachments() {
+    return array(
+      'content' => true,
+    );
   }
 
   public function getSimpleSymbolInspectFunctionName() {
-    return 'revision';
+    return 'paste';
   }
 
   public function newSimpleSymbolObjectRef() {
-    return new ArcanistRevisionRef();
+    return new ArcanistPasteRef();
   }
 
 }

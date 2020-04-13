@@ -59,6 +59,17 @@ final class ArcanistSymbolEngine
       $symbols);
   }
 
+  public function loadPasteForSymbol($symbol) {
+    $refs = $this->loadPastesForSymbols(array($symbol));
+    return head($refs)->getObject();
+  }
+
+  public function loadPastesForSymbols(array $symbols) {
+    return $this->loadRefsForSymbols(
+      new ArcanistPasteSymbolRef(),
+      $symbols);
+  }
+
   public function loadRefsForSymbols(
     ArcanistSymbolRef $template,
     array $symbols) {

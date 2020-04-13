@@ -6,6 +6,7 @@ final class ArcanistDisplayRef
     ArcanistTerminalStringInterface {
 
   private $ref;
+  private $uri;
 
   public function setRef(ArcanistRef $ref) {
     $this->ref = $ref;
@@ -14,6 +15,15 @@ final class ArcanistDisplayRef
 
   public function getRef() {
     return $this->ref;
+  }
+
+  public function setURI($uri) {
+    $this->uri = $uri;
+    return $this;
+  }
+
+  public function getURI() {
+    return $this->uri;
   }
 
   public function newTerminalString() {
@@ -60,9 +70,20 @@ final class ArcanistDisplayRef
     }
 
     $ref = $this->getRef();
-    return tsprintf(
+    $output = array();
+
+    $output[] =  tsprintf(
       "<bg:cyan>**  *  **</bg> %s\n",
       $display_text);
+
+    $uri = $this->getURI();
+    if ($uri !== null) {
+      $output[] = tsprintf(
+        "<bg:cyan>** :// **</bg>    __%s__\n",
+        $uri);
+    }
+
+    return $output;
   }
 
 }

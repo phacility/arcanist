@@ -51,14 +51,19 @@ abstract class ArcanistRuntimeHardpointQuery
 
   abstract protected function canLoadRef(ArcanistRef $ref);
 
-  final public function newConduitSearch($method, $constraints) {
+  final public function newConduitSearch(
+    $method,
+    $constraints,
+    $attachments = array()) {
+
     $conduit_engine = $this->getRuntime()
       ->getConduitEngine();
 
     $conduit_future = id(new ConduitSearchFuture())
       ->setConduitEngine($conduit_engine)
       ->setMethod($method)
-      ->setConstraints($constraints);
+      ->setConstraints($constraints)
+      ->setAttachments($attachments);
 
     return $conduit_future;
   }

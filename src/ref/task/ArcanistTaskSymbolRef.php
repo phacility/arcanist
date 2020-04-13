@@ -1,30 +1,30 @@
 <?php
 
-final class ArcanistRevisionSymbolRef
+final class ArcanistTaskSymbolRef
   extends ArcanistSimpleSymbolRef {
 
   public function getRefDisplayName() {
-    return pht('Revision Symbol "%s"', $this->getSymbol());
+    return pht('Task Symbol "%s"', $this->getSymbol());
   }
 
   protected function getSimpleSymbolPrefixPattern() {
-    return '[Dd]?';
+    return '[Tt]?';
   }
 
   protected function getSimpleSymbolPHIDType() {
-    return 'DREV';
+    return 'TASK';
   }
 
   public function getSimpleSymbolConduitSearchMethodName() {
-    return 'differential.revision.search';
+    return 'maniphest.search';
   }
 
   public function getSimpleSymbolInspectFunctionName() {
-    return 'revision';
+    return 'task';
   }
 
   public function newSimpleSymbolObjectRef() {
-    return new ArcanistRevisionRef();
+    return new ArcanistTaskRef();
   }
 
 }

@@ -6,6 +6,7 @@ final class ConduitSearchFuture
   private $conduitEngine;
   private $method;
   private $constraints;
+  private $attachments;
 
   private $objects = array();
   private $cursor;
@@ -28,13 +29,22 @@ final class ConduitSearchFuture
     return $this->method;
   }
 
-  public function setConstraints($constraints) {
+  public function setConstraints(array $constraints) {
     $this->constraints = $constraints;
     return $this;
   }
 
   public function getConstraints() {
     return $this->constraints;
+  }
+
+  public function setAttachments(array $attachments) {
+    $this->attachments = $attachments;
+    return $this;
+  }
+
+  public function getAttachments() {
+    return $this->attachments;
   }
 
   public function isReady() {
@@ -85,6 +95,10 @@ final class ConduitSearchFuture
     $parameters = array(
       'constraints' => $constraints,
     );
+
+    if ($this->attachments) {
+      $parameters['attachments'] = $this->attachments;
+    }
 
     if ($this->cursor !== null) {
       $parameters['after'] = (string)$this->cursor;

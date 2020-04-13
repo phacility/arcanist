@@ -92,4 +92,14 @@ final class ArcanistLogEngine
         ->setMessage($message));
   }
 
+  public function writeWaitingForInput() {
+    if (!phutil_is_interactive()) {
+      return;
+    }
+
+    $this->writeStatus(
+      pht('INPUT'),
+      pht('Waiting for input on stdin...'));
+  }
+
 }
