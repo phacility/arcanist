@@ -53,8 +53,8 @@ final class ArcanistMessageRevisionHardpointQuery
 
     $results = array();
     if ($map) {
-      $revisions = (yield $this->yieldConduit(
-        'differential.query',
+      $revisions = (yield $this->yieldConduitSearch(
+        'differential.revision.search',
         array(
           'ids' => array_keys($map),
         )));

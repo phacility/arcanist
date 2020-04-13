@@ -233,7 +233,24 @@ EOTEXT
       }
 
       $ref_uri = head($ref_uris);
-      $uris[] = $ref_uri->getURI();
+
+      // TODO: "ArcanistRevisionRef", at least, may return a relative URI.
+      // If we get a relative URI, guess the correct absolute URI based on
+      // the Conduit URI. This might not be correct for Conduit over SSH.
+
+      $raw_uri = $ref_uri->getURI();
+
+      $raw_uri = new PhutilURI($raw_uri);
+      if (!strlen($raw_uri->getDomain())) {
+        $base_uri = $this->getConduitEngine()
+          ->getConduitURI();
+
+        $raw_uri = id(new PhutilURI($base_uri))
+          ->setPath($raw_uri->getPath());
+      }
+      $raw_uri = phutil_string_cast($raw_uri);
+
+      $uris[] = $raw_uri;
     }
 
     $this->openURIsInBrowser($uris);

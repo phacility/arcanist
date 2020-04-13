@@ -26,28 +26,59 @@ final class ArcanistRevisionRef
     return $ref;
   }
 
+  public static function newFromConduitQuery(array $dict) {
+    // Mangle an older "differential.query" result to look like a modern
+    // "differential.revision.search" result.
+
+    $status_name = idx($dict, 'statusName');
+
+    switch ($status_name) {
+      case 'Abandoned':
+      case 'Closed':
+        $is_closed = true;
+        break;
+      default:
+        $is_closed = false;
+        break;
+    }
+
+    $dict['fields'] = array(
+      'uri' => idx($dict, 'uri'),
+      'title' => idx($dict, 'title'),
+      'authorPHID' => idx($dict, 'authorPHID'),
+      'status' => array(
+        'name' => $status_name,
+        'closed' => $is_closed,
+      ),
+    );
+
+    return self::newFromConduit($dict);
+  }
+
   public function getMonogram() {
     return 'D'.$this->getID();
   }
 
   public function getStatusDisplayName() {
-    return idx($this->parameters, 'statusName');
+    return idxv($this->parameters, array('fields', 'status', 'name'));
   }
 
   public function isClosed() {
-    // TODO: This should use sensible constants, not English language
-    // display text.
-    switch ($this->getStatusDisplayName()) {
-      case 'Abandoned':
-      case 'Closed':
-        return true;
-    }
-
-    return false;
+    return idxv($this->parameters, array('fields', 'status', 'closed'));
   }
 
   public function getURI() {
-    return idx($this->parameters, 'uri');
+    $uri = idxv($this->parameters, array('fields', 'uri'));
+
+    if ($uri === null) {
+      // TODO: The "uri" field was added at the same time as this callsite,
+      // so we may not have it yet if the server is running an older version
+      // of Phabricator. Fake our way through.
+
+      $uri = '/'.$this->getMonogram();
+    }
+
+    return $uri;
   }
 
   public function getFullName() {
@@ -63,11 +94,11 @@ final class ArcanistRevisionRef
   }
 
   public function getName() {
-    return idx($this->parameters, 'title');
+    return idxv($this->parameters, array('fields', 'title'));
   }
 
   public function getAuthorPHID() {
-    return idx($this->parameters, 'authorPHID');
+    return idxv($this->parameters, array('fields', 'authorPHID'));
   }
 
   public function addSource(ArcanistRevisionRefSource $source) {

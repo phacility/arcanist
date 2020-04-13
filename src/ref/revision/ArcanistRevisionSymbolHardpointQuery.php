@@ -17,10 +17,10 @@ final class ArcanistRevisionSymbolHardpointQuery
     $id_map = mpull($refs, 'getSymbol');
     $id_set = array_fuse($id_map);
 
-    $revisions = (yield $this->yieldConduit(
-      'differential.query',
+    $revisions = (yield $this->yieldConduitSearch(
+      'differential.revision.search',
       array(
-        'ids' => $id_set,
+        'ids' => array_values($id_set),
       )));
 
     $refs = array();

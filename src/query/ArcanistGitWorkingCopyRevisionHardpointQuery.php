@@ -60,7 +60,7 @@ final class ArcanistGitWorkingCopyRevisionHardpointQuery
           continue;
         }
 
-        $revision_ref = ArcanistRevisionRef::newFromConduit($dict);
+        $revision_ref = ArcanistRevisionRef::newFromConduitQuery($dict);
         foreach ($revision_hashes as $revision_hash) {
           $hash_key = $this->getHashKey($revision_hash);
           $state_refs = idx($map, $hash_key, array());

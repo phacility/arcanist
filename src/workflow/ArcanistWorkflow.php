@@ -2140,7 +2140,7 @@ abstract class ArcanistWorkflow extends Phobject {
             'Failed to open URI "%s" in browser ("%s"). '.
             'Check your "browser" config option.',
             $uri,
-            $browser));
+            implode(' ', $browser)));
       }
     }
   }

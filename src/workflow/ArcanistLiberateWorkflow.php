@@ -33,6 +33,16 @@ EOTEXT
     );
   }
 
+  protected function newPrompts() {
+    return array(
+      $this->newPrompt('arc.liberate.create')
+        ->setDescription(
+          pht(
+            'Confirms creation of a new library.')),
+    );
+  }
+
+
   public function runWorkflow() {
     $log = $this->getLogEngine();
 
@@ -154,10 +164,18 @@ EOTEXT
       return;
     }
 
-    echo pht("The directory '%s' does not exist.", $path);
-    if (!phutil_console_confirm(pht('Do you want to create it?'))) {
-      throw new ArcanistUsageException(pht('Cancelled.'));
-    }
+    echo tsprintf(
+      "%!\n%W\n",
+      pht('NEW LIBRARY'),
+      pht(
+        'The directory "%s" does not exist. Do you want to create it?',
+        $path));
+
+    $query = pht('Create new library?');
+
+    $this->getPrompt('arc.liberate.create')
+      ->setQuery($query)
+      ->execute();
 
     execx('mkdir -p %R', $path);
   }
