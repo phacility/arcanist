@@ -1278,19 +1278,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return trim($summary);
   }
 
-  public function backoutCommit($commit_hash) {
-    $this->execxLocal('revert %s -n --no-edit', $commit_hash);
-    $this->reloadWorkingCopy();
-    if (!$this->getUncommittedStatus()) {
-      throw new ArcanistUsageException(
-        pht('%s has already been reverted.', $commit_hash));
-    }
-  }
-
-  public function getBackoutMessage($commit_hash) {
-    return pht('This reverts commit %s.', $commit_hash);
-  }
-
   public function isGitSubversionRepo() {
     return Filesystem::pathExists($this->getPath('.git/svn'));
   }

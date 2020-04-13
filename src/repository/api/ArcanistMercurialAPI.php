@@ -797,19 +797,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return trim($summary);
   }
 
-  public function backoutCommit($commit_hash) {
-    $this->execxLocal('backout -r %s', $commit_hash);
-    $this->reloadWorkingCopy();
-    if (!$this->getUncommittedStatus()) {
-      throw new ArcanistUsageException(
-        pht('%s has already been reverted.', $commit_hash));
-    }
-  }
-
-  public function getBackoutMessage($commit_hash) {
-    return pht('Backed out changeset %s,', $commit_hash);
-  }
-
   public function resolveBaseCommitRule($rule, $source) {
     list($type, $name) = explode(':', $rule, 2);
 
