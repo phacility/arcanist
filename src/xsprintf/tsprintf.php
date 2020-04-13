@@ -48,6 +48,9 @@ function xsprintf_terminal($userdata, &$pattern, &$pos, &$value, &$length) {
       $value = PhutilTerminalString::escapeStringValue($value, false);
       $type = 's';
       break;
+    case 'd':
+      $type = 'd';
+      break;
     default:
       throw new Exception(
         pht(
