@@ -280,11 +280,15 @@ final class HTTPSFuture extends BaseHTTPFuture {
       $headers = $this->getHeaders();
 
       $saw_expect = false;
+      $saw_accept = false;
       for ($ii = 0; $ii < count($headers); $ii++) {
         list($name, $value) = $headers[$ii];
         $headers[$ii] = $name.': '.$value;
-        if (!strncasecmp($name, 'Expect', strlen('Expect'))) {
+        if (!strcasecmp($name, 'Expect')) {
           $saw_expect = true;
+        }
+        if (!strcasecmp($name, 'Accept-Encoding')) {
+          $saw_accept = true;
         }
       }
       if (!$saw_expect) {
@@ -302,6 +306,15 @@ final class HTTPSFuture extends BaseHTTPFuture {
         //   http://curl.haxx.se/mail/archive-2009-07/0008.html
         $headers[] = 'Expect:';
       }
+
+      if (!$saw_accept) {
+        if (!$use_streaming_parser) {
+          if ($this->canAcceptGzip()) {
+            $headers[] = 'Accept-Encoding: gzip';
+          }
+        }
+      }
+
       curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
       // Set the requested HTTP method, e.g. GET / POST / PUT.
@@ -819,6 +832,10 @@ final class HTTPSFuture extends BaseHTTPFuture {
       'type' => 'http',
       'uri' => phutil_string_cast($this->getURI()),
     );
+  }
+
+  private function canAcceptGzip() {
+    return function_exists('gzdecode');
   }
 
 }

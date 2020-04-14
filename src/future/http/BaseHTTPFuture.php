@@ -348,6 +348,26 @@ abstract class BaseHTTPFuture extends Future {
       }
     }
 
+    $content_encoding = null;
+    foreach ($headers as $header) {
+      list($name, $value) = $header;
+      $name = phutil_utf8_strtolower($name);
+      if (!strcasecmp($name, 'Content-Encoding')) {
+        $content_encoding = $value;
+        break;
+      }
+    }
+
+    switch ($content_encoding) {
+      case 'gzip':
+        $decoded_body = gzdecode($body);
+        if ($decoded_body === false) {
+          return $this->buildMalformedResult($raw_response);
+        }
+        $body = $decoded_body;
+        break;
+    }
+
     $status = new HTTPFutureHTTPResponseStatus(
       $response_code,
       $body,
