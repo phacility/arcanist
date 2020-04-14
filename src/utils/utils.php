@@ -1016,7 +1016,7 @@ function phutil_loggable_string($string) {
       $result .= $c_map[$c];
     } else {
       $o = ord($c);
-      if ($o < 0x20 || $o == 0x7F) {
+      if ($o < 0x20 || $o >= 0x7F) {
         $result .= '\\x'.sprintf('%02X', $o);
       } else {
         $result .= $c;
