@@ -40,42 +40,44 @@ EOHELP
     $with = $args->getArg('help-with-what');
 
     $runtime = $this->getRuntime();
-    $toolset = $runtime->getToolset();
-    if ($toolset->getToolsetKey() === 'arc') {
-      $workflows = $args->getWorkflows();
+    if ($runtime) {
+      $toolset = $runtime->getToolset();
+      if ($toolset->getToolsetKey() === 'arc') {
+        $workflows = $args->getWorkflows();
 
-      $legacy = array();
+        $legacy = array();
 
-      $legacy[] = new ArcanistCloseRevisionWorkflow();
-      $legacy[] = new ArcanistCommitWorkflow();
-      $legacy[] = new ArcanistCoverWorkflow();
-      $legacy[] = new ArcanistDiffWorkflow();
-      $legacy[] = new ArcanistExportWorkflow();
-      $legacy[] = new ArcanistGetConfigWorkflow();
-      $legacy[] = new ArcanistSetConfigWorkflow();
-      $legacy[] = new ArcanistInstallCertificateWorkflow();
-      $legacy[] = new ArcanistLandWorkflow();
-      $legacy[] = new ArcanistLintersWorkflow();
-      $legacy[] = new ArcanistLintWorkflow();
-      $legacy[] = new ArcanistListWorkflow();
-      $legacy[] = new ArcanistPatchWorkflow();
-      $legacy[] = new ArcanistPasteWorkflow();
-      $legacy[] = new ArcanistTasksWorkflow();
-      $legacy[] = new ArcanistTodoWorkflow();
-      $legacy[] = new ArcanistUnitWorkflow();
-      $legacy[] = new ArcanistWhichWorkflow();
+        $legacy[] = new ArcanistCloseRevisionWorkflow();
+        $legacy[] = new ArcanistCommitWorkflow();
+        $legacy[] = new ArcanistCoverWorkflow();
+        $legacy[] = new ArcanistDiffWorkflow();
+        $legacy[] = new ArcanistExportWorkflow();
+        $legacy[] = new ArcanistGetConfigWorkflow();
+        $legacy[] = new ArcanistSetConfigWorkflow();
+        $legacy[] = new ArcanistInstallCertificateWorkflow();
+        $legacy[] = new ArcanistLandWorkflow();
+        $legacy[] = new ArcanistLintersWorkflow();
+        $legacy[] = new ArcanistLintWorkflow();
+        $legacy[] = new ArcanistListWorkflow();
+        $legacy[] = new ArcanistPatchWorkflow();
+        $legacy[] = new ArcanistPasteWorkflow();
+        $legacy[] = new ArcanistTasksWorkflow();
+        $legacy[] = new ArcanistTodoWorkflow();
+        $legacy[] = new ArcanistUnitWorkflow();
+        $legacy[] = new ArcanistWhichWorkflow();
 
-      foreach ($legacy as $workflow) {
-        // If this workflow has been updated but not removed from the list
-        // above yet, just skip it.
-        if ($workflow instanceof ArcanistArcWorkflow) {
-          continue;
+        foreach ($legacy as $workflow) {
+          // If this workflow has been updated but not removed from the list
+          // above yet, just skip it.
+          if ($workflow instanceof ArcanistArcWorkflow) {
+            continue;
+          }
+
+          $workflows[] = $workflow->newLegacyPhutilWorkflow();
         }
 
-        $workflows[] = $workflow->newLegacyPhutilWorkflow();
+        $args->setWorkflows($workflows);
       }
-
-      $args->setWorkflows($workflows);
     }
 
     if (!$with) {
