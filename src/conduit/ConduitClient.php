@@ -13,6 +13,7 @@ final class ConduitClient extends Phobject {
   private $privateKey;
   private $conduitToken;
   private $oauthToken;
+  private $capabilities = array();
 
   const AUTH_ASYMMETRIC = 'asymmetric';
 
@@ -86,6 +87,11 @@ final class ConduitClient extends Phobject {
     return $this;
   }
 
+  public function enableCapabilities(array $capabilities) {
+    $this->capabilities += array_fuse($capabilities);
+    return $this;
+  }
+
   public function callMethod($method, array $params) {
 
     $meta = array();
@@ -143,11 +149,27 @@ final class ConduitClient extends Phobject {
 
     // Always use the cURL-based HTTPSFuture, for proxy support and other
     // protocol edge cases that HTTPFuture does not support.
-    $core_future = new HTTPSFuture($uri, $data);
+    $core_future = new HTTPSFuture($uri);
     $core_future->addHeader('Host', $this->getHostStringForHeader());
 
     $core_future->setMethod('POST');
     $core_future->setTimeout($this->timeout);
+
+    // See T13507. If possible, try to compress requests. To compress requests,
+    // we must have "gzencode()" available and the server needs to have
+    // asserted it has the "gzip" capability.
+    $can_gzip =
+      (function_exists('gzencode')) &&
+      (isset($this->capabilities['gzip']));
+    if ($can_gzip) {
+      $gzip_data = phutil_build_http_querystring($data);
+      $gzip_data = gzencode($gzip_data);
+
+      $core_future->addHeader('Content-Encoding', 'gzip');
+      $core_future->setData($gzip_data);
+    } else {
+      $core_future->setData($data);
+    }
 
     if ($this->username !== null) {
       $core_future->setHTTPBasicAuthCredentials(

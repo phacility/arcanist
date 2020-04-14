@@ -3,6 +3,7 @@
 final class ConduitFuture extends FutureProxy {
 
   private $client;
+  private $engine;
   private $conduitMethod;
   private $profilerCallID;
 
@@ -38,6 +39,19 @@ final class ConduitFuture extends FutureProxy {
     list($status, $body, $headers) = $result;
     if ($status->isError()) {
       throw $status;
+    }
+
+    $capabilities = array();
+    foreach ($headers as $header) {
+      list($name, $value) = $header;
+      if (!strcasecmp($name, 'X-Conduit-Capabilities')) {
+        $capabilities = explode(' ', $value);
+        break;
+      }
+    }
+
+    if ($capabilities) {
+      $this->client->enableCapabilities($capabilities);
     }
 
     $raw = $body;
