@@ -26,7 +26,7 @@ abstract class BaseHTTPFuture extends Future {
   private $uri;
   private $data;
   private $expect;
-
+  private $disableContentDecoding;
 
 /* -(  Creating a New Request  )--------------------------------------------- */
 
@@ -276,6 +276,15 @@ abstract class BaseHTTPFuture extends Future {
     return strlen(phutil_build_http_querystring($data));
   }
 
+  public function setDisableContentDecoding($disable_decoding) {
+    $this->disableContentDecoding = $disable_decoding;
+    return $this;
+  }
+
+  public function getDisableContentDecoding() {
+    return $this->disableContentDecoding;
+  }
+
 
 /* -(  Resolving the Request  )---------------------------------------------- */
 
@@ -348,24 +357,26 @@ abstract class BaseHTTPFuture extends Future {
       }
     }
 
-    $content_encoding = null;
-    foreach ($headers as $header) {
-      list($name, $value) = $header;
-      $name = phutil_utf8_strtolower($name);
-      if (!strcasecmp($name, 'Content-Encoding')) {
-        $content_encoding = $value;
-        break;
-      }
-    }
-
-    switch ($content_encoding) {
-      case 'gzip':
-        $decoded_body = gzdecode($body);
-        if ($decoded_body === false) {
-          return $this->buildMalformedResult($raw_response);
+    if (!$this->getDisableContentDecoding()) {
+      $content_encoding = null;
+      foreach ($headers as $header) {
+        list($name, $value) = $header;
+        $name = phutil_utf8_strtolower($name);
+        if (!strcasecmp($name, 'Content-Encoding')) {
+          $content_encoding = $value;
+          break;
         }
-        $body = $decoded_body;
-        break;
+      }
+
+      switch ($content_encoding) {
+        case 'gzip':
+          $decoded_body = @gzdecode($body);
+          if ($decoded_body === false) {
+            return $this->buildMalformedResult($raw_response);
+          }
+          $body = $decoded_body;
+          break;
+      }
     }
 
     $status = new HTTPFutureHTTPResponseStatus(
