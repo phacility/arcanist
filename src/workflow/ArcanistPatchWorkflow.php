@@ -458,7 +458,16 @@ EOTEXT
       } else {
         throw $ex;
       }
+    // UBER CODE
+    } catch (HTTPFutureHTTPResponseStatus $ex) {
+      if ($ex->getStatusCode() == 401) {
+        $this->authenticateConduit();
+        return $this->run();
+      } else {
+        throw $ex;
+      }
     }
+    // UBER CODE END
     $try_encoding = nonempty($this->getArgument('encoding'), null);
     if (!$try_encoding) {
       if ($this->requiresConduit()) {
