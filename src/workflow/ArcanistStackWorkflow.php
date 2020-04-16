@@ -55,6 +55,10 @@ EOTEXT
           Submits an accepted stack of diffs after review to Submit Queue for landing. This command is the last
           step in the standard Differential pre-publish code review workflow.
 
+          This command also supports landing stack of diffs to repositories which do not use Submit Queue. Changes
+          are pushed to repository atomically as one pack. Only changes present in Phabricator will be applied! Make
+          sure your changes are synced to Phabricator otherwise you might loose them!
+
           FAQS:
           1. What are the Submit Queue guarantees for Stacked-Diffs ?
               (a) Submit Queue guarantees atomicity for landing all diffs within a single stack. Either all diffs in the 
@@ -81,15 +85,15 @@ EOTEXT
 
           5. What validations are done as part of arc-stack ?
              Apart from general validations done in "arc land" (like diff and buildable status), arc stack
-             ensures each revision in the stack is stacked against the latest diff of its parent. 
-             
+             ensures each revision in the stack is stacked against the latest diff of its parent.
+
           6. Will arc-stack do auto-rebase if it detects inconsistencies ?
              If arc stack detects rebase inconsistencies, Users will be prompted to rebase. Arcanist can also try to 
              auto rebase and arc-diff on behalf of user but this is ONLY BEST EFFORT. If there are merge-conflicts,
              it would exit and users would need to fix the conflicts and cleanup branches themselves.
              Users are still expected to do rebase the first diff in the stack against the target branch before
              running arc stack. Otherwise, Submit Queue may reject the request during Merge-Validation Check.
-  
+
           7. What are the requirements for a repo to be stack-diff ready ?
              arc stack for Submit Queue relies on tag-based patching (git tags in staging repos) to ensure any arbitrary
              revision in the stack can be patched for running merge-conflict and build-checking validations. For this case,
@@ -98,9 +102,16 @@ EOTEXT
               (a) Staging repository must be enabled for the repo.
               (b) Jenkins jobs that runs validations as part of Submit Queue MUST use the above flag during arc patch.
 
+             arc stack for usual repositories is simply patching Revisions it detected on top of each other, also it is
+             checking each Differential Revision build status.
+
           8. How to contact support team with arc-stack questions ?
-             Please ping us at "Arc Stack" uchat channel.  For any error reporting, please run arc-stack command in verbose mode with
-             ARCANIST_TRACE enabled as below
+             Please ping us at "Arc Stack" uchat channel.
+
+             If you have issue with `arc stack` while landing changes to non Submit Queue enabled repository, please ping us at
+             "Phabricator" slack channel.
+
+             For any error reporting, please run arc-stack command in verbose mode with ARCANIST_TRACE enabled as below
                    ARCANIST_TRACE=1 arc stack --trace
 
           DESCRIPTION:
@@ -327,10 +338,6 @@ EOTEXT
       throw new ArcanistUsageException("arc stack supports only git version control");
     }
 
-    if (!$this->shouldUseSubmitQueue) {
-      throw new ArcanistUsageException("arc stack only supports landing through submit queue");
-    }
-
     if ($this->tbr) {
       throw new ArcanistUsageException("Use arc land if you want to do tbr");
     }
@@ -344,9 +351,23 @@ EOTEXT
       $this->uberRunUnit();
     }
 
-    $engine = new UberArcanistStackSubmitQueueEngine($this->submitQueueClient,
-                                                     $this->getConduit(),
-                                                     $this->getUsesArcFlow());
+    $engine = null;
+    if ($this->shouldUseSubmitQueue) {
+      $engine = id(new UberArcanistStackSubmitQueueEngine(
+          $this->submitQueueClient,
+          $this->getConduit(),
+          $this->getUsesArcFlow()))
+        ->setTraceModeEnabled($this->traceModeEnabled)
+        ->setSubmitQueueRegex($this->submitQueueRegex)
+        ->setTbr($this->tbr)
+        ->setRebaseCheckEnabled($this->rebaseCheckEnabled)
+        ->setSubmitQueueTags($this->submitQueueTags)
+        ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'))
+        ->setBuildMessageCallback(array($this, 'uberBuildEngineMessage'));
+    } else {
+      $engine = id(new UberArcanistStackGitLandEngine())
+        ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
+    }
     $this->readEngineArguments();
     $this->requireCleanWorkingCopy();
     $should_hold = $this->getArgument('hold');
@@ -358,15 +379,7 @@ EOTEXT
       ->setTargetOnto($this->onto)
       ->setShouldHold($should_hold)
       ->setShouldKeep($this->keepBranch)
-      ->setShouldPreview($this->preview)
-      ->setTraceModeEnabled($this->traceModeEnabled)
-      ->setSubmitQueueRegex($this->submitQueueRegex)
-      ->setTbr($this->tbr)
-      ->setRebaseCheckEnabled($this->rebaseCheckEnabled)
-      ->setSubmitQueueTags($this->submitQueueTags)
-      ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'))
-      ->setBuildMessageCallback(array($this, 'uberBuildEngineMessage'));
-
+      ->setShouldPreview($this->preview);
       $engine->execute();
 
       if (!$should_hold && !$this->preview) {
@@ -833,13 +846,13 @@ EOTEXT
   public function uberBuildEngineMessage(UberArcanistStackSubmitQueueEngine $engine) {
     // TODO: This is oh-so-gross because the below method is gross.
     $this->buildEngineMessage($engine);
-    $engine->setRevisionIdsInStackOrder($this->revision_ids);
   }
 
   public function buildEngineMessage(ArcanistLandEngine $engine) {
     // TODO: This is oh-so-gross.
     $this->findRevisions();
     $engine->setCommitMessageFile($this->messageFile);
+    $engine->setRevisionIdsInStackOrder($this->revision_ids);
   }
 
   public function didCommitMerge() {
@@ -854,19 +867,9 @@ EOTEXT
     }
     $this->askForRepositoryUpdate();
 
-    $mark_workflow = $this->buildChildWorkflow(
-      'close-revision',
-      array(
-        '--finalize',
-        '--quiet',
-        $this->revision['id'],
-      ));
-    $mark_workflow->run();
-    // UBER CODE
     $this->dispatchEvent(
       ArcanistEventType::TYPE_LAND_DIDPUSHREVISION,
       array());
-    // END UBER CODE
   }
 
   private function debugLog($pattern /* ... */) {
