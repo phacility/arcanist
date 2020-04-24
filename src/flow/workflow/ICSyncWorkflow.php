@@ -113,6 +113,7 @@ EOTEXT
       foreach (new FutureIterator($calls) as $call) {
         $call->resolve();
       }
+      $this->writeInfo("Dependencies updated", '');
     }
 
     if ($revisions) {
