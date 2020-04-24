@@ -2,12 +2,10 @@
 
 final class ArcanistNoneLintRenderer extends ArcanistLintRenderer {
 
-  public function renderLintResult(ArcanistLintResult $result) {
-    return '';
-  }
+  const RENDERERKEY = 'none';
 
-  public function renderOkayResult() {
-    return '';
+  public function renderLintResult(ArcanistLintResult $result) {
+    return null;
   }
 
 }

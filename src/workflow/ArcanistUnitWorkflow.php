@@ -128,7 +128,7 @@ EOTEXT
   }
 
   public function run() {
-    $working_copy = $this->getWorkingCopy();
+    $working_copy = $this->getWorkingCopyIdentity();
 
     $paths = $this->getArgument('paths');
     $rev = $this->getArgument('rev');

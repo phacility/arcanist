@@ -1,0 +1,60 @@
+<?php
+
+function a(?int $x) {}
+function b(?SomeClass $x) {}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > a
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     > ?
+     * n_DECLARATION_PARAMETER
+      * n_NULLABLE_TYPE
+       * n_CLASS_NAME
+        > int
+      > " "
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > b
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     > ?
+     * n_DECLARATION_PARAMETER
+      * n_NULLABLE_TYPE
+       * n_CLASS_NAME
+        > SomeClass
+      > " "
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+ > "\n"

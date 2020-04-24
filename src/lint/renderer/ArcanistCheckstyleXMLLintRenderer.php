@@ -1,55 +1,74 @@
 <?php
 
-/**
- * Shows lint messages to the user.
- */
 final class ArcanistCheckstyleXMLLintRenderer extends ArcanistLintRenderer {
+
+  const RENDERERKEY = 'xml';
 
   private $writer;
 
-  public function __construct() {
-    $this->writer = new XMLWriter();
-    $this->writer->openMemory();
-    $this->writer->setIndent(true);
-    $this->writer->setIndentString('  ');
+  private function getWriter() {
+    if (!$this->writer) {
+      $xml_extension = 'XMLWriter';
+
+      if (!extension_loaded($xml_extension)) {
+        throw new Exception(
+          pht(
+            'Lint can not be output into "%s" format because the PHP "%s" '.
+            'extension is not installed. Install the extension or choose a '.
+            'different output format.',
+            self::RENDERERKEY,
+            $xml_extension));
+      }
+
+      $writer = new XMLWriter();
+      $writer->openMemory();
+      $writer->setIndent(true);
+      $writer->setIndentString('  ');
+
+      $this->writer = $writer;
+    }
+
+    return $this->writer;
   }
 
-  public function renderPreamble() {
-    $this->writer->startDocument('1.0', 'UTF-8');
-    $this->writer->startElement('checkstyle');
-    $this->writer->writeAttribute('version', '4.3');
-    return $this->writer->flush();
+  public function willRenderResults() {
+    $writer = $this->getWriter();
+
+    $writer->startDocument('1.0', 'UTF-8');
+    $writer->startElement('checkstyle');
+    $writer->writeAttribute('version', '4.3');
+    $this->writeOut($writer->flush());
   }
 
   public function renderLintResult(ArcanistLintResult $result) {
-    $this->writer->startElement('file');
-    $this->writer->writeAttribute('name', $result->getPath());
+    $writer = $this->getWriter();
+
+    $writer->startElement('file');
+    $writer->writeAttribute('name', $result->getPath());
 
     foreach ($result->getMessages() as $message) {
-      $this->writer->startElement('error');
+      $writer->startElement('error');
 
-      $this->writer->writeAttribute('line', $message->getLine());
-      $this->writer->writeAttribute('column', $message->getChar());
-      $this->writer->writeAttribute('severity',
+      $writer->writeAttribute('line', $message->getLine());
+      $writer->writeAttribute('column', $message->getChar());
+      $writer->writeAttribute('severity',
         $this->getStringForSeverity($message->getSeverity()));
-      $this->writer->writeAttribute('message', $message->getDescription());
-      $this->writer->writeAttribute('source', $message->getCode());
+      $writer->writeAttribute('message', $message->getDescription());
+      $writer->writeAttribute('source', $message->getCode());
 
-      $this->writer->endElement();
+      $writer->endElement();
     }
 
-    $this->writer->endElement();
-    return $this->writer->flush();
+    $writer->endElement();
+    $this->writeOut($writer->flush());
   }
 
-  public function renderOkayResult() {
-    return '';
-  }
+  public function didRenderResults() {
+    $writer = $this->getWriter();
 
-  public function renderPostamble() {
-    $this->writer->endElement();
-    $this->writer->endDocument();
-    return $this->writer->flush();
+    $writer->endElement();
+    $writer->endDocument();
+    $this->writeOut($writer->flush());
   }
 
   private function getStringForSeverity($severity) {

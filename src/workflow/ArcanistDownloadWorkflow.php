@@ -1,53 +1,31 @@
 <?php
 
-/**
- * Download a file from Phabricator.
- */
-final class ArcanistDownloadWorkflow extends ArcanistWorkflow {
-
-  private $id;
-  private $saveAs;
-  private $show;
+final class ArcanistDownloadWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'download';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **download** __file__ [--as __name__] [--show]
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Download a file to local disk.
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Download a file to local disk.'))
+      ->addExample(pht('**download** [__options__] -- __file__'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: filesystems
-          Download a file to local disk, e.g.:
-
-            $ arc download F33              # Download file 'F33'
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'show' => array(
-        'conflicts' => array(
-          'as' => pht(
-            'Use %s to direct the file to stdout, or %s to direct '.
-            'it to a named location.',
-            '--show',
-            '--as'),
-        ),
-        'help' => pht('Write file to stdout instead of to disk.'),
-      ),
-      'as' => array(
-        'param' => 'name',
-        'help' => pht(
-          'Save the file with a specific name rather than the default.'),
-      ),
-      '*' => 'argv',
+      $this->newWorkflowArgument('as')
+        ->setParameter('path')
+        ->setHelp(pht('Save the file to a specific location.')),
+      $this->newWorkflowArgument('argv')
+        ->setWildcard(true),
     );
   }
 
@@ -72,207 +50,143 @@ EOTEXT
     $this->show = $this->getArgument('show');
   }
 
-  public function requiresAuthentication() {
-    return true;
-  }
 
-  public function run() {
-    $conduit = $this->getConduit();
+  public function runWorkflow() {
+    $file_symbols = $this->getArgument('argv');
 
-    $id = $this->id;
-    $display_name = 'F'.$id;
-    $is_show = $this->show;
-    $save_as = $this->saveAs;
+    if (!$file_symbols) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Specify a file to download, like "F123".'));
+    }
+
+    if (count($file_symbols) > 1) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Specify exactly one file to download.'));
+    }
+
+    $file_symbol = head($file_symbols);
+
+    $symbols = $this->getSymbolEngine();
+    $file_ref = $symbols->loadFileForSymbol($file_symbol);
+    if (!$file_ref) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'File "%s" does not exist, or you do not have permission to '.
+          'view it.',
+          $file_symbol));
+    }
+
+    $is_stdout = false;
     $path = null;
 
-    try {
-      $file = $conduit->callMethodSynchronous(
-        'file.search',
-        array(
-          'constraints' => array(
-            'ids' => array($id),
-          ),
-        ));
+    $save_as = $this->getArgument('as');
+    if ($save_as === '-') {
+      $is_stdout = true;
+    } else if ($save_as === null) {
+      $path = $file_ref->getName();
+      $path = basename($path);
+      $path = Filesystem::resolvePath($path);
 
-      $data = $file['data'];
-      if (!$data) {
-        throw new ArcanistUsageException(
-          pht(
-            'File "%s" is not a valid file, or not visible.',
-            $display_name));
-      }
+      $try_unique = true;
+    } else {
+      $path = Filesystem::resolvePath($save_as);
 
-      $file = head($data);
-      $data_uri = idxv($file, array('fields', 'dataURI'));
+      $try_unique = false;
+    }
 
-      if ($data_uri === null) {
-        throw new ArcanistUsageException(
-          pht(
-            'File "%s" can not be downloaded.',
-            $display_name));
-      }
-
-      if ($is_show) {
-        // Skip all the file path stuff if we're just going to echo the
-        // file contents.
+    $file_handle = null;
+    if (!$is_stdout) {
+      if ($try_unique) {
+        $path = Filesystem::writeUniqueFile($path, '');
+        Filesystem::remove($path);
       } else {
-        if ($save_as !== null) {
-          $path = Filesystem::resolvePath($save_as);
-
-          $try_unique = false;
-        } else {
-          $path = idxv($file, array('fields', 'name'), $display_name);
-          $path = basename($path);
-          $path = Filesystem::resolvePath($path);
-
-          $try_unique = true;
-        }
-
-        if ($try_unique) {
-          $path = Filesystem::writeUniqueFile($path, '');
-        } else {
-          if (Filesystem::pathExists($path)) {
-            throw new ArcanistUsageException(
-              pht(
-                'File "%s" already exists.',
-                $save_as));
-          }
-
-          Filesystem::writeFile($path, '');
-        }
-
-        $display_path = Filesystem::readablePath($path);
-      }
-
-      $size = idxv($file, array('fields', 'size'), 0);
-
-      if ($is_show) {
-        $file_handle = null;
-      } else {
-        $file_handle = fopen($path, 'ab+');
-        if ($file_handle === false) {
-          throw new Exception(
+        if (Filesystem::pathExists($path)) {
+          throw new PhutilArgumentUsageException(
             pht(
-              'Failed to open file "%s" for writing.',
+              'File "%s" already exists.',
               $path));
         }
-
-        $this->writeInfo(
-          pht('DATA'),
-          pht(
-            'Downloading "%s" (%s byte(s))...',
-            $display_name,
-            new PhutilNumber($size)));
       }
+    }
 
-      $future = new HTTPSFuture($data_uri);
+    $display_path = Filesystem::readablePath($path);
 
+    $display_name = $file_ref->getName();
+    if (!strlen($display_name)) {
+      $display_name = $file_ref->getMonogram();
+    }
+
+    $expected_bytes = $file_ref->getSize();
+    $log = $this->getLogEngine();
+
+    if (!$is_stdout) {
+      $log->writeStatus(
+        pht('DATA'),
+        pht(
+          'Downloading "%s" (%s byte(s)) to "%s"...',
+          $display_name,
+          new PhutilNumber($expected_bytes),
+          $display_path));
+    }
+
+    $data_uri = $file_ref->getDataURI();
+    $future = new HTTPSFuture($data_uri);
+
+    if (!$is_stdout) {
       // For small files, don't bother drawing a progress bar.
       $minimum_bar_bytes = (1024 * 1024 * 4);
+      if ($expected_bytes > $minimum_bar_bytes) {
+        $progress = id(new PhutilConsoleProgressSink())
+          ->setTotalWork($expected_bytes);
 
-      if ($is_show || ($size < $minimum_bar_bytes)) {
-        $bar = null;
-      } else {
-        $bar = id(new PhutilConsoleProgressBar())
-          ->setTotal($size);
+        $future->setProgressSink($progress);
       }
 
-      // TODO: We should stream responses to disk, but cURL gives us the raw
-      // HTTP response data and BaseHTTPFuture can not currently parse it in
-      // a stream-oriented way. Until this is resolved, buffer the file data
-      // in memory and write it to disk in one shot.
+      // Compute a timeout based on the expected filesize.
+      $transfer_rate = 32 * 1024;
+      $timeout = (int)(120 + ($expected_bytes / $transfer_rate));
 
-      list($status, $data) = $future->resolve();
-      if ($status->getStatusCode() !== 200) {
-        throw new Exception(
-          pht(
-            'Got HTTP %d status response, expected HTTP 200.',
-            $status->getStatusCode()));
-      }
+      $future
+        ->setTimeout($timeout)
+        ->setDownloadPath($path);
+    }
 
-      if (strlen($data)) {
-        if ($is_show) {
-          echo $data;
-        } else {
-          $ok = fwrite($file_handle, $data);
-          if ($ok === false) {
-            throw new Exception(
-              pht(
-                'Failed to write file data to "%s".',
-                $path));
-          }
-        }
-      }
-
-      if ($bar) {
-        $bar->update(strlen($data));
-      }
-
-      if ($bar) {
-        $bar->done();
-      }
-
-      if ($file_handle) {
-        $ok = fclose($file_handle);
-        if ($ok === false) {
-          throw new Exception(
-            pht(
-              'Failed to close file handle for "%s".',
-              $path));
-        }
-      }
-
-      if (!$is_show) {
-        $this->writeOkay(
-          pht('DONE'),
-          pht(
-            'Saved "%s" as "%s".',
-            $display_name,
-            $display_path));
-      }
-
-      return 0;
+    try {
+      list($data) = $future->resolvex();
     } catch (Exception $ex) {
-
-      // If we created an empty file, clean it up.
-      if (!$is_show) {
-        if ($path !== null) {
-          Filesystem::remove($path);
-        }
-      }
-
-      // If we fail for any reason, fall back to the older mechanism using
-      // "file.info" and "file.download".
+      Filesystem::removePath($path);
+      throw $ex;
     }
 
-    $this->writeStatusMessage(pht('Getting file information...')."\n");
-    $info = $conduit->callMethodSynchronous(
-      'file.info',
-      array(
-        'id' => $this->id,
-      ));
-
-    $desc = pht('(%s bytes)', new PhutilNumber($info['byteSize']));
-    if ($info['name']) {
-      $desc = "'".$info['name']."' ".$desc;
+    if ($is_stdout) {
+      $file_bytes = strlen($data);
+    } else {
+      // TODO: This has various potential problems with clearstatcache() and
+      // 32-bit systems, but just ignore them for now.
+      $file_bytes = filesize($path);
     }
 
-    $this->writeStatusMessage(pht('Downloading file %s...', $desc)."\n");
-    $data = $conduit->callMethodSynchronous(
-      'file.download',
-      array(
-        'phid' => $info['phid'],
-      ));
+    if ($file_bytes !== $expected_bytes) {
+      throw new Exception(
+        pht(
+          'Downloaded file size (%s bytes) does not match expected '.
+          'file size (%s bytes). This download may be incomplete or '.
+          'corrupt.',
+          new PhutilNumber($file_bytes),
+          new PhutilNumber($expected_bytes)));
+    }
 
-    $data = base64_decode($data);
-
-    if ($this->show) {
+    if ($is_stdout) {
       echo $data;
     } else {
-      $path = Filesystem::writeUniqueFile(
-        nonempty($this->saveAs, $info['name'], 'file'),
-        $data);
-      $this->writeStatusMessage(pht("Saved file as '%s'.", $path)."\n");
+      $log->writeStatus(
+        pht('DONE'),
+        pht(
+          'Saved "%s" as "%s".',
+          $display_name,
+          $display_path));
     }
 
     return 0;

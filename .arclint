@@ -36,12 +36,34 @@
       "exclude": "(^resources/spelling/.*\\.json$)"
     },
     "text": {
-      "type": "text"
+      "type": "text",
+      "exclude": [
+        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect)|/Makefile\\z)"
+      ]
+    },
+    "text-without-length": {
+      "type": "text",
+      "include": [
+        "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect))"
+      ],
+      "severity": {
+        "3": "disabled"
+      }
+    },
+    "text-without-tabs": {
+      "type": "text",
+      "include": [
+        "(/Makefile\\z)"
+      ],
+      "severity": {
+        "2": "disabled"
+      }
     },
     "xhpast": {
       "type": "xhpast",
       "include": "(\\.php$)",
-      "standard": "phutil.xhpast"
+      "standard": "phutil.xhpast",
+      "xhpast.php-version": "5.5.0"
     }
   }
 }

@@ -1,0 +1,43 @@
+<?php
+
+if ($j->getStatus()['running']) {
+  // do something
+}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_METHOD_CALL
+       * n_OBJECT_PROPERTY_ACCESS
+        * n_VARIABLE
+         > $j
+        > ->
+        * n_STRING
+         > getStatus
+       * n_INDEX_ACCESS
+        * n_CALL_PARAMETER_LIST
+         > (
+         > )
+        > [
+        * n_STRING_SCALAR
+         > 'running'
+        > ]
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > "\n  "
+      > "// do something\n"
+      > }
+ > "\n"

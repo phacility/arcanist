@@ -3,7 +3,7 @@
 final class ArcanistSettings extends Phobject {
 
   private function getOptions() {
-    return array(
+    $legacy_builtins = array(
       'default' => array(
         'type' => 'string',
         'help' => pht(
@@ -80,19 +80,6 @@ final class ArcanistSettings extends Phobject {
           'arc land'),
         'example' => '"develop"',
       ),
-      'arc.lint.cache' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'Enable the lint cache by default. When enabled, `%s` attempts to '.
-          'use cached results if possible. Currently, the cache is not always '.
-          'invalidated correctly and may cause `%s` to report incorrect '.
-          'results, particularly while developing linters. This is probably '.
-          'worth enabling only if your linters are very slow.',
-          'arc lint',
-          'arc lint'),
-        'default' => false,
-        'example' => 'false',
-      ),
       'history.immutable' => array(
         'type' => 'bool',
         'legacy' => 'immutable_history',
@@ -121,14 +108,6 @@ final class ArcanistSettings extends Phobject {
           "behind HTTPS signed by your organization's internal CA."),
         'example' => 'support/yourca.pem',
       ),
-      'https.blindly-trust-domains' => array(
-        'type' => 'list',
-        'help' => pht(
-          'List of domains to blindly trust SSL certificates for. '.
-          'Disables peer verification.'),
-        'default' => array(),
-        'example' => '["secure.mycompany.com"]',
-      ),
       'browser' => array(
         'type' => 'string',
         'help' => pht('Command to use to invoke a web browser.'),
@@ -139,16 +118,6 @@ final class ArcanistSettings extends Phobject {
         'help' => pht('List of event listener classes to install at startup.'),
         'default' => array(),
         'example' => '["ExampleEventListener"]',
-      ),
-      'http.basicauth.user' => array(
-        'type' => 'string',
-        'help' => pht('Username to use for basic auth over HTTP transports.'),
-        'example' => '"bob"',
-      ),
-      'http.basicauth.pass' => array(
-        'type' => 'string',
-        'help' => pht('Password to use for basic auth over HTTP transports.'),
-        'example' => '"bobhasasecret"',
       ),
       'arc.autostash' => array(
         'type' => 'bool',
@@ -168,6 +137,16 @@ final class ArcanistSettings extends Phobject {
           'Configured command aliases. Use "arc alias" to define aliases.'),
       ),
     );
+
+    $settings = ArcanistSetting::getAllSettings();
+    foreach ($settings as $key => $setting) {
+      $settings[$key] = $setting->getLegacyDictionary();
+    }
+
+    $results = $settings + $legacy_builtins;
+    ksort($results);
+
+    return $results;
   }
 
   private function getOption($key) {

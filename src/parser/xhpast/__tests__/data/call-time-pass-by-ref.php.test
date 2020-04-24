@@ -1,0 +1,22 @@
+<?php f(&$v);
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_FUNCTION_CALL
+    * n_SYMBOL_NAME
+     > f
+    * n_CALL_PARAMETER_LIST
+     > (
+     * n_VARIABLE_REFERENCE
+      > &
+      * n_VARIABLE
+       > $v
+     > )
+   > ;
+ > "\n"

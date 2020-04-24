@@ -81,6 +81,11 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'This commit will be landed:',
         'These commits will be landed:',
       ),
+
+      'Updated %s librarie(s).' => array(
+        'Updated library.',
+        'Updated %s libraries.',
+      ),
     );
   }
 

@@ -1,0 +1,35 @@
+<?php [1][0]; "X"[0];
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_INDEX_ACCESS
+    * n_ARRAY_LITERAL
+     * n_ARRAY_VALUE_LIST
+      > [
+      * n_ARRAY_VALUE
+       * n_EMPTY
+       * n_NUMERIC_SCALAR
+        > 1
+      > ]
+    > [
+    * n_NUMERIC_SCALAR
+     > 0
+    > ]
+   > ;
+  > " "
+  * n_STATEMENT
+   * n_INDEX_ACCESS
+    * n_STRING_SCALAR
+     > "\"X\""
+    > [
+    * n_NUMERIC_SCALAR
+     > 0
+    > ]
+   > ;
+ > "\n"

@@ -1,0 +1,48 @@
+<?php 1; ?>
+<? 1; ?>
+<?= 1; ?>
+<a />
+<b ?>
+~~~~~~~~~~
+pass, comment="Omits ASP tags since parser support is off as built."
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1
+   > ;
+  > " "
+  * n_STATEMENT
+   * n_EMPTY
+  * n_OPEN_TAG
+   > <?
+  > " "
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1
+   > ;
+  > " "
+  * n_STATEMENT
+   * n_EMPTY
+  * n_OPEN_TAG
+   > <?=
+  > " "
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1
+   > ;
+  > " "
+  * n_STATEMENT
+   * n_EMPTY
+  * n_INLINE_HTML
+   > <
+  * n_INLINE_HTML
+   > "a />\n"
+  * n_INLINE_HTML
+   > <
+  * n_INLINE_HTML
+   > "b ?>\n"

@@ -1,0 +1,22 @@
+<?php
+1 <=> 2;
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_NUMERIC_SCALAR
+     > 1
+    > " "
+    * n_OPERATOR
+     > <=>
+    > " "
+    * n_NUMERIC_SCALAR
+     > 2
+   > ;
+ > "\n"

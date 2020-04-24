@@ -6,9 +6,14 @@ class MyClass {
   }
 
   public function someOtherMethod() {
-    $x = 'MyClass is awesome';
+    $x = 'MyClass';
     $y = 'MyClassIsAwesome';
+    $z = 'MyClass is awesome';
     return __CLASS__;
+  }
+
+  public function throwAnException() {
+    throw new Exception('MyClass is throwing an exception!');
   }
 }
 
@@ -29,9 +34,14 @@ class MyClass {
   }
 
   public function someOtherMethod() {
-    $x = 'MyClass is awesome';
+    $x = __CLASS__;
     $y = 'MyClassIsAwesome';
+    $z = 'MyClass is awesome';
     return __CLASS__;
+  }
+
+  public function throwAnException() {
+    throw new Exception('MyClass is throwing an exception!');
   }
 }
 

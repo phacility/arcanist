@@ -1,0 +1,24 @@
+<?php
+
+$a = <<<EODOC
+EODOC;
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $a
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_HEREDOC
+     > "<<<EODOC\nEODOC"
+   > ;
+ > "\n"

@@ -1,70 +1,56 @@
 <?php
 
-/**
- * Upload a file to Phabricator.
- */
-final class ArcanistUploadWorkflow extends ArcanistWorkflow {
-
-  private $paths;
-  private $json;
+final class ArcanistUploadWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'upload';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **upload** __file__ [__file__ ...] [--json]
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Upload one or more files from local disk to Phabricator.
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Upload files.'))
+      ->addExample(pht('**upload** [__options__] -- __file__ [__file__ ...]'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: filesystems
-          Upload a file from local disk.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'json' => array(
-        'help' => pht('Output upload information in JSON format.'),
-      ),
-      'temporary' => array(
-        'help' => pht(
-          'Mark the file as temporary. Temporary files will be deleted '.
-          'automatically after 24 hours.'),
-      ),
-      '*' => 'paths',
+      $this->newWorkflowArgument('json')
+        ->setHelp(pht('Output upload information in JSON format.')),
+      $this->newWorkflowArgument('temporary')
+        ->setHelp(
+          pht(
+            'Mark the file as temporary. Temporary files will be '.
+            'deleted after 24 hours.')),
+      $this->newWorkflowArgument('paths')
+        ->setWildcard(true)
+        ->setIsPathArgument(true),
     );
   }
 
-  protected function didParseArguments() {
+  public function runWorkflow() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException(
-        pht('Specify one or more files to upload.'));
+      throw new PhutilArgumentUsageException(
+        pht('Specify one or more paths to files you want to upload.'));
     }
 
-    $this->paths = $this->getArgument('paths');
-    $this->json = $this->getArgument('json');
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  public function run() {
     $is_temporary = $this->getArgument('temporary');
+    $is_json = $this->getArgument('json');
+    $paths = $this->getArgument('paths');
 
-    $conduit = $this->getConduit();
+    $conduit = $this->getConduitEngine();
     $results = array();
 
     $uploader = id(new ArcanistFileUploader())
-      ->setConduitClient($conduit);
+      ->setConduitEngine($conduit);
 
-    foreach ($this->paths as $key => $path) {
+    foreach ($paths as $key => $path) {
       $file = id(new ArcanistFileDataRef())
         ->setName(basename($path))
         ->setPath($path);
@@ -89,7 +75,7 @@ EOTEXT
       $phid = $file->getPHID();
       $name = $file->getName();
 
-      $info = $conduit->callMethodSynchronous(
+      $info = $conduit->resolveCall(
         'file.info',
         array(
           'phid' => $phid,
@@ -97,14 +83,15 @@ EOTEXT
 
       $results[$path] = $info;
 
-      if (!$this->json) {
+      if (!$is_json) {
         $id = $info['id'];
         echo "  F{$id} {$name}: ".$info['uri']."\n\n";
       }
     }
 
-    if ($this->json) {
-      echo json_encode($results)."\n";
+    if ($is_json) {
+      $output = id(new PhutilJSON())->encodeFormatted($results);
+      echo $output;
     } else {
       $this->writeStatus(pht('Done.'));
     }
@@ -125,7 +112,7 @@ EOTEXT
     }
 
     $this->writeStatus(pht('Beginning chunked upload of large file...'));
-    $chunks = $conduit->callMethodSynchronous(
+    $chunks = $conduit->resolveCall(
       'file.querychunks',
       array(
         'filePHID' => $file_phid,
@@ -182,7 +169,7 @@ EOTEXT
             'fread()'));
       }
 
-      $conduit->callMethodSynchronous(
+      $conduit->resolveCall(
         'file.uploadchunk',
         array(
           'filePHID' => $file_phid,

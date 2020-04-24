@@ -5,6 +5,43 @@ sanity_check_environment();
 
 require_once dirname(__FILE__).'/__init_script__.php';
 
+/**
+ * Adjust 'include_path' to add locations where we'll search for libraries.
+ * We look in these places:
+ *
+ *  - Next to 'arcanist/'.
+ *  - Anywhere in the normal PHP 'include_path'.
+ *  - Inside 'arcanist/externals/includes/'.
+ */
+function arcanist_adjust_php_include_path() {
+  // The 'arcanist/' directory.
+  $arcanist_dir = dirname(dirname(__FILE__));
+
+  // The parent directory of 'arcanist/'.
+  $parent_dir = dirname($arcanist_dir);
+
+  // The 'arcanist/externals/includes/' directory.
+  $include_dir = implode(
+    DIRECTORY_SEPARATOR,
+    array(
+      $arcanist_dir,
+      'externals',
+      'includes',
+    ));
+
+  $php_include_path = ini_get('include_path');
+  $php_include_path = implode(
+    PATH_SEPARATOR,
+    array(
+      $parent_dir,
+      $php_include_path,
+      $include_dir,
+    ));
+
+  ini_set('include_path', $php_include_path);
+}
+arcanist_adjust_php_include_path();
+
 ini_set('memory_limit', -1);
 
 $original_argv = $argv;
@@ -17,9 +54,6 @@ $base_args->parsePartial(
       'param'   => 'path',
       'help'    => pht('Load a libphutil library.'),
       'repeat'  => true,
-    ),
-    array(
-      'name'    => 'skip-arcconfig',
     ),
     array(
       'name'    => 'arcrc-file',
@@ -36,15 +70,8 @@ $base_args->parsePartial(
       'help' => pht('Use a specific authentication token.'),
     ),
     array(
-      'name'    => 'conduit-version',
-      'param'   => 'version',
-      'help'    => pht(
-        '(Developers) Mock client version in protocol handshake.'),
-    ),
-    array(
-      'name'    => 'conduit-timeout',
-      'param'   => 'timeout',
-      'help'    => pht('Set Conduit timeout (in seconds).'),
+      'name' => 'anonymous',
+      'help' => pht('Run workflow as a public user, without authenticating.'),
     ),
     array(
       'name'   => 'config',
@@ -60,10 +87,8 @@ $config_trace_mode = $base_args->getArg('trace');
 
 $force_conduit = $base_args->getArg('conduit-uri');
 $force_token = $base_args->getArg('conduit-token');
-$force_conduit_version = $base_args->getArg('conduit-version');
-$conduit_timeout = $base_args->getArg('conduit-timeout');
-$skip_arcconfig = $base_args->getArg('skip-arcconfig');
 $custom_arcrc = $base_args->getArg('arcrc-file');
+$is_anonymous = $base_args->getArg('anonymous');
 $load = $base_args->getArg('load-phutil-library');
 $help = $base_args->getArg('help');
 $args = array_values($base_args->getUnconsumedArgumentVector());
@@ -81,7 +106,6 @@ try {
       csprintf('%Ls', $original_argv));
 
     $libraries = array(
-      'phutil',
       'arcanist',
     );
 
@@ -116,12 +140,8 @@ try {
   $system_config = $configuration_manager->readSystemArcConfig();
   $runtime_config = $configuration_manager->applyRuntimeArcConfig($base_args);
 
-  if ($skip_arcconfig) {
-    $working_copy = ArcanistWorkingCopyIdentity::newDummyWorkingCopy();
-  } else {
-    $working_copy =
-      ArcanistWorkingCopyIdentity::newFromPath($working_directory);
-  }
+  $working_copy =
+    ArcanistWorkingCopyIdentity::newFromPath($working_directory);
   $configuration_manager->setWorkingCopyIdentity($working_copy);
 
   // Load additional libraries, which can provide new classes like configuration
@@ -180,13 +200,7 @@ try {
   }
 
   $user_config = $configuration_manager->readUserConfigurationFile();
-
-  $config_class = $working_copy->getProjectConfig('arcanist_configuration');
-  if ($config_class) {
-    $config = new $config_class();
-  } else {
-    $config = new ArcanistConfiguration();
-  }
+  $config = new ArcanistConfiguration();
 
   $command = strtolower($args[0]);
   $args = array_slice($args, 1);
@@ -205,13 +219,6 @@ try {
   // Git commit hooks) can detect that they're being run via `arc` and change
   // their behaviors.
   putenv('ARCANIST='.$command);
-
-  if ($force_conduit_version) {
-    $workflow->forceConduitVersion($force_conduit_version);
-  }
-  if ($conduit_timeout) {
-    $workflow->setConduitTimeout($conduit_timeout);
-  }
 
   $need_working_copy = $workflow->requiresWorkingCopy();
 
@@ -324,6 +331,10 @@ try {
     $conduit_token = $force_token;
   }
 
+  if ($is_anonymous) {
+    $conduit_token = null;
+  }
+
   $description = implode(' ', $original_argv);
   $credentials = array(
     'user' => $user_name,
@@ -332,6 +343,12 @@ try {
     'token' => $conduit_token,
   );
   $workflow->setConduitCredentials($credentials);
+
+  $engine = id(new ArcanistConduitEngine())
+    ->setConduitURI($conduit_uri)
+    ->setConduitToken($conduit_token);
+
+  $workflow->setConduitEngine($engine);
 
   if ($need_auth) {
     if ((!$user_name || !$certificate) && (!$conduit_token)) {
@@ -409,7 +426,7 @@ try {
     fwrite(STDERR, phutil_console_format(
       "**%s** %s\n",
       pht('Usage Exception:'),
-      $ex->getMessage()));
+      rtrim($ex->getMessage())));
   }
 
   if ($config) {

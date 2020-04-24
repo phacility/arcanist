@@ -1,0 +1,215 @@
+<?php
+
+trait T {
+  function f() {}
+}
+
+class C {
+  use T;
+}
+
+class D {
+  use T, U;
+}
+
+class E {
+  use T, U {
+    T::x insteadof U;
+    T::x as y;
+    T::z as private z;
+  }
+}
+
+class F {
+  use Q { q as protected; }
+}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     * n_STRING
+      > trait
+    > " "
+    * n_CLASS_NAME
+     > T
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+       * n_EMPTY
+       * n_STRING
+        > f
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > C
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_TRAIT_USE
+      > use
+      > " "
+      * n_CLASS_NAME
+       > T
+      * n_EMPTY
+     > ;
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > D
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_TRAIT_USE
+      > use
+      > " "
+      * n_CLASS_NAME
+       > T
+      > ,
+      > " "
+      * n_CLASS_NAME
+       > U
+      * n_EMPTY
+     > ;
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > E
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_TRAIT_USE
+      > use
+      > " "
+      * n_CLASS_NAME
+       > T
+      > ,
+      > " "
+      * n_CLASS_NAME
+       > U
+      > " "
+      * n_TRAIT_ADAPTATION_LIST
+       > {
+       > "\n    "
+       * n_TRAIT_INSTEADOF
+        * n_TRAIT_METHOD_REFERENCE
+         > T
+         > ::
+         > x
+        > " "
+        > insteadof
+        > " "
+        * n_TRAIT_REFERENCE_LIST
+         * n_CLASS_NAME
+          > U
+        > ;
+       > "\n    "
+       * n_TRAIT_AS
+        * n_TRAIT_METHOD_REFERENCE
+         > T
+         > ::
+         > x
+        * n_EMPTY
+        * n_STRING
+         > y
+        > ;
+       > "\n    "
+       * n_TRAIT_AS
+        * n_TRAIT_METHOD_REFERENCE
+         > T
+         > ::
+         > z
+        > " "
+        > as
+        > " "
+        * n_METHOD_MODIFIER_LIST
+         * n_STRING
+          > private
+        > " "
+        * n_STRING
+         > z
+        > ;
+       > "\n  "
+       > }
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > F
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_TRAIT_USE
+      > use
+      > " "
+      * n_CLASS_NAME
+       > Q
+      > " "
+      * n_TRAIT_ADAPTATION_LIST
+       > {
+       > " "
+       * n_TRAIT_AS
+        * n_TRAIT_METHOD_REFERENCE
+         * n_STRING
+          > q
+        > " "
+        > as
+        > " "
+        * n_STRING
+         > protected
+        * n_EMPTY
+       > " "
+       > }
+     > "\n"
+     > }
+ > "\n"

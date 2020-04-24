@@ -179,7 +179,7 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               continue;
             }
 
-            $libphutil_root = dirname(phutil_get_library_root('phutil'));
+            $libphutil_root = dirname(phutil_get_library_root('arcanist'));
 
             $this->raiseLintInLibrary(
               $library,

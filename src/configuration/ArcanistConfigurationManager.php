@@ -270,7 +270,13 @@ final class ArcanistConfigurationManager extends Phobject {
   }
 
   public function readUserArcConfig() {
-    return idx($this->readUserConfigurationFile(), 'config', array());
+    $config = $this->readUserConfigurationFile();
+
+    if (isset($config['config'])) {
+      $config = $config['config'];
+    }
+
+    return $config;
   }
 
   public function writeUserArcConfig(array $options) {

@@ -17,8 +17,8 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
     }
 
     if ($compat_info === null) {
-      $target = phutil_get_library_root('phutil').
-        '/../resources/php_compat_info.json';
+      $target = phutil_get_library_root('arcanist').
+        '/../resources/php/symbol-information.json';
       $compat_info = phutil_json_decode(Filesystem::readFile($target));
     }
 

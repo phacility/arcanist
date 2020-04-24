@@ -1,0 +1,33 @@
+<?php
+
+function f(callable $c) {}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_TYPE_NAME
+       > callable
+      > " "
+      * n_VARIABLE
+       > $c
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+ > "\n"

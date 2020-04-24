@@ -1,0 +1,35 @@
+<?php
+XHPASTNode::NODE_TYPES['n_PROGRAM'];
+PHP_VERSION[0];
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n"
+  * n_STATEMENT
+   * n_INDEX_ACCESS
+    * n_CLASS_STATIC_ACCESS
+     * n_CLASS_NAME
+      > XHPASTNode
+     > ::
+     * n_STRING
+      > NODE_TYPES
+    > [
+    * n_STRING_SCALAR
+     > 'n_PROGRAM'
+    > ]
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_INDEX_ACCESS
+    * n_STRING
+     > PHP_VERSION
+    > [
+    * n_NUMERIC_SCALAR
+     > 0
+    > ]
+   > ;
+ > "\n"

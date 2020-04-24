@@ -1,0 +1,88 @@
+<?php
+
+1;
+1.1;
+-1;
+-1.1;
+1e1;
+0xFF;
+'a';
+"a";
+`a`;
+b'a';
+b"a";
+lbl:
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1.1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > -
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > -
+    * n_NUMERIC_SCALAR
+     > 1.1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1e1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 0xFF
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STRING_SCALAR
+    > 'a'
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STRING_SCALAR
+    > "\"a\""
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BACKTICKS_EXPRESSION
+    > `a`
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STRING_SCALAR
+    > b'a'
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STRING_SCALAR
+    > "b\"a\""
+   > ;
+  > "\n"
+  * n_LABEL
+   * n_STRING
+    > lbl
+   > :
+ > "\n"

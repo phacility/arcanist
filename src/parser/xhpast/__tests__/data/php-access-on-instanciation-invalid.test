@@ -1,0 +1,13 @@
+<?php
+
+class a {
+ public $b;
+
+ public function c() { }
+}
+
+new a->b;
+
+new a->c();
+~~~~~~~~~~
+fail-syntax

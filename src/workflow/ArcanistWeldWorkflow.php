@@ -1,36 +1,37 @@
 <?php
 
-final class ArcanistWeldWorkflow extends ArcanistWorkflow {
+final class ArcanistWeldWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'weld';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **weld** [options] __file__ __file__ ...
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Robustly fuse two or more files together. The resulting joint is much stronger
+than the one created by tools like __cat__.
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Robustly fuse files together.'))
+      ->addExample('**weld** [options] -- __file__ __file__ ...')
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Robustly fuse two or more files together. The resulting joint is
-          much stronger than the one created by tools like __cat__.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      '*' => 'files',
+      $this->newWorkflowArgument('files')
+        ->setWildcard(true),
     );
   }
 
-  public function run() {
+  public function runWorkflow() {
     $files = $this->getArgument('files');
+
     if (count($files) < 2) {
-      throw new ArcanistUsageException(
+      throw new PhutilArgumentUsageException(
         pht('Specify two or more files to weld together.'));
     }
 
@@ -86,8 +87,20 @@ EOTEXT
     $u = rtrim($u, "\r\n");
     $v = rtrim($v, "\r\n");
 
-    $u = phutil_utf8v_combined($u);
-    $v = phutil_utf8v_combined($v);
+    // If the inputs are UTF8, split glyphs (so two valid UTF8 inputs always
+    // produce a sensible, valid UTF8 output). If they aren't, split bytes.
+
+    if (phutil_is_utf8($u)) {
+      $u = phutil_utf8v_combined($u);
+    } else {
+      $u = str_split($u);
+    }
+
+    if (phutil_is_utf8($v)) {
+      $v = phutil_utf8v_combined($v);
+    } else {
+      $v = str_split($v);
+    }
 
     $len = max(count($u), count($v));
 

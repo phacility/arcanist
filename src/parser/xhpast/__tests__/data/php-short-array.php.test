@@ -1,0 +1,16 @@
+<?php [];
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_ARRAY_LITERAL
+    * n_ARRAY_VALUE_LIST
+     > [
+     > ]
+   > ;
+ > "\n"

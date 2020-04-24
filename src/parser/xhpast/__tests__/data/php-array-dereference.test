@@ -1,0 +1,145 @@
+<?php
+
+function foo() {
+  return [1,2,3];
+}
+
+$i = 1;
+$x = foo()[2];
+
+$y = foo()[$i];
+
+if (isset(foo()[0])) { }
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > foo
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_RETURN
+       > return
+       > " "
+       * n_ARRAY_LITERAL
+        * n_ARRAY_VALUE_LIST
+         > [
+         * n_ARRAY_VALUE
+          * n_EMPTY
+          * n_NUMERIC_SCALAR
+           > 1
+         > ,
+         * n_ARRAY_VALUE
+          * n_EMPTY
+          * n_NUMERIC_SCALAR
+           > 2
+         > ,
+         * n_ARRAY_VALUE
+          * n_EMPTY
+          * n_NUMERIC_SCALAR
+           > 3
+         > ]
+      > ;
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $i
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_INDEX_ACCESS
+     * n_FUNCTION_CALL
+      * n_SYMBOL_NAME
+       > foo
+      * n_CALL_PARAMETER_LIST
+       > (
+       > )
+     > [
+     * n_NUMERIC_SCALAR
+      > 2
+     > ]
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $y
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_INDEX_ACCESS
+     * n_FUNCTION_CALL
+      * n_SYMBOL_NAME
+       > foo
+      * n_CALL_PARAMETER_LIST
+       > (
+       > )
+     > [
+     * n_VARIABLE
+      > $i
+     > ]
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_FUNCTION_CALL
+       * n_SYMBOL_NAME
+        > isset
+       * n_CALL_PARAMETER_LIST
+        > (
+        * n_INDEX_ACCESS
+         * n_FUNCTION_CALL
+          * n_SYMBOL_NAME
+           > foo
+          * n_CALL_PARAMETER_LIST
+           > (
+           > )
+         > [
+         * n_NUMERIC_SCALAR
+          > 0
+         > ]
+        > )
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > " "
+      > }
+ > "\n"

@@ -1,0 +1,24 @@
+<?php
+
+# comment
+// comment
+/* comment */
+/**
+ * comment
+ */
+/* unterminated comment
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+ > "\n\n"
+ > "# comment\n"
+ > "// comment\n"
+ > "/* comment */"
+ > "\n"
+ > "/**\n * comment\n */"
+ > "\n"
+ > "/* unterminated comment\n"
