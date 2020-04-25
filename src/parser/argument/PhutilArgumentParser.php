@@ -77,6 +77,7 @@ final class PhutilArgumentParser extends Phobject {
   private $tagline;
   private $synopsis;
   private $workflows;
+  private $helpWorkflows;
   private $showHelp;
   private $requireArgumentTerminator = false;
   private $sawTerminator = false;
@@ -449,11 +450,13 @@ final class PhutilArgumentParser extends Phobject {
 
         $flow = $corrected;
       } else {
-        $this->raiseUnknownWorkflow($flow, $corrected);
+        if (!$this->showHelp) {
+          $this->raiseUnknownWorkflow($flow, $corrected);
+        }
       }
     }
 
-    $workflow = $this->workflows[$flow];
+    $workflow = idx($this->workflows, $flow);
 
     if ($this->showHelp) {
       // Make "cmd flow --help" behave like "cmd help flow", not "cmd help".
@@ -469,6 +472,10 @@ final class PhutilArgumentParser extends Phobject {
       } else {
         $this->printHelpAndExit();
       }
+    }
+
+    if (!$workflow) {
+      $this->raiseUnknownWorkflow($flow, $corrected);
     }
 
     $this->argv = array_values($argv);
@@ -633,6 +640,12 @@ final class PhutilArgumentParser extends Phobject {
     return $this;
   }
 
+  public function setHelpWorkflows(array $help_workflows) {
+    $help_workflows = mpull($help_workflows, null, 'getName');
+    $this->helpWorkflows = $help_workflows;
+    return $this;
+  }
+
   public function getWorkflows() {
     return $this->workflows;
   }
@@ -684,11 +697,16 @@ final class PhutilArgumentParser extends Phobject {
       $out[] = null;
     }
 
-    if ($this->workflows) {
+    $workflows = $this->helpWorkflows;
+    if ($workflows === null) {
+      $workflows = $this->workflows;
+    }
+
+    if ($workflows) {
       $has_help = false;
       $out[] = $this->format('**%s**', pht('WORKFLOWS'));
       $out[] = null;
-      $flows = $this->workflows;
+      $flows = $workflows;
       ksort($flows);
       foreach ($flows as $workflow) {
         if ($workflow->getName() == 'help') {
@@ -739,7 +757,12 @@ final class PhutilArgumentParser extends Phobject {
 
     $indent = ($show_details ? 0 : 6);
 
-    $workflow = idx($this->workflows, strtolower($workflow_name));
+    $workflows = $this->helpWorkflows;
+    if ($workflows === null) {
+      $workflows = $this->workflows;
+    }
+
+    $workflow = idx($workflows, strtolower($workflow_name));
     if (!$workflow) {
       $out[] = $this->indent(
         $indent,
