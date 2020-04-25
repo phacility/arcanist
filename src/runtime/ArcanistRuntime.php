@@ -162,6 +162,9 @@ final class ArcanistRuntime {
 
     // TOOLSETS: Some day, stop falling through to the old "arc" runtime.
 
+    $help_workflows = $this->getHelpWorkflows($phutil_workflows);
+    $args->setHelpWorkflows($help_workflows);
+
     try {
       return $args->parseWorkflowsFull($phutil_workflows);
     } catch (ArcanistMissingArgumentTerminatorException $terminator_exception) {
@@ -867,6 +870,43 @@ final class ArcanistRuntime {
 
   public function getToolset() {
     return $this->toolset;
+  }
+
+  private function getHelpWorkflows(array $workflows) {
+    if ($this->getToolset()->getToolsetKey() === 'arc') {
+      $legacy = array();
+
+      $legacy[] = new ArcanistCloseRevisionWorkflow();
+      $legacy[] = new ArcanistCommitWorkflow();
+      $legacy[] = new ArcanistCoverWorkflow();
+      $legacy[] = new ArcanistDiffWorkflow();
+      $legacy[] = new ArcanistExportWorkflow();
+      $legacy[] = new ArcanistGetConfigWorkflow();
+      $legacy[] = new ArcanistSetConfigWorkflow();
+      $legacy[] = new ArcanistInstallCertificateWorkflow();
+      $legacy[] = new ArcanistLandWorkflow();
+      $legacy[] = new ArcanistLintersWorkflow();
+      $legacy[] = new ArcanistLintWorkflow();
+      $legacy[] = new ArcanistListWorkflow();
+      $legacy[] = new ArcanistPatchWorkflow();
+      $legacy[] = new ArcanistPasteWorkflow();
+      $legacy[] = new ArcanistTasksWorkflow();
+      $legacy[] = new ArcanistTodoWorkflow();
+      $legacy[] = new ArcanistUnitWorkflow();
+      $legacy[] = new ArcanistWhichWorkflow();
+
+      foreach ($legacy as $workflow) {
+        // If this workflow has been updated but not removed from the list
+        // above yet, just skip it.
+        if ($workflow instanceof ArcanistArcWorkflow) {
+          continue;
+        }
+
+        $workflows[] = $workflow->newLegacyPhutilWorkflow();
+      }
+    }
+
+    return $workflows;
   }
 
 }

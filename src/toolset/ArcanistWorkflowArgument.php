@@ -41,6 +41,11 @@ final class ArcanistWorkflowArgument
       $spec['param'] = $parameter;
     }
 
+    $help = $this->getHelp();
+    if ($help !== null) {
+      $spec['help'] = $help;
+    }
+
     return $spec;
   }
 
