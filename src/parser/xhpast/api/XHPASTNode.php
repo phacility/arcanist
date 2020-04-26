@@ -163,7 +163,26 @@ final class XHPASTNode extends AASTNode {
     $re = '/\\\\.|(\$|\{\$|\${)([a-z_\x7F-\xFF][a-z0-9_\x7F-\xFF]*)/i';
     $matches = null;
     preg_match_all($re, $value, $matches, PREG_OFFSET_CAPTURE);
-    return ipull(array_filter($matches[2]), 0, 1);
+
+    // NOTE: The result format for this construction changed in PHP 7.4.
+    // See T13518.
+
+    $names = $matches[2];
+    foreach ($names as $name_idx => $name_match) {
+      if ($name_match === '') {
+        unset($names[$name_idx]);
+        continue;
+      }
+
+      if ($name_match[1] === -1) {
+        unset($names[$name_idx]);
+        continue;
+      }
+    }
+
+    $names = ipull($names, 0, 1);
+
+    return $names;
   }
 
   public function getStringLiteralValue() {
