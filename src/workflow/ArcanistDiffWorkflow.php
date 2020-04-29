@@ -2900,8 +2900,7 @@ EOTEXT
       'uri' => $staging_uri,
     );
 
-    list($stdout) = $api->execxLocal('ls-files -z -- %s', ':(attr:filter=lfs)');
-    $is_lfs = strpos($stdout, "\0") !== false;
+    $is_lfs = $api->isGitLFSWorkingCopy();
 
     // If the base commit is a real commit, we're going to push it. We don't
     // use this, but pushing it to a ref reduces the amount of redundant work
