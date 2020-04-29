@@ -1678,4 +1678,32 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return 'HEAD';
   }
 
+  public function isGitLFSWorkingCopy() {
+    // NOTE: This test previously used the command:
+    //
+    //   $ git ls-files -z -- ':(attr:filter=lfs)'
+    //
+    // However, this does not work on old versions of Git (see PHI1718) and
+    // it potentially does a lot of unnecessary work when run in a large tree.
+    //
+    // Instead, just check if ".gitattributes" exists and looks like it sets
+    // up an "lfs" filter for any pattern. This isn't completely accurate:
+    //
+    //   - LFS can be configured with a global ".gitattributes" file, although
+    //     this is unusual and discouraged by the official LFS documentation.
+    //   - LFS may be configured only for files that don't actually exist in
+    //     the repository.
+    //
+    // These cases are presumably very rare.
+
+    $attributes_path = $this->getPath('.gitattributes');
+    if (!Filesystem::pathExists($attributes_path)) {
+      return false;
+    }
+
+    $attributes_data = Filesystem::readFile($attributes_path);
+
+    return (bool)preg_match('(\bfilter\s*=\s*lfs\b)', $attributes_data);
+  }
+
 }
