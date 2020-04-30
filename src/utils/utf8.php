@@ -95,6 +95,10 @@ function phutil_is_utf8_with_only_bmp_characters($string) {
  */
 function phutil_is_utf8($string) {
   if (function_exists('mb_check_encoding')) {
+    // See T13527. In some versions of PHP, "mb_check_encoding()" strictly
+    // requires a string parameter.
+    $string = phutil_string_cast($string);
+
     // If mbstring is available, this is significantly faster than using PHP.
     return mb_check_encoding($string, 'UTF-8');
   }

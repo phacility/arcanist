@@ -824,4 +824,13 @@ final class PhutilUTF8TestCase extends PhutilTestCase {
     phutil_set_system_locale($original_locale);
   }
 
+  public function testUTF8StringlikeObjects() {
+    // See T13527. In some versions and configurations of PHP, passing an
+    // object which implements "__toString()" to "mb_check_encoding()" could
+    // fail.
+    $any_stringlike_object = new PhutilURI('/');
+
+    $this->assertTrue(phutil_is_utf8($any_stringlike_object));
+  }
+
 }
