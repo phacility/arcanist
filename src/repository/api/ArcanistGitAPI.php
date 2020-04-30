@@ -1679,31 +1679,64 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   }
 
   public function isGitLFSWorkingCopy() {
-    // NOTE: This test previously used the command:
+
+    // We're going to run:
     //
     //   $ git ls-files -z -- ':(attr:filter=lfs)'
     //
-    // However, this does not work on old versions of Git (see PHI1718) and
-    // it potentially does a lot of unnecessary work when run in a large tree.
+    // ...and exit as soon as it generates any field terminated with a "\0".
     //
-    // Instead, just check if ".gitattributes" exists and looks like it sets
-    // up an "lfs" filter for any pattern. This isn't completely accurate:
+    // If this command generates any such output, that means this working copy
+    // contains at least one LFS file, so it's an LFS working copy. If it
+    // exits with no error and no output, this is not an LFS working copy.
     //
-    //   - LFS can be configured with a global ".gitattributes" file, although
-    //     this is unusual and discouraged by the official LFS documentation.
-    //   - LFS may be configured only for files that don't actually exist in
-    //     the repository.
-    //
-    // These cases are presumably very rare.
+    // If it exits with an error, we're in trouble.
 
-    $attributes_path = $this->getPath('.gitattributes');
-    if (!Filesystem::pathExists($attributes_path)) {
+    $future = $this->buildLocalFuture(
+      array(
+        'ls-files -z -- %s',
+        ':(attr:filter=lfs)',
+      ));
+
+    $lfs_list = id(new LinesOfALargeExecFuture($future))
+      ->setDelimiter("\0");
+
+    try {
+      foreach ($lfs_list as $lfs_file) {
+        // We have our answer, so we can throw the subprocess away.
+        $future->resolveKill();
+        return true;
+      }
       return false;
+    } catch (CommandException $ex) {
+      // This is probably an older version of Git. Continue below.
     }
 
-    $attributes_data = Filesystem::readFile($attributes_path);
+    // In older versions of Git, the first command will fail with an error
+    // ("Invalid pathspec magic..."). See PHI1718.
+    //
+    // Some other tests we could use include:
+    //
+    // (1) Look for ".gitattributes" at the repository root. This approach is
+    // a rough approximation because ".gitattributes" may be global or in a
+    // subdirectory. See D21190.
+    //
+    // (2) Use "git check-attr" and pipe a bunch of files into it, roughly
+    // like this:
+    //
+    //   $ git ls-files -z -- | git check-attr --stdin -z filter --
+    //
+    // However, the best version of this check I could come up with is fairly
+    // slow in even moderately large repositories (~200ms in a repository with
+    // 10K paths). See D21190.
+    //
+    // (3) Use "git lfs ls-files". This is even worse than piping "ls-files"
+    // to "check-attr" in PHP (~600ms in a repository with 10K paths).
+    //
+    // (4) Give up and just assume the repository isn't LFS. This is the
+    // current behavior.
 
-    return (bool)preg_match('(\bfilter\s*=\s*lfs\b)', $attributes_data);
+    return false;
   }
 
 }
