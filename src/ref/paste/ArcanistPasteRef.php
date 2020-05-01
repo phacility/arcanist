@@ -30,7 +30,13 @@ final class ArcanistPasteRef
   }
 
   public function getURI() {
-    return idxv($this->parameters, array('fields', 'uri'));
+    $uri = idxv($this->parameters, array('fields', 'uri'));
+
+    if ($uri === null) {
+      $uri = '/'.$this->getMonogram();
+    }
+
+    return $uri;
   }
 
   public function getContent() {
