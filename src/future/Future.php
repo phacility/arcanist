@@ -41,13 +41,13 @@ abstract class Future extends Phobject {
           'timeout.'));
     }
 
-    if ($this->hasException()) {
-      throw $this->getException();
-    }
-
-    if (!$this->hasResult()) {
+    if (!$this->hasResult() && !$this->hasException()) {
       $graph = new FutureIterator(array($this));
       $graph->resolveAll();
+    }
+
+    if ($this->hasException()) {
+      throw $this->getException();
     }
 
     return $this->getResult();

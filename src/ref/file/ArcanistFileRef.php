@@ -37,6 +37,16 @@ final class ArcanistFileRef
     return idxv($this->parameters, array('fields', 'size'));
   }
 
+  public function getURI() {
+    $uri = idxv($this->parameters, array('fields', 'uri'));
+
+    if ($uri === null) {
+      $uri = '/'.$this->getMonogram();
+    }
+
+    return $uri;
+  }
+
   public function getMonogram() {
     return 'F'.$this->getID();
   }

@@ -713,7 +713,17 @@ final class ExecFuture extends PhutilExecutableFuture {
     while (isset($this->stdin) && $this->stdin->getByteLength()) {
       $write_segment = $this->stdin->getAnyPrefix();
 
-      $bytes = fwrite($stdin, $write_segment);
+      try {
+        $bytes = fwrite($stdin, $write_segment);
+      } catch (RuntimeException $ex) {
+        // If the subprocess has exited, we may get a broken pipe error here
+        // in recent versions of PHP. There does not seem to be any way to
+        // get the actual error code other than reading the exception string.
+
+        // For now, treat this as if writes are blocked.
+        break;
+      }
+
       if ($bytes === false) {
         throw new Exception(pht('Unable to write to stdin!'));
       } else if ($bytes) {
