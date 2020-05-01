@@ -23,6 +23,10 @@ EOTEXT
     return array(
       $this->newWorkflowArgument('json')
         ->setHelp(pht('Output upload information in JSON format.')),
+      $this->newWorkflowArgument('browse')
+        ->setHelp(
+          pht(
+            'After the upload completes, open the files in a web browser.')),
       $this->newWorkflowArgument('temporary')
         ->setHelp(
           pht(
@@ -42,6 +46,7 @@ EOTEXT
 
     $is_temporary = $this->getArgument('temporary');
     $is_json = $this->getArgument('json');
+    $is_browse = $this->getArgument('browse');
     $paths = $this->getArgument('paths');
 
     $conduit = $this->getConduitEngine();
@@ -65,35 +70,68 @@ EOTEXT
 
     $files = $uploader->uploadFiles();
 
-    $results = array();
+    $phids = array();
     foreach ($files as $file) {
-      // TODO: This could be handled more gracefully; just preserving behavior
-      // until we introduce `file.query` and modernize this.
+      // TODO: This could be handled more gracefully.
       if ($file->getErrors()) {
         throw new Exception(implode("\n", $file->getErrors()));
       }
-      $phid = $file->getPHID();
-      $name = $file->getName();
+      $phids[] = $file->getPHID();
+    }
 
-      $info = $conduit->resolveCall(
-        'file.info',
-        array(
-          'phid' => $phid,
-        ));
+    $symbols = $this->getSymbolEngine();
+    $symbol_refs = $symbols->loadFilesForSymbols($phids);
 
-      $results[$path] = $info;
-
-      if (!$is_json) {
-        $id = $info['id'];
-        echo "  F{$id} {$name}: ".$info['uri']."\n\n";
+    $refs = array();
+    foreach ($symbol_refs as $symbol_ref) {
+      $ref = $symbol_ref->getObject();
+      if ($ref === null) {
+        throw new Exception(
+          pht(
+            'Failed to resolve symbol ref "%s".',
+            $symbol_ref->getSymbol()));
       }
+      $refs[] = $ref;
     }
 
     if ($is_json) {
-      $output = id(new PhutilJSON())->encodeFormatted($results);
-      echo $output;
+      $json = array();
+
+      foreach ($refs as $key => $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+
+        $map = array(
+          'argument' => $paths[$key],
+          'id' => $ref->getID(),
+          'phid' => $ref->getPHID(),
+          'name' => $ref->getName(),
+          'uri' => $uri,
+        );
+
+        $json[] = $map;
+      }
+
+      echo id(new PhutilJSON())->encodeAsList($json);
     } else {
-      $this->writeStatus(pht('Done.'));
+      foreach ($refs as $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+        echo tsprintf(
+          '%s',
+          $ref->newDisplayRef()
+            ->setURI($uri));
+      }
+    }
+
+    if ($is_browse) {
+      $uris = array();
+      foreach ($refs as $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+        $uris[] = $uri;
+      }
+      $this->openURIsInBrowser($uris);
     }
 
     return 0;
