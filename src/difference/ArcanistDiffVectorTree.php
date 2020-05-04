@@ -3,7 +3,7 @@
 final class ArcanistDiffVectorTree
   extends Phobject {
 
-  private $vectors;
+  private $vectors = array();
 
   public function addVector(array $vector) {
     $this->vectors[] = $vector;
