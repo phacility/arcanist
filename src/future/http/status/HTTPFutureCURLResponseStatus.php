@@ -43,7 +43,7 @@ final class HTTPFutureCURLResponseStatus extends HTTPFutureResponseStatus {
         'negotiating the SSL connection. This usually indicates that you are '.
         'using a self-signed certificate but have not added your CA to the '.
         'CA bundle. See instructions in "%s".',
-        'libphutil/resources/ssl/README'),
+        'arcanist/resources/ssl/README'),
 
       // Apparently there's no error constant for this? In cURL it's
       // CURLE_SSL_CACERT_BADFILE but there's no corresponding constant in
@@ -58,7 +58,7 @@ final class HTTPFutureCURLResponseStatus extends HTTPFutureResponseStatus {
         'local host has some sort of SSL misconfiguration which prevents it '.
         'from accepting the CA. If you are using a self-signed certificate, '.
         'see instructions in "%s".',
-        'libphutil/resources/ssl/README'),
+        'arcanist/resources/ssl/README'),
 
       CURLE_OPERATION_TIMEOUTED => pht(
         'The request took too long to complete.'),

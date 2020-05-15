@@ -27,7 +27,7 @@ final class HTTPFutureCertificateResponseStatus
       "line, or by visiting the site in Safari and choosing to trust the ".
       "certificate permanently.\n\n".
       'For more information, see instructions in "%s".',
-      'libphutil/resources/ssl/README');
+      'arcanist/resources/ssl/README');
   }
 
 }
