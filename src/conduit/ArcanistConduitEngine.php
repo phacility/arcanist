@@ -40,7 +40,7 @@ final class ArcanistConduitEngine
   }
 
   public function newCall($method, array $parameters) {
-    if ($this->conduitURI == null) {
+    if ($this->conduitURI == null && $this->client === null) {
       $this->raiseURIException();
     }
 
@@ -78,9 +78,11 @@ final class ArcanistConduitEngine
       if ($token) {
         $client->setConduitToken($this->getConduitToken());
       }
+
+      $this->client = $client;
     }
 
-    return $client;
+    return $this->client;
   }
 
   private function raiseURIException() {
@@ -105,4 +107,12 @@ final class ArcanistConduitEngine
     throw new ArcanistUsageException($block->drawConsoleString());
   }
 
+  public static function newConduitEngineFromConduitClient(
+    ConduitClient $client) {
+
+    $engine = new self();
+    $engine->client = $client;
+
+    return $engine;
+  }
 }
