@@ -27,6 +27,8 @@ final class HTTPSFuture extends BaseHTTPFuture {
   private $parser;
   private $progressSink;
 
+  private $curlOptions = array();
+
   /**
    * Create a temp file containing an SSL cert, and use it for this session.
    *
@@ -162,6 +164,22 @@ final class HTTPSFuture extends BaseHTTPFuture {
 
   public function getProgressSink() {
     return $this->progressSink;
+  }
+
+  /**
+   * See T13533. This supports an install-specific Kerberos workflow.
+   */
+  public function addCURLOption($option_key, $option_value) {
+    if (!is_scalar($option_key)) {
+      throw new Exception(
+        pht(
+          'Expected option key passed to "addCurlOption(<key>, ...)" to be '.
+          'a scalar, got "%s".',
+          phutil_describe_type($option_key)));
+    }
+
+    $this->curlOptions[] = array($option_key, $option_value);
+    return $this;
   }
 
   /**
@@ -407,6 +425,24 @@ final class HTTPSFuture extends BaseHTTPFuture {
 
       if ($proxy) {
         curl_setopt($curl, CURLOPT_PROXY, (string)$proxy);
+      }
+
+      foreach ($this->curlOptions as $curl_option) {
+        list($curl_key, $curl_value) = $curl_option;
+        try {
+          $ok = curl_setopt($curl, $curl_key, $curl_value);
+          if (!$ok) {
+            throw new Exception(
+              pht(
+                'Call to "curl_setopt(...)" returned "false".'));
+          }
+        } catch (Exception $ex) {
+          throw new PhutilProxyException(
+            pht(
+              'Call to "curl_setopt(...) failed for option key "%s".',
+              $curl_key),
+            $ex);
+        }
       }
 
       if ($is_download) {
