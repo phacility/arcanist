@@ -48,11 +48,21 @@ final class ArcanistCpplintLinter extends ArcanistExternalLinter {
 
       $message = new ArcanistLintMessage();
       $message->setPath($path);
-      $message->setLine($matches[1]);
       $message->setCode($matches[3]);
       $message->setName($matches[3]);
       $message->setDescription($matches[2]);
       $message->setSeverity($severity);
+
+      // NOTE: "cpplint" raises some messages which apply to the whole file,
+      // like "no #ifndef guard found". It raises these messages on line 0.
+
+      // Arcanist messages should have a "null" line, not a "0" line, if they
+      // aren't bound to a particular line number.
+
+      $line = (int)$matches[1];
+      if ($line > 0) {
+        $message->setLine($line);
+      }
 
       $messages[] = $message;
     }
