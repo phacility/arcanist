@@ -146,11 +146,16 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
           $char - 1,
           strlen($original));
 
-        $new_lines[$start - 1] = substr_replace(
-          $new_lines[$start - 1],
-          $this->highlightText($replacement),
-          $char - 1,
-          strlen($replacement));
+        // See T13543. The message may have completely removed this line: for
+        // example, if it trimmed trailing spaces from the end of a file. If
+        // the line no longer exists, don't try to highlight it.
+        if (isset($new_lines[$start - 1])) {
+          $new_lines[$start - 1] = substr_replace(
+            $new_lines[$start - 1],
+            $this->highlightText($replacement),
+            $char - 1,
+            strlen($replacement));
+        }
       }
 
       // If lines at the beginning of the changed line range are actually the
