@@ -4,4 +4,4 @@ function f() {
   this is bad syntax;
 }
 ~~~~~~~~~
-error:4:0:PHP1:Parse Error
+error:4::PHP1:Parse Error
