@@ -29,10 +29,24 @@ final class PhutilArrayCheck
   }
 
   public function setContext($object, $method) {
-    if (!is_object($object) && !is_string($object)) {
+    if (is_array($object)) {
+      foreach ($object as $idx => $value) {
+        if (!is_object($value)) {
+          throw new Exception(
+            pht(
+              'Expected an object, string, or list of objects for "object" '.
+              'context. Got a list ("%s"), but the list item at index '.
+              '"%s" (with type "%s") is not an object.',
+              phutil_describe_type($object),
+              $idx,
+              phutil_describe_type($value)));
+        }
+      }
+    } else if (!is_object($object) && !is_string($object)) {
       throw new Exception(
         pht(
-          'Expected an object or string for "object" context, got "%s".',
+          'Expected an object, string, or list of objects for "object" '.
+          'context, got "%s".',
           phutil_describe_type($object)));
     }
 
@@ -219,7 +233,20 @@ final class PhutilArrayCheck
     $method = $context['method'];
     $argv = $context['argv'];
 
-    if (is_object($object)) {
+    if (is_array($object)) {
+      $classes = array();
+      foreach ($object as $item) {
+        $classes[] = get_class($item);
+      }
+      $classes = array_fuse($classes);
+      $n = count($object);
+
+      $object_display = sprintf(
+        '[%s]<%d>->%s',
+        implode(', ', $classes),
+        $n,
+        $method);
+    } else if (is_object($object)) {
       $object_display = sprintf(
         '%s->%s',
         get_class($object),
