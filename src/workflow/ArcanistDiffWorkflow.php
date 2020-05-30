@@ -16,7 +16,6 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
@@ -1129,10 +1128,6 @@ EOTEXT
 
   private function shouldAmend() {
     if ($this->isRawDiffSource()) {
-      return false;
-    }
-
-    if ($this->haveUncommittedChanges) {
       return false;
     }
 
