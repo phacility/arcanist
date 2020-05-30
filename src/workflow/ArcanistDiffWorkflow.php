@@ -224,11 +224,6 @@ EOTEXT
           'message'   => pht('%s does not update any revision.', '--only'),
         ),
       ),
-      'encoding' => array(
-        'param' => 'encoding',
-        'help' => pht(
-          'Attempt to convert non UTF-8 hunks into specified encoding.'),
-      ),
       'allow-untracked' => array(
         'help' => pht('Skip checks for untracked files in the working copy.'),
       ),
@@ -1032,8 +1027,6 @@ EOTEXT
       }
     }
 
-    $try_encoding = nonempty($this->getArgument('encoding'), null);
-
     $utf8_problems = array();
     foreach ($changes as $change) {
       foreach ($change->getHunks() as $hunk) {
@@ -1046,17 +1039,15 @@ EOTEXT
           $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
           if (!$is_binary) {
 
-            if (!$try_encoding) {
-              try {
-                $try_encoding = $this->getRepositoryEncoding();
-              } catch (ConduitClientException $e) {
-                if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
-                  echo phutil_console_wrap(
-                    pht('Lookup of encoding in arcanist project failed: %s',
-                        $e->getMessage())."\n");
-                } else {
-                  throw $e;
-                }
+            try {
+              $try_encoding = $this->getRepositoryEncoding();
+            } catch (ConduitClientException $e) {
+              if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
+                echo phutil_console_wrap(
+                  pht('Lookup of encoding in arcanist project failed: %s',
+                      $e->getMessage())."\n");
+              } else {
+                throw $e;
               }
             }
 
