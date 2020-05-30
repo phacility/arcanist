@@ -13,7 +13,6 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $excuses = array('lint' => null, 'unit' => null);
   private $testResults;
   private $diffID;
   private $revisionID;
@@ -215,12 +214,6 @@ EOTEXT
       'allow-untracked' => array(
         'help' => pht('Skip checks for untracked files in the working copy.'),
       ),
-      'excuse' => array(
-        'param' => 'excuse',
-        'help' => pht(
-          'Provide a prepared in advance excuse for any lints/tests '.
-          'shall they fail.'),
-      ),
       'less-context' => array(
         'help' => pht(
           "Normally, files are diffed with full context: the entire file is ".
@@ -235,11 +228,6 @@ EOTEXT
         'passthru' => array(
           'lint' => true,
         ),
-      ),
-      'advice' => array(
-        'help' => pht(
-          'Require excuse for lint advice in addition to lint warnings and '.
-          'errors.'),
       ),
       'only-new' => array(
         'param' => 'bool',
@@ -418,28 +406,12 @@ EOTEXT
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
 
-    $server = $this->console->getServer();
-    $server->setHandler(array($this, 'handleServerMessage'));
     $data = $this->runLintUnit();
 
     $lint_result = $data['lintResult'];
     $this->unresolvedLint = $data['unresolvedLint'];
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
-
-    if ($this->getArgument('nolint')) {
-      $this->excuses['lint'] = $this->getSkipExcuse(
-        pht('Provide explanation for skipping lint or press Enter to abort:'),
-        'lint-excuses');
-    }
-
-    if ($this->getArgument('nounit')) {
-      $this->excuses['unit'] = $this->getSkipExcuse(
-        pht(
-          'Provide explanation for skipping unit tests '.
-          'or press Enter to abort:'),
-        'unit-excuses');
-    }
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -1256,34 +1228,22 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          if ($this->getArgument('advice') &&
-              $lint_workflow->getUnresolvedMessages()) {
-            $this->getErrorExcuse(
-              'lint',
-              pht('Lint issued unresolved advice.'),
-              'lint-excuses');
-          } else {
-            $this->console->writeOut(
-              "<bg:green>** %s **</bg> %s\n",
-              pht('LINT OKAY'),
-              pht('No lint problems.'));
-          }
+          $this->console->writeOut(
+            "<bg:green>** %s **</bg> %s\n",
+            pht('LINT OKAY'),
+            pht('No lint problems.'));
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved warnings.'),
-            'lint-excuses');
+          $this->console->writeOut(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('LINT MESSAGES'),
+            pht('Lint issued unresolved warnings.'));
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           $this->console->writeOut(
             "<bg:red>** %s **</bg> %s\n",
             pht('LINT ERRORS'),
             pht('Lint raised errors!'));
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved errors!'),
-            'lint-excuses');
           break;
       }
 
@@ -1357,10 +1317,6 @@ EOTEXT
             "<bg:red>** %s **</bg> %s\n",
             pht('UNIT ERRORS'),
             pht('Unit testing raised errors!'));
-          $this->getErrorExcuse(
-            'unit',
-            pht('Unit test results include failures!'),
-            'unit-excuses');
           break;
       }
 
@@ -1383,66 +1339,6 @@ EOTEXT
 
   public function getTestResults() {
     return $this->testResults;
-  }
-
-  private function getSkipExcuse($prompt, $history) {
-    $excuse = $this->getArgument('excuse');
-
-    if ($excuse === null) {
-      $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-      $excuse = phutil_console_prompt($prompt, $history);
-      if ($excuse == '') {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
-    return $excuse;
-  }
-
-  private function getErrorExcuse($type, $prompt, $history) {
-    if ($this->getArgument('excuse')) {
-      $this->console->sendMessage(array(
-        'type'    => $type,
-        'confirm'  => $prompt.' '.pht('Ignore them?'),
-      ));
-      return;
-    }
-
-    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-
-    $prompt .= ' '.
-      pht('Provide explanation to continue or press Enter to abort.');
-    $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
-    $this->console->sendMessage(array(
-      'type'    => $type,
-      'prompt'  => pht('Explanation:'),
-      'history' => $history,
-    ));
-  }
-
-  public function handleServerMessage(PhutilConsoleMessage $message) {
-    $data = $message->getData();
-
-    if ($this->getArgument('excuse')) {
-      try {
-        phutil_console_require_tty();
-      } catch (PhutilConsoleStdinNotInteractiveException $ex) {
-        $this->excuses[$data['type']] = $this->getArgument('excuse');
-        return null;
-      }
-    }
-
-    $response = '';
-    if (isset($data['prompt'])) {
-      $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
-    } else if (phutil_console_confirm($data['confirm'])) {
-      $response = $this->getArgument('excuse');
-    }
-    if ($response == '') {
-      throw new ArcanistUserAbortException();
-    }
-    $this->excuses[$data['type']] = $response;
-    return null;
   }
 
 
@@ -2450,12 +2346,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
-    if (strlen($this->excuses['lint'])) {
-      $this->updateDiffProperty(
-        'arc:lint-excuse',
-        json_encode($this->excuses['lint']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->unresolvedLint) {
         $this->updateDiffProperty(
@@ -2474,11 +2364,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (strlen($this->excuses['unit'])) {
-      $this->updateDiffProperty('arc:unit-excuse',
-        json_encode($this->excuses['unit']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->testResults) {
         $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
