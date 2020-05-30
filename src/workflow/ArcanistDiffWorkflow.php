@@ -295,9 +295,6 @@ EOTEXT
       'skip-staging' => array(
         'help' => pht('Do not copy changes to the staging area.'),
       ),
-      'ignore-unsound-tests' => array(
-        'help'  => pht('Ignore unsound test failures without prompting.'),
-      ),
       'base' => array(
         'param' => 'rules',
         'help'  => pht('Additional rules for determining base revision.'),
@@ -1238,22 +1235,20 @@ EOTEXT
             pht('No unit test failures.'));
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          if ($this->getArgument('ignore-unsound-tests')) {
-            echo phutil_console_format(
-              "<bg:yellow>** %s **</bg> %s\n",
-              pht('UNIT UNSOUND'),
-              pht(
-                'Unit testing raised errors, but all '.
-                'failing tests are unsound.'));
-          } else {
-            $continue = phutil_console_confirm(
-              pht(
-                'Unit test results included failures, but all failing tests '.
-                'are known to be unsound. Ignore unsound test failures?'));
-            if (!$continue) {
-              throw new ArcanistUserAbortException();
-            }
+          $continue = phutil_console_confirm(
+            pht(
+              'Unit test results included failures, but all failing tests '.
+              'are known to be unsound. Ignore unsound test failures?'));
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
           }
+
+          echo phutil_console_format(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('UNIT UNSOUND'),
+            pht(
+              'Unit testing raised errors, but all '.
+              'failing tests are unsound.'));
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
           $this->console->writeOut(
