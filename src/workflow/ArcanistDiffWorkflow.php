@@ -122,8 +122,6 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw'),
           'never-apply-patches' => pht('%s disables lint.', '--raw'),
-          'advice'              => pht('%s disables lint.', '--raw'),
-          'lintall'             => pht('%s disables lint.', '--raw'),
 
           'create'              => pht(
             '%s and %s both need stdin. Use %s.',
@@ -148,8 +146,6 @@ EOTEXT
           'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw-command'),
           'never-apply-patches' => pht('%s disables lint.', '--raw-command'),
-          'advice'              => pht('%s disables lint.', '--raw-command'),
-          'lintall'             => pht('%s disables lint.', '--raw-command'),
         ),
       ),
       'create' => array(
@@ -191,8 +187,6 @@ EOTEXT
       'nolint' => array(
         'help' => pht('Do not run lint.'),
         'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--nolint'),
-          'advice'    => pht('%s suppresses lint.', '--nolint'),
           'apply-patches' => pht('%s suppresses lint.', '--nolint'),
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
@@ -221,21 +215,6 @@ EOTEXT
           "you are making changes to very large files with tens of thousands ".
           "of lines, this may not work well. With this flag, a diff will ".
           "be created that has only a few lines of context."),
-      ),
-      'lintall' => array(
-        'help' => pht(
-          'Raise all lint warnings, not just those on lines you changed.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
-      ),
-      'only-new' => array(
-        'param' => 'bool',
-        'help' => pht(
-          'Display only lint messages not present in the original code.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
       ),
       'apply-patches' => array(
         'help' => pht(
@@ -373,10 +352,6 @@ EOTEXT
         'nosupport' => array(
           'svn' => pht('Subversion does not support commit ranges.'),
           'hg' => pht('Mercurial does not support %s yet.', '--head'),
-        ),
-        'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--head'),
-          'advice'    => pht('%s suppresses lint.', '--head'),
         ),
       ),
     );
