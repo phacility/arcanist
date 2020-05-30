@@ -78,10 +78,6 @@ EOTEXT
       return true;
     }
 
-    if ($this->getArgument('use-commit-message')) {
-      return true;
-    }
-
     return false;
   }
 
@@ -105,19 +101,6 @@ EOTEXT
         'help' => pht(
           'When creating a revision, read revision information '.
           'from this file.'),
-      ),
-      'use-commit-message' => array(
-        'supports' => array(
-          'git',
-          // TODO: Support mercurial.
-        ),
-        'short' => 'C',
-        'param' => 'commit',
-        'help' => pht('Read revision information from a specific commit.'),
-        'conflicts' => array(
-          'only' => null,
-          'update'  => null,
-        ),
       ),
       'edit' => array(
         'supports'    => array(
@@ -332,7 +315,6 @@ EOTEXT
           'git',
         ),
         'conflicts' => array(
-          'use-commit-message'  => true,
           'update'              => true,
           'only' => true,
           'raw'                 => true,
@@ -820,10 +802,6 @@ EOTEXT
     }
 
     if ($this->getArgument('update')) {
-      return false;
-    }
-
-    if ($this->getArgument('use-commit-message')) {
       return false;
     }
 
@@ -1482,12 +1460,7 @@ EOTEXT
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
-    $is_message = $this->getArgument('use-commit-message');
     $is_verbatim = $this->getArgument('verbatim');
-
-    if ($is_message) {
-      return $this->getCommitMessageFromCommit($is_message);
-    }
 
     if ($is_verbatim) {
       return $this->getCommitMessageFromUser();
@@ -1540,18 +1513,6 @@ EOTEXT
       // a diff.
       return null;
     }
-  }
-
-
-  /**
-   * @task message
-   */
-  private function getCommitMessageFromCommit($commit) {
-    $text = $this->getRepositoryAPI()->getCommitMessage($commit);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-    $message->pullDataFromConduit($this->getConduit());
-    $this->validateCommitMessage($message);
-    return $message;
   }
 
 
