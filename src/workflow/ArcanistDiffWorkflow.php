@@ -118,7 +118,6 @@ EOTEXT
           'many Arcanist/Phabricator features which depend on having access '.
           'to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw'),
           'never-apply-patches' => pht('%s disables lint.', '--raw'),
 
@@ -142,7 +141,6 @@ EOTEXT
           'working copy. This disables many Arcanist/Phabricator features '.
           'which depend on having access to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw-command'),
           'never-apply-patches' => pht('%s disables lint.', '--raw-command'),
         ),
@@ -201,14 +199,6 @@ EOTEXT
       ),
       'allow-untracked' => array(
         'help' => pht('Skip checks for untracked files in the working copy.'),
-      ),
-      'less-context' => array(
-        'help' => pht(
-          "Normally, files are diffed with full context: the entire file is ".
-          "sent to Differential so reviewers can 'show more' and see it. If ".
-          "you are making changes to very large files with tens of thousands ".
-          "of lines, this may not work well. With this flag, a diff will ".
-          "be created that has only a few lines of context."),
       ),
       'apply-patches' => array(
         'help' => pht(
@@ -597,9 +587,6 @@ EOTEXT
     }
 
     $repository_api = $this->getRepositoryAPI();
-    if ($this->getArgument('less-context')) {
-      $repository_api->setDiffLinesOfContext(3);
-    }
 
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
@@ -925,11 +912,6 @@ EOTEXT
           "Generally, source changes should not be this large.",
           $change->getCurrentPath(),
           new PhutilNumber($size));
-        if (!$this->getArgument('less-context')) {
-          $byte_warning .= ' '.pht(
-            "If this file is a huge text file, try using the '%s' flag.",
-            '--less-context');
-        }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           throw new ArcanistUsageException(
             $byte_warning.' '.
