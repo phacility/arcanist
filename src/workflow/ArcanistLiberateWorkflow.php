@@ -29,7 +29,8 @@ EOTEXT
         ->setHelp(
           pht('Perform a clean rebuild, ignoring caches. Thorough, but slow.')),
       $this->newWorkflowArgument('argv')
-        ->setWildcard(true),
+        ->setWildcard(true)
+        ->setIsPathArgument(true),
     );
   }
 
