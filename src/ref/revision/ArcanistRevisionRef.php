@@ -7,6 +7,7 @@ final class ArcanistRevisionRef
 
   const HARDPOINT_COMMITMESSAGE = 'ref.revision.commitmessage';
   const HARDPOINT_AUTHORREF = 'ref.revision.authorRef';
+  const HARDPOINT_BUILDABLEREF = 'ref.revision.buildableRef';
   const HARDPOINT_PARENTREVISIONREFS = 'ref.revision.parentRevisionRefs';
 
   private $parameters;
@@ -21,6 +22,7 @@ final class ArcanistRevisionRef
     return array(
       $this->newHardpoint(self::HARDPOINT_COMMITMESSAGE),
       $this->newHardpoint(self::HARDPOINT_AUTHORREF),
+      $this->newHardpoint(self::HARDPOINT_BUILDABLEREF),
       $this->newTemplateHardpoint(
         self::HARDPOINT_PARENTREVISIONREFS,
         $object_list),
@@ -124,6 +126,10 @@ final class ArcanistRevisionRef
     return idx($this->parameters, 'phid');
   }
 
+  public function getDiffPHID() {
+    return idxv($this->parameters, array('fields', 'diffPHID'));
+  }
+
   public function getName() {
     return idxv($this->parameters, array('fields', 'title'));
   }
@@ -151,6 +157,10 @@ final class ArcanistRevisionRef
 
   public function getParentRevisionRefs() {
     return $this->getHardpoint(self::HARDPOINT_PARENTREVISIONREFS);
+  }
+
+  public function getBuildableRef() {
+    return $this->getHardpoint(self::HARDPOINT_BUILDABLEREF);
   }
 
   public function getDisplayRefObjectName() {

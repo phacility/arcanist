@@ -22,6 +22,10 @@ abstract class ArcanistSimpleSymbolRef
     $matches = null;
 
     $prefix_pattern = $this->getSimpleSymbolPrefixPattern();
+    if ($prefix_pattern === null) {
+      $prefix_pattern = '';
+    }
+
     $id_pattern = '(^'.$prefix_pattern.'([1-9]\d*)\z)';
 
     $is_id = preg_match($id_pattern, $symbol, $matches);
@@ -46,7 +50,10 @@ abstract class ArcanistSimpleSymbolRef
         $symbol));
   }
 
-  abstract protected function getSimpleSymbolPrefixPattern();
+  protected function getSimpleSymbolPrefixPattern() {
+    return null;
+  }
+
   abstract protected function getSimpleSymbolPHIDType();
   abstract public function getSimpleSymbolConduitSearchMethodName();
   abstract public function getSimpleSymbolInspectFunctionName();

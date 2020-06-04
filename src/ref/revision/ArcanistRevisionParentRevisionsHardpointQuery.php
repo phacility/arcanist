@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistRevisionParentRevisionRefsHardpointQuery
+final class ArcanistRevisionParentRevisionsHardpointQuery
   extends ArcanistRuntimeHardpointQuery {
 
   public function getHardpoints() {
