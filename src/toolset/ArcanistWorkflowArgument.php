@@ -8,6 +8,8 @@ final class ArcanistWorkflowArgument
   private $wildcard;
   private $parameter;
   private $isPathArgument;
+  private $shortFlag;
+  private $repeatable;
 
   public function setKey($key) {
     $this->key = $key;
@@ -27,6 +29,24 @@ final class ArcanistWorkflowArgument
     return $this->wildcard;
   }
 
+  public function setShortFlag($short_flag) {
+    $this->shortFlag = $short_flag;
+    return $this;
+  }
+
+  public function getShortFlag() {
+    return $this->shortFlag;
+  }
+
+  public function setRepeatable($repeatable) {
+    $this->repeatable = $repeatable;
+    return $this;
+  }
+
+  public function getRepeatable() {
+    return $this->repeatable;
+  }
+
   public function getPhutilSpecification() {
     $spec = array(
       'name' => $this->getKey(),
@@ -44,6 +64,16 @@ final class ArcanistWorkflowArgument
     $help = $this->getHelp();
     if ($help !== null) {
       $spec['help'] = $help;
+    }
+
+    $short = $this->getShortFlag();
+    if ($short !== null) {
+      $spec['short'] = $short;
+    }
+
+    $repeatable = $this->getRepeatable();
+    if ($repeatable !== null) {
+      $spec['repeat'] = $repeatable;
     }
 
     return $spec;
