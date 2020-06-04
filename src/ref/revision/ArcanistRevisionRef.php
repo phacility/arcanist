@@ -6,6 +6,8 @@ final class ArcanistRevisionRef
     ArcanistDisplayRefInterface {
 
   const HARDPOINT_COMMITMESSAGE = 'ref.revision.commitmessage';
+  const HARDPOINT_AUTHORREF = 'ref.revision.authorRef';
+  const HARDPOINT_PARENTREVISIONREFS = 'ref.revision.parentRevisionRefs';
 
   private $parameters;
   private $sources = array();
@@ -15,8 +17,13 @@ final class ArcanistRevisionRef
   }
 
   protected function newHardpoints() {
+    $object_list = new ArcanistObjectListHardpoint();
     return array(
       $this->newHardpoint(self::HARDPOINT_COMMITMESSAGE),
+      $this->newHardpoint(self::HARDPOINT_AUTHORREF),
+      $this->newTemplateHardpoint(
+        self::HARDPOINT_PARENTREVISIONREFS,
+        $object_list),
     );
   }
 
@@ -61,6 +68,30 @@ final class ArcanistRevisionRef
 
   public function getStatusDisplayName() {
     return idxv($this->parameters, array('fields', 'status', 'name'));
+  }
+
+  public function isStatusChangesPlanned() {
+    $status = $this->getStatus();
+    return ($status === 'changes-planned');
+  }
+
+  public function isStatusAbandoned() {
+    $status = $this->getStatus();
+    return ($status === 'abandoned');
+  }
+
+  public function isStatusClosed() {
+    $status = $this->getStatus();
+    return ($status === 'closed');
+  }
+
+  public function isStatusAccepted() {
+    $status = $this->getStatus();
+    return ($status === 'accepted');
+  }
+
+  public function getStatus() {
+    return idxv($this->parameters, array('fields', 'status', 'value'));
   }
 
   public function isClosed() {
@@ -112,6 +143,14 @@ final class ArcanistRevisionRef
 
   public function getCommitMessage() {
     return $this->getHardpoint(self::HARDPOINT_COMMITMESSAGE);
+  }
+
+  public function getAuthorRef() {
+    return $this->getHardpoint(self::HARDPOINT_AUTHORREF);
+  }
+
+  public function getParentRevisionRefs() {
+    return $this->getHardpoint(self::HARDPOINT_PARENTREVISIONREFS);
   }
 
   public function getDisplayRefObjectName() {
