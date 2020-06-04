@@ -138,12 +138,21 @@ final class ArcanistSettings extends Phobject {
       ),
     );
 
+    // To give warning for abandoned settings, in case workflow broken without exceptions after upgrade.
+    $abandoned = array(
+      'arcanist_configuration' => array(
+        'type' => 'abandoned',
+        'help' => pht(
+          'Abandoned. Override ArcanistConfiguration.'),
+      ),
+    );
+
     $settings = ArcanistSetting::getAllSettings();
     foreach ($settings as $key => $setting) {
       $settings[$key] = $setting->getLegacyDictionary();
     }
 
-    $results = $settings + $legacy_builtins;
+    $results = $settings + $legacy_builtins + $abandoned;
     ksort($results);
 
     return $results;
@@ -245,6 +254,12 @@ final class ArcanistSettings extends Phobject {
           pht(
             'Use "arc alias" to configure aliases, not "arc set-config".'));
         break;
+      case 'abandoned':
+        throw new Exception(
+          pht(
+            "The setting '%s' has been abandoned. You should consider alternatives.",
+             $key));
+        break;
 
     }
 
@@ -279,7 +294,14 @@ final class ArcanistSettings extends Phobject {
         }
         break;
       case 'wild':
+        break;
       case 'aliases':
+        break;
+      case 'abandoned':
+        throw new Exception(
+          pht(
+            "The setting '%s' has been abandoned. You should consider alternatives.",
+              $key));
         break;
     }
 
