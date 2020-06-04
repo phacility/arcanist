@@ -7,6 +7,7 @@ final class ArcanistDisplayRef
 
   private $ref;
   private $uri;
+  private $lines = array();
 
   public function setRef(ArcanistRef $ref) {
     $this->ref = $ref;
@@ -24,6 +25,11 @@ final class ArcanistDisplayRef
 
   public function getURI() {
     return $this->uri;
+  }
+
+  public function appendLine($line) {
+    $this->lines[] = $line;
+    return $this;
   }
 
   public function newTerminalString() {
@@ -81,6 +87,10 @@ final class ArcanistDisplayRef
       $output[] = tsprintf(
         "<bg:cyan>** :// **</bg>    __%s__\n",
         $uri);
+    }
+
+    foreach ($this->lines as $line) {
+      $output[] = tsprintf("        %s\n", $line);
     }
 
     return $output;
