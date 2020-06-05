@@ -1299,6 +1299,7 @@ final class ArcanistGitLandEngine
       }
 
       $commits = phutil_split_lines($commits, false);
+      $is_first = false;
       foreach ($commits as $line) {
         if (!strlen($line)) {
           continue;
@@ -1331,7 +1332,12 @@ final class ArcanistGitLandEngine
         }
 
         $commit = $commit_map[$hash];
-        $commit->addSymbol($symbol);
+        if ($is_first) {
+          $commit->addDirectSymbol($symbol);
+          $is_first = false;
+        }
+
+        $commit->addIndirectSymbol($symbol);
       }
     }
 

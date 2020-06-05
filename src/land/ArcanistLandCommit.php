@@ -7,12 +7,14 @@ final class ArcanistLandCommit
   private $summary;
   private $displaySummary;
   private $parents;
-  private $symbols = array();
   private $explicitRevisionRef;
   private $revisionRef = false;
   private $parentCommits;
   private $isHeadCommit;
   private $isImplicitCommit;
+
+  private $directSymbols = array();
+  private $indirectSymbols = array();
 
   public function setHash($hash) {
     $this->hash = $hash;
@@ -50,13 +52,22 @@ final class ArcanistLandCommit
     return $this->parents;
   }
 
-  public function addSymbol(ArcanistLandSymbol $symbol) {
-    $this->symbols[] = $symbol;
+  public function addDirectSymbol(ArcanistLandSymbol $symbol) {
+    $this->directSymbols[] = $symbol;
     return $this;
   }
 
-  public function getSymbols() {
-    return $this->symbols;
+  public function getDirectSymbols() {
+    return $this->directSymbols;
+  }
+
+  public function addIndirectSymbol(ArcanistLandSymbol $symbol) {
+    $this->indirectSymbols[] = $symbol;
+    return $this;
+  }
+
+  public function getIndirectSymbols() {
+    return $this->indirectSymbols;
   }
 
   public function setExplicitRevisionref(ArcanistRevisionRef $ref) {

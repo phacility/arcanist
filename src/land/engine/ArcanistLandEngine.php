@@ -866,7 +866,7 @@ abstract class ArcanistLandEngine extends Phobject {
       // TODO: If we have several refs but all but one are abandoned or closed
       // or authored by someone else, we could guess what you mean.
 
-      $symbols = $commit->getSymbols();
+      $symbols = $commit->getIndirectSymbols();
       $raw_symbols = mpull($symbols, 'getSymbol');
       $symbol_list = implode(', ', $raw_symbols);
       $display_hash = $this->getDisplayHash($hash);
@@ -898,11 +898,6 @@ abstract class ArcanistLandEngine extends Phobject {
           'selection of a particular revision.',
           $display_hash));
     }
-
-    // TODO: Some of the revisions we've identified may be mapped to an
-    // outdated set of commits. We should look in local branches for a better
-    // set of commits, and try to confirm that the state we're about to land
-    // is the current state in Differential.
 
     if ($force_ref) {
       $phid_map = array();
@@ -1154,6 +1149,8 @@ abstract class ArcanistLandEngine extends Phobject {
 
       $sets[$revision_phid] = $set;
     }
+
+    $sets = $this->filterCommitSets($sets);
 
     if (!$this->getShouldPreview()) {
       $this->confirmImplicitCommits($sets, $symbols);
@@ -1434,6 +1431,64 @@ abstract class ArcanistLandEngine extends Phobject {
         $strategy));
 
     return $strategy;
+  }
+
+  private function filterCommitSets(array $sets) {
+    assert_instances_of($sets, 'ArcanistLandCommitSet');
+    $log = $this->getLogEngine();
+
+    // If some of the ancestor revisions are already closed, and the user did
+    // not specifically indicate that we should land them, and we are using
+    // a "squash" strategy, discard those sets.
+
+    if ($this->isSquashStrategy()) {
+      $discard = array();
+      foreach ($sets as $key => $set) {
+        $revision_ref = $set->getRevisionRef();
+
+        if (!$revision_ref->isClosed()) {
+          continue;
+        }
+
+        $symbols = null;
+        foreach ($set->getCommits() as $commit) {
+          $commit_symbols = $commit->getDirectSymbols();
+          if ($commit_symbols) {
+            $symbols = $commit_symbols;
+            break;
+          }
+        }
+
+        if ($symbols) {
+          continue;
+        }
+
+        $discard[] = $set;
+        unset($sets[$key]);
+      }
+
+      if ($discard) {
+        echo tsprintf(
+          "\n%!\n%W\n",
+          pht('DISCARDING ANCESTORS'),
+          pht(
+            'Some ancestor commits are associated with revisions that have '.
+            'already been closed. These changes will be skipped:'));
+
+        foreach ($discard as $set) {
+          $this->printCommitSet($set);
+        }
+
+        echo tsprintf("\n");
+      }
+    }
+
+    // TODO: Some of the revisions we've identified may be mapped to an
+    // outdated set of commits. We should look in local branches for a better
+    // set of commits, and try to confirm that the state we're about to land
+    // is the current state in Differential.
+
+    return $sets;
   }
 
 }
