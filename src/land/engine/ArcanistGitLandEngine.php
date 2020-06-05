@@ -235,11 +235,13 @@ final class ArcanistGitLandEngine
 
   protected function executeMerge(ArcanistLandCommitSet $set, $into_commit) {
     $api = $this->getRepositoryAPI();
+    $log = $this->getLogEngine();
 
     $this->updateWorkingCopy($into_commit);
 
     $commits = $set->getCommits();
-    $source_commit = last($commits)->getHash();
+    $max_commit = last($commits);
+    $source_commit = $max_commit->getHash();
 
     // NOTE: See T11435 for some history. See PHI1727 for a case where a user
     // modified their working copy while running "arc land". This attempts to
@@ -263,10 +265,15 @@ final class ArcanistGitLandEngine
           $this->getDisplayHash($into_commit)));
     }
 
-    list($original_author, $original_date) = $this->getAuthorAndDate(
-      $source_commit);
+    $log->writeStatus(
+      pht('MERGING'),
+      pht(
+        '%s %s',
+        $this->getDisplayHash($source_commit),
+        $max_commit->getDisplaySummary()));
 
     try {
+
       if ($this->isSquashStrategy()) {
         // NOTE: We're explicitly specifying "--ff" to override the presence
         // of "merge.ff" options in user configuration.
@@ -280,16 +287,43 @@ final class ArcanistGitLandEngine
           $source_commit);
       }
     } catch (CommandException $ex) {
+
+      // TODO: If we previously succeeded with at least one merge, we could
+      // provide a hint that "--incremental" can do some of the work.
+
       $api->execManualLocal('merge --abort');
       $api->execManualLocal('reset --hard HEAD --');
 
-      throw new PhutilArgumentUsageException(
-        pht(
-          'Local "%s" does not merge cleanly into "%s". Merge or rebase '.
-          'local changes so they can merge cleanly.',
-          $source_commit,
-          $into_commit));
+      $direct_symbols = $max_commit->getDirectSymbols();
+      $indirect_symbols = $max_commit->getIndirectSymbols();
+      if ($direct_symbols) {
+        $message = pht(
+          'Local commit "%s" (%s) does not merge cleanly into "%s". '.
+          'Merge or rebase local changes so they can merge cleanly.',
+          $this->getDisplayHash($source_commit),
+          $this->getDisplaySymbols($direct_symbols),
+          $this->getDisplayHash($into_commit));
+      } else if ($indirect_symbols) {
+        $message = pht(
+          'Local commit "%s" (reachable from: %s) does not merge cleanly '.
+          'into "%s". Merge or rebase local changes so they can merge '.
+          'cleanly.',
+          $this->getDisplayHash($source_commit),
+          $this->getDisplaySymbols($indirect_symbols),
+          $this->getDisplayHash($into_commit));
+      } else {
+        $message = pht(
+          'Local commit "%s" does not merge cleanly into "%s". Merge or '.
+          'rebase local changes so they can merge cleanly.',
+          $this->getDisplayHash($source_commit),
+          $this->getDisplayHash($into_commit));
+      }
+
+      throw new PhutilArgumentUsageException($message);
     }
+
+    list($original_author, $original_date) = $this->getAuthorAndDate(
+      $source_commit);
 
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
