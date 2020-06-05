@@ -91,9 +91,9 @@ branch.
 EOTEXT
       );
 
-    // TODO: Add command synopses.
-
     return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Publish reviewed changes.'))
+      ->addExample(pht('**land** [__options__] [__ref__ ...]'))
       ->setHelp($help);
   }
 
