@@ -17,6 +17,9 @@ final class ArcanistGitLandEngine
   }
 
   protected function pruneBranches(array $sets) {
+    $api = $this->getRepositoryAPI();
+    $log = $this->getLogEngine();
+
     $old_commits = array();
     foreach ($sets as $set) {
       $hash = last($set->getCommits())->getHash();
@@ -27,20 +30,19 @@ final class ArcanistGitLandEngine
       $old_commits,
       $is_contains = false);
 
-    $api = $this->getRepositoryAPI();
     foreach ($branch_map as $branch_name => $branch_hash) {
       $recovery_command = csprintf(
         'git checkout -b %s %s',
         $branch_name,
         $this->getDisplayHash($branch_hash));
 
-      echo tsprintf(
-        "%s\n",
-        pht('Cleaning up branch "%s"...', $branch_name));
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht('Destroying branch "%s". To recover, run:', $branch_name));
 
       echo tsprintf(
-        "%s\n",
-        pht('(Use `%s` if you want it back.)', $recovery_command));
+        "\n    **$** %s\n\n",
+        $recovery_command);
 
       $api->execxLocal('branch -D -- %s', $branch_name);
       $this->deletedBranches[$branch_name] = true;
