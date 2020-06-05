@@ -140,6 +140,15 @@ abstract class ArcanistLandEngine extends Phobject {
     return $this->shouldKeep;
   }
 
+  final public function setStrategyArgument($strategy_argument) {
+    $this->strategyArgument = $strategy_argument;
+    return $this;
+  }
+
+  final public function getStrategyArgument() {
+    return $this->strategyArgument;
+  }
+
   final public function setStrategy($strategy) {
     $this->strategy = $strategy;
     return $this;

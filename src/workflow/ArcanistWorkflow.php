@@ -2357,11 +2357,13 @@ abstract class ArcanistWorkflow extends Phobject {
       $prompts = $this->newPrompts();
       assert_instances_of($prompts, 'ArcanistPrompt');
 
+      // TODO: Move this somewhere modular.
+
       $prompts[] = $this->newPrompt('arc.state.stash')
         ->setDescription(
           pht(
             'Prompts the user to stash changes and continue when the '.
-            'working copy has untracked, uncommitted. or unstaged '.
+            'working copy has untracked, uncommitted, or unstaged '.
             'changes.'));
 
       // TODO: Swap to ArrayCheck?

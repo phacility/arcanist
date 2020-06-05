@@ -103,6 +103,11 @@ final class ArcanistGitLandEngine
       }
     }
 
+    // Sort the result so that branches are processed in natural order.
+    $names = array_keys($result);
+    natcasesort($names);
+    $result = array_select_keys($result, $names);
+
     return $result;
   }
 
