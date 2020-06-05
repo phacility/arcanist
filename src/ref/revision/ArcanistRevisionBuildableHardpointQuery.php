@@ -29,7 +29,7 @@ final class ArcanistRevisionBuildableHardpointQuery
     $buildables = (yield $this->yieldConduitSearch(
       'harbormaster.buildable.search',
       array(
-        'objectPHIDs' => $diff_map,
+        'objectPHIDs' => array_values($diff_map),
         'manual' => false,
       )));
 

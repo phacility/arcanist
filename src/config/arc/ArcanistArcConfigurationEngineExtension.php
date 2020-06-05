@@ -136,19 +136,15 @@ final class ArcanistArcConfigurationEngineExtension
           array(
             'origin',
           )),
-      id(new ArcanistBoolConfigOption())
-        ->setKey('history.immutable')
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.strategy')
         ->setSummary(
           pht(
-            'Configure use of history mutation operations like amends '.
-            'and rebases.'))
+            'Configure a default merge strategy for "arc land".'))
         ->setHelp(
           pht(
-            'If this option is set to "true", Arcanist will treat the '.
-            'repository history as immutable and will never issue '.
-            'commands which rewrite repository history (like amends or '.
-            'rebases). This option defaults to "true" in Mercurial, '.
-            '"false" in Git, and has no effect in Subversion.')),
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--strategy" flag.')),
     );
   }
 

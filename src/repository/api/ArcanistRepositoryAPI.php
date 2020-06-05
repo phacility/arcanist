@@ -734,4 +734,19 @@ abstract class ArcanistRepositoryAPI extends Phobject {
   final public function newBranchRef() {
     return new ArcanistBranchRef();
   }
+
+  final public function getLandEngine() {
+    $engine = $this->newLandEngine();
+
+    if ($engine) {
+      $engine->setRepositoryAPI($this);
+    }
+
+    return $engine;
+  }
+
+  protected function newLandEngine() {
+    return null;
+  }
+
 }

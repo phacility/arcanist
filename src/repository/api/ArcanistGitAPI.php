@@ -1564,6 +1564,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return ($uri !== null);
   }
 
+  public function isFetchableRemote($remote_name) {
+    $uri = $this->getGitRemoteFetchURI($remote_name);
+    return ($uri !== null);
+  }
+
   private function getGitRemoteFetchURI($remote_name) {
     return $this->getGitRemoteURI($remote_name, $for_push = false);
   }
@@ -1737,6 +1742,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // current behavior.
 
     return false;
+  }
+
+  protected function newLandEngine() {
+    return new ArcanistGitLandEngine();
+  }
+
+  public function newLocalState() {
+    return id(new ArcanistGitLocalState())
+      ->setRepositoryAPI($this);
   }
 
 }

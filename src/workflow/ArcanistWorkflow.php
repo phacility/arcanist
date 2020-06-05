@@ -244,7 +244,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $err;
   }
 
-  final protected function getLogEngine() {
+  final public function getLogEngine() {
     return $this->getRuntime()->getLogEngine();
   }
 
@@ -2357,6 +2357,15 @@ abstract class ArcanistWorkflow extends Phobject {
       $prompts = $this->newPrompts();
       assert_instances_of($prompts, 'ArcanistPrompt');
 
+      $prompts[] = $this->newPrompt('arc.state.stash')
+        ->setDescription(
+          pht(
+            'Prompts the user to stash changes and continue when the '.
+            'working copy has untracked, uncommitted. or unstaged '.
+            'changes.'));
+
+      // TODO: Swap to ArrayCheck?
+
       $map = array();
       foreach ($prompts as $prompt) {
         $key = $prompt->getKey();
@@ -2380,7 +2389,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->promptMap;
   }
 
-  protected function getPrompt($key) {
+  final public function getPrompt($key) {
     $map = $this->getPromptMap();
 
     $prompt = idx($map, $key);

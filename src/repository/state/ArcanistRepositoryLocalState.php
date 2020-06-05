@@ -151,6 +151,9 @@ abstract class ArcanistRepositoryLocalState
     $this->executeSaveLocalState();
     $this->shouldRestore = true;
 
+    // TODO: Detect when we're in the middle of a rebase.
+    // TODO: Detect when we're in the middle of a cherry-pick.
+
     return $this;
   }
 

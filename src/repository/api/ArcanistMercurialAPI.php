@@ -534,6 +534,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getAllBranches() {
+    // TODO: This is wrong, and returns bookmarks.
+
     list($branch_info) = $this->execxLocal('bookmarks');
     if (trim($branch_info) == 'no bookmarks set') {
       return array();
@@ -548,10 +550,14 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     $return = array();
     foreach ($matches as $match) {
-      list(, $current, $name) = $match;
+      list(, $current, $name, $hash) = $match;
+
+      list($id, $hash) = explode(':', $hash);
+
       $return[] = array(
         'current' => (bool)$current,
         'name'    => rtrim($name),
+        'hash' => $hash,
       );
     }
     return $return;
@@ -562,9 +568,13 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     $refs = array();
     foreach ($branches as $branch) {
+      $commit_ref = $this->newCommitRef()
+        ->setCommitHash($branch['hash']);
+
       $refs[] = $this->newBranchRef()
         ->setBranchName($branch['name'])
-        ->setIsCurrentBranch($branch['current']);
+        ->setIsCurrentBranch($branch['current'])
+        ->attachCommitRef($commit_ref);
     }
 
     return $refs;
@@ -1064,6 +1074,46 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $bookmarks;
   }
 
+  public function getBookmarkCommitHash($name) {
+    // TODO: Cache this.
+
+    $bookmarks = $this->getBookmarks($name);
+    $bookmarks = ipull($bookmarks, null, 'name');
+
+    foreach ($bookmarks as $bookmark) {
+      if ($bookmark['name'] === $name) {
+        return $bookmark['revision'];
+      }
+    }
+
+    throw new Exception(pht('No bookmark "%s".', $name));
+  }
+
+  public function getBranchCommitHash($name) {
+    // TODO: Cache this.
+    // TODO: This won't work when there are multiple branch heads with the
+    // same name.
+
+    $branches = $this->getBranches($name);
+
+    $heads = array();
+    foreach ($branches as $branch) {
+      if ($branch['name'] === $name) {
+        $heads[] = $branch;
+      }
+    }
+
+    if (count($heads) === 1) {
+      return idx(head($heads), 'revision');
+    }
+
+    if (!$heads) {
+      throw new Exception(pht('No branch "%s".', $name));
+    }
+
+    throw new Exception(pht('Too many branch heads for "%s".', $name));
+  }
+
   private function splitBranchOrBookmarkLine($line) {
     // branches and bookmarks are printed in the format:
     // default                 0:a5ead76cdf85 (inactive)
@@ -1107,5 +1157,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
     return $env;
   }
+
+  protected function newLandEngine() {
+    return new ArcanistMercurialLandEngine();
+  }
+
+  public function newLocalState() {
+    return id(new ArcanistMercurialLocalState())
+      ->setRepositoryAPI($this);
+  }
+
 
 }
