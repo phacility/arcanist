@@ -113,12 +113,32 @@ final class ArcanistPrompt
         $write = array();
         $except = array();
 
-        $ok = stream_select($read, $write, $except, 1);
+        $ok = @stream_select($read, $write, $except, 1);
         if ($ok === false) {
-          throw new Exception(pht('stream_select() failed!'));
+          // NOTE: We may be interrupted by a system call, particularly if
+          // the window is resized while a prompt is shown and the terminal
+          // sends SIGWINCH.
+
+          // If we are, just continue below and try to read from stdin. If
+          // we were interrupted, we should read nothing and continue
+          // normally. If the pipe is broken, the read should fail.
         }
 
-        $response = fgets($stdin);
+        $response = '';
+        while (true) {
+          $bytes = fread($stdin, 8192);
+          if ($bytes === false) {
+            throw new Exception(
+              pht('fread() from stdin failed with an error.'));
+          }
+
+          if (!strlen($bytes)) {
+            break;
+          }
+
+          $response .= $bytes;
+        }
+
         if (!strlen($response)) {
           continue;
         }
