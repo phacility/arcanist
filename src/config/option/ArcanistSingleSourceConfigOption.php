@@ -1,6 +1,6 @@
 <?php
 
-abstract class ArcanistScalarConfigOption
+abstract class ArcanistSingleSourceConfigOption
   extends ArcanistConfigOption {
 
   public function getValueFromStorageValueList(array $list) {

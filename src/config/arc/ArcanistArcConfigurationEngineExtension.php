@@ -29,38 +29,6 @@ final class ArcanistArcConfigurationEngineExtension
           'off of.'),
         'example' => '"develop"',
       ),
-      'arc.land.onto.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to land changes onto when '.
-          '`%s` is run.',
-          'arc land'),
-        'example' => '"develop"',
-      ),
-
-      'arc.autostash' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'Whether %s should permit the automatic stashing of changes in the '.
-          'working directory when requiring a clean working copy. This option '.
-          'should only be used when users understand how to restore their '.
-          'working directory from the local stash if an Arcanist operation '.
-          'causes an unrecoverable error.',
-          'arc'),
-        'default' => false,
-        'example' => 'false',
-      ),
-
-      'history.immutable' => array(
-        'type' => 'bool',
-        'legacy' => 'immutable_history',
-        'help' => pht(
-          'If true, %s will never change repository history (e.g., through '.
-          'amending or rebasing). Defaults to true in Mercurial and false in '.
-          'Git. This setting has no effect in Subversion.',
-          'arc'),
-        'example' => 'false',
-      ),
       'editor' => array(
         'type' => 'string',
         'help' => pht(
@@ -111,9 +79,9 @@ final class ArcanistArcConfigurationEngineExtension
         ->setHelp(
           pht(
             'Associate the working copy with a specific Phabricator '.
-            'repository. Normally, `arc` can figure this association out on '.
-            'its own, but if your setup is unusual you can use this option '.
-            'to tell it what the desired value is.'))
+            'repository. Normally, Arcanist can figure this association '.
+            'out on its own, but if your setup is unusual you can use '.
+            'this option to tell it what the desired value is.'))
         ->setExamples(
           array(
             'libexample',
@@ -145,6 +113,42 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Configured command aliases. Use the "alias" workflow to define '.
             'aliases.')),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('arc.land.onto')
+        ->setDefaultValue(array())
+        ->setSummary(pht('Default list of "onto" refs for "arc land".'))
+        ->setHelp(
+          pht(
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--onto" flag.'))
+        ->setExamples(
+          array(
+            '["master"]',
+          )),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.onto-remote')
+        ->setSummary(pht('Default list of "onto" remote for "arc land".'))
+        ->setHelp(
+          pht(
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--onto-remote" flag.'))
+        ->setExamples(
+          array(
+            'origin',
+          )),
+      id(new ArcanistBoolConfigOption())
+        ->setKey('history.immutable')
+        ->setSummary(
+          pht(
+            'Configure use of history mutation operations like amends '.
+            'and rebases.'))
+        ->setHelp(
+          pht(
+            'If this option is set to "true", Arcanist will treat the '.
+            'repository history as immutable and will never issue '.
+            'commands which rewrite repository history (like amends or '.
+            'rebases). This option defaults to "true" in Mercurial, '.
+            '"false" in Git, and has no effect in Subversion.')),
     );
   }
 
