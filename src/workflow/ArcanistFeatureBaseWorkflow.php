@@ -201,7 +201,13 @@ EOHELP
       $epoch = $commit->getCommitEpoch();
 
       $color = idx($color_map, $status, 'default');
-      $ssort = sprintf('%d%012d', idx($ssort_map, $status, 0), $epoch);
+
+      $epoch_vector = id(new PhutilSortVector())
+        ->addInt($epoch);
+
+      $status_vector = id(new PhutilSortVector())
+        ->addInt(idx($ssort_map, $status, 0))
+        ->addInt($epoch);
 
       if ($revision) {
         $desc = $revision->getFullName();
@@ -216,9 +222,10 @@ EOHELP
         'desc'      => $desc,
         'revision'  => $revision ? $revision->getID() : null,
         'color'     => $color,
-        'esort'     => $epoch,
         'epoch'     => $epoch,
-        'ssort'     => $ssort,
+
+        'esort'     => $epoch_vector,
+        'ssort'     => $status_vector,
       );
     }
 
@@ -230,11 +237,25 @@ EOHELP
     $len_name = max(array_map('strlen', ipull($out, 'name'))) + 2;
     $len_status = max(array_map('strlen', ipull($out, 'status'))) + 2;
 
+    // Sort the list in natural order first. When we apply a stable sort to
+    // the list below, branches which were last updated at the same time will
+    // retain this ordering. This allows "feature1", "feature2", etc., to
+    // display in the correct order if they were touched at the same second,
+    // which is common when "arc land" performs a cascading rebase.
+
+    $name_map = ipull($out, 'name');
+    natcasesort($name_map);
+    $out = array_select_keys($out, array_keys($name_map));
+
     if ($this->getArgument('by-status')) {
-      $out = isort($out, 'ssort');
+      $vectors = ipull($out, 'ssort');
     } else {
-      $out = isort($out, 'esort');
+      $vectors = ipull($out, 'esort');
     }
+
+    $vectors = msortv($vectors, 'getSelf');
+    $out = array_select_keys($out, array_keys($vectors));
+
     if ($this->getArgument('output') == 'json') {
       foreach ($out as &$feature) {
         unset($feature['color'], $feature['ssort'], $feature['esort']);
