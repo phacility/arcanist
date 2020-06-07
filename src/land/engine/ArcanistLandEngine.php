@@ -31,6 +31,8 @@ abstract class ArcanistLandEngine extends Phobject {
   private $intoEmpty;
   private $intoLocal;
 
+  private $localState;
+
   final public function setViewer($viewer) {
     $this->viewer = $viewer;
     return $this;
@@ -256,6 +258,15 @@ abstract class ArcanistLandEngine extends Phobject {
 
   final public function getIntoArgument() {
     return $this->intoArgument;
+  }
+
+  private function setLocalState(ArcanistRepositoryLocalState $local_state) {
+    $this->localState = $local_state;
+    return $this;
+  }
+
+  final protected function getLocalState() {
+    return $this->localState;
   }
 
   final protected function getOntoFromConfiguration() {
@@ -1232,6 +1243,8 @@ abstract class ArcanistLandEngine extends Phobject {
       ->setWorkflow($workflow)
       ->saveLocalState();
 
+    $this->setLocalState($local_state);
+
     $seen_into = array();
     try {
       $last_key = last_key($sets);
@@ -1309,19 +1322,18 @@ abstract class ArcanistLandEngine extends Phobject {
       }
 
       if ($is_hold) {
-        $this->didHoldChanges($local_state);
+        $this->didHoldChanges($into_commit);
         $local_state->discardLocalState();
       } else {
+        // TODO: Restore this.
+        // $this->getWorkflow()->askForRepositoryUpdate();
+
         $this->reconcileLocalState($into_commit, $local_state);
+
+        $log->writeSuccess(
+          pht('DONE'),
+          pht('Landed changes.'));
       }
-
-      // TODO: Restore this.
-      // $this->getWorkflow()->askForRepositoryUpdate();
-
-      // TODO: This is misleading under "--hold".
-      $log->writeSuccess(
-        pht('DONE'),
-        pht('Landed changes.'));
     } catch (Exception $ex) {
       $local_state->restoreLocalState();
       throw $ex;
@@ -1412,6 +1424,8 @@ abstract class ArcanistLandEngine extends Phobject {
   abstract protected function reconcileLocalState(
     $into_commit,
     ArcanistRepositoryLocalState $state);
+
+  abstract protected function didHoldChanges($into_commit);
 
   private function selectMergeStrategy() {
     $log = $this->getLogEngine();

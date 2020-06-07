@@ -189,6 +189,10 @@ abstract class ArcanistRepositoryLocalState
     $this->discardLocalState();
   }
 
+  final public function getRestoreCommandsForDisplay() {
+    return $this->newRestoreCommandsForDisplay();
+  }
+
   protected function canStashChanges() {
     return false;
   }
@@ -208,6 +212,7 @@ abstract class ArcanistRepositoryLocalState
   abstract protected function executeSaveLocalState();
   abstract protected function executeRestoreLocalState();
   abstract protected function executeDiscardLocalState();
+  abstract protected function newRestoreCommandsForDisplay();
 
   protected function getIgnoreHints() {
     return array();

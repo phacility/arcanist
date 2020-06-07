@@ -503,7 +503,7 @@ final class ArcanistMercurialLandEngine
 
     $api->execxLocal(
       'push --rev %s -- %s',
-      $into_commit,
+      hgsprintf('%s', $into_commit),
       $this->getOntoRemote());
   }
 
@@ -600,4 +600,52 @@ final class ArcanistMercurialLandEngine
     $state->discardLocalState();
   }
 
+  protected function didHoldChanges($into_commit) {
+    $log = $this->getLogEngine();
+    $local_state = $this->getLocalState();
+
+    $message = pht(
+      'Holding changes locally, they have not been pushed.');
+
+    $push_command = csprintf(
+      '$ hg push -- %s %Ls',
+
+      // TODO: When a parameter contains only "safe" characters, we could
+      // relax the behavior of hgsprintf().
+
+      hgsprintf('%s', $this->getDisplayHash($into_commit)),
+      $this->newOntoRefArguments($into_commit));
+
+    echo tsprintf(
+      "\n%!\n%s\n\n",
+      pht('HOLD CHANGES'),
+      $message);
+
+    echo tsprintf(
+      "%s\n\n    **%s**\n\n",
+      pht('To push changes manually, run this command:'),
+      $push_command);
+
+    $restore_commands = $local_state->getRestoreCommandsForDisplay();
+    if ($restore_commands) {
+      echo tsprintf(
+        "%s\n\n",
+        pht(
+          'To go back to how things were before you ran "arc land", run '.
+          'these %s command(s):',
+          phutil_count($restore_commands)));
+
+      foreach ($restore_commands as $restore_command) {
+        echo tsprintf("    **%s**\n", $restore_command);
+      }
+
+      echo tsprintf("\n");
+    }
+
+    echo tsprintf(
+      "%s\n".
+      pht(
+        'Local branches and bookmarks have not been changed, and are still '.
+        'in the same state as before.'));
+  }
 }

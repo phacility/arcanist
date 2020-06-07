@@ -84,6 +84,29 @@ final class ArcanistGitLocalState
     return;
   }
 
+  protected function newRestoreCommandsForDisplay() {
+    $ref = $this->localRef;
+    $commit = $this->localCommit;
+
+    $commands = array();
+
+    if ($ref !== null) {
+      $commands[] = csprintf(
+        'git checkout -B %s %s --',
+        $ref,
+        $this->getDisplayHash($commit));
+    } else {
+      $commands[] = csprintf(
+        'git checkout %s --',
+        $this->getDisplayHash($commit));
+    }
+
+    // NOTE: We run "submodule update" in the real restore workflow, but
+    // assume users can reasonably figure that out on their own.
+
+    return $commands;
+  }
+
   protected function canStashChanges() {
     return true;
   }

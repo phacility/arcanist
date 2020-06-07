@@ -435,18 +435,10 @@ final class ArcanistGitLandEngine
       pht('PUSHING'),
       pht('Pushing changes to "%s".', $this->getOntoRemote()));
 
-    $refspecs = array();
-    foreach ($this->getOntoRefs() as $onto_ref) {
-      $refspecs[] = sprintf(
-        '%s:%s',
-        $into_commit,
-        $onto_ref);
-    }
-
     $err = $api->execPassthru(
       'push -- %s %Ls',
       $this->getOntoRemote(),
-      $refspecs);
+      $this->newOntoRefArguments($into_commit));
 
     if ($err) {
       throw new ArcanistUsageException(
@@ -738,57 +730,57 @@ final class ArcanistGitLandEngine
     );
   }
 
-  protected function didHoldChanges(
-    ArcanistRepositoryLocalState $state) {
+  protected function didHoldChanges($into_commit) {
     $log = $this->getLogEngine();
-
-    // TODO: This probably needs updates.
-
-    // TODO: We should refuse "--hold" if we stash.
+    $local_state = $this->getLocalState();
 
     if ($this->getIsGitPerforce()) {
-      $this->writeInfo(
-        pht('HOLD'),
-        pht(
-          'Holding change locally, it has not been submitted.'));
+      $message = pht(
+        'Holding changes locally, they have not been submitted.');
 
       $push_command = csprintf(
-        '$ git p4 submit -M --commit %R --',
-        $this->mergedRef);
+        'git p4 submit -M --commit %s --',
+        $into_commit);
     } else {
-      $log->writeStatus(
-        pht('HOLD'),
-        pht(
-          'Holding change locally, it has not been pushed.'));
+      $message = pht(
+        'Holding changes locally, they have not been pushed.');
 
-      $push_command = 'TODO: ...';
-      // csprintf(
-      //   '$ git push -- %R %R:%R',
-      //   $this->getOntoRemote(),
-      //   $this->mergedRef,
-      //   $this->getOnto());
+      $push_command = csprintf(
+        'git push -- %s %Ls',
+        $this->getOntoRemote(),
+        $this->newOntoRefArguments($into_commit));
     }
 
-    $restore_command = 'TODO: ...';
+    echo tsprintf(
+      "\n%!\n%s\n\n",
+      pht('HOLD CHANGES'),
+      $message);
 
     echo tsprintf(
-      "\n%s\n\n".
-      "%s\n\n".
-      "    **%s**\n\n".
-      "%s\n\n".
-      "    **%s**\n\n".
+      "%s\n\n%>\n",
+      pht('To push changes manually, run this command:'),
+      $push_command);
+
+    $restore_commands = $local_state->getRestoreCommandsForDisplay();
+    if ($restore_commands) {
+      echo tsprintf(
+        "%s\n\n",
+        pht(
+          'To go back to how things were before you ran "arc land", run '.
+          'these %s command(s):',
+          phutil_count($restore_commands)));
+
+      foreach ($restore_commands as $restore_command) {
+        echo tsprintf('%>', $restore_command);
+      }
+
+      echo tsprintf("\n");
+    }
+
+    echo tsprintf(
       "%s\n",
       pht(
-        'This local working copy now contains the merged changes in a '.
-        'detached state.'),
-      pht('You can push the changes manually with this command:'),
-      $push_command,
-      pht(
-        'You can go back to how things were before you ran "arc land" with '.
-        'this command:'),
-      $restore_command,
-      pht(
-        'Local branches have not been changed, and are still in exactly the '.
+        'Local branches have not been changed, and are still in the '.
         'same state as before.'));
   }
 
@@ -1407,7 +1399,7 @@ final class ArcanistGitLandEngine
     $log = $this->getLogEngine();
 
     $branch = $api->getBranchName();
-    if ($branch === null) {
+    if ($branch !== null) {
       $log->writeStatus(
         pht('SOURCE'),
         pht(
@@ -1425,7 +1417,20 @@ final class ArcanistGitLandEngine
         'Landing the current HEAD, "%s".',
         $commit->getCommitHash()));
 
-    return array($branch);
+    return array($commit->getCommitHash());
+  }
+
+  private function newOntoRefArguments($into_commit) {
+    $refspecs = array();
+
+    foreach ($this->getOntoRefs() as $onto_ref) {
+      $refspecs[] = sprintf(
+        '%s:%s',
+        $this->getDisplayHash($into_commit),
+        $onto_ref);
+    }
+
+    return $refspecs;
   }
 
 }

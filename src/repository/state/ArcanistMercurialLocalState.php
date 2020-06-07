@@ -45,6 +45,11 @@ final class ArcanistMercurialLocalState
     return array();
   }
 
+  protected function newRestoreCommandsForDisplay() {
+    // TODO: Provide this.
+    return array();
+  }
+
   protected function saveStash() {
     return null;
   }
