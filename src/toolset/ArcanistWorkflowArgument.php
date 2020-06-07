@@ -10,6 +10,7 @@ final class ArcanistWorkflowArgument
   private $isPathArgument;
   private $shortFlag;
   private $repeatable;
+  private $relatedConfig = array();
 
   public function setKey($key) {
     $this->key = $key;
@@ -47,6 +48,15 @@ final class ArcanistWorkflowArgument
     return $this->repeatable;
   }
 
+  public function addRelatedConfig($related_config) {
+    $this->relatedConfig[] = $related_config;
+    return $this;
+  }
+
+  public function getRelatedConfig() {
+    return $this->relatedConfig;
+  }
+
   public function getPhutilSpecification() {
     $spec = array(
       'name' => $this->getKey(),
@@ -63,6 +73,20 @@ final class ArcanistWorkflowArgument
 
     $help = $this->getHelp();
     if ($help !== null) {
+      $config = $this->getRelatedConfig();
+
+      if ($config) {
+        $more = array();
+        foreach ($this->getRelatedConfig() as $config) {
+          $more[] = tsprintf(
+            '%s **%s**',
+            pht('Related configuration:'),
+            $config);
+        }
+        $more = phutil_glue($more, "\n");
+        $help = tsprintf("%B\n\n%B", $help, $more);
+      }
+
       $spec['help'] = $help;
     }
 
@@ -80,6 +104,10 @@ final class ArcanistWorkflowArgument
   }
 
   public function setHelp($help) {
+    if (is_array($help)) {
+      $help = implode("\n\n", $help);
+    }
+
     $this->help = $help;
     return $this;
   }

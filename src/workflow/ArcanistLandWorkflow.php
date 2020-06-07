@@ -12,82 +12,111 @@ final class ArcanistLandWorkflow
 
   public function getWorkflowInformation() {
     $help = pht(<<<EOTEXT
-Supports: git, git/p4, hg
+Supports: git, git/p4, git/svn, hg
 
-Publish an accepted revision after review. This command is the last
-step in the standard Differential code review workflow.
+Publish accepted revisions after review. This command is the last step in the
+standard Differential code review workflow.
 
-This command merges and pushes changes associated with an accepted
-revision that are currently sitting in __ref__, which is usually the
-name of a local branch. Without __ref__, the current working copy
-state will be used.
+To publish changes in local branch or bookmark "feature1", you will usually
+run this command:
 
-Under Git: branches, tags, and arbitrary commits (detached HEADs)
-may be landed.
+  **$ arc land feature1**
 
-Under Git/Perforce: branches, tags, and arbitrary commits may
-be submitted.
+This workflow merges and pushes changes associated with revisions that are
+ancestors of __ref__. Without __ref__, the current working copy state will be
+used. You can specify multiple __ref__ arguments to publish multiple changes at
+once.
 
-Under Mercurial: branches and bookmarks may be landed, but only
-onto a target of the same type. See T3855.
+A __ref__ can be any symbol which identifies a commit: a branch name, a tag
+name, a bookmark name, a topic name, a raw commit hash, a symbolic reference,
+etc.
 
-The workflow selects a target branch to land onto and a remote where
-the change will be pushed to.
+When you provide a __ref__, all unpublished changes which are present in
+ancestors of that __ref__ will be selected for publishing.
 
-A target branch is selected by examining these sources in order:
+For example, if you provide local branch "feature3" as a __ref__ argument, that
+may also select the changes in "feature1" and "feature2" (if they are ancestors
+of "feature3"). If you stack changes in a single local branch, all commits in
+the stack may be selected.
 
-  - the **--onto** flag;
-  - the upstream of the branch targeted by the land operation,
-    recursively (Git only);
-  - the __arc.land.onto.default__ configuration setting;
+The workflow merges unpublished changes reachable from __ref__ "into" some
+intermediate branch, then pushes the combined state "onto" some destination
+branch (or list of branches).
+
+(In Mercurial, the "into" and "onto" branches may be bookmarks instead.)
+
+In the most common case, there is only one "onto" branch (often "master" or
+"default" or some similar branch) and the "into" branch is the same branch. For
+example, it is common to merge local feature branch "feature1" into
+"origin/master", then push it onto "origin/master".
+
+The list of "onto" branches is selected by examining these sources in order:
+
+  - the **--onto** flags;
+  - the __arc.land.onto__ configuration setting;
+  - (in Git) the upstream of the branch targeted by the land operation,
+    recursively;
   - or by falling back to a standard default:
-    - "master" in Git;
-    - "default" in Mercurial.
+    - (in Git) "master";
+    - (in Mercurial) "default".
 
-A remote is selected by examining these sources in order:
+The remote to push "onto" is selected by examining these sources in order:
 
-  - the **--remote** flag;
-  - the upstream of the current branch, recursively (Git only);
-  - the special "p4" remote which indicates a repository has
-    been synchronized with Perforce (Git only);
+  - the **--onto-remote** flag;
+  - the __arc.land.onto-remote__ configuration setting;
+  - (in Git) the upstream of the current branch, recursively;
+  - (in Git) the special "p4" remote which indicates a repository has
+    been synchronized with Perforce;
   - or by falling back to a standard default:
-    - "origin" in Git;
-    - the default remote in Mercurial.
+    - (in Git) "origin";
+    - (in Mercurial) "default".
 
-After selecting a target branch and a remote, the commits which will
-be landed are printed.
+The branch to merge "into" is selected by examining these sources in order:
 
-With **--preview**, execution stops here, before the change is
-merged.
+  - the **--into** flag;
+  - the **--into-empty** flag;
+  - or by falling back to the first "onto" branch.
 
-The change is merged with the changes in the target branch,
-following these rules:
+The remote to merge "into" is selected by examining these sources in order:
 
-In repositories with mutable history or with **--squash**, this will
-perform a squash merge (the entire branch will be represented as one
-commit after the merge).
+  - the **--into-remote** flag;
+  - the **--into-local** flag (which disables fetching before merging);
+  - or by falling back to the "onto" remote.
 
-In repositories with immutable history or with **--merge**, this will
-perform a strict merge (a merge commit will always be created, and
-local commits will be preserved).
+After selecting remotes and branches, the commits which will land are printed.
 
-The resulting commit will be given an up-to-date commit message
+With **--preview**, execution stops here, before the change is merged.
+
+The "into" branch is fetched from the "into" remote (unless **--into-local** or
+**--into-empty** are specified) and the changes are merged into the state in
+the "into" branch according to the selected merge strategy.
+
+The default merge strategy is "squash", which produces a single commit from
+all local commits for each change. A different strategy can be selected with
+the **--strategy** flag.
+
+The resulting merged change will be given an up-to-date commit message
 describing the final state of the revision in Differential.
-
-In Git, the merge occurs in a detached HEAD. The local branch
-reference (if one exists) is not updated yet.
 
 With **--hold**, execution stops here, before the change is pushed.
 
-The change is pushed into the remote.
+The change is pushed onto all of the "onto" branches in the "onto" remote.
 
-Consulting mystical sources of power, the workflow makes a guess
-about what state you wanted to end up in after the process finishes
-and the working copy is put into that state.
+If you are landing multiple changes, they are normally all merged locally and
+then all pushed in a single operation. Instead, you can merge and push them one
+at a time with **--incremental**.
 
-The branch which was landed is deleted, unless the **--keep-branch**
-flag was passed or the landing branch is the same as the target
-branch.
+Under merge strategies which mutate history (including the default "squash"
+strategy), local refs which descend from commits that were published are
+now updated. For example, if you land "feature4", local branches "feature5" and
+"feature6" may now be rebased on the published version of the change.
+
+Once everything has been pushed, cleanup occurs. Consulting mystical sources of
+power, the workflow makes a guess about what state you wanted to end up in
+after the process finishes. The working copy is put into that state.
+
+Any obsolete refs that point at commits which were published are deleted,
+unless the **--keep-branch** flag is passed.
 EOTEXT
       );
 
@@ -102,49 +131,65 @@ EOTEXT
       $this->newWorkflowArgument('hold')
         ->setHelp(
           pht(
-            'Prepare the change to be pushed, but do not actually push it.')),
+            'Prepare the changes to be pushed, but do not actually push '.
+            'them.')),
       $this->newWorkflowArgument('keep-branches')
         ->setHelp(
           pht(
             'Keep local branches around after changes are pushed. By '.
-            'default, local branches are deleted after they land.')),
+            'default, local branches are deleted after the changes they '.
+            'contain are published.')),
       $this->newWorkflowArgument('onto-remote')
         ->setParameter('remote-name')
-        ->setHelp(pht('Push to a remote other than the default.')),
-
-      // TODO: Formally allow flags to be bound to related configuration
-      // for documentation, e.g. "setRelatedConfiguration('arc.land.onto')".
-
+        ->setHelp(pht('Push to a remote other than the default.'))
+        ->addRelatedConfig('arc.land.onto-remote'),
       $this->newWorkflowArgument('onto')
         ->setParameter('branch-name')
         ->setRepeatable(true)
+        ->addRelatedConfig('arc.land.onto')
         ->setHelp(
-          pht(
-            'After merging, push changes onto a specified branch. '.
-            'Specifying this flag multiple times will push multiple '.
-            'branches.')),
+          array(
+            pht(
+              'After merging, push changes onto a specified branch.'),
+            pht(
+              'Specifying this flag multiple times will push to multiple '.
+              'branches.'),
+          )),
       $this->newWorkflowArgument('strategy')
         ->setParameter('strategy-name')
+        ->addRelatedConfig('arc.land.strategy')
         ->setHelp(
-          pht(
-            // TODO: Improve this.
-            'Merge using a particular strategy.')),
+          array(
+            pht(
+              'Merge using a particular strategy. Supported strategies are '.
+              '"squash" and "merge".'),
+            pht(
+              'The "squash" strategy collapses multiple local commits into '.
+              'a single commit when publishing. It produces a linear '.
+              'published history (but discards local checkpoint commits). '.
+              'This is the default strategy.'),
+            pht(
+              'The "merge" strategy generates a merge commit when publishing '.
+              'that retains local checkpoint commits (but produces a '.
+              'nonlinear published history). Select this strategy if you do '.
+              'not want "arc land" to discard checkpoint commits.'),
+          )),
       $this->newWorkflowArgument('revision')
         ->setParameter('revision-identifier')
         ->setHelp(
           pht(
-            'Land a specific revision, rather than determining the revisions '.
-            'from the commits that are landing.')),
+            'Land a specific revision, rather than determining revisions '.
+            'automatically from the commits that are landing.')),
       $this->newWorkflowArgument('preview')
         ->setHelp(
           pht(
-            'Shows the changes that will land. Does not modify the working '.
+            'Show the changes that will land. Does not modify the working '.
             'copy or the remote.')),
       $this->newWorkflowArgument('into')
         ->setParameter('commit-ref')
         ->setHelp(
           pht(
-            'Specifies the state to merge into. By default, this is the same '.
+            'Specify the state to merge into. By default, this is the same '.
             'as the "onto" ref.')),
       $this->newWorkflowArgument('into-remote')
         ->setParameter('remote-name')
@@ -166,13 +211,17 @@ EOTEXT
             '"into" state is not specified.')),
       $this->newWorkflowArgument('incremental')
         ->setHelp(
-          pht(
-            'When landing multiple revisions at once, push and rebase '.
-            'after each operation instead of waiting until all merges '.
-            'are completed. This is slower than the default behavior and '.
-            'not atomic, but may make it easier to resolve conflicts and '.
-            'land complicated changes by letting you make progress one '.
-            'step at a time.')),
+          array(
+            pht(
+              'When landing multiple revisions at once, push and rebase '.
+              'after each merge completes instead of waiting until all '.
+              'merges are completed to push.'),
+            pht(
+              'This is slower than the default behavior and not atomic, '.
+              'but may make it easier to resolve conflicts and land '.
+              'complicated changes by allowing you to make progress one '.
+              'step at a time.'),
+          )),
       $this->newWorkflowArgument('ref')
         ->setWildcard(true),
     );
