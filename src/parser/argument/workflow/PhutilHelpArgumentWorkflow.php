@@ -2,6 +2,17 @@
 
 final class PhutilHelpArgumentWorkflow extends PhutilArgumentWorkflow {
 
+  private $workflow;
+
+  public function setWorkflow($workflow) {
+    $this->workflow = $workflow;
+    return $this;
+  }
+
+  public function getWorkflow() {
+    return $this->workflow;
+  }
+
   protected function didConstruct() {
     $this->setName('help');
     $this->setExamples(<<<EOHELP
@@ -29,16 +40,26 @@ EOHELP
     $with = $args->getArg('help-with-what');
 
     if (!$with) {
+      // TODO: Update this to use a pager, too.
+
       $args->printHelpAndExit();
     } else {
+      $out = array();
       foreach ($with as $thing) {
-        echo phutil_console_format(
+        $out[] = phutil_console_format(
           "**%s**\n\n",
           pht('%s WORKFLOW', strtoupper($thing)));
-        echo $args->renderWorkflowHelp($thing, $show_flags = true);
-        echo "\n";
+        $out[] = $args->renderWorkflowHelp($thing, $show_flags = true);
+        $out[] = "\n";
       }
-      exit(PhutilArgumentParser::PARSE_ERROR_CODE);
+      $out = implode('', $out);
+
+      $workflow = $this->getWorkflow();
+      if ($workflow) {
+        $workflow->writeToPager($out);
+      } else {
+        echo $out;
+      }
     }
   }
 

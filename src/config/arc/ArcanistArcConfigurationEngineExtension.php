@@ -125,6 +125,18 @@ final class ArcanistArcConfigurationEngineExtension
           array(
             '["master"]',
           )),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('pager')
+        ->setDefaultValue(array())
+        ->setSummary(pht('Default pager command.'))
+        ->setHelp(
+          pht(
+            'Specify the pager command to use when displaying '.
+            'documentation.'))
+        ->setExamples(
+          array(
+            '["less", "-R", "--"]',
+          )),
       id(new ArcanistStringConfigOption())
         ->setKey('arc.land.onto-remote')
         ->setSummary(pht('Default list of "onto" remote for "arc land".'))

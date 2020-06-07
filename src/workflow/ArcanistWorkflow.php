@@ -2451,4 +2451,30 @@ abstract class ArcanistWorkflow extends Phobject {
     return $raw_uri;
   }
 
+  final public function writeToPager($corpus) {
+    $is_tty = (function_exists('posix_isatty') && posix_isatty(STDOUT));
+
+    if (!$is_tty) {
+      echo $corpus;
+    } else {
+      $pager = $this->getConfig('pager');
+
+      if (!$pager) {
+        $pager = array('less', '-R', '--');
+      }
+
+      // Try to show the content through a pager.
+      $err = id(new PhutilExecPassthru('%Ls', $pager))
+        ->write($corpus)
+        ->resolve();
+
+      // If the pager exits with an error, print the content normally.
+      if ($err) {
+        echo $corpus;
+      }
+    }
+
+    return $this;
+  }
+
 }

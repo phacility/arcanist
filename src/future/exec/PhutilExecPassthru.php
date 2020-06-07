@@ -20,6 +20,12 @@
  */
 final class PhutilExecPassthru extends PhutilExecutableFuture {
 
+  private $stdinData;
+
+  public function write($data) {
+    $this->stdinData = $data;
+    return $this;
+  }
 
 /* -(  Executing Passthru Commands  )---------------------------------------- */
 
@@ -34,7 +40,15 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
   public function execute() {
     $command = $this->getCommand();
 
-    $spec  = array(STDIN, STDOUT, STDERR);
+    $is_write = ($this->stdinData !== null);
+
+    if ($is_write) {
+      $stdin_spec = array('pipe', 'r');
+    } else {
+      $stdin_spec = STDIN;
+    }
+
+    $spec = array($stdin_spec, STDOUT, STDERR);
     $pipes = array();
 
     $unmasked_command = $command->getUnmaskedString();
@@ -81,6 +95,11 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
             $errors));
       }
     } else {
+      if ($is_write) {
+        fwrite($pipes[0], $this->stdinData);
+        fclose($pipes[0]);
+      }
+
       $err = proc_close($proc);
     }
 

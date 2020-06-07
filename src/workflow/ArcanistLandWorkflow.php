@@ -122,7 +122,7 @@ EOTEXT
 
     return $this->newWorkflowInformation()
       ->setSynopsis(pht('Publish reviewed changes.'))
-      ->addExample(pht('**land** [__options__] [__ref__ ...]'))
+      ->addExample(pht('**land** [__options__] -- [__ref__ ...]'))
       ->setHelp($help);
   }
 
