@@ -174,10 +174,9 @@ final class ArcanistGitLandEngine
           'Synchronizing "%s" from Perforce...',
           $target->getRef()));
 
-      $err = $api->execPassthru(
+      $err = $this->newPassthru(
         'p4 sync --silent --branch %s --',
         $target->getRemote().'/'.$target->getRef());
-
       if ($err) {
         throw new ArcanistUsageException(
           pht(
@@ -416,12 +415,11 @@ final class ArcanistGitLandEngine
       // fix conflicts and run "arc land" again.
       $flags_argv[] = '--conflict=quit';
 
-      $err = $api->execPassthru(
+      $err = $this->newPassthru(
         '%LR p4 submit %LR --commit %R --',
         $config_argv,
         $flags_argv,
         $into_commit);
-
       if ($err) {
         throw new ArcanistUsageException(
           pht(
@@ -435,7 +433,7 @@ final class ArcanistGitLandEngine
       pht('PUSHING'),
       pht('Pushing changes to "%s".', $this->getOntoRemote()));
 
-    $err = $api->execPassthru(
+    $err = $this->newPassthru(
       'push -- %s %Ls',
       $this->getOntoRemote(),
       $this->newOntoRefArguments($into_commit));
@@ -1298,9 +1296,7 @@ final class ArcanistGitLandEngine
     $ignore_failure = false) {
     $api = $this->getRepositoryAPI();
 
-    // TODO: Format this fetch nicely as a workflow command.
-
-    $err = $api->execPassthru(
+    $err = $this->newPassthru(
       'fetch --no-tags --quiet -- %s %s',
       $target->getRemote(),
       $target->getRef());

@@ -1548,4 +1548,20 @@ abstract class ArcanistLandEngine extends Phobject {
     return $sets;
   }
 
+  final protected function newPassthru($pattern /* , ... */) {
+    $workflow = $this->getWorkflow();
+    $argv = func_get_args();
+
+    $api = $this->getRepositoryAPI();
+
+    $passthru = call_user_func_array(
+      array($api, 'newPassthru'),
+      $argv);
+
+    $command = $workflow->newCommand($passthru)
+      ->setResolveOnError(true);
+
+    return $command->execute();
+  }
+
 }

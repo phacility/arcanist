@@ -5,6 +5,7 @@ final class ArcanistCommand
 
   private $logEngine;
   private $executableFuture;
+  private $resolveOnError = false;
 
   public function setExecutableFuture(PhutilExecutableFuture $future) {
     $this->executableFuture = $future;
@@ -24,6 +25,15 @@ final class ArcanistCommand
     return $this->logEngine;
   }
 
+  public function setResolveOnError($resolve_on_error) {
+    $this->resolveOnError = $resolve_on_error;
+    return $this;
+  }
+
+  public function getResolveOnError() {
+    return $this->resolveOnError;
+  }
+
   public function execute() {
     $log = $this->getLogEngine();
     $future = $this->getExecutableFuture();
@@ -41,7 +51,7 @@ final class ArcanistCommand
 
     $log->writeNewline();
 
-    if ($err) {
+    if ($err && !$this->getResolveOnError()) {
       $log->writeError(
         pht('ERROR'),
         pht(
@@ -55,5 +65,7 @@ final class ArcanistCommand
         '',
         '');
     }
+
+    return $err;
   }
 }

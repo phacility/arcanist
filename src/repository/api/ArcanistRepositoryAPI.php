@@ -675,6 +675,20 @@ abstract class ArcanistRepositoryAPI extends Phobject {
       ->setResolveOnError(false);
   }
 
+  public function newPassthru($pattern /* , ... */) {
+    throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+
+    $future = call_user_func_array(
+      array($this, 'newPassthru'),
+      $args);
+
+    return $future->resolve();
+  }
+
   final public function setRuntime(ArcanistRuntime $runtime) {
     $this->runtime = $runtime;
     return $this;

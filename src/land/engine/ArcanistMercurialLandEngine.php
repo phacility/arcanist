@@ -360,14 +360,14 @@ final class ArcanistMercurialLandEngine
 
     // TODO: Support bookmarks.
     // TODO: Deal with bookmark save/restore behavior.
-    // TODO: Format this nicely with passthru.
     // TODO: Raise a good error message when the ref does not exist.
 
-    $api->execPassthru(
+    $err = $this->newPassthru(
       'pull -b %s -- %s',
       $target->getRef(),
       $target->getRemote());
 
+    // TODO: Deal with errors.
     // TODO: Deal with multiple branch heads.
 
     list($stdout) = $api->execxLocal(
@@ -507,7 +507,7 @@ final class ArcanistMercurialLandEngine
 
     // TODO: This does not respect "--into" or "--onto" properly.
 
-    $api->execxLocal(
+    $this->newPassthru(
       'push --rev %s -- %s',
       hgsprintf('%s', $into_commit),
       $this->getOntoRemote());

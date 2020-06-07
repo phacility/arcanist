@@ -27,18 +27,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $future;
   }
 
-  public function execPassthru($pattern /* , ... */) {
+  public function newPassthru($pattern /* , ... */) {
     $args = func_get_args();
 
     $env = $this->getMercurialEnvironmentVariables();
 
     $args[0] = 'hg '.$args[0];
 
-    $passthru = newv('PhutilExecPassthru', $args)
+    return newv('PhutilExecPassthru', $args)
       ->setEnv($env)
       ->setCWD($this->getPath());
-
-    return $passthru->resolve();
   }
 
   public function getSourceControlSystemName() {
