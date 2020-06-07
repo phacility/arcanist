@@ -56,6 +56,12 @@ $base_args->parsePartial(
       'repeat'  => true,
     ),
     array(
+      'name'    => 'library',
+      'param'   => 'path',
+      'help'    => pht('Load a library (same as --load-phutil-library).'),
+      'repeat'  => true,
+    ),
+    array(
       'name'    => 'arcrc-file',
       'param'   => 'filename',
     ),
@@ -89,7 +95,9 @@ $force_conduit = $base_args->getArg('conduit-uri');
 $force_token = $base_args->getArg('conduit-token');
 $custom_arcrc = $base_args->getArg('arcrc-file');
 $is_anonymous = $base_args->getArg('anonymous');
-$load = $base_args->getArg('load-phutil-library');
+$load = array_merge(
+  $base_args->getArg('load-phutil-library'),
+  $base_args->getArg('library'));
 $help = $base_args->getArg('help');
 $args = array_values($base_args->getUnconsumedArgumentVector());
 
