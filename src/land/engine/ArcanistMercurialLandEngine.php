@@ -406,6 +406,7 @@ final class ArcanistMercurialLandEngine
       }
 
       $commits = phutil_split_lines($commits, false);
+      $is_first = true;
       foreach ($commits as $line) {
         if (!strlen($line)) {
           continue;
@@ -438,7 +439,12 @@ final class ArcanistMercurialLandEngine
         }
 
         $commit = $commit_map[$hash];
-        $commit->addSymbol($symbol);
+        if ($is_first) {
+          $commit->addDirectSymbol($symbol);
+          $is_first = false;
+        }
+
+        $commit->addIndirectSymbol($symbol);
       }
     }
 
@@ -607,14 +613,12 @@ final class ArcanistMercurialLandEngine
     $message = pht(
       'Holding changes locally, they have not been pushed.');
 
+    // TODO: This is only vaguely correct.
+
     $push_command = csprintf(
-      '$ hg push -- %s %Ls',
-
-      // TODO: When a parameter contains only "safe" characters, we could
-      // relax the behavior of hgsprintf().
-
+      '$ hg push --rev %s -- %s',
       hgsprintf('%s', $this->getDisplayHash($into_commit)),
-      $this->newOntoRefArguments($into_commit));
+      $this->getOntoRemote());
 
     echo tsprintf(
       "\n%!\n%s\n\n",
@@ -643,7 +647,7 @@ final class ArcanistMercurialLandEngine
     }
 
     echo tsprintf(
-      "%s\n".
+      "%s\n",
       pht(
         'Local branches and bookmarks have not been changed, and are still '.
         'in the same state as before.'));

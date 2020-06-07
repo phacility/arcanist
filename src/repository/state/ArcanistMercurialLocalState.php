@@ -5,7 +5,6 @@ final class ArcanistMercurialLocalState
 
   private $localCommit;
   private $localRef;
-  private $localPath;
 
   public function getLocalRef() {
     return $this->localRef;
@@ -17,6 +16,7 @@ final class ArcanistMercurialLocalState
 
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
+
     // TODO: Fix this.
   }
 
@@ -36,13 +36,16 @@ final class ArcanistMercurialLocalState
   }
 
   protected function canStashChanges() {
-    // Depends on stash extension.
-    return false;
+    $api = $this->getRepositoryAPI();
+    return $api->getMercurialFeature('shelve');
   }
 
   protected function getIgnoreHints() {
-    // TODO: Provide this.
-    return array();
+    return array(
+      pht(
+        'To configure Mercurial to ignore certain files in the working '.
+        'copy, add them to ".hgignore".'),
+    );
   }
 
   protected function newRestoreCommandsForDisplay() {
@@ -51,15 +54,43 @@ final class ArcanistMercurialLocalState
   }
 
   protected function saveStash() {
-    return null;
+    $api = $this->getRepositoryAPI();
+    $log = $this->getWorkflow()->getLogEngine();
+
+    $stash_ref = sprintf(
+      'arc-%s',
+      Filesystem::readRandomCharacters(12));
+
+    $api->execxLocal(
+      '--config extensions.shelve= shelve --unknown --name %s --',
+      $stash_ref);
+
+    $log->writeStatus(
+      pht('SHELVE'),
+      pht('Shelving uncommitted changes from working copy.'));
+
+    return $stash_ref;
   }
 
   protected function restoreStash($stash_ref) {
-    return null;
+    $api = $this->getRepositoryAPI();
+    $log = $this->getWorkflow()->getLogEngine();
+
+    $log->writeStatus(
+      pht('UNSHELVE'),
+      pht('Restoring uncommitted changes to working copy.'));
+
+    $api->execxLocal(
+      '--config extensions.shelve= unshelve --keep --name %s --',
+      $stash_ref);
   }
 
   protected function discardStash($stash_ref) {
-    return null;
+    $api = $this->getRepositoryAPI();
+
+    $api->execxLocal(
+      '--config extensions.shelve= shelve --delete %s --',
+      $stash_ref);
   }
 
 }

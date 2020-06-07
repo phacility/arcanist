@@ -1349,7 +1349,7 @@ final class ArcanistGitLandEngine
       }
 
       $commits = phutil_split_lines($commits, false);
-      $is_first = false;
+      $is_first = true;
       foreach ($commits as $line) {
         if (!strlen($line)) {
           continue;

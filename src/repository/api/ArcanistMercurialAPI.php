@@ -12,6 +12,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $supportsRebase;
   private $supportsPhases;
 
+  private $featureResults = array();
+  private $featureFutures = array();
+
   protected function buildLocalFuture(array $argv) {
     $env = $this->getMercurialEnvironmentVariables();
 
@@ -1165,6 +1168,58 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function newLocalState() {
     return id(new ArcanistMercurialLocalState())
       ->setRepositoryAPI($this);
+  }
+
+  public function willTestMercurialFeature($feature) {
+    $this->executeMercurialFeatureTest($feature, false);
+    return $this;
+  }
+
+  public function getMercurialFeature($feature) {
+    return $this->executeMercurialFeatureTest($feature, true);
+  }
+
+  private function executeMercurialFeatureTest($feature, $resolve) {
+    if (array_key_exists($feature, $this->featureResults)) {
+      return $this->featureResults[$feature];
+    }
+
+    if (!array_key_exists($feature, $this->featureFutures)) {
+      $future = $this->newMercurialFeatureFuture($feature);
+      $future->start();
+      $this->featureFutures[$feature] = $future;
+    }
+
+    if (!$resolve) {
+      return;
+    }
+
+    $future = $this->featureFutures[$feature];
+    $result = $this->resolveMercurialFeatureFuture($feature, $future);
+    $this->featureResults[$feature] = $result;
+
+    return $result;
+  }
+
+  private function newMercurialFeatureFuture($feature) {
+    switch ($feature) {
+      case 'shelve':
+        return $this->execFutureLocal(
+          '--config extensions.shelve= shelve --help');
+      default:
+        throw new Exception(
+          pht(
+            'Unknown Mercurial feature "%s".',
+            $feature));
+    }
+  }
+
+  private function resolveMercurialFeatureFuture($feature, $future) {
+    // By default, assume the feature is a simple capability test and the
+    // capability is present if the feature resolves without an error.
+
+    list($err) = $future->resolve();
+    return !$err;
   }
 
 

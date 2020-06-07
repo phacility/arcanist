@@ -22,7 +22,14 @@ function xsprintf_mercurial($userdata, &$pattern, &$pos, &$value, &$length) {
 
   switch ($type) {
     case 's':
-      $value = "'".addcslashes($value, "'\\")."'";
+      // If this is symbol only has "safe" alphanumeric latin characters,
+      // and is at least one character long, we can let it through without
+      // escaping it. This tends to produce more readable commands.
+      if (preg_match('(^[a-zA-Z0-9]+\z)', $value)) {
+        $value = $value;
+      } else {
+        $value = "'".addcslashes($value, "'\\")."'";
+      }
       break;
     case 'R':
       $type = 's';

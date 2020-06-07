@@ -161,9 +161,8 @@ abstract class ArcanistRepositoryLocalState
     $this->shouldRestore = false;
 
     $this->executeRestoreLocalState();
-    if ($this->stashRef !== null) {
-      $this->restoreStash($this->stashRef);
-    }
+    $this->applyStash();
+    $this->executeDiscardLocalState();
 
     return $this;
   }
@@ -171,12 +170,8 @@ abstract class ArcanistRepositoryLocalState
   final public function discardLocalState() {
     $this->shouldRestore = false;
 
+    $this->applyStash();
     $this->executeDiscardLocalState();
-    if ($this->stashRef !== null) {
-      $this->restoreStash($this->stashRef);
-      $this->discardStash($this->stashRef);
-      $this->stashRef = null;
-    }
 
     return $this;
   }
@@ -184,9 +179,9 @@ abstract class ArcanistRepositoryLocalState
   final public function __destruct() {
     if ($this->shouldRestore) {
       $this->restoreLocalState();
+    } else {
+      $this->discardLocalState();
     }
-
-    $this->discardLocalState();
   }
 
   final public function getRestoreCommandsForDisplay() {
@@ -207,6 +202,17 @@ abstract class ArcanistRepositoryLocalState
 
   protected function discardStash($ref) {
     throw new PhutilMethodNotImplementedException();
+  }
+
+  private function applyStash() {
+    if ($this->stashRef === null) {
+      return;
+    }
+    $stash_ref = $this->stashRef;
+    $this->stashRef = null;
+
+    $this->restoreStash($stash_ref);
+    $this->discardStash($stash_ref);
   }
 
   abstract protected function executeSaveLocalState();
