@@ -12,6 +12,7 @@ final class ArcanistLandCommit
   private $parentCommits;
   private $isHeadCommit;
   private $isImplicitCommit;
+  private $relatedRevisionRefs = array();
 
   private $directSymbols = array();
   private $indirectSymbols = array();
@@ -156,5 +157,14 @@ final class ArcanistLandCommit
     return null;
   }
 
+  public function setRelatedRevisionRefs(array $refs) {
+    assert_instances_of($refs, 'ArcanistRevisionRef');
+    $this->relatedRevisionRefs = $refs;
+    return $this;
+  }
+
+  public function getRelatedRevisionRefs() {
+    return $this->relatedRevisionRefs;
+  }
 
 }

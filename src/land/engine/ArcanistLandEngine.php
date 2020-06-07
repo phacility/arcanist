@@ -835,96 +835,76 @@ abstract class ArcanistLandEngine extends Phobject {
     foreach ($commit_map as $commit) {
       $hash = $commit->getHash();
       $state_ref = $state_refs[$hash];
-
       $revision_refs = $state_ref->getRevisionRefs();
-
-      // If we have several possible revisions but one of them matches the
-      // "--revision" argument, just select it. This is relatively safe and
-      // reasonable and doesn't need a warning.
-
-      if ($force_ref) {
-        if (count($revision_refs) > 1) {
-          foreach ($revision_refs as $revision_ref) {
-            if ($revision_ref->getPHID() === $force_ref->getPHID()) {
-              $revision_refs = array($revision_ref);
-              break;
-            }
-          }
-        }
-      }
-
-      if (count($revision_refs) === 1) {
-        $revision_ref = head($revision_refs);
-        $commit->setExplicitRevisionRef($revision_ref);
-        continue;
-      }
-
-      if (!$revision_refs) {
-        continue;
-      }
-
-      // TODO: If we have several refs but all but one are abandoned or closed
-      // or authored by someone else, we could guess what you mean.
-
-      $symbols = $commit->getIndirectSymbols();
-      $raw_symbols = mpull($symbols, 'getSymbol');
-      $symbol_list = implode(', ', $raw_symbols);
-      $display_hash = $this->getDisplayHash($hash);
-
-      // TODO: Include "use 'arc look --type commit abc' to figure out why"
-      // once that works?
-
-      echo tsprintf(
-        "\n%!\n%W\n\n",
-        pht('AMBIGUOUS REVISION'),
-        pht(
-          'The revision associated with commit "%s" (an ancestor of: %s) '.
-          'is ambiguous. These %s revision(s) are associated with the commit:',
-          $display_hash,
-          implode(', ', $raw_symbols),
-          phutil_count($revision_refs)));
-
-      foreach ($revision_refs as $revision_ref) {
-        echo tsprintf(
-          '%s',
-          $revision_ref->newDisplayRef());
-      }
-
-      echo tsprintf("\n");
-
-      throw new PhutilArgumentUsageException(
-        pht(
-          'Revision for commit "%s" is ambiguous. Use "--revision" to force '.
-          'selection of a particular revision.',
-          $display_hash));
+      $commit->setRelatedRevisionRefs($revision_refs);
     }
 
-    if ($force_ref) {
-      $phid_map = array();
-      foreach ($commit_map as $commit) {
-        $explicit_ref = $commit->getExplicitRevisionRef();
-        if ($explicit_ref) {
-          $revision_phid = $explicit_ref->getPHID();
-          $phid_map[$revision_phid] = $revision_phid;
-        }
+    // For commits which have exactly one related revision, select it now.
+
+    foreach ($commit_map as $commit) {
+      $revision_refs = $commit->getRelatedRevisionRefs();
+
+      if (count($revision_refs) !== 1) {
+        continue;
       }
 
+      $revision_ref = head($revision_refs);
+      $commit->setExplicitRevisionRef($revision_ref);
+    }
+
+    // If we have a "--revision", select that revision for any commits with
+    // no known related revisions.
+
+    // Also select that revision for any commits which have several possible
+    // revisions including that revision. This is relatively safe and
+    // reasonable and doesn't require a warning.
+
+    if ($force_ref) {
+      $force_phid = $force_ref->getPHID();
+      foreach ($commit_map as $commit) {
+        if ($commit->getExplicitRevisionRef()) {
+          continue;
+        }
+
+        $revision_refs = $commit->getRelatedRevisionRefs();
+
+        if ($revision_refs) {
+          $revision_refs = mpull($revision_refs, null, 'getPHID');
+          if (!isset($revision_refs[$force_phid])) {
+            continue;
+          }
+        }
+
+        $commit->setExplicitRevisionRef($force_ref);
+      }
+    }
+
+    // If we have a "--revision", identify any commits which it is not yet
+    // selected for. These are commits which are not associated with the
+    // identified revision but are associated with one or more other revisions.
+
+    if ($force_ref) {
       $force_phid = $force_ref->getPHID();
 
-      // If none of the commits have a revision, forcing the revision is
-      // reasonable and we don't need to confirm it.
+      $confirm_force = array();
+      foreach ($commit_map as $key => $commit) {
+        $revision_ref = $commit->getExplicitRevisionRef();
 
-      // If some of the commits have a revision, but it's the same as the
-      // revision we're forcing, forcing the revision is also reasonable.
+        if (!$revision_ref) {
+          continue;
+        }
 
-      // Discard the revision we're trying to force, then check if there's
-      // anything left. If some of the commits have a different revision,
-      // make sure the user is really doing what they expect.
+        if ($revision_ref->getPHID() === $force_phid) {
+          continue;
+        }
 
-      unset($phid_map[$force_phid]);
+        $confirm_force[] = $commit;
+      }
 
-      if ($phid_map) {
+      if ($confirm_force) {
+
         // TODO: Make this more clear.
+        // TODO: Show all the commits.
 
         throw new PhutilArgumentUsageException(
           pht(
@@ -933,10 +913,73 @@ abstract class ArcanistLandEngine extends Phobject {
             'ALL these commits wiht a different unrelated revision???'));
       }
 
-      foreach ($commit_map as $commit) {
+      foreach ($confirm_force as $commit) {
         $commit->setExplicitRevisionRef($force_ref);
       }
     }
+
+    // Finally, raise an error if we're left with ambiguous revisions. This
+    // happens when we have no "--revision" and some commits in the range
+    // that are associated with more than one revision.
+
+    $ambiguous = array();
+    foreach ($commit_map as $commit) {
+      if ($commit->getExplicitRevisionRef()) {
+        continue;
+      }
+
+      if (!$commit->getRelatedRevisionRefs()) {
+        continue;
+      }
+
+      $ambiguous[] = $commit;
+    }
+
+    if ($ambiguous) {
+      foreach ($ambiguous as $commit) {
+        $symbols = $commit->getIndirectSymbols();
+        $raw_symbols = mpull($symbols, 'getSymbol');
+        $symbol_list = implode(', ', $raw_symbols);
+        $display_hash = $this->getDisplayHash($hash);
+
+        $revision_refs = $commit->getRelatedRevisionRefs();
+
+        // TODO: Include "use 'arc look --type commit abc' to figure out why"
+        // once that works?
+
+        // TODO: We could print all the ambiguous commits.
+
+        // TODO: Suggest "--pick" as a remedy once it exists?
+
+        echo tsprintf(
+          "\n%!\n%W\n\n",
+          pht('AMBIGUOUS REVISION'),
+          pht(
+            'The revision associated with commit "%s" (an ancestor of: %s) '.
+            'is ambiguous. These %s revision(s) are associated with the '.
+            'commit:',
+            $display_hash,
+            implode(', ', $raw_symbols),
+            phutil_count($revision_refs)));
+
+        foreach ($revision_refs as $revision_ref) {
+          echo tsprintf(
+            '%s',
+            $revision_ref->newDisplayRef());
+        }
+
+        echo tsprintf("\n");
+
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Revision for commit "%s" is ambiguous. Use "--revision" to force '.
+            'selection of a particular revision.',
+            $display_hash));
+      }
+    }
+
+    // NOTE: We may exit this method with commits that are still unassociated.
+    // These will be handled later by the "implicit commits" mechanism.
   }
 
   final protected function getDisplayHash($hash) {
