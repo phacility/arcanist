@@ -226,20 +226,18 @@ final class ArcanistGitLandEngine
     return $this->getLandTargetLocalCommit($target);
   }
 
-  private function updateWorkingCopy($into_commit) {
-    $api = $this->getRepositoryAPI();
-    if ($into_commit === null) {
-      throw new Exception('TODO: Author a new empty state.');
-    } else {
-      $api->execxLocal('checkout %s --', $into_commit);
-    }
-  }
-
   protected function executeMerge(ArcanistLandCommitSet $set, $into_commit) {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
-    $this->updateWorkingCopy($into_commit);
+    $is_empty = ($into_commit === null);
+
+    if ($is_empty) {
+      $empty_commit = ArcanistGitRawCommit::newEmptyCommit();
+      $into_commit = $api->writeRawCommit($empty_commit);
+    }
+
+    $api->execxLocal('checkout %s --', $into_commit);
 
     $commits = $set->getCommits();
     $max_commit = last($commits);
@@ -251,7 +249,8 @@ final class ArcanistGitLandEngine
     // as changes.
 
     list($changes) = $api->execxLocal(
-      'diff --no-ext-diff HEAD..%s --',
+      'diff --no-ext-diff %s..%s --',
+      $into_commit,
       $source_commit);
     $changes = trim($changes);
     if (!strlen($changes)) {
@@ -274,20 +273,30 @@ final class ArcanistGitLandEngine
         $this->getDisplayHash($source_commit),
         $max_commit->getDisplaySummary()));
 
+    $argv = array();
+    $argv[] = '--no-stat';
+    $argv[] = '--no-commit';
+
+    // When we're merging into the empty state, Git refuses to perform the
+    // merge until we tell it explicitly that we're doing something unusual.
+    if ($is_empty) {
+      $argv[] = '--allow-unrelated-histories';
+    }
+
+    if ($this->isSquashStrategy()) {
+      // NOTE: We're explicitly specifying "--ff" to override the presence
+      // of "merge.ff" options in user configuration.
+      $argv[] = '--ff';
+      $argv[] = '--squash';
+    } else {
+      $argv[] = '--no-ff';
+    }
+
+    $argv[] = '--';
+    $argv[] = $source_commit;
+
     try {
-
-      if ($this->isSquashStrategy()) {
-        // NOTE: We're explicitly specifying "--ff" to override the presence
-        // of "merge.ff" options in user configuration.
-
-        $api->execxLocal(
-          'merge --no-stat --no-commit --ff --squash -- %s',
-          $source_commit);
-      } else {
-        $api->execxLocal(
-          'merge --no-stat --no-commit --no-ff -- %s',
-          $source_commit);
-      }
+      $api->execxLocal('merge %Ls', $argv);
     } catch (CommandException $ex) {
 
       // TODO: If we previously succeeded with at least one merge, we could
@@ -340,14 +349,23 @@ final class ArcanistGitLandEngine
     list($stdout) = $api->execxLocal('rev-parse --verify %s', 'HEAD');
     $new_cursor = trim($stdout);
 
-    if ($into_commit === null) {
+    if ($is_empty) {
+      // See T12876. If we're landing into the empty state, we just did a fake
+      // merge on top of an empty commit. We're now on a commit with all of the
+      // right details except that it has an extra empty commit as a parent.
+
+      // Create a new commit which is the same as the current HEAD, except that
+      // it doesn't have the extra parent.
+
+      $raw_commit = $api->readRawCommit($new_cursor);
       if ($this->isSquashStrategy()) {
-        throw new Exception(
-          pht('TODO: Rewrite HEAD to have no parents.'));
+        $raw_commit->setParents(array());
       } else {
-        throw new Exception(
-          pht('TODO: Rewrite HEAD to have only source as a parent.'));
+        $raw_commit->setParents(array($source_commit));
       }
+      $new_cursor = $api->writeRawCommit($raw_commit);
+
+      $api->execxLocal('checkout %s --', $new_cursor);
     }
 
     return $new_cursor;
@@ -720,8 +738,13 @@ final class ArcanistGitLandEngine
     );
   }
 
-  private function didHoldChanges() {
+  protected function didHoldChanges(
+    ArcanistRepositoryLocalState $state) {
     $log = $this->getLogEngine();
+
+    // TODO: This probably needs updates.
+
+    // TODO: We should refuse "--hold" if we stash.
 
     if ($this->getIsGitPerforce()) {
       $this->writeInfo(
@@ -738,16 +761,15 @@ final class ArcanistGitLandEngine
         pht(
           'Holding change locally, it has not been pushed.'));
 
-      $push_command = csprintf(
-        '$ git push -- %R %R:%R',
-        $this->getTargetRemote(),
-        $this->mergedRef,
-        $this->getTargetOnto());
+      $push_command = 'TODO: ...';
+      // csprintf(
+      //   '$ git push -- %R %R:%R',
+      //   $this->getOntoRemote(),
+      //   $this->mergedRef,
+      //   $this->getOnto());
     }
 
-    $restore_command = csprintf(
-      '$ git checkout %R --',
-      $this->localRef);
+    $restore_command = 'TODO: ...';
 
     echo tsprintf(
       "\n%s\n\n".

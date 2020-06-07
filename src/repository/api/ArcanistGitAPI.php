@@ -1753,4 +1753,22 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       ->setRepositoryAPI($this);
   }
 
+  public function readRawCommit($hash) {
+    list($stdout) = $this->execxLocal(
+      'cat-file commit -- %s',
+      $hash);
+
+    return ArcanistGitRawCommit::newFromRawBlob($stdout);
+  }
+
+  public function writeRawCommit(ArcanistGitRawCommit $commit) {
+    $blob = $commit->getRawBlob();
+
+    $future = $this->execFutureLocal('hash-object -t commit --stdin -w');
+    $future->write($blob);
+    list($stdout) = $future->resolvex();
+
+    return trim($stdout);
+  }
+
 }

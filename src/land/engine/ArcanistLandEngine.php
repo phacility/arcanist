@@ -1266,8 +1266,8 @@ abstract class ArcanistLandEngine extends Phobject {
       }
 
       if ($is_hold) {
-        $this->didHoldChanges();
-        $this->discardLocalState();
+        $this->didHoldChanges($local_state);
+        $local_state->discardLocalState();
       } else {
         $this->reconcileLocalState($into_commit, $local_state);
       }
@@ -1275,6 +1275,7 @@ abstract class ArcanistLandEngine extends Phobject {
       // TODO: Restore this.
       // $this->getWorkflow()->askForRepositoryUpdate();
 
+      // TODO: This is misleading under "--hold".
       $log->writeSuccess(
         pht('DONE'),
         pht('Landed changes.'));
@@ -1286,7 +1287,6 @@ abstract class ArcanistLandEngine extends Phobject {
       throw $ex;
     }
   }
-
 
   protected function validateArguments() {
     $log = $this->getLogEngine();
