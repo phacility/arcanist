@@ -1361,7 +1361,7 @@ abstract class ArcanistLandEngine
     }
 
     $into = $this->getIntoArgument();
-    if ($into && ($into_empty !== null)) {
+    if ($into && $into_empty) {
       throw new PhutilArgumentUsageException(
         pht(
           'Arguments "--into" and "--into-empty" are mutually exclusive.'));

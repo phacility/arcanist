@@ -885,6 +885,11 @@ final class ArcanistGitLandEngine
             $onto_ref));
       }
     }
+
+    // TODO: Check that these refs really exist in the remote? Checking the
+    // remote is expensive and users probably rarely specify "--onto" manually,
+    // but if "arc land" creates branches without prompting when you make typos
+    // that also seems questionable.
   }
 
   protected function selectOntoRefs(array $symbols) {
@@ -1491,7 +1496,7 @@ final class ArcanistGitLandEngine
 
     foreach ($this->getOntoRefs() as $onto_ref) {
       $refspecs[] = sprintf(
-        '%s:%s',
+        '%s:refs/heads/%s',
         $this->getDisplayHash($into_commit),
         $onto_ref);
     }
