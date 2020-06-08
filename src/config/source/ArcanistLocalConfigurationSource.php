@@ -7,4 +7,12 @@ final class ArcanistLocalConfigurationSource
     return pht('Local Config File');
   }
 
+  public function isWritableConfigurationSource() {
+    return true;
+  }
+
+  public function getConfigurationSourceScope() {
+    return ArcanistConfigurationSource::SCOPE_WORKING_COPY;
+  }
+
 }

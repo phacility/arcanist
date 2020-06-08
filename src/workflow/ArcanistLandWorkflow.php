@@ -237,12 +237,13 @@ EOTEXT
       $this->newPrompt('arc.land.confirm')
         ->setDescription(
           pht(
-            'Confirms that the correct changes have been selected.')),
+            'Confirms that the correct changes have been selected to '.
+            'land.')),
       $this->newPrompt('arc.land.implicit')
         ->setDescription(
           pht(
             'Confirms that local commits which are not associated with '.
-            'a revision should land.')),
+            'a revision have been associated correctly and should land.')),
       $this->newPrompt('arc.land.unauthored')
         ->setDescription(
           pht(
@@ -267,11 +268,11 @@ EOTEXT
       $this->newPrompt('arc.land.failed-builds')
         ->setDescription(
           pht(
-            'Confirms that revisions with failed builds.')),
+            'Confirms that revisions with failed builds should land.')),
       $this->newPrompt('arc.land.ongoing-builds')
         ->setDescription(
           pht(
-            'Confirms that revisions with ongoing builds.')),
+            'Confirms that revisions with ongoing builds should land.')),
     );
   }
 

@@ -6,6 +6,7 @@ final class ArcanistArcConfigurationEngineExtension
   const EXTENSIONKEY = 'arc';
 
   const KEY_ALIASES = 'aliases';
+  const KEY_PROMPTS = 'prompts';
 
   public function newConfigurationOptions() {
     // TOOLSETS: Restore "load", and maybe this other stuff.
@@ -113,6 +114,14 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Configured command aliases. Use the "alias" workflow to define '.
             'aliases.')),
+      id(new ArcanistPromptsConfigOption())
+        ->setKey(self::KEY_PROMPTS)
+        ->setDefaultValue(array())
+        ->setSummary(pht('List of prompt responses.'))
+        ->setHelp(
+          pht(
+            'Configured prompt aliases. Use the "prompts" workflow to '.
+            'show prompts and responses.')),
       id(new ArcanistStringListConfigOption())
         ->setKey('arc.land.onto')
         ->setDefaultValue(array())

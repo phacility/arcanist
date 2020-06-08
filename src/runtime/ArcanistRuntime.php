@@ -884,7 +884,6 @@ final class ArcanistRuntime {
       $legacy[] = new ArcanistGetConfigWorkflow();
       $legacy[] = new ArcanistSetConfigWorkflow();
       $legacy[] = new ArcanistInstallCertificateWorkflow();
-      $legacy[] = new ArcanistLandWorkflow();
       $legacy[] = new ArcanistLintersWorkflow();
       $legacy[] = new ArcanistLintWorkflow();
       $legacy[] = new ArcanistListWorkflow();
