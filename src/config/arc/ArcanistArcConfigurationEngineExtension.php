@@ -22,14 +22,6 @@ final class ArcanistArcConfigurationEngineExtension
         'default' => array(),
         'example' => '["/var/arc/customlib/src"]',
       ),
-
-      'arc.feature.start.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to create the new feature branch '.
-          'off of.'),
-        'example' => '"develop"',
-      ),
       'editor' => array(
         'type' => 'string',
         'help' => pht(

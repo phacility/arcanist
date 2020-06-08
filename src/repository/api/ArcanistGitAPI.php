@@ -597,16 +597,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getCanonicalRevisionName($string) {
     $match = null;
+
     if (preg_match('/@([0-9]+)$/', $string, $match)) {
       $stdout = $this->getHashFromFromSVNRevisionNumber($match[1]);
     } else {
       list($stdout) = $this->execxLocal(
-        phutil_is_windows()
-        ? 'show -s --format=%C %s --'
-        : 'show -s --format=%s %s --',
+        'show -s --format=%s %s --',
         '%H',
         $string);
     }
+
     return rtrim($stdout);
   }
 
@@ -1056,7 +1056,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    *
    * @return list<dict<string, string>> Dictionary of branch information.
    */
-  public function getAllBranches() {
+  private function getAllBranches() {
     $field_list = array(
       '%(refname)',
       '%(objectname)',
@@ -1100,26 +1100,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     return $result;
-  }
-
-  public function getAllBranchRefs() {
-    $branches = $this->getAllBranches();
-
-    $refs = array();
-    foreach ($branches as $branch) {
-      $commit_ref = $this->newCommitRef()
-        ->setCommitHash($branch['hash'])
-        ->setTreeHash($branch['tree'])
-        ->setCommitEpoch($branch['epoch'])
-        ->attachMessage($branch['text']);
-
-      $refs[] = $this->newMarkerRef()
-        ->setName($branch['name'])
-        ->setIsActive($branch['current'])
-        ->attachCommitRef($commit_ref);
-    }
-
-    return $refs;
   }
 
   public function getBaseCommitRef() {
@@ -1782,6 +1762,5 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   protected function newMarkerRefQueryTemplate() {
     return new ArcanistGitRepositoryMarkerQuery();
   }
-
 
 }

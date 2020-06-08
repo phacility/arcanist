@@ -65,13 +65,6 @@ final class ArcanistSettings extends Phobject {
           'engine is specified by the current project.'),
         'example' => '"ExampleUnitTestEngine"',
       ),
-      'arc.feature.start.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to create the new feature branch '.
-          'off of.'),
-        'example' => '"develop"',
-      ),
       'arc.land.onto.default' => array(
         'type' => 'string',
         'help' => pht(

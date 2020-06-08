@@ -49,43 +49,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
-    $match = null;
-    if ($this->isHgSubversionRepo() &&
-        preg_match('/@([0-9]+)$/', $string, $match)) {
-      $string = hgsprintf('svnrev(%s)', $match[1]);
-    }
-
     list($stdout) = $this->execxLocal(
       'log -l 1 --template %s -r %s --',
       '{node}',
       $string);
 
-    return $stdout;
-  }
-
-  public function getHashFromFromSVNRevisionNumber($revision_id) {
-    $matches = array();
-    $string = hgsprintf('svnrev(%s)', $revision_id);
-    list($stdout) = $this->execxLocal(
-      'log -l 1 --template %s -r %s --',
-      '{node}',
-       $string);
-    if (!$stdout) {
-      throw new ArcanistUsageException(
-        pht('Cannot find the HG equivalent of %s given.', $revision_id));
-    }
-    return $stdout;
-  }
-
-
-  public function getSVNRevisionNumberFromHash($hash) {
-    $matches = array();
-    list($stdout) = $this->execxLocal(
-      'log -r %s --template {svnrev}', $hash);
-    if (!$stdout) {
-      throw new ArcanistUsageException(
-        pht('Cannot find the SVN equivalent of %s given.', $hash));
-    }
     return $stdout;
   }
 
@@ -505,53 +473,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
-  public function getAllBranches() {
-    // TODO: This is wrong, and returns bookmarks.
-
-    list($branch_info) = $this->execxLocal('bookmarks');
-    if (trim($branch_info) == 'no bookmarks set') {
-      return array();
-    }
-
-    $matches = null;
-    preg_match_all(
-      '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
-      $branch_info,
-      $matches,
-      PREG_SET_ORDER);
-
-    $return = array();
-    foreach ($matches as $match) {
-      list(, $current, $name, $hash) = $match;
-
-      list($id, $hash) = explode(':', $hash);
-
-      $return[] = array(
-        'current' => (bool)$current,
-        'name'    => rtrim($name),
-        'hash' => $hash,
-      );
-    }
-    return $return;
-  }
-
-  public function getAllBranchRefs() {
-    $branches = $this->getAllBranches();
-
-    $refs = array();
-    foreach ($branches as $branch) {
-      $commit_ref = $this->newCommitRef()
-        ->setCommitHash($branch['hash']);
-
-      $refs[] = $this->newMarkerRef()
-        ->setBranchName($branch['name'])
-        ->setIsCurrentBranch($branch['current'])
-        ->attachCommitRef($commit_ref);
-    }
-
-    return $refs;
-  }
-
   public function getBaseCommitRef() {
     $base_commit = $this->getBaseCommit();
 
@@ -937,10 +858,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   }
 
-  public function isHgSubversionRepo() {
-    return file_exists($this->getPath('.hg/svn/rev_map'));
-  }
-
   public function getSubversionInfo() {
     $info = array();
     $base_path = null;
@@ -972,133 +889,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getActiveBookmark() {
-    $bookmarks = $this->getBookmarks();
-    foreach ($bookmarks as $bookmark) {
-      if ($bookmark['is_active']) {
-        return $bookmark['name'];
-      }
+    $bookmark = $this->newMarkerRefQuery()
+      ->withMarkerTypes(ArcanistMarkerRef::TYPE_BOOKMARK)
+      ->withIsActive(true)
+      ->executeOne();
+
+    if (!$bookmark) {
+      return null;
     }
 
-    return null;
-  }
-
-  public function isBookmark($name) {
-    $bookmarks = $this->getBookmarks();
-    foreach ($bookmarks as $bookmark) {
-      if ($bookmark['name'] === $name) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public function isBranch($name) {
-    $branches = $this->getBranches();
-    foreach ($branches as $branch) {
-      if ($branch['name'] === $name) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public function getBranches() {
-    list($stdout) = $this->execxLocal('--debug branches');
-    $lines = ArcanistMercurialParser::parseMercurialBranches($stdout);
-
-    $branches = array();
-    foreach ($lines as $name => $spec) {
-      $branches[] = array(
-        'name' => $name,
-        'revision' => $spec['rev'],
-      );
-    }
-
-    return $branches;
-  }
-
-  public function getBookmarks() {
-    $bookmarks = array();
-
-    list($raw_output) = $this->execxLocal('bookmarks');
-    $raw_output = trim($raw_output);
-    if ($raw_output !== 'no bookmarks set') {
-      foreach (explode("\n", $raw_output) as $line) {
-        // example line:  * mybook               2:6b274d49be97
-        list($name, $revision) = $this->splitBranchOrBookmarkLine($line);
-
-        $is_active = false;
-        if ('*' === $name[0]) {
-          $is_active = true;
-          $name = substr($name, 2);
-        }
-
-        $bookmarks[] = array(
-          'is_active' => $is_active,
-          'name' => $name,
-          'revision' => $revision,
-        );
-      }
-    }
-
-    return $bookmarks;
-  }
-
-  public function getBookmarkCommitHash($name) {
-    // TODO: Cache this.
-
-    $bookmarks = $this->getBookmarks($name);
-    $bookmarks = ipull($bookmarks, null, 'name');
-
-    foreach ($bookmarks as $bookmark) {
-      if ($bookmark['name'] === $name) {
-        return $bookmark['revision'];
-      }
-    }
-
-    throw new Exception(pht('No bookmark "%s".', $name));
-  }
-
-  public function getBranchCommitHash($name) {
-    // TODO: Cache this.
-    // TODO: This won't work when there are multiple branch heads with the
-    // same name.
-
-    $branches = $this->getBranches($name);
-
-    $heads = array();
-    foreach ($branches as $branch) {
-      if ($branch['name'] === $name) {
-        $heads[] = $branch;
-      }
-    }
-
-    if (count($heads) === 1) {
-      return idx(head($heads), 'revision');
-    }
-
-    if (!$heads) {
-      throw new Exception(pht('No branch "%s".', $name));
-    }
-
-    throw new Exception(pht('Too many branch heads for "%s".', $name));
-  }
-
-  private function splitBranchOrBookmarkLine($line) {
-    // branches and bookmarks are printed in the format:
-    // default                 0:a5ead76cdf85 (inactive)
-    // * mybook               2:6b274d49be97
-    // this code divides the name half from the revision half
-    // it does not parse the * and (inactive) bits
-    $colon_index = strrpos($line, ':');
-    $before_colon = substr($line, 0, $colon_index);
-    $start_rev_index = strrpos($before_colon, ' ');
-    $name = substr($line, 0, $start_rev_index);
-    $rev = substr($line, $start_rev_index);
-
-    return array(trim($name), trim($rev));
+    return $bookmark->getName();
   }
 
   public function getRemoteURI() {

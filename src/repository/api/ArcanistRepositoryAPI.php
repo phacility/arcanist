@@ -369,15 +369,6 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function getAllBranches() {
-    // TODO: Implement for Mercurial/SVN and make abstract.
-    return array();
-  }
-
-  public function getAllBranchRefs() {
-    throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
   public function getBaseCommitRef() {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
