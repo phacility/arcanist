@@ -7,9 +7,19 @@ final class ArcanistMercurialLandEngine
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
-    $bookmark = $api->getActiveBookmark();
-    if ($bookmark !== null) {
+    $markers = $api->newMarkerRefQuery()
+      ->withIsActive(true)
+      ->execute();
 
+    $bookmark = null;
+    foreach ($markers as $marker) {
+      if ($marker->isBookmark()) {
+        $bookmark = $marker->getName();
+        break;
+      }
+    }
+
+    if ($bookmark !== null) {
       $log->writeStatus(
         pht('SOURCE'),
         pht(
@@ -19,50 +29,96 @@ final class ArcanistMercurialLandEngine
       return array($bookmark);
     }
 
-    $branch = $api->getBranchName();
-    if ($branch !== null) {
+    $branch = null;
+    foreach ($markers as $marker) {
+      if ($marker->isBranch()) {
+        $branch = $marker->getName();
+        break;
+      }
+    }
 
+    if ($branch !== null) {
       $log->writeStatus(
         pht('SOURCE'),
         pht(
-          'Landing the current branch, "%s".',
+          'Landing the active branch, "%s".',
           $branch));
 
       return array($branch);
     }
 
-    throw new Exception(pht('TODO: Operate on raw revision.'));
+    $commit = $api->getCanonicalRevisionName('.');
+
+    $log->writeStatus(
+      pht('SOURCE'),
+      pht(
+        'Landing the active commit, "%s".',
+        $this->getDisplayHash($commit)));
+
+    return array($commit);
   }
 
   protected function resolveSymbols(array $symbols) {
     assert_instances_of($symbols, 'ArcanistLandSymbol');
     $api = $this->getRepositoryAPI();
 
-    foreach ($symbols as $symbol) {
+    $marker_types = array(
+      ArcanistMarkerRef::TYPE_BOOKMARK,
+      ArcanistMarkerRef::TYPE_BRANCH,
+    );
+
+    $unresolved = $symbols;
+    foreach ($marker_types as $marker_type) {
+      $markers = $api->newMarkerRefQuery()
+        ->withMarkerTypes(array($marker_type))
+        ->execute();
+
+      $markers = mgroup($markers, 'getName');
+
+      foreach ($unresolved as $key =>  $symbol) {
+        $raw_symbol = $symbol->getSymbol();
+
+        $named_markers = idx($markers, $raw_symbol);
+        if (!$named_markers) {
+          continue;
+        }
+
+        if (count($named_markers) > 1) {
+          throw new PhutilArgumentUsageException(
+            pht(
+              'Symbol "%s" is ambiguous: it matches multiple markers '.
+              '(of type "%s"). Use an unambiguous identifier.',
+              $raw_symbol,
+              $marker_type));
+        }
+
+        $marker = head($named_markers);
+
+        $symbol->setCommit($marker->getCommitHash());
+
+        unset($unresolved[$key]);
+      }
+    }
+
+    foreach ($unresolved as $symbol) {
       $raw_symbol = $symbol->getSymbol();
 
-      if ($api->isBookmark($raw_symbol)) {
-        $hash = $api->getBookmarkCommitHash($raw_symbol);
-        $symbol->setCommit($hash);
-
-        // TODO: Set that this is a bookmark?
-
-        continue;
+      // TODO: This doesn't have accurate error behavior if the user provides
+      // a revset like "x::y".
+      try {
+        $commit = $api->getCanonicalRevisionName($raw_symbol);
+      } catch (CommandException $ex) {
+        $commit = null;
       }
 
-      if ($api->isBranch($raw_symbol)) {
-        $hash = $api->getBranchCommitHash($raw_symbol);
-        $symbol->setCommit($hash);
-
-        // TODO: Set that this is a branch?
-
-        continue;
+      if ($commit === null) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Symbol "%s" does not identify a bookmark, branch, or commit.',
+            $raw_symbol));
       }
 
-      throw new PhutilArgumentUsageException(
-        pht(
-          'Symbol "%s" is not a bookmark or branch name.',
-          $raw_symbol));
+      $symbol->setCommit($commit);
     }
   }
 

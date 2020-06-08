@@ -4,7 +4,8 @@ abstract class ArcanistRepositoryMarkerQuery
   extends Phobject {
 
   private $repositoryAPI;
-  private $types;
+  private $isActive;
+  private $markerTypes;
   private $commitHashes;
   private $ancestorCommitHashes;
 
@@ -17,18 +18,31 @@ abstract class ArcanistRepositoryMarkerQuery
     return $this->repositoryAPI;
   }
 
-  final public function withTypes(array $types) {
-    $this->types = array_fuse($types);
+  final public function withMarkerTypes(array $types) {
+    $this->markerTypes = array_fuse($types);
+    return $this;
+  }
+
+  final public function withIsActive($active) {
+    $this->isActive = $active;
     return $this;
   }
 
   final public function execute() {
     $markers = $this->newRefMarkers();
 
-    $types = $this->types;
+    $types = $this->markerTypes;
     if ($types !== null) {
       foreach ($markers as $key => $marker) {
         if (!isset($types[$marker->getMarkerType()])) {
+          unset($markers[$key]);
+        }
+      }
+    }
+
+    if ($this->isActive !== null) {
+      foreach ($markers as $key => $marker) {
+        if ($marker->getIsActive() !== $this->isActive) {
           unset($markers[$key]);
         }
       }
@@ -53,11 +67,11 @@ abstract class ArcanistRepositoryMarkerQuery
   }
 
   final protected function shouldQueryMarkerType($marker_type) {
-    if ($this->types === null) {
+    if ($this->markerTypes === null) {
       return true;
     }
 
-    return isset($this->types[$marker_type]);
+    return isset($this->markerTypes[$marker_type]);
   }
 
 }

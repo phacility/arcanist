@@ -109,6 +109,14 @@ final class ArcanistMarkerRef
     return $this->isActive;
   }
 
+  public function isBookmark() {
+    return ($this->getMarkerType() === self::TYPE_BOOKMARK);
+  }
+
+  public function isBranch() {
+    return ($this->getMarkerType() === self::TYPE_BRANCH);
+  }
+
   public function attachCommitRef(ArcanistCommitRef $ref) {
     return $this->attachHardpoint(self::HARDPOINT_COMMITREF, $ref);
   }

@@ -11,7 +11,7 @@ abstract class ArcanistMarkersWorkflow
     $marker_type = $this->getWorkflowMarkerType();
 
     $markers = $api->newMarkerRefQuery()
-      ->withTypes(array($marker_type))
+      ->withMarkerTypes(array($marker_type))
       ->execute();
 
     $states = array();

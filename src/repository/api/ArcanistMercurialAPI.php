@@ -59,6 +59,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       'log -l 1 --template %s -r %s --',
       '{node}',
       $string);
+
     return $stdout;
   }
 
