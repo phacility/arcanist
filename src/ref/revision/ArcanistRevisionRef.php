@@ -72,6 +72,10 @@ final class ArcanistRevisionRef
     return idxv($this->parameters, array('fields', 'status', 'name'));
   }
 
+  public function getStatusANSIColor() {
+    return idxv($this->parameters, array('fields', 'status', 'color.ansi'));
+  }
+
   public function isStatusChangesPlanned() {
     $status = $this->getStatus();
     return ($status === 'changes-planned');

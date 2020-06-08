@@ -1113,10 +1113,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         ->setCommitEpoch($branch['epoch'])
         ->attachMessage($branch['text']);
 
-      $refs[] = $this->newBranchRef()
-        ->setBranchName($branch['name'])
-        ->setRefName($branch['ref'])
-        ->setIsCurrentBranch($branch['current'])
+      $refs[] = $this->newMarkerRef()
+        ->setName($branch['name'])
+        ->setIsActive($branch['current'])
         ->attachCommitRef($commit_ref);
     }
 
@@ -1769,5 +1768,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     return trim($stdout);
   }
+
+  protected function newSupportedMarkerTypes() {
+    return array(
+      ArcanistMarkerRef::TYPE_BRANCH,
+    );
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    return new ArcanistGitRepositoryMarkerQuery();
+  }
+
 
 }

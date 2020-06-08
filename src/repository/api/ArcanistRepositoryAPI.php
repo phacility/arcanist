@@ -745,8 +745,8 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return new ArcanistCommitRef();
   }
 
-  final public function newBranchRef() {
-    return new ArcanistBranchRef();
+  final public function newMarkerRef() {
+    return new ArcanistMarkerRef();
   }
 
   final public function getLandEngine() {
@@ -761,6 +761,23 @@ abstract class ArcanistRepositoryAPI extends Phobject {
 
   protected function newLandEngine() {
     return null;
+  }
+
+  final public function getSupportedMarkerTypes() {
+    return $this->newSupportedMarkerTypes();
+  }
+
+  protected function newSupportedMarkerTypes() {
+    return array();
+  }
+
+  final public function newMarkerRefQuery() {
+    return id($this->newMarkerRefQueryTemplate())
+      ->setRepositoryAPI($this);
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
   }
 
 }

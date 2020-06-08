@@ -542,7 +542,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $commit_ref = $this->newCommitRef()
         ->setCommitHash($branch['hash']);
 
-      $refs[] = $this->newBranchRef()
+      $refs[] = $this->newMarkerRef()
         ->setBranchName($branch['name'])
         ->setIsCurrentBranch($branch['current'])
         ->attachCommitRef($commit_ref);
@@ -1190,5 +1190,15 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return !$err;
   }
 
+  protected function newSupportedMarkerTypes() {
+    return array(
+      ArcanistMarkerRef::TYPE_BRANCH,
+      ArcanistMarkerRef::TYPE_BOOKMARK,
+    );
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    return new ArcanistMercurialRepositoryMarkerQuery();
+  }
 
 }

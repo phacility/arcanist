@@ -191,7 +191,7 @@ EOHELP
         }
       }
 
-      if (!$this->getArgument('view-all') && !$branch->getIsCurrentBranch()) {
+      if (!$this->getArgument('view-all') && !$branch->getIsActive()) {
         if ($status == 'Closed' || $status == 'Abandoned') {
           continue;
         }
@@ -216,8 +216,8 @@ EOHELP
       }
 
       $out[] = array(
-        'name'      => $branch->getBranchName(),
-        'current'   => $branch->getIsCurrentBranch(),
+        'name'      => $branch->getName(),
+        'current'   => $branch->getIsActive(),
         'status'    => $status,
         'desc'      => $desc,
         'revision'  => $revision ? $revision->getID() : null,

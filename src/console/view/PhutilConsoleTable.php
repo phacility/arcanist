@@ -57,9 +57,9 @@ final class PhutilConsoleTable extends PhutilConsoleView {
 
 /* -(  Data  )--------------------------------------------------------------- */
 
-  public function addColumn($key, array $column) {
+  public function addColumn($key, array $column = array()) {
     PhutilTypeSpec::checkMap($column, array(
-      'title' => 'string',
+      'title' => 'optional string',
       'align' => 'optional string',
     ));
     $this->columns[$key] = $column;
@@ -85,6 +85,16 @@ final class PhutilConsoleTable extends PhutilConsoleView {
     return $this;
   }
 
+  public function drawRows(array $rows) {
+    $this->data = array();
+    $this->widths = array();
+
+    foreach ($rows as $row) {
+      $this->addRow($row);
+    }
+
+    return $this->draw();
+  }
 
 /* -(  Drawing  )------------------------------------------------------------ */
 
