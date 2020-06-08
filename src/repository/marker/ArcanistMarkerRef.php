@@ -1,9 +1,12 @@
 <?php
 
 final class ArcanistMarkerRef
-  extends ArcanistRef {
+  extends ArcanistRef
+  implements
+    ArcanistDisplayRefInterface {
 
-  const HARDPOINT_COMMITREF = 'commitRef';
+  const HARDPOINT_COMMITREF = 'arc.marker.commitRef';
+  const HARDPOINT_WORKINGCOPYSTATEREF = 'arc.marker.workingCopyStateRef';
 
   const TYPE_BRANCH = 'branch';
   const TYPE_BOOKMARK = 'bookmark';
@@ -13,18 +16,38 @@ final class ArcanistMarkerRef
   private $epoch;
   private $markerHash;
   private $commitHash;
+  private $displayHash;
   private $treeHash;
   private $summary;
   private $message;
   private $isActive = false;
 
   public function getRefDisplayName() {
-    return pht('Marker %s', $this->getName());
+    return $this->getDisplayRefObjectName();
+  }
+
+  public function getDisplayRefObjectName() {
+    switch ($this->getMarkerType()) {
+      case self::TYPE_BRANCH:
+        return pht('Branch "%s"', $this->getName());
+      case self::TYPE_BOOKMARK:
+        return pht('Bookmark "%s"', $this->getName());
+      default:
+        return pht('Marker "%s"', $this->getName());
+    }
+  }
+
+  public function getDisplayRefTitle() {
+    return pht(
+      '%s %s',
+      $this->getDisplayHash(),
+      $this->getSummary());
   }
 
   protected function newHardpoints() {
     return array(
       $this->newHardpoint(self::HARDPOINT_COMMITREF),
+      $this->newHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF),
     );
   }
 
@@ -63,6 +86,17 @@ final class ArcanistMarkerRef
   public function getMarkerHash() {
     return $this->markerHash;
   }
+
+  public function setDisplayHash($display_hash) {
+    $this->displayHash = $display_hash;
+    return $this;
+  }
+
+  public function getDisplayHash() {
+    return $this->displayHash;
+  }
+
+
 
   public function setCommitHash($commit_hash) {
     $this->commitHash = $commit_hash;
@@ -123,6 +157,14 @@ final class ArcanistMarkerRef
 
   public function getCommitRef() {
     return $this->getHardpoint(self::HARDPOINT_COMMITREF);
+  }
+
+  public function attachWorkingCopyStateRef(ArcanistWorkingCopyStateRef $ref) {
+    return $this->attachHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF, $ref);
+  }
+
+  public function getWorkingCopyStateRef() {
+    return $this->getHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF);
   }
 
 }

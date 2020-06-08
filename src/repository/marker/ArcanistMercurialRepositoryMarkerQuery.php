@@ -100,6 +100,7 @@ final class ArcanistMercurialRepositoryMarkerQuery
       }
 
       $message = $fields[4];
+      $message_lines = phutil_split_lines($message, false);
 
       $commit_ref = $api->newCommitRef()
         ->setCommitHash($node)
@@ -107,6 +108,7 @@ final class ArcanistMercurialRepositoryMarkerQuery
 
       $template = id(new ArcanistMarkerRef())
         ->setCommitHash($node)
+        ->setSummary(head($message_lines))
         ->attachCommitRef($commit_ref);
 
       if ($is_bookmarks) {

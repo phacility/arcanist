@@ -6,6 +6,7 @@ abstract class ArcanistRepositoryMarkerQuery
   private $repositoryAPI;
   private $isActive;
   private $markerTypes;
+  private $names;
   private $commitHashes;
   private $ancestorCommitHashes;
 
@@ -23,18 +24,60 @@ abstract class ArcanistRepositoryMarkerQuery
     return $this;
   }
 
+  final public function withNames(array $names) {
+    $this->names = array_fuse($names);
+    return $this;
+  }
+
   final public function withIsActive($active) {
     $this->isActive = $active;
     return $this;
   }
 
+  final public function executeOne() {
+    $markers = $this->execute();
+
+    if (!$markers) {
+      return null;
+    }
+
+    if (count($markers) > 1) {
+      throw new Exception(
+        pht(
+          'Query matched multiple markers, expected zero or one.'));
+    }
+
+    return head($markers);
+  }
+
   final public function execute() {
     $markers = $this->newRefMarkers();
+
+    $api = $this->getRepositoryAPI();
+    foreach ($markers as $marker) {
+      $state_ref = id(new ArcanistWorkingCopyStateRef())
+        ->setCommitRef($marker->getCommitRef());
+
+      $marker->attachWorkingCopyStateRef($state_ref);
+
+      $hash = $marker->getCommitHash();
+      $hash = $api->getDisplayHash($hash);
+      $marker->setDisplayHash($hash);
+    }
 
     $types = $this->markerTypes;
     if ($types !== null) {
       foreach ($markers as $key => $marker) {
         if (!isset($types[$marker->getMarkerType()])) {
+          unset($markers[$key]);
+        }
+      }
+    }
+
+    $names = $this->names;
+    if ($names !== null) {
+      foreach ($markers as $key => $marker) {
+        if (!isset($names[$marker->getName()])) {
           unset($markers[$key]);
         }
       }
@@ -47,6 +90,7 @@ abstract class ArcanistRepositoryMarkerQuery
         }
       }
     }
+
 
     return $this->sortMarkers($markers);
   }

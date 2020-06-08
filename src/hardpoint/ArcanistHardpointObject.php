@@ -5,6 +5,12 @@ abstract class ArcanistHardpointObject
 
   private $hardpointList;
 
+  public function __clone() {
+    if ($this->hardpointList) {
+      $this->hardpointList = clone $this->hardpointList;
+    }
+  }
+
   final public function getHardpoint($hardpoint) {
     return $this->getHardpointList()->getHardpoint(
       $this,

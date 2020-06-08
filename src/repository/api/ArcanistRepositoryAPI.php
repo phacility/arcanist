@@ -763,6 +763,20 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return null;
   }
 
+  final public function getWorkEngine() {
+    $engine = $this->newWorkEngine();
+
+    if ($engine) {
+      $engine->setRepositoryAPI($this);
+    }
+
+    return $engine;
+  }
+
+  protected function newWorkEngine() {
+    return null;
+  }
+
   final public function getSupportedMarkerTypes() {
     return $this->newSupportedMarkerTypes();
   }
@@ -778,6 +792,10 @@ abstract class ArcanistRepositoryAPI extends Phobject {
 
   protected function newMarkerRefQueryTemplate() {
     throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function getDisplayHash($hash) {
+    return substr($hash, 0, 12);
   }
 
 }

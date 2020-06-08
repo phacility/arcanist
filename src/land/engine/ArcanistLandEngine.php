@@ -1,11 +1,7 @@
 <?php
 
-abstract class ArcanistLandEngine extends Phobject {
-
-  private $workflow;
-  private $viewer;
-  private $logEngine;
-  private $repositoryAPI;
+abstract class ArcanistLandEngine
+  extends ArcanistWorkflowEngine {
 
   private $sourceRefs;
   private $shouldHold;
@@ -32,15 +28,6 @@ abstract class ArcanistLandEngine extends Phobject {
   private $intoLocal;
 
   private $localState;
-
-  final public function setViewer($viewer) {
-    $this->viewer = $viewer;
-    return $this;
-  }
-
-  final public function getViewer() {
-    return $this->viewer;
-  }
 
   final public function setOntoRemote($onto_remote) {
     $this->ontoRemote = $onto_remote;
@@ -94,34 +81,6 @@ abstract class ArcanistLandEngine extends Phobject {
 
   final public function getIntoLocal() {
     return $this->intoLocal;
-  }
-
-  final public function setWorkflow($workflow) {
-    $this->workflow = $workflow;
-    return $this;
-  }
-
-  final public function getWorkflow() {
-    return $this->workflow;
-  }
-
-  final public function setRepositoryAPI(
-    ArcanistRepositoryAPI $repository_api) {
-    $this->repositoryAPI = $repository_api;
-    return $this;
-  }
-
-  final public function getRepositoryAPI() {
-    return $this->repositoryAPI;
-  }
-
-  final public function setLogEngine(ArcanistLogEngine $log_engine) {
-    $this->logEngine = $log_engine;
-    return $this;
-  }
-
-  final public function getLogEngine() {
-    return $this->logEngine;
   }
 
   final public function setShouldHold($should_hold) {

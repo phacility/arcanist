@@ -42,7 +42,7 @@ final class ArcanistGitLocalState
     }
 
     $log = $this->getWorkflow()->getLogEngine();
-    $log->writeStatus(pht('SAVE STATE'), $where);
+    $log->writeTrace(pht('SAVE STATE'), $where);
   }
 
   protected function executeRestoreLocalState() {

@@ -1746,6 +1746,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return new ArcanistGitLandEngine();
   }
 
+  protected function newWorkEngine() {
+    return new ArcanistGitWorkEngine();
+  }
+
   public function newLocalState() {
     return id(new ArcanistGitLocalState())
       ->setRepositoryAPI($this);

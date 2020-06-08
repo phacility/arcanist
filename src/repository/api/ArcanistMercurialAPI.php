@@ -1134,6 +1134,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return new ArcanistMercurialLandEngine();
   }
 
+  protected function newWorkEngine() {
+    return new ArcanistMercurialWorkEngine();
+  }
+
   public function newLocalState() {
     return id(new ArcanistMercurialLocalState())
       ->setRepositoryAPI($this);
