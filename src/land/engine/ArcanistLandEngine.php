@@ -269,13 +269,17 @@ abstract class ArcanistLandEngine extends Phobject {
     return $this->localState;
   }
 
+  final protected function getOntoConfigurationKey() {
+    return 'arc.land.onto';
+  }
+
   final protected function getOntoFromConfiguration() {
     $config_key = $this->getOntoConfigurationKey();
     return $this->getWorkflow()->getConfig($config_key);
   }
 
-  final protected function getOntoConfigurationKey() {
-    return 'arc.land.onto';
+  final protected function getOntoRemoteConfigurationKey() {
+    return 'arc.land.onto-remote';
   }
 
   final protected function getOntoRemoteFromConfiguration() {
@@ -283,8 +287,13 @@ abstract class ArcanistLandEngine extends Phobject {
     return $this->getWorkflow()->getConfig($config_key);
   }
 
-  final protected function getOntoRemoteConfigurationKey() {
-    return 'arc.land.onto-remote';
+  final protected function getStrategyConfigurationKey() {
+    return 'arc.land.strategy';
+  }
+
+  final protected function getStrategyFromConfiguration() {
+    $config_key = $this->getStrategyConfigurationKey();
+    return $this->getWorkflow()->getConfig($config_key);
   }
 
   final protected function confirmRevisions(array $sets) {
@@ -1457,8 +1466,7 @@ abstract class ArcanistLandEngine extends Phobject {
       return $strategy;
     }
 
-    $strategy_key = 'arc.land.strategy';
-    $strategy = $this->getWorkflow()->getConfig($strategy_key);
+    $strategy = $this->getStrategyFromConfiguration();
     if ($strategy !== null) {
       if (!isset($supported_strategies[$strategy])) {
         throw new PhutilArgumentUsageException(
@@ -1474,7 +1482,7 @@ abstract class ArcanistLandEngine extends Phobject {
         pht(
           'Merging with "%s" strategy, configured with "%s".',
           $strategy,
-          $strategy_key));
+          $this->getStrategyConfigurationKey()));
 
       return $strategy;
     }

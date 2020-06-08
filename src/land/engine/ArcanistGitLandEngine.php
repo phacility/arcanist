@@ -229,6 +229,8 @@ final class ArcanistGitLandEngine
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
+    $this->confirmLegacyStrategyConfiguration();
+
     $is_empty = ($into_commit === null);
 
     if ($is_empty) {
@@ -1427,6 +1429,52 @@ final class ArcanistGitLandEngine
     }
 
     return $refspecs;
+  }
+
+  private function confirmLegacyStrategyConfiguration() {
+    // TODO: See T13547. Remove this check in the future. This prevents users
+    // from accidentally executing a "squash" workflow under a configuration
+    // which would previously have executed a "merge" workflow.
+
+    // We're fine if we have an explicit "--strategy".
+    if ($this->getStrategyArgument() !== null) {
+      return;
+    }
+
+    // We're fine if we have an explicit "arc.land.strategy".
+    if ($this->getStrategyFromConfiguration() !== null) {
+      return;
+    }
+
+    // We're fine if "history.immutable" is not set to "true".
+    $source_list = $this->getWorkflow()->getConfigurationSourceList();
+    $config_list = $source_list->getStorageValueList('history.immutable');
+    if (!$config_list) {
+      return;
+    }
+
+    $config_value = (bool)last($config_list)->getValue();
+    if (!$config_value) {
+      return;
+    }
+
+    // We're in trouble: we would previously have selected "merge" and will
+    // now select "squash". Make sure the user knows what they're in for.
+
+    echo tsprintf(
+      "\n%!\n%W\n\n",
+      pht('MERGE STRATEGY IS AMBIGUOUS'),
+      pht(
+        'See <%s>. The default merge strategy under Git with '.
+        '"history.immutable" has changed from "merge" to "squash". Your '.
+        'configuration is ambiguous under this behavioral change. '.
+        '(Use "--strategy" or configure "arc.land.strategy" to bypass '.
+        'this check.)',
+        'https://secure.phabricator.com/T13547'));
+
+    throw new PhutilArgumentUsageException(
+      pht(
+        'Desired merge strategy is ambiguous, choose an explicit strategy.'));
   }
 
 }
