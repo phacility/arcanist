@@ -29,6 +29,7 @@ abstract class ArcanistLandEngine
 
   private $localState;
   private $hasUnpushedChanges;
+  private $pickArgument;
 
   final public function setOntoRemote($onto_remote) {
     $this->ontoRemote = $onto_remote;
@@ -73,6 +74,15 @@ abstract class ArcanistLandEngine
 
   final public function getIntoEmpty() {
     return $this->intoEmpty;
+  }
+
+  final public function setPickArgument($pick_argument) {
+    $this->pickArgument = $pick_argument;
+    return $this;
+  }
+
+  final public function getPickArgument() {
+    return $this->pickArgument;
   }
 
   final public function setIntoLocal($into_local) {
@@ -1360,6 +1370,13 @@ abstract class ArcanistLandEngine
     $strategy = $this->selectMergeStrategy();
     $this->setStrategy($strategy);
 
+    $is_pick = $this->getPickArgument();
+    if ($is_pick && !$this->isSquashStrategy()) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'You can not "--pick" changes under the "merge" strategy.'));
+    }
+
     // Build the symbol ref here (which validates the format of the symbol),
     // but don't load the object until later on when we're sure we actually
     // need it, since loading it requires a relatively expensive Conduit call.
@@ -1486,16 +1503,7 @@ abstract class ArcanistLandEngine
           continue;
         }
 
-        $symbols = null;
-        foreach ($set->getCommits() as $commit) {
-          $commit_symbols = $commit->getDirectSymbols();
-          if ($commit_symbols) {
-            $symbols = $commit_symbols;
-            break;
-          }
-        }
-
-        if ($symbols) {
+        if ($set->hasDirectSymbols()) {
           continue;
         }
 
@@ -1523,6 +1531,18 @@ abstract class ArcanistLandEngine
     // outdated set of commits. We should look in local branches for a better
     // set of commits, and try to confirm that the state we're about to land
     // is the current state in Differential.
+
+    $is_pick = $this->getPickArgument();
+    if ($is_pick) {
+      foreach ($sets as $key => $set) {
+        if ($set->hasDirectSymbols()) {
+          $set->setIsPick(true);
+          continue;
+        }
+
+        unset($sets[$key]);
+      }
+    }
 
     return $sets;
   }

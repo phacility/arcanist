@@ -5,6 +5,7 @@ final class ArcanistLandCommitSet
 
   private $revisionRef;
   private $commits;
+  private $isPick;
 
   public function setRevisionRef(ArcanistRevisionRef $revision_ref) {
     $this->revisionRef = $revision_ref;
@@ -47,6 +48,25 @@ final class ArcanistLandCommitSet
     }
 
     return false;
+  }
+
+  public function hasDirectSymbols() {
+    foreach ($this->commits as $commit) {
+      if ($commit->getDirectSymbols()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public function setIsPick($is_pick) {
+    $this->isPick = $is_pick;
+    return $this;
+  }
+
+  public function getIsPick() {
+    return $this->isPick;
   }
 
 }

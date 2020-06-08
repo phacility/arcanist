@@ -32,7 +32,9 @@ name, a bookmark name, a topic name, a raw commit hash, a symbolic reference,
 etc.
 
 When you provide a __ref__, all unpublished changes which are present in
-ancestors of that __ref__ will be selected for publishing.
+ancestors of that __ref__ will be selected for publishing. (With the
+**--pick** flag, only the unpublished changes you directly reference will be
+selected.)
 
 For example, if you provide local branch "feature3" as a __ref__ argument, that
 may also select the changes in "feature1" and "feature2" (if they are ancestors
@@ -222,6 +224,11 @@ EOTEXT
               'complicated changes by allowing you to make progress one '.
               'step at a time.'),
           )),
+      $this->newWorkflowArgument('pick')
+        ->setHelp(
+          pht(
+            'Land only the changes directly named by arguments, instead '.
+            'of all reachable ancestors.')),
       $this->newWorkflowArgument('ref')
         ->setWildcard(true),
     );
@@ -308,6 +315,7 @@ EOTEXT
 
     $revision = $this->getArgument('revision');
     $strategy = $this->getArgument('strategy');
+    $pick = $this->getArgument('pick');
 
     $land_engine
       ->setViewer($this->getViewer())
@@ -324,6 +332,7 @@ EOTEXT
       ->setIntoEmptyArgument($into_empty)
       ->setIntoLocalArgument($into_local)
       ->setIntoArgument($into)
+      ->setPickArgument($pick)
       ->setIsIncremental($is_incremental)
       ->setRevisionSymbol($revision);
 

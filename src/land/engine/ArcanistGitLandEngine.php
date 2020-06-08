@@ -122,6 +122,7 @@ final class ArcanistGitLandEngine
       return;
     }
 
+    $min_commit = head($set->getCommits())->getHash();
     $old_commit = last($set->getCommits())->getHash();
     $new_commit = $into_commit;
 
@@ -143,17 +144,38 @@ final class ArcanistGitLandEngine
           'Rebasing "%s" onto landed state...',
           $branch_name));
 
+      // If we used "--pick" to select this commit, we want to rebase branches
+      // that descend from it onto its ancestor, not onto the landed change.
+
+      // For example, if the change sequence was "W", "X", "Y", "Z" and we
+      // landed "Y" onto "master" using "--pick", we want to rebase "Z" onto
+      // "X" (so "W" and "X", which it will often depend on, are still
+      // its ancestors), not onto the new "master".
+
+      if ($set->getIsPick()) {
+        $rebase_target = $min_commit.'^';
+      } else {
+        $rebase_target = $new_commit;
+      }
+
       try {
         $api->execxLocal(
           'rebase --onto %s -- %s %s',
-          $new_commit,
+          $rebase_target,
           $old_commit,
           $branch_name);
       } catch (CommandException $ex) {
-        // TODO: If we have a stashed state or are not running in incremental
-        // mode: abort the rebase, restore the local state, and pop the stash.
-        // Otherwise, drop the user out here.
-        throw $ex;
+        $api->execManualLocal('rebase --abort');
+        $api->execManualLocal('reset --hard HEAD --');
+
+        $log->writeWarning(
+          pht('REBASE CONFLICT'),
+          pht(
+            'Branch "%s" does not rebase cleanly from "%s" onto '.
+            '"%s", skipping.',
+            $branch_name,
+            $this->getDisplayHash($old_commit),
+            $this->getDisplayHash($rebase_target)));
       }
     }
   }

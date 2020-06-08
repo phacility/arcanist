@@ -38,7 +38,7 @@ branch or bookmark that exists in the working copy. If it finds one, it will
 switch to it. If it does not find one, it will attempt to create a new branch
 or bookmark.
 
-When "arc work" creates a branch or bookmark, it will use "--start" as the
+When "arc work" creates a branch or bookmark, it will use **--start** as the
 branchpoint if it is provided. Otherwise, the current working copy state will
 serve as the starting point.
 EOHELP
