@@ -9,9 +9,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $localCommitInfo;
   private $rawDiffCache = array();
 
-  private $supportsRebase;
-  private $supportsPhases;
-
   private $featureResults = array();
   private $featureFutures = array();
 
@@ -145,19 +142,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       return $base;
     }
 
-    // Mercurial 2.1 and up have phases which indicate if something is
-    // published or not. To find which revs are outgoing, it's much
-    // faster to check the phase instead of actually checking the server.
-    if ($this->supportsPhases()) {
-      list($err, $stdout) = $this->execManualLocal(
-        'log --branch %s -r %s --style default',
-        $this->getBranchName(),
-        'draft()');
-    } else {
-      list($err, $stdout) = $this->execManualLocal(
-        'outgoing --branch %s --style default',
-        $this->getBranchName());
-    }
+    list($err, $stdout) = $this->execManualLocal(
+      'log --branch %s -r %s --style default',
+      $this->getBranchName(),
+      'draft()');
 
     if (!$err) {
       $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
@@ -506,24 +494,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     } else {
       return (strpos($stdout, 'amend') !== false);
     }
-  }
-
-  public function supportsRebase() {
-    if ($this->supportsRebase === null) {
-      list($err) = $this->execManualLocal('help rebase');
-      $this->supportsRebase = $err === 0;
-    }
-
-    return $this->supportsRebase;
-  }
-
-  public function supportsPhases() {
-    if ($this->supportsPhases === null) {
-      list($err) = $this->execManualLocal('help phase');
-      $this->supportsPhases = $err === 0;
-    }
-
-    return $this->supportsPhases;
   }
 
   public function supportsCommitRanges() {
