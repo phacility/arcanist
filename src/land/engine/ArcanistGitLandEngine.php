@@ -38,7 +38,7 @@ final class ArcanistGitLandEngine
 
       $log->writeStatus(
         pht('CLEANUP'),
-        pht('Destroying branch "%s". To recover, run:', $branch_name));
+        pht('Cleaning up branch "%s". To recover, run:', $branch_name));
 
       echo tsprintf(
         "\n    **$** %s\n\n",
@@ -238,11 +238,13 @@ final class ArcanistGitLandEngine
       $into_commit = $api->writeRawCommit($empty_commit);
     }
 
-    $api->execxLocal('checkout %s --', $into_commit);
-
     $commits = $set->getCommits();
+
+    $min_commit = head($commits);
+    $min_hash = $min_commit->getHash();
+
     $max_commit = last($commits);
-    $source_commit = $max_commit->getHash();
+    $max_hash = $max_commit->getHash();
 
     // NOTE: See T11435 for some history. See PHI1727 for a case where a user
     // modified their working copy while running "arc land". This attempts to
@@ -252,7 +254,7 @@ final class ArcanistGitLandEngine
     list($changes) = $api->execxLocal(
       'diff --no-ext-diff %s..%s --',
       $into_commit,
-      $source_commit);
+      $max_hash);
     $changes = trim($changes);
     if (!strlen($changes)) {
 
@@ -263,7 +265,7 @@ final class ArcanistGitLandEngine
         pht(
           'Merging local "%s" into "%s" produces an empty diff. '.
           'This usually means these changes have already landed.',
-          $this->getDisplayHash($source_commit),
+          $this->getDisplayHash($max_hash),
           $this->getDisplayHash($into_commit)));
     }
 
@@ -271,7 +273,7 @@ final class ArcanistGitLandEngine
       pht('MERGING'),
       pht(
         '%s %s',
-        $this->getDisplayHash($source_commit),
+        $this->getDisplayHash($max_hash),
         $max_commit->getDisplaySummary()));
 
     $argv = array();
@@ -294,25 +296,44 @@ final class ArcanistGitLandEngine
     }
 
     $argv[] = '--';
-    $argv[] = $source_commit;
 
+    $is_rebasing = false;
+    $is_merging = false;
     try {
+      if ($this->isSquashStrategy() && !$is_empty) {
+        // If we're performing a squash merge, we're going to rebase the
+        // commit range first. We only want to merge the specific commits
+        // in the range, and merging too much can create conflicts.
+
+        $api->execxLocal('checkout %s --', $max_hash);
+
+        $is_rebasing = true;
+        $api->execxLocal(
+          'rebase --onto %s -- %s',
+          $into_commit,
+          $min_hash.'^');
+        $is_rebasing = false;
+
+        $merge_hash = $api->getCanonicalRevisionName('HEAD');
+      } else {
+        $merge_hash = $max_hash;
+      }
+
+      $api->execxLocal('checkout %s --', $into_commit);
+
+      $argv[] = $merge_hash;
+
+      $is_merging = true;
       $api->execxLocal('merge %Ls', $argv);
+      $is_merging = false;
     } catch (CommandException $ex) {
-
-      // TODO: If we previously succeeded with at least one merge, we could
-      // provide a hint that "--incremental" can do some of the work.
-
-      $api->execManualLocal('merge --abort');
-      $api->execManualLocal('reset --hard HEAD --');
-
       $direct_symbols = $max_commit->getDirectSymbols();
       $indirect_symbols = $max_commit->getIndirectSymbols();
       if ($direct_symbols) {
         $message = pht(
           'Local commit "%s" (%s) does not merge cleanly into "%s". '.
           'Merge or rebase local changes so they can merge cleanly.',
-          $this->getDisplayHash($source_commit),
+          $this->getDisplayHash($max_hash),
           $this->getDisplaySymbols($direct_symbols),
           $this->getDisplayHash($into_commit));
       } else if ($indirect_symbols) {
@@ -320,22 +341,47 @@ final class ArcanistGitLandEngine
           'Local commit "%s" (reachable from: %s) does not merge cleanly '.
           'into "%s". Merge or rebase local changes so they can merge '.
           'cleanly.',
-          $this->getDisplayHash($source_commit),
+          $this->getDisplayHash($max_hash),
           $this->getDisplaySymbols($indirect_symbols),
           $this->getDisplayHash($into_commit));
       } else {
         $message = pht(
           'Local commit "%s" does not merge cleanly into "%s". Merge or '.
           'rebase local changes so they can merge cleanly.',
-          $this->getDisplayHash($source_commit),
+          $this->getDisplayHash($max_hash),
           $this->getDisplayHash($into_commit));
       }
 
-      throw new PhutilArgumentUsageException($message);
+      echo tsprintf(
+        "\n%!\n%W\n\n",
+        pht('MERGE CONFLICT'),
+        $message);
+
+      if ($this->getHasUnpushedChanges()) {
+        echo tsprintf(
+          "%?\n\n",
+          pht(
+            'Use "--incremental" to merge and push changes one by one.'));
+      }
+
+      if ($is_rebasing) {
+        $api->execManualLocal('rebase --abort');
+      }
+
+      if ($is_merging) {
+        $api->execManualLocal('merge --abort');
+      }
+
+      if ($is_merging || $is_rebasing) {
+        $api->execManualLocal('reset --hard HEAD --');
+      }
+
+      throw new PhutilArgumentUsageException(
+        pht('Encountered a merge conflict.'));
     }
 
     list($original_author, $original_date) = $this->getAuthorAndDate(
-      $source_commit);
+      $max_hash);
 
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
@@ -362,7 +408,7 @@ final class ArcanistGitLandEngine
       if ($this->isSquashStrategy()) {
         $raw_commit->setParents(array());
       } else {
-        $raw_commit->setParents(array($source_commit));
+        $raw_commit->setParents(array($merge_hash));
       }
       $new_cursor = $api->writeRawCommit($raw_commit);
 
