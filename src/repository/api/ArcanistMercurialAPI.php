@@ -1012,4 +1012,16 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return new ArcanistMercurialRepositoryRemoteQuery();
   }
 
+
+  public function getMercurialExtensionArguments() {
+    $path = phutil_get_library_root('arcanist');
+    $path = dirname($path);
+    $path = $path.'/support/hg/arc-hg.py';
+
+    return array(
+      '--config',
+      'extensions.arc-hg='.$path,
+    );
+  }
+
 }

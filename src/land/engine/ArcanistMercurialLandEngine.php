@@ -7,6 +7,16 @@ final class ArcanistMercurialLandEngine
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
+    // TODO: In Mercurial, you normally can not create a branch and a bookmark
+    // with the same name. However, you can fetch a branch or bookmark from
+    // a remote that has the same name as a local branch or bookmark of the
+    // other type, and end up with a local branch and bookmark with the same
+    // name. We should detect this and treat it as an error.
+
+    // TODO: In Mercurial, you can create local bookmarks named
+    // "default@default" and similar which do not surive a round trip through
+    // a remote. Possibly, we should disallow interacting with these bookmarks.
+
     $markers = $api->newMarkerRefQuery()
       ->withIsActive(true)
       ->execute();
@@ -436,27 +446,156 @@ final class ArcanistMercurialLandEngine
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
-    // TODO: Support bookmarks.
-    // TODO: Deal with bookmark save/restore behavior.
-    // TODO: Raise a good error message when the ref does not exist.
+    // See T9948. If the user specified "--into X", we don't know if it's a
+    // branch, a bookmark, or a symbol which doesn't exist yet.
+
+    // In native Mercurial it is difficult to figure this out, so we use
+    // an extension to provide a command which works like "git ls-remote".
+
+    // NOTE: We're using passthru on this because it's a remote command and
+    // may prompt the user for credentials.
+
+    // TODO: This is fairly silly/confusing to show to users in the common
+    // case where it does not require credentials, particularly because the
+    // actual command line is full of nonsense.
+
+    $tmpfile = new TempFile();
+    Filesystem::remove($tmpfile);
 
     $err = $this->newPassthru(
-      'pull -b %s -- %s',
-      $target->getRef(),
+      '%Ls arc-ls-remote --output %s -- %s',
+      $api->getMercurialExtensionArguments(),
+      phutil_string_cast($tmpfile),
       $target->getRemote());
+    if ($err) {
+      throw new Exception(
+        pht(
+          'Call to "hg arc-ls-remote" failed with error "%s".',
+          $err));
+    }
 
-    // TODO: Deal with errors.
-    // TODO: Deal with multiple branch heads.
+    $raw_data = Filesystem::readFile($tmpfile);
+    unset($tmpfile);
 
-    list($stdout) = $api->execxLocal(
-      'log --rev %s --template %s --',
-      hgsprintf(
-        'last(ancestors(%s) and !outgoing(%s))',
+    $markers = phutil_json_decode($raw_data);
+
+    $target_name = $target->getRef();
+
+    $bookmarks = array();
+    $branches = array();
+    foreach ($markers as $marker) {
+      if ($marker['name'] !== $target_name) {
+        continue;
+      }
+
+      if ($marker['type'] === 'bookmark') {
+        $bookmarks[] = $marker;
+      } else {
+        $branches[] = $marker;
+      }
+    }
+
+    if (!$bookmarks && !$branches) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Remote "%s" has no bookmark or branch named "%s".',
+          $target->getRemote(),
+          $target->getRef()));
+    }
+
+    if ($bookmarks && $branches) {
+      echo tsprintf(
+        "\n%!\n%W\n\n",
+        pht('AMBIGUOUS MARKER'),
+        pht(
+          'In remote "%s", the name "%s" identifies one or more branch '.
+          'heads and one or more bookmarks. Close, rename, or delete all '.
+          'but one of these markers, or pull the state you want to merge '.
+          'into and use "--into-local --into <hash>" to disambiguate the '.
+          'desired merge target.',
+          $target->getRemote(),
+          $target->getRef()));
+
+      throw new PhutilArgumentUsageException(
+        pht('Merge target is ambiguous.'));
+    }
+
+    $is_bookmark = false;
+    $is_branch = false;
+
+    if ($bookmarks) {
+      if (count($bookmarks) > 1) {
+        throw new Exception(
+          pht(
+            'Remote "%s" has multiple bookmarks with name "%s". This '.
+            'is unexpected.',
+            $target->getRemote(),
+            $target->getRef()));
+      }
+      $bookmark = head($bookmarks);
+
+      $target_hash = $bookmark['node'];
+      $is_bookmark = true;
+    }
+
+    if ($branches) {
+      if (count($branches) > 1) {
+        echo tsprintf(
+          "\n%!\n%W\n\n",
+          pht('MULTIPLE BRANCH HEADS'),
+          pht(
+            'Remote "%s" has multiple branch heads named "%s". Close all '.
+            'but one, or pull the head you want and use "--into-local '.
+            '--into <hash>" to specify an explicit merge target.',
+            $target->getRemote(),
+            $target->getRef()));
+
+        throw new PhutilArgumentUsageException(
+          pht(
+            'Remote branch has multiple heads.'));
+      }
+
+      $branch = head($branches);
+
+      $target_hash = $branch['node'];
+      $is_branch = true;
+    }
+
+    if ($is_branch) {
+      $err = $this->newPassthru(
+        'pull -b %s -- %s',
         $target->getRef(),
-        $target->getRemote()),
-      '{node}');
+        $target->getRemote());
+    } else {
 
-    return trim($stdout);
+      // NOTE: This may have side effects:
+      //
+      //   - It can create a "bookmark@remote" bookmark if there is a local
+      //     bookmark with the same name that is not an ancestor.
+      //   - It can create an arbitrary number of other bookmarks.
+      //
+      // Since these seem to generally be intentional behaviors in Mercurial,
+      // and should theoretically be familiar to Mercurial users, just accept
+      // them as the cost of doing business.
+
+      $err = $this->newPassthru(
+        'pull -B %s -- %s',
+        $target->getRef(),
+        $target->getRemote());
+    }
+
+    // NOTE: It's possible that between the time we ran "ls-remote" and the
+    // time we ran "pull" that the remote changed.
+
+    // It may even have been rewound or rewritten, in which case we did not
+    // actually fetch the ref we are about to return as a target. For now,
+    // assume this didn't happen: it's so unlikely that it's probably not
+    // worth spending 100ms to check.
+
+    // TODO: If the Mercurial command server is revived, this check becomes
+    // more reasonable if it's cheap.
+
+    return $target_hash;
   }
 
   protected function selectCommits($into_commit, array $symbols) {
