@@ -1,23 +1,13 @@
 <?php
 
 abstract class ArcanistRepositoryMarkerQuery
-  extends Phobject {
+  extends ArcanistRepositoryQuery {
 
-  private $repositoryAPI;
   private $isActive;
   private $markerTypes;
   private $names;
   private $commitHashes;
   private $ancestorCommitHashes;
-
-  final public function setRepositoryAPI(ArcanistRepositoryAPI $api) {
-    $this->repositoryAPI = $api;
-    return $this;
-  }
-
-  final public function getRepositoryAPI() {
-    return $this->repositoryAPI;
-  }
 
   final public function withMarkerTypes(array $types) {
     $this->markerTypes = array_fuse($types);
@@ -32,22 +22,6 @@ abstract class ArcanistRepositoryMarkerQuery
   final public function withIsActive($active) {
     $this->isActive = $active;
     return $this;
-  }
-
-  final public function executeOne() {
-    $markers = $this->execute();
-
-    if (!$markers) {
-      return null;
-    }
-
-    if (count($markers) > 1) {
-      throw new Exception(
-        pht(
-          'Query matched multiple markers, expected zero or one.'));
-    }
-
-    return head($markers);
   }
 
   final public function execute() {

@@ -785,6 +785,15 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     throw new PhutilMethodNotImplementedException();
   }
 
+  final public function newRemoteRefQuery() {
+    return id($this->newRemoteRefQueryTemplate())
+      ->setRepositoryAPI($this);
+  }
+
+  protected function newRemoteRefQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
+  }
+
   final public function getDisplayHash($hash) {
     return substr($hash, 0, 12);
   }

@@ -48,6 +48,7 @@ final class ArcanistMercurialLandEngine
     }
 
     $commit = $api->getCanonicalRevisionName('.');
+    $commit = $this->getDisplayHash($commit);
 
     $log->writeStatus(
       pht('SOURCE'),
@@ -124,9 +125,21 @@ final class ArcanistMercurialLandEngine
 
   protected function selectOntoRemote(array $symbols) {
     assert_instances_of($symbols, 'ArcanistLandSymbol');
+    $api = $this->getRepositoryAPI();
+
     $remote = $this->newOntoRemote($symbols);
 
-    // TODO: Verify this remote actually exists.
+    $remote_ref = $api->newRemoteRefQuery()
+      ->withNames(array($remote))
+      ->executeOne();
+    if (!$remote_ref) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'No remote "%s" exists in this repository.',
+          $remote));
+    }
+
+    // TODO: Allow selection of a bare URI.
 
     return $remote;
   }
@@ -261,8 +274,17 @@ final class ArcanistMercurialLandEngine
     $into = $this->getIntoRemoteArgument();
     if ($into !== null) {
 
-      // TODO: Verify that this is a valid path.
-      // TODO: Allow a raw URI?
+      $remote_ref = $api->newRemoteRefQuery()
+        ->withNames(array($into))
+        ->executeOne();
+      if (!$remote_ref) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'No remote "%s" exists in this repository.',
+            $into));
+      }
+
+      // TODO: Allow a raw URI.
 
       $this->setIntoRemote($into);
 

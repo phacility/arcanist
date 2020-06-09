@@ -902,6 +902,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getRemoteURI() {
+    // TODO: Remove this method in favor of RemoteRefQuery.
+
     list($stdout) = $this->execxLocal('paths default');
 
     $stdout = trim($stdout);
@@ -1004,6 +1006,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   protected function newMarkerRefQueryTemplate() {
     return new ArcanistMercurialRepositoryMarkerQuery();
+  }
+
+  protected function newRemoteRefQueryTemplate() {
+    return new ArcanistMercurialRepositoryRemoteQuery();
   }
 
 }

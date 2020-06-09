@@ -2036,6 +2036,8 @@ abstract class ArcanistWorkflow extends Phobject {
         'This repository has no VCS UUID (this is normal for git/hg).');
     }
 
+    // TODO: Swap this for a RemoteRefQuery.
+
     $remote_uri = $this->getRepositoryAPI()->getRemoteURI();
     if ($remote_uri !== null) {
       $query = array(
