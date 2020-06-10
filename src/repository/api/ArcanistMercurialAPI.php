@@ -980,7 +980,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     switch ($feature) {
       case 'shelve':
         return $this->execFutureLocal(
-          '--config extensions.shelve= shelve --help');
+          '--config extensions.shelve= shelve --help --');
+      case 'evolve':
+        return $this->execFutureLocal('prune --help --');
       default:
         throw new Exception(
           pht(

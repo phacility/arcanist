@@ -288,7 +288,7 @@ final class ArcanistMercurialLandEngine
         $onto_markers[] = $new_bookmark;
         $new_markers[] = $new_bookmark;
       } else {
-        $onto_markers[] = $marker;
+        $onto_markers[] = head($matches);
       }
     }
 
@@ -553,9 +553,6 @@ final class ArcanistMercurialLandEngine
         pht('Merge target is ambiguous.'));
     }
 
-    $is_bookmark = false;
-    $is_branch = false;
-
     if ($bookmarks) {
       if (count($bookmarks) > 1) {
         throw new Exception(
@@ -592,7 +589,7 @@ final class ArcanistMercurialLandEngine
       $target_marker = $branch;
     }
 
-    if ($is_branch) {
+    if ($target_marker->isBranch()) {
       $err = $this->newPassthru(
         'pull --branch %s -- %s',
         $target->getRef(),
@@ -728,7 +725,7 @@ final class ArcanistMercurialLandEngine
 
     $branch_marker = $this->ontoBranchMarker;
     if ($branch_marker) {
-      $api->execxLocal('branch -- %s', $branch_marker);
+      $api->execxLocal('branch -- %s', $branch_marker->getName());
     }
 
     try {
@@ -892,7 +889,7 @@ final class ArcanistMercurialLandEngine
       return;
     }
 
-    $strip = array();
+    $revs = array();
 
     // We've rebased all descendants already, so we can safely delete all
     // of these commits.
@@ -904,10 +901,10 @@ final class ArcanistMercurialLandEngine
       $min_commit = head($commits)->getHash();
       $max_commit = last($commits)->getHash();
 
-      $strip[] = hgsprintf('%s::%s', $min_commit, $max_commit);
+      $revs[] = hgsprintf('%s::%s', $min_commit, $max_commit);
     }
 
-    $rev_set = '('.implode(') or (', $strip).')';
+    $rev_set = '('.implode(') or (', $revs).')';
 
     // See PHI45. If we have "hg evolve", get rid of old commits using
     // "hg prune" instead of "hg strip".
@@ -916,11 +913,11 @@ final class ArcanistMercurialLandEngine
     // removes the obsolescence marker and revives the predecessor. This is
     // not desirable: we want to destroy all predecessors of these commits.
 
-    try {
+    if ($api->getMercurialFeature('evolve')) {
       $api->execxLocal(
-        '--config extensions.evolve= prune --rev %s',
+        'prune --rev %s',
         $rev_set);
-    } catch (CommandException $ex) {
+    } else {
       $api->execxLocal(
         '--config extensions.strip= strip --rev %s',
         $rev_set);
