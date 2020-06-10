@@ -455,18 +455,20 @@ final class ArcanistMercurialLandEngine
     // NOTE: We're using passthru on this because it's a remote command and
     // may prompt the user for credentials.
 
-    // TODO: This is fairly silly/confusing to show to users in the common
-    // case where it does not require credentials, particularly because the
-    // actual command line is full of nonsense.
-
     $tmpfile = new TempFile();
     Filesystem::remove($tmpfile);
 
-    $err = $this->newPassthru(
+    $command = $this->newPassthruCommand(
       '%Ls arc-ls-remote --output %s -- %s',
       $api->getMercurialExtensionArguments(),
       phutil_string_cast($tmpfile),
       $target->getRemote());
+
+    $command->setDisplayCommand(
+      'hg ls-remote -- %s',
+      $target->getRemote());
+
+    $err = $command->execute();
     if ($err) {
       throw new Exception(
         pht(

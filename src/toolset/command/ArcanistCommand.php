@@ -6,6 +6,7 @@ final class ArcanistCommand
   private $logEngine;
   private $executableFuture;
   private $resolveOnError = false;
+  private $displayCommand;
 
   public function setExecutableFuture(PhutilExecutableFuture $future) {
     $this->executableFuture = $future;
@@ -34,10 +35,27 @@ final class ArcanistCommand
     return $this->resolveOnError;
   }
 
+  public function setDisplayCommand($pattern /* , ... */) {
+    $argv = func_get_args();
+    $command = call_user_func_array('csprintf', $argv);
+    $this->displayCommand = $command;
+    return $this;
+  }
+
+  public function getDisplayCommand() {
+    return $this->displayCommand;
+  }
+
   public function execute() {
     $log = $this->getLogEngine();
     $future = $this->getExecutableFuture();
-    $command = $future->getCommand();
+
+    $display_command = $this->getDisplayCommand();
+    if ($display_command !== null) {
+      $command = $display_command;
+    } else {
+      $command = $future->getCommand();
+    }
 
     $log->writeNewline();
 
