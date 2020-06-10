@@ -280,6 +280,11 @@ EOTEXT
         ->setDescription(
           pht(
             'Confirms that revisions with ongoing builds should land.')),
+      $this->newPrompt('arc.land.create')
+        ->setDescription(
+          pht(
+            'Confirms that new branches or bookmarks should be created '.
+            'in the remote.')),
     );
   }
 

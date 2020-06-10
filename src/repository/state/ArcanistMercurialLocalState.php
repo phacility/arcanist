@@ -4,37 +4,45 @@ final class ArcanistMercurialLocalState
   extends ArcanistRepositoryLocalState {
 
   private $localCommit;
-  private $localRef;
-
-  public function getLocalRef() {
-    return $this->localRef;
-  }
-
-  public function getLocalPath() {
-    return $this->localPath;
-  }
+  private $localBranch;
 
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
+    $log = $this->getWorkflow()->getLogEngine();
 
-    // TODO: We need to save the position of "." and the current active
-    // branch, which may be any symbol at all. Both of these can be pulled
-    // from "hg arc-ls-markers".
+    // TODO: Both of these can be pulled from "hg arc-ls-markers" more
+    // efficiently.
 
+    $this->localCommit = $api->getCanonicalRevisionName('.');
+
+    list($branch) = $api->execxLocal('branch');
+    $this->localBranch = trim($branch);
+
+    $log->writeTrace(
+      pht('SAVE STATE'),
+      pht(
+        'Saving local state (at "%s" on branch "%s").',
+        $this->getDisplayHash($this->localCommit),
+        $this->localBranch));
   }
 
   protected function executeRestoreLocalState() {
     $api = $this->getRepositoryAPI();
+    $log = $this->getWorkflow()->getLogEngine();
 
-    // TODO: In Mercurial, we may want to discard commits we've created.
-    // $repository_api->execxLocal(
-    //   '--config extensions.mq= strip %s',
-    //   $this->onto);
+    $log->writeStatus(
+      pht('LOAD STATE'),
+      pht(
+        'Restoring local state (at "%s" on branch "%s").',
+        $this->getDisplayHash($this->localCommit),
+        $this->localBranch));
 
+    $api->execxLocal('update -- %s', $this->localCommit);
+    $api->execxLocal('branch --force -- %s', $this->localBranch);
   }
 
   protected function executeDiscardLocalState() {
-    // TODO: Fix this.
+    return;
   }
 
   protected function canStashChanges() {
@@ -51,8 +59,17 @@ final class ArcanistMercurialLocalState
   }
 
   protected function newRestoreCommandsForDisplay() {
-    // TODO: Provide this.
-    return array();
+    $commands = array();
+
+    $commands[] = csprintf(
+      'hg update -- %s',
+      $this->getDisplayHash($this->localCommit));
+
+    $commands[] = csprintf(
+      'hg branch --force -- %s',
+      $this->localBranch);
+
+    return $commands;
   }
 
   protected function saveStash() {

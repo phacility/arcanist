@@ -47,7 +47,6 @@ final class ArcanistGitLocalState
 
   protected function executeRestoreLocalState() {
     $api = $this->getRepositoryAPI();
-
     $log = $this->getWorkflow()->getLogEngine();
 
     $ref = $this->localRef;
@@ -161,10 +160,6 @@ final class ArcanistGitLocalState
 
   private function getDisplayStashRef($stash_ref) {
     return substr($stash_ref, 0, 12);
-  }
-
-  private function getDisplayHash($hash) {
-    return substr($hash, 0, 12);
   }
 
 }

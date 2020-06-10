@@ -89,7 +89,7 @@ final class ArcanistMercurialLandEngine
 
       $markers = mgroup($markers, 'getName');
 
-      foreach ($unresolved as $key =>  $symbol) {
+      foreach ($unresolved as $key => $symbol) {
         $raw_symbol = $symbol->getSymbol();
 
         $named_markers = idx($markers, $raw_symbol);
@@ -98,12 +98,25 @@ final class ArcanistMercurialLandEngine
         }
 
         if (count($named_markers) > 1) {
-          throw new PhutilArgumentUsageException(
+          echo tsprintf(
+            "\n%!\n%W\n\n",
+            pht('AMBIGUOUS SYMBOL'),
             pht(
               'Symbol "%s" is ambiguous: it matches multiple markers '.
               '(of type "%s"). Use an unambiguous identifier.',
               $raw_symbol,
               $marker_type));
+
+          foreach ($named_markers as $named_marker) {
+            echo tsprintf('%s', $named_marker->newDisplayRef());
+          }
+
+          echo tsprintf("\n");
+
+          throw new PhutilArgumentUsageException(
+            pht(
+              'Symbol "%s" is ambiguous.',
+              $symbol));
         }
 
         $marker = head($named_markers);
@@ -300,16 +313,58 @@ final class ArcanistMercurialLandEngine
 
       $branch_count = count($branches);
       if ($branch_count > 1) {
+        echo tsprintf(
+          "\n%!\n%W\n\n%W\n\n%W\n\n",
+          pht('MULTIPLE "ONTO" BRANCHES'),
+          pht(
+            'You have selected multiple branches to push changes onto. '.
+            'Pushing to multiple branches is not supported by "arc land" '.
+            'in Mercurial: Mercurial commits may only belong to one '.
+            'branch, so this operation can not be executed atomically.'),
+          pht(
+            'You may land one branches and any number of bookmarks in a '.
+            'single operation.'),
+          pht('These branches were selected:'));
+
+        foreach ($branches as $branch) {
+          echo tsprintf('%s', $branch->newDisplayRef());
+        }
+
+        echo tsprintf("\n");
+
         throw new PhutilArgumentUsageException(
           pht(
-            'TODO: You can not push onto multiple branches in Mercurial.'));
+            'Landing onto multiple branches at once is not supported in '.
+            'Mercurial.'));
       } else if ($branch_count) {
         $this->ontoBranchMarker = head($branches);
       }
     }
 
     if ($new_markers) {
-      // TODO: If we're creating bookmarks, ask the user to confirm.
+      echo tsprintf(
+        "\n%!\n%W\n\n",
+        pht('CREATE %s BOOKMARK(S)', phutil_count($new_markers)),
+        pht(
+          'These %s symbol(s) do not exist in the remote. They will be created '.
+          'as new bookmarks:',
+          phutil_count($new_markers)));
+
+
+      foreach ($new_markers as $new_marker) {
+        echo tsprintf('%s', $new_marker->newDisplayRef());
+      }
+
+      echo tsprintf("\n");
+
+      $query = pht(
+        'Create %s new remote bookmark(s)?',
+        phutil_count($new_markers));
+
+      $this->getWorkflow()
+        ->getPrompt('arc.land.create')
+        ->setQuery($query)
+        ->execute();
     }
 
     $this->ontoMarkers = $onto_markers;
@@ -761,6 +816,30 @@ final class ArcanistMercurialLandEngine
   protected function pushChange($into_commit) {
     $api = $this->getRepositoryAPI();
 
+    list($head, $body, $tail) = $this->newPushCommands($into_commit);
+
+    foreach ($head as $command) {
+      $api->execxLocal('%Ls', $command);
+    }
+
+    try {
+      foreach ($body as $command) {
+        $this->newPasthru('%Ls', $command);
+      }
+    } finally {
+      foreach ($tail as $command) {
+        $api->execxLocal('%Ls', $command);
+      }
+    }
+  }
+
+  private function newPushCommands($into_commit) {
+    $api = $this->getRepositoryAPI();
+
+    $head_commands = array();
+    $body_commands = array();
+    $tail_commands = array();
+
     $bookmarks = array();
     foreach ($this->ontoMarkers as $onto_marker) {
       if (!$onto_marker->isBookmark()) {
@@ -776,8 +855,8 @@ final class ArcanistMercurialLandEngine
     $restore = array();
     if ($bookmarks) {
       $markers = $api->newMarkerRefQuery()
-        ->withNames(array(mpull($bookmarks, 'getName')))
-        ->withTypes(array(ArcanistMarkerRef::TYPE_BOOKMARK))
+        ->withNames(mpull($bookmarks, 'getName'))
+        ->withMarkerTypes(array(ArcanistMarkerRef::TYPE_BOOKMARK))
         ->execute();
       $markers = mpull($markers, 'getCommitHash', 'getName');
 
@@ -791,6 +870,15 @@ final class ArcanistMercurialLandEngine
           continue;
         }
 
+        $head_commands[] = array(
+          'bookmark',
+          '--force',
+          '--rev',
+          hgsprintf('%s', $this->getDisplayHash($new_position)),
+          '--',
+          $bookmark_name,
+        );
+
         $api->execxLocal(
           'bookmark --force --rev %s -- %s',
           hgsprintf('%s', $new_position),
@@ -800,7 +888,7 @@ final class ArcanistMercurialLandEngine
       }
     }
 
-    // Now, do the actual push.
+    // Now, prepare the actual push.
 
     $argv = array();
     $argv[] = 'push';
@@ -821,23 +909,33 @@ final class ArcanistMercurialLandEngine
     $argv[] = '--';
     $argv[] = $this->getOntoRemote();
 
-    try {
-      $this->newPassthru('%Ls', $argv);
-    } finally {
-      foreach ($restore as $bookmark_name => $old_position) {
-        if ($old_position === null) {
-          $api->execxLocal(
-            'bookmark --delete -- %s',
-            $bookmark_name);
-        } else {
-          $api->execxLocal(
-            'bookmark --force --rev %s -- %s',
-            hgsprintf('%s', $old_position),
-            $bookmark_name);
-        }
+    $body_commands[] = $argv;
+
+    // Finally, restore the bookmarks.
+
+    foreach ($restore as $bookmark_name => $old_position) {
+      $tail = array();
+      $tail[] = 'bookmark';
+
+      if ($old_position === null) {
+        $tail[] = '--delete';
+      } else {
+        $tail[] = '--force';
+        $tail[] = '--rev';
+        $tail[] = hgsprintf('%s', $this->getDisplayHash($old_position));
       }
+
+      $tail[] = '--';
+      $tail[] = $bookmark_name;
+
+      $tail_commands[] = $tail;
     }
 
+    return array(
+      $head_commands,
+      $body_commands,
+      $tail_commands,
+    );
   }
 
   protected function cascadeState(ArcanistLandCommitSet $set, $into_commit) {
@@ -940,12 +1038,8 @@ final class ArcanistMercurialLandEngine
     $message = pht(
       'Holding changes locally, they have not been pushed.');
 
-    // TODO: This is only vaguely correct.
-
-    $push_command = csprintf(
-      '$ hg push --rev %s -- %s',
-      hgsprintf('%s', $this->getDisplayHash($into_commit)),
-      $this->getOntoRemote());
+    list($head, $body, $tail) = $this->newPushCommands($into_commit);
+    $commands = array_merge($head, $body, $tail);
 
     echo tsprintf(
       "\n%!\n%s\n\n",
@@ -953,9 +1047,15 @@ final class ArcanistMercurialLandEngine
       $message);
 
     echo tsprintf(
-      "%s\n\n    **%s**\n\n",
-      pht('To push changes manually, run this command:'),
-      $push_command);
+      "%s\n\n",
+      pht('To push changes manually, run these %s command(s):',
+        phutil_count($commands)));
+
+    foreach ($commands as $command) {
+      echo tsprintf('%>', csprintf('hg %Ls', $command));
+    }
+
+    echo tsprintf("\n");
 
     $restore_commands = $local_state->getRestoreCommandsForDisplay();
     if ($restore_commands) {
@@ -967,7 +1067,7 @@ final class ArcanistMercurialLandEngine
           phutil_count($restore_commands)));
 
       foreach ($restore_commands as $restore_command) {
-        echo tsprintf("    **%s**\n", $restore_command);
+        echo tsprintf('%>', $restore_command);
       }
 
       echo tsprintf("\n");
@@ -978,14 +1078,6 @@ final class ArcanistMercurialLandEngine
       pht(
         'Local branches and bookmarks have not been changed, and are still '.
         'in the same state as before.'));
-  }
-
-
-  private function newRemoteMarkers($remote) {
-    // See T9948. If the user specified "--into X" or "--onto X", we don't know
-    // if it's a branch, a bookmark, or a symbol which doesn't exist yet.
-
-
   }
 
 }
