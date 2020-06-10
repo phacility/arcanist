@@ -159,25 +159,20 @@ def remotemarkers(ui, repo, source, opts):
   source, branches = hg.parseurl(ui.expandpath(source))
   remote = hg.peer(repo, opts, source)
 
-  bundle, remotebranches, cleanup = bundlerepo.getremotechanges(
-    ui,
-    repo,
-    remote)
+  with remote.commandexecutor() as e:
+    branchmap = e.callcommand('branchmap', {}).result()
 
-  try:
-    for n in remotebranches:
-      ctx = bundle[n]
+  for branch_name in branchmap:
+    for branch_node in branchmap[branch_name]:
       markers.append({
         'type': 'branch',
-        'name': ctx.branch(),
-        'node': node.hex(ctx.node()),
+        'name': branch_name,
+        'node': node.hex(branch_node),
       })
-  finally:
-    cleanup()
 
   with remote.commandexecutor() as e:
     remotemarks = bookmarks.unhexlifybookmarks(e.callcommand('listkeys', {
-        'namespace': 'bookmarks',
+      'namespace': 'bookmarks',
     }).result())
 
   for mark in remotemarks:
