@@ -29,7 +29,7 @@ final class ArcanistBuildBuildplanHardpointQuery
       $plan_ref = ArcanistBuildPlanRef::newFromConduit($plan);
       $plan_refs[] = $plan_ref;
     }
-    $plan_refs = mpull($plan_refs, 'getPHID');
+    $plan_refs = mpull($plan_refs, null, 'getPHID');
 
     $results = array();
     foreach ($refs as $key => $build_ref) {

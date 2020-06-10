@@ -2434,7 +2434,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $stdin->read();
   }
 
-  protected function getAbsoluteURI($raw_uri) {
+  final public function getAbsoluteURI($raw_uri) {
     // TODO: "ArcanistRevisionRef", at least, may return a relative URI.
     // If we get a relative URI, guess the correct absolute URI based on
     // the Conduit URI. This might not be correct for Conduit over SSH.

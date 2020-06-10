@@ -36,10 +36,6 @@ final class ArcanistBuildableRef
     return idx($this->parameters, 'phid');
   }
 
-  public function getName() {
-    return idxv($this->parameters, array('fields', 'name'));
-  }
-
   public function getObjectPHID() {
     return idxv($this->parameters, array('fields', 'objectPHID'));
   }
@@ -53,11 +49,21 @@ final class ArcanistBuildableRef
   }
 
   public function getDisplayRefTitle() {
-    return $this->getName();
+    return pht('Buildable %d', $this->getID());
   }
 
   public function getBuildRefs() {
     return $this->getHardpoint(self::HARDPOINT_BUILDREFS);
+  }
+
+  public function getURI() {
+    $uri = idxv($this->parameters, array('fields', 'uri'));
+
+    if ($uri === null) {
+      $uri = '/'.$this->getMonogram();
+    }
+
+    return $uri;
   }
 
 }

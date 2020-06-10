@@ -635,7 +635,7 @@ abstract class ArcanistLandEngine
 
       if (!isset($build_map[$revision_phid])) {
         $build_map[$revision_phid] = array(
-          'revisionRef' => $revision_phid,
+          'revisionRef' => $revision_ref,
           'buildRefs' => array(),
         );
       }
@@ -666,14 +666,14 @@ abstract class ArcanistLandEngine
       }
 
       echo tsprintf(
-        "%!\n%s\n\n",
+        "%!\n%s\n",
         pht('BUILD FAILURES'),
         $message);
 
       $prompt_key = 'arc.land.failed-builds';
     } else if ($has_ongoing) {
       echo tsprintf(
-        "%!\n%s\n\n",
+        "%!\n%s\n",
         pht('ONGOING BUILDS'),
         pht(
           '%s revision(s) have ongoing builds:',
@@ -700,15 +700,20 @@ abstract class ArcanistLandEngine
     }
 
     echo tsprintf(
-      "\n%s\n\n",
+      "\n%s\n",
       pht('You can review build details here:'));
 
     // TODO: Only show buildables with problem builds.
 
+    $workflow = $this->getWorkflow();
+
     foreach ($buildable_refs as $buildable) {
       $display_ref = $buildable->newDisplayRef();
 
-      // TODO: Include URI here.
+      $raw_uri = $buildable->getURI();
+      $raw_uri = $workflow->getAbsoluteURI($raw_uri);
+
+      $display_ref->setURI($raw_uri);
 
       echo tsprintf('%s', $display_ref);
     }
@@ -909,7 +914,7 @@ abstract class ArcanistLandEngine
           pht(
             'TODO: You are forcing a revision, but commits are associated '.
             'with some other revision. Are you REALLY sure you want to land '.
-            'ALL these commits wiht a different unrelated revision???'));
+            'ALL these commits with a different unrelated revision???'));
       }
 
       foreach ($confirm_force as $commit) {
