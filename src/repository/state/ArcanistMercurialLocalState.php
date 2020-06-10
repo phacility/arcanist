@@ -17,12 +17,14 @@ final class ArcanistMercurialLocalState
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
 
-    // TODO: Fix this.
+    // TODO: We need to save the position of "." and the current active
+    // branch, which may be any symbol at all. Both of these can be pulled
+    // from "hg arc-ls-markers".
+
   }
 
   protected function executeRestoreLocalState() {
     $api = $this->getRepositoryAPI();
-    // TODO: Fix this.
 
     // TODO: In Mercurial, we may want to discard commits we've created.
     // $repository_api->execxLocal(

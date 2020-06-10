@@ -3,6 +3,9 @@
 final class ArcanistMercurialLandEngine
   extends ArcanistLandEngine {
 
+  private $ontoBranchMarker;
+  private $ontoMarkers;
+
   protected function getDefaultSymbols() {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
@@ -242,6 +245,8 @@ final class ArcanistMercurialLandEngine
   }
 
   protected function confirmOntoRefs(array $onto_refs) {
+    $api = $this->getRepositoryAPI();
+
     foreach ($onto_refs as $onto_ref) {
       if (!strlen($onto_ref)) {
         throw new PhutilArgumentUsageException(
@@ -251,6 +256,63 @@ final class ArcanistMercurialLandEngine
             $onto_ref));
       }
     }
+
+    $remote_ref = id(new ArcanistRemoteRef())
+      ->setRemoteName($this->getOntoRemote());
+
+    $markers = $api->newMarkerRefQuery()
+      ->withRemotes(array($remote_ref))
+      ->execute();
+
+    $onto_markers = array();
+    $new_markers = array();
+    foreach ($onto_refs as $onto_ref) {
+      $matches = array();
+      foreach ($markers as $marker) {
+        if ($marker->getName() === $onto_ref) {
+          $matches[] = $marker;
+        }
+      }
+
+      $match_count = count($matches);
+      if ($match_count > 1) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'TODO: Ambiguous ref.'));
+      } else if (!$match_count) {
+        $new_bookmark = id(new ArcanistMarkerRef())
+          ->setMarkerType(ArcanistMarkerRef::TYPE_BOOKMARK)
+          ->setName($onto_ref)
+          ->attachRemoteRef($remote_ref);
+
+        $onto_markers[] = $new_bookmark;
+        $new_markers[] = $new_bookmark;
+      } else {
+        $onto_markers[] = $marker;
+      }
+    }
+
+    $branches = array();
+    foreach ($onto_markers as $onto_marker) {
+      if ($onto_marker->isBranch()) {
+        $branches[] = $onto_marker;
+      }
+
+      $branch_count = count($branches);
+      if ($branch_count > 1) {
+        throw new PhutilArgumentUsageException(
+          pht(
+            'TODO: You can not push onto multiple branches in Mercurial.'));
+      } else if ($branch_count) {
+        $this->ontoBranchMarker = head($branches);
+      }
+    }
+
+    if ($new_markers) {
+      // TODO: If we're creating bookmarks, ask the user to confirm.
+    }
+
+    $this->ontoMarkers = $onto_markers;
   }
 
   protected function selectIntoRemote() {
@@ -366,7 +428,6 @@ final class ArcanistMercurialLandEngine
   }
 
   protected function selectIntoCommit() {
-    // Make sure that our "into" target is valid.
     $log = $this->getLogEngine();
 
     if ($this->getIntoEmpty()) {
@@ -385,7 +446,8 @@ final class ArcanistMercurialLandEngine
       $api = $this->getRepositoryAPI();
       $local_ref = $this->getIntoRef();
 
-      // TODO: This error handling could probably be cleaner.
+      // TODO: This error handling could probably be cleaner, it will just
+      // raise an exception without any context.
 
       $into_commit = $api->getCanonicalRevisionName($local_ref);
 
@@ -446,51 +508,20 @@ final class ArcanistMercurialLandEngine
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
-    // See T9948. If the user specified "--into X", we don't know if it's a
-    // branch, a bookmark, or a symbol which doesn't exist yet.
-
-    // In native Mercurial it is difficult to figure this out, so we use
-    // an extension to provide a command which works like "git ls-remote".
-
-    // NOTE: We're using passthru on this because it's a remote command and
-    // may prompt the user for credentials.
-
-    $tmpfile = new TempFile();
-    Filesystem::remove($tmpfile);
-
-    $command = $this->newPassthruCommand(
-      '%Ls arc-ls-remote --output %s -- %s',
-      $api->getMercurialExtensionArguments(),
-      phutil_string_cast($tmpfile),
-      $target->getRemote());
-
-    $command->setDisplayCommand(
-      'hg ls-remote -- %s',
-      $target->getRemote());
-
-    $err = $command->execute();
-    if ($err) {
-      throw new Exception(
-        pht(
-          'Call to "hg arc-ls-remote" failed with error "%s".',
-          $err));
-    }
-
-    $raw_data = Filesystem::readFile($tmpfile);
-    unset($tmpfile);
-
-    $markers = phutil_json_decode($raw_data);
-
     $target_name = $target->getRef();
+
+    $remote_ref = id(new ArcanistRemoteRef())
+      ->setRemoteName($target->getRemote());
+
+    $markers = $api->newMarkerRefQuery()
+      ->withRemotes(array($remote_ref))
+      ->withNames(array($target_name))
+      ->execute();
 
     $bookmarks = array();
     $branches = array();
     foreach ($markers as $marker) {
-      if ($marker['name'] !== $target_name) {
-        continue;
-      }
-
-      if ($marker['type'] === 'bookmark') {
+      if ($marker->isBookmark()) {
         $bookmarks[] = $marker;
       } else {
         $branches[] = $marker;
@@ -536,8 +567,7 @@ final class ArcanistMercurialLandEngine
       }
       $bookmark = head($bookmarks);
 
-      $target_hash = $bookmark['node'];
-      $is_bookmark = true;
+      $target_marker = $bookmark;
     }
 
     if ($branches) {
@@ -559,13 +589,12 @@ final class ArcanistMercurialLandEngine
 
       $branch = head($branches);
 
-      $target_hash = $branch['node'];
-      $is_branch = true;
+      $target_marker = $branch;
     }
 
     if ($is_branch) {
       $err = $this->newPassthru(
-        'pull -b %s -- %s',
+        'pull --branch %s -- %s',
         $target->getRef(),
         $target->getRemote());
     } else {
@@ -581,12 +610,12 @@ final class ArcanistMercurialLandEngine
       // them as the cost of doing business.
 
       $err = $this->newPassthru(
-        'pull -B %s -- %s',
+        'pull --bookmark %s -- %s',
         $target->getRef(),
         $target->getRemote());
     }
 
-    // NOTE: It's possible that between the time we ran "ls-remote" and the
+    // NOTE: It's possible that between the time we ran "ls-markers" and the
     // time we ran "pull" that the remote changed.
 
     // It may even have been rewound or rewritten, in which case we did not
@@ -597,7 +626,7 @@ final class ArcanistMercurialLandEngine
     // TODO: If the Mercurial command server is revived, this check becomes
     // more reasonable if it's cheap.
 
-    return $target_hash;
+    return $target_marker->getCommitHash();
   }
 
   protected function selectCommits($into_commit, array $symbols) {
@@ -691,6 +720,17 @@ final class ArcanistMercurialLandEngine
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
 
+    // If we're landing "--onto" a branch, set that as the branch marker
+    // before creating the new commit.
+
+    // TODO: We could skip this if we know that the "$into_commit" already
+    // has the right branch, which it will if we created it.
+
+    $branch_marker = $this->ontoBranchMarker;
+    if ($branch_marker) {
+      $api->execxLocal('branch -- %s', $branch_marker);
+    }
+
     try {
       $argv = array();
       $argv[] = '--dest';
@@ -724,12 +764,83 @@ final class ArcanistMercurialLandEngine
   protected function pushChange($into_commit) {
     $api = $this->getRepositoryAPI();
 
-    // TODO: This does not respect "--into" or "--onto" properly.
+    $bookmarks = array();
+    foreach ($this->ontoMarkers as $onto_marker) {
+      if (!$onto_marker->isBookmark()) {
+        continue;
+      }
+      $bookmarks[] = $onto_marker;
+    }
 
-    $this->newPassthru(
-      'push --rev %s -- %s',
-      hgsprintf('%s', $into_commit),
-      $this->getOntoRemote());
+    // If we're pushing to bookmarks, move all the bookmarks we want to push
+    // to the merge commit. (There doesn't seem to be any way to specify
+    // "push commit X as bookmark Y" in Mercurial.)
+
+    $restore = array();
+    if ($bookmarks) {
+      $markers = $api->newMarkerRefQuery()
+        ->withNames(array(mpull($bookmarks, 'getName')))
+        ->withTypes(array(ArcanistMarkerRef::TYPE_BOOKMARK))
+        ->execute();
+      $markers = mpull($markers, 'getCommitHash', 'getName');
+
+      foreach ($bookmarks as $bookmark) {
+        $bookmark_name = $bookmark->getName();
+
+        $old_position = idx($markers, $bookmark_name);
+        $new_position = $into_commit;
+
+        if ($old_position === $new_position) {
+          continue;
+        }
+
+        $api->execxLocal(
+          'bookmark --force --rev %s -- %s',
+          hgsprintf('%s', $new_position),
+          $bookmark_name);
+
+        $restore[$bookmark_name] = $old_position;
+      }
+    }
+
+    // Now, do the actual push.
+
+    $argv = array();
+    $argv[] = 'push';
+
+    if ($bookmarks) {
+      // If we're pushing at least one bookmark, we can just specify the list
+      // of bookmarks as things we want to push.
+      foreach ($bookmarks as $bookmark) {
+        $argv[] = '--bookmark';
+        $argv[] = $bookmark->getName();
+      }
+    } else {
+      // Otherwise, specify the commit itself.
+      $argv[] = '--rev';
+      $argv[] = hgsprintf('%s', $into_commit);
+    }
+
+    $argv[] = '--';
+    $argv[] = $this->getOntoRemote();
+
+    try {
+      $this->newPassthru('%Ls', $argv);
+    } finally {
+      foreach ($restore as $bookmark_name => $old_position) {
+        if ($old_position === null) {
+          $api->execxLocal(
+            'bookmark --delete -- %s',
+            $bookmark_name);
+        } else {
+          $api->execxLocal(
+            'bookmark --force --rev %s -- %s',
+            hgsprintf('%s', $old_position),
+            $bookmark_name);
+        }
+      }
+    }
+
   }
 
   protected function cascadeState(ArcanistLandCommitSet $set, $into_commit) {
@@ -871,4 +982,13 @@ final class ArcanistMercurialLandEngine
         'Local branches and bookmarks have not been changed, and are still '.
         'in the same state as before.'));
   }
+
+
+  private function newRemoteMarkers($remote) {
+    // See T9948. If the user specified "--into X" or "--onto X", we don't know
+    // if it's a branch, a bookmark, or a symbol which doesn't exist yet.
+
+
+  }
+
 }

@@ -3,144 +3,123 @@
 final class ArcanistMercurialRepositoryMarkerQuery
   extends ArcanistRepositoryMarkerQuery {
 
-  protected function newRefMarkers() {
-    $markers = array();
-
-    if ($this->shouldQueryMarkerType(ArcanistMarkerRef::TYPE_BRANCH)) {
-      $markers[] = $this->newBranchOrBookmarkMarkers(false);
-    }
-
-    if ($this->shouldQueryMarkerType(ArcanistMarkerRef::TYPE_BOOKMARK)) {
-      $markers[] = $this->newBranchOrBookmarkMarkers(true);
-    }
-
-    return array_mergev($markers);
+  protected function newLocalRefMarkers() {
+    return $this->newMarkers();
   }
 
-  private function newBranchOrBookmarkMarkers($is_bookmarks) {
+  protected function newRemoteRefMarkers(ArcanistRemoteRef $remote = null) {
+    return $this->newMarkers($remote);
+  }
+
+  private function newMarkers(ArcanistRemoteRef $remote = null) {
     $api = $this->getRepositoryAPI();
 
-    $is_branches = !$is_bookmarks;
+    // In native Mercurial it is difficult to identify remote markers, and
+    // complicated to identify local markers efficiently. We use an extension
+    // to provide a command which works like "git for-each-ref" locally and
+    // "git ls-remote" when given a remote.
 
-    // NOTE: This is a bit clumsy, but it allows us to get most bookmark and
-    // branch information in a single command, including full hashes, without
-    // using "--debug" or matching any human readable strings in the output.
+    $argv = array();
+    foreach ($api->getMercurialExtensionArguments() as $arg) {
+      $argv[] = $arg;
+    }
+    $argv[] = 'arc-ls-markers';
 
-    // NOTE: We can't get branches and bookmarks together in a single command
-    // because if we query for "heads() + bookmark()", we can't tell if a
-    // bookmarked result is a branch head or not.
+    // NOTE: In remote mode, we're using passthru and a tempfile on this
+    // because it's a remote command and may prompt the user to provide
+    // credentials interactively. In local mode, we can just read stdout.
 
-    $template_fields = array(
-      '{node}',
-      '{branch}',
-      '{join(bookmarks, "\3")}',
-      '{activebookmark}',
-      '{desc}',
-    );
-    $expect_fields = count($template_fields);
+    if ($remote !== null) {
+      $tmpfile = new TempFile();
+      Filesystem::remove($tmpfile);
 
-    $template = implode('\2', $template_fields).'\1';
-
-    if ($is_bookmarks) {
-      $query = hgsprintf('bookmark()');
-    } else {
-      $query = hgsprintf('head()');
+      $argv[] = '--output';
+      $argv[] = phutil_string_cast($tmpfile);
     }
 
-    $future = $api->newFuture(
-      'log --rev %s --template %s --',
-      $query,
-      $template);
+    $argv[] = '--';
 
-    list($lines) = $future->resolve();
+    if ($remote !== null) {
+      $argv[] = $remote->getRemoteName();
+    }
+
+    if ($remote !== null) {
+      $passthru = $api->newPassthru('%Ls', $argv);
+
+      $err = $passthru->execute();
+      if ($err) {
+        throw new Exception(
+          pht(
+            'Call to "hg arc-ls-markers" failed with error "%s".',
+            $err));
+      }
+
+      $raw_data = Filesystem::readFile($tmpfile);
+      unset($tmpfile);
+    } else {
+      $future = $api->newFuture('%Ls', $argv);
+      list($raw_data) = $future->resolve();
+    }
+
+    $items = phutil_json_decode($raw_data);
 
     $markers = array();
-
-    $lines = explode("\1", $lines);
-    foreach ($lines as $line) {
-      if (!strlen(trim($line))) {
+    foreach ($items as $item) {
+      if (!empty($item['isClosed'])) {
+        // NOTE: For now, we ignore closed branch heads.
         continue;
       }
 
-      $fields = explode("\2", $line, $expect_fields);
-      $actual_fields = count($fields);
-      if ($actual_fields !== $expect_fields) {
-        throw new Exception(
-          pht(
-            'Unexpected number of fields in line "%s", expected %s but '.
-            'found %s.',
-            $line,
-            new PhutilNumber($expect_fields),
-            new PhutilNumber($actual_fields)));
+      $node = $item['node'];
+      if (!$node) {
+        // NOTE: For now, we ignore the virtual "current branch" marker.
+        continue;
       }
 
-      $node = $fields[0];
-
-      $branch = $fields[1];
-      if (!strlen($branch)) {
-        $branch = 'default';
+      switch ($item['type']) {
+        case 'branch':
+          $marker_type = ArcanistMarkerRef::TYPE_BRANCH;
+          break;
+        case 'bookmark':
+          $marker_type = ArcanistMarkerRef::TYPE_BOOKMARK;
+          break;
+        case 'commit':
+          $marker_type = null;
+          break;
+        default:
+          throw new Exception(
+            pht(
+              'Call to "hg arc-ls-markers" returned marker of unknown '.
+              'type "%s".',
+              $item['type']));
       }
 
-      if ($is_bookmarks) {
-        $bookmarks = $fields[2];
-        if (strlen($bookmarks)) {
-          $bookmarks = explode("\3", $fields[2]);
-        } else {
-          $bookmarks = array();
-        }
-
-        if (strlen($fields[3])) {
-          $active_bookmark = $fields[3];
-        } else {
-          $active_bookmark = null;
-        }
-      } else {
-        $bookmarks = array();
-        $active_bookmark = null;
+      if ($marker_type === null) {
+        // NOTE: For now, we ignore the virtual "head" marker.
+        continue;
       }
-
-      $message = $fields[4];
-      $message_lines = phutil_split_lines($message, false);
 
       $commit_ref = $api->newCommitRef()
-        ->setCommitHash($node)
-        ->attachMessage($message);
+        ->setCommitHash($node);
 
-      $template = id(new ArcanistMarkerRef())
+      $marker_ref = id(new ArcanistMarkerRef())
+        ->setName($item['name'])
         ->setCommitHash($node)
-        ->setSummary(head($message_lines))
         ->attachCommitRef($commit_ref);
 
-      if ($is_bookmarks) {
-        foreach ($bookmarks as $bookmark) {
-          $is_active = ($bookmark === $active_bookmark);
+      if (isset($item['description'])) {
+        $description = $item['description'];
+        $commit_ref->attachMessage($description);
 
-          $markers[] = id(clone $template)
-            ->setMarkerType(ArcanistMarkerRef::TYPE_BOOKMARK)
-            ->setName($bookmark)
-            ->setIsActive($is_active);
-        }
+        $description_lines = phutil_split_lines($description, false);
+        $marker_ref->setSummary(head($description_lines));
       }
 
-      if ($is_branches) {
-        $markers[] = id(clone $template)
-          ->setMarkerType(ArcanistMarkerRef::TYPE_BRANCH)
-          ->setName($branch);
-      }
-    }
+      $marker_ref
+        ->setMarkerType($marker_type)
+        ->setIsActive(!empty($item['isActive']));
 
-    if ($is_branches) {
-      $current_hash = $api->getCanonicalRevisionName('.');
-
-      foreach ($markers as $marker) {
-        if ($marker->getMarkerType() !== ArcanistMarkerRef::TYPE_BRANCH) {
-          continue;
-        }
-
-        if ($marker->getCommitHash() === $current_hash) {
-          $marker->setIsActive(true);
-        }
-      }
+      $markers[] = $marker_ref;
     }
 
     return $markers;

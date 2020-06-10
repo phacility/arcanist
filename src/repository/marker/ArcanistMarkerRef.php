@@ -7,6 +7,7 @@ final class ArcanistMarkerRef
 
   const HARDPOINT_COMMITREF = 'arc.marker.commitRef';
   const HARDPOINT_WORKINGCOPYSTATEREF = 'arc.marker.workingCopyStateRef';
+  const HARDPOINT_REMOTEREF = 'arc.marker.remoteRef';
 
   const TYPE_BRANCH = 'branch';
   const TYPE_BOOKMARK = 'bookmark';
@@ -48,6 +49,7 @@ final class ArcanistMarkerRef
     return array(
       $this->newHardpoint(self::HARDPOINT_COMMITREF),
       $this->newHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF),
+      $this->newHardpoint(self::HARDPOINT_REMOTEREF),
     );
   }
 
@@ -165,6 +167,14 @@ final class ArcanistMarkerRef
 
   public function getWorkingCopyStateRef() {
     return $this->getHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF);
+  }
+
+  public function attachRemoteRef(ArcanistRemoteRef $ref = null) {
+    return $this->attachHardpoint(self::HARDPOINT_REMOTEREF, $ref);
+  }
+
+  public function getRemoteRef() {
+    return $this->getHardpoint(self::HARDPOINT_REMOTEREF);
   }
 
 }

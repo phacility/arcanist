@@ -8,6 +8,7 @@ abstract class ArcanistRepositoryMarkerQuery
   private $names;
   private $commitHashes;
   private $ancestorCommitHashes;
+  private $remotes;
 
   final public function withMarkerTypes(array $types) {
     $this->markerTypes = array_fuse($types);
@@ -19,13 +20,35 @@ abstract class ArcanistRepositoryMarkerQuery
     return $this;
   }
 
+  final public function withRemotes(array $remotes) {
+    assert_instances_of($remotes, 'ArcanistRemoteRef');
+    $this->remotes = $remotes;
+    return $this;
+  }
+
   final public function withIsActive($active) {
     $this->isActive = $active;
     return $this;
   }
 
   final public function execute() {
-    $markers = $this->newRefMarkers();
+    $remotes = $this->remotes;
+    if ($remotes !== null) {
+      $marker_lists = array();
+      foreach ($remotes as $remote) {
+        $marker_list = $this->newRemoteRefMarkers($remote);
+        foreach ($marker_list as $marker) {
+          $marker->attachRemoteRef($remote);
+        }
+        $marker_lists[] = $marker_list;
+      }
+      $markers = array_mergev($marker_lists);
+    } else {
+      $markers = $this->newLocalRefMarkers();
+      foreach ($markers as $marker) {
+        $marker->attachRemoteRef(null);
+      }
+    }
 
     $api = $this->getRepositoryAPI();
     foreach ($markers as $marker) {
@@ -65,7 +88,6 @@ abstract class ArcanistRepositoryMarkerQuery
       }
     }
 
-
     return $this->sortMarkers($markers);
   }
 
@@ -91,5 +113,8 @@ abstract class ArcanistRepositoryMarkerQuery
 
     return isset($this->markerTypes[$marker_type]);
   }
+
+  abstract protected function newLocalRefMarkers();
+  abstract protected function newRemoteRefMarkers(ArcanistRemoteRef $remote);
 
 }

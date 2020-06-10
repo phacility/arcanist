@@ -3,8 +3,7 @@
 final class ArcanistGitRepositoryMarkerQuery
   extends ArcanistRepositoryMarkerQuery {
 
-
-  protected function newRefMarkers() {
+  protected function newLocalRefMarkers() {
     $api = $this->getRepositoryAPI();
 
     $future = $this->newCurrentBranchNameFuture()->start();
@@ -120,6 +119,10 @@ final class ArcanistGitRepositoryMarkerQuery
     }
 
     return $matches[1];
+  }
+
+  protected function newRemoteRefMarkers(ArcanistRemoteRef $remote) {
+    throw new PhutilMethodNotImplementedException();
   }
 
 }
