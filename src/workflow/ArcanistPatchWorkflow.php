@@ -538,7 +538,15 @@ EOTEXT
         }
       }
       $new_branch = $this->createBranch($bundle, $has_base_revision);
+    // UBER CODE
+    } elseif ($has_base_revision) {
+      // try reseting to a base revision to properly apply change
+      if ($repository_api instanceof ArcanistGitAPI) {
+        $base_revision = $bundle->getBaseRevision();
+        $repository_api->execManualLocal("reset --hard %s", $base_revision);
+      }
     }
+    // UBER CODE END
     if (!$has_base_revision && $this->shouldApplyDependencies()) {
       $this->authenticateConduit(); // UBER CODE
       $this->applyDependencies($bundle);
