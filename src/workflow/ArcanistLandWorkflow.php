@@ -259,10 +259,10 @@ EOTEXT
         ->setDescription(
           pht(
             'Confirms that revisions with changes planned should land.')),
-      $this->newPrompt('arc.land.closed')
+      $this->newPrompt('arc.land.published')
         ->setDescription(
           pht(
-            'Confirms that revisions that are already closed should land.')),
+            'Confirms that revisions that are already published should land.')),
       $this->newPrompt('arc.land.not-accepted')
         ->setDescription(
           pht(

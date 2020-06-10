@@ -86,9 +86,9 @@ final class ArcanistRevisionRef
     return ($status === 'abandoned');
   }
 
-  public function isStatusClosed() {
+  public function isStatusPublished() {
     $status = $this->getStatus();
-    return ($status === 'closed');
+    return ($status === 'published');
   }
 
   public function isStatusAccepted() {

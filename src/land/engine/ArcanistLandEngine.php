@@ -333,13 +333,13 @@ abstract class ArcanistLandEngine
     }
 
     $planned = array();
-    $closed = array();
+    $published = array();
     $not_accepted = array();
     foreach ($revision_refs as $revision_ref) {
       if ($revision_ref->isStatusChangesPlanned()) {
         $planned[] = $revision_ref;
-      } else if ($revision_ref->isStatusClosed()) {
-        $closed[] = $revision_ref;
+      } else if ($revision_ref->isStatusPublished()) {
+        $published[] = $revision_ref;
       } else if (!$revision_ref->isStatusAccepted()) {
         $not_accepted[] = $revision_ref;
       }
@@ -389,28 +389,28 @@ abstract class ArcanistLandEngine
     // See PHI1727. Previously, this prompt was bundled with the generic
     // "not accepted" prompt, but at least one user found it confusing.
 
-    if ($closed) {
-      $example_ref = head($closed);
+    if ($published) {
+      $example_ref = head($published);
 
       echo tsprintf(
         "\n%!\n%W\n\n",
-        pht('%s REVISION(S) ARE ALREADY CLOSED', phutil_count($closed)),
+        pht('%s REVISION(S) ARE ALREADY PUBLISHED', phutil_count($published)),
         pht(
           'You are landing %s revision(s) which are already in the state '.
           '"%s", indicating that they have previously landed:',
-          phutil_count($closed),
+          phutil_count($published),
           $example_ref->getStatusDisplayName()));
 
-      foreach ($closed as $revision_ref) {
+      foreach ($published as $revision_ref) {
         echo tsprintf('%s', $revision_ref->newDisplayRef());
       }
 
       $query = pht(
-        'Land %s revision(s) that are already closed?',
-        phutil_count($closed));
+        'Land %s revision(s) that are already published?',
+        phutil_count($published));
 
       $this->getWorkflow()
-        ->getPrompt('arc.land.closed')
+        ->getPrompt('arc.land.published')
         ->setQuery($query)
         ->execute();
     }
