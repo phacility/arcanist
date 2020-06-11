@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistPasteRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   private $parameters;
 
@@ -47,12 +45,10 @@ final class ArcanistPasteRef
     return 'P'.$this->getID();
   }
 
-  public function getDisplayRefObjectName() {
-    return $this->getMonogram();
-  }
-
-  public function getDisplayRefTitle() {
-    return $this->getTitle();
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getMonogram())
+      ->setTitle($this->getName());
   }
 
 }

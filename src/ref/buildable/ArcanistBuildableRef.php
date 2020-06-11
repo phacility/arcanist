@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistBuildableRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   const HARDPOINT_BUILDREFS = 'ref.buildable.buildRefs';
 
@@ -44,12 +42,10 @@ final class ArcanistBuildableRef
     return 'B'.$this->getID();
   }
 
-  public function getDisplayRefObjectName() {
-    return $this->getMonogram();
-  }
-
-  public function getDisplayRefTitle() {
-    return pht('Buildable %d', $this->getID());
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getMonogram())
+      ->setTitle($this->getRefDisplayName());
   }
 
   public function getBuildRefs() {

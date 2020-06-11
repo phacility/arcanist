@@ -163,7 +163,7 @@ abstract class ArcanistWorkEngine
           $revision_ref->getMonogram()));
 
       foreach ($selected as $marker) {
-        echo tsprintf('%s', $marker->newDisplayRef());
+        echo tsprintf('%s', $marker->newRefView());
       }
 
       echo tsprintf("\n");
@@ -177,7 +177,7 @@ abstract class ArcanistWorkEngine
       pht('REVISION'),
       pht('Resuming work on revision:'));
 
-    echo tsprintf('%s', $revision_ref->newDisplayRef());
+    echo tsprintf('%s', $revision_ref->newRefView());
     echo tsprintf("\n");
 
     return $target;

@@ -1,14 +1,12 @@
 <?php
 
 final class ArcanistBuildPlanRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   private $parameters;
 
   public function getRefDisplayName() {
-    return $this->getDisplayRefObjectName();
+    return pht('Build Plan %d', $this->getID());
   }
 
   public static function newFromConduit(array $parameters) {
@@ -29,19 +27,17 @@ final class ArcanistBuildPlanRef
     return idxv($this->parameters, array('fields', 'name'));
   }
 
-  public function getDisplayRefObjectName() {
-    return pht('Build Plan %d', $this->getID());
-  }
-
-  public function getDisplayRefTitle() {
-    return $this->getName();
-  }
-
   public function getBehavior($behavior_key, $default = null) {
     return idxv(
       $this->parameters,
       array('fields', 'behaviors', $behavior_key, 'value'),
       $default);
+  }
+
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getRefDisplayName())
+      ->setTitle($this->getName());
   }
 
 }

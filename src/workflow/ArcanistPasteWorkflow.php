@@ -159,7 +159,7 @@ EOTEXT
 
     echo tsprintf(
       '%s',
-      $paste_ref->newDisplayRef()
+      $paste_ref->newRefView()
         ->setURI($uri));
 
     if ($is_browse) {

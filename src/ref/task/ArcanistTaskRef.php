@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistTaskRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   private $parameters;
 
@@ -33,12 +31,10 @@ final class ArcanistTaskRef
     return 'T'.$this->getID();
   }
 
-  public function getDisplayRefObjectName() {
-    return $this->getMonogram();
-  }
-
-  public function getDisplayRefTitle() {
-    return $this->getName();
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getMonogram())
+      ->setTitle($this->getName());
   }
 
 }

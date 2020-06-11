@@ -108,7 +108,7 @@ EOTEXT
       echo tsprintf(
         "%s\n\n%s\n",
         pht('Amending commit message to reflect revision:'),
-        $revision_ref->newDisplayRef());
+        $revision_ref->newRefView());
 
       $this->confirmAmendAuthor($revision_ref);
       $this->confirmAmendNotFound($revision_ref, $state_ref);
@@ -193,7 +193,7 @@ EOTEXT
          "%!\n%W\n\n%B\n",
          pht('MULTIPLE REVISIONS IN WORKING COPY'),
          pht('More than one revision was found in the working copy:'),
-         mpull($revisions, 'newDisplayRef'));
+         mpull($revisions, 'newRefView'));
 
       throw new PhutilArgumentUsageException(
         pht(
@@ -233,7 +233,7 @@ EOTEXT
           'The author of this revision (%s) is:',
           $revision_ref->getMonogram()),
       ),
-      $author_ref->newDisplayRef());
+      $author_ref->newRefView());
 
     $prompt = pht(
       'Amend working copy using revision owned by %s?',

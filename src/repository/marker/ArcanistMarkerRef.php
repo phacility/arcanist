@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistMarkerRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   const HARDPOINT_COMMITREF = 'arc.marker.commitRef';
   const HARDPOINT_WORKINGCOPYSTATEREF = 'arc.marker.workingCopyStateRef';
@@ -24,10 +22,6 @@ final class ArcanistMarkerRef
   private $isActive = false;
 
   public function getRefDisplayName() {
-    return $this->getDisplayRefObjectName();
-  }
-
-  public function getDisplayRefObjectName() {
     switch ($this->getMarkerType()) {
       case self::TYPE_BRANCH:
         return pht('Branch "%s"', $this->getName());
@@ -36,13 +30,6 @@ final class ArcanistMarkerRef
       default:
         return pht('Marker "%s"', $this->getName());
     }
-  }
-
-  public function getDisplayRefTitle() {
-    return pht(
-      '%s %s',
-      $this->getDisplayHash(),
-      $this->getSummary());
   }
 
   protected function newHardpoints() {
@@ -97,8 +84,6 @@ final class ArcanistMarkerRef
   public function getDisplayHash() {
     return $this->displayHash;
   }
-
-
 
   public function setCommitHash($commit_hash) {
     $this->commitHash = $commit_hash;
@@ -175,6 +160,17 @@ final class ArcanistMarkerRef
 
   public function getRemoteRef() {
     return $this->getHardpoint(self::HARDPOINT_REMOTEREF);
+  }
+
+  protected function buildRefView(ArcanistRefView $view) {
+    $title = pht(
+      '%s %s',
+      $this->getDisplayHash(),
+      $this->getSummary());
+
+    $view
+      ->setObjectName($this->getRefDisplayName())
+      ->setTitle($title);
   }
 
 }

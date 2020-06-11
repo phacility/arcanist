@@ -119,7 +119,7 @@ EOTEXT
         $uri = $this->getAbsoluteURI($uri);
         echo tsprintf(
           '%s',
-          $ref->newDisplayRef()
+          $ref->newRefView()
             ->setURI($uri));
       }
     }

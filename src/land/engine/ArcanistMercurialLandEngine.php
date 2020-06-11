@@ -108,7 +108,7 @@ final class ArcanistMercurialLandEngine
               $marker_type));
 
           foreach ($named_markers as $named_marker) {
-            echo tsprintf('%s', $named_marker->newDisplayRef());
+            echo tsprintf('%s', $named_marker->newRefView());
           }
 
           echo tsprintf("\n");
@@ -327,7 +327,7 @@ final class ArcanistMercurialLandEngine
           pht('These branches were selected:'));
 
         foreach ($branches as $branch) {
-          echo tsprintf('%s', $branch->newDisplayRef());
+          echo tsprintf('%s', $branch->newRefView());
         }
 
         echo tsprintf("\n");
@@ -352,7 +352,7 @@ final class ArcanistMercurialLandEngine
 
 
       foreach ($new_markers as $new_marker) {
-        echo tsprintf('%s', $new_marker->newDisplayRef());
+        echo tsprintf('%s', $new_marker->newRefView());
       }
 
       echo tsprintf("\n");

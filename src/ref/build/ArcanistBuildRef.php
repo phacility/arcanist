@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistBuildRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   const HARDPOINT_BUILDPLANREF = 'ref.build.buildplanRef';
 
@@ -16,7 +14,7 @@ final class ArcanistBuildRef
   }
 
   public function getRefDisplayName() {
-    return $this->getDisplayRefObjectName();
+    return pht('Build %d', $this->getID());
   }
 
   public static function newFromConduit(array $parameters) {
@@ -37,12 +35,10 @@ final class ArcanistBuildRef
     return idxv($this->parameters, array('fields', 'name'));
   }
 
-  public function getDisplayRefObjectName() {
-    return pht('Build %d', $this->getID());
-  }
-
-  public function getDisplayRefTitle() {
-    return $this->getName();
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getRefDisplayName())
+      ->setTitle($this->getName());
   }
 
   public function getBuildPlanRef() {

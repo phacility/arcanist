@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistRevisionRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   const HARDPOINT_COMMITMESSAGE = 'ref.revision.commitmessage';
   const HARDPOINT_AUTHORREF = 'ref.revision.authorRef';
@@ -167,12 +165,10 @@ final class ArcanistRevisionRef
     return $this->getHardpoint(self::HARDPOINT_BUILDABLEREF);
   }
 
-  public function getDisplayRefObjectName() {
-    return $this->getMonogram();
-  }
-
-  public function getDisplayRefTitle() {
-    return $this->getName();
+  protected function buildRefView(ArcanistRefView $view) {
+    $view
+      ->setObjectName($this->getMonogram())
+      ->setTitle($this->getTitle());
   }
 
 }

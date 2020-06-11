@@ -305,7 +305,7 @@ abstract class ArcanistLandEngine
           $viewer->getMonogram()));
 
       foreach ($unauthored as $revision_ref) {
-        $display_ref = $revision_ref->newDisplayRef();
+        $display_ref = $revision_ref->newRefView();
 
         $author_ref = $revision_ref->getAuthorRef();
         if ($author_ref) {
@@ -373,7 +373,7 @@ abstract class ArcanistLandEngine
           phutil_count($planned)));
 
       foreach ($planned as $revision_ref) {
-        echo tsprintf('%s', $revision_ref->newDisplayRef());
+        echo tsprintf('%s', $revision_ref->newRefView());
       }
 
       $query = pht(
@@ -402,7 +402,7 @@ abstract class ArcanistLandEngine
           $example_ref->getStatusDisplayName()));
 
       foreach ($published as $revision_ref) {
-        echo tsprintf('%s', $revision_ref->newDisplayRef());
+        echo tsprintf('%s', $revision_ref->newRefView());
       }
 
       $query = pht(
@@ -429,7 +429,7 @@ abstract class ArcanistLandEngine
           phutil_count($not_accepted)));
 
       foreach ($not_accepted as $revision_ref) {
-        $display_ref = $revision_ref->newDisplayRef();
+        $display_ref = $revision_ref->newRefView();
         $display_ref->appendLine(
           pht(
             'Status: %s',
@@ -493,7 +493,7 @@ abstract class ArcanistLandEngine
       foreach ($open_parents as $parent_phid => $spec) {
         $parent_ref = $spec['ref'];
 
-        $display_ref = $parent_ref->newDisplayRef();
+        $display_ref = $parent_ref->newRefView();
 
         $display_ref->appendLine(
           pht(
@@ -686,36 +686,29 @@ abstract class ArcanistLandEngine
       $prompt_key = 'arc.land.ongoing-builds';
     }
 
+    $workflow = $this->getWorkflow();
+
     echo tsprintf("\n");
     foreach ($build_map as $build_item) {
       $revision_ref = $build_item['revisionRef'];
+      $revision_view = $revision_ref->newRefView();
 
-      echo tsprintf('%s', $revision_ref->newDisplayRef());
+      $buildable_ref = $revision_ref->getBuildableRef();
+      $buildable_view = $buildable_ref->newRefView();
+
+      $raw_uri = $buildable_ref->getURI();
+      $raw_uri = $workflow->getAbsoluteURI($raw_uri);
+      $buildable_view->setURI($raw_uri);
+
+      $revision_view->addChild($buildable_view);
 
       foreach ($build_item['buildRefs'] as $build_ref) {
-        echo tsprintf('%s', $build_ref->newDisplayRef());
+        $build_view = $build_ref->newRefView();
+        $buildable_view->addChild($build_view);
       }
 
+      echo tsprintf('%s', $revision_view);
       echo tsprintf("\n");
-    }
-
-    echo tsprintf(
-      "\n%s\n",
-      pht('You can review build details here:'));
-
-    // TODO: Only show buildables with problem builds.
-
-    $workflow = $this->getWorkflow();
-
-    foreach ($buildable_refs as $buildable) {
-      $display_ref = $buildable->newDisplayRef();
-
-      $raw_uri = $buildable->getURI();
-      $raw_uri = $workflow->getAbsoluteURI($raw_uri);
-
-      $display_ref->setURI($raw_uri);
-
-      echo tsprintf('%s', $display_ref);
     }
 
     $this->getWorkflow()
@@ -777,7 +770,7 @@ abstract class ArcanistLandEngine
 
     echo tsprintf(
       "\n%s",
-      $revision_ref->newDisplayRef());
+      $revision_ref->newRefView());
 
     foreach ($set->getCommits() as $commit) {
       $is_implicit = $commit->getIsImplicitCommit();
@@ -969,7 +962,7 @@ abstract class ArcanistLandEngine
         foreach ($revision_refs as $revision_ref) {
           echo tsprintf(
             '%s',
-            $revision_ref->newDisplayRef());
+            $revision_ref->newRefView());
         }
 
         echo tsprintf("\n");
