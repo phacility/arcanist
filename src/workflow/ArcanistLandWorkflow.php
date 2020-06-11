@@ -118,7 +118,7 @@ power, the workflow makes a guess about what state you wanted to end up in
 after the process finishes. The working copy is put into that state.
 
 Any obsolete refs that point at commits which were published are deleted,
-unless the **--keep-branch** flag is passed.
+unless the **--keep-branches** flag is passed.
 EOTEXT
       );
 
