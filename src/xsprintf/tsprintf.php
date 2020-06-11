@@ -51,6 +51,7 @@ function xsprintf_terminal($userdata, &$pattern, &$pos, &$value, &$length) {
     case '?':
       $value = tsprintf('<bg:green>**  ?  **</bg> %s', $value);
       $value = PhutilTerminalString::escapeStringValue($value, false);
+      $value = phutil_console_wrap($value, 6, false);
       $type = 's';
       break;
     case '>':

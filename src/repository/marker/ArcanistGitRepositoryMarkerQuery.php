@@ -122,7 +122,59 @@ final class ArcanistGitRepositoryMarkerQuery
   }
 
   protected function newRemoteRefMarkers(ArcanistRemoteRef $remote) {
-    throw new PhutilMethodNotImplementedException();
+    $api = $this->getRepositoryAPI();
+
+    // NOTE: Since we only care about branches today, we only list branches.
+
+    $future = $api->newFuture(
+      'ls-remote --refs %s %s',
+      $remote->getRemoteName(),
+      'refs/heads/*');
+    list($stdout) = $future->resolve();
+
+    $branch_prefix = 'refs/heads/';
+    $branch_length = strlen($branch_prefix);
+
+    $pattern = '(^(?P<hash>\S+)\t(?P<ref>\S+)\z)';
+    $markers = array();
+
+    $lines = phutil_split_lines($stdout, false);
+    foreach ($lines as $line) {
+      $matches = null;
+      $ok = preg_match($pattern, $line, $matches);
+      if (!$ok) {
+        throw new Exception(
+          pht(
+            'Failed to match "ls-remote" pattern against line "%s".',
+            $line));
+      }
+
+      $hash = $matches['hash'];
+      $ref = $matches['ref'];
+
+      if (!strncmp($ref, $branch_prefix, $branch_length)) {
+        $type = ArcanistMarkerRef::TYPE_BRANCH;
+        $name = substr($ref, $branch_length);
+      } else {
+        // For now, discard other refs.
+        continue;
+      }
+
+      $marker = id(new ArcanistMarkerRef())
+        ->setName($name)
+        ->setMarkerType($type)
+        ->setMarkerHash($hash)
+        ->setCommitHash($hash);
+
+      $commit_ref = $api->newCommitRef()
+        ->setCommitHash($hash);
+
+      $marker->attachCommitRef($commit_ref);
+
+      $markers[] = $marker;
+    }
+
+    return $markers;
   }
 
 }

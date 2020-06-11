@@ -270,8 +270,7 @@ final class ArcanistMercurialLandEngine
       }
     }
 
-    $remote_ref = id(new ArcanistRemoteRef())
-      ->setRemoteName($this->getOntoRemote());
+    $remote_ref = $this->getOntoRemoteRef();
 
     $markers = $api->newMarkerRefQuery()
       ->withRemotes(array($remote_ref))
@@ -346,8 +345,8 @@ final class ArcanistMercurialLandEngine
         "\n%!\n%W\n\n",
         pht('CREATE %s BOOKMARK(S)', phutil_count($new_markers)),
         pht(
-          'These %s symbol(s) do not exist in the remote. They will be created '.
-          'as new bookmarks:',
+          'These %s symbol(s) do not exist in the remote. They will be '.
+          'created as new bookmarks:',
           phutil_count($new_markers)));
 
 
@@ -356,6 +355,17 @@ final class ArcanistMercurialLandEngine
       }
 
       echo tsprintf("\n");
+
+      $is_hold = $this->getShouldHold();
+      if ($is_hold) {
+        echo tsprintf(
+          "%?\n",
+          pht(
+            'You are using "--hold", so execution will stop before the '.
+            '%s bookmark(s) are actually created. You will be given '.
+            'instructions to create the bookmarks.',
+            phutil_count($new_markers)));
+      }
 
       $query = pht(
         'Create %s new remote bookmark(s)?',

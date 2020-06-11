@@ -876,6 +876,8 @@ final class ArcanistGitLandEngine
   }
 
   protected function confirmOntoRefs(array $onto_refs) {
+    $api = $this->getRepositoryAPI();
+
     foreach ($onto_refs as $onto_ref) {
       if (!strlen($onto_ref)) {
         throw new PhutilArgumentUsageException(
@@ -886,10 +888,61 @@ final class ArcanistGitLandEngine
       }
     }
 
-    // TODO: Check that these refs really exist in the remote? Checking the
-    // remote is expensive and users probably rarely specify "--onto" manually,
-    // but if "arc land" creates branches without prompting when you make typos
-    // that also seems questionable.
+    $markers = $api->newMarkerRefQuery()
+      ->withRemotes(array($this->getOntoRemoteRef()))
+      ->withNames($onto_refs)
+      ->execute();
+
+    $markers = mgroup($markers, 'getName');
+
+    $new_markers = array();
+    foreach ($onto_refs as $onto_ref) {
+      if (isset($markers[$onto_ref])) {
+        // Remote already has a branch with this name, so we're fine: we
+        // aren't creatinga new branch.
+        continue;
+      }
+
+      $new_markers[] = id(new ArcanistMarkerRef())
+        ->setMarkerType(ArcanistMarkerRef::TYPE_BRANCH)
+        ->setName($onto_ref);
+    }
+
+    if ($new_markers) {
+      echo tsprintf(
+        "\n%!\n%W\n\n",
+        pht('CREATE %s BRANCHE(S)', phutil_count($new_markers)),
+        pht(
+          'These %s symbol(s) do not exist in the remote. They will be '.
+          'created as new branches:',
+          phutil_count($new_markers)));
+
+      foreach ($new_markers as $new_marker) {
+        echo tsprintf('%s', $new_marker->newRefView());
+      }
+
+      echo tsprintf("\n");
+
+      $is_hold = $this->getShouldHold();
+      if ($is_hold) {
+        echo tsprintf(
+          "%?\n",
+          pht(
+            'You are using "--hold", so execution will stop before the '.
+            '%s branche(s) are actually created. You will be given '.
+            'instructions to create the branches.',
+            phutil_count($new_markers)));
+      }
+
+      $query = pht(
+        'Create %s new branche(s) in the remote?',
+        phutil_count($new_markers));
+
+      $this->getWorkflow()
+        ->getPrompt('arc.land.create')
+        ->setQuery($query)
+        ->execute();
+    }
   }
 
   protected function selectOntoRefs(array $symbols) {
@@ -1238,6 +1291,7 @@ final class ArcanistGitLandEngine
     $api = $this->getRepositoryAPI();
     // Make sure that our "into" target is valid.
     $log = $this->getLogEngine();
+    $api = $this->getRepositoryAPI();
 
     if ($this->getIntoEmpty()) {
       // If we're running under "--into-empty", we don't have to do anything.

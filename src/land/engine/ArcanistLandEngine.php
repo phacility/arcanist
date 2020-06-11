@@ -1569,4 +1569,9 @@ abstract class ArcanistLandEngine
     return $command->execute();
   }
 
+  final protected function getOntoRemoteRef() {
+    return id(new ArcanistRemoteRef())
+      ->setRemoteName($this->getOntoRemote());
+  }
+
 }
