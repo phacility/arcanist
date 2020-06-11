@@ -49,6 +49,27 @@ final class ArcanistRevisionRef
         break;
     }
 
+    $value_map = array(
+      '0' => 'needs-review',
+      '1' => 'needs-revision',
+      '2' => 'accepted',
+      '3' => 'published',
+      '4' => 'abandoned',
+      '5' => 'changes-planned',
+    );
+
+    $color_map = array(
+      'needs-review' => 'magenta',
+      'needs-revision' => 'red',
+      'accepted' => 'green',
+      'published' => 'cyan',
+      'abandoned' => null,
+      'changes-planned' => 'red',
+    );
+
+    $status_value = idx($value_map, idx($dict, 'status'));
+    $ansi_color = idx($color_map, $status_value);
+
     $dict['fields'] = array(
       'uri' => idx($dict, 'uri'),
       'title' => idx($dict, 'title'),
@@ -56,6 +77,8 @@ final class ArcanistRevisionRef
       'status' => array(
         'name' => $status_name,
         'closed' => $is_closed,
+        'value' => $status_value,
+        'color.ansi' => $ansi_color,
       ),
     );
 
