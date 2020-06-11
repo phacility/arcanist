@@ -61,13 +61,13 @@ final class ArcanistMercurialLandEngine
     }
 
     $commit = $api->getCanonicalRevisionName('.');
-    $commit = $this->getDisplayHash($commit);
+    $commit = $api->getDisplayHash($commit);
 
     $log->writeStatus(
       pht('SOURCE'),
       pht(
         'Landing the active commit, "%s".',
-        $this->getDisplayHash($commit)));
+        $api->getDisplayHash($commit)));
 
     return array($commit);
   }
@@ -511,7 +511,7 @@ final class ArcanistMercurialLandEngine
         pht(
           'Preparing merge into local target "%s", at commit "%s".',
           $local_ref,
-          $this->getDisplayHash($into_commit)));
+          $api->getDisplayHash($into_commit)));
 
       return $into_commit;
     }
@@ -528,7 +528,7 @@ final class ArcanistMercurialLandEngine
           'Preparing merge into "%s" from remote "%s", at commit "%s".',
           $target->getRef(),
           $target->getRemote(),
-          $this->getDisplayHash($commit)));
+          $api->getDisplayHash($commit)));
       return $commit;
     }
 
@@ -874,7 +874,7 @@ final class ArcanistMercurialLandEngine
           'bookmark',
           '--force',
           '--rev',
-          hgsprintf('%s', $this->getDisplayHash($new_position)),
+          hgsprintf('%s', $api->getDisplayHash($new_position)),
           '--',
           $bookmark_name,
         );
@@ -922,7 +922,7 @@ final class ArcanistMercurialLandEngine
       } else {
         $tail[] = '--force';
         $tail[] = '--rev';
-        $tail[] = hgsprintf('%s', $this->getDisplayHash($old_position));
+        $tail[] = hgsprintf('%s', $api->getDisplayHash($old_position));
       }
 
       $tail[] = '--';

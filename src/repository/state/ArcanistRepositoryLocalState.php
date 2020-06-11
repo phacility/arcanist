@@ -256,8 +256,4 @@ abstract class ArcanistRepositoryLocalState
     echo tsprintf("\n");
   }
 
-  final protected function getDisplayHash($hash) {
-    return substr($hash, 0, 12);
-  }
-
 }

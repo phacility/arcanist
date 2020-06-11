@@ -168,7 +168,7 @@ final class ArcanistRevisionRef
   protected function buildRefView(ArcanistRefView $view) {
     $view
       ->setObjectName($this->getMonogram())
-      ->setTitle($this->getTitle());
+      ->setTitle($this->getName());
   }
 
 }

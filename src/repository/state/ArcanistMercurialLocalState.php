@@ -22,7 +22,7 @@ final class ArcanistMercurialLocalState
       pht('SAVE STATE'),
       pht(
         'Saving local state (at "%s" on branch "%s").',
-        $this->getDisplayHash($this->localCommit),
+        $api->getDisplayHash($this->localCommit),
         $this->localBranch));
   }
 
@@ -34,7 +34,7 @@ final class ArcanistMercurialLocalState
       pht('LOAD STATE'),
       pht(
         'Restoring local state (at "%s" on branch "%s").',
-        $this->getDisplayHash($this->localCommit),
+        $api->getDisplayHash($this->localCommit),
         $this->localBranch));
 
     $api->execxLocal('update -- %s', $this->localCommit);
@@ -59,11 +59,12 @@ final class ArcanistMercurialLocalState
   }
 
   protected function newRestoreCommandsForDisplay() {
+    $api = $this->getRepositoryAPI();
     $commands = array();
 
     $commands[] = csprintf(
       'hg update -- %s',
-      $this->getDisplayHash($this->localCommit));
+      $api->getDisplayHash($this->localCommit));
 
     $commands[] = csprintf(
       'hg branch --force -- %s',

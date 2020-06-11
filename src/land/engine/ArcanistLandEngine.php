@@ -766,6 +766,7 @@ abstract class ArcanistLandEngine
   }
 
   final protected function printCommitSet(ArcanistLandCommitSet $set) {
+    $api = $this->getRepositoryAPI();
     $revision_ref = $set->getRevisionRef();
 
     echo tsprintf(
@@ -775,7 +776,7 @@ abstract class ArcanistLandEngine
     foreach ($set->getCommits() as $commit) {
       $is_implicit = $commit->getIsImplicitCommit();
 
-      $display_hash = $this->getDisplayHash($commit->getHash());
+      $display_hash = $api->getDisplayHash($commit->getHash());
       $display_summary = $commit->getDisplaySummary();
 
       if ($is_implicit) {
@@ -794,6 +795,7 @@ abstract class ArcanistLandEngine
 
   final protected function loadRevisionRefs(array $commit_map) {
     assert_instances_of($commit_map, 'ArcanistLandCommit');
+    $api = $this->getRepositoryAPI();
     $workflow = $this->getWorkflow();
 
     $state_refs = array();
@@ -937,7 +939,7 @@ abstract class ArcanistLandEngine
         $symbols = $commit->getIndirectSymbols();
         $raw_symbols = mpull($symbols, 'getSymbol');
         $symbol_list = implode(', ', $raw_symbols);
-        $display_hash = $this->getDisplayHash($hash);
+        $display_hash = $api->getDisplayHash($hash);
 
         $revision_refs = $commit->getRelatedRevisionRefs();
 
@@ -979,15 +981,11 @@ abstract class ArcanistLandEngine
     // These will be handled later by the "implicit commits" mechanism.
   }
 
-  final protected function getDisplayHash($hash) {
-    // TODO: This should be on the API object.
-    return substr($hash, 0, 12);
-  }
-
   final protected function confirmCommits(
     $into_commit,
     array $symbols,
     array $commit_map) {
+    $api = $this->getRepositoryAPI();
 
     $commit_count = count($commit_map);
 
@@ -997,7 +995,7 @@ abstract class ArcanistLandEngine
         'which are not already present in the state you are merging '.
         'into ("%s"), so nothing can land.',
         $this->getDisplaySymbols($symbols),
-        $this->getDisplayHash($into_commit));
+        $api->getDisplayHash($into_commit));
 
       echo tsprintf(
         "\n%!\n%W\n\n",
@@ -1029,7 +1027,7 @@ abstract class ArcanistLandEngine
           'into ("%s"). All of these commits will land:',
           new PhutilNumber($commit_count),
           $this->getDisplaySymbols($symbols),
-          $this->getDisplayHash($into_commit));
+          $api->getDisplayHash($into_commit));
       }
 
       echo tsprintf(
@@ -1054,7 +1052,7 @@ abstract class ArcanistLandEngine
         } else {
           echo tsprintf(
             "  %s %s\n",
-            $this->getDisplayHash($commit->getHash()),
+            $api->getDisplayHash($commit->getHash()),
             $commit->getDisplaySummary());
         }
       }
@@ -1150,12 +1148,12 @@ abstract class ArcanistLandEngine
             '"%s". Use "arc diff" to create or update a revision with this '.
             'commit, or "--revision" to force selection of a particular '.
             'revision.',
-            $this->getDisplayHash($commit_hash)));
+            $api->getDisplayHash($commit_hash)));
 
         throw new PhutilArgumentUsageException(
           pht(
             'Unable to determine revision for commit "%s".',
-            $this->getDisplayHash($commit_hash)));
+            $api->getDisplayHash($commit_hash)));
       }
 
       $revision_groups[$revision_ref->getPHID()][] = $commit;

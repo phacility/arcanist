@@ -34,7 +34,7 @@ final class ArcanistGitLandEngine
       $recovery_command = csprintf(
         'git checkout -b %s %s',
         $branch_name,
-        $this->getDisplayHash($branch_hash));
+        $api->getDisplayHash($branch_hash));
 
       $log->writeStatus(
         pht('CLEANUP'),
@@ -174,8 +174,8 @@ final class ArcanistGitLandEngine
             'Branch "%s" does not rebase cleanly from "%s" onto '.
             '"%s", skipping.',
             $branch_name,
-            $this->getDisplayHash($old_commit),
-            $this->getDisplayHash($rebase_target)));
+            $api->getDisplayHash($old_commit),
+            $api->getDisplayHash($rebase_target)));
       }
     }
   }
@@ -287,15 +287,15 @@ final class ArcanistGitLandEngine
         pht(
           'Merging local "%s" into "%s" produces an empty diff. '.
           'This usually means these changes have already landed.',
-          $this->getDisplayHash($max_hash),
-          $this->getDisplayHash($into_commit)));
+          $api->getDisplayHash($max_hash),
+          $api->getDisplayHash($into_commit)));
     }
 
     $log->writeStatus(
       pht('MERGING'),
       pht(
         '%s %s',
-        $this->getDisplayHash($max_hash),
+        $api->getDisplayHash($max_hash),
         $max_commit->getDisplaySummary()));
 
     $argv = array();
@@ -355,23 +355,23 @@ final class ArcanistGitLandEngine
         $message = pht(
           'Local commit "%s" (%s) does not merge cleanly into "%s". '.
           'Merge or rebase local changes so they can merge cleanly.',
-          $this->getDisplayHash($max_hash),
+          $api->getDisplayHash($max_hash),
           $this->getDisplaySymbols($direct_symbols),
-          $this->getDisplayHash($into_commit));
+          $api->getDisplayHash($into_commit));
       } else if ($indirect_symbols) {
         $message = pht(
           'Local commit "%s" (reachable from: %s) does not merge cleanly '.
           'into "%s". Merge or rebase local changes so they can merge '.
           'cleanly.',
-          $this->getDisplayHash($max_hash),
+          $api->getDisplayHash($max_hash),
           $this->getDisplaySymbols($indirect_symbols),
-          $this->getDisplayHash($into_commit));
+          $api->getDisplayHash($into_commit));
       } else {
         $message = pht(
           'Local commit "%s" does not merge cleanly into "%s". Merge or '.
           'rebase local changes so they can merge cleanly.',
-          $this->getDisplayHash($max_hash),
-          $this->getDisplayHash($into_commit));
+          $api->getDisplayHash($max_hash),
+          $api->getDisplayHash($into_commit));
       }
 
       echo tsprintf(
@@ -1235,6 +1235,7 @@ final class ArcanistGitLandEngine
   }
 
   protected function selectIntoCommit() {
+    $api = $this->getRepositoryAPI();
     // Make sure that our "into" target is valid.
     $log = $this->getLogEngine();
 
@@ -1251,7 +1252,6 @@ final class ArcanistGitLandEngine
     if ($this->getIntoLocal()) {
       // If we're running under "--into-local", just make sure that the
       // target identifies some actual commit.
-      $api = $this->getRepositoryAPI();
       $local_ref = $this->getIntoRef();
 
       list($err, $stdout) = $api->execManualLocal(
@@ -1272,7 +1272,7 @@ final class ArcanistGitLandEngine
         pht(
           'Preparing merge into local target "%s", at commit "%s".',
           $local_ref,
-          $this->getDisplayHash($into_commit)));
+          $api->getDisplayHash($into_commit)));
 
       return $into_commit;
     }
@@ -1289,7 +1289,7 @@ final class ArcanistGitLandEngine
           'Preparing merge into "%s" from remote "%s", at commit "%s".',
           $target->getRef(),
           $target->getRemote(),
-          $this->getDisplayHash($commit)));
+          $api->getDisplayHash($commit)));
       return $commit;
     }
 
@@ -1492,12 +1492,13 @@ final class ArcanistGitLandEngine
   }
 
   private function newOntoRefArguments($into_commit) {
+    $api = $this->getRepositoryAPI();
     $refspecs = array();
 
     foreach ($this->getOntoRefs() as $onto_ref) {
       $refspecs[] = sprintf(
         '%s:refs/heads/%s',
-        $this->getDisplayHash($into_commit),
+        $api->getDisplayHash($into_commit),
         $onto_ref);
     }
 

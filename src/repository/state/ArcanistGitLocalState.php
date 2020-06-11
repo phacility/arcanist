@@ -26,12 +26,12 @@ final class ArcanistGitLocalState
       $ref = null;
       $where = pht(
         'Saving local state (at detached commit "%s").',
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     } else {
       $where = pht(
         'Saving local state (on ref "%s" at commit "%s").',
         $ref,
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     }
 
     $this->localRef = $ref;
@@ -56,11 +56,11 @@ final class ArcanistGitLocalState
       $where = pht(
         'Restoring local state (to ref "%s" at commit "%s").',
         $ref,
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     } else {
       $where = pht(
         'Restoring local state (to detached commit "%s").',
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     }
 
     $log->writeStatus(pht('LOAD STATE'), $where);
@@ -84,6 +84,7 @@ final class ArcanistGitLocalState
   }
 
   protected function newRestoreCommandsForDisplay() {
+    $api = $this->getRepositoryAPI();
     $ref = $this->localRef;
     $commit = $this->localCommit;
 
@@ -93,11 +94,11 @@ final class ArcanistGitLocalState
       $commands[] = csprintf(
         'git checkout -B %s %s --',
         $ref,
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     } else {
       $commands[] = csprintf(
         'git checkout %s --',
-        $this->getDisplayHash($commit));
+        $api->getDisplayHash($commit));
     }
 
     // NOTE: We run "submodule update" in the real restore workflow, but
