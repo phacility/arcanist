@@ -125,7 +125,7 @@ EOTEXT
     if (!$skip_recover && $orphaned && $this->consoleConfirm(tsprintf(
         "The branches listed below:\n%s\nno longer have valid ".
         "upstream\n\n Attach these branches to 'master'?",
-        implode($orphaned, "\n")))) {
+        implode("\n", $orphaned)))) {
       foreach ($orphaned as $orphan) {
         $git->execxLocal(
           'branch --set-upstream-to=master %s',
