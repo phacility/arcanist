@@ -122,6 +122,41 @@ final class ArcanistConsoleLintRenderer extends ArcanistLintRenderer {
     $old_impact = substr_count($original, "\n") + 1;
     $start = $line;
 
+    // See PHI1782. If a linter raises a message at a line that does not
+    // exist, just render a warning message.
+
+    // Linters are permitted to raise a warning at the very end of a file.
+    // For example, if a file is 13 lines long, it is valid to raise a message
+    // on line 14 as long as the character position is 1 or unspecified and
+    // there is no "original" text.
+
+    $max_old = count($old_lines);
+
+    $invalid_position = false;
+    if ($start > ($max_old + 1)) {
+      $invalid_position = true;
+    } else if ($start > $max_old) {
+      if (strlen($original)) {
+        $invalid_position = true;
+      } else if ($char !== null && $char !== 1) {
+        $invalid_position = true;
+      }
+    }
+
+    if ($invalid_position) {
+      $warning = $this->renderLine(
+        $start,
+        pht(
+          '(This message was raised at line %s, but the file only has '.
+          '%s line(s).)',
+          new PhutilNumber($start),
+          new PhutilNumber($max_old)),
+        false,
+        '?');
+
+      return $warning."\n\n";
+    }
+
     if ($message->isPatchable()) {
       $patch_offset = $line_map[$line] + ($char - 1);
 
