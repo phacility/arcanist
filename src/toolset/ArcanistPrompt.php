@@ -86,18 +86,22 @@ final class ArcanistPrompt
       throw $ex;
     }
 
-    // NOTE: We're making stdin nonblocking so that we can respond to signals
-    // immediately. If we don't, and you ^C during a prompt, the program does
-    // not handle the signal until fgets() returns.
-
     $stdin = fopen('php://stdin', 'r');
     if (!$stdin) {
       throw new Exception(pht('Failed to open stdin for reading.'));
     }
 
-    $ok = stream_set_blocking($stdin, false);
-    if (!$ok) {
-      throw new Exception(pht('Unable to set stdin nonblocking.'));
+    // NOTE: We're making stdin nonblocking so that we can respond to signals
+    // immediately. If we don't, and you ^C during a prompt, the program does
+    // not handle the signal until fgets() returns.
+
+    // On Windows, we skip this because stdin can not be made nonblocking.
+
+    if (!phutil_is_windows()) {
+      $ok = stream_set_blocking($stdin, false);
+      if (!$ok) {
+        throw new Exception(pht('Unable to set stdin nonblocking.'));
+      }
     }
 
     echo "\n";
@@ -117,44 +121,48 @@ final class ArcanistPrompt
           $query,
           $options);
 
-        while (true) {
-          $is_saved = false;
+        $is_saved = false;
 
-          $read = array($stdin);
-          $write = array();
-          $except = array();
-
-          $ok = @stream_select($read, $write, $except, 1);
-          if ($ok === false) {
-            // NOTE: We may be interrupted by a system call, particularly if
-            // the window is resized while a prompt is shown and the terminal
-            // sends SIGWINCH.
-
-            // If we are, just continue below and try to read from stdin. If
-            // we were interrupted, we should read nothing and continue
-            // normally. If the pipe is broken, the read should fail.
-          }
-
-          $response = '';
+        if (phutil_is_windows()) {
+          $response = fgets($stdin);
+        } else {
           while (true) {
-            $bytes = fread($stdin, 8192);
-            if ($bytes === false) {
-              throw new Exception(
-                pht('fread() from stdin failed with an error.'));
+            $read = array($stdin);
+            $write = array();
+            $except = array();
+
+            $ok = @stream_select($read, $write, $except, 1);
+            if ($ok === false) {
+              // NOTE: We may be interrupted by a system call, particularly if
+              // the window is resized while a prompt is shown and the terminal
+              // sends SIGWINCH.
+
+              // If we are, just continue below and try to read from stdin. If
+              // we were interrupted, we should read nothing and continue
+              // normally. If the pipe is broken, the read should fail.
             }
 
-            if (!strlen($bytes)) {
-              break;
+            $response = '';
+            while (true) {
+              $bytes = fread($stdin, 8192);
+              if ($bytes === false) {
+                throw new Exception(
+                  pht('fread() from stdin failed with an error.'));
+              }
+
+              if (!strlen($bytes)) {
+                break;
+              }
+
+              $response .= $bytes;
             }
 
-            $response .= $bytes;
-          }
+            if (!strlen($response)) {
+              continue;
+            }
 
-          if (!strlen($response)) {
-            continue;
+            break;
           }
-
-          break;
         }
 
         $response = trim($response);
