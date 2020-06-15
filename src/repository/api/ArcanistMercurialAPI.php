@@ -1031,4 +1031,8 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $uri);
   }
 
+  protected function newCommitGraphQueryTemplate() {
+    return new ArcanistMercurialCommitGraphQuery();
+  }
+
 }

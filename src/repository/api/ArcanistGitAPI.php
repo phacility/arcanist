@@ -1816,4 +1816,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $hashes;
   }
 
+  protected function newCommitGraphQueryTemplate() {
+    return new ArcanistGitCommitGraphQuery();
+  }
+
 }

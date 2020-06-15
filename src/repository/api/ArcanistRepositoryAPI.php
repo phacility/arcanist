@@ -42,6 +42,7 @@ abstract class ArcanistRepositoryAPI extends Phobject {
   private $runtime;
   private $currentWorkingCopyStateRef = false;
   private $currentCommitRef = false;
+  private $graph;
 
   abstract public function getSourceControlSystemName();
 
@@ -794,9 +795,18 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     throw new PhutilMethodNotImplementedException();
   }
 
+  final public function newCommitGraphQuery() {
+    return id($this->newCommitGraphQueryTemplate());
+  }
+
+  protected function newCommitGraphQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
+  }
+
   final public function getDisplayHash($hash) {
     return substr($hash, 0, 12);
   }
+
 
   final public function getNormalizedURI($uri) {
     $normalized_uri = $this->newNormalizedURI($uri);
@@ -813,6 +823,15 @@ abstract class ArcanistRepositoryAPI extends Phobject {
 
   protected function newPublishedCommitHashes() {
     return array();
+  }
+
+  final public function getGraph() {
+    if (!$this->graph) {
+      $this->graph = id(new ArcanistCommitGraph())
+        ->setRepositoryAPI($this);
+    }
+
+    return $this->graph;
   }
 
 }
