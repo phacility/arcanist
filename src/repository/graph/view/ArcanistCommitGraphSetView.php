@@ -169,41 +169,43 @@ final class ArcanistCommitGraphSetView
       );
     }
 
-    $marker_layout = array();
+    $items = array();
     foreach ($object_layout as $layout) {
       $commit_ref = idx($layout, 'commit');
       if (!$commit_ref) {
-        $marker_layout[] = $layout;
+        $items[] = $layout;
         continue;
       }
 
       $commit_hash = $commit_ref->getCommitHash();
       $markers = idx($marker_refs, $commit_hash);
       if (!$markers) {
-        $marker_layout[] = $layout;
+        $items[] = $layout;
         continue;
       }
 
       $head_marker = array_shift($markers);
       $layout['marker'] = $head_marker;
-      $marker_layout[] = $layout;
+      $items[] = $layout;
 
       if (!$markers) {
         continue;
       }
 
       foreach ($markers as $marker) {
-        $marker_layout[] = array(
+        $items[] = array(
           'marker' => $marker,
         );
       }
     }
 
-    $marker_view = $this->drawMarkerCell($marker_layout);
-    $commits_view = $this->drawCommitsCell($marker_layout);
-    $status_view = $this->drawStatusCell($marker_layout);
-    $revisions_view = $this->drawRevisionsCell($marker_layout);
-    $messages_view = $this->drawMessagesCell($marker_layout);
+    $items = $this->collapseItems($items);
+
+    $marker_view = $this->drawMarkerCell($items);
+    $commits_view = $this->drawCommitsCell($items);
+    $status_view = $this->drawStatusCell($items);
+    $revisions_view = $this->drawRevisionsCell($items);
+    $messages_view = $this->drawMessagesCell($items);
 
     return array(
       id(new ArcanistGridCell())
@@ -311,6 +313,12 @@ final class ArcanistCommitGraphSetView
   private function drawCommitsCell(array $items) {
     $cell = array();
     foreach ($items as $item) {
+      $count = idx($item, 'collapseCount');
+      if ($count) {
+        $cell[] = tsprintf("   :   \n");
+        continue;
+      }
+
       $commit_ref = idx($item, 'commit');
       if (!$commit_ref) {
         $cell[] = tsprintf("\n");
@@ -361,6 +369,16 @@ final class ArcanistCommitGraphSetView
     $cell = array();
 
     foreach ($items as $item) {
+      $count = idx($item, 'collapseCount');
+      if ($count) {
+        $cell[] = tsprintf(
+          "%s\n",
+          pht(
+            '<... %s more commits ...>',
+            new PhutilNumber($count)));
+        continue;
+      }
+
       $revision_ref = idx($item, 'revision');
       if ($revision_ref) {
         $cell[] = tsprintf("%s\n", $revision_ref->getName());
@@ -415,5 +433,46 @@ final class ArcanistCommitGraphSetView
     return tsprintf('%s', $status);
   }
 
+  private function collapseItems(array $items) {
+    $show_context = 3;
+
+    $map = array();
+    foreach ($items as $key => $item) {
+      $can_collapse =
+        (isset($item['commit'])) &&
+        (!isset($item['revision'])) &&
+        (!isset($item['marker']));
+      $map[$key] = $can_collapse;
+    }
+
+    $map = phutil_partition($map);
+    foreach ($map as $partition) {
+      $value = head($partition);
+
+      if (!$value) {
+        break;
+      }
+
+      $count = count($partition);
+      if ($count < ($show_context * 2) + 3) {
+        continue;
+      }
+
+      $partition = array_slice($partition, $show_context, -$show_context, true);
+
+      $is_first = true;
+      foreach ($partition as $key => $value) {
+        if ($is_first) {
+          $items[$key]['collapseCount'] = $count;
+        } else {
+          unset($items[$key]);
+        }
+
+        $is_first = false;
+      }
+    }
+
+    return $items;
+  }
 
 }
