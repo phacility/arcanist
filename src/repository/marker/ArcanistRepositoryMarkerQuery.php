@@ -104,21 +104,6 @@ abstract class ArcanistRepositoryMarkerQuery
       }
     }
 
-    return $this->sortMarkers($markers);
-  }
-
-  private function sortMarkers(array $markers) {
-    // Sort the list in natural order. If we apply a stable sort later,
-    // markers will sort in "feature1", "feature2", etc., order if they
-    // don't otherwise have a unique position.
-
-    // This can improve behavior if two branches were updated at the same
-    // time, as is common when cascading rebases after changes land.
-
-    $map = mpull($markers, 'getName');
-    natcasesort($map);
-    $markers = array_select_keys($markers, array_keys($map));
-
     return $markers;
   }
 
