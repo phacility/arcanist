@@ -11,6 +11,8 @@ final class ArcanistCommitGraphSetView
   private $revisionRefs;
   private $markerRefs;
   private $viewDepth;
+  private $groupView;
+  private $memberViews = array();
 
   public function setRepositoryAPI(ArcanistRepositoryAPI $repository_api) {
     $this->repositoryAPI = $repository_api;
@@ -37,6 +39,29 @@ final class ArcanistCommitGraphSetView
 
   public function getParentView() {
     return $this->parentView;
+  }
+
+  public function setGroupView(ArcanistCommitGraphSetView $group_view) {
+    $this->groupView = $group_view;
+    return $this;
+  }
+
+  public function getGroupView() {
+    return $this->groupView;
+  }
+
+  public function addMemberView(ArcanistCommitGraphSetView $member_view) {
+    $this->memberViews[] = $member_view;
+    return $this;
+  }
+
+  public function getMemberViews() {
+    return $this->memberViews;
+  }
+
+  public function setMemberViews(array $member_views) {
+    $this->memberViews = $member_views;
+    return $this;
   }
 
   public function addChildView(ArcanistCommitGraphSetView $child_view) {
@@ -305,6 +330,17 @@ final class ArcanistCommitGraphSetView
         $label);
 
       $is_first = false;
+    }
+
+    $member_views = $this->getMemberViews();
+    $member_count = count($member_views);
+    if ($member_count > 1) {
+      $cell[] = tsprintf(
+        "%s%s\n",
+        $empty_indent,
+        pht(
+          '- <... %s more revisions ...>',
+          new PhutilNumber($member_count - 1)));
     }
 
     return $cell;

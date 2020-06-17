@@ -54,16 +54,6 @@ final class ArcanistCommitGraphSetTreeView
     $view_root = $this->newSetViews($set);
     $view_list = $this->setViews;
 
-    foreach ($view_list as $view) {
-      $parent_view = $view->getParentView();
-      if ($parent_view) {
-        $depth = $parent_view->getViewDepth() + 1;
-      } else {
-        $depth = 0;
-      }
-      $view->setViewDepth($depth);
-    }
-
     $api = $this->getRepositoryAPI();
 
     foreach ($view_list as $view) {
@@ -80,6 +70,8 @@ final class ArcanistCommitGraphSetTreeView
         ->setRevisionRefs($revision_refs)
         ->setMarkerRefs($marker_refs);
     }
+
+    $view_list = $this->collapseViews($view_root, $view_list);
 
     $rows = array();
     foreach ($view_list as $view) {
@@ -142,6 +134,113 @@ final class ArcanistCommitGraphSetTreeView
       $results[$hash] = idx($this->markerGroups, $hash, array());
     }
     return $results;
+  }
+
+  private function collapseViews($view_root, array $view_list) {
+    $this->groupViews($view_root);
+
+    foreach ($view_list as $view) {
+      $group = $view->getGroupView();
+      $group->addMemberView($view);
+    }
+
+    foreach ($view_list as $view) {
+      $member_views = $view->getMemberViews();
+
+      // Break small groups apart.
+      $count = count($member_views);
+      if ($count > 1 && $count < 4) {
+        foreach ($member_views as $member_view) {
+          $member_view->setGroupView($member_view);
+          $member_view->setMemberViews(array($member_view));
+        }
+      }
+    }
+
+    foreach ($view_list as $view) {
+      $parent_view = $view->getParentView();
+      if (!$parent_view) {
+        $depth = 0;
+      } else {
+        $parent_group = $parent_view->getGroupView();
+
+        $member_views = $parent_group->getMemberViews();
+        if (count($member_views) > 1) {
+          $depth = $parent_group->getViewDepth() + 2;
+        } else {
+          $depth = $parent_group->getViewDepth() + 1;
+        }
+      }
+
+      $view->setViewDepth($depth);
+    }
+
+    foreach ($view_list as $key => $view) {
+      if (!$view->getMemberViews()) {
+        unset($view_list[$key]);
+      }
+    }
+
+    return $view_list;
+  }
+
+  private function groupViews($view) {
+    $group_view = $this->getGroupForView($view);
+    $view->setGroupView($group_view);
+
+
+
+    $children = $view->getChildViews();
+    foreach ($children as $child) {
+      $this->groupViews($child);
+    }
+  }
+
+  private function getGroupForView($view) {
+    $revision_refs = $view->getRevisionRefs();
+    if ($revision_refs) {
+      $has_unpublished_revision = false;
+
+      foreach ($revision_refs as $revision_ref) {
+        if (!$revision_ref->isStatusPublished()) {
+          $has_unpublished_revision = true;
+          break;
+        }
+      }
+
+      if ($has_unpublished_revision) {
+        return $view;
+      }
+    }
+
+    $marker_lists = $view->getMarkerRefs();
+    foreach ($marker_lists as $marker_refs) {
+      if ($marker_refs) {
+        return $view;
+      }
+    }
+
+    // If a view has no children, it is never grouped with other views.
+    $children = $view->getChildViews();
+    if (!$children) {
+      return $view;
+    }
+
+    // If a view is a root, we can't group it.
+    $parent = $view->getParentView();
+    if (!$parent) {
+      return $view;
+    }
+
+    // If a view has siblings, we can't group it with other views.
+    $siblings = $parent->getChildViews();
+    if (count($siblings) !== 1) {
+      return $view;
+    }
+
+    // The view has no children and no other siblings, so add it to the
+    // parent's group.
+    return $parent->getGroupView();
   }
 
 }
