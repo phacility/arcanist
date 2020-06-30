@@ -3,6 +3,17 @@
 abstract class ArcanistRefInspector
   extends Phobject {
 
+  private $workflow;
+
+  final public function setWorkflow(ArcanistWorkflow $workflow) {
+    $this->workflow = $workflow;
+    return $this;
+  }
+
+  final public function getWorkflow() {
+    return $this->workflow;
+  }
+
   abstract public function getInspectFunctionName();
   abstract public function newInspectRef(array $argv);
 

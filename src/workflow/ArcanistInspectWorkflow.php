@@ -34,6 +34,10 @@ EOTEXT
 
     $inspectors = ArcanistRefInspector::getAllInspectors();
 
+    foreach ($inspectors as $inspector) {
+      $inspector->setWorkflow($this);
+    }
+
     if (!$objects) {
       echo tsprintf(
         "%s\n\n",
