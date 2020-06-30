@@ -1763,4 +1763,8 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return new ArcanistGitRepositoryMarkerQuery();
   }
 
+  protected function newRemoteRefQueryTemplate() {
+    return new ArcanistGitRepositoryRemoteQuery();
+  }
+
 }

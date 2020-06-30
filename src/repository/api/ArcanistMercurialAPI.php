@@ -1014,7 +1014,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return new ArcanistMercurialRepositoryRemoteQuery();
   }
 
-
   public function getMercurialExtensionArguments() {
     $path = phutil_get_library_root('arcanist');
     $path = dirname($path);
