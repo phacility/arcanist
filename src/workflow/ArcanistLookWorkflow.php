@@ -60,7 +60,7 @@ EOTEXT
         'You stand in the middle of a small clearing in the woods.'));
 
     $now = time();
-    $hour = (int)date('h', $now);
+    $hour = (int)date('G', $now);
 
     if ($hour >= 5 && $hour <= 7) {
       $time = pht(

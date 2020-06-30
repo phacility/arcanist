@@ -66,9 +66,9 @@ final class ArcanistMercurialCommitGraphQuery
     $fields = array(
       '', // Placeholder for "encoding".
       '{node}',
-      '{parents}',
+      '{p1node} {p2node}',
       '{date|rfc822date}',
-      '{description|utf8}',
+      '{desc|utf8}',
     );
 
     $template = implode("\2", $fields)."\1";
@@ -123,6 +123,9 @@ final class ArcanistMercurialCommitGraphQuery
     $graph = $this->getGraph();
     $lines = $this->queryFuture;
     $limit = $this->getLimit();
+
+    $no_parent = str_repeat('0', 40);
+
     while (true) {
       if (!$lines->valid()) {
         return false;
@@ -159,9 +162,12 @@ final class ArcanistMercurialCommitGraphQuery
 
       if (strlen($parents)) {
         $parents = explode(' ', $parents);
-
         $parent_nodes = array();
         foreach ($parents as $parent) {
+          if ($parent === $no_parent) {
+            continue;
+          }
+
           $parent_node = $graph->getNode($parent);
           if (!$parent_node) {
             $parent_node = $graph->newNode($parent);

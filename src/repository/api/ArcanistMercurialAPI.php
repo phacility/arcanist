@@ -1035,4 +1035,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return new ArcanistMercurialCommitGraphQuery();
   }
 
+  protected function newPublishedCommitHashes() {
+    $future = $this->newFuture(
+      'log --rev %s --template %s',
+      hgsprintf('parents(draft()) - draft()'),
+      '{node}\n');
+    list($lines) = $future->resolve();
+
+    $lines = phutil_split_lines($lines, false);
+
+    $hashes = array();
+    foreach ($lines as $line) {
+      if (!strlen(trim($line))) {
+        continue;
+      }
+      $hashes[] = $line;
+    }
+
+    return $hashes;
+  }
+
 }

@@ -16,7 +16,7 @@ abstract class ArcanistMarkersWorkflow
       ->withMarkerTypes(array($marker_type))
       ->execute();
 
-    $tail_hashes = $this->getTailHashes();
+    $tail_hashes = $api->getPublishedCommitHashes();
 
     $heads = mpull($markers, 'getCommitHash');
 
@@ -32,7 +32,6 @@ abstract class ArcanistMarkersWorkflow
     }
 
     $nodes = $query->execute();
-
     if (count($nodes) > $limit) {
 
       // TODO: Show what we can.
@@ -166,11 +165,6 @@ abstract class ArcanistMarkersWorkflow
     $types = array_fuse($types);
 
     return isset($types[$marker_type]);
-  }
-
-  private function getTailHashes() {
-    $api = $this->getRepositoryAPI();
-    return $api->getPublishedCommitHashes();
   }
 
   private function sortSets(
