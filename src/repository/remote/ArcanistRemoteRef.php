@@ -38,4 +38,8 @@ final class ArcanistRemoteRef
     return $this->pushURI;
   }
 
+  protected function buildRefView(ArcanistRefView $view) {
+    $view->setObjectName($this->getRemoteName());
+  }
+
 }
