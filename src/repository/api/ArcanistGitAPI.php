@@ -1767,4 +1767,10 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return new ArcanistGitRepositoryRemoteQuery();
   }
 
+  protected function newNormalizedURI($uri) {
+    return new ArcanistRepositoryURINormalizer(
+      ArcanistRepositoryURINormalizer::TYPE_GIT,
+      $uri);
+  }
+
 }

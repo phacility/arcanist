@@ -3,6 +3,7 @@
 final class ArcanistRepositoryRef
   extends ArcanistRef {
 
+  private $parameters = array();
   private $phid;
   private $browseURI;
 
@@ -22,6 +23,37 @@ final class ArcanistRepositoryRef
   public function setBrowseURI($browse_uri) {
     $this->browseURI = $browse_uri;
     return $this;
+  }
+
+  public static function newFromConduit(array $map) {
+    $ref = new self();
+    $ref->parameters = $map;
+
+    $ref->phid = $map['phid'];
+
+    return $ref;
+  }
+
+  public function getURIs() {
+    $uris = idxv($this->parameters, array('attachments', 'uris', 'uris'));
+
+    if (!$uris) {
+      return array();
+    }
+
+    $results = array();
+    foreach ($uris as $uri) {
+      $effective_uri = idxv($uri, array('fields', 'uri', 'effective'));
+      if ($effective_uri !== null) {
+        $results[] = $effective_uri;
+      }
+    }
+
+    return $results;
+  }
+
+  public function getDisplayName() {
+    return idxv($this->parameters, array('fields', 'name'));
   }
 
   public function newBrowseURI(array $params) {
@@ -67,9 +99,13 @@ final class ArcanistRepositoryRef
   }
 
   public function getDefaultBranch() {
-    // TODO: This should read from the remote, and is not correct for
-    // Mercurial anyway, as "default" would be a better default branch.
-    return 'master';
+    $branch = idxv($this->parameters, array('fields', 'defaultBranch'));
+
+    if ($branch === null) {
+      return 'master';
+    }
+
+    return $branch;
   }
 
 }

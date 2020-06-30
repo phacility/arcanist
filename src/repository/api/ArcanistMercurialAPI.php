@@ -1025,4 +1025,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     );
   }
 
+  protected function newNormalizedURI($uri) {
+    return new ArcanistRepositoryURINormalizer(
+      ArcanistRepositoryURINormalizer::TYPE_MERCURIAL,
+      $uri);
+  }
+
 }

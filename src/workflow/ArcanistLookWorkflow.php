@@ -140,6 +140,11 @@ EOTEXT
 
     $remotes = $api->newRemoteRefQuery()
       ->execute();
+
+    $this->loadHardpoints(
+      $remotes,
+      ArcanistRemoteRef::HARDPOINT_REPOSITORYREFS);
+
     foreach ($remotes as $remote) {
 
       $view = $remote->newRefView();
@@ -154,6 +159,18 @@ EOTEXT
           'Push URI: %s',
           $push_uri));
 
+      $push_repository = $remote->getPushRepositoryRef();
+      if ($push_repository) {
+        $push_display = $push_repository->getDisplayName();
+      } else {
+        $push_display = '-';
+      }
+
+      $view->appendLine(
+        pht(
+          'Push Repository: %s',
+          $push_display));
+
       $fetch_uri = $remote->getFetchURI();
       if ($fetch_uri === null) {
         $fetch_uri = '-';
@@ -163,6 +180,18 @@ EOTEXT
         pht(
           'Fetch URI: %s',
           $fetch_uri));
+
+      $fetch_repository = $remote->getFetchRepositoryRef();
+      if ($fetch_repository) {
+        $fetch_display = $fetch_repository->getDisplayName();
+      } else {
+        $fetch_display = '-';
+      }
+
+      $view->appendLine(
+        pht(
+          'Fetch Repository: %s',
+          $fetch_display));
 
       echo tsprintf('%s', $view);
     }

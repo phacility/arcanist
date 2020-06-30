@@ -798,4 +798,13 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return substr($hash, 0, 12);
   }
 
+  final public function getNormalizedURI($uri) {
+    $normalized_uri = $this->newNormalizedURI($uri);
+    return $normalized_uri->getNormalizedURI();
+  }
+
+  protected function newNormalizedURI($uri) {
+    return $uri;
+  }
+
 }

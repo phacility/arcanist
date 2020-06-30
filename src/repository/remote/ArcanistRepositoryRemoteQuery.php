@@ -11,7 +11,12 @@ abstract class ArcanistRepositoryRemoteQuery
   }
 
   final public function execute() {
+    $api = $this->getRepositoryAPI();
     $refs = $this->newRemoteRefs();
+
+    foreach ($refs as $ref) {
+      $ref->setRepositoryAPI($api);
+    }
 
     $names = $this->names;
     if ($names !== null) {
