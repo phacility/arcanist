@@ -47,7 +47,7 @@ final class ArcanistMercurialCommitGraphQuery
 
     if ($revsets) {
       $revsets = array(
-        $this->joinAndRevsets($revs),
+        $this->joinAndRevsets($revsets),
       );
     }
 
@@ -58,12 +58,10 @@ final class ArcanistMercurialCommitGraphQuery
           '%s',
           $exact_hash);
       }
-      $revsets[] = array(
-        $this->joinOrRevsets($revs),
-      );
+      $revsets[] = $this->joinOrRevsets($revs);
     }
 
-    $revsets = $this->joinOrRevsets($revs);
+    $revsets = $this->joinOrRevsets($revsets);
 
     $fields = array(
       '', // Placeholder for "encoding".
@@ -75,10 +73,42 @@ final class ArcanistMercurialCommitGraphQuery
 
     $template = implode("\2", $fields)."\1";
 
+    $flags = array();
+
+    $min_epoch = $this->getMinimumEpoch();
+    $max_epoch = $this->getMaximumEpoch();
+    if ($min_epoch !== null || $max_epoch !== null) {
+      $flags[] = '--date';
+
+      if ($min_epoch !== null) {
+        $min_epoch = date('c', $min_epoch);
+      }
+
+      if ($max_epoch !== null) {
+        $max_epoch = date('c', $max_epoch);
+      }
+
+      if ($min_epoch !== null && $max_epoch !== null) {
+        $flags[] = sprintf(
+          '%s to %s',
+          $min_epoch,
+          $max_epoch);
+      } else if ($min_epoch) {
+        $flags[] = sprintf(
+          '>%s',
+          $min_epoch);
+      } else {
+        $flags[] = sprintf(
+          '<%s',
+          $max_epoch);
+      }
+    }
+
     $future = $api->newFuture(
-      'log --rev %s --template %s --',
+      'log --rev %s --template %s %Ls --',
       $revsets,
-      $template);
+      $template,
+      $flags);
     $future->setResolveOnError(true);
     $future->start();
 

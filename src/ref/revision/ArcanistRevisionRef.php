@@ -70,6 +70,11 @@ final class ArcanistRevisionRef
     $status_value = idx($value_map, idx($dict, 'status'));
     $ansi_color = idx($color_map, $status_value);
 
+    $date_created = null;
+    if (isset($dict['dateCreated'])) {
+      $date_created = (int)$dict['dateCreated'];
+    }
+
     $dict['fields'] = array(
       'uri' => idx($dict, 'uri'),
       'title' => idx($dict, 'title'),
@@ -80,6 +85,7 @@ final class ArcanistRevisionRef
         'value' => $status_value,
         'color.ansi' => $ansi_color,
       ),
+      'dateCreated' => $date_created,
     );
 
     return self::newFromConduit($dict);
@@ -102,6 +108,10 @@ final class ArcanistRevisionRef
 
   public function getStatusANSIColor() {
     return idxv($this->parameters, array('fields', 'status', 'color.ansi'));
+  }
+
+  public function getDateCreated() {
+    return idxv($this->parameters, array('fields', 'dateCreated'));
   }
 
   public function isStatusChangesPlanned() {

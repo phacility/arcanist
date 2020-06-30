@@ -7,8 +7,9 @@ abstract class ArcanistCommitGraphQuery
   private $headHashes;
   private $tailHashes;
   private $exactHashes;
-  private $stopAtGCA;
   private $limit;
+  private $minimumEpoch;
+  private $maximumEpoch;
 
   final public function setGraph(ArcanistCommitGraph $graph) {
     $this->graph = $graph;
@@ -46,11 +47,6 @@ abstract class ArcanistCommitGraphQuery
     return $this->exactHashes;
   }
 
-  final public function withStopAtGCA($stop_gca) {
-    $this->stopAtGCA = $stop_gca;
-    return $this;
-  }
-
   final public function setLimit($limit) {
     $this->limit = $limit;
     return $this;
@@ -58,6 +54,20 @@ abstract class ArcanistCommitGraphQuery
 
   final protected function getLimit() {
     return $this->limit;
+  }
+
+  final public function withEpochRange($min, $max) {
+    $this->minimumEpoch = $min;
+    $this->maximumEpoch = $max;
+    return $this;
+  }
+
+  final public function getMinimumEpoch() {
+    return $this->minimumEpoch;
+  }
+
+  final public function getMaximumEpoch() {
+    return $this->maximumEpoch;
   }
 
   final public function getRepositoryAPI() {

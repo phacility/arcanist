@@ -60,17 +60,11 @@ abstract class ArcanistMarkersWorkflow
     }
 
     if ($disjoint_heads) {
+      $disjoint_nodes = $graph->newQuery()
+        ->withExactHashes($disjoint_heads)
+        ->execute();
 
-      // TODO: Git currently can not query for more than one exact hash at a
-      // time.
-
-      foreach ($disjoint_heads as $disjoint_head) {
-        $disjoint_nodes = $graph->newQuery()
-          ->withExactHashes(array($disjoint_head))
-          ->execute();
-
-        $nodes += $disjoint_nodes;
-      }
+      $nodes += $disjoint_nodes;
     }
 
     $state_refs = array();
