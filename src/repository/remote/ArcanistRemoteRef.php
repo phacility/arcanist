@@ -89,4 +89,13 @@ final class ArcanistRemoteRef
     return null;
   }
 
+  public function isPermanentRef(ArcanistMarkerRef $ref) {
+    $repository_ref = $this->getPushRepositoryRef();
+    if (!$repository_ref) {
+      return false;
+    }
+
+    return $repository_ref->isPermanentRef($ref);
+  }
+
 }

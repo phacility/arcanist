@@ -807,4 +807,12 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return $uri;
   }
 
+  final public function getPublishedCommitHashes() {
+    return $this->newPublishedCommitHashes();
+  }
+
+  protected function newPublishedCommitHashes() {
+    return array();
+  }
+
 }

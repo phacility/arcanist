@@ -23,11 +23,11 @@ final class ArcanistGitRepositoryMarkerQuery
     $branch_prefix = 'refs/heads/';
     $branch_length = strlen($branch_prefix);
 
-    // NOTE: Since we only return branches today, we restrict this operation
-    // to branches.
+    $remote_prefix = 'refs/remotes/';
+    $remote_length = strlen($remote_prefix);
 
     list($stdout) = $api->newFuture(
-      'for-each-ref --format %s -- refs/heads/',
+      'for-each-ref --format %s -- refs/',
       implode('%01', $field_list))->resolve();
 
     $markers = array();
@@ -53,9 +53,20 @@ final class ArcanistGitRepositoryMarkerQuery
 
       list($ref, $hash, $epoch, $tree, $dst_hash, $summary, $text) = $fields;
 
+      $remote_name = null;
+
       if (!strncmp($ref, $branch_prefix, $branch_length)) {
         $type = ArcanistMarkerRef::TYPE_BRANCH;
         $name = substr($ref, $branch_length);
+      } else if (!strncmp($ref, $remote_prefix, $remote_length)) {
+        // This isn't entirely correct: the ref may be a tag, etc.
+        $type = ArcanistMarkerRef::TYPE_BRANCH;
+
+        $label = substr($ref, $remote_length);
+        $parts = explode('/', $label, 2);
+
+        $remote_name = $parts[0];
+        $name = $parts[1];
       } else {
         // For now, discard other refs.
         continue;
@@ -69,6 +80,10 @@ final class ArcanistGitRepositoryMarkerQuery
         ->setTreeHash($tree)
         ->setSummary($summary)
         ->setMessage($text);
+
+      if ($remote_name !== null) {
+        $marker->setRemoteName($remote_name);
+      }
 
       if (strlen($dst_hash)) {
         $commit_hash = $dst_hash;

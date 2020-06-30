@@ -1773,4 +1773,47 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       $uri);
   }
 
+  protected function newPublishedCommitHashes() {
+    $remotes = $this->newRemoteRefQuery()
+      ->execute();
+    if (!$remotes) {
+      return array();
+    }
+
+    $markers = $this->newMarkerRefQuery()
+      ->withIsRemoteCache(true)
+      ->execute();
+
+    if (!$markers) {
+      return array();
+    }
+
+    $runtime = $this->getRuntime();
+    $workflow = $runtime->getCurrentWorkflow();
+
+    $workflow->loadHardpoints(
+      $remotes,
+      ArcanistRemoteRef::HARDPOINT_REPOSITORYREFS);
+
+    $remotes = mpull($remotes, null, 'getRemoteName');
+
+    $hashes = array();
+
+    foreach ($markers as $marker) {
+      $remote_name = $marker->getRemoteName();
+      $remote = idx($remotes, $remote_name);
+      if (!$remote) {
+        continue;
+      }
+
+      if (!$remote->isPermanentRef($marker)) {
+        continue;
+      }
+
+      $hashes[] = $marker->getCommitHash();
+    }
+
+    return $hashes;
+  }
+
 }

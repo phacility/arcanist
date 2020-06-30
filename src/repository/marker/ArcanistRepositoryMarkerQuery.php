@@ -9,6 +9,7 @@ abstract class ArcanistRepositoryMarkerQuery
   private $commitHashes;
   private $ancestorCommitHashes;
   private $remotes;
+  private $isRemoteCache = false;
 
   final public function withMarkerTypes(array $types) {
     $this->markerTypes = array_fuse($types);
@@ -23,6 +24,11 @@ abstract class ArcanistRepositoryMarkerQuery
   final public function withRemotes(array $remotes) {
     assert_instances_of($remotes, 'ArcanistRemoteRef');
     $this->remotes = $remotes;
+    return $this;
+  }
+
+  final public function withIsRemoteCache($is_cache) {
+    $this->isRemoteCache = $is_cache;
     return $this;
   }
 
@@ -83,6 +89,16 @@ abstract class ArcanistRepositoryMarkerQuery
     if ($this->isActive !== null) {
       foreach ($markers as $key => $marker) {
         if ($marker->getIsActive() !== $this->isActive) {
+          unset($markers[$key]);
+        }
+      }
+    }
+
+    if ($this->isRemoteCache !== null) {
+      $want_cache = $this->isRemoteCache;
+      foreach ($markers as $key => $marker) {
+        $is_cache = ($marker->getRemoteName() !== null);
+        if ($is_cache !== $want_cache) {
           unset($markers[$key]);
         }
       }

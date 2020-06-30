@@ -41,6 +41,10 @@ EOTEXT
         return $this->lookRemotes();
       }
 
+      if ($argv === array('published')) {
+        return $this->lookPublished();
+      }
+
       echo tsprintf(
         "%s\n",
         pht(
@@ -194,6 +198,48 @@ EOTEXT
           $fetch_display));
 
       echo tsprintf('%s', $view);
+    }
+
+    echo tsprintf("\n");
+    echo tsprintf(
+      pht(
+        "Across the grove, a stream flows north toward ".
+        "**published** commits.\n"));
+  }
+
+  private function lookPublished() {
+    echo tsprintf(
+      "%W\n\n",
+      pht(
+        'You walk along the narrow bank of the stream as it winds lazily '.
+        'downhill and turns east, gradually widening into a river.'));
+
+    $api = $this->getRepositoryAPI();
+
+    $published = $api->getPublishedCommitHashes();
+
+    if ($published) {
+      echo tsprintf(
+        "%W\n\n",
+        pht(
+          'Floating on the water, you see published commits:'));
+
+      foreach ($published as $hash) {
+        echo tsprintf(
+          "%s\n",
+          $hash);
+      }
+
+      echo tsprintf(
+        "\n%W\n",
+        pht(
+          'They river bubbles peacefully.'));
+    } else {
+      echo tsprintf(
+        "%W\n",
+        pht(
+          'The river bubbles quietly, but you do not see any published '.
+          'commits anywhere.'));
     }
   }
 

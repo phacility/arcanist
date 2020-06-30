@@ -108,4 +108,39 @@ final class ArcanistRepositoryRef
     return $branch;
   }
 
+  public function isPermanentRef(ArcanistMarkerRef $ref) {
+    $rules = idxv(
+      $this->parameters,
+      array('fields', 'refRules', 'permanentRefRules'));
+
+    if ($rules === null) {
+      return false;
+    }
+
+    // If the rules exist but there are no specified rules, treat every ref
+    // as permanent.
+    if (!$rules) {
+      return true;
+    }
+
+    // TODO: It would be nice to unify evaluation of permanent ref rules
+    // across Arcanist and Phabricator.
+
+    $ref_name = $ref->getName();
+    foreach ($rules as $rule) {
+      $matches = null;
+      if (preg_match('(^regexp\\((.*)\\)\z)', $rule, $matches)) {
+        if (preg_match($matches[1], $ref_name)) {
+          return true;
+        }
+      } else {
+        if ($rule === $ref_name) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
 }

@@ -20,6 +20,7 @@ final class ArcanistMarkerRef
   private $summary;
   private $message;
   private $isActive = false;
+  private $remoteName;
 
   public function getRefDisplayName() {
     switch ($this->getMarkerType()) {
@@ -128,6 +129,15 @@ final class ArcanistMarkerRef
 
   public function getIsActive() {
     return $this->isActive;
+  }
+
+  public function setRemoteName($remote_name) {
+    $this->remoteName = $remote_name;
+    return $this;
+  }
+
+  public function getRemoteName() {
+    return $this->remoteName;
   }
 
   public function isBookmark() {
