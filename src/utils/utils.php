@@ -433,6 +433,14 @@ function msort(array $list, $method) {
  * @return list Objects ordered by the vectors.
  */
 function msortv(array $list, $method) {
+  return msortv_internal($list, $method, SORT_STRING);
+}
+
+function msortv_natural(array $list, $method) {
+  return msortv_internal($list, $method, SORT_NATURAL | SORT_FLAG_CASE);
+}
+
+function msortv_internal(array $list, $method, $flags) {
   $surrogate = mpull($list, $method);
 
   $index = 0;
@@ -455,7 +463,7 @@ function msortv(array $list, $method) {
     $surrogate[$key] = (string)$value;
   }
 
-  asort($surrogate, SORT_STRING);
+  asort($surrogate, $flags);
 
   $result = array();
   foreach ($surrogate as $key => $value) {
@@ -1965,4 +1973,33 @@ function phutil_glue(array $list, $glue) {
   }
 
   return array_select_keys($tmp, $keys);
+}
+
+function phutil_partition(array $map) {
+  $partitions = array();
+
+  $partition = array();
+  $is_first = true;
+  $partition_value = null;
+
+  foreach ($map as $key => $value) {
+    if (!$is_first) {
+      if ($partition_value === $value) {
+        $partition[$key] = $value;
+        continue;
+      }
+
+      $partitions[] = $partition;
+    }
+
+    $is_first = false;
+    $partition = array($key => $value);
+    $partition_value = $value;
+  }
+
+  if ($partition) {
+    $partitions[] = $partition;
+  }
+
+  return $partitions;
 }

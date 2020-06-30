@@ -966,4 +966,38 @@ final class PhutilUtilsTestCase extends PhutilTestCase {
     }
   }
 
+  public function testArrayPartition() {
+    $map = array(
+      'empty' => array(
+        array(),
+        array(),
+      ),
+      'unique' => array(
+        array('a' => 'a', 'b' => 'b', 'c' => 'c'),
+        array(array('a' => 'a'), array('b' => 'b'), array('c' => 'c')),
+      ),
+      'xy' => array(
+        array('a' => 'x', 'b' => 'x', 'c' => 'y', 'd' => 'y'),
+        array(
+          array('a' => 'x', 'b' => 'x'),
+          array('c' => 'y', 'd' => 'y'),
+        ),
+      ),
+      'multi' => array(
+        array('a' => true, 'b' => true, 'c' => false, 'd' => true),
+        array(
+          array('a' => true, 'b' => true),
+          array('c' => false),
+          array('d' => true),
+        ),
+      ),
+    );
+
+    foreach ($map as $name => $item) {
+      list($input, $expect) = $item;
+      $actual = phutil_partition($input);
+      $this->assertEqual($expect, $actual, pht('Partition of "%s"', $name));
+    }
+  }
+
 }
