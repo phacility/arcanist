@@ -249,9 +249,8 @@ final class ArcanistCommitGraphSetView
         substr($max->getCommitHash(), 0, 7));
     }
 
-    // TODO: Make this a function of terminal width?
-
-    $max_depth = 25;
+    $terminal_width = phutil_console_get_terminal_width();
+    $max_depth = (int)floor(3 + (max(0, $terminal_width - 72) / 6));
     if ($depth <= $max_depth) {
       $indent = str_repeat(' ', ($depth * 2));
     } else {
@@ -262,20 +261,29 @@ final class ArcanistCommitGraphSetView
 
     $empty_indent = str_repeat(' ', strlen($indent));
 
+    $max_width = ($max_depth * 2) + 16;
+    $available_width = $max_width - (min($max_depth, $depth) * 2);
+
     $is_first = true;
     $cell = array();
     foreach ($items as $item) {
       $marker_ref = idx($item, 'marker');
 
       if ($marker_ref) {
+        $marker_name = $marker_ref->getName();
+
+        $marker_name = id(new PhutilUTF8StringTruncator())
+          ->setMaximumGlyphs($available_width)
+          ->truncateString($marker_name);
+
         if ($marker_ref->getIsActive()) {
           $label = tsprintf(
             '<bg:green>**%s**</bg>',
-            $marker_ref->getName());
+            $marker_name);
         } else {
           $label = tsprintf(
             '**%s**',
-            $marker_ref->getName());
+            $marker_name);
         }
       } else if ($is_first) {
         $label = $commit_label;
@@ -391,7 +399,11 @@ final class ArcanistCommitGraphSetView
 
 
   private function drawRevisionStatus(ArcanistRevisionRef $revision_ref) {
-    $status = $revision_ref->getStatusDisplayName();
+    if (phutil_console_get_terminal_width() < 120) {
+      $status = $revision_ref->getStatusShortDisplayName();
+    } else {
+      $status = $revision_ref->getStatusDisplayName();
+    }
 
     $ansi_color = $revision_ref->getStatusANSIColor();
     if ($ansi_color) {

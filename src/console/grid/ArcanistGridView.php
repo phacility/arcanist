@@ -10,7 +10,7 @@ final class ArcanistGridView
 
   public function setColumns(array $columns) {
     assert_instances_of($columns, 'ArcanistGridColumn');
-    $this->columns = $columns;
+    $this->columns = mpull($columns, null, 'getKey');
     return $this;
   }
 
@@ -56,27 +56,70 @@ final class ArcanistGridView
     return tsprintf("%s\n", $rows);
   }
 
-  private function getDisplayWidth($key) {
-    if (!isset($this->displayWidths[$key])) {
-      $column = $this->getColumn($key);
+  private function getDisplayWidth($display_key) {
+    if (!isset($this->displayWidths[$display_key])) {
+      $flexible_columns = array();
 
-      $width = $column->getDisplayWidth();
-      if ($width === null) {
-        $width = 1;
-        foreach ($this->getRows() as $row) {
-          if (!$row->hasCell($key)) {
-            continue;
+      $columns = $this->getColumns();
+      foreach ($columns as $key => $column) {
+        $width = $column->getDisplayWidth();
+
+        if ($width === null) {
+          $width = 1;
+          foreach ($this->getRows() as $row) {
+            if (!$row->hasCell($key)) {
+              continue;
+            }
+
+            $cell = $row->getCell($key);
+            $width = max($width, $cell->getContentDisplayWidth());
           }
-
-          $cell = $row->getCell($key);
-          $width = max($width, $cell->getContentDisplayWidth());
         }
+
+        if ($column->getMinimumWidth() !== null) {
+          $flexible_columns[] = $key;
+        }
+
+        $this->displayWidths[$key] = $width;
       }
 
-      $this->displayWidths[$key] = $width;
+      $available_width = phutil_console_get_terminal_width();
+
+      // Adjust the available width to account for cell spacing.
+      $available_width -= (2 * (count($columns) - 1));
+
+      while (true) {
+        $total_width = array_sum($this->displayWidths);
+
+        if ($total_width <= $available_width) {
+          break;
+        }
+
+        if (!$flexible_columns) {
+          break;
+        }
+
+        // NOTE: This is very unsophisticated, and just shortcuts us to a
+        // reasonable result when only one column is flexible.
+
+        foreach ($flexible_columns as $flexible_key) {
+          $column = $columns[$flexible_key];
+
+          $need_width = ($total_width - $available_width);
+          $old_width = $this->displayWidths[$flexible_key];
+          $new_width = ($old_width - $need_width);
+
+          $new_width = max($new_width, $column->getMinimumWidth());
+
+          $this->displayWidths[$flexible_key] = $new_width;
+
+          $flexible_columns = array();
+          break;
+        }
+      }
     }
 
-    return $this->displayWidths[$key];
+    return $this->displayWidths[$display_key];
   }
 
   public function getColumn($key) {
@@ -241,7 +284,12 @@ final class ArcanistGridView
     $src_width,
     $dst_width,
     $alignment) {
-    return $line;
+
+    $line = phutil_string_cast($line);
+
+    return id(new PhutilUTF8StringTruncator())
+      ->setMaximumGlyphs($dst_width)
+      ->truncateString($line);
   }
 
 }

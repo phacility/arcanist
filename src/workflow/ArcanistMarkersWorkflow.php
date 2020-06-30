@@ -151,7 +151,8 @@ abstract class ArcanistMarkersWorkflow
     $grid->newColumn('commits');
     $grid->newColumn('status');
     $grid->newColumn('revisions');
-    $grid->newColumn('messages');
+    $grid->newColumn('messages')
+      ->setMinimumWidth(12);
 
     foreach ($partition_lists as $row_lists) {
       foreach ($row_lists as $row_list) {

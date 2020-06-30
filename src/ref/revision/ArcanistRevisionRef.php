@@ -89,6 +89,13 @@ final class ArcanistRevisionRef
     return 'D'.$this->getID();
   }
 
+  public function getStatusShortDisplayName() {
+    if ($this->isStatusNeedsReview()) {
+      return pht('Review');
+    }
+    return idxv($this->parameters, array('fields', 'status', 'name'));
+  }
+
   public function getStatusDisplayName() {
     return idxv($this->parameters, array('fields', 'status', 'name'));
   }
@@ -115,6 +122,11 @@ final class ArcanistRevisionRef
   public function isStatusAccepted() {
     $status = $this->getStatus();
     return ($status === 'accepted');
+  }
+
+  public function isStatusNeedsReview() {
+    $status = $this->getStatus();
+    return ($status === 'needs-review');
   }
 
   public function getStatus() {

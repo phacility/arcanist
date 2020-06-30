@@ -6,6 +6,7 @@ final class ArcanistGridColumn
   private $key;
   private $alignment = self::ALIGNMENT_LEFT;
   private $displayWidth;
+  private $minimumWidth;
 
   const ALIGNMENT_LEFT = 'align.left';
   const ALIGNMENT_CENTER = 'align.center';
@@ -36,6 +37,15 @@ final class ArcanistGridColumn
 
   public function getDisplayWidth() {
     return $this->displayWidth;
+  }
+
+  public function setMinimumWidth($minimum_width) {
+    $this->minimumWidth = $minimum_width;
+    return $this;
+  }
+
+  public function getMinimumWidth() {
+    return $this->minimumWidth;
   }
 
 }
