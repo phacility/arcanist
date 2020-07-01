@@ -15,61 +15,56 @@ final class ArcanistConduitCallFuture
   }
 
   private function raiseLoginRequired() {
-    $conduit_uri = $this->getEngine()->getConduitURI();
-    $conduit_uri = new PhutilURI($conduit_uri);
-    $conduit_uri->setPath('/');
+    $conduit_domain = $this->getConduitDomain();
 
-    $conduit_domain = $conduit_uri->getDomain();
-
-    $block = id(new PhutilConsoleBlock())
-      ->addParagraph(
-        tsprintf(
-          '**<bg:red> %s </bg>**',
-          pht('LOGIN REQUIRED')))
-      ->addParagraph(
+    $message = array(
+      tsprintf(
+        "\n\n%W\n\n",
         pht(
           'You are trying to connect to a server ("%s") that you do not '.
           'have any stored credentials for, but the command you are '.
           'running requires authentication.',
-          $conduit_domain))
-      ->addParagraph(
+          $conduit_domain)),
+      tsprintf(
+        "%W\n\n",
         pht(
-          'To login and save credentials for this server, run this '.
-          'command:'))
-      ->addParagraph(
-        tsprintf(
-          "    $ arc install-certificate %s\n",
-          $conduit_uri));
+          'To log in and save credentials for this server, run this '.
+          'command:')),
+      tsprintf(
+        '%>',
+        $this->getInstallCommand()),
+    );
 
-    throw new PhutilArgumentUsageException($block->drawConsoleString());
+    $this->raiseException(
+      pht('Conduit API login required.'),
+      pht('LOGIN REQUIRED'),
+      $message);
   }
 
   private function raiseInvalidAuth() {
-    $conduit_uri = $this->getEngine()->getConduitURI();
-    $conduit_uri = new PhutilURI($conduit_uri);
-    $conduit_uri->setPath('/');
+    $conduit_domain = $this->getConduitDomain();
 
-    $conduit_domain = $conduit_uri->getDomain();
-
-    $block = id(new PhutilConsoleBlock())
-      ->addParagraph(
-        tsprintf(
-          '**<bg:red> %s </bg>**',
-          pht('INVALID CREDENTIALS')))
-      ->addParagraph(
+    $message = array(
+      tsprintf(
+        "\n\n%W\n\n",
         pht(
-          'Your stored credentials for this server ("%s") are not valid.',
-          $conduit_domain))
-      ->addParagraph(
+          'Your stored credentials for the server you are trying to connect '.
+          'to ("%s") are not valid.',
+          $conduit_domain)),
+      tsprintf(
+        "%W\n\n",
         pht(
-          'To login and save valid credentials for this server, run this '.
-          'command:'))
-      ->addParagraph(
-        tsprintf(
-          "    $ arc install-certificate %s\n",
-          $conduit_uri));
+          'To log in and save valid credentials for this server, run this '.
+          'command:')),
+      tsprintf(
+        '%>',
+        $this->getInstallCommand()),
+    );
 
-    throw new PhutilArgumentUsageException($block->drawConsoleString());
+    $this->raiseException(
+      pht('Invalid Conduit API credentials.'),
+      pht('INVALID CREDENTIALS'),
+      $message);
   }
 
   protected function didReceiveResult($result) {
@@ -89,6 +84,33 @@ final class ArcanistConduitCallFuture
     }
 
     throw $exception;
+  }
+
+  private function getInstallCommand() {
+    $conduit_uri = $this->getConduitURI();
+
+    return csprintf(
+      'arc install-certificate %s',
+      $conduit_uri);
+  }
+
+  private function getConduitURI() {
+    $conduit_uri = $this->getEngine()->getConduitURI();
+    $conduit_uri = new PhutilURI($conduit_uri);
+    $conduit_uri->setPath('/');
+
+    return $conduit_uri;
+  }
+
+  private function getConduitDomain() {
+    $conduit_uri = $this->getConduitURI();
+    return $conduit_uri->getDomain();
+  }
+
+  private function raiseException($summary, $title, $body) {
+    throw id(new ArcanistConduitAuthenticationException($summary))
+      ->setTitle($title)
+      ->setBody($body);
   }
 
 }

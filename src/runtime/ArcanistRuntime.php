@@ -41,6 +41,8 @@ final class ArcanistRuntime {
       $log->writeError(pht('USAGE EXCEPTION'), $ex->getMessage());
     } catch (ArcanistUserAbortException $ex) {
       $log->writeError(pht('---'), $ex->getMessage());
+    } catch (ArcanistConduitAuthenticationException $ex) {
+      $log->writeError($ex->getTitle(), $ex->getBody());
     }
 
     return 1;
