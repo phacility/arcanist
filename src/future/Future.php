@@ -63,7 +63,7 @@ abstract class Future extends Phobject {
     $this->hasStarted = true;
 
     $this->startServiceProfiler();
-    $this->isReady();
+    $this->updateFuture();
   }
 
   final public function updateFuture() {
