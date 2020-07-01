@@ -585,12 +585,18 @@ EOTEXT
       $matches = $this->getMatches($flags, $current);
 
       // If whatever the user is completing does not match the prefix of any
-      // flag, try to autcomplete a wildcard argument if it has some kind of
-      // meaningful completion. For example, "arc lint READ<tab>" should
-      // autocomplete a file.
+      // flag (or is entirely empty), try to autcomplete a wildcard argument
+      // if it has some kind of meaningful completion. For example, "arc lint
+      // READ<tab>" should autocomplete a file, and "arc lint <tab>" should
+      // suggest files in the current directory.
 
-      if (!$matches && $wildcard) {
+      if (!strlen($current) || !$matches) {
+        $try_paths = true;
+      } else {
+        $try_paths = false;
+      }
 
+      if ($try_paths && $wildcard) {
         // TOOLSETS: There was previously some very questionable support for
         // autocompleting branches here. This could be moved into Arguments
         // and Workflows.
