@@ -1808,22 +1808,6 @@ abstract class ArcanistWorkflow extends Phobject {
     return $parser;
   }
 
-  final protected function resolveCall(ConduitFuture $method) {
-    try {
-      return $method->resolve();
-    } catch (ConduitClientException $ex) {
-      if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
-        echo phutil_console_wrap(
-          pht(
-            'This feature requires a newer version of Phabricator. Please '.
-            'update it using these instructions: %s',
-            'https://secure.phabricator.com/book/phabricator/article/'.
-              'upgrading/')."\n\n");
-      }
-      throw $ex;
-    }
-  }
-
   final protected function dispatchEvent($type, array $data) {
     $data += array(
       'workflow' => $this,
@@ -1964,7 +1948,8 @@ abstract class ArcanistWorkflow extends Phobject {
 
     try {
       $method = 'repository.query';
-      $results = $this->getConduitEngine()->newCall($method, $query)
+      $results = $this->getConduitEngine()
+        ->newFuture($method, $query)
         ->resolve();
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {

@@ -39,28 +39,17 @@ final class ArcanistConduitEngine
     return $this->conduitTimeout;
   }
 
-  public function newCall($method, array $parameters) {
+  public function newFuture($method, array $parameters) {
     if ($this->conduitURI == null && $this->client === null) {
       $this->raiseURIException();
     }
 
-    return id(new ArcanistConduitCall())
-      ->setEngine($this)
-      ->setMethod($method)
-      ->setParameters($parameters);
-  }
-
-  public function resolveCall($method, array $parameters) {
-    return $this->newCall($method, $parameters)->resolve();
-  }
-
-  public function newFuture(ArcanistConduitCall $call) {
-    $method = $call->getMethod();
-    $parameters = $call->getParameters();
-
     $future = $this->getClient()->callMethod($method, $parameters);
 
-    return $future;
+    $call_future = id(new ArcanistConduitCallFuture($future))
+      ->setEngine($this);
+
+    return $call_future;
   }
 
   private function getClient() {

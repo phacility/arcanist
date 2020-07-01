@@ -141,8 +141,7 @@ EOTEXT
     );
 
     $conduit_engine = $this->getConduitEngine();
-    $conduit_call = $conduit_engine->newCall($method, $parameters);
-    $conduit_future = $conduit_engine->newFuture($conduit_call);
+    $conduit_future = $conduit_engine->newFuture($method, $parameters);
     $result = $conduit_future->resolve();
 
     $paste_phid = idxv($result, array('object', 'phid'));

@@ -48,7 +48,7 @@ final class ArcanistPasteRef
   protected function buildRefView(ArcanistRefView $view) {
     $view
       ->setObjectName($this->getMonogram())
-      ->setTitle($this->getName());
+      ->setTitle($this->getTitle());
   }
 
 }

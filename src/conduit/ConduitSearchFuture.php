@@ -104,8 +104,7 @@ final class ConduitSearchFuture
       $parameters['after'] = (string)$this->cursor;
     }
 
-    $conduit_call = $engine->newCall($method, $parameters);
-    $conduit_future = $engine->newFuture($conduit_call);
+    $conduit_future = $engine->newFuture($method, $parameters);
 
     return $conduit_future;
   }

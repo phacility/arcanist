@@ -1,22 +1,9 @@
 <?php
 
-final class ArcanistConduitCall
-  extends Phobject {
+final class ArcanistConduitCallFuture
+  extends FutureProxy {
 
-  private $key;
   private $engine;
-  private $method;
-  private $parameters;
-  private $future;
-
-  public function setKey($key) {
-    $this->key = $key;
-    return $this;
-  }
-
-  public function getKey() {
-    return $this->key;
-  }
 
   public function setEngine(ArcanistConduitEngine $engine) {
     $this->engine = $engine;
@@ -25,71 +12,6 @@ final class ArcanistConduitCall
 
   public function getEngine() {
     return $this->engine;
-  }
-
-  public function setMethod($method) {
-    $this->method = $method;
-    return $this;
-  }
-
-  public function getMethod() {
-    return $this->method;
-  }
-
-  public function setParameters(array $parameters) {
-    $this->parameters = $parameters;
-    return $this;
-  }
-
-  public function getParameters() {
-    return $this->parameters;
-  }
-
-  private function newFuture() {
-    if ($this->future) {
-      throw new Exception(
-        pht(
-          'Call has previously generated a future. Create a '.
-          'new call object for each API method invocation.'));
-    }
-
-    $method = $this->getMethod();
-    $parameters = $this->getParameters();
-    $future = $this->getEngine()->newFuture($this);
-    $this->future = $future;
-
-    return $this->future;
-  }
-
-  public function resolve() {
-    if (!$this->future) {
-      $this->newFuture();
-    }
-
-    return $this->resolveFuture();
-  }
-
-  private function resolveFuture() {
-    $future = $this->future;
-
-    try {
-      $result = $future->resolve();
-    } catch (ConduitClientException $ex) {
-      switch ($ex->getErrorCode()) {
-        case 'ERR-INVALID-SESSION':
-          if (!$this->getEngine()->getConduitToken()) {
-            $this->raiseLoginRequired();
-          }
-          break;
-        case 'ERR-INVALID-AUTH':
-          $this->raiseInvalidAuth();
-          break;
-      }
-
-      throw $ex;
-    }
-
-    return $result;
   }
 
   private function raiseLoginRequired() {
@@ -119,7 +41,7 @@ final class ArcanistConduitCall
           "    $ arc install-certificate %s\n",
           $conduit_uri));
 
-    throw new ArcanistUsageException($block->drawConsoleString());
+    throw new PhutilArgumentUsageException($block->drawConsoleString());
   }
 
   private function raiseInvalidAuth() {
@@ -147,7 +69,26 @@ final class ArcanistConduitCall
           "    $ arc install-certificate %s\n",
           $conduit_uri));
 
-    throw new ArcanistUsageException($block->drawConsoleString());
+    throw new PhutilArgumentUsageException($block->drawConsoleString());
+  }
+
+  protected function didReceiveResult($result) {
+    return $result;
+  }
+
+  protected function didReceiveException($exception) {
+    switch ($exception->getErrorCode()) {
+      case 'ERR-INVALID-SESSION':
+        if (!$this->getEngine()->getConduitToken()) {
+          $this->raiseLoginRequired();
+        }
+        break;
+      case 'ERR-INVALID-AUTH':
+        $this->raiseInvalidAuth();
+        break;
+    }
+
+    throw $exception;
   }
 
 }

@@ -53,8 +53,7 @@ EOTEXT
     }
 
     $engine = $this->getConduitEngine();
-    $conduit_call = $engine->newCall($method, $params);
-    $conduit_future = $engine->newFuture($conduit_call);
+    $conduit_future = $engine->newFuture($method, $params);
 
     $error = null;
     $error_message = null;
