@@ -5,7 +5,6 @@ final class ConduitFuture extends FutureProxy {
   private $client;
   private $engine;
   private $conduitMethod;
-  private $profilerCallID;
 
   public function setClient(ConduitClient $client, $method) {
     $this->client = $client;
@@ -13,29 +12,19 @@ final class ConduitFuture extends FutureProxy {
     return $this;
   }
 
-  public function isReady() {
-    if ($this->profilerCallID === null) {
-      $profiler = PhutilServiceProfiler::getInstance();
+  protected function getServiceProfilerStartParameters() {
+    return array(
+      'type' => 'conduit',
+      'method' => $this->conduitMethod,
+      'size' => $this->getProxiedFuture()->getHTTPRequestByteLength(),
+    );
+  }
 
-      $this->profilerCallID = $profiler->beginServiceCall(
-        array(
-          'type'    => 'conduit',
-          'method'  => $this->conduitMethod,
-          'size'    => $this->getProxiedFuture()->getHTTPRequestByteLength(),
-        ));
-    }
-
-    return parent::isReady();
+  protected function getServiceProfilerResultParameters() {
+    return array();
   }
 
   protected function didReceiveResult($result) {
-    if ($this->profilerCallID !== null) {
-      $profiler = PhutilServiceProfiler::getInstance();
-      $profiler->endServiceCall(
-        $this->profilerCallID,
-        array());
-    }
-
     list($status, $body, $headers) = $result;
     if ($status->isError()) {
       throw $status;

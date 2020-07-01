@@ -35,4 +35,11 @@ abstract class FutureAgent
     return $sockets;
   }
 
+  protected function getServiceProfilerStartParameters() {
+    // At least today, the agent construct doesn't add anything interesting
+    // to the trace and the underlying futures always show up in the trace
+    // themselves.
+    return null;
+  }
+
 }

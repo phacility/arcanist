@@ -115,6 +115,10 @@ abstract class Future extends Phobject {
 
     $params = $this->getServiceProfilerStartParameters();
 
+    if ($params === null) {
+      return;
+    }
+
     $profiler = PhutilServiceProfiler::getInstance();
     $call_id = $profiler->beginServiceCall($params);
 
