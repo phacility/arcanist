@@ -1,9 +1,7 @@
 <?php
 
 final class ArcanistUserRef
-  extends ArcanistRef
-  implements
-    ArcanistDisplayRefInterface {
+  extends ArcanistRef {
 
   private $parameters;
 
@@ -49,18 +47,16 @@ final class ArcanistUserRef
     return idxv($this->parameters, array('fields', 'realName'));
   }
 
-  public function getDisplayRefObjectName() {
-    return $this->getMonogram();
-  }
-
-  public function getDisplayRefTitle() {
+  protected function buildRefView(ArcanistRefView $view) {
     $real_name = $this->getRealName();
-
     if (strlen($real_name)) {
       $real_name = sprintf('(%s)', $real_name);
     }
 
-    return $real_name;
+    $view
+      ->setObjectName($this->getMonogram())
+      ->setTitle($real_name);
   }
+
 
 }

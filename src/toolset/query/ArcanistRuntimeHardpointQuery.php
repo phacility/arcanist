@@ -77,8 +77,7 @@ abstract class ArcanistRuntimeHardpointQuery
     $conduit_engine = $this->getRuntime()
       ->getConduitEngine();
 
-    $call_object = $conduit_engine->newCall($method, $parameters);
-    $call_future = $conduit_engine->newFuture($call_object);
+    $call_future = $conduit_engine->newFuture($method, $parameters);
 
     return $call_future;
   }

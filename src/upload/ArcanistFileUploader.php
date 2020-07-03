@@ -118,11 +118,7 @@ final class ArcanistFileUploader extends Phobject {
         $params['deleteAfterEpoch'] = $delete_after;
       }
 
-      // TOOLSETS: This should be a real future, but ConduitEngine and
-      // ConduitCall are currently built oddly and return pretend futures.
-
-      $futures[$key] = new ImmediateFuture(
-        $conduit->resolveCall('file.allocate', $params));
+      $futures[$key] = $conduit->newFuture('file.allocate', $params);
     }
 
     $iterator = id(new FutureIterator($futures))->limit(4);
@@ -217,11 +213,12 @@ final class ArcanistFileUploader extends Phobject {
   private function uploadChunks(ArcanistFileDataRef $file, $file_phid) {
     $conduit = $this->conduitEngine;
 
-    $chunks = $conduit->resolveCall(
+    $future = $conduit->newFuture(
       'file.querychunks',
       array(
         'filePHID' => $file_phid,
       ));
+    $chunks = $future->resolve();
 
     $remaining = array();
     foreach ($chunks as $chunk) {
@@ -258,7 +255,7 @@ final class ArcanistFileUploader extends Phobject {
     foreach ($remaining as $chunk) {
       $data = $file->readBytes($chunk['byteStart'], $chunk['byteEnd']);
 
-      $conduit->resolveCall(
+      $future = $conduit->newFuture(
         'file.uploadchunk',
         array(
           'filePHID' => $file_phid,
@@ -266,6 +263,7 @@ final class ArcanistFileUploader extends Phobject {
           'dataEncoding' => 'base64',
           'data' => base64_encode($data),
         ));
+      $future->resolve();
 
       $progress->update(1);
     }
@@ -282,11 +280,13 @@ final class ArcanistFileUploader extends Phobject {
 
     $data = $file->readBytes(0, $file->getByteSize());
 
-    return $conduit->resolveCall(
+    $future = $conduit->newFuture(
       'file.upload',
       $this->getUploadParameters($file) + array(
         'data_base64' => base64_encode($data),
       ));
+
+    return $future->resolve();
   }
 
 

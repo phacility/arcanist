@@ -13,11 +13,9 @@ final class ArcanistDiffWorkflow extends ArcanistWorkflow {
   private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $excuses = array('lint' => null, 'unit' => null);
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
@@ -78,10 +76,6 @@ EOTEXT
       return true;
     }
 
-    if ($this->getArgument('use-commit-message')) {
-      return true;
-    }
-
     return false;
   }
 
@@ -106,19 +100,6 @@ EOTEXT
           'When creating a revision, read revision information '.
           'from this file.'),
       ),
-      'use-commit-message' => array(
-        'supports' => array(
-          'git',
-          // TODO: Support mercurial.
-        ),
-        'short' => 'C',
-        'param' => 'commit',
-        'help' => pht('Read revision information from a specific commit.'),
-        'conflicts' => array(
-          'only' => null,
-          'update'  => null,
-        ),
-      ),
       'edit' => array(
         'supports'    => array(
           'git',
@@ -137,11 +118,8 @@ EOTEXT
           'many Arcanist/Phabricator features which depend on having access '.
           'to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw'),
           'never-apply-patches' => pht('%s disables lint.', '--raw'),
-          'advice'              => pht('%s disables lint.', '--raw'),
-          'lintall'             => pht('%s disables lint.', '--raw'),
 
           'create'              => pht(
             '%s and %s both need stdin. Use %s.',
@@ -163,11 +141,8 @@ EOTEXT
           'working copy. This disables many Arcanist/Phabricator features '.
           'which depend on having access to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw-command'),
           'never-apply-patches' => pht('%s disables lint.', '--raw-command'),
-          'advice'              => pht('%s disables lint.', '--raw-command'),
-          'lintall'             => pht('%s disables lint.', '--raw-command'),
         ),
       ),
       'create' => array(
@@ -209,8 +184,6 @@ EOTEXT
       'nolint' => array(
         'help' => pht('Do not run lint.'),
         'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--nolint'),
-          'advice'    => pht('%s suppresses lint.', '--nolint'),
           'apply-patches' => pht('%s suppresses lint.', '--nolint'),
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
@@ -226,40 +199,6 @@ EOTEXT
       ),
       'allow-untracked' => array(
         'help' => pht('Skip checks for untracked files in the working copy.'),
-      ),
-      'excuse' => array(
-        'param' => 'excuse',
-        'help' => pht(
-          'Provide a prepared in advance excuse for any lints/tests '.
-          'shall they fail.'),
-      ),
-      'less-context' => array(
-        'help' => pht(
-          "Normally, files are diffed with full context: the entire file is ".
-          "sent to Differential so reviewers can 'show more' and see it. If ".
-          "you are making changes to very large files with tens of thousands ".
-          "of lines, this may not work well. With this flag, a diff will ".
-          "be created that has only a few lines of context."),
-      ),
-      'lintall' => array(
-        'help' => pht(
-          'Raise all lint warnings, not just those on lines you changed.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
-      ),
-      'advice' => array(
-        'help' => pht(
-          'Require excuse for lint advice in addition to lint warnings and '.
-          'errors.'),
-      ),
-      'only-new' => array(
-        'param' => 'bool',
-        'help' => pht(
-          'Display only lint messages not present in the original code.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
       ),
       'apply-patches' => array(
         'help' => pht(
@@ -327,7 +266,6 @@ EOTEXT
           'git',
         ),
         'conflicts' => array(
-          'use-commit-message'  => true,
           'update'              => true,
           'only' => true,
           'raw'                 => true,
@@ -356,9 +294,6 @@ EOTEXT
       ),
       'skip-staging' => array(
         'help' => pht('Do not copy changes to the staging area.'),
-      ),
-      'ignore-unsound-tests' => array(
-        'help'  => pht('Ignore unsound test failures without prompting.'),
       ),
       'base' => array(
         'param' => 'rules',
@@ -399,10 +334,6 @@ EOTEXT
           'svn' => pht('Subversion does not support commit ranges.'),
           'hg' => pht('Mercurial does not support %s yet.', '--head'),
         ),
-        'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--head'),
-          'advice'    => pht('%s suppresses lint.', '--head'),
-        ),
       ),
     );
 
@@ -431,28 +362,12 @@ EOTEXT
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
 
-    $server = $this->console->getServer();
-    $server->setHandler(array($this, 'handleServerMessage'));
     $data = $this->runLintUnit();
 
     $lint_result = $data['lintResult'];
     $this->unresolvedLint = $data['unresolvedLint'];
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
-
-    if ($this->getArgument('nolint')) {
-      $this->excuses['lint'] = $this->getSkipExcuse(
-        pht('Provide explanation for skipping lint or press Enter to abort:'),
-        'lint-excuses');
-    }
-
-    if ($this->getArgument('nounit')) {
-      $this->excuses['unit'] = $this->getSkipExcuse(
-        pht(
-          'Provide explanation for skipping unit tests '.
-          'or press Enter to abort:'),
-        'unit-excuses');
-    }
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -669,9 +584,6 @@ EOTEXT
     }
 
     $repository_api = $this->getRepositoryAPI();
-    if ($this->getArgument('less-context')) {
-      $repository_api->setDiffLinesOfContext(3);
-    }
 
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
@@ -815,10 +727,6 @@ EOTEXT
     }
 
     if ($this->getArgument('update')) {
-      return false;
-    }
-
-    if ($this->getArgument('use-commit-message')) {
       return false;
     }
 
@@ -1001,11 +909,6 @@ EOTEXT
           "Generally, source changes should not be this large.",
           $change->getCurrentPath(),
           new PhutilNumber($size));
-        if (!$this->getArgument('less-context')) {
-          $byte_warning .= ' '.pht(
-            "If this file is a huge text file, try using the '%s' flag.",
-            '--less-context');
-        }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           throw new ArcanistUsageException(
             $byte_warning.' '.
@@ -1198,10 +1101,6 @@ EOTEXT
       return false;
     }
 
-    if ($this->haveUncommittedChanges) {
-      return false;
-    }
-
     if ($this->getArgument('no-amend')) {
       return false;
     }
@@ -1269,34 +1168,22 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          if ($this->getArgument('advice') &&
-              $lint_workflow->getUnresolvedMessages()) {
-            $this->getErrorExcuse(
-              'lint',
-              pht('Lint issued unresolved advice.'),
-              'lint-excuses');
-          } else {
-            $this->console->writeOut(
-              "<bg:green>** %s **</bg> %s\n",
-              pht('LINT OKAY'),
-              pht('No lint problems.'));
-          }
+          $this->console->writeOut(
+            "<bg:green>** %s **</bg> %s\n",
+            pht('LINT OKAY'),
+            pht('No lint problems.'));
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved warnings.'),
-            'lint-excuses');
+          $this->console->writeOut(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('LINT MESSAGES'),
+            pht('Lint issued unresolved warnings.'));
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           $this->console->writeOut(
             "<bg:red>** %s **</bg> %s\n",
             pht('LINT ERRORS'),
             pht('Lint raised errors!'));
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved errors!'),
-            'lint-excuses');
           break;
       }
 
@@ -1348,32 +1235,26 @@ EOTEXT
             pht('No unit test failures.'));
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          if ($this->getArgument('ignore-unsound-tests')) {
-            echo phutil_console_format(
-              "<bg:yellow>** %s **</bg> %s\n",
-              pht('UNIT UNSOUND'),
-              pht(
-                'Unit testing raised errors, but all '.
-                'failing tests are unsound.'));
-          } else {
-            $continue = phutil_console_confirm(
-              pht(
-                'Unit test results included failures, but all failing tests '.
-                'are known to be unsound. Ignore unsound test failures?'));
-            if (!$continue) {
-              throw new ArcanistUserAbortException();
-            }
+          $continue = phutil_console_confirm(
+            pht(
+              'Unit test results included failures, but all failing tests '.
+              'are known to be unsound. Ignore unsound test failures?'));
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
           }
+
+          echo phutil_console_format(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('UNIT UNSOUND'),
+            pht(
+              'Unit testing raised errors, but all '.
+              'failing tests are unsound.'));
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
           $this->console->writeOut(
             "<bg:red>** %s **</bg> %s\n",
             pht('UNIT ERRORS'),
             pht('Unit testing raised errors!'));
-          $this->getErrorExcuse(
-            'unit',
-            pht('Unit test results include failures!'),
-            'unit-excuses');
           break;
       }
 
@@ -1398,66 +1279,6 @@ EOTEXT
     return $this->testResults;
   }
 
-  private function getSkipExcuse($prompt, $history) {
-    $excuse = $this->getArgument('excuse');
-
-    if ($excuse === null) {
-      $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-      $excuse = phutil_console_prompt($prompt, $history);
-      if ($excuse == '') {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
-    return $excuse;
-  }
-
-  private function getErrorExcuse($type, $prompt, $history) {
-    if ($this->getArgument('excuse')) {
-      $this->console->sendMessage(array(
-        'type'    => $type,
-        'confirm'  => $prompt.' '.pht('Ignore them?'),
-      ));
-      return;
-    }
-
-    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-
-    $prompt .= ' '.
-      pht('Provide explanation to continue or press Enter to abort.');
-    $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
-    $this->console->sendMessage(array(
-      'type'    => $type,
-      'prompt'  => pht('Explanation:'),
-      'history' => $history,
-    ));
-  }
-
-  public function handleServerMessage(PhutilConsoleMessage $message) {
-    $data = $message->getData();
-
-    if ($this->getArgument('excuse')) {
-      try {
-        phutil_console_require_tty();
-      } catch (PhutilConsoleStdinNotInteractiveException $ex) {
-        $this->excuses[$data['type']] = $this->getArgument('excuse');
-        return null;
-      }
-    }
-
-    $response = '';
-    if (isset($data['prompt'])) {
-      $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
-    } else if (phutil_console_confirm($data['confirm'])) {
-      $response = $this->getArgument('excuse');
-    }
-    if ($response == '') {
-      throw new ArcanistUserAbortException();
-    }
-    $this->excuses[$data['type']] = $response;
-    return null;
-  }
-
 
 /* -(  Commit and Update Messages  )----------------------------------------- */
 
@@ -1473,12 +1294,7 @@ EOTEXT
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
-    $is_message = $this->getArgument('use-commit-message');
     $is_verbatim = $this->getArgument('verbatim');
-
-    if ($is_message) {
-      return $this->getCommitMessageFromCommit($is_message);
-    }
 
     if ($is_verbatim) {
       return $this->getCommitMessageFromUser();
@@ -1531,18 +1347,6 @@ EOTEXT
       // a diff.
       return null;
     }
-  }
-
-
-  /**
-   * @task message
-   */
-  private function getCommitMessageFromCommit($commit) {
-    $text = $this->getRepositoryAPI()->getCommitMessage($commit);
-    $message = ArcanistDifferentialCommitMessage::newFromRawCorpus($text);
-    $message->pullDataFromConduit($this->getConduit());
-    $this->validateCommitMessage($message);
-    return $message;
   }
 
 
@@ -2480,12 +2284,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
-    if (strlen($this->excuses['lint'])) {
-      $this->updateDiffProperty(
-        'arc:lint-excuse',
-        json_encode($this->excuses['lint']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->unresolvedLint) {
         $this->updateDiffProperty(
@@ -2504,11 +2302,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (strlen($this->excuses['unit'])) {
-      $this->updateDiffProperty('arc:unit-excuse',
-        json_encode($this->excuses['unit']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->testResults) {
         $this->updateDiffProperty('arc:unit', json_encode($this->testResults));

@@ -119,7 +119,7 @@ EOTEXT
         $uri = $this->getAbsoluteURI($uri);
         echo tsprintf(
           '%s',
-          $ref->newDisplayRef()
+          $ref->newRefView()
             ->setURI($uri));
       }
     }
@@ -139,85 +139,6 @@ EOTEXT
 
   private function writeStatus($line) {
     $this->writeStatusMessage($line."\n");
-  }
-
-  private function uploadChunks($file_phid, $path) {
-    $conduit = $this->getConduit();
-
-    $f = @fopen($path, 'rb');
-    if (!$f) {
-      throw new Exception(pht('Unable to open file "%s"', $path));
-    }
-
-    $this->writeStatus(pht('Beginning chunked upload of large file...'));
-    $chunks = $conduit->resolveCall(
-      'file.querychunks',
-      array(
-        'filePHID' => $file_phid,
-      ));
-
-    $remaining = array();
-    foreach ($chunks as $chunk) {
-      if (!$chunk['complete']) {
-        $remaining[] = $chunk;
-      }
-    }
-
-    $done = (count($chunks) - count($remaining));
-
-    if ($done) {
-      $this->writeStatus(
-        pht(
-          'Resuming upload (%s of %s chunks remain).',
-          phutil_count($remaining),
-          phutil_count($chunks)));
-    } else {
-      $this->writeStatus(
-        pht(
-          'Uploading chunks (%s chunks to upload).',
-          phutil_count($remaining)));
-    }
-
-    $progress = new PhutilConsoleProgressBar();
-    $progress->setTotal(count($chunks));
-
-    for ($ii = 0; $ii < $done; $ii++) {
-      $progress->update(1);
-    }
-
-    $progress->draw();
-
-    // TODO: We could do these in parallel to improve upload performance.
-    foreach ($remaining as $chunk) {
-      $offset = $chunk['byteStart'];
-
-      $ok = fseek($f, $offset);
-      if ($ok !== 0) {
-        throw new Exception(
-          pht(
-            'Failed to %s!',
-            'fseek()'));
-      }
-
-      $data = fread($f, $chunk['byteEnd'] - $chunk['byteStart']);
-      if ($data === false) {
-        throw new Exception(
-          pht(
-            'Failed to %s!',
-            'fread()'));
-      }
-
-      $conduit->resolveCall(
-        'file.uploadchunk',
-        array(
-          'filePHID' => $file_phid,
-          'byteStart' => $offset,
-          'dataEncoding' => 'base64',
-          'data' => base64_encode($data),
-        ));
-
-      $progress->update(1);
-    }
   }
 
 }

@@ -4,6 +4,7 @@ abstract class ArcanistConfigurationSource
   extends Phobject {
 
   const SCOPE_USER = 'user';
+  const SCOPE_WORKING_COPY = 'working-copy';
 
   abstract public function getSourceDisplayName();
   abstract public function getAllKeys();

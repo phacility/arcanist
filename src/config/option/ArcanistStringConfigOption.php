@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistStringConfigOption
-  extends ArcanistScalarConfigOption {
+  extends ArcanistSingleSourceConfigOption {
 
   public function getType() {
     return 'string';

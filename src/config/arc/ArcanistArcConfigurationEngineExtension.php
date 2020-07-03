@@ -6,6 +6,7 @@ final class ArcanistArcConfigurationEngineExtension
   const EXTENSIONKEY = 'arc';
 
   const KEY_ALIASES = 'aliases';
+  const KEY_PROMPTS = 'prompts';
 
   public function newConfigurationOptions() {
     // TOOLSETS: Restore "load", and maybe this other stuff.
@@ -20,46 +21,6 @@ final class ArcanistArcConfigurationEngineExtension
           'or unit test engines.'),
         'default' => array(),
         'example' => '["/var/arc/customlib/src"]',
-      ),
-
-      'arc.feature.start.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to create the new feature branch '.
-          'off of.'),
-        'example' => '"develop"',
-      ),
-      'arc.land.onto.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to land changes onto when '.
-          '`%s` is run.',
-          'arc land'),
-        'example' => '"develop"',
-      ),
-
-      'arc.autostash' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'Whether %s should permit the automatic stashing of changes in the '.
-          'working directory when requiring a clean working copy. This option '.
-          'should only be used when users understand how to restore their '.
-          'working directory from the local stash if an Arcanist operation '.
-          'causes an unrecoverable error.',
-          'arc'),
-        'default' => false,
-        'example' => 'false',
-      ),
-
-      'history.immutable' => array(
-        'type' => 'bool',
-        'legacy' => 'immutable_history',
-        'help' => pht(
-          'If true, %s will never change repository history (e.g., through '.
-          'amending or rebasing). Defaults to true in Mercurial and false in '.
-          'Git. This setting has no effect in Subversion.',
-          'arc'),
-        'example' => 'false',
       ),
       'editor' => array(
         'type' => 'string',
@@ -111,9 +72,9 @@ final class ArcanistArcConfigurationEngineExtension
         ->setHelp(
           pht(
             'Associate the working copy with a specific Phabricator '.
-            'repository. Normally, `arc` can figure this association out on '.
-            'its own, but if your setup is unusual you can use this option '.
-            'to tell it what the desired value is.'))
+            'repository. Normally, Arcanist can figure this association '.
+            'out on its own, but if your setup is unusual you can use '.
+            'this option to tell it what the desired value is.'))
         ->setExamples(
           array(
             'libexample',
@@ -145,6 +106,58 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Configured command aliases. Use the "alias" workflow to define '.
             'aliases.')),
+      id(new ArcanistPromptsConfigOption())
+        ->setKey(self::KEY_PROMPTS)
+        ->setDefaultValue(array())
+        ->setSummary(pht('List of prompt responses.'))
+        ->setHelp(
+          pht(
+            'Configured prompt aliases. Use the "prompts" workflow to '.
+            'show prompts and responses.')),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('arc.land.onto')
+        ->setDefaultValue(array())
+        ->setSummary(pht('Default list of "onto" refs for "arc land".'))
+        ->setHelp(
+          pht(
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--onto" flag.'))
+        ->setExamples(
+          array(
+            '["master"]',
+          )),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('pager')
+        ->setDefaultValue(array())
+        ->setSummary(pht('Default pager command.'))
+        ->setHelp(
+          pht(
+            'Specify the pager command to use when displaying '.
+            'documentation.'))
+        ->setExamples(
+          array(
+            '["less", "-R", "--"]',
+          )),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.onto-remote')
+        ->setSummary(pht('Default list of "onto" remote for "arc land".'))
+        ->setHelp(
+          pht(
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--onto-remote" flag.'))
+        ->setExamples(
+          array(
+            'origin',
+          )),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.strategy')
+        ->setSummary(
+          pht(
+            'Configure a default merge strategy for "arc land".'))
+        ->setHelp(
+          pht(
+            'Specifies the default behavior when "arc land" is run with '.
+            'no "--strategy" flag.')),
     );
   }
 

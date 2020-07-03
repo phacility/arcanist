@@ -41,6 +41,8 @@ final class ArcanistRuntime {
       $log->writeError(pht('USAGE EXCEPTION'), $ex->getMessage());
     } catch (ArcanistUserAbortException $ex) {
       $log->writeError(pht('---'), $ex->getMessage());
+    } catch (ArcanistConduitAuthenticationException $ex) {
+      $log->writeError($ex->getTitle(), $ex->getBody());
     }
 
     return 1;
@@ -884,7 +886,6 @@ final class ArcanistRuntime {
       $legacy[] = new ArcanistGetConfigWorkflow();
       $legacy[] = new ArcanistSetConfigWorkflow();
       $legacy[] = new ArcanistInstallCertificateWorkflow();
-      $legacy[] = new ArcanistLandWorkflow();
       $legacy[] = new ArcanistLintersWorkflow();
       $legacy[] = new ArcanistLintWorkflow();
       $legacy[] = new ArcanistListWorkflow();

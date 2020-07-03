@@ -115,6 +115,21 @@ final class PhutilArgumentSpellingCorrector extends Phobject {
       $options[$key] = $this->normalizeString($option);
     }
 
+    // In command mode, accept any unique prefix of a command as a shorthand
+    // for that command.
+    if ($this->getMode() === self::MODE_COMMANDS) {
+      $prefixes = array();
+      foreach ($options as $option) {
+        if (!strncmp($input, $option, strlen($input))) {
+          $prefixes[] = $option;
+        }
+      }
+
+      if (count($prefixes) === 1) {
+        return $prefixes;
+      }
+    }
+
     $distances = array();
     $inputv = phutil_utf8v($input);
     foreach ($options as $option) {

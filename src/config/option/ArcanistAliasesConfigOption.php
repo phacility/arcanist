@@ -1,7 +1,7 @@
 <?php
 
 final class ArcanistAliasesConfigOption
-  extends ArcanistListConfigOption {
+  extends ArcanistMultiSourceConfigOption {
 
   public function getType() {
     return 'list<alias>';

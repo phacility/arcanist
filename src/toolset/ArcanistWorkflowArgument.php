@@ -8,6 +8,9 @@ final class ArcanistWorkflowArgument
   private $wildcard;
   private $parameter;
   private $isPathArgument;
+  private $shortFlag;
+  private $repeatable;
+  private $relatedConfig = array();
 
   public function setKey($key) {
     $this->key = $key;
@@ -27,6 +30,33 @@ final class ArcanistWorkflowArgument
     return $this->wildcard;
   }
 
+  public function setShortFlag($short_flag) {
+    $this->shortFlag = $short_flag;
+    return $this;
+  }
+
+  public function getShortFlag() {
+    return $this->shortFlag;
+  }
+
+  public function setRepeatable($repeatable) {
+    $this->repeatable = $repeatable;
+    return $this;
+  }
+
+  public function getRepeatable() {
+    return $this->repeatable;
+  }
+
+  public function addRelatedConfig($related_config) {
+    $this->relatedConfig[] = $related_config;
+    return $this;
+  }
+
+  public function getRelatedConfig() {
+    return $this->relatedConfig;
+  }
+
   public function getPhutilSpecification() {
     $spec = array(
       'name' => $this->getKey(),
@@ -43,13 +73,41 @@ final class ArcanistWorkflowArgument
 
     $help = $this->getHelp();
     if ($help !== null) {
+      $config = $this->getRelatedConfig();
+
+      if ($config) {
+        $more = array();
+        foreach ($this->getRelatedConfig() as $config) {
+          $more[] = tsprintf(
+            '%s **%s**',
+            pht('Related configuration:'),
+            $config);
+        }
+        $more = phutil_glue($more, "\n");
+        $help = tsprintf("%B\n\n%B", $help, $more);
+      }
+
       $spec['help'] = $help;
+    }
+
+    $short = $this->getShortFlag();
+    if ($short !== null) {
+      $spec['short'] = $short;
+    }
+
+    $repeatable = $this->getRepeatable();
+    if ($repeatable !== null) {
+      $spec['repeat'] = $repeatable;
     }
 
     return $spec;
   }
 
   public function setHelp($help) {
+    if (is_array($help)) {
+      $help = implode("\n\n", $help);
+    }
+
     $this->help = $help;
     return $this;
   }

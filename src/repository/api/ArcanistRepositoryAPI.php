@@ -42,6 +42,7 @@ abstract class ArcanistRepositoryAPI extends Phobject {
   private $runtime;
   private $currentWorkingCopyStateRef = false;
   private $currentCommitRef = false;
+  private $graph;
 
   abstract public function getSourceControlSystemName();
 
@@ -369,15 +370,6 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
 
-  public function getAllBranches() {
-    // TODO: Implement for Mercurial/SVN and make abstract.
-    return array();
-  }
-
-  public function getAllBranchRefs() {
-    throw new ArcanistCapabilityNotSupportedException($this);
-  }
-
   public function getBaseCommitRef() {
     throw new ArcanistCapabilityNotSupportedException($this);
   }
@@ -675,6 +667,20 @@ abstract class ArcanistRepositoryAPI extends Phobject {
       ->setResolveOnError(false);
   }
 
+  public function newPassthru($pattern /* , ... */) {
+    throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function execPassthru($pattern /* , ... */) {
+    $args = func_get_args();
+
+    $future = call_user_func_array(
+      array($this, 'newPassthru'),
+      $args);
+
+    return $future->resolve();
+  }
+
   final public function setRuntime(ArcanistRuntime $runtime) {
     $this->runtime = $runtime;
     return $this;
@@ -731,7 +737,101 @@ abstract class ArcanistRepositoryAPI extends Phobject {
     return new ArcanistCommitRef();
   }
 
-  final public function newBranchRef() {
-    return new ArcanistBranchRef();
+  final public function newMarkerRef() {
+    return new ArcanistMarkerRef();
   }
+
+  final public function getLandEngine() {
+    $engine = $this->newLandEngine();
+
+    if ($engine) {
+      $engine->setRepositoryAPI($this);
+    }
+
+    return $engine;
+  }
+
+  protected function newLandEngine() {
+    return null;
+  }
+
+  final public function getWorkEngine() {
+    $engine = $this->newWorkEngine();
+
+    if ($engine) {
+      $engine->setRepositoryAPI($this);
+    }
+
+    return $engine;
+  }
+
+  protected function newWorkEngine() {
+    return null;
+  }
+
+  final public function getSupportedMarkerTypes() {
+    return $this->newSupportedMarkerTypes();
+  }
+
+  protected function newSupportedMarkerTypes() {
+    return array();
+  }
+
+  final public function newMarkerRefQuery() {
+    return id($this->newMarkerRefQueryTemplate())
+      ->setRepositoryAPI($this);
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function newRemoteRefQuery() {
+    return id($this->newRemoteRefQueryTemplate())
+      ->setRepositoryAPI($this);
+  }
+
+  protected function newRemoteRefQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function newCommitGraphQuery() {
+    return id($this->newCommitGraphQueryTemplate());
+  }
+
+  protected function newCommitGraphQueryTemplate() {
+    throw new PhutilMethodNotImplementedException();
+  }
+
+  final public function getDisplayHash($hash) {
+    return substr($hash, 0, 12);
+  }
+
+
+  final public function getNormalizedURI($uri) {
+    $normalized_uri = $this->newNormalizedURI($uri);
+    return $normalized_uri->getNormalizedURI();
+  }
+
+  protected function newNormalizedURI($uri) {
+    return $uri;
+  }
+
+  final public function getPublishedCommitHashes() {
+    return $this->newPublishedCommitHashes();
+  }
+
+  protected function newPublishedCommitHashes() {
+    return array();
+  }
+
+  final public function getGraph() {
+    if (!$this->graph) {
+      $this->graph = id(new ArcanistCommitGraph())
+        ->setRepositoryAPI($this);
+    }
+
+    return $this->graph;
+  }
+
 }

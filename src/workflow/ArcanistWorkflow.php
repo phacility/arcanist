@@ -244,7 +244,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $err;
   }
 
-  final protected function getLogEngine() {
+  final public function getLogEngine() {
     return $this->getRuntime()->getLogEngine();
   }
 
@@ -1808,22 +1808,6 @@ abstract class ArcanistWorkflow extends Phobject {
     return $parser;
   }
 
-  final protected function resolveCall(ConduitFuture $method) {
-    try {
-      return $method->resolve();
-    } catch (ConduitClientException $ex) {
-      if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
-        echo phutil_console_wrap(
-          pht(
-            'This feature requires a newer version of Phabricator. Please '.
-            'update it using these instructions: %s',
-            'https://secure.phabricator.com/book/phabricator/article/'.
-              'upgrading/')."\n\n");
-      }
-      throw $ex;
-    }
-  }
-
   final protected function dispatchEvent($type, array $data) {
     $data += array(
       'workflow' => $this,
@@ -1964,7 +1948,8 @@ abstract class ArcanistWorkflow extends Phobject {
 
     try {
       $method = 'repository.query';
-      $results = $this->getConduitEngine()->newCall($method, $query)
+      $results = $this->getConduitEngine()
+        ->newFuture($method, $query)
         ->resolve();
     } catch (ConduitClientException $ex) {
       if ($ex->getErrorCode() == 'ERR-CONDUIT-CALL') {
@@ -2035,6 +2020,8 @@ abstract class ArcanistWorkflow extends Phobject {
       $reasons[] = pht(
         'This repository has no VCS UUID (this is normal for git/hg).');
     }
+
+    // TODO: Swap this for a RemoteRefQuery.
 
     $remote_uri = $this->getRepositoryAPI()->getRemoteURI();
     if ($remote_uri !== null) {
@@ -2357,6 +2344,17 @@ abstract class ArcanistWorkflow extends Phobject {
       $prompts = $this->newPrompts();
       assert_instances_of($prompts, 'ArcanistPrompt');
 
+      // TODO: Move this somewhere modular.
+
+      $prompts[] = $this->newPrompt('arc.state.stash')
+        ->setDescription(
+          pht(
+            'Prompts the user to stash changes and continue when the '.
+            'working copy has untracked, uncommitted, or unstaged '.
+            'changes.'));
+
+      // TODO: Swap to ArrayCheck?
+
       $map = array();
       foreach ($prompts as $prompt) {
         $key = $prompt->getKey();
@@ -2380,7 +2378,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->promptMap;
   }
 
-  protected function getPrompt($key) {
+  final public function getPrompt($key) {
     $map = $this->getPromptMap();
 
     $prompt = idx($map, $key);
@@ -2421,7 +2419,7 @@ abstract class ArcanistWorkflow extends Phobject {
     return $stdin->read();
   }
 
-  protected function getAbsoluteURI($raw_uri) {
+  final public function getAbsoluteURI($raw_uri) {
     // TODO: "ArcanistRevisionRef", at least, may return a relative URI.
     // If we get a relative URI, guess the correct absolute URI based on
     // the Conduit URI. This might not be correct for Conduit over SSH.
@@ -2438,6 +2436,32 @@ abstract class ArcanistWorkflow extends Phobject {
     $raw_uri = phutil_string_cast($raw_uri);
 
     return $raw_uri;
+  }
+
+  final public function writeToPager($corpus) {
+    $is_tty = (function_exists('posix_isatty') && posix_isatty(STDOUT));
+
+    if (!$is_tty) {
+      echo $corpus;
+    } else {
+      $pager = $this->getConfig('pager');
+
+      if (!$pager) {
+        $pager = array('less', '-R', '--');
+      }
+
+      // Try to show the content through a pager.
+      $err = id(new PhutilExecPassthru('%Ls', $pager))
+        ->write($corpus)
+        ->resolve();
+
+      // If the pager exits with an error, print the content normally.
+      if ($err) {
+        echo $corpus;
+      }
+    }
+
+    return $this;
   }
 
 }

@@ -16,10 +16,6 @@ final class ArcanistArcToolset extends ArcanistToolset {
         'param' => 'token',
         'help' => pht('Use a specific authentication token.'),
       ),
-      array(
-        'name' => 'anonymous',
-        'help' => pht('Run workflow as a public user, without authenticating.'),
-      ),
     );
   }
 

@@ -48,6 +48,17 @@ function xsprintf_terminal($userdata, &$pattern, &$pos, &$value, &$length) {
       $value = PhutilTerminalString::escapeStringValue($value, false);
       $type = 's';
       break;
+    case '?':
+      $value = tsprintf('<bg:green>**  ?  **</bg> %s', $value);
+      $value = PhutilTerminalString::escapeStringValue($value, false);
+      $value = phutil_console_wrap($value, 6, false);
+      $type = 's';
+      break;
+    case '>':
+      $value = tsprintf("    **$ %s**\n", $value);
+      $value = PhutilTerminalString::escapeStringValue($value, false);
+      $type = 's';
+      break;
     case 'd':
       $type = 'd';
       break;

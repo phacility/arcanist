@@ -27,27 +27,29 @@ abstract class FutureProxy extends Future {
   }
 
   public function isReady() {
-    if ($this->hasResult()) {
+    if ($this->hasResult() || $this->hasException()) {
       return true;
     }
 
     $proxied = $this->getProxiedFuture();
+    $proxied->updateFuture();
 
-    $is_ready = $proxied->isReady();
+    if ($proxied->hasResult() || $proxied->hasException()) {
+      try {
+        $result = $proxied->resolve();
+        $result = $this->didReceiveResult($result);
+      } catch (Exception $ex) {
+        $result = $this->didReceiveException($ex);
+      } catch (Throwable $ex) {
+        $result = $this->didReceiveException($ex);
+      }
 
-    if ($proxied->hasResult()) {
-      $result = $proxied->getResult();
-      $result = $this->didReceiveResult($result);
       $this->setResult($result);
+
+      return true;
     }
 
-    return $is_ready;
-  }
-
-  public function resolve() {
-    $this->getProxiedFuture()->resolve();
-    $this->isReady();
-    return $this->getResult();
+    return false;
   }
 
   public function getReadSockets() {
@@ -72,5 +74,9 @@ abstract class FutureProxy extends Future {
   }
 
   abstract protected function didReceiveResult($result);
+
+  protected function didReceiveException($exception) {
+    throw $exception;
+  }
 
 }

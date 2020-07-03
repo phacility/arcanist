@@ -20,12 +20,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
   protected function buildLocalFuture(array $argv) {
     $argv[0] = 'git '.$argv[0];
 
-    $future = newv('ExecFuture', $argv);
-    $future->setCWD($this->getPath());
-    return $future;
+    return newv('ExecFuture', $argv)
+      ->setCWD($this->getPath());
   }
 
-  public function execPassthru($pattern /* , ... */) {
+  public function newPassthru($pattern /* , ... */) {
     $args = func_get_args();
 
     static $git = null;
@@ -43,9 +42,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     $args[0] = $git.' '.$args[0];
 
-    return call_user_func_array('phutil_passthru', $args);
+    return newv('PhutilExecPassthru', $args)
+      ->setCWD($this->getPath());
   }
-
 
   public function getSourceControlSystemName() {
     return 'git';
@@ -598,16 +597,16 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getCanonicalRevisionName($string) {
     $match = null;
+
     if (preg_match('/@([0-9]+)$/', $string, $match)) {
       $stdout = $this->getHashFromFromSVNRevisionNumber($match[1]);
     } else {
       list($stdout) = $this->execxLocal(
-        phutil_is_windows()
-        ? 'show -s --format=%C %s --'
-        : 'show -s --format=%s %s --',
+        'show -s --format=%s %s --',
         '%H',
         $string);
     }
+
     return rtrim($stdout);
   }
 
@@ -1057,7 +1056,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    *
    * @return list<dict<string, string>> Dictionary of branch information.
    */
-  public function getAllBranches() {
+  private function getAllBranches() {
     $field_list = array(
       '%(refname)',
       '%(objectname)',
@@ -1101,27 +1100,6 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     return $result;
-  }
-
-  public function getAllBranchRefs() {
-    $branches = $this->getAllBranches();
-
-    $refs = array();
-    foreach ($branches as $branch) {
-      $commit_ref = $this->newCommitRef()
-        ->setCommitHash($branch['hash'])
-        ->setTreeHash($branch['tree'])
-        ->setCommitEpoch($branch['epoch'])
-        ->attachMessage($branch['text']);
-
-      $refs[] = $this->newBranchRef()
-        ->setBranchName($branch['name'])
-        ->setRefName($branch['ref'])
-        ->setIsCurrentBranch($branch['current'])
-        ->attachCommitRef($commit_ref);
-    }
-
-    return $refs;
   }
 
   public function getBaseCommitRef() {
@@ -1564,6 +1542,11 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return ($uri !== null);
   }
 
+  public function isFetchableRemote($remote_name) {
+    $uri = $this->getGitRemoteFetchURI($remote_name);
+    return ($uri !== null);
+  }
+
   private function getGitRemoteFetchURI($remote_name) {
     return $this->getGitRemoteURI($remote_name, $for_push = false);
   }
@@ -1737,6 +1720,104 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     // current behavior.
 
     return false;
+  }
+
+  protected function newLandEngine() {
+    return new ArcanistGitLandEngine();
+  }
+
+  protected function newWorkEngine() {
+    return new ArcanistGitWorkEngine();
+  }
+
+  public function newLocalState() {
+    return id(new ArcanistGitLocalState())
+      ->setRepositoryAPI($this);
+  }
+
+  public function readRawCommit($hash) {
+    list($stdout) = $this->execxLocal(
+      'cat-file commit -- %s',
+      $hash);
+
+    return ArcanistGitRawCommit::newFromRawBlob($stdout);
+  }
+
+  public function writeRawCommit(ArcanistGitRawCommit $commit) {
+    $blob = $commit->getRawBlob();
+
+    $future = $this->execFutureLocal('hash-object -t commit --stdin -w');
+    $future->write($blob);
+    list($stdout) = $future->resolvex();
+
+    return trim($stdout);
+  }
+
+  protected function newSupportedMarkerTypes() {
+    return array(
+      ArcanistMarkerRef::TYPE_BRANCH,
+    );
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    return new ArcanistGitRepositoryMarkerQuery();
+  }
+
+  protected function newRemoteRefQueryTemplate() {
+    return new ArcanistGitRepositoryRemoteQuery();
+  }
+
+  protected function newNormalizedURI($uri) {
+    return new ArcanistRepositoryURINormalizer(
+      ArcanistRepositoryURINormalizer::TYPE_GIT,
+      $uri);
+  }
+
+  protected function newPublishedCommitHashes() {
+    $remotes = $this->newRemoteRefQuery()
+      ->execute();
+    if (!$remotes) {
+      return array();
+    }
+
+    $markers = $this->newMarkerRefQuery()
+      ->withIsRemoteCache(true)
+      ->execute();
+
+    if (!$markers) {
+      return array();
+    }
+
+    $runtime = $this->getRuntime();
+    $workflow = $runtime->getCurrentWorkflow();
+
+    $workflow->loadHardpoints(
+      $remotes,
+      ArcanistRemoteRef::HARDPOINT_REPOSITORYREFS);
+
+    $remotes = mpull($remotes, null, 'getRemoteName');
+
+    $hashes = array();
+
+    foreach ($markers as $marker) {
+      $remote_name = $marker->getRemoteName();
+      $remote = idx($remotes, $remote_name);
+      if (!$remote) {
+        continue;
+      }
+
+      if (!$remote->isPermanentRef($marker)) {
+        continue;
+      }
+
+      $hashes[] = $marker->getCommitHash();
+    }
+
+    return $hashes;
+  }
+
+  protected function newCommitGraphQueryTemplate() {
+    return new ArcanistGitCommitGraphQuery();
   }
 
 }

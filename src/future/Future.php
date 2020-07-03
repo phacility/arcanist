@@ -63,7 +63,7 @@ abstract class Future extends Phobject {
     $this->hasStarted = true;
 
     $this->startServiceProfiler();
-    $this->isReady();
+    $this->updateFuture();
   }
 
   final public function updateFuture() {
@@ -114,6 +114,10 @@ abstract class Future extends Phobject {
     }
 
     $params = $this->getServiceProfilerStartParameters();
+
+    if ($params === null) {
+      return;
+    }
 
     $profiler = PhutilServiceProfiler::getInstance();
     $call_id = $profiler->beginServiceCall($params);

@@ -192,7 +192,8 @@ final class ArcanistHardpointEngine
     $wait_futures = $this->waitFutures;
     if ($wait_futures) {
       if (!$this->futureIterator) {
-        $iterator = new FutureIterator(array());
+        $iterator = id(new FutureIterator(array()))
+          ->limit(32);
         foreach ($wait_futures as $wait_future) {
           $iterator->addFuture($wait_future);
         }

@@ -1,32 +1,58 @@
 <?php
 
 abstract class ArcanistListConfigOption
-  extends ArcanistConfigOption {
+  extends ArcanistSingleSourceConfigOption {
 
-  public function getValueFromStorageValueList(array $list) {
-    assert_instances_of($list, 'ArcanistConfigurationSourceValue');
-
-    $result_list = array();
-    foreach ($list as $source_value) {
-      $source = $source_value->getConfigurationSource();
-      $storage_value = $this->getStorageValueFromSourceValue($source_value);
-
-      $items = $this->getValueFromStorageValue($storage_value);
-      foreach ($items as $item) {
-        $result_list[] = new ArcanistConfigurationSourceValue(
-          $source,
-          $item);
-      }
+  final public function getStorageValueFromStringValue($value) {
+    try {
+      $json_value = phutil_json_decode($value);
+    } catch (PhutilJSONParserException $ex) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Value "%s" is not valid, specify a JSON list: %s',
+          $value,
+          $ex->getMessage()));
     }
 
-    $result_list = $this->didReadStorageValueList($result_list);
+    if (!is_array($json_value) || !phutil_is_natural_list($json_value)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Value "%s" is not valid: expected a list, got "%s".',
+          $value,
+          phutil_describe_type($json_value)));
+    }
 
-    return $result_list;
+    foreach ($json_value as $idx => $item) {
+      $this->validateListItem($idx, $item);
+    }
+
+    return $json_value;
   }
 
-  protected function didReadStorageValueList(array $list) {
-    assert_instances_of($list, 'ArcanistConfigurationSourceValue');
-    return mpull($list, 'getValue');
+  final public function getValueFromStorageValue($value) {
+    if (!is_array($value)) {
+      throw new Exception(pht('Expected a list!'));
+    }
+
+    if (!phutil_is_natural_list($value)) {
+      throw new Exception(pht('Expected a natural list!'));
+    }
+
+    foreach ($value as $idx => $item) {
+      $this->validateListItem($idx, $item);
+    }
+
+    return $value;
   }
+
+  public function getDisplayValueFromValue($value) {
+    return json_encode($value);
+  }
+
+  public function getStorageValueFromValue($value) {
+    return $value;
+  }
+
+  abstract protected function validateListItem($idx, $item);
 
 }
