@@ -253,7 +253,6 @@ final class ArcanistCommitGraphSetView
 
   private function drawMarkerCell(array $items) {
     $api = $this->getRepositoryAPI();
-    $depth = $this->getViewDepth();
 
     $marker_refs = $this->getMarkerRefs();
     $commit_refs = $this->getCommitRefs();
@@ -276,53 +275,119 @@ final class ArcanistCommitGraphSetView
         substr($max->getCommitHash(), 0, 7));
     }
 
+    $member_views = $this->getMemberViews();
+    $member_count = count($member_views);
+    if ($member_count > 1) {
+      $items[] = array(
+        'group' => $member_views,
+      );
+    }
+
     $terminal_width = phutil_console_get_terminal_width();
     $max_depth = (int)floor(3 + (max(0, $terminal_width - 72) / 6));
-    if ($depth <= $max_depth) {
-      $indent = str_repeat(' ', ($depth * 2));
-    } else {
-      $more = ' ... ';
-      $indent = str_repeat(' ', ($max_depth * 2) - strlen($more)).$more;
-    }
-    $indent .= '- ';
 
-    $empty_indent = str_repeat(' ', strlen($indent));
+    $depth = $this->getViewDepth();
+
+    if ($depth <= $max_depth) {
+      $display_depth = ($depth * 2);
+      $is_squished = false;
+    } else {
+      $display_depth = ($max_depth * 2);
+      $is_squished = true;
+    }
 
     $max_width = ($max_depth * 2) + 16;
-    $available_width = $max_width - (min($max_depth, $depth) * 2);
+    $available_width = $max_width - $display_depth;
+
+    $mark_ne = "\xE2\x94\x97";
+    $mark_ew = "\xE2\x94\x81";
+    $mark_esw = "\xE2\x94\xB3";
+    $mark_sw = "\xE2\x94\x93";
+    $mark_bullet = "\xE2\x80\xA2";
+    $mark_ns_light = "\xE2\x94\x82";
+    $mark_ne_light = "\xE2\x94\x94";
+    $mark_esw_light = "\xE2\x94\xAF";
+
+    $has_children = $this->getChildViews();
 
     $is_first = true;
+    $last_key = last_key($items);
     $cell = array();
-    foreach ($items as $item) {
+    foreach ($items as $item_key => $item) {
       $marker_ref = idx($item, 'marker');
+      $group_ref = idx($item, 'group');
+
+      $is_last = ($item_key === $last_key);
 
       if ($marker_ref) {
         $marker_name = $marker_ref->getName();
+        $is_active = $marker_ref->getIsActive();
+
+        if ($is_active) {
+          $marker_width = $available_width - 4;
+        } else {
+          $marker_width = $available_width;
+        }
 
         $marker_name = id(new PhutilUTF8StringTruncator())
-          ->setMaximumGlyphs($available_width)
+          ->setMaximumGlyphs($marker_width)
           ->truncateString($marker_name);
 
         if ($marker_ref->getIsActive()) {
           $label = tsprintf(
-            '<bg:green>**%s**</bg>',
+            '<bg:green>**%s**</bg> **%s**',
+            ' * ',
             $marker_name);
         } else {
           $label = tsprintf(
             '**%s**',
             $marker_name);
         }
+      } else if ($group_ref) {
+        $label = pht(
+          '(... %s more revisions ...)',
+          new PhutilNumber(count($group_ref) - 1));
       } else if ($is_first) {
         $label = $commit_label;
       } else {
         $label = '';
       }
 
-      if ($is_first) {
-        $indent_text = $indent;
+      if ($display_depth > 2) {
+        $indent = str_repeat(' ', $display_depth - 2);
       } else {
-        $indent_text = $empty_indent;
+        $indent = '';
       }
+
+      if ($is_first) {
+        if ($display_depth === 0) {
+          $path = $mark_bullet.' ';
+        } else {
+          if ($has_children) {
+            $path = $mark_ne.$mark_ew.$mark_esw.' ';
+          } else if (!$is_last) {
+            $path = $mark_ne.$mark_ew.$mark_esw_light.' ';
+          } else {
+            $path = $mark_ne.$mark_ew.$mark_ew.' ';
+          }
+        }
+      } else if ($group_ref) {
+        $path = $mark_ne.'/'.$mark_sw.' ';
+      } else {
+        if ($is_last && !$has_children) {
+          $path = $mark_ne_light.' ';
+        } else {
+          $path = $mark_ns_light.' ';
+        }
+        if ($display_depth > 0) {
+          $path = '  '.$path;
+        }
+      }
+
+      $indent_text = sprintf(
+        '%s%s',
+        $indent,
+        $path);
 
       $cell[] = tsprintf(
         "%s%s\n",
@@ -330,17 +395,6 @@ final class ArcanistCommitGraphSetView
         $label);
 
       $is_first = false;
-    }
-
-    $member_views = $this->getMemberViews();
-    $member_count = count($member_views);
-    if ($member_count > 1) {
-      $cell[] = tsprintf(
-        "%s%s\n",
-        $empty_indent,
-        pht(
-          '- <... %s more revisions ...>',
-          new PhutilNumber($member_count - 1)));
     }
 
     return $cell;
