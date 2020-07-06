@@ -36,3 +36,4 @@
 
 # Python extension compiled files.
 /support/hg/arc-hg.pyc
+/support/hg/__pycache__/

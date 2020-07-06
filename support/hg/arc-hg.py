@@ -1,4 +1,14 @@
 from __future__ import absolute_import
+import sys
+
+is_python_3 = sys.version_info[0] >= 3
+
+if is_python_3:
+  def arc_items(dict):
+    return dict.items()
+else:
+  def arc_items(dict):
+    return dict.iteritems()
 
 import os
 import json
@@ -19,8 +29,8 @@ cmdtable = {}
 command = registrar.command(cmdtable)
 
 @command(
-  "arc-ls-markers",
-  [('', 'output', '',
+  b'arc-ls-markers',
+  [(b'', b'output', b'',
     _('file to output refs to'), _('FILE')),
   ] + cmdutil.remoteopts,
   _('[--output FILENAME] [SOURCE]'))
@@ -42,6 +52,16 @@ def lsmarkers(ui, repo, source=None, **opts):
   else:
     markers = remotemarkers(ui, repo, source, opts)
 
+  for m in markers:
+    if m['name'] != None:
+      m['name'] = m['name'].decode('utf-8')
+
+    if m['node'] != None:
+      m['node'] = m['node'].decode('utf-8')
+
+    if m['description'] != None:
+      m['description'] = m['description'].decode('utf-8')
+
   json_opts = {
     'indent': 2,
     'sort_keys': True,
@@ -54,14 +74,15 @@ def lsmarkers(ui, repo, source=None, **opts):
     with open(output_file, 'w+') as f:
       json.dump(markers, f, **json_opts)
   else:
-    print json.dumps(markers, output_file, **json_opts)
+    json_data = json.dumps(markers, **json_opts)
+    print(json_data)
 
   return 0
 
 def localmarkers(ui, repo):
   markers = []
 
-  active_node = repo['.'].node()
+  active_node = repo[b'.'].node()
   all_heads = set(repo.heads())
   current_name = repo.dirstate.branch()
   saw_current = False
@@ -117,7 +138,7 @@ def localmarkers(ui, repo):
   bookmarks = repo._bookmarks
   active_bookmark = repo._activebookmark
 
-  for bookmark_name, bookmark_node in bookmarks.iteritems():
+  for bookmark_name, bookmark_node in arc_items(bookmarks):
     is_active = (active_bookmark == bookmark_name)
     description = repo[bookmark_node].description()
 
