@@ -890,7 +890,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   public function getActiveBookmark() {
     $bookmark = $this->newMarkerRefQuery()
-      ->withMarkerTypes(ArcanistMarkerRef::TYPE_BOOKMARK)
+      ->withMarkerTypes(
+        array(
+          ArcanistMarkerRef::TYPE_BOOKMARK,
+        ))
       ->withIsActive(true)
       ->executeOne();
 
