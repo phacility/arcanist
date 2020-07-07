@@ -31,9 +31,9 @@ command = registrar.command(cmdtable)
 @command(
   b'arc-ls-markers',
   [(b'', b'output', b'',
-    _('file to output refs to'), _('FILE')),
+    _(b'file to output refs to'), _(b'FILE')),
   ] + cmdutil.remoteopts,
-  _('[--output FILENAME] [SOURCE]'))
+  _(b'[--output FILENAME] [SOURCE]'))
 def lsmarkers(ui, repo, source=None, **opts):
   """list markers
 
@@ -166,7 +166,7 @@ def localmarkers(ui, repo):
       'isClosed': False,
       'isTip': False,
       'isCurrent': True,
-      'description': repo['.'].description(),
+      'description': repo[b'.'].description(),
     })
 
   return markers
@@ -181,7 +181,7 @@ def remotemarkers(ui, repo, source, opts):
   remote = hg.peer(repo, opts, source)
 
   with remote.commandexecutor() as e:
-    branchmap = e.callcommand('branchmap', {}).result()
+    branchmap = e.callcommand(b'branchmap', {}).result()
 
   for branch_name in branchmap:
     for branch_node in branchmap[branch_name]:
@@ -189,11 +189,12 @@ def remotemarkers(ui, repo, source, opts):
         'type': 'branch',
         'name': branch_name,
         'node': node.hex(branch_node),
+        'description': None,
       })
 
   with remote.commandexecutor() as e:
-    remotemarks = bookmarks.unhexlifybookmarks(e.callcommand('listkeys', {
-      'namespace': 'bookmarks',
+    remotemarks = bookmarks.unhexlifybookmarks(e.callcommand(b'listkeys', {
+      b'namespace': b'bookmarks',
     }).result())
 
   for mark in remotemarks:
@@ -201,6 +202,7 @@ def remotemarkers(ui, repo, source, opts):
       'type': 'bookmark',
       'name': mark,
       'node': node.hex(remotemarks[mark]),
+      'description': None,
     })
 
   return markers
