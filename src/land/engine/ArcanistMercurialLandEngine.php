@@ -116,7 +116,7 @@ final class ArcanistMercurialLandEngine
           throw new PhutilArgumentUsageException(
             pht(
               'Symbol "%s" is ambiguous.',
-              $symbol));
+              $raw_symbol));
         }
 
         $marker = head($named_markers);
@@ -493,6 +493,7 @@ final class ArcanistMercurialLandEngine
   }
 
   protected function selectIntoCommit() {
+    $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
     if ($this->getIntoEmpty()) {
@@ -508,7 +509,6 @@ final class ArcanistMercurialLandEngine
     if ($this->getIntoLocal()) {
       // If we're running under "--into-local", just make sure that the
       // target identifies some actual commit.
-      $api = $this->getRepositoryAPI();
       $local_ref = $this->getIntoRef();
 
       // TODO: This error handling could probably be cleaner, it will just
@@ -834,7 +834,7 @@ final class ArcanistMercurialLandEngine
 
     try {
       foreach ($body as $command) {
-        $this->newPasthru('%Ls', $command);
+        $this->newPassthru('%Ls', $command);
       }
     } finally {
       foreach ($tail as $command) {
