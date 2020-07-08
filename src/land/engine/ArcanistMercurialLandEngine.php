@@ -768,6 +768,19 @@ final class ArcanistMercurialLandEngine
       throw new Exception(pht('TODO: Support merge strategies'));
     }
 
+    // See PHI1808. When we "hg rebase ..." below, Mercurial will move
+    // bookmarks which point at the old commit range to point at the rebased
+    // commit. This is somewhat surprising and we don't want this to happen:
+    // save the old bookmark state so we can put the bookmarks back before
+    // we continue.
+
+    $bookmark_refs = $api->newMarkerRefQuery()
+      ->withMarkerTypes(
+        array(
+          ArcanistMarkerRef::TYPE_BOOKMARK,
+        ))
+      ->execute();
+
     // TODO: Add a Mercurial version check requiring 2.1.1 or newer.
 
     $api->execxLocal(
@@ -815,6 +828,28 @@ final class ArcanistMercurialLandEngine
       // TODO
       // $api->execManualLocal('rebase --abort');
       throw $ex;
+    }
+
+    // Find all the bookmarks which pointed at commits we just rebased, and
+    // put them back the way they were before rebasing moved them. We aren't
+    // deleting the old commits yet and don't want to move the bookmarks.
+
+    $obsolete_map = array();
+    foreach ($set->getCommits() as $commit) {
+      $obsolete_map[$commit->getHash()] = true;
+    }
+
+    foreach ($bookmark_refs as $bookmark_ref) {
+      $bookmark_hash = $bookmark_ref->getCommitHash();
+
+      if (!isset($obsolete_map[$bookmark_hash])) {
+        continue;
+      }
+
+      $api->execxLocal(
+        'bookmark --force --rev %s -- %s',
+        $bookmark_hash,
+        $bookmark_ref->getName());
     }
 
     list($stdout) = $api->execxLocal('log --rev tip --template %s', '{node}');
@@ -1003,6 +1038,7 @@ final class ArcanistMercurialLandEngine
     }
 
     $revs = array();
+    $obsolete_map = array();
 
     // We've rebased all descendants already, so we can safely delete all
     // of these commits.
@@ -1015,6 +1051,10 @@ final class ArcanistMercurialLandEngine
       $max_commit = last($commits)->getHash();
 
       $revs[] = hgsprintf('%s::%s', $min_commit, $max_commit);
+
+      foreach ($commits as $commit) {
+        $obsolete_map[$commit->getHash()] = true;
+      }
     }
 
     $rev_set = '('.implode(') or (', $revs).')';
@@ -1025,6 +1065,33 @@ final class ArcanistMercurialLandEngine
     // If we "hg strip" a commit which has an obsolete predecessor, it
     // removes the obsolescence marker and revives the predecessor. This is
     // not desirable: we want to destroy all predecessors of these commits.
+
+    // See PHI1808. Both "hg strip" and "hg prune" move bookmarks backwards in
+    // history rather than destroying them. Instead, we want to destroy any
+    // bookmarks which point at these now-obsoleted commits.
+
+    $bookmark_refs = $api->newMarkerRefQuery()
+      ->withMarkerTypes(
+        array(
+          ArcanistMarkerRef::TYPE_BOOKMARK,
+        ))
+      ->execute();
+    foreach ($bookmark_refs as $bookmark_ref) {
+      $bookmark_hash = $bookmark_ref->getCommitHash();
+      $bookmark_name = $bookmark_ref->getName();
+
+      if (!isset($obsolete_map[$bookmark_hash])) {
+        continue;
+      }
+
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht('Deleting bookmark "%s".', $bookmark_name));
+
+      $api->execxLocal(
+        'bookmark --delete -- %s',
+        $bookmark_name);
+    }
 
     if ($api->getMercurialFeature('evolve')) {
       $api->execxLocal(
