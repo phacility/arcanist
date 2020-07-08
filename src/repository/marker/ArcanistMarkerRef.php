@@ -9,6 +9,8 @@ final class ArcanistMarkerRef
 
   const TYPE_BRANCH = 'branch';
   const TYPE_BOOKMARK = 'bookmark';
+  const TYPE_COMMIT_STATE = 'commit-state';
+  const TYPE_BRANCH_STATE = 'branch-state';
 
   private $name;
   private $markerType;
@@ -146,6 +148,14 @@ final class ArcanistMarkerRef
 
   public function isBranch() {
     return ($this->getMarkerType() === self::TYPE_BRANCH);
+  }
+
+  public function isCommitState() {
+    return ($this->getMarkerType() === self::TYPE_COMMIT_STATE);
+  }
+
+  public function isBranchState() {
+    return ($this->getMarkerType() === self::TYPE_BRANCH_STATE);
   }
 
   public function attachCommitRef(ArcanistCommitRef $ref) {

@@ -71,10 +71,6 @@ final class ArcanistMercurialRepositoryMarkerQuery
       }
 
       $node = $item['node'];
-      if (!$node) {
-        // NOTE: For now, we ignore the virtual "current branch" marker.
-        continue;
-      }
 
       switch ($item['type']) {
         case 'branch':
@@ -83,8 +79,11 @@ final class ArcanistMercurialRepositoryMarkerQuery
         case 'bookmark':
           $marker_type = ArcanistMarkerRef::TYPE_BOOKMARK;
           break;
-        case 'commit':
-          $marker_type = null;
+        case 'commit-state':
+          $marker_type = ArcanistMarkerRef::TYPE_COMMIT_STATE;
+          break;
+        case 'branch-state':
+          $marker_type = ArcanistMarkerRef::TYPE_BRANCH_STATE;
           break;
         default:
           throw new Exception(
@@ -92,11 +91,6 @@ final class ArcanistMercurialRepositoryMarkerQuery
               'Call to "hg arc-ls-markers" returned marker of unknown '.
               'type "%s".',
               $item['type']));
-      }
-
-      if ($marker_type === null) {
-        // NOTE: For now, we ignore the virtual "head" marker.
-        continue;
       }
 
       $commit_ref = $api->newCommitRef()
