@@ -834,7 +834,12 @@ final class ArcanistMercurialLandEngine
 
     try {
       foreach ($body as $command) {
-        $this->newPassthru('%Ls', $command);
+        $err = $this->newPassthru('%Ls', $command);
+        if ($err) {
+          throw new ArcanistUsageException(
+            pht(
+              'Push failed! Fix the error and run "arc land" again.'));
+        }
       }
     } finally {
       foreach ($tail as $command) {
