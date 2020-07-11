@@ -5,40 +5,105 @@ final class ArcanistMercurialLocalState
 
   private $localCommit;
   private $localBranch;
+  private $localBookmark;
 
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
     $log = $this->getWorkflow()->getLogEngine();
 
-    // TODO: Both of these can be pulled from "hg arc-ls-markers" more
-    // efficiently.
+    $markers = $api->newMarkerRefQuery()
+      ->execute();
 
-    $this->localCommit = $api->getCanonicalRevisionName('.');
+    $local_commit = null;
+    foreach ($markers as $marker) {
+      if ($marker->isCommitState()) {
+        $local_commit = $marker->getCommitHash();
+      }
+    }
 
-    list($branch) = $api->execxLocal('branch');
-    $this->localBranch = trim($branch);
+    if ($local_commit === null) {
+      throw new Exception(
+        pht(
+          'Unable to identify the current commit in the working copy.'));
+    }
 
-    $log->writeTrace(
-      pht('SAVE STATE'),
-      pht(
+    $this->localCommit = $local_commit;
+
+    $local_branch = null;
+    foreach ($markers as $marker) {
+      if ($marker->isBranchState()) {
+        $local_branch = $marker->getName();
+        break;
+      }
+    }
+
+    if ($local_branch === null) {
+      throw new Exception(
+        pht(
+          'Unable to identify the current branch in the working copy.'));
+    }
+
+    if ($local_branch !== null) {
+      $this->localBranch = $local_branch;
+    }
+
+    $local_bookmark = null;
+    foreach ($markers as $marker) {
+      if ($marker->isBookmark()) {
+        if ($marker->getIsActive()) {
+          $local_bookmark = $marker->getName();
+          break;
+        }
+      }
+    }
+
+    if ($local_bookmark !== null) {
+      $this->localBookmark = $local_bookmark;
+    }
+
+    $has_bookmark = ($this->localBookmark !== null);
+
+    if ($has_bookmark) {
+      $location = pht(
+        'Saving local state (at "%s" on branch "%s", bookmarked as "%s").',
+        $api->getDisplayHash($this->localCommit),
+        $this->localBranch,
+        $this->localBookmark);
+    } else {
+      $location = pht(
         'Saving local state (at "%s" on branch "%s").',
         $api->getDisplayHash($this->localCommit),
-        $this->localBranch));
+        $this->localBranch);
+    }
+
+    $log->writeTrace(pht('SAVE STATE'), $location);
   }
 
   protected function executeRestoreLocalState() {
     $api = $this->getRepositoryAPI();
     $log = $this->getWorkflow()->getLogEngine();
 
-    $log->writeStatus(
-      pht('LOAD STATE'),
-      pht(
+    if ($this->localBookmark !== null) {
+      $location = pht(
+        'Restoring local state (at "%s" on branch "%s", bookmarked as "%s").',
+        $api->getDisplayHash($this->localCommit),
+        $this->localBranch,
+        $this->localBookmark);
+    } else {
+      $location = pht(
         'Restoring local state (at "%s" on branch "%s").',
         $api->getDisplayHash($this->localCommit),
-        $this->localBranch));
+        $this->localBranch);
+    }
+
+    $log->writeStatus(pht('LOAD STATE'), $location);
 
     $api->execxLocal('update -- %s', $this->localCommit);
     $api->execxLocal('branch --force -- %s', $this->localBranch);
+
+    if ($this->localBookmark !== null) {
+      $api->execxLocal('bookmark --force -- %s', $this->localBookmark);
+    }
   }
 
   protected function executeDiscardLocalState() {
@@ -69,6 +134,12 @@ final class ArcanistMercurialLocalState
     $commands[] = csprintf(
       'hg branch --force -- %s',
       $this->localBranch);
+
+    if ($this->localBookmark !== null) {
+      $commands[] = csprintf(
+        'hg bookmark --force -- %s',
+        $this->localBookmark);
+    }
 
     return $commands;
   }

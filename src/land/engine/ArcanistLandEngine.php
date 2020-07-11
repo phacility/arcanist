@@ -1259,7 +1259,7 @@ abstract class ArcanistLandEngine
             try {
               $this->pushChange($into_commit);
               $this->setHasUnpushedChanges(false);
-            } catch (Exception $ex) {
+            } catch (ArcanistLandPushFailureException $ex) {
 
               // TODO: If the push fails, fetch and retry if the remote ref
               // has moved ahead of us.
@@ -1280,7 +1280,8 @@ abstract class ArcanistLandEngine
                 continue;
               }
 
-              throw $ex;
+              throw new PhutilArgumentUsageException(
+                $ex->getMessage());
             }
 
             if ($need_cascade) {

@@ -85,21 +85,17 @@ def localmarkers(ui, repo):
   active_node = repo[b'.'].node()
   all_heads = set(repo.heads())
   current_name = repo.dirstate.branch()
-  saw_current = False
-  saw_active = False
 
   branch_list = repo.branchmap().iterbranches()
   for branch_name, branch_heads, tip_node, is_closed in branch_list:
     for head_node in branch_heads:
-      is_active = (head_node == active_node)
+
+      is_active = False
+      if branch_name == current_name:
+        if head_node == active_node:
+          is_active = True
+
       is_tip = (head_node == tip_node)
-      is_current = (branch_name == current_name)
-
-      if is_current:
-        saw_current = True
-
-      if is_active:
-        saw_active = True
 
       if is_closed:
         head_closed = True
@@ -115,25 +111,8 @@ def localmarkers(ui, repo):
         'isActive': is_active,
         'isClosed': head_closed,
         'isTip': is_tip,
-        'isCurrent': is_current,
         'description': description,
       })
-
-  # If the current branch (selected with "hg branch X") is not reflected in
-  # the list of heads we selected, add a virtual head for it so callers get
-  # a complete picture of repository marker state.
-
-  if not saw_current:
-    markers.append({
-      'type': 'branch',
-      'name': current_name,
-      'node': None,
-      'isActive': False,
-      'isClosed': False,
-      'isTip': False,
-      'isCurrent': True,
-      'description': None,
-    })
 
   bookmarks = repo._bookmarks
   active_bookmark = repo._activebookmark
@@ -141,9 +120,6 @@ def localmarkers(ui, repo):
   for bookmark_name, bookmark_node in arc_items(bookmarks):
     is_active = (active_bookmark == bookmark_name)
     description = repo[bookmark_node].description()
-
-    if is_active:
-      saw_active = True
 
     markers.append({
       'type': 'bookmark',
@@ -153,21 +129,36 @@ def localmarkers(ui, repo):
       'description': description,
     })
 
-  # If the current working copy state is not the head of a branch and there is
-  # also no active bookmark, add a virtual marker for it so callers can figure
-  # out exactly where we are.
+  # Add virtual markers for the current commit state and current branch state
+  # so callers can figure out exactly where we are.
 
-  if not saw_active:
-    markers.append({
-      'type': 'commit',
-      'name': None,
-      'node': node.hex(active_node),
-      'isActive': False,
-      'isClosed': False,
-      'isTip': False,
-      'isCurrent': True,
-      'description': repo[b'.'].description(),
-    })
+  # Common cases where this matters include:
+
+  # You run "hg update 123" to update to an older revision. Your working
+  # copy commit will not be a branch head or a bookmark.
+
+  # You run "hg branch X" to create a new branch, but have not made any commits
+  # yet. Your working copy branch will not be reflected in any commits.
+
+  markers.append({
+    'type': 'branch-state',
+    'name': current_name,
+    'node': None,
+    'isActive': True,
+    'isClosed': False,
+    'isTip': False,
+    'description': None,
+  })
+
+  markers.append({
+    'type': 'commit-state',
+    'name': None,
+    'node': node.hex(active_node),
+    'isActive': True,
+    'isClosed': False,
+    'isTip': False,
+    'description': repo[b'.'].description(),
+  })
 
   return markers
 

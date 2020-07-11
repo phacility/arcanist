@@ -491,7 +491,7 @@ final class ArcanistGitLandEngine
         $flags_argv,
         $into_commit);
       if ($err) {
-        throw new ArcanistUsageException(
+        throw new ArcanistLandPushFailureException(
           pht(
             'Submit failed! Fix the error and run "arc land" again.'));
       }
@@ -509,16 +509,10 @@ final class ArcanistGitLandEngine
       $this->newOntoRefArguments($into_commit));
 
     if ($err) {
-      throw new ArcanistUsageException(
+      throw new ArcanistLandPushFailureException(
         pht(
           'Push failed! Fix the error and run "arc land" again.'));
     }
-
-    // TODO
-    // if ($this->isGitSvn) {
-    //   $err = phutil_passthru('git svn dcommit');
-    //   $cmd = 'git svn dcommit';
-
   }
 
   protected function reconcileLocalState(
