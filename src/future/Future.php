@@ -14,6 +14,7 @@ abstract class Future extends Phobject {
   private $exception;
   private $futureKey;
   private $serviceProfilerCallID;
+  private $raiseExceptionOnStart = true;
   private static $nextKey = 1;
 
   /**
@@ -41,7 +42,7 @@ abstract class Future extends Phobject {
           'timeout.'));
     }
 
-    if (!$this->hasResult() && !$this->hasException()) {
+    if (!$this->canResolve()) {
       $graph = new FutureIterator(array($this));
       $graph->resolveAll();
     }
@@ -53,25 +54,8 @@ abstract class Future extends Phobject {
     return $this->getResult();
   }
 
-  final public function startFuture() {
-    if ($this->hasStarted) {
-      throw new Exception(
-        pht(
-          'Future has already started; futures can not start more '.
-          'than once.'));
-    }
-    $this->hasStarted = true;
-
-    $this->startServiceProfiler();
-    $this->updateFuture();
-  }
-
   final public function updateFuture() {
-    if ($this->hasException()) {
-      return;
-    }
-
-    if ($this->hasResult()) {
+    if ($this->canResolve()) {
       return;
     }
 
@@ -82,25 +66,6 @@ abstract class Future extends Phobject {
     } catch (Throwable $ex) {
       $this->setException($ex);
     }
-  }
-
-  final public function endFuture() {
-    if (!$this->hasException() && !$this->hasResult()) {
-      throw new Exception(
-        pht(
-          'Trying to end a future which has no exception and no result. '.
-          'Futures must resolve before they can be ended.'));
-    }
-
-    if ($this->hasEnded) {
-      throw new Exception(
-        pht(
-          'Future has already ended; futures can not end more '.
-          'than once.'));
-    }
-    $this->hasEnded = true;
-
-    $this->endServiceProfiler();
   }
 
   private function startServiceProfiler() {
@@ -181,7 +146,24 @@ abstract class Future extends Phobject {
   }
 
   public function start() {
-    $this->isReady();
+    if ($this->hasStarted) {
+      throw new Exception(
+        pht(
+          'Future has already started; futures can not start more '.
+          'than once.'));
+    }
+    $this->hasStarted = true;
+
+    $this->startServiceProfiler();
+
+    $this->updateFuture();
+
+    if ($this->raiseExceptionOnStart) {
+      if ($this->hasException()) {
+        throw $this->getException();
+      }
+    }
+
     return $this;
   }
 
@@ -212,6 +194,8 @@ abstract class Future extends Phobject {
     $this->hasResult = true;
     $this->result = $result;
 
+    $this->endFuture();
+
     return $this;
   }
 
@@ -219,13 +203,16 @@ abstract class Future extends Phobject {
     return $this->hasResult;
   }
 
-  final private function setException($exception) {
+  private function setException($exception) {
     // NOTE: The parameter may be an Exception or a Throwable.
     $this->exception = $exception;
+
+    $this->endFuture();
+
     return $this;
   }
 
-  final private function getException() {
+  private function getException() {
     return $this->exception;
   }
 
@@ -252,6 +239,39 @@ abstract class Future extends Phobject {
     }
 
     return $this->futureKey;
+  }
+
+  final public function setRaiseExceptionOnStart($raise) {
+    $this->raiseExceptionOnStart = $raise;
+    return $this;
+  }
+
+  final public function getHasFutureStarted() {
+    return $this->hasStarted;
+  }
+
+  final public function canResolve() {
+    if ($this->hasResult()) {
+      return true;
+    }
+
+    if ($this->hasException()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private function endFuture() {
+    if ($this->hasEnded) {
+      throw new Exception(
+        pht(
+          'Future has already ended; futures can not end more '.
+          'than once.'));
+    }
+    $this->hasEnded = true;
+
+    $this->endServiceProfiler();
   }
 
 }
