@@ -104,7 +104,7 @@ final class ArcanistGitCommitGraphQuery
         }
 
         $future = array_pop($this->futures);
-        $future->startFuture();
+        $future->start();
 
         $iterator = id(new LinesOfALargeExecFuture($future))
           ->setDelimiter("\1");

@@ -95,6 +95,18 @@ final class ExecFuture extends PhutilExecutableFuture {
     return $status['pid'];
   }
 
+  public function hasPID() {
+    if ($this->procStatus) {
+      return true;
+    }
+
+    if ($this->proc) {
+      return true;
+    }
+
+    return false;
+  }
+
 
 /* -(  Configuring Execution  )---------------------------------------------- */
 
@@ -194,7 +206,7 @@ final class ExecFuture extends PhutilExecutableFuture {
 
   public function readStdout() {
     if ($this->start) {
-      $this->isReady(); // Sync
+      $this->updateFuture(); // Sync
     }
 
     $result = (string)substr($this->stdout, $this->stdoutPos);
@@ -890,6 +902,17 @@ final class ExecFuture extends PhutilExecutableFuture {
         return $this->procStatus;
       }
     }
+
+    // See T13555. This may occur if you call "getPID()" on a future which
+    // exited immediately without ever creating a valid subprocess.
+
+    if (!$this->proc) {
+      throw new Exception(
+        pht(
+          'Attempting to get subprocess status in "ExecFuture" with no '.
+          'valid subprocess.'));
+    }
+
     $this->procStatus = proc_get_status($this->proc);
 
     return $this->procStatus;

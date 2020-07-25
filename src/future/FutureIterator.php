@@ -222,12 +222,7 @@ final class FutureIterator
 
       $resolve_key = null;
       foreach ($working_set as $future_key => $future) {
-        if ($future->hasException()) {
-          $resolve_key = $future_key;
-          break;
-        }
-
-        if ($future->hasResult()) {
+        if ($future->canResolve()) {
           $resolve_key = $future_key;
           break;
         }
@@ -393,7 +388,13 @@ final class FutureIterator
     unset($this->wait[$future_key]);
     $this->work[$future_key] = $future_key;
 
-    $this->futures[$future_key]->startFuture();
+    $future = $this->futures[$future_key];
+
+    if (!$future->getHasFutureStarted()) {
+      $future
+        ->setRaiseExceptionOnStart(false)
+        ->start();
+    }
   }
 
   private function moveFutureToDone($future_key) {
@@ -404,8 +405,6 @@ final class FutureIterator
     // futures that are ready to go as soon as we can.
 
     $this->updateWorkingSet();
-
-    $this->futures[$future_key]->endFuture();
   }
 
   /**
