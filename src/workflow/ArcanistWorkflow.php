@@ -397,12 +397,12 @@ abstract class ArcanistWorkflow extends Phobject {
    * credentials can then be used to establish an authenticated connection to
    * conduit by calling @{method:authenticateConduit}. Arcanist sets some
    * defaults for all workflows regardless of whether or not they return true
-   * from @{method:requireAuthentication}, based on the ##~/.arcrc## and
-   * ##.arcconf## files if they are present. Thus, you can generally upgrade a
-   * workflow which does not require authentication into an authenticated
-   * workflow by later invoking @{method:requireAuthentication}. You should not
-   * normally need to call this method unless you are specifically overriding
-   * the defaults.
+   * from @{method:requireAuthentication}, based on the ##~/.config/arcrc## (or
+   * ##~/.arcrc##) and ##.arcconf## files if they are present. Thus, you can
+   * generally upgrade a workflow which does not require authentication into 
+   * an authenticated workflow by later invoking @{method:requireAuthentication}.
+   * You should not normally need to call this method unless you are specifically
+   * overriding the defaults.
    *
    * NOTE: You can not call this method after calling
    * @{method:authenticateConduit}.

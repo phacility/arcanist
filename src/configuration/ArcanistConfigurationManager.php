@@ -194,10 +194,10 @@ final class ArcanistConfigurationManager extends Phobject {
             $prompt = pht(
               "File permissions on your %s are too open. ".
               "Fix them by chmod'ing to 600?",
-              '~/.arcrc');
+              $user_config_path);
             if (!phutil_console_confirm($prompt, $default_no = false)) {
               throw new ArcanistUsageException(
-                pht('Set %s to file mode 600.', '~/.arcrc'));
+                pht('Set %s to file mode 600.', $user_config_path));
             }
             execx('chmod 600 %s', $user_config_path);
 
@@ -213,7 +213,7 @@ final class ArcanistConfigurationManager extends Phobject {
           $user_config = phutil_json_decode($user_config_data);
         } catch (PhutilJSONParserException $ex) {
           throw new PhutilProxyException(
-            pht("Your '%s' file is not a valid JSON file.", '~/.arcrc'),
+            pht("Your '%s' file is not a valid JSON file.", $user_config_path),
             $ex);
         }
       } else {
@@ -265,7 +265,17 @@ final class ArcanistConfigurationManager extends Phobject {
     if (phutil_is_windows()) {
       return getenv('APPDATA').'/.arcrc';
     } else {
-      return getenv('HOME').'/.arcrc';
+      $home_dir = getenv('HOME');
+      $old_config = $home_dir.'/.arcrc';
+      $xdg_config_dir = getenv('XDG_CONFIG_DIR');
+
+      if (file_exists($old_config)) {
+        return $old_config;
+      } elseif ($xdg_config_dir == FALSE) {
+        return $home_dir.'/.config/arcrc';
+      } else {
+        return $xdg_config_dir.'/.config/arcrc';
+      }
     }
   }
 

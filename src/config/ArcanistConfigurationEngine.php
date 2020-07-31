@@ -92,7 +92,17 @@ final class ArcanistConfigurationEngine
     if (phutil_is_windows()) {
       return getenv('APPDATA').'/.arcrc';
     } else {
-      return getenv('HOME').'/.arcrc';
+      $home_dir = getenv('HOME');
+      $old_config = $home_dir.'/.arcrc';
+      $xdg_config_dir = getenv('XDG_CONFIG_DIR');
+
+      if (file_exists($old_config)) {
+        return $old_config;
+      } elseif ($xdg_config_dir == FALSE) {
+        return $home_dir.'/.config/arcrc';
+      } else {
+        return $xdg_config_dir.'/.config/arcrc';
+      }
     }
   }
 

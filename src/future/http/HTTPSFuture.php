@@ -34,7 +34,7 @@ final class HTTPSFuture extends BaseHTTPFuture {
    *
    * This allows us to do host-specific SSL certificates in whatever client
    * is using libphutil. e.g. in Arcanist, you could add an "ssl_cert" key
-   * to a specific host in ~/.arcrc and use that.
+   * to a specific host in the config file and use that.
    *
    * cURL needs this to be a file, it doesn't seem to be able to handle a string
    * which contains the cert. So we make a temporary file and store it there.

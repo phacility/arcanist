@@ -26,9 +26,10 @@ EOTEXT
           copy). By default, user configuration is written. Use __--local__
           to write local configuration.
 
-          User values are written to '~/.arcrc' on Linux and Mac OS X, and an
-          undisclosed location on Windows. Local values are written to an arc
-          directory under either .git, .hg, or .svn as appropriate.
+          User values are written to '~/.config/arcrc' on Linux and Mac OS X by 
+          default, or '~/.arcrc' on old installations, and an undisclosed 
+          location on Windows. Local values are written to an arc directory 
+          under either .git, .hg, or .svn as appropriate.
 EOTEXT
       );
   }

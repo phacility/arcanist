@@ -19,7 +19,7 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: http, https
-          Installs Conduit credentials into your ~/.arcrc for the given install
+          Installs Conduit credentials into your config file for the given install
           of Phabricator. You need to do this before you can use 'arc', as it
           enables 'arc' to link your command-line activity with your account on
           the web. Run this command from within a project directory to install
@@ -55,6 +55,7 @@ EOTEXT
     $configuration_manager = $this->getConfigurationManager();
 
     $config = $configuration_manager->readUserConfigurationFile();
+    $config_path = $configuration_manager->getUserConfigurationFileLocation();
 
     $this->writeInfo(
       pht('CONNECT'),
@@ -168,7 +169,7 @@ EOTEXT
       );
     }
 
-    echo pht('Writing %s...', '~/.arcrc')."\n";
+    echo pht('Writing %s...', $config_path)."\n";
     $configuration_manager->writeUserConfigurationFile($config);
 
     if ($is_token_auth) {
