@@ -327,9 +327,24 @@ abstract class ArcanistWorkflow extends Phobject {
         $conduit->setConduitToken($token);
 
         try {
-          $result = $this->getConduit()->callMethodSynchronous(
-            'user.whoami',
-            array());
+          // UBER CODE
+          $usso = new UberUSSO();
+          $usso->enhanceConduitClient($conduit);
+          try {
+            $result = $this->getConduit()->callMethodSynchronous(
+              'user.whoami',
+              array());
+          } catch (HTTPFutureHTTPResponseStatus $ex) {
+            if (!$usso->enhanceConduitClient($conduit, $ex)) {
+              // if no enhancements came from error, then fail
+              // otherwise continue trying
+              throw $ex;
+            }
+            $result = $this->getConduit()->callMethodSynchronous(
+              'user.whoami',
+               array());
+          }
+          // UBER CODE END
 
           $this->userName = $result['userName'];
           $this->userPHID = $result['phid'];
