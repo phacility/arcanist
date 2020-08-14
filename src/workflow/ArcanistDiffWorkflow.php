@@ -1860,6 +1860,11 @@ EOTEXT
           $template);
         $message->pullDataFromConduit($conduit);
         $this->validateCommitMessage($message);
+        // UBER CODE
+        if ($this->isCommitEditRequired($message)) {
+          continue;
+        }
+        // UBER CODE END
         $done = true;
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
         echo pht('Commit message has errors:')."\n\n";
@@ -2108,6 +2113,40 @@ EOTEXT
         }
       }
     }
+  }
+
+  // runs some validation and returns boolean status if user needs
+  // to edit commit message again
+  private function isCommitEditRequired($message) {
+    if (!$message instanceof ArcanistDifferentialCommitMessage) {
+      return false;
+    }
+    // atm we do not request automation to add tasks/issues
+    if ($this->getArgument('nointeractive')) {
+      return false;
+    }
+    try {
+      phutil_console_require_tty();
+      $config = $this->getConfigurationManager();
+      $check_task_presence = $config->getConfigFromAnySource(
+        'differential.check_task_presence');
+      if (!$check_task_presence) {
+        return false;
+      }
+      $tasks = $message->getFieldValue('maniphestTaskPhids');
+      $issues = $message->getFieldValue('uber-jira.issues');
+      if ($tasks || $issues) {
+        return false;
+      }
+      return phutil_console_confirm(
+        phutil_console_format(
+          '<fg:red>WARNING:</fg> You must associate either Maniphest task or '.
+          'Jira issue with this revision. Do you want to add one?'),
+          $default_no = false);
+    } catch (PhutilConsoleStdinNotInteractiveException $e) {
+      // do nothing
+    }
+    return false;
   }
   // END UBER CODE
 
