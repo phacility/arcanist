@@ -9,6 +9,7 @@ final class UberUSSO extends Phobject {
     $conduit,
     HTTPFutureHTTPResponseStatus $status = null) {
 
+    $tkn = null;
     if ($status != null) {
       // if ARC_USSO_TOKEN is set (service most like) we should not try to use
       // usso/ussh stuff
