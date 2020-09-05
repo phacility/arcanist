@@ -132,7 +132,7 @@ final class HTTPSFuture extends BaseHTTPFuture {
    * @return string|false
    */
   public static function loadContent($uri, $timeout = null) {
-    $future = new HTTPSFuture($uri);
+    $future = new self($uri);
     if ($timeout !== null) {
       $future->setTimeout($timeout);
     }
@@ -151,7 +151,8 @@ final class HTTPSFuture extends BaseHTTPFuture {
       throw new Exception(
         pht(
           'Specified download path "%s" already exists, refusing to '.
-          'overwrite.'));
+          'overwrite.',
+          $download_path));
     }
 
     return $this;
