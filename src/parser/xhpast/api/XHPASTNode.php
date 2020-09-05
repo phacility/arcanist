@@ -33,7 +33,9 @@ final class XHPASTNode extends AASTNode {
         return $this->getChildByIndex(0)->evalStatic();
         break;
       case 'n_STRING_SCALAR':
-        return (string)$this->getStringLiteralValue();
+        return phutil_string_cast($this->getStringLiteralValue());
+      case 'n_HEREDOC':
+        return phutil_string_cast($this->getStringLiteralValue());
       case 'n_NUMERIC_SCALAR':
         $value = $this->getSemanticString();
         if (preg_match('/^0x/i', $value)) {
@@ -186,30 +188,50 @@ final class XHPASTNode extends AASTNode {
   }
 
   public function getStringLiteralValue() {
-    if ($this->getTypeName() != 'n_STRING_SCALAR') {
-      return null;
+    $type_name = $this->getTypeName();
+
+    if ($type_name === 'n_HEREDOC') {
+      $value = $this->getSemanticString();
+      $value = phutil_split_lines($value);
+      $value = array_slice($value, 1, -1);
+      $value = implode('', $value);
+
+      // Strip the final newline from value, this isn't part of the string
+      // literal.
+      $value = preg_replace('/(\r|\n|\r\n)\z/', '', $value);
+
+      return $this->newStringLiteralFromSemanticString($value);
     }
 
-    $value = $this->getSemanticString();
-    $type  = $value[0];
-    $value = preg_replace('/^b?[\'"]|[\'"]$/i', '', $value);
-    $esc   = false;
-    $len   = strlen($value);
-    $out   = '';
+    if ($type_name === 'n_STRING_SCALAR') {
+      $value = $this->getSemanticString();
+      $type  = $value[0];
+      $value = preg_replace('/^b?[\'"]|[\'"]$/i', '', $value);
 
-    if ($type == "'") {
-      // Single quoted strings treat everything as a literal except "\\" and
-      // "\'".
-      return str_replace(
-        array('\\\\', '\\\''),
-        array('\\',   "'"),
-        $value);
+      if ($type == "'") {
+        // Single quoted strings treat everything as a literal except "\\" and
+        // "\'".
+        return str_replace(
+          array('\\\\', '\\\''),
+          array('\\',   "'"),
+          $value);
+      }
+
+      return $this->newStringLiteralFromSemanticString($value);
     }
 
+    return null;
+  }
+
+  private function newStringLiteralFromSemanticString($value) {
     // Double quoted strings treat "\X" as a literal if X isn't specifically
     // a character which needs to be escaped -- e.g., "\q" and "\'" are
     // literally "\q" and "\'". stripcslashes() is too aggressive, so find
     // all these under-escaped backslashes and escape them.
+
+    $len = strlen($value);
+    $esc = false;
+    $out = '';
 
     for ($ii = 0; $ii < $len; $ii++) {
       $c = $value[$ii];
