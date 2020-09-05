@@ -72,8 +72,8 @@ final class ArcanistAliasEngine
           pht(
             'Configuration source ("%s") defines an invalid alias, which '.
             'will be ignored: %s',
-            $alias->getConfigurationSource()->getSourceDisplayName()),
-            $exception->getMessage());
+            $alias->getConfigurationSource()->getSourceDisplayName(),
+            $exception->getMessage()));
     }
 
     $command = array_shift($argv);

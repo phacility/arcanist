@@ -553,6 +553,7 @@ final class ArcanistRuntime {
             'workflow in a given toolset must have a unique name.',
             get_class($workflow),
             get_class($map[$key]),
+            $key,
             get_class($toolset),
             $toolset->getToolsetKey()));
       }
