@@ -550,6 +550,7 @@ phutil_register_library_map(array(
     'ArcanistUselessOverridingMethodXHPASTLinterRule' => 'lint/linter/xhpast/rules/ArcanistUselessOverridingMethodXHPASTLinterRule.php',
     'ArcanistUselessOverridingMethodXHPASTLinterRuleTestCase' => 'lint/linter/xhpast/rules/__tests__/ArcanistUselessOverridingMethodXHPASTLinterRuleTestCase.php',
     'ArcanistUserAbortException' => 'exception/usage/ArcanistUserAbortException.php',
+    'ArcanistRevisionStatusException' => 'exception/usage/ArcanistRevisionStatusException.php',
     'ArcanistUserConfigurationSource' => 'config/source/ArcanistUserConfigurationSource.php',
     'ArcanistUserRef' => 'ref/user/ArcanistUserRef.php',
     'ArcanistUserSymbolHardpointQuery' => 'ref/user/ArcanistUserSymbolHardpointQuery.php',
