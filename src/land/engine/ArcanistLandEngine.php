@@ -275,6 +275,22 @@ abstract class ArcanistLandEngine
     return $this->getWorkflow()->getConfig($config_key);
   }
 
+  final public function allowForcedLandWithoutReview($revision_refs) {
+    $expected_string = "FORCE_LAND=";
+    $this->getWorkflow()->loadHardpoints(
+      $revision_refs,
+      array(
+        ArcanistRevisionRef::HARDPOINT_COMMITMESSAGE,
+      ));
+    foreach($revision_refs as $ref){
+      $commit_msg = $ref->getCommitMessage();
+      if(strpos($commit_msg, $expected_string) != false){
+        return true;
+    }
+    }
+    return false;
+  }
+
   final protected function confirmRevisions(array $sets) {
     assert_instances_of($sets, 'ArcanistLandCommitSet');
 
@@ -435,6 +451,10 @@ abstract class ArcanistLandEngine
             'Status: %s',
             $revision_ref->getStatusDisplayName()));
         echo tsprintf('%s', $display_ref);
+      }
+
+      if(!$this->allowForcedLandWithoutReview($revision_refs)) {
+        throw new ArcanistRevisionStatusException();
       }
 
       $query = pht(
