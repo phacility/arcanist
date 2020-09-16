@@ -43,6 +43,8 @@ final class ArcanistRuntime {
       $log->writeError(pht('---'), $ex->getMessage());
     } catch (ArcanistConduitAuthenticationException $ex) {
       $log->writeError($ex->getTitle(), $ex->getBody());
+    } catch (ArcanistRevisionStatusException $ex) {
+      $log->writeError(pht('---'), $ex->getMessage());
     }
 
     return 1;
