@@ -194,7 +194,14 @@ final class FutureIterator
    * @task iterator
    */
   public function next() {
-    $this->key = null;
+    // See T13572. If we preivously resolved and returned a Future, release
+    // it now. This prevents us from holding Futures indefinitely when callers
+    // like FuturePool build long-lived iterators and keep adding new Futures
+    // to them.
+    if ($this->key !== null) {
+      unset($this->futures[$this->key]);
+      $this->key = null;
+    }
 
     $this->updateWorkingSet();
 
