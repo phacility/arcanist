@@ -163,7 +163,7 @@ final class ArcanistArcConfigurationEngineExtension
         ->setKey('land.notaccepted.readmore')
         ->setSummary(
           pht(
-            'Information why policy on revision acceptance changes.'))
+            'Information why the policy of accepting reviews has changed.'))
     );
   }
 
