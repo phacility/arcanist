@@ -158,6 +158,16 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Specifies the default behavior when "arc land" is run with '.
             'no "--strategy" flag.')),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.notaccepted.message')
+        ->setDefaultValue(
+          pht(
+            'Rejected: You should never land revision without review. '.
+            'If you know what you are doing and still want to land, use `FORCE_LAND=__reason__` '.
+            'in revisions summary.'))
+        ->setSummary(
+          pht(
+            'Error message when attempting to land a non-accepted revision.'))
     );
   }
 

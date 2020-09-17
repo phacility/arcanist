@@ -128,7 +128,9 @@ final class ArcanistRuntime {
         ->setRuntime($this)
         ->setConfigurationEngine($config_engine)
         ->setConfigurationSourceList($config)
-        ->setConduitEngine($conduit_engine);
+        ->setConduitEngine($conduit_engine)
+        ->setNotAcceptedMessage(
+          $config->getConfig('arc.land.notaccepted.message'));
 
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
     }

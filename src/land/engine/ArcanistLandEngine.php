@@ -454,7 +454,7 @@ abstract class ArcanistLandEngine
       }
 
       if(!$this->allowForcedLandWithoutReview($revision_refs)) {
-        throw new ArcanistRevisionStatusException();
+        throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
       }
 
       $query = pht(
