@@ -122,8 +122,6 @@ final class ArcanistRuntime {
     $conduit_engine = $this->newConduitEngine($config, $args);
     $this->conduitEngine = $conduit_engine;
 
-    $docs_url = $config->getConfig('land.notaccepted.readmore');
-
     $phutil_workflows = array();
     foreach ($workflows as $key => $workflow) {
       $workflow
@@ -131,7 +129,8 @@ final class ArcanistRuntime {
         ->setConfigurationEngine($config_engine)
         ->setConfigurationSourceList($config)
         ->setConduitEngine($conduit_engine)
-        ->setNotAcceptedReadMore($docs_url);
+        ->setNotAcceptedMessage(
+          $config->getConfig('arc.land.notaccepted.message'));
 
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();
     }
