@@ -454,9 +454,7 @@ abstract class ArcanistLandEngine
       }
 
       if(!$this->allowForcedLandWithoutReview($revision_refs)) {
-        $read_more_url = $this->getWorkflow()->getNotAcceptedReadMore();
-
-        throw new ArcanistRevisionStatusException($read_more_url);
+        throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
       }
 
       $query = pht(
