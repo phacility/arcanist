@@ -158,6 +158,11 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Specifies the default behavior when "arc land" is run with '.
             'no "--strategy" flag.')),
+      id(new ArcanistStringConfigOption())
+        ->setKey('land.notaccepted.readmore')
+        ->setSummary(
+          pht(
+            'Information why policy on revision acceptance changes.'))
     );
   }
 

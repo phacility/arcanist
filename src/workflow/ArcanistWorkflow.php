@@ -76,6 +76,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $configurationSourceList;
 
   private $promptMap;
+  private $not_accepted_read_more_url;
 
   final public function setToolset(ArcanistToolset $toolset) {
     $this->toolset = $toolset;
@@ -2462,6 +2463,16 @@ abstract class ArcanistWorkflow extends Phobject {
     }
 
     return $this;
+  }
+
+
+  final public function setNotAcceptedReadMore($read_more_url) {
+    $this->not_accepted_read_more_url = $read_more_url;
+    return $this;
+  }
+
+  final public function getNotAcceptedReadMore() {
+    return $this->not_accepted_read_more_url;
   }
 
 }
