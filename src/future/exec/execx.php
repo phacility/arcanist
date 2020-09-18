@@ -47,7 +47,7 @@ function exec_manual($cmd /* , ... */) {
  */
 function phutil_passthru($cmd /* , ... */) {
   $args = func_get_args();
-  return newv('PhutilExecPassthru', $args)->execute();
+  return newv('PhutilExecPassthru', $args)->resolve();
 }
 
 
