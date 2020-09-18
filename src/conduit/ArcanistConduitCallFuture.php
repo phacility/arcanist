@@ -72,15 +72,18 @@ final class ArcanistConduitCallFuture
   }
 
   protected function didReceiveException($exception) {
-    switch ($exception->getErrorCode()) {
-      case 'ERR-INVALID-SESSION':
-        if (!$this->getEngine()->getConduitToken()) {
-          $this->raiseLoginRequired();
-        }
-        break;
-      case 'ERR-INVALID-AUTH':
-        $this->raiseInvalidAuth();
-        break;
+
+    if ($exception instanceof ConduitClientException) {
+      switch ($exception->getErrorCode()) {
+        case 'ERR-INVALID-SESSION':
+          if (!$this->getEngine()->getConduitToken()) {
+            $this->raiseLoginRequired();
+          }
+          break;
+        case 'ERR-INVALID-AUTH':
+          $this->raiseInvalidAuth();
+          break;
+      }
     }
 
     throw $exception;

@@ -1459,6 +1459,7 @@ abstract class ArcanistLandEngine
             'Merge strategy "%s" specified in "%s" configuration is '.
             'unknown. Supported merge strategies are: %s.',
             $strategy,
+            $this->getStrategyConfigurationKey(),
             $strategy_list));
       }
 

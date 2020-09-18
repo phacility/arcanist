@@ -778,7 +778,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 pht(
                   "'%s' has been amended with 'Differential Revision:', ".
                   "as specified by '%s' in your %s 'base' configuration.",
-                  '.'.
+                  '.',
                   $rule,
                   $source));
               // NOTE: This should be safe because Mercurial doesn't support

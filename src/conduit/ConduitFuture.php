@@ -62,9 +62,14 @@ final class ConduitFuture extends FutureProxy {
     }
 
     if ($data['error_code']) {
+      $message = pht(
+        '<%s> %s',
+        $this->conduitMethod,
+        $data['error_info']);
+
       throw new ConduitClientException(
         $data['error_code'],
-        $data['error_info']);
+        $message);
     }
 
     $result = $data['result'];

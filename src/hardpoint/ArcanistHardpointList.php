@@ -27,7 +27,9 @@ final class ArcanistHardpointList
           pht(
             'Hardpoint (at index "%s") has the same key ("%s") as an earlier '.
             'hardpoint. Each hardpoint must have a key that is unique '.
-            'among hardpoints on the object.'));
+            'among hardpoints on the object.',
+            $idx,
+            $key));
       }
 
       $map[$key] = $hardpoint;

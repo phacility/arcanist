@@ -82,7 +82,12 @@ final class ArcanistFormattedStringXHPASTLinterRule
       }
 
       $format = $parameters->getChildByIndex($start);
-      if ($format->getTypeName() != 'n_STRING_SCALAR') {
+      if (!$format->isConstantString()) {
+
+        // TODO: When this parameter is not a constant string, the call may
+        // be unsafe. We should make some attempt to warn about this for
+        // "qsprintf()" and other security-sensitive functions.
+
         continue;
       }
 

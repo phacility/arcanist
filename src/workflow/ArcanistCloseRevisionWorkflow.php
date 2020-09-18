@@ -35,8 +35,7 @@ EOTEXT
         'help' => pht(
           "Close only if the repository is untracked and the revision is ".
           "accepted. Continue even if the close can't happen. This is a soft ".
-          "version of '' used by other workflows.",
-          'close-revision'),
+          "version of 'close-revision' used by other workflows."),
       ),
       'quiet' => array(
         'help' => pht('Do not print a success message.'),
