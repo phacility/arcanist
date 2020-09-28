@@ -1544,7 +1544,7 @@ abstract class ArcanistLandEngine
     return $strategy;
   }
 
-  private function filterCommitSets(array $sets) {
+  protected function filterCommitSets(array $sets) {
     assert_instances_of($sets, 'ArcanistLandCommitSet');
     $log = $this->getLogEngine();
 

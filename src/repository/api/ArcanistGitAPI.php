@@ -1822,4 +1822,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return new ArcanistGitCommitGraphQuery();
   }
 
+  public function getRemoteUrl() {
+    list($stdout) = $this->execxLocal('config --get remote.origin.url');
+    return rtrim($stdout, "\n");
+  }
+
 }

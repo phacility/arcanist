@@ -296,7 +296,13 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     $repository_api = $working_copy->getRepositoryAPI();
 
-    $land_engine = $repository_api->getLandEngine();
+    if($this->getLandWithPHLQ()) {
+      $land_engine = new ArcanistPhlqLandEngine($this->getPhlqUrl());
+      $land_engine->setRepositoryAPI($repository_api);
+    } else {
+      $land_engine = $repository_api->getLandEngine();
+    }
+
     if (!$land_engine) {
       throw new PhutilArgumentUsageException(
         pht(

@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistGitLandEngine
+class ArcanistGitLandEngine
   extends ArcanistLandEngine {
 
   private $isGitPerforce;
