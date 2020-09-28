@@ -472,7 +472,7 @@ final class UberArcanistStackSubmitQueueEngine
   private function getBranchName() {
     $branch_name    = null;
     $repository_api = $this->getRepositoryAPI();
-    $revision_id    = $this->revision['id'];
+    $revision_id    = idx(nonempty($this->revision, array()), 'id');
     $base_name      = 'arcstack';
     if ($revision_id) {
       $base_name .= "-D{$revision_id}_";
