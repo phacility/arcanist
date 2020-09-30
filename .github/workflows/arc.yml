@@ -1,0 +1,20 @@
+name: Arc
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  arc_unit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-ruby@v1
+        with:
+            ruby-version: '2.7.1'
+      - run: gem install rubocop --no-document
+      - run: ./bin/arc liberate --
+      - run: ./bin/arc unit --everything --
