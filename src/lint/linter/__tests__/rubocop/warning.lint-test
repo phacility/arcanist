@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 def hello(unused)
   puts 'hi'
 end
 ~~~~~~~~~
-warning:1:11
+warning:3:11
