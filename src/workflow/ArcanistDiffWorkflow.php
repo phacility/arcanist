@@ -2742,16 +2742,16 @@ EOTEXT
         $staging_uri,
         $ref);
 
-        if ($err) {
-          $this->writeWarn(
-            pht('STAGING FAILED'),
-            pht('Unable to push lfs changes to the staging area.'));
+      if ($err) {
+        $this->writeWarn(
+          pht('STAGING FAILED'),
+          pht('Unable to push lfs changes to the staging area.'));
 
-          throw new ArcanistUsageException(
-            pht(
-              'Failed to push lfs changes to staging area. Correct the issue, '.
-              'or use --skip-staging to skip this step.'));
-        }
+        throw new ArcanistUsageException(
+          pht(
+            'Failed to push lfs changes to staging area. Correct the issue, '.
+            'or use --skip-staging to skip this step.'));
+      }
     }
 
     return $refs;
