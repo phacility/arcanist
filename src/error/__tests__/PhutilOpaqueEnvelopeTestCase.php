@@ -3,9 +3,6 @@
 final class PhutilOpaqueEnvelopeTestCase extends PhutilTestCase {
 
   public function testOpaqueEnvelope() {
-    // Skip test for now on GitHub Actions
-    $this->assertTrue(true);
-    return
 
     // NOTE: When run via "arc diff", this test's trace may include portions of
     // the diff itself, and thus this source code. Since we look for the secret
