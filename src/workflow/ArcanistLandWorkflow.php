@@ -52,10 +52,10 @@ EOTEXT
 
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
-          Supports: git, hg
+          Supports: git, git/p4, hg
 
           Publish an accepted revision after review. This command is the last
-          step in the standard Differential pre-publish code review workflow.
+          step in the standard Differential code review workflow.
 
           This command merges and pushes changes associated with an accepted
           revision that are currently sitting in __ref__, which is usually the
@@ -64,6 +64,9 @@ EOTEXT
 
           Under Git: branches, tags, and arbitrary commits (detached HEADs)
           may be landed.
+
+          Under Git/Perforce: branches, tags, and arbitrary commits may
+          be submitted.
 
           Under Mercurial: branches and bookmarks may be landed, but only
           onto a target of the same type. See T3855.
@@ -74,7 +77,8 @@ EOTEXT
           A target branch is selected by examining these sources in order:
 
             - the **--onto** flag;
-            - the upstream of the current branch, recursively (Git only);
+            - the upstream of the branch targeted by the land operation,
+              recursively (Git only);
             - the __arc.land.onto.default__ configuration setting;
             - or by falling back to a standard default:
               - "master" in Git;
@@ -84,6 +88,8 @@ EOTEXT
 
             - the **--remote** flag;
             - the upstream of the current branch, recursively (Git only);
+            - the special "p4" remote which indicates a repository has
+              been synchronized with Perforce (Git only);
             - or by falling back to a standard default:
               - "origin" in Git;
               - the default remote in Mercurial.
@@ -167,7 +173,7 @@ EOTEXT
       'remote' => array(
         'param' => 'origin',
         'help' => pht(
-          "Push to a remote other than the default ('origin' in git)."),
+          'Push to a remote other than the default.'),
       ),
       'merge' => array(
         'help' => pht(
@@ -339,23 +345,23 @@ EOTEXT
     }
 
     if ($engine) {
-      $this->readEngineArguments();
-      $this->requireCleanWorkingCopy();
-
       $should_hold = $this->getArgument('hold');
+      $remote_arg = $this->getArgument('remote');
+      $onto_arg = $this->getArgument('onto');
 
       $engine
         ->setWorkflow($this)
         ->setRepositoryAPI($this->getRepositoryAPI())
         ->setSourceRef($this->branch)
-        ->setTargetRemote($this->remote)
-        ->setTargetOnto($this->onto)
         ->setShouldHold($should_hold)
         ->setShouldKeep($this->keepBranch)
         ->setShouldSquash($this->useSquash)
         ->setShouldPreview($this->preview)
+        ->setRemoteArgument($remote_arg)
+        ->setOntoArgument($onto_arg)
         ->setBuildMessageCallback(array($this, 'buildEngineMessage'));
 
+      // UBER CODE
       if ($engine instanceof UberArcanistSubmitQueueEngine) {
         $engine =
           $engine
@@ -366,7 +372,22 @@ EOTEXT
             ->setSkipUpdateWorkingCopy($this->getArgument('uber-skip-update'))
             ->setBuildMessageCallback(array($this, 'uberBuildEngineMessage'));
       }
+      // UBER CODE END
 
+      // The goal here is to raise errors with flags early (which is cheap),
+      // before we test if the working copy is clean (which can be slow). This
+      // could probably be structured more cleanly.
+
+      $engine->parseArguments();
+
+      // This must be configured or we fail later inside "buildEngineMessage()".
+      // This is less than ideal.
+      $this->ontoRemoteBranch = sprintf(
+        '%s/%s',
+        $engine->getTargetRemote(),
+        $engine->getTargetOnto());
+
+      $this->requireCleanWorkingCopy();
       $engine->execute();
 
       if (!$should_hold && !$this->preview) {
@@ -462,123 +483,6 @@ EOTEXT
     $refspec = substr($refspec, strlen($prefix));
     return $refspec;
   }
-
-  private function readEngineArguments() {
-    // NOTE: This is hard-coded for Git right now.
-    // TODO: Clean this up and move it into LandEngines.
-
-    $onto = $this->getEngineOnto();
-    $remote = $this->getEngineRemote();
-
-    // This just overwrites work we did earlier, but it has to be up in this
-    // class for now because other parts of the workflow still depend on it.
-    $this->onto = $onto;
-    $this->remote = $remote;
-    $this->ontoRemoteBranch = $this->remote.'/'.$onto;
-  }
-
-  private function getEngineOnto() {
-    $onto = $this->getArgument('onto');
-    if ($onto !== null) {
-      $this->writeInfo(
-        pht('TARGET'),
-        pht(
-          'Landing onto "%s", selected by the --onto flag.',
-          $onto));
-      return $onto;
-    }
-
-    $api = $this->getRepositoryAPI();
-    $path = $api->getPathToUpstream($this->branch);
-
-    if ($path->getLength()) {
-      $cycle = $path->getCycle();
-      if ($cycle) {
-        $this->writeWarn(
-          pht('LOCAL CYCLE'),
-          pht(
-            'Local branch tracks an upstream, but following it leads to a '.
-            'local cycle; ignoring branch upstream.'));
-
-        echo tsprintf(
-          "\n    %s\n\n",
-          implode(' -> ', $cycle));
-
-      } else {
-        if ($path->isConnectedToRemote()) {
-          $onto = $path->getRemoteBranchName();
-          $this->writeInfo(
-            pht('TARGET'),
-            pht(
-              'Landing onto "%s", selected by following tracking branches '.
-              'upstream to the closest remote.',
-              $onto));
-          return $onto;
-        } else {
-          $this->writeInfo(
-            pht('NO PATH TO UPSTREAM'),
-            pht(
-              'Local branch tracks an upstream, but there is no path '.
-              'to a remote; ignoring branch upstream.'));
-        }
-      }
-    }
-
-    $config_key = 'arc.land.onto.default';
-    $onto = $this->getConfigFromAnySource($config_key);
-    if ($onto !== null) {
-      $this->writeInfo(
-        pht('TARGET'),
-        pht(
-          'Landing onto "%s", selected by "%s" configuration.',
-          $onto,
-          $config_key));
-      return $onto;
-    }
-
-    $onto = 'master';
-    $this->writeInfo(
-      pht('TARGET'),
-      pht(
-        'Landing onto "%s", the default target under git.',
-        $onto));
-    return $onto;
-  }
-
-  private function getEngineRemote() {
-    $remote = $this->getArgument('remote');
-    if ($remote !== null) {
-      $this->writeInfo(
-        pht('REMOTE'),
-        pht(
-          'Using remote "%s", selected by the --remote flag.',
-          $remote));
-      return $remote;
-    }
-
-    $api = $this->getRepositoryAPI();
-    $path = $api->getPathToUpstream($this->branch);
-
-    $remote = $path->getRemoteRemoteName();
-    if ($remote !== null) {
-      $this->writeInfo(
-        pht('REMOTE'),
-        pht(
-          'Using remote "%s", selected by following tracking branches '.
-          'upstream to the closest remote.',
-          $remote));
-      return $remote;
-    }
-
-    $remote = 'origin';
-    $this->writeInfo(
-      pht('REMOTE'),
-      pht(
-        'Using remote "%s", the default remote under git.',
-        $remote));
-    return $remote;
-  }
-
 
   private function readArguments() {
     $repository_api = $this->getRepositoryAPI();
