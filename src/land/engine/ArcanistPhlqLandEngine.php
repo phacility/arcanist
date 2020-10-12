@@ -4,6 +4,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
   protected $phlqUrl;
   protected $phlqLogsPath = "/log/D";
   protected $phlqLandPath = "/land/D";
+  protected $phlqStatePath = "/state/D";
 
   function __construct($phlq_url) {
     if(empty($phlq_url))
@@ -34,6 +35,16 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       return null;
 
     return $response;
+  }
+
+  function landState($rev_id) {
+    $url = $this->phlqUrl . $this->phlqStatePath . $rev_id;
+    return trim(file_get_contents($url));
+  }
+
+  function landLogs($rev_id) {
+    $url = $this->phlqUrl . $this->phlqLogsPath . $rev_id;
+    return file_get_contents($url);
   }
 
   function execute() {
@@ -167,6 +178,29 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       $log->writeSuccess(
         pht('DONE'),
         pht($message));
+    }
+
+    $this->TailLogs($revision_ids);
+  }
+
+  function TailLogs($revision_ids) {
+    $tail_position = [];
+    foreach ($revision_ids as $rev_id)
+      $tail_position[$rev_id] = 0;
+
+    while($tail_position) {
+      foreach(array_keys($tail_position) as $rev_id) {
+        $land_state = $this->landState($rev_id);
+        $land_logs = $this->landLogs($rev_id);
+        $out = substr($land_logs, $tail_position[$rev_id]);
+        $tail_position[$rev_id] = strlen($land_logs);
+
+        print($out);
+
+        if($land_state == "DONE" || $land_state == "FAILED")
+          unset($tail_position[$rev_id]);
+      }
+      if($tail_position) sleep(4);
     }
   }
 }
