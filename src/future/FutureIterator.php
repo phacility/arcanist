@@ -194,7 +194,7 @@ final class FutureIterator
    * @task iterator
    */
   public function next() {
-    // See T13572. If we preivously resolved and returned a Future, release
+    // See T13572. If we previously resolved and returned a Future, release
     // it now. This prevents us from holding Futures indefinitely when callers
     // like FuturePool build long-lived iterators and keep adding new Futures
     // to them.
