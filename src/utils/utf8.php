@@ -426,6 +426,8 @@ function phutil_utf8_is_cjk($string) {
  * @return list  A list of characters in the string.
  */
 function phutil_utf8v($string, $byte_limit = null) {
+  $string = phutil_string_cast($string);
+
   $res = array();
   $len = strlen($string);
 
