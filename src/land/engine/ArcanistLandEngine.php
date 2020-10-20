@@ -276,7 +276,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithoutReview($revision_refs) {
-    $expected_string = "FORCE_LAND=";
+    $expected_pattern = "/^FORCE_LAND=.+/im";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -284,9 +284,9 @@ abstract class ArcanistLandEngine
       ));
     foreach($revision_refs as $ref){
       $commit_msg = $ref->getCommitMessage();
-      if(strpos($commit_msg, $expected_string) != false){
+      if(preg_match($expected_pattern, $commit_msg) > 0){
         return true;
-    }
+      }
     }
     return false;
   }
