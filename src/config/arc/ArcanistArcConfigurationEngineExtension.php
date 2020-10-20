@@ -190,6 +190,12 @@ final class ArcanistArcConfigurationEngineExtension
           array(
             'https://phlq/',
           )),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.upgrade.message')
+        ->setDefaultValue(
+          pht('Arc is managed by your employer.'))
+        ->setSummary(
+          pht('Message shown when arc upgrade command is called.')),
     );
   }
 
