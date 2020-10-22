@@ -181,6 +181,15 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     }
 
     $this->TailLogs($revision_ids);
+    $this->cleanTags($api, $log);
+  }
+
+  function cleanTags($api, $log) {
+    $log->writeStatus(
+      pht('CLEANUP'),
+      pht('Cleaning tags.'));
+
+    $api->cleanTags();
   }
 
   function TailLogs($revision_ids) {
