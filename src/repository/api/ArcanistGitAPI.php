@@ -1825,4 +1825,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return rtrim($stdout, "\n");
   }
 
+  public function cleanTags() {
+    $this->execxLocal('fetch origin --prune --tags');
+  }
 }
