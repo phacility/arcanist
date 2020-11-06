@@ -296,9 +296,16 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     $repository_api = $working_copy->getRepositoryAPI();
 
-    if($this->getLandWithPHLQ()) {
+    if ($this->getIsPhlq()) {
+      // If landing in PHLQ service we use the standard land engine and set lint build plan PHIDS
+      // that are allowed to land in failed state and we set forceable build plan PHIDS that are
+      // allowed to land in failed state if ALLOW_FAILED_TESTS is set
+      $land_engine = $repository_api->getLandEngine();
+      $land_engine->setLintBuildPlanPhids($this->getLintBuildPlanPhids());
+      $land_engine->setForceableBuildPlanPhids($this->getForceableBuildPlanPhids());
+    } else if ($this->getUsePhlq()) {
       $land_engine = new ArcanistPhlqLandEngine($this->getPhlqUrl());
-      $land_engine->setRepositoryAPI($repository_api);
+      $land_engine->setRepositoryAPI($repository_api);  
     } else {
       $land_engine = $repository_api->getLandEngine();
     }
