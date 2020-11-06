@@ -164,8 +164,8 @@ final class ArcanistArcConfigurationEngineExtension
         ->setDefaultValue(
           pht(
             'Rejected: You should never land revision without review. '.
-            'If you know what you are doing and still want to land, use `FORCE_LAND=__reason__` '.
-            'in revisions summary.'))
+            'If you know what you are doing and still want to land, add a '.
+            '`FORCE_LAND=<reason>` line to the revision summary and it will be audited.'))
         ->setSummary(
           pht(
             'Error message when attempting to land a non-accepted revision.')),
@@ -176,6 +176,13 @@ final class ArcanistArcConfigurationEngineExtension
         ->setHelp(
           pht(
             'Use PHLQ to land changes')),
+      id(new ArcanistBoolConfigOption())
+        ->setKey('is.phlq')
+        ->setDefaultValue(false)
+        ->setSummary(pht('Internal use only'))
+        ->setHelp(
+          pht(
+            'Internal use only')),
       id(new ArcanistStringConfigOption())
         ->setKey('phlq.uri')
         ->setAliases(
@@ -190,6 +197,36 @@ final class ArcanistArcConfigurationEngineExtension
         ->setExamples(
           array(
             'https://phlq/',
+          )),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('forceable.build.plan.phids')
+        ->setDefaultValue(array())
+        ->setAliases(
+          array(
+            'forceable_build_plan_phids',
+          ))
+        ->setSummary(
+          pht(
+            'List PHIDs of forceable build plans which can be landed with failing status with '.
+            'a `ALLOW_FAILED_TESTS=<reason>` line in revision summary and it will be audited.'))
+        ->setExamples(
+          array(
+            ["PHID-ABCD-abcdefghijklmnopqrst"],
+          )),
+      id(new ArcanistStringListConfigOption())
+        ->setKey('lint.build.plan.phids')
+        ->setDefaultValue(array())
+        ->setAliases(
+          array(
+            'lint_build_plan_phids',
+          ))
+        ->setSummary(
+          pht(
+            'List PHIDs of lint build plans which can be landed with failing '.
+            'status.'))
+        ->setExamples(
+          array(
+            ["PHID-ABCD-abcdefghijklmnopqrst"],
           )),
       id(new ArcanistStringConfigOption())
         ->setKey('arc.upgrade.message')

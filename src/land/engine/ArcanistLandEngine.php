@@ -31,6 +31,19 @@ abstract class ArcanistLandEngine
   private $hasUnpushedChanges;
   private $pickArgument;
 
+  private $forceableBuildPlanPhids;
+  private $lintBuildPlanPhids;
+
+  final public function setForceableBuildPlanPhids($val) {
+    $this->forceableBuildPlanPhids = $val;
+    return $this;
+  }
+
+  final public function setLintBuildPlanPhids($val) {
+    $this->lintBuildPlanPhids = $val;
+    return $this;
+  }
+
   final public function setOntoRemote($onto_remote) {
     $this->ontoRemote = $onto_remote;
     return $this;
@@ -277,6 +290,22 @@ abstract class ArcanistLandEngine
 
   final public function allowForcedLandWithoutReview($revision_refs) {
     $expected_pattern = "/^FORCE_LAND=.+/im";
+    $this->getWorkflow()->loadHardpoints(
+      $revision_refs,
+      array(
+        ArcanistRevisionRef::HARDPOINT_COMMITMESSAGE,
+      ));
+    foreach($revision_refs as $ref){
+      $commit_msg = $ref->getCommitMessage();
+      if(preg_match($expected_pattern, $commit_msg) > 0){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  final public function allowForcedLandWithFailingForceableTests($revision_refs) {
+    $expected_pattern = "/^ALLOW_FAILED_TESTS=.+/im";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -556,6 +585,8 @@ abstract class ArcanistLandEngine
   private function confirmBuilds(array $revision_refs) {
     assert_instances_of($revision_refs, 'ArcanistRevisionRef');
 
+    $log = $this->getLogEngine();
+
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -593,7 +624,10 @@ abstract class ArcanistLandEngine
     $has_failures = false;
     $has_ongoing = false;
 
+    $allow_failing_forceable_tests = $this->allowForcedLandWithFailingForceableTests($revision_refs);
+
     $build_refs = msortv($build_refs, 'getStatusSortVector');
+
     foreach ($build_refs as $build_ref) {
       $plan_ref = $build_ref->getBuildPlanRef();
       if (!$plan_ref) {
@@ -628,6 +662,27 @@ abstract class ArcanistLandEngine
       }
 
       if ($build_ref->isComplete()) {
+        $plan_phid = $plan_ref->getPHID();
+        $plan_id = $plan_ref->getID();
+        $plan_name = $plan_ref->getName();
+
+        // If build plan is a lint plan then allow it to land in failed state
+        if ($this->lintBuildPlanPhids && in_array($plan_phid, $this->lintBuildPlanPhids)) {
+          $log->writeWarning(
+            pht('LANDING WITH FAILING LINT'),
+            pht('Linting failures not fatal for land (build plan %s: %s)', $plan_id, $plan_name));
+          continue;
+        }
+
+        // If build plan is an forceable plan then allow it to land in failed state if
+        // ALLOW_FAILED_TESTS is set
+        if ($this->forceableBuildPlanPhids && $allow_failing_forceable_tests && in_array($plan_phid, $this->forceableBuildPlanPhids)) {
+          $log->writeWarning(
+            pht('FORCE LANDING WITH FAILED TESTS'),
+            pht('Landing with failing forceable tests (build plan %s: %s)', $plan_id, $plan_name));
+          continue;
+        }
+
         $has_failures = true;
       } else {
         $has_ongoing = true;
@@ -662,8 +717,6 @@ abstract class ArcanistLandEngine
 
       $build_map[$revision_phid]['buildRefs'][] = $build_ref;
     }
-
-    $log = $this->getLogEngine();
 
     if ($has_failures) {
       if ($has_ongoing) {
