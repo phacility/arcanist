@@ -79,8 +79,11 @@ abstract class ArcanistWorkflow extends Phobject {
 
   // LOCAL MODIFICATION
   private $not_accepted_message;
-  private $land_with_phlq;
+  private $use_phlq;
+  private $is_phlq;
   private $phlq_url;
+  private $forceable_build_plan_phids;
+  private $lint_build_plan_phids;
 
   final public function setNotAcceptedMessage($message) {
     $this->not_accepted_message = $message;
@@ -100,13 +103,40 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->phlq_url;
   }
 
-  final public function setLandWithPHLQ(bool $val) {
-    $this->land_with_phlq = $val;
+  final public function setUsePhlq(bool $val) {
+    $this->use_phlq = $val;
     return $this;
   }
 
-  final public function getLandWithPHLQ() {
-    return $this->land_with_phlq;
+  final public function getUsePhlq() {
+    return $this->use_phlq;
+  }
+
+  final public function setIsPhlq(bool $val) {
+    $this->is_phlq = $val;
+    return $this;
+  }
+
+  final public function getIsPhlq() {
+    return $this->is_phlq;
+  }
+
+  final public function setForceableBuildPlanPhids($val) {
+    $this->forceable_build_plan_phids = $val;
+    return $this;
+  }
+
+  final public function getForceableBuildPlanPhids() {
+    return $this->forceable_build_plan_phids;
+  }
+
+  final public function setLintBuildPlanPhids($val) {
+    $this->lint_build_plan_phids = $val;
+    return $this;
+  }
+
+  final public function getLintBuildPlanPhids() {
+    return $this->lint_build_plan_phids;
   }
 
   // END LOCAL MODIFICATION
