@@ -17,7 +17,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
   function landRevision($rev_id, $remote_url) {
     $handle = curl_init($this->phlqUrl . $this->phlqLandPath . $rev_id);
-    $data = array('args' => [], 'repo_url' => $remote_url);
+    $data = array('repo_url' => $remote_url);
     $data_string = json_encode($data);
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($handle, CURLOPT_POST, TRUE);
