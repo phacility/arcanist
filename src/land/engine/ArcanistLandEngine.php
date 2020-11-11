@@ -289,7 +289,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithoutReview($revision_refs) {
-    $expected_pattern = "/^FORCE_LAND=.+/im";
+    $expected_pattern = "/^FORCE_LAND=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -305,7 +305,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithFailingForceableTests($revision_refs) {
-    $expected_pattern = "/^ALLOW_FAILED_TESTS=.+/im";
+    $expected_pattern = "/^ALLOW_FAILED_TESTS=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -377,10 +377,18 @@ abstract class ArcanistLandEngine
         ->execute();
     }
 
+    $log = $this->getLogEngine();
+
     $planned = array();
     $published = array();
     $not_accepted = array();
     foreach ($revision_refs as $revision_ref) {
+      if (!$revision_ref->isStatusAccepted()) {
+        if (!$this->allowForcedLandWithoutReview(array($revision_ref))) {
+          $log->writeError(pht('REVIEW'), pht('Revision D%s not accepted', $revision_ref->getID()));
+          throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
+        }
+      }
       if ($revision_ref->isStatusChangesPlanned()) {
         $planned[] = $revision_ref;
       } else if ($revision_ref->isStatusPublished()) {
@@ -480,10 +488,6 @@ abstract class ArcanistLandEngine
             'Status: %s',
             $revision_ref->getStatusDisplayName()));
         echo tsprintf('%s', $display_ref);
-      }
-
-      if(!$this->allowForcedLandWithoutReview($revision_refs)) {
-        throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
       }
 
       $query = pht(
@@ -624,15 +628,21 @@ abstract class ArcanistLandEngine
     $has_failures = false;
     $has_ongoing = false;
 
-    $allow_failing_forceable_tests = $this->allowForcedLandWithFailingForceableTests($revision_refs);
-
     $build_refs = msortv($build_refs, 'getStatusSortVector');
+    $buildable_map = mpull($buildable_refs, null, 'getPHID');
+    $revision_map = mpull($revision_refs, null, 'getDiffPHID');
 
     foreach ($build_refs as $build_ref) {
       $plan_ref = $build_ref->getBuildPlanRef();
       if (!$plan_ref) {
         continue;
       }
+
+      $buildable_phid = $build_ref->getBuildablePHID();
+      $buildable_ref = $buildable_map[$buildable_phid];
+      $object_phid = $buildable_ref->getObjectPHID();
+      $revision_ref = $revision_map[$object_phid];
+      $allow_failing_forceable_tests = $this->allowForcedLandWithFailingForceableTests(array($revision_ref));
 
       $plan_behavior = $plan_ref->getBehavior('arc-land', 'always');
       $if_building = ($plan_behavior == 'building');
@@ -661,16 +671,16 @@ abstract class ArcanistLandEngine
         continue;
       }
 
-      if ($build_ref->isComplete()) {
-        $plan_phid = $plan_ref->getPHID();
-        $plan_id = $plan_ref->getID();
-        $plan_name = $plan_ref->getName();
+      $plan_phid = $plan_ref->getPHID();
+      $plan_id = $plan_ref->getID();
+      $plan_name = $plan_ref->getName();
 
+      if ($build_ref->isComplete()) {
         // If build plan is a lint plan then allow it to land in failed state
         if ($this->lintBuildPlanPhids && in_array($plan_phid, $this->lintBuildPlanPhids)) {
           $log->writeWarning(
-            pht('LANDING WITH FAILING LINT'),
-            pht('Linting failures not fatal for land (build plan %s: %s)', $plan_id, $plan_name));
+            pht('LANDING D%s WITH FAILING LINT', $revision_ref->getID()),
+            pht('Linting failures on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
           continue;
         }
 
@@ -678,13 +688,30 @@ abstract class ArcanistLandEngine
         // ALLOW_FAILED_TESTS is set
         if ($this->forceableBuildPlanPhids && $allow_failing_forceable_tests && in_array($plan_phid, $this->forceableBuildPlanPhids)) {
           $log->writeWarning(
-            pht('FORCE LANDING WITH FAILED TESTS'),
-            pht('Landing with failing forceable tests (build plan %s: %s)', $plan_id, $plan_name));
+            pht('FORCE LANDING D%s WITH FAILED TESTS', $revision_ref->getID()),
+            pht('Landing D%s with failing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
           continue;
         }
 
         $has_failures = true;
       } else {
+        // If build plan is a lint plan then allow it to land in ongoing state
+        if ($this->lintBuildPlanPhids && in_array($plan_phid, $this->lintBuildPlanPhids)) {
+          $log->writeWarning(
+            pht('LANDING D%s WITH ONGOING LINT', $revision_ref->getID()),
+            pht('Linting ongoing on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+          continue;
+        }
+
+        // If build plan is an forceable plan then allow it to land in ongoing state if
+        // ALLOW_FAILED_TESTS is set
+        if ($this->forceableBuildPlanPhids && $allow_failing_forceable_tests && in_array($plan_phid, $this->forceableBuildPlanPhids)) {
+          $log->writeWarning(
+            pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
+            pht('Landing D%s with ongoing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+          continue;
+        }
+
         $has_ongoing = true;
       }
 
@@ -697,8 +724,6 @@ abstract class ArcanistLandEngine
 
     $build_map = array();
     $failure_map = array();
-    $buildable_map = mpull($buildable_refs, null, 'getPHID');
-    $revision_map = mpull($revision_refs, null, 'getDiffPHID');
     foreach ($problem_builds as $build_ref) {
       $buildable_phid = $build_ref->getBuildablePHID();
       $buildable_ref = $buildable_map[$buildable_phid];
