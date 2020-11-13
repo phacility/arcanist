@@ -171,16 +171,17 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
     $this->confirmRevisions($sets);
 
-    foreach ($revision_ids as $rev_id) {
-      $remote_url = $api->getRemoteUrl();
-      $this->landRevision($rev_id, $remote_url);
-      $message = "Land request send. Landing logs: ".$this->phlqUrl . $this->phlqLogsPath . $rev_id;
-      $log->writeSuccess(
-        pht('DONE'),
-        pht($message));
-    }
- 
-    $landing_errors = $this->tailLogs($revision_ids, $log);
+    # If landing a stack we only send the request to land the last revision
+    # in the stack as arc will pull in the entire stack when landing
+    $land_rev_id = end($revision_ids);
+    $remote_url = $api->getRemoteUrl();
+    $this->landRevision($land_rev_id, $remote_url);
+    $message = "Land request send. Landing logs: ".$this->phlqUrl . $this->phlqLogsPath . $land_rev_id;
+    $log->writeSuccess(
+      pht('DONE'),
+      pht($message));
+
+    $landing_errors = $this->tailLogs([$land_rev_id], $log);
     if($landing_errors == 0)
       $this->cleanTags($api, $log);
   }
