@@ -131,9 +131,11 @@ final class ArcanistRuntime {
         ->setConduitEngine($conduit_engine)
         ->setNotAcceptedMessage(
           $config->getConfig('arc.land.notaccepted.message'))
+        ->setBuildFailuresMessage(
+          $config->getConfig('arc.land.buildfailures.message'))
         ->setUsePhlq($config->getConfig('phlq'))
         ->setIsPhlq($config->getConfig('is.phlq'))
-        ->setPhlqUrl($config->getConfig('phlq.uri'))
+        ->setPhlqUri($config->getConfig('phlq.uri'))
         ->setForceableBuildPlanPhids($config->getConfig('forceable.build.plan.phids'))
         ->setLintBuildPlanPhids($config->getConfig('lint.build.plan.phids'));
 
