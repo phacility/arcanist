@@ -79,9 +79,10 @@ abstract class ArcanistWorkflow extends Phobject {
 
   // LOCAL MODIFICATION
   private $not_accepted_message;
+  private $build_failures_message;
   private $use_phlq;
   private $is_phlq;
-  private $phlq_url;
+  private $phlq_uri;
   private $forceable_build_plan_phids;
   private $lint_build_plan_phids;
 
@@ -94,13 +95,22 @@ abstract class ArcanistWorkflow extends Phobject {
     return $this->not_accepted_message;
   }
 
-  final public function setPhlqUrl($url) {
-    $this->phlq_url = $url;
+  final public function setBuildFailuresMessage($message) {
+    $this->build_failures_message = $message;
     return $this;
   }
 
-  final public function getPhlqUrl() {
-    return $this->phlq_url;
+  final public function getBuildFailuresMessage() {
+    return $this->build_failures_message;
+  }
+
+  final public function setPhlqUri($url) {
+    $this->phlq_uri = $url;
+    return $this;
+  }
+
+  final public function getPhlqUri() {
+    return $this->phlq_uri;
   }
 
   final public function setUsePhlq(bool $val) {

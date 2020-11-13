@@ -296,16 +296,23 @@ EOTEXT
     $working_copy = $this->getWorkingCopy();
     $repository_api = $working_copy->getRepositoryAPI();
 
+    $log = $this->getLogEngine();
+    $phlq_uri = $this->getPhlqUri();
+    $use_phlq = $this->getUsePhlq();
+
+    if ($use_phlq && empty($phlq_uri)) {
+      $log->writeWarning(
+        pht('PHLQ'),
+        pht("You have PHLQ enabled, but phlq.uri is not configured. Attempting at landing by git push."));
+      $use_phlq = false;
+    }
+
     if ($this->getIsPhlq()) {
-      // If landing in PHLQ service we use the standard land engine and set lint build plan PHIDS
-      // that are allowed to land in failed state and we set forceable build plan PHIDS that are
-      // allowed to land in failed state if ALLOW_FAILED_TESTS is set
+      // If landing in PHLQ service we use the standard land engine
       $land_engine = $repository_api->getLandEngine();
-      $land_engine->setLintBuildPlanPhids($this->getLintBuildPlanPhids());
-      $land_engine->setForceableBuildPlanPhids($this->getForceableBuildPlanPhids());
-    } else if ($this->getUsePhlq()) {
-      $land_engine = new ArcanistPhlqLandEngine($this->getPhlqUrl());
-      $land_engine->setRepositoryAPI($repository_api);  
+    } else if ($use_phlq) {
+      $land_engine = new ArcanistPhlqLandEngine($this->getPhlqUri());
+      $land_engine->setRepositoryAPI($repository_api);
     } else {
       $land_engine = $repository_api->getLandEngine();
     }

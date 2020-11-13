@@ -1,23 +1,16 @@
 <?php
 
 class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
-  protected $phlqUrl;
-  protected $phlqLogsPath = "/log/D";
-  protected $phlqLandPath = "/land/D";
-  protected $phlqStatePath = "/state/D";
+  protected $phlqLogsPath = "/log/";
+  protected $phlqLandPath = "/land/stack";
+  protected $phlqStatePath = "/state/";
 
-  function __construct($phlq_url) {
-    if(empty($phlq_url))
-      throw new PhutilArgumentUsageException(
-        pht('PHLQ url not found. Set %s in your .arcconfig.', 'phlq.url')
-      );
-
-    $this->phlqUrl = $phlq_url;
-  }
-
-  function landRevision($rev_id, $remote_url) {
-    $handle = curl_init($this->phlqUrl . $this->phlqLandPath . $rev_id);
-    $data = array('repo_url' => $remote_url);
+  function landRevisions($phlq_uri, $revision_ids, $remote_url) {
+    $handle = curl_init($phlq_uri . $this->phlqLandPath);
+    $data = array(
+      'repo_url' => $remote_url,
+      'revisions' => array_map(function ($r) { return "D".$r; }, $revision_ids),
+    );
     $data_string = json_encode($data);
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($handle, CURLOPT_POST, TRUE);
@@ -37,13 +30,13 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     return $response;
   }
 
-  function landState($rev_id) {
-    $url = $this->phlqUrl . $this->phlqStatePath . $rev_id;
+  function landState($phlq_uri, $log_id) {
+    $url = $phlq_uri . $this->phlqStatePath . $log_id;
     return trim(file_get_contents($url));
   }
 
-  function landLogs($rev_id) {
-    $url = $this->phlqUrl . $this->phlqLogsPath . $rev_id;
+  function landLogs($phlq_uri, $log_id) {
+    $url = $phlq_uri . $this->phlqLogsPath . $log_id;
     return file_get_contents($url);
   }
 
@@ -171,68 +164,129 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
     $this->confirmRevisions($sets);
 
-    # If landing a stack we only send the request to land the last revision
-    # in the stack as arc will pull in the entire stack when landing
-    $land_rev_id = end($revision_ids);
+    $phlq_uri = $this->getWorkflow()->getPhlqUri();
+
+    $log_id = "D" . $revision_ids[0];
+    if (count($revision_ids) > 1) {
+      $log_id = "D" . end($revision_ids);
+    }
     $remote_url = $api->getRemoteUrl();
-    $this->landRevision($land_rev_id, $remote_url);
-    $message = "Land request sent. Landing logs: ".$this->phlqUrl . $this->phlqLogsPath . $land_rev_id;
+    try {
+      $log_tail_start = strlen($this->landLogs($phlq_uri, $log_id));
+    } catch (Exception $e) {
+      $log_tail_start = 0;
+    }
+    $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
+    $message = "Land request sent. Landing logs: ". $phlq_uri . $this->phlqLogsPath . $log_id;
     $log->writeSuccess(
       pht('DONE'),
       pht($message));
 
-    $landing_errors = $this->tailLogs([$land_rev_id], $log);
-    if($landing_errors == 0)
-      $this->cleanTags($api, $log);
+    $success = $this->tailLogs($phlq_uri, $log_id, $log_tail_start, $log);
+    if($success)
+      $this->cleanupAfterLand($api, $log);
   }
 
-  function cleanTags($api, $log) {
+  function cleanupAfterLand($api, $log) {
+    $current_branch = $api->getBranchName();
     $log->writeStatus(
       pht('CLEANUP'),
-      pht('Cleaning tags.'));
+      pht("Current branch is '%s'", $current_branch));
 
-    $api->cleanTags();
+    $log->writeStatus(
+      pht('CLEANUP'),
+      pht('Fetching origin master'));
+    $api->execxLocal('fetch --no-tags --quiet -- origin master');
+
+    $log->writeStatus(
+      pht('CLEANUP'),
+      pht('Cleaning tags'));
+    $api->execxLocal("fetch --prune origin '+refs/tags/*:refs/tags/*'");
+
+    list($stdout) = $api->execxLocal('status --porcelain');
+    $status = trim($stdout);
+    if ($status != "") {
+      // If there are local changes then we're done
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht("Branch '%s' has local changes", $current_branch));
+      return;
+    }
+
+    $log->writeStatus(
+      pht('CLEANUP'),
+      pht('Rebasing to origin/master'));
+    $api->execxLocal('rebase origin/master');
+
+    if ($current_branch != "master") {
+      try {
+        // Check if the non-master branch has been fully landed
+        $log->writeStatus(
+          pht('CLEANUP'),
+          pht('Checking merge-base'));
+
+        // Will throw on exit code is 1 if current_branch is not an ancestor
+        // of origin/master which means it is not fully landed
+        $api->execxLocal('merge-base --is-ancestor -- %s origin/master', $current_branch);
+        $log->writeStatus(
+          pht('CLEANUP'),
+          pht("Branch %s is fully landed", $current_branch));
+        $fully_landed = true;
+      } catch (Exception $e) {
+        // If not fully landed then we're done
+        $log->writeStatus(
+          pht('CLEANUP'),
+          pht("Branch '%s' is not fully landed", $current_branch));
+          return;
+      }
+
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht('Switching to master branch'));
+      $api->execxLocal('checkout master');
+
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht('Rebasing to origin/master'));
+      $api->execxLocal('rebase origin/master');
+  
+      $log->writeStatus(
+        pht('CLEANUP'),
+        pht("Deleting branch '%s'.", $current_branch));
+      $api->execxLocal('branch -D -- %s', $current_branch);
+    }
   }
 
-  function tailLogs($revision_ids, $log) {
-    $tries = 0;
+  function tailLogs($phlq_uri, $log_id, $log_tail_start, $log) {
+    $count = 0;
     $landing_errors = 0;
-    $last_state = [];
-    $tail_position = [];
-    foreach ($revision_ids as $rev_id)
-      $tail_position[$rev_id] = 0;
-
-    while($tail_position) {
-      foreach(array_keys($tail_position) as $rev_id) {
-        $land_state = $this->landState($rev_id);
-        $land_logs = $this->landLogs($rev_id);
-        $out = substr($land_logs, $tail_position[$rev_id]);
-        $tail_position[$rev_id] = strlen($land_logs);
-
-        print($out);
-
-        if($land_state == "DONE" || $land_state == "ERROR") {
-          unset($tail_position[$rev_id]);
-
-          $msg = "D".$rev_id.": ".$land_state;
-          if($land_state == "DONE")
-            $log->writeSuccess(pht("LANDING"), pht($msg));
-
-          if($land_state == "ERROR") {
-            $log->writeError(pht("LANDING"), pht($msg));
-            $landing_errors++;
-          }
-
-        } else if($tries % 10 == 0) {
-          $log->writeStatus(pht("LANDING"), pht("D".$rev_id.": ".$land_state));
-        } else if($last_state[$rev_id] && $land_state != $last_state[$rev_id]) {
-          $log->writeStatus(pht("LANDING"), pht("D".$rev_id.": ".$land_state));
-        }
-        $last_state[$rev_id] = $land_state;
+    $last_state = "";
+    $tail_position = $log_tail_start;
+    while (true) {
+      $land_state = $this->landState($phlq_uri, $log_id);
+      $land_logs = $this->landLogs($phlq_uri, $log_id);
+      $out = substr($land_logs, $tail_position);
+      $tail_position = strlen($land_logs);
+      print($out);
+      $msg = $log_id.": ".$land_state;
+      if ($land_state == "DONE") {
+        # Success
+        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
+        return true;
+      } else if ($land_state == "ERROR") {
+        # Failure
+        $log->writeError(pht("LANDING"), pht($log_id.": ".$land_state));
+        return false;
+      } else if ($count % 10 == 0) {
+        # Periodic update
+        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
+      } else if ($land_state != $last_state) {
+        # State change
+        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
       }
-      $tries += 1;
-      if($tail_position) sleep(4);
+      $last_state = $land_state;
+      $count += 1;
+      sleep(4);
     }
-    return $landing_errors;
   }
 }
