@@ -1826,8 +1826,4 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout) = $this->execxLocal('config --get remote.origin.url');
     return rtrim($stdout, "\n");
   }
-
-  public function cleanTags() {
-    $this->execxLocal('fetch origin --prune --tags');
-  }
 }

@@ -168,6 +168,16 @@ final class ArcanistArcConfigurationEngineExtension
         ->setSummary(
           pht(
             'Error message when attempting to land a non-accepted revision.')),
+      id(new ArcanistStringConfigOption())
+        ->setKey('arc.land.buildfailures.message')
+        ->setDefaultValue(
+          pht(
+            'Rejected: You should not land revisions with failed or ongoing builds. '.
+            'If you know what you are doing and still want to land, add a '.
+            '`ALLOW_FAILED_TESTS=<reason>` line to the revision summary and it will be audited.'))
+        ->setSummary(
+          pht(
+            'Error message when attempting to land a revision with failed builds.')),
       id(new ArcanistBoolConfigOption())
         ->setKey('phlq')
         ->setDefaultValue(false)
@@ -188,7 +198,7 @@ final class ArcanistArcConfigurationEngineExtension
           array(
             'phlq_uri',
           ))
-        ->setSummary(pht('PHLQ instance url.'))
+        ->setSummary(pht('PHLQ instance uri.'))
         ->setHelp(
           pht(
             'Associates this working copy with a specific installation of '.
