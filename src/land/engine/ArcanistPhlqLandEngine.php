@@ -176,7 +176,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     $land_rev_id = end($revision_ids);
     $remote_url = $api->getRemoteUrl();
     $this->landRevision($land_rev_id, $remote_url);
-    $message = "Land request send. Landing logs: ".$this->phlqUrl . $this->phlqLogsPath . $land_rev_id;
+    $message = "Land request sent. Landing logs: ".$this->phlqUrl . $this->phlqLogsPath . $land_rev_id;
     $log->writeSuccess(
       pht('DONE'),
       pht($message));
