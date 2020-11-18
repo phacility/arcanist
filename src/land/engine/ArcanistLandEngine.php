@@ -710,11 +710,6 @@ abstract class ArcanistLandEngine
         $has_ongoing = true;
       }
 
-      if ($blocking_failed_builds) {
-        $log->writeError(pht('BUILD'), pht('Revision D%s has build failures or ongoing builds', $revision_ref->getID()));
-        throw new ArcanistRevisionStatusException($this->getWorkflow()->getBuildFailuresMessage());
-      }
-
       $problem_builds[] = $build_ref;
     }
 
@@ -807,6 +802,11 @@ abstract class ArcanistLandEngine
 
       echo tsprintf('%s', $revision_view);
       echo tsprintf("\n");
+    }
+
+    if (($has_failures || $has_ongoing) && $blocking_failed_builds) {
+      $log->writeError(pht('BUILD'), pht('Revision D%s has build failures or ongoing builds', $revision_ref->getID()));
+      throw new ArcanistRevisionStatusException($this->getWorkflow()->getBuildFailuresMessage());
     }
 
     $this->getWorkflow()
