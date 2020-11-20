@@ -230,7 +230,7 @@ abstract class ArcanistLandEngine
     return $this->intoArgument;
   }
 
-  private function setLocalState(ArcanistRepositoryLocalState $local_state) {
+  protected function setLocalState(ArcanistRepositoryLocalState $local_state) {
     $this->localState = $local_state;
     return $this;
   }
@@ -239,7 +239,7 @@ abstract class ArcanistLandEngine
     return $this->localState;
   }
 
-  private function setHasUnpushedChanges($unpushed) {
+  protected function setHasUnpushedChanges($unpushed) {
     $this->hasUnpushedChanges = $unpushed;
     return $this;
   }
