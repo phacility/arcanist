@@ -164,35 +164,122 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
     $this->confirmRevisions($sets);
 
-    $phlq_uri = $this->getWorkflow()->getPhlqUri();
+    $workflow = $this->getWorkflow();
 
-    $log_id = "D" . $revision_ids[0];
-    if (count($revision_ids) > 1) {
-      $log_id = "D" . end($revision_ids);
-    }
-    $remote_url = $api->getRemoteUrl();
+    $is_incremental = $this->getIsIncremental();
+    $is_hold = $this->getShouldHold();
+    $is_keep = $this->getShouldKeep();
+
+    $local_state = $api->newLocalState()
+      ->setWorkflow($workflow)
+      ->saveLocalState();
+
+    $this->setLocalState($local_state);
+
+    $seen_into = array();
     try {
-      $log_tail_start = strlen($this->landLogs($phlq_uri, $log_id));
-    } catch (Exception $e) {
-      $log_tail_start = 0;
-    }
-    $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
-    $message = "Land request sent. Landing logs: ". $phlq_uri . $this->phlqLogsPath . $log_id;
-    $log->writeSuccess(
-      pht('DONE'),
-      pht($message));
+      $last_key = last_key($sets);
 
-    $success = $this->tailLogs($phlq_uri, $log_id, $log_tail_start, $log);
-    if($success)
-      $this->cleanupAfterLand($api, $log);
+      $need_cascade = array();
+      $need_prune = array();
+
+      foreach ($sets as $set_key => $set) {
+        // Add these first, so we don't add them multiple times if we need
+        // to retry a push.
+        $need_prune[] = $set;
+        $need_cascade[] = $set;
+
+        while (true) {
+          $into_commit = $this->executeMerge($set, $into_commit);
+          $this->setHasUnpushedChanges(true);
+
+          if ($is_hold) {
+            $should_push = false;
+          } else if ($is_incremental) {
+            $should_push = true;
+          } else {
+            $is_last = ($set_key === $last_key);
+            $should_push = $is_last;
+          }
+
+          if ($should_push) {
+            // Instead of pushing, make a request to land queue
+            $phlq_uri = $this->getWorkflow()->getPhlqUri();
+
+            $log_id = "D" . $revision_ids[0];
+            if (count($revision_ids) > 1) {
+              $log_id = "D" . end($revision_ids);
+            }
+            $remote_url = $api->getRemoteUrl();
+            try {
+              $log_tail_start = strlen($this->landLogs($phlq_uri, $log_id));
+            } catch (Exception $e) {
+              $log_tail_start = 0;
+            }
+            $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
+            $logs_uri = $phlq_uri . $this->phlqLogsPath . $log_id;
+            $message = "Land request sent. Landing logs: " . $logs_uri;
+            $log->writeSuccess(
+              pht('DONE'),
+              pht($message));
+
+            $success = $this->tailLogs($phlq_uri, $log_id, $log_tail_start, $log);
+            if ($success) {
+              // Since we didn't push locally, we fetch after remote land successful
+              $this->fetchAfterLand($api, $log);
+              $this->setHasUnpushedChanges(false);
+              $local_state->discardLocalState();
+            } else {
+              throw new Exception("Land failed on land queue " . $logs_uri);
+            }
+
+            if ($need_cascade) {
+              // NOTE: We cascade each set we've pushed, but we're going to
+              // cascade them from most recent to least recent. This way,
+              // branches which descend from more recent changes only cascade
+              // once, directly in to the correct state.
+              $need_cascade = array_reverse($need_cascade);
+              foreach ($need_cascade as $cascade_set) {
+                $this->cascadeState($set, $into_commit);
+              }
+              $need_cascade = array();
+            }
+
+            if (!$is_keep) {
+              $this->pruneBranches($need_prune);
+              $need_prune = array();
+            }
+          }
+
+          break;
+        }
+      }
+
+      if ($is_hold) {
+        $this->didHoldChanges($into_commit);
+        $local_state->discardLocalState();
+      } else {
+        $this->reconcileLocalState($into_commit, $local_state);
+
+        // Since we didn't push the SHA of the landed commit won't match
+        // what would have been pushed from here. We rebase which should
+        // fast forward unless something went wrong.
+        $this->rebaseIfPristineMaster($api, $log);
+
+        $log->writeSuccess(
+          pht('DONE'),
+          pht('Landed changes.'));
+      }
+    } catch (Exception $ex) {
+      $local_state->restoreLocalState();
+      throw $ex;
+    } catch (Throwable $ex) {
+      $local_state->restoreLocalState();
+      throw $ex;
+    }
   }
 
-  function cleanupAfterLand($api, $log) {
-    $current_branch = $api->getBranchName();
-    $log->writeStatus(
-      pht('CLEANUP'),
-      pht("Current branch is '%s'", $current_branch));
-
+  function fetchAfterLand($api, $log) {
     $log->writeStatus(
       pht('CLEANUP'),
       pht('Fetching origin master'));
@@ -202,58 +289,41 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       pht('CLEANUP'),
       pht('Cleaning tags'));
     $api->execxLocal("fetch --prune origin '+refs/tags/*:refs/tags/*'");
+  }
 
-    list($stdout) = $api->execxLocal('status --porcelain');
-    $status = trim($stdout);
-    if ($status != "") {
-      // If there are local changes then we're done
-      $log->writeStatus(
-        pht('CLEANUP'),
-        pht("Branch '%s' has local changes", $current_branch));
-      return;
-    }
-
+  function rebaseIfPristineMaster($api, $log) {
+    $current_branch = $api->getBranchName();
     $log->writeStatus(
       pht('CLEANUP'),
-      pht('Rebasing to origin/master'));
-    $api->execxLocal('rebase origin/master');
+      pht("Current branch is '%s'", $current_branch));
 
-    if ($current_branch != "master") {
-      try {
-        // Check if the non-master branch has been fully landed
+    if ($current_branch == "master") {
+      list($stdout) = $api->execxLocal('status --porcelain');
+      $status = trim($stdout);
+      if ($status != "") {
+        // If there are local changes then we're done
         $log->writeStatus(
           pht('CLEANUP'),
-          pht('Checking merge-base'));
-
-        // Will throw on exit code is 1 if current_branch is not an ancestor
-        // of origin/master which means it is not fully landed
-        $api->execxLocal('merge-base --is-ancestor -- %s origin/master', $current_branch);
-        $log->writeStatus(
-          pht('CLEANUP'),
-          pht("Branch %s is fully landed", $current_branch));
-        $fully_landed = true;
-      } catch (Exception $e) {
-        // If not fully landed then we're done
-        $log->writeStatus(
-          pht('CLEANUP'),
-          pht("Branch '%s' is not fully landed", $current_branch));
-          return;
+          pht("Branch '%s' has local changes", $current_branch));
+        return;
       }
-
-      $log->writeStatus(
-        pht('CLEANUP'),
-        pht('Switching to master branch'));
-      $api->execxLocal('checkout master');
-
-      $log->writeStatus(
-        pht('CLEANUP'),
-        pht('Rebasing to origin/master'));
-      $api->execxLocal('rebase origin/master');
-  
-      $log->writeStatus(
-        pht('CLEANUP'),
-        pht("Deleting branch '%s'.", $current_branch));
-      $api->execxLocal('branch -D -- %s', $current_branch);
+      try {
+        $log->writeStatus(
+          pht('CLEANUP'),
+          pht('Rebasing to origin/master'));
+        $api->execxLocal('rebase origin/master');
+      } catch (Exception $e) {
+        $log->writeWarning(
+          pht('CLEANUP'),
+          pht('Rebase failed'));
+        try {
+          $log->writeStatus(
+            pht('CLEANUP'),
+            pht('Aborting rebase'));
+          $api->execxLocal('rebase --abort');
+        } catch (Exception $e) {}
+        return;
+      }
     }
   }
 
