@@ -208,7 +208,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
             $log_id = "D" . $revision_ids[0];
             if (count($revision_ids) > 1) {
-              $log_id = "D" . end($revision_ids);
+              $log_id = $log_id . "-D" . end($revision_ids);
             }
             $remote_url = $api->getRemoteUrl();
             try {
@@ -220,7 +220,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
             $logs_uri = $phlq_uri . $this->phlqLogsPath . $log_id;
             $message = "Land request sent. Landing logs: " . $logs_uri;
             $log->writeSuccess(
-              pht('DONE'),
+              pht('LAND QUEUE'),
               pht($message));
 
             $success = $this->tailLogs($phlq_uri, $log_id, $log_tail_start, $log);
@@ -341,18 +341,18 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       $msg = $log_id.": ".$land_state;
       if ($land_state == "DONE") {
         # Success
-        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
+        $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
         return true;
       } else if ($land_state == "ERROR") {
         # Failure
-        $log->writeError(pht("LANDING"), pht($log_id.": ".$land_state));
+        $log->writeError(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
         return false;
       } else if ($count % 10 == 0) {
         # Periodic update
-        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
+        $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
       } else if ($land_state != $last_state) {
         # State change
-        $log->writeStatus(pht("LANDING"), pht($log_id.": ".$land_state));
+        $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
       }
       $last_state = $land_state;
       $count += 1;
