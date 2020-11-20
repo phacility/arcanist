@@ -471,18 +471,20 @@ abstract class ArcanistLandEngine
         echo tsprintf('%s', $display_ref);
       }
 
+      foreach ($not_accepted as $revision_ref) {
+        if ($this->allowForcedLandWithoutReview(array($revision_ref))) {
+          $log->writeWarning(
+            pht('FORCE LANDING UNACCEPTED REVISION D%s', $revision_ref->getID()),
+            pht('Landing D%s in unaccepted state with FORCE_LAND', $revision_ref->getID()));
+        } else {
+          $log->writeError(pht('REVIEW'), pht('Revision D%s not accepted', $revision_ref->getID()));
+          throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
+        }
+      }
+
       $query = pht(
         'Land %s revision(s) in the wrong state?',
         phutil_count($not_accepted));
-
-      if ($this->allowForcedLandWithoutReview(array($revision_ref))) {
-        $log->writeWarning(
-          pht('FORCE LANDING UNACCEPTED REVISION D%s', $revision_ref->getID()),
-          pht('Landing D%s in unaccepted state with FORCE_LAND', $revision_ref->getID()));
-      } else {
-        $log->writeError(pht('REVIEW'), pht('Revision D%s not accepted', $revision_ref->getID()));
-        throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
-      }
 
       $this->getWorkflow()
         ->getPrompt('arc.land.not-accepted')
