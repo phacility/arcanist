@@ -84,6 +84,7 @@ abstract class ArcanistWorkflow extends Phobject {
   private $is_phlq;
   private $phlq_uri;
   private $forceable_build_plan_phids;
+  private $non_blocking_build_plan_phids;
   private $lint_build_plan_phids;
 
   final public function setNotAcceptedMessage($message) {
@@ -138,6 +139,15 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final public function getForceableBuildPlanPhids() {
     return $this->forceable_build_plan_phids;
+  }
+
+  final public function setNonBlockingBuildPlanPhids($val) {
+    $this->non_blocking_build_plan_phids = $val;
+    return $this;
+  }
+
+  final public function getNonBlockingBuildPlanPhids() {
+    return $this->non_blocking_build_plan_phids;
   }
 
   final public function setLintBuildPlanPhids($val) {
