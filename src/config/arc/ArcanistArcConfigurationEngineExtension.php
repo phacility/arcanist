@@ -223,6 +223,21 @@ final class ArcanistArcConfigurationEngineExtension
             ["PHID-ABCD-abcdefghijklmnopqrst"],
           )),
       id(new ArcanistStringListConfigOption())
+        ->setKey('non-blocking.build.plan.phids')
+        ->setDefaultValue(array())
+        ->setAliases(
+          array(
+            'non_blocking_build_plan_phids',
+          ))
+        ->setSummary(
+          pht(
+            'List PHIDs of build plans which can be landed with failing '.
+            'status.'))
+        ->setExamples(
+          array(
+            ["PHID-ABCD-abcdefghijklmnopqrst"],
+          )),
+      id(new ArcanistStringListConfigOption())
         ->setKey('lint.build.plan.phids')
         ->setDefaultValue(array())
         ->setAliases(

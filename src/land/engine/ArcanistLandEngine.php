@@ -619,6 +619,8 @@ abstract class ArcanistLandEngine
     $problem_builds = array();
     $has_failures = false;
     $has_ongoing = false;
+    $has_blocking_failures = false;
+    $has_blocking_ongoing = false;
 
     $build_refs = msortv($build_refs, 'getStatusSortVector');
     $buildable_map = mpull($buildable_refs, null, 'getPHID');
@@ -667,45 +669,106 @@ abstract class ArcanistLandEngine
       $plan_id = $plan_ref->getID();
       $plan_name = $plan_ref->getName();
 
-      $blocking_failed_builds = $this->getWorkflow()->getIsPhlq() || $this->getWorkflow()->getUsePhlq();
+      $is_phlq = $this->getWorkflow()->getIsPhlq();
+      $blocking_failed_builds = $is_phlq || $this->getWorkflow()->getUsePhlq();
       $lint_build_plan_phids = $this->getWorkflow()->getLintBuildPlanPhids();
       $forceable_build_plan_phids = $this->getWorkflow()->getForceableBuildPlanPhids();
+      $non_blocking_build_plan_phids = $this->getWorkflow()->getNonBlockingBuildPlanPhids();
 
       if ($build_ref->isComplete()) {
-        // If build plan is a lint plan then allow it to land in failed state
-        if ($lint_build_plan_phids && in_array($plan_phid, $lint_build_plan_phids)) {
-          $log->writeWarning(
-            pht('LANDING D%s WITH FAILING LINT', $revision_ref->getID()),
-            pht('Linting failures on D%s not fatal for land with ALLOW_FAILED_TESTS (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
-          continue;
-        }
+        if ($blocking_failed_builds) {
+          // If build plan is a non-blocking plan then allow it to land in failed state
+          if ($non_blocking_build_plan_phids && in_array($plan_phid, $non_blocking_build_plan_phids)) {
+            $log->writeWarning(
+              pht('NON-BLOCKING FAILED TESTS', $revision_ref->getID()),
+              pht('Non-blocking build plan failures on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              // If running locally, still prompt to allow user to confirm land with failures
+              continue;
+            }
+          }
 
-        // If build plan is an forceable plan then allow it to land in failed state if
-        // ALLOW_FAILED_TESTS is set
-        if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
-          $log->writeWarning(
-            pht('FORCE LANDING D%s WITH FAILED TESTS', $revision_ref->getID()),
-            pht('Landing D%s with failing forceable tests with ALLOW_FAILED_TESTS  (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
-          continue;
+          // If build plan is a lint plan then allow it to land in failed state
+          else if ($lint_build_plan_phids && in_array($plan_phid, $lint_build_plan_phids)) {
+            $log->writeWarning(
+              pht('FAILING LINT', $revision_ref->getID()),
+              pht('Linting failures on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              // If running locally, still prompt to allow user to confirm land with failures
+              continue;
+            }
+          }
+
+          // If build plan is an forceable plan then allow it to land in failed state if
+          // ALLOW_FAILED_TESTS is set
+          else if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
+            $log->writeWarning(
+              pht('FORCE LANDING D%s WITH FAILED TESTS', $revision_ref->getID()),
+              pht('Landing D%s with failing forceable tests with ALLOW_FAILED_TESTS (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              // If running locally, still prompt to allow user to confirm land with failures
+              continue;
+            }
+          }
+          
+          else {
+            // Land queue won't allow this revision to land so block locally as well
+            $log->writeError(
+              pht('BLOCKING FAILED TESTS', $revision_ref->getID()),
+              pht('Blocking build plan failures on D%s are fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            $has_blocking_failures = true;
+          }
         }
 
         $has_failures = true;
       } else {
-        // If build plan is a lint plan then allow it to land in ongoing state
-        if ($lint_build_plan_phids && in_array($plan_phid, $lint_build_plan_phids)) {
-          $log->writeWarning(
-            pht('LANDING D%s WITH ONGOING LINT', $revision_ref->getID()),
-            pht('Linting ongoing on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
-          continue;
-        }
+        if ($blocking_failed_builds) {
+          // If build plan is a non-blocking plan then allow it to land in ongoing state
+          if ($non_blocking_build_plan_phids && in_array($plan_phid, $non_blocking_build_plan_phids)) {
+            $log->writeWarning(
+              pht('NON-BLOCKING ONGOING TESTS', $revision_ref->getID()),
+              pht('Non-blocking ongoing tests on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              // If running locally, still prompt to allow user to confirm land with failures
+              continue;
+            }
+          }
 
-        // If build plan is an forceable plan then allow it to land in ongoing state if
-        // ALLOW_FAILED_TESTS is set
-        if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
-          $log->writeWarning(
-            pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
-            pht('Landing D%s with ongoing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
-          continue;
+          // If build plan is a lint plan then allow it to land in ongoing state
+          else if ($lint_build_plan_phids && in_array($plan_phid, $lint_build_plan_phids)) {
+            $log->writeWarning(
+              pht('ONGOING LINT', $revision_ref->getID()),
+              pht('Linting ongoing on D%s not fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              // If running locally, still prompt to allow user to confirm land with failures
+              continue;
+            }
+          }
+
+          // If build plan is an forceable plan then allow it to land in ongoing state if
+          // ALLOW_FAILED_TESTS is set
+          else if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
+            $log->writeWarning(
+              pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
+              pht('Landing D%s with ongoing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            if ($is_phlq) {
+              // If this is PHLQ then continue so this failure is not prompted for
+              continue;
+            }
+          }
+
+          else {
+            // Land queue won't allow this revision to land so block locally as well
+            $log->writeError(
+              pht('BLOCKING ONGOING TESTS', $revision_ref->getID()),
+              pht('Blocking ongoing build plans on D%s are fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            $has_blocking_ongoing = true;
+          }
         }
 
         $has_ongoing = true;
@@ -805,8 +868,8 @@ abstract class ArcanistLandEngine
       echo tsprintf("\n");
     }
 
-    if (($has_failures || $has_ongoing) && $blocking_failed_builds) {
-      $log->writeError(pht('BUILD'), pht('Revision D%s has build failures or ongoing builds', $revision_ref->getID()));
+    if (($has_blocking_failures || $has_blocking_ongoing) && $blocking_failed_builds) {
+      $log->writeError(pht('BUILD'), pht('Revision D%s has blocking build failures or ongoing builds', $revision_ref->getID()));
       throw new ArcanistRevisionStatusException($this->getWorkflow()->getBuildFailuresMessage());
     }
 
