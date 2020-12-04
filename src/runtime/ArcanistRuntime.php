@@ -137,6 +137,7 @@ final class ArcanistRuntime {
         ->setIsPhlq($config->getConfig('is.phlq'))
         ->setPhlqUri($config->getConfig('phlq.uri'))
         ->setForceableBuildPlanPhids($config->getConfig('forceable.build.plan.phids'))
+        ->setNonBlockingBuildPlanPhids($config->getConfig('non-blocking.build.plan.phids'))
         ->setLintBuildPlanPhids($config->getConfig('lint.build.plan.phids'));
 
       $phutil_workflows[$key] = $workflow->newPhutilWorkflow();

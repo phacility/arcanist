@@ -15,19 +15,25 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($handle, CURLOPT_POST, TRUE);
     curl_setopt($handle, CURLOPT_POSTFIELDS, $data_string);
-    curl_setopt($handle, CURLOPT_HTTPHEADER, array(                                                                          
-      'Content-Type: application/json',                                                                                
-      'Content-Length: ' . strlen($data_string))                                                                       
+    curl_setopt($handle, CURLOPT_HTTPHEADER, array(
+      'Content-Type: application/json',
+      'Content-Length: ' . strlen($data_string))
     );
 
     $response = curl_exec($handle);
-    $httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+    $error = curl_error($handle);
+    if ($error != "") {
+      throw new Exception(pht("Request to phlq (%s) failed: %s", $phlq_uri, $error));
+    }
+    $http_code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
     curl_close($handle);
-
-    if($httpCode == 404)
-      return null;
-
-    return $response;
+    if ($http_code != 200) {
+      throw new Exception(pht(
+        "Request to phlq (%s) failed with response %s: %s",
+        $phlq_uri,
+        $http_code,
+        $response));
+    }
   }
 
   function landState($phlq_uri, $log_id) {
@@ -216,7 +222,14 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
             } catch (Exception $e) {
               $log_tail_start = 0;
             }
-            $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
+            try {
+              $response_code = $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
+            } catch (Exception $e) {
+              $log->writeError(
+                pht('LAND QUEUE'),
+                pht("Exception: %s", $e->getMessage()));
+              throw $e;
+            }
             $logs_uri = $phlq_uri . $this->phlqLogsPath . $log_id;
             $message = "Land request sent. Landing logs: " . $logs_uri;
             $log->writeSuccess(
