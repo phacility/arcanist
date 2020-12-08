@@ -241,6 +241,10 @@ EOTEXT
           pht(
             'Confirms landing more than %s commit(s) in a single operation.',
             new PhutilNumber($this->getLargeWorkingSetLimit()))),
+      $this->newPrompt('arc.land.confirm-timestamps')
+        ->setDescription(
+          pht(
+            'Confirms that to land when commit timestamps are ahead of latest diff')),
       $this->newPrompt('arc.land.confirm')
         ->setDescription(
           pht(

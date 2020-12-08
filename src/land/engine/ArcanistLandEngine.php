@@ -276,7 +276,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithoutReview($revision_refs) {
-    $expected_pattern = "/^FORCE_LAND=.+/m";
+    $expected_pattern = "/\sFORCE_LAND=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -292,7 +292,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithFailingForceableTests($revision_refs) {
-    $expected_pattern = "/^ALLOW_FAILED_TESTS=.+/m";
+    $expected_pattern = "/\sALLOW_FAILED_TESTS=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -879,7 +879,7 @@ abstract class ArcanistLandEngine
       ->execute();
   }
 
-  final protected function confirmImplicitCommits(array $sets, array $symbols) {
+  protected function confirmImplicitCommits(array $sets, array $symbols) {
     assert_instances_of($sets, 'ArcanistLandCommitSet');
     assert_instances_of($symbols, 'ArcanistLandSymbol');
 
