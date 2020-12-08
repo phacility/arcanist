@@ -94,7 +94,7 @@ function __arcanist_init_script__() {
   )));
 
   // Disable the insanely dangerous XML entity loader by default.
-  if (function_exists('libxml_disable_entity_loader')) {
+  if (function_exists('libxml_disable_entity_loader') && LIBXML_VERSION < 20900) {
     libxml_disable_entity_loader(true);
   }
 
