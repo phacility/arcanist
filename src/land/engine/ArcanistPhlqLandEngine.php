@@ -5,10 +5,9 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
   protected $phlqLandPath = "/land/stack";
   protected $phlqStatePath = "/state/";
 
-  function landRevisions($phlq_uri, $revision_ids, $remote_url) {
+  function landRevisions($phlq_uri, $revision_ids) {
     $handle = curl_init($phlq_uri . $this->phlqLandPath);
     $data = array(
-      'repo_url' => $remote_url,
       'revisions' => array_map(function ($r) { return "D".$r; }, $revision_ids),
     );
     $data_string = json_encode($data);
@@ -46,9 +45,39 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     return file_get_contents($url);
   }
 
+  function confirmImplicitCommits(array $sets, array $symbols) {
+    assert_instances_of($sets, 'ArcanistLandCommitSet');
+    assert_instances_of($symbols, 'ArcanistLandSymbol');
+
+    $implicit = array();
+    foreach ($sets as $set) {
+      if ($set->hasImplicitCommits()) {
+        $implicit[] = $set;
+      }
+    }
+
+    if (!$implicit) {
+      return;
+    }
+
+    $log = $this->getLogEngine();
+    $log->writeError(
+      pht('IMPLICIT COMMITS'),
+      pht(
+        "Some commits reachable from the specified sources (%s) are not " .
+        "associated with revisions and may not have been reviewed. ",
+        $this->getDisplaySymbols($symbols)));
+    throw new ArcanistRevisionStatusException(
+      "All commits must be associated with revisions to land with land queue. " .
+      "Land queue is NOT aware of local changes that have not been pushed to the revision and " .
+      "will land the latest diff in the revision. " .
+      "Run 'arc diff' before landing.");
+  }
+
   function execute() {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
+    $workflow = $this->getWorkflow();
 
     $this->validateArguments();
 
@@ -133,6 +162,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     $sets = array();
     foreach ($revision_groups as $revision_phid => $group) {
       $revision_ref = head($group)->getRevisionRef();
+      $revision_id = $revision_ref->getID();
 
       $set = id(new ArcanistLandCommitSet())
         ->setRevisionRef($revision_ref)
@@ -145,6 +175,70 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
     if (!$this->getShouldPreview()) {
       $this->confirmImplicitCommits($sets, $symbols);
+    }
+
+    foreach ($revision_groups as $revision_phid => $group) {
+      $revision_ref = head($group)->getRevisionRef();
+      $revision_id = $revision_ref->getID();
+
+      # get the last modified time for the revision diff
+      $local_timestamp_warning = false;
+      $conduitEngine = $workflow->getConduitEngine();
+      $future = $conduitEngine->newFuture(
+        "differential.revision.search",
+        array(
+          'constraints' => array('phids' => [$revision_phid]),
+        ),
+      );
+      $response = $future->resolve();
+      $diff_phid = $response['data'][0]['fields']['diffPHID'];
+      $future = $conduitEngine->newFuture(
+        "differential.diff.search",
+        array(
+          'constraints' => array('phids' => [$diff_phid]),
+        ),
+      );
+      $response = $future->resolve();
+      $diff_date_modified = $response['data'][0]['fields']['dateModified'];
+
+      # compare against the unix commiter timestamps for each commit
+      foreach ($group as $commit) {
+        $git_cmd = "show -s --format=%%ct " . $commit->getHash();
+        list($err, $commit_unix_date) = $api->execManualLocal($git_cmd);
+        if ($err) {
+          throw new Exception(pht("git command '%s' failed with exit code %s", $git_cmd, strval($err)));
+        }
+        $commit_unix_date = intval(trim($commit_unix_date));
+        $timestamp_diff = $commit_unix_date - $diff_date_modified;
+        # allow for small theshold before tripping the warning
+        if ($timestamp_diff > 5) {
+          $pretty_diff = sprintf('%02dh %02dm %02ds', ($timestamp_diff/3600),($timestamp_diff/60%60), $timestamp_diff%60);
+          echo tsprintf(
+            "\n%!\n%W\n",
+            pht('POTENTIAL UNPUSHED LOCAL CHANGES FOR D%s', $revision_id),
+            pht(
+              "Local commit %s (%s) in revision D%s has a timestamp that is " .
+              "%s ahead of the revision's latest diff timestamp.\n\n" .
+              "Land queue is NOT aware of local changes that have not been pushed to the revision and " .
+              "will land the latest diff in revision D%s.\n\n" .
+              "If you have rebased to resolve merge conflicts or made other local changes that have not been pushed to " .
+              "the revision, you must call 'arc diff' again before landing.\n\n" .
+              "If you are landing after an 'arc patch' and have not made any local changes then " .
+              "you may ignore this warning. Local timestamps are expected to be newer after patching.\n\n",
+              $commit->getHash(),
+              $commit->getSummary(),
+              $revision_id,
+              $pretty_diff,
+              $revision_id));
+
+          $query = pht('Ignore potential local changes for D%s?', $revision_id);
+
+          $this->getWorkflow()
+            ->getPrompt('arc.land.confirm-timestamps')
+            ->setQuery($query)
+            ->execute();  
+        }
+      }
     }
 
     $log->writeStatus(
@@ -169,8 +263,6 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       ->execute();
 
     $this->confirmRevisions($sets);
-
-    $workflow = $this->getWorkflow();
 
     $is_incremental = $this->getIsIncremental();
     $is_hold = $this->getShouldHold();
@@ -216,14 +308,13 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
             if (count($revision_ids) > 1) {
               $log_id = $log_id . "-D" . end($revision_ids);
             }
-            $remote_url = $api->getRemoteUrl();
             try {
               $log_tail_start = strlen($this->landLogs($phlq_uri, $log_id));
             } catch (Exception $e) {
               $log_tail_start = 0;
             }
             try {
-              $response_code = $this->landRevisions($phlq_uri, $revision_ids, $remote_url);
+              $response_code = $this->landRevisions($phlq_uri, $revision_ids);
             } catch (Exception $e) {
               $log->writeError(
                 pht('LAND QUEUE'),
