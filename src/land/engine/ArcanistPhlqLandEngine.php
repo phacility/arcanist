@@ -323,7 +323,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
               $log_tail_start = 0;
             }
             try {
-              $response_code = $this->landRevisions($phlq_uri, $revision_ids);
+              $response_code = $this->landRevisions($phlq_uri, $revision_ids, $username);
             } catch (Exception $e) {
               $log->writeError(
                 pht('LAND QUEUE'),
