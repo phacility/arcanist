@@ -5,10 +5,11 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
   protected $phlqLandPath = "/land/stack";
   protected $phlqStatePath = "/state/";
 
-  function landRevisions($phlq_uri, $revision_ids) {
+  function landRevisions($phlq_uri, $revision_ids, $username) {
     $handle = curl_init($phlq_uri . $this->phlqLandPath);
     $data = array(
       'revisions' => array_map(function ($r) { return "D".$r; }, $revision_ids),
+      'username' => $username,
     );
     $data_string = json_encode($data);
     curl_setopt($handle, CURLOPT_RETURNTRANSFER, TRUE);
@@ -78,6 +79,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
     $workflow = $this->getWorkflow();
+    $conduitEngine = $workflow->getConduitEngine();
 
     $this->validateArguments();
 
@@ -183,7 +185,6 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
 
       # get the last modified time for the revision diff
       $local_timestamp_warning = false;
-      $conduitEngine = $workflow->getConduitEngine();
       $future = $conduitEngine->newFuture(
         "differential.revision.search",
         array(
@@ -239,6 +240,14 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
             ->execute();  
         }
       }
+    }
+
+    # get phabricator user name
+    $future = $conduitEngine->newFuture("user.whoami", array());
+    $response = $future->resolve();
+    $username = $response['userName'];
+    if (!$username) {
+      throw new Exception("Failed to determine username from conduit");
     }
 
     $log->writeStatus(
