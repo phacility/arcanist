@@ -1983,7 +1983,7 @@ abstract class ArcanistWorkflow extends Phobject {
   }
 
 
-  protected function openURIsInBrowser(array $uris) {
+  public function openURIsInBrowser(array $uris) { // UBER CODE
     $browser = $this->getBrowserCommand();
     foreach ($uris as $uri) {
       $err = phutil_passthru('%s %s', $browser, $uri);

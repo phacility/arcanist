@@ -477,6 +477,7 @@ EOTEXT
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
+      $this->attachJiraIssues($revision, $commit_message); // UBER CODE
     }
 
     $this->runCheckPromptResolveScripts();
@@ -665,6 +666,11 @@ EOTEXT
       if ($this->shouldOpenCreatedObjectsInBrowser()) {
         $this->openURIsInBrowser(array($uri));
       }
+      // UBER CODE
+      if (idx($revision, 'id')) {
+        $this->removeScratchFile(sprintf('D%s-jira-issues.json', $revision['id']));
+      }
+      // UBER CODE END
     }
 
     echo pht('Included changes:')."\n";
@@ -677,6 +683,7 @@ EOTEXT
     }
 
     $this->removeScratchFile('create-message');
+    $this->removeScratchFile('create-message-jira-issues.json'); // UBER CODE
 
     return 0;
   }
@@ -1860,11 +1867,6 @@ EOTEXT
           $template);
         $message->pullDataFromConduit($conduit);
         $this->validateCommitMessage($message);
-        // UBER CODE
-        if ($this->isCommitEditRequired($message)) {
-          continue;
-        }
-        // UBER CODE END
         $done = true;
       } catch (ArcanistDifferentialCommitMessageParserException $ex) {
         echo pht('Commit message has errors:')."\n\n";
@@ -2115,38 +2117,70 @@ EOTEXT
     }
   }
 
-  // runs some validation and returns boolean status if user needs
-  // to edit commit message again
-  private function isCommitEditRequired($message) {
-    if (!$message instanceof ArcanistDifferentialCommitMessage) {
-      return false;
+  // check and if necessary prompts to enter jira tasks
+  private function attachJiraIssues(&$revision,
+    ArcanistDifferentialCommitMessage $message = null) {
+
+    // check if message already has jira issues
+    if ($message->getFieldValue('uber-jira.issues')) {
+      return;
     }
+
+    // check if revision itself already has jira issues
+    if (idx($revision['fields'], 'uber-jira.issues')) {
+      return;
+    }
+
     // atm we do not request automation to add tasks/issues
     if ($this->getArgument('nointeractive')) {
-      return false;
+      return;
     }
+    // check if we have TTY otherwise it is probably automation...
     try {
       phutil_console_require_tty();
-      $config = $this->getConfigurationManager();
-      $check_task_presence = $config->getConfigFromAnySource(
-        'differential.check_task_presence');
-      if (!$check_task_presence) {
-        return false;
-      }
-      $tasks = $message->getFieldValue('maniphestTaskPhids');
-      $issues = $message->getFieldValue('uber-jira.issues');
-      if ($tasks || $issues) {
-        return false;
-      }
-      return phutil_console_confirm(
-        phutil_console_format(
-          '<fg:red>WARNING:</fg> You must associate either Maniphest task or '.
-          'Jira issue with this revision. Do you want to add one?'),
-          $default_no = false);
     } catch (PhutilConsoleStdinNotInteractiveException $e) {
-      // do nothing
+      return;
     }
-    return false;
+
+    // do not execute check for non uber Phabricator though general
+    // recommendation would be to checkout upstream arcanist
+    if (strpos($this->getConduit()->getHost(), "uberinternal.com")===false) {
+      return;
+    }
+
+    $config = $this->getConfigurationManager();
+    $lookup_issues = $config->getConfigFromAnySource(
+      'differential.lookup-jira-issues');
+    if (!$lookup_issues) {
+      return;
+    }
+
+    $issues = array();
+    // read from scratch files maybe user already chose issues previously
+    if (!idx($revision, 'id', false)) {
+      $issues = $this->readScratchJSONFile('create-message-jira-issues.json');
+    } else {
+      $issues = $this->readScratchJSONFile(sprintf('D%s-jira-issues.json', $revision['id']));
+    }
+    if (!empty($issues)) {
+      $message->setFieldValue('uber-jira.issues', $issues);
+      $revision['fields']['uber-jira.issues'] = $issues;
+      return;
+    }
+
+    $jira = new UberTask($this);
+    $issues = $jira->getJiraIssuesForAttachment($message);
+
+    if (!empty($issues)) {
+      // save to scratch files if user/unit test/linter cancel
+      if (!idx($revision, 'id', false)) {
+        $this->writeScratchJSONFile('create-message-jira-issues.json', $issues);
+      } else {
+        $this->writeScratchJSONFile(sprintf('D%s-jira-issues.json', $revision['id']), $issues);
+      }
+      $revision['fields']['uber-jira.issues'] = $issues;
+      $message->setFieldValue('uber-jira.issues', $issues);
+    }
   }
   // END UBER CODE
 

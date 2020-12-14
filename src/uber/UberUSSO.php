@@ -36,7 +36,7 @@ final class UberUSSO extends Phobject {
     return false;
   }
 
-  private function maybeUseUSSOToken($domain) {
+  public function maybeUseUSSOToken($domain) {
     $cache = self::getUSSOCacheFilename($domain);
     try {
       $data = @json_decode(file_get_contents($cache), true);
@@ -51,7 +51,7 @@ final class UberUSSO extends Phobject {
     return null;
   }
 
-  private function getUSSOToken($domain) {
+  public function getUSSOToken($domain) {
     // check ussh and if necessary ask to auth
     list($e, $stdin, $stderr) = exec_manual('ussh');
     if ($e != 0) {
