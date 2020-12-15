@@ -189,7 +189,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
         "differential.revision.search",
         array(
           'constraints' => array('phids' => [$revision_phid]),
-        ),
+        )
       );
       $response = $future->resolve();
       $diff_phid = $response['data'][0]['fields']['diffPHID'];
@@ -197,7 +197,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
         "differential.diff.search",
         array(
           'constraints' => array('phids' => [$diff_phid]),
-        ),
+        )
       );
       $response = $future->resolve();
       $diff_date_modified = $response['data'][0]['fields']['dateModified'];
