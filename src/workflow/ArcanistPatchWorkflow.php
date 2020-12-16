@@ -110,6 +110,10 @@ EOTEXT
       'force' => array(
         'help' => pht('Do not run any sanity checks.'),
       ),
+      'nosubmodules' => array(
+        'supports' => array('git'),
+        'help' => pht('Do not init submodules.'),
+      ),
       '*' => 'name',
     );
   }
@@ -307,13 +311,15 @@ EOTEXT
         $repository_api->execxLocal('checkout -b %s', $branch_name);
       }
 
-      // Synchronize submodule state, since the checkout may have modified
-      // submodule references. See PHI1083.
+      if (!$this->getArgument('nosubmodules', false)) {
+        // Synchronize submodule state, since the checkout may have modified
+        // submodule references. See PHI1083.
 
-      // Note that newer versions of "git checkout" include a
-      // "--recurse-submodules" flag which accomplishes this goal a little
-      // more simply. For now, use the more compatible form.
-      $repository_api->execPassthru('submodule update --init --recursive');
+        // Note that newer versions of "git checkout" include a
+        // "--recurse-submodules" flag which accomplishes this goal a little
+        // more simply. For now, use the more compatible form.
+        $repository_api->execPassthru('submodule update --init --recursive');
+      }
 
       echo phutil_console_format(
         "%s\n",
@@ -722,23 +728,25 @@ EOTEXT
         throw new ArcanistUsageException(pht('Unable to apply patch!'));
       }
 
-      // See PHI1083 and PHI648. If the patch applied changes to submodules,
-      // it only updates the submodule pointer, not the actual submodule. We're
-      // left with the pointer update staged in the index, and the unmodified
-      // submodule on disk.
+      if (!$this->getArgument('nosubmodules', false)) {
+        // See PHI1083 and PHI648. If the patch applied changes to submodules,
+        // it only updates the submodule pointer, not the actual submodule. We're
+        // left with the pointer update staged in the index, and the unmodified
+        // submodule on disk.
 
-      // If we then "git commit --all" or "git add --all", the unmodified
-      // submodule on disk is added to the index as a change, which effectively
-      // undoes the patch we just applied and reverts the submodule back to
-      // the previous state.
+        // If we then "git commit --all" or "git add --all", the unmodified
+        // submodule on disk is added to the index as a change, which effectively
+        // undoes the patch we just applied and reverts the submodule back to
+        // the previous state.
 
-      // To avoid this, do a submodule update before we continue.
+        // To avoid this, do a submodule update before we continue.
 
-      // We could also possibly skip the "--all" flag so we don't have to do
-      // this submodule update, but we want to leave the working copy in a
-      // clean state anyway, so we're going to have to do an update at some
-      // point. This usually doesn't cost us anything.
-      $repository_api->execPassthru('submodule update --init --recursive');
+        // We could also possibly skip the "--all" flag so we don't have to do
+        // this submodule update, but we want to leave the working copy in a
+        // clean state anyway, so we're going to have to do an update at some
+        // point. This usually doesn't cost us anything.
+        $repository_api->execPassthru('submodule update --init --recursive');
+      }
 
       if ($this->shouldCommit()) {
         $flags = array();
@@ -771,12 +779,16 @@ EOTEXT
         // the working copy.
 
         $repository_api->execxLocal('checkout %s --', $original_branch);
-        $repository_api->execPassthru('submodule update --init --recursive');
+        if (!$this->getArgument('nosubmodules', false)) {
+          $repository_api->execPassthru('submodule update --init --recursive');
+        }
 
         $ex = null;
         try {
           $repository_api->execxLocal('cherry-pick -- %s', $new_branch);
-          $repository_api->execPassthru('submodule update --init --recursive');
+          if (!$this->getArgument('nosubmodules', false)) {
+            $repository_api->execPassthru('submodule update --init --recursive');
+          }
         } catch (Exception $ex) {
           // do nothing
         }
