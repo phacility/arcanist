@@ -41,7 +41,6 @@ class UberArcanistSubmitQueueEngine
       }
 
       if ($this->getTbr()) {
-        $this->uberCreateTask($this->getRevision());
         $this->pushChange();
       } else if ($this->uberShouldRunSubmitQueue($this->getRevision(), $this->submitQueueRegex)) {
         $this->pushChangeToSubmitQueue();
@@ -244,37 +243,6 @@ class UberArcanistSubmitQueueEngine
       throw new ArcanistUserAbortException();
     }
     return $excuse;
-  }
-
-  private function uberCreateTask($revision) {
-    $t = $this->getSubmitQueueTags();
-    if (empty($t)) {
-      return;
-    }
-
-    $console = PhutilConsole::getConsole();
-    $excuse = $this->uberTbrGetExcuse(
-      pht('Provide explanation for skipping SubmitQueue or press Enter to abort.'),
-      'tbr-excuses');
-    $args = array(
-      pht('%s is skipping SubmitQueue', 'D' . $revision['id']),
-      '--uber-description',
-      pht("%s is skipping SubmitQueue\n Author: %s\n Excuse: %s\n",
-        'D' . $revision['id'],
-        $this->getWorkflow()->getUserName(),
-        $excuse),
-      '--browse');
-    foreach ($this->submitQueueTags as $tag) {
-      array_push($args, "--project", $tag);
-    }
-
-    $owners = $this->getWorkflow()->getConfigFromAnySource("uber.land.submitqueue.owners");
-    foreach ($owners as $owner) {
-      array_push($args, "--cc", $owner);
-    }
-
-    $todo_workflow = $this->getWorkflow()->buildChildWorkflow('todo', $args);
-    $todo_workflow->run();
   }
 
   protected function getLandingCommits() {
