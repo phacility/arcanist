@@ -380,12 +380,12 @@ EOTEXT
       ->setShouldHold($should_hold)
       ->setShouldKeep($this->keepBranch)
       ->setShouldPreview($this->preview);
-      $engine->execute();
+    $engine->execute();
 
-      if (!$should_hold && !$this->preview) {
-        $this->didPush();
-      }
-      return 0;
+    if (!$should_hold && !$this->preview) {
+      $this->didPush();
+    }
+    return 0;
   }
 
   private function getUpstreamMatching($branch, $pattern) {

@@ -337,6 +337,12 @@ final class UberArcanistStackSubmitQueueEngine
    * Ensures each revision in the diff is rebased against latest diff of its parent.
    */
   protected function validate() {
+    $untracked = $repository_api = $this->getRepositoryAPI()
+      ->getUntrackedChanges();
+    if ($untracked) {
+      throw new ArcanistUsageException(pht(
+        'Repository contains untracked changes, stash it!'));
+    }
     $prevRestoreFlag = $this->restoreWhenDestroyed;
     $this->restoreWhenDestroyed = false;
     try {
