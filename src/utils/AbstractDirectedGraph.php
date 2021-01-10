@@ -318,7 +318,7 @@ abstract class AbstractDirectedGraph extends Phobject {
    *                      which cycle.
    * @task cycle
    */
-  final private function performCycleDetection($node, array $visited) {
+  private function performCycleDetection($node, array $visited) {
     $visited[$node] = true;
     foreach ($this->knownNodes[$node] as $edge) {
       if (isset($visited[$edge])) {
