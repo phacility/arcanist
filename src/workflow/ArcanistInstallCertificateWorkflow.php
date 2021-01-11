@@ -137,7 +137,20 @@ EOTEXT
 
       $conduit->setConduitToken($token);
       try {
-        $conduit->callMethodSynchronous('user.whoami', array());
+        // UBER CODE
+        $usso = new UberUSSO();
+        $usso->enhanceConduitClient($conduit);
+        try {
+          $conduit->callMethodSynchronous('user.whoami', array());
+        } catch (HTTPFutureHTTPResponseStatus $ex) {
+          if (!$usso->enhanceConduitClient($conduit, $ex)) {
+            // if no enhancements came from error, then fail
+            // otherwise continue trying
+            throw $ex;
+          }
+          $conduit->callMethodSynchronous('user.whoami', array());
+        }
+        // UBER CODE END
       } catch (Exception $ex) {
         throw new ArcanistUsageException(
           pht(
