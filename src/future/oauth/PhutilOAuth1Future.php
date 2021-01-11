@@ -268,7 +268,8 @@ final class PhutilOAuth1Future extends FutureProxy {
           throw new Exception(pht('%s failed!', 'openssl_sign()'));
         }
 
-        openssl_free_key($pkey);
+        // Deprecated in PHP 8; key is automatically freed.
+        @openssl_free_key($pkey);
 
         return base64_encode($signature);
       case 'PLAINTEXT':
