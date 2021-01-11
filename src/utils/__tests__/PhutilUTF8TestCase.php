@@ -498,6 +498,8 @@ final class PhutilUTF8TestCase extends PhutilTestCase {
       phutil_utf8_convert('xyz', 'moon language', 'UTF-8');
     } catch (Exception $ex) {
       $caught = $ex;
+    } catch (Throwable $ex) {
+      $caught = $ex;
     }
 
     $this->assertTrue((bool)$caught, pht('Conversion with bogus encoding.'));
