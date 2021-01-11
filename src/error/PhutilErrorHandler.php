@@ -180,10 +180,10 @@ final class PhutilErrorHandler extends Phobject {
    * @return void
    * @task internal
    */
-  public static function handleError($num, $str, $file, $line, $ctx) {
+  public static function handleError($num, $str, $file, $line, $ctx = null) {
 
     foreach (self::$traps as $trap) {
-      $trap->addError($num, $str, $file, $line, $ctx);
+      $trap->addError($num, $str, $file, $line);
     }
 
     if ((error_reporting() & $num) == 0) {
@@ -214,7 +214,6 @@ final class PhutilErrorHandler extends Phobject {
         array(
           'file'       => $file,
           'line'       => $line,
-          'context'    => $ctx,
           'error_code' => $num,
           'trace'      => $trace,
         ));
