@@ -89,10 +89,7 @@ final class ArcanistFormattedStringXHPASTLinterRule
       $argv = array($format->evalStatic()) + array_fill(0, $argc, null);
 
       try {
-        xsprintf(
-          'ArcanistFormattedStringXHPASTLinterRule::processXsprintfCallback',
-          null,
-          $argv);
+        xsprintf(array(__CLASS__, 'processXsprintfCallback'), null, $argv);
       } catch (BadFunctionCallException $ex) {
         $this->raiseLintAtNode(
           $call,
