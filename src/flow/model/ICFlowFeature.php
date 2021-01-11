@@ -14,23 +14,24 @@ final class ICFlowFeature extends Phobject {
   private function __construct() {}
 
   public static function newFromHead(ICFlowRef $head, ICGitAPI $git) {
+    $default_branch = $git->getDefaultRemoteBranch();
     $feature = new self();
     $feature->head = $head;
     $upstream = $head->getUpstream();
     // we're not interested in branches which have no upstream
-    // nor master
-    if (!$upstream || $head->getName() == 'master') {
+    // nor default branch
+    if (!$upstream || $head->getName() == $default_branch) {
       return $feature;
     }
-    // if upstream branch doesn't exists - treat master as upstream
+    // if upstream branch doesn't exists - treat remote default branch as upstream
     if (!$git->revParseVerify($upstream)) {
       echo phutil_console_format("Branch <fg:green>%s</fg> is based on ".
                                  "<fg:red>%s</fg>, but the upstream is gone. ".
                                  "Try running `arc tidy` to fix upsteam. ".
-                                 "Trying to show changes based on master ".
+                                 "Trying to show changes based on %s ".
                                  "branch.\n",
-                                 $head->getName(), $upstream);
-      $upstream = 'master';
+                                 $head->getName(), $upstream, $default_branch);
+      $upstream = $default_branch;
     }
     // get all git logs from HEAD to upstream branch it will be used to find
     // closest match differential revision

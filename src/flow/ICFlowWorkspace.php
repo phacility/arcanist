@@ -10,7 +10,7 @@ final class ICFlowWorkspace extends Phobject {
   private $cache;
   private $headRefs;
   private $features;
-  private $rootBranch = 'master';
+  private $rootBranch = null;
   private $terminalBranch = null;
 
   public function setConduit(ConduitClient $conduit) {
@@ -30,6 +30,13 @@ final class ICFlowWorkspace extends Phobject {
   public function setRootBranch($root_branch) {
     $this->rootBranch = $root_branch;
     return $this;
+  }
+
+  public function getRootBranch() {
+    if ($this->rootBranch == null) {
+      $this->setRootBranch($this->getGitAPI->getDefaultRemoteBranch());
+    }
+    return $this->rootBranch;
   }
 
   public function getGitAPI() {
@@ -258,8 +265,8 @@ final class ICFlowWorkspace extends Phobject {
 
   public function getFeatures() {
     if (!$this->features) {
-      if ($this->rootBranch || $this->terminalBranch) {
-        $this->features = $this->getFeaturesBetween($this->rootBranch,
+      if ($this->getRootBranch() || $this->terminalBranch) {
+        $this->features = $this->getFeaturesBetween($this->getRootBranch(),
           $this->terminalBranch);
       } else {
         $this->features = $this->getAllFeatures();
@@ -288,7 +295,7 @@ final class ICFlowWorkspace extends Phobject {
     foreach ($tracking as $upstream => $downstreams) {
       $graph->addNodes(array($upstream => array_keys($downstreams)));
     }
-    if ($this->rootBranch == 'master') {
+    if ($this->getRootBranch() == $this->getGitAPI()->getDefaultRemoteBranch()) {
       return $graph->loadGraph();
     } else {
       // build truncated graph

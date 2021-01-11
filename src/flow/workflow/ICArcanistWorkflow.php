@@ -25,7 +25,9 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   private $branches;
   private $revisions;
   private $diffs;
-  private $rootBranch = 'master';
+  private $rootBranch = null;
+  // origin default branch
+  private $defaultBranch = null;
 
   public function getSupportedRevisionControlSystems() {
     return array('git');
@@ -74,7 +76,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
       $this->flow = (new ICFlowWorkspace())
         ->setGitAPI($this->getGitAPI())
         ->setConduit($this->getConduit())
-        ->setRootBranch($this->rootBranch)
+        ->setRootBranch($this->getRootBranch())
         ->setCache(ic_standard_cache(ic_blob_cache('flow'), 'workspace'));
     }
     return $this->flow;
@@ -314,12 +316,26 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
   }
 
   public function setRootBranch($root_branch) {
-    if ($this->rootBranch != $root_branch) {
+    if ($this->getRootBranch() != $root_branch) {
       // changing rootBranch changes flow workspace
       $this->flow = null;
     }
     $this->rootBranch = $root_branch;
     return $this;
+  }
+
+  public function getRootBranch() {
+    if ($this->rootBranch === null) {
+      $this->rootBranch = $this->getDefaultRemoteBranch();
+    }
+    return $this->rootBranch;
+  }
+
+  public function getDefaultRemoteBranch() {
+    if ($this->defaultBranch === null) {
+      $this->defaultBranch = $this->getGitAPI()->getDefaultRemoteBranch();
+    }
+    return $this->defaultBranch;
   }
 
   public function clearFlowWorkspace() {

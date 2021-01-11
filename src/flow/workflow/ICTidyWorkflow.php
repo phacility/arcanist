@@ -25,7 +25,7 @@ EOTEXT
           in order:
 
             - recover
-              Graft branches whose upstreams have been deleted onto master.
+              Graft branches whose upstreams have been deleted onto default branch.
             - prune
               Delete branches whose corresponding differential revisions have
               been deleted, then graft any children of those branches onto the
@@ -107,10 +107,12 @@ EOTEXT
       }
     }
 
+    $default_branch = $this->getDefaultRemoteBranch();
+
     if (!$skip_recover && $deleted && $this->consoleConfirm(tsprintf(
         'The branches listed as <fg:red>Deleted</fg> no longer exist and '.
         "their child branches are orphaned.\n\nAttach these orphaned branches ".
-        "to 'master'?"))) {
+        "to '%s'?", $default_branch))) {
       foreach ($deleted as $deleted_branch) {
         $parent = $graph->getUpstream($deleted_branch);
         foreach ($graph->getDownstreams($deleted_branch) as $orphaned_branch) {
@@ -124,12 +126,12 @@ EOTEXT
 
     if (!$skip_recover && $orphaned && $this->consoleConfirm(tsprintf(
         "The branches listed below:\n%s\nno longer have valid ".
-        "upstream\n\n Attach these branches to 'master'?",
-        implode("\n", $orphaned)))) {
+        "upstream\n\n Attach these branches to '%s'?",
+        implode("\n", $orphaned), $default_branch))) {
       foreach ($orphaned as $orphan) {
         $git->execxLocal(
-          'branch --set-upstream-to=master %s',
-          $orphan);
+          'branch --set-upstream-to=%s %s',
+          $default_branch, $orphan);
       }
     }
 
@@ -140,7 +142,7 @@ EOTEXT
           'automatically deleted from your working copy.'.
           "\n\nDelete these branches?"))) {
       if (array_search($git->getBranchName(), $closed) !== false) {
-        $git->execxLocal('checkout master');
+        $git->execxLocal('checkout %s', $default_branch);
       }
       $git->execxLocal('branch -D %Ls', $closed);
       $this->recursivePruneBranch($closed, $graph, $git);
@@ -153,7 +155,7 @@ EOTEXT
         'revisions which have been abandoned and can be automatically deleted '.
         "from your working copy. \n\nDelete these branches?"))) {
       if (array_search($git->getBranchName(), $abandoned) !== false) {
-        $git->execxLocal('checkout master');
+        $git->execxLocal('checkout %', $default_branch);
       }
       $git->execxLocal('branch -D %Ls', $abandoned);
       $this->recursivePruneBranch($abandoned, $graph, $git);

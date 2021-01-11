@@ -118,4 +118,19 @@ final class ICGitAPI extends Phobject {
     }
     return true;
   }
+
+  public function getDefaultRemoteBranch($remote = 'origin') {
+    $ref_path = sprintf('refs/remotes/%s/', $remote);
+    $ref_head = $ref_path.'HEAD';
+    list($stdout, $stderr) = $this->api->execxLocal(
+      'symbolic-ref %s', $ref_head);
+    $branch = trim($stdout);
+    if (empty($branch)) {
+      throw new ArcanistUsageException(
+        sprintf('Remote %s has not default branch', $remote));
+    }
+    $branch = str_replace($ref_path, '', $branch);
+    return $branch;
+  }
+
 }

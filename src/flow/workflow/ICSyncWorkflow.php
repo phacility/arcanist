@@ -19,7 +19,7 @@ EOTEXT
       "local working copy and the\n".
       "          remote install. If no options are passed it will refresh ".
       "dependencies and revisions.\n          Synchronization by default is ".
-      'started from master branch, you can specify different root branch');
+      'started from default branch, you can specify different root branch');
   }
 
   public function getArguments() {
@@ -61,9 +61,10 @@ EOTEXT
   }
 
   public function run() {
+    $default_branch = $this->getDefaultRemoteBranch();
     $dependencies = $this->getArgument('dependencies', false);
     $revisions = $this->getArgument('revisions', false);
-    $branch = idx($this->getArgument('branch', false), 0, 'master');
+    $branch = idx($this->getArgument('branch', false), 0, $default_branch);
     if (!$dependencies && !$revisions) {
       $dependencies = true;
       $revisions = true;
@@ -164,8 +165,8 @@ EOTEXT
     $grafted_parent_branches = array();
 
     foreach ($graph->getNodesInTopologicalOrder() as $branch_name) {
-      // generally master branch is not that interesting, skip it
-      if ($branch_name == 'master') {
+      // generally default branch is not that interesting, skip it
+      if ($branch_name == $this->getDefaultRemoteBranch()) {
         continue;
       }
       $feature = $this->getFeature($branch_name);
