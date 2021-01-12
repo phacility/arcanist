@@ -84,7 +84,7 @@ final class ArcanistGitCommitGraphQuery
       $format = implode('%x02', $fields).'%x01';
 
       $future = $api->newFuture(
-        'log --format=%s %Ls --stdin',
+        'log --format=%s %Ls --stdin --',
         $format,
         $flags);
       $future->write($ref_blob);

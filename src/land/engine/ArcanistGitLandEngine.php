@@ -274,9 +274,11 @@ final class ArcanistGitLandEngine
     // as changes.
 
     list($changes) = $api->execxLocal(
-      'diff --no-ext-diff %s..%s --',
-      $into_commit,
-      $max_hash);
+      'diff --no-ext-diff %s --',
+      gitsprintf(
+        '%s..%s',
+        $into_commit,
+        $max_hash));
     $changes = trim($changes);
     if (!strlen($changes)) {
 
@@ -762,7 +764,7 @@ final class ArcanistGitLandEngine
     $api = $this->getRepositoryAPI();
 
     list($stdout) = $api->execxLocal(
-      'merge-base %s %s',
+      'merge-base -- %s %s',
       $branch,
       $commit);
     $merge_base = trim($stdout);
@@ -781,7 +783,7 @@ final class ArcanistGitLandEngine
     list($info) = $api->execxLocal(
       'log -n1 --format=%s %s --',
       '%aD%n%an%n%ae',
-      $commit);
+      gitsprintf('%s', $commit));
 
     $info = trim($info);
     list($date, $author, $email) = explode("\n", $info, 3);
@@ -1452,19 +1454,19 @@ final class ArcanistGitLandEngine
     $commit_map = array();
     foreach ($symbols as $symbol) {
       $symbol_commit = $symbol->getCommit();
-      $format = '%H%x00%P%x00%s%x00';
+      $format = '--format=%H%x00%P%x00%s%x00';
 
       if ($into_commit === null) {
         list($commits) = $api->execxLocal(
-          'log %s --format=%s',
-          $symbol_commit,
-          $format);
+          'log %s %s --',
+          $format,
+          gitsprintf('%s', $symbol_commit));
       } else {
         list($commits) = $api->execxLocal(
-          'log %s --not %s --format=%s',
-          $symbol_commit,
-          $into_commit,
-          $format);
+          'log %s %s --not %s --',
+          $format,
+          gitsprintf('%s', $symbol_commit),
+          gitsprintf('%s', $into_commit));
       }
 
       $commits = phutil_split_lines($commits, false);
