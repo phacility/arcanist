@@ -274,7 +274,7 @@ abstract class ArcanistLintEngine extends Phobject {
     return ArcanistLintSeverity::isAtLeastAsSevere($severity, $minimum);
   }
 
-  final private function shouldUseCache(
+  private function shouldUseCache(
     $cache_granularity,
     $repository_version) {
 
@@ -313,7 +313,7 @@ abstract class ArcanistLintEngine extends Phobject {
     return $this;
   }
 
-  final private function isRelevantMessage(ArcanistLintMessage $message) {
+  private function isRelevantMessage(ArcanistLintMessage $message) {
     // When a user runs "arc lint", we default to raising only warnings on
     // lines they have changed (errors are still raised anywhere in the
     // file). The list of $changed lines may be null, to indicate that the

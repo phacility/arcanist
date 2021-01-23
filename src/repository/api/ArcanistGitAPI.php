@@ -88,7 +88,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
    */
   private function isDescendant($child, $parent) {
     list($common_ancestor) = $this->execxLocal(
-      'merge-base %s %s',
+      'merge-base -- %s %s',
       $child,
       $parent);
     $common_ancestor = trim($common_ancestor);
@@ -214,7 +214,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       }
 
       list($err, $merge_base) = $this->execManualLocal(
-        'merge-base %s %s',
+        'merge-base -- %s %s',
         $symbolic_commit,
         $this->getHeadCommit());
       if ($err) {
@@ -381,7 +381,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     list($merge_base) = $this->execxLocal(
-      'merge-base %s HEAD',
+      'merge-base -- %s HEAD',
       $default_relative);
 
     return trim($merge_base);
@@ -569,22 +569,24 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     } else if ($relative == self::GIT_MAGIC_ROOT_COMMIT) {
       // First commit.
       list($stdout) = $this->execxLocal(
-        'log --format=medium HEAD');
+        'log --format=medium HEAD --');
     } else {
       // 2..N commits.
       list($stdout) = $this->execxLocal(
-        'log --first-parent --format=medium %s..%s',
-        $this->getBaseCommit(),
-        $this->getHeadCommit());
+        'log --first-parent --format=medium %s --',
+        gitsprintf(
+          '%s..%s',
+          $this->getBaseCommit(),
+          $this->getHeadCommit()));
     }
     return $stdout;
   }
 
   public function getGitHistoryLog() {
     list($stdout) = $this->execxLocal(
-      'log --format=medium -n%d %s',
+      'log --format=medium -n%d %s --',
       self::SEARCH_LENGTH_FOR_PARENT_REVISIONS,
-      $this->getBaseCommit());
+      gitsprintf('%s', $this->getBaseCommit()));
     return $stdout;
   }
 
@@ -721,7 +723,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       array(
         'diff %C --raw %s --',
         $diff_options,
-        $diff_base,
+        gitsprintf('%s', $diff_base),
       ));
 
     $untracked_future = $this->buildLocalFuture(
@@ -782,7 +784,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($stdout, $stderr) = $this->execxLocal(
       'diff %C --raw %s HEAD --',
       $this->getDiffBaseOptions(),
-      $this->getBaseCommit());
+      gitsprintf('%s', $this->getBaseCommit()));
 
     return $this->parseGitRawDiff($stdout);
   }
@@ -935,15 +937,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getChangedFiles($since_commit) {
     list($stdout) = $this->execxLocal(
-      'diff --raw %s',
-      $since_commit);
+      'diff --raw %s --',
+      gitsprintf('%s', $since_commit));
     return $this->parseGitRawDiff($stdout);
   }
 
   public function getBlame($path) {
     list($stdout) = $this->execxLocal(
       'blame --porcelain -w -M %s -- %s',
-      $this->getBaseCommit(),
+      gitsprintf('%s', $this->getBaseCommit()),
       $path);
 
     // the --porcelain format prints at least one header line per source line,
@@ -1030,7 +1032,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
     list($stdout) = $this->execxLocal(
       'ls-tree %s -- %s',
-      $revision,
+      gitsprintf('%s', $revision),
       $path);
 
     $info = $this->parseGitTree($stdout);
@@ -1046,7 +1048,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     list($stdout) = $this->execxLocal(
-      'cat-file blob %s',
+      'cat-file blob -- %s',
        $info[$path]['ref']);
     return $stdout;
   }
@@ -1171,7 +1173,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     list($message) = $this->execxLocal(
       'log -n1 --format=%C %s --',
       '%s%n%n%b',
-      $commit);
+      gitsprintf('%s', $commit));
     return $message;
   }
 
@@ -1249,9 +1251,9 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     }
 
     list($summary) = $this->execxLocal(
-      'log -n 1 --format=%C %s',
-      '%s',
-      $commit);
+      'log -n 1 %s %s --',
+      '--format=%s',
+      gitsprintf('%s', $commit));
 
     return trim($summary);
   }
@@ -1268,7 +1270,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
         $matches = null;
         if (preg_match('/^merge-base\((.+)\)$/', $name, $matches)) {
           list($err, $merge_base) = $this->execManualLocal(
-            'merge-base %s HEAD',
+            'merge-base -- %s HEAD',
             $matches[1]);
           if (!$err) {
             $this->setBaseCommitExplanation(
@@ -1282,7 +1284,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
           }
         } else if (preg_match('/^branch-unique\((.+)\)$/', $name, $matches)) {
           list($err, $merge_base) = $this->execManualLocal(
-            'merge-base %s HEAD',
+            'merge-base -- %s HEAD',
             $matches[1]);
           if ($err) {
             return null;
@@ -1400,7 +1402,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
             if (!$err) {
               $upstream = rtrim($upstream);
               list($upstream_merge_base) = $this->execxLocal(
-                'merge-base %s HEAD',
+                'merge-base -- %s HEAD',
                 $upstream);
               $upstream_merge_base = rtrim($upstream_merge_base);
               $this->setBaseCommitExplanation(

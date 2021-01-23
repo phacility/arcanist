@@ -75,6 +75,10 @@ final class PhutilTypeSpec extends Phobject {
         }
         break;
       case 'regex':
+        if (!is_string($value)) {
+          throw new PhutilTypeCheckException($this, $value, $name);
+        }
+
         $trap = new PhutilErrorTrap();
           $ok = @preg_match($value, '');
           $err = $trap->getErrorsAsString();

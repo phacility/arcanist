@@ -94,8 +94,11 @@ function __arcanist_init_script__() {
   )));
 
   // Disable the insanely dangerous XML entity loader by default.
+  // PHP 8 deprecates this function and disables this by default; remove once
+  // PHP 7 is no longer supported or a future version has removed the function
+  // entirely.
   if (function_exists('libxml_disable_entity_loader')) {
-    libxml_disable_entity_loader(true);
+    @libxml_disable_entity_loader(true);
   }
 
   $root = dirname(dirname(dirname(__FILE__)));

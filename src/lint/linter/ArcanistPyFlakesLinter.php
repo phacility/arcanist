@@ -35,7 +35,8 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
     list($stdout) = execx('%C --version', $this->getExecutableCommand());
 
     $matches = array();
-    if (preg_match('/^(?P<version>\d+\.\d+\.\d+)$/', $stdout, $matches)) {
+    $pattern = '/^(?P<version>\d+\.\d+\.\d+)( Python.*)?$/';
+    if (preg_match($pattern, $stdout, $matches)) {
       return $matches['version'];
     } else {
       return false;
@@ -52,7 +53,8 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
     $messages = array();
     foreach ($lines as $line) {
       $matches = null;
-      if (!preg_match('/^(.*?):(\d+): (.*)$/', $line, $matches)) {
+      $pattern = '/^(?<path>.*?):(?<line>\d+):(?<column>\d*) (?<message>.*)$/';
+      if (!preg_match($pattern, $line, $matches)) {
         continue;
       }
       foreach ($matches as $key => $match) {
@@ -60,7 +62,7 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
       }
 
       $severity = ArcanistLintSeverity::SEVERITY_WARNING;
-      $description = $matches[3];
+      $description = $matches['message'];
 
       $error_regexp = '/(^undefined|^duplicate|before assignment$)/';
       if (preg_match($error_regexp, $description)) {
@@ -69,7 +71,10 @@ final class ArcanistPyFlakesLinter extends ArcanistExternalLinter {
 
       $message = new ArcanistLintMessage();
       $message->setPath($path);
-      $message->setLine($matches[2]);
+      $message->setLine($matches['line']);
+      if ($matches['column'] != '') {
+        $message->setChar($matches['column']);
+      }
       $message->setCode($this->getLinterName());
       $message->setName($this->getLinterName());
       $message->setDescription($description);

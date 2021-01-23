@@ -27,7 +27,7 @@ final class ArcanistGitCommitMessageHardpointQuery
       $futures[$hash] = $api->execFutureLocal(
         'log -n1 --format=%s %s --',
         '%s%n%n%b',
-        $hash);
+        gitsprintf('%s', $hash));
     }
 
     yield $this->yieldFutures($futures);
