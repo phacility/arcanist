@@ -53,6 +53,14 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
   }
 
   public function willLintPaths(array $paths) {
+
+    $libtype_map = array(
+      'class' => 'class',
+      'function' => 'function',
+      'interface' => 'class',
+      'class/interface' => 'class',
+    );
+
     // NOTE: For now, we completely ignore paths and just lint every library in
     // its entirety. This is simpler and relatively fast because we don't do any
     // detailed checks and all the data we need for this comes out of module
@@ -60,6 +68,26 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
 
     $bootloader = PhutilBootloader::getInstance();
     $libraries  = $bootloader->getAllLibraries();
+
+    // Load all the builtin symbols first.
+    $builtin_map = PhutilLibraryMapBuilder::newBuiltinMap();
+    $builtin_map = $builtin_map['have'];
+
+    $normal_symbols = array();
+    $all_symbols = array();
+    foreach ($builtin_map as $type => $builtin_symbols) {
+      $libtype = $libtype_map[$type];
+      foreach ($builtin_symbols as $builtin_symbol => $ignored) {
+        $normal_symbol = $this->normalizeSymbol($builtin_symbol);
+        $normal_symbols[$type][$normal_symbol] = $builtin_symbol;
+
+        $all_symbols[$libtype][$builtin_symbol] = array(
+          'library' => null,
+          'file' => null,
+          'offset' => null,
+        );
+      }
+    }
 
     // Load the up-to-date map for each library, without loading the library
     // itself. This means lint results will accurately reflect the state of
@@ -80,7 +108,6 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
       }
     }
 
-    $all_symbols = array();
     foreach ($symbols as $library => $map) {
       // Check for files which declare more than one class/interface in the same
       // file, or mix function definitions with class/interface definitions. We
@@ -125,20 +152,12 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
         }
       }
 
-      $libtype_map = array(
-        'class' => 'class',
-        'function' => 'function',
-        'interface' => 'class',
-        'class/interface' => 'class',
-      );
-
       // Check for duplicate symbols: two files providing the same class or
       // function. While doing this, we also build a map of normalized symbol
       // names to original symbol names: we want a definition of "idx()" to
       // collide with a definition of "IdX()", and want to perform spelling
       // corrections later.
 
-      $normal_symbols = array();
       foreach ($map as $file => $spec) {
         $have = idx($spec, 'have', array());
         foreach (array('class', 'function', 'interface') as $type) {
@@ -160,12 +179,20 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
             $old_src = $all_symbols[$libtype][$old_symbol]['file'];
             $old_lib = $all_symbols[$libtype][$old_symbol]['library'];
 
-            $this->raiseLintInLibrary(
-              $library,
-              $file,
-              $offset,
-              self::LINT_DUPLICATE_SYMBOL,
-              pht(
+            // If these values are "null", it means that the symbol is a
+            // builtin symbol provided by PHP or a PHP extension.
+
+            if ($old_lib === null) {
+              $message = pht(
+                'Definition of symbol "%s" (of type "%s") in file "%s" in '.
+                'library "%s" duplicates builtin definition of the same '.
+                'symbol.',
+                $symbol,
+                $type,
+                $file,
+                $library);
+            } else {
+              $message = pht(
                 'Definition of symbol "%s" (of type "%s") in file "%s" in '.
                 'library "%s" duplicates prior definition in file "%s" in '.
                 'library "%s".',
@@ -174,7 +201,15 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
                 $file,
                 $library,
                 $old_src,
-                $old_lib));
+                $old_lib);
+            }
+
+            $this->raiseLintInLibrary(
+              $library,
+              $file,
+              $offset,
+              self::LINT_DUPLICATE_SYMBOL,
+              $message);
           }
         }
       }
