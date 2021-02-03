@@ -84,6 +84,17 @@ abstract class AASTToken extends Phobject {
     return $result;
   }
 
+  public function getWhitespaceTokensAfter() {
+    $tokens = $this->tree->getRawTokenStream();
+    $result = array();
+    $ii = $this->id + 1;
+    while ($ii < count($tokens) && $tokens[$ii]->isAnyWhitespace()) {
+      $result[$ii] = $tokens[$ii];
+      ++$ii;
+    }
+    return $result;
+  }
+
   final public function getLineNumber() {
     return idx($this->tree->getOffsetToLineNumberMap(), $this->getOffset());
   }
