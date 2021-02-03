@@ -67,6 +67,18 @@ function xsprintf($callback, $userdata, array $argv) {
         }
 
         if ($callback !== null) {
+
+          // See T13588 and D21500. This function uses "$callback()", instead
+          // of "call_user_func()", to simplify reference behavior: some of
+          // these arguments must be passed by reference.
+
+          // Prior to PHP7, this syntax will not work if "$callback" is a
+          // string referencing a static method, like "C::m".
+
+          // This syntax does work if "$callback" is an array referencing
+          // a static method, like "array('C', 'm')", in all versions of PHP
+          // since PHP 5.4.
+
           $callback($userdata, $pattern, $pos, $argv[$arg], $len);
         }
       }
