@@ -267,13 +267,19 @@ final class ArcanistSettings extends Phobject {
         'help' => pht(
           'If true, diff with empty binary upload will produce exceptions'.
           'unless diff explicitly with `--skip-binaries` option'),
-          'default' => true,
+        'default' => true,
       ),
       'uber.arcanist.use_non_tag_refs' => array(
         'type' => 'bool',
         'help' => pht(
           'If true, arc will use non-tag refs for base and diff, both during arc diff and arc patch'),
-          'default' => false,
+        'default' => false,
+      ),
+      'differential.lookup-jira-issues' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'If true, arc will query jira for issues and display it for user selection'),
+        'default' => false,
       ),
     );
   }
