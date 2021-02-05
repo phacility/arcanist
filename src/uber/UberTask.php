@@ -129,6 +129,10 @@ final class UberTask extends Phobject {
         ->setHeader('Select issue to attach to Differential Revision '.
                     '(use tab for multiple selection)');
       $result = $fzf->fuzzyChoosePrompt($for_search);
+      if (empty($result)) {
+        // nothing was chosen (ctrl+d, ctrl+c)
+        return;
+      }
 
       $issues = array();
       $project_urls = array();
