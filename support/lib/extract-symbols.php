@@ -23,8 +23,8 @@ $args->setSynopsis(<<<EOHELP
 
         Symbols are reported in JSON on stdout.
 
-        This script is used internally by libphutil/arcanist to build maps of
-        library symbols.
+        This script is used internally by Arcanist to build maps of library
+        symbols.
 
         It would be nice to eventually implement this as a C++ xhpast binary,
         as it's relatively stable and performance is currently awful
@@ -38,7 +38,11 @@ $args->parse(
     array(
       'name'      => 'all',
       'help'      => pht(
-        'Report all symbols, including built-ins and declared externals.'),
+        'Emit all symbols, including built-ins and declared externals.'),
+    ),
+    array(
+      'name' => 'builtins',
+      'help' => pht('Emit builtin symbols.'),
     ),
     array(
       'name'      => 'ugly',
@@ -52,14 +56,32 @@ $args->parse(
   ));
 
 $paths = $args->getArg('path');
-if (count($paths) !== 1) {
-  throw new Exception(pht('Specify exactly one path!'));
-}
-$path = Filesystem::resolvePath(head($paths));
 
 $show_all = $args->getArg('all');
+$show_builtins = $args->getArg('builtins');
 
-$source_code = Filesystem::readFile($path);
+if ($show_all && $show_builtins) {
+  throw new PhutilArgumentUsageException(
+    pht(
+      'Flags "--all" and "--builtins" are not compatible.'));
+}
+
+if ($show_builtins && $paths) {
+  throw new PhutilArgumentUsageException(
+    pht(
+      'Flag "--builtins" may not be used with a path.'));
+}
+
+if ($show_builtins) {
+  $path = '<builtins>';
+  $source_code = '';
+} else {
+  if (count($paths) !== 1) {
+    throw new Exception(pht('Specify exactly one path!'));
+  }
+  $path = Filesystem::resolvePath(head($paths));
+  $source_code = Filesystem::readFile($path);
+}
 
 try {
   $tree = XHPASTTree::newFromData($source_code);
@@ -474,6 +496,14 @@ foreach ($need as $key => $spec) {
   $required_symbols[$type][$name] = $spec['symbol']->getOffset();
 }
 
+if ($show_builtins) {
+  foreach ($builtins as $type => $builtin_symbols) {
+    foreach ($builtin_symbols as $builtin_symbol => $ignored) {
+      $declared_symbols[$type][$builtin_symbol] = null;
+    }
+  }
+}
+
 $result = array(
   'have'  => $declared_symbols,
   'need'  => $required_symbols,
@@ -543,8 +573,6 @@ function phutil_symbols_get_builtins() {
       'parent' => true,
       'self'   => true,
 
-      'PhutilBootloader' => true,
-
       // PHP7 defines these new parent classes of "Exception", but they do not
       // exist prior to PHP7. It's possible to use them safely in PHP5, in
       // some cases, to write code which is compatible with either PHP5 or
@@ -569,12 +597,6 @@ function phutil_symbols_get_builtins() {
         'empty' => true,
         'isset' => true,
         'die'   => true,
-
-        // These are provided by libphutil but not visible in the map.
-
-        'phutil_is_windows'   => true,
-        'phutil_load_library' => true,
-        'phutil_is_hiphop_runtime' => true,
 
         // HPHP/i defines these functions as 'internal', but they are NOT
         // builtins and do not exist in vanilla PHP. Make sure we don't mark

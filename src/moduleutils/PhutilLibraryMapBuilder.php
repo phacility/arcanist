@@ -266,9 +266,29 @@ final class PhutilLibraryMapBuilder extends Phobject {
    */
   private function buildSymbolAnalysisFuture($file) {
     $absolute_file = $this->getPath($file);
+    return self::newExtractSymbolsFuture(
+      array(),
+      array($absolute_file));
+  }
+
+  private static function newExtractSymbolsFuture(array $flags, array $paths) {
     $bin = dirname(__FILE__).'/../../support/lib/extract-symbols.php';
 
-    return new ExecFuture('php -f %R -- --ugly %R', $bin, $absolute_file);
+    return new ExecFuture(
+      'php -f %R -- --ugly %Ls -- %Ls',
+      $bin,
+      $flags,
+      $paths);
+  }
+
+  public static function newBuiltinMap() {
+    $future = self::newExtractSymbolsFuture(
+      array('--builtins'),
+      array());
+
+    list($json) = $future->resolvex();
+
+    return phutil_json_decode($json);
   }
 
 
