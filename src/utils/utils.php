@@ -876,13 +876,18 @@ function array_mergev(array $arrayv) {
     if (!is_array($item)) {
       throw new InvalidArgumentException(
         pht(
-          'Expected all items passed to `%s` to be arrays, but '.
+          'Expected all items passed to "array_mergev()" to be arrays, but '.
           'argument with key "%s" has type "%s".',
-          __FUNCTION__.'()',
           $key,
           gettype($item)));
     }
   }
+
+  // See T13588. In PHP8, "call_user_func_array()" will attempt to use
+  // "unnatural" array keys as named parameters, and then fail because
+  // "array_merge()" does not accept named parameters . Guarantee the list is
+  // a "natural" list to avoid this.
+  $arrayv = array_values($arrayv);
 
   return call_user_func_array('array_merge', $arrayv);
 }
