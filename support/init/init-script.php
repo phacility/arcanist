@@ -56,6 +56,15 @@ function __arcanist_init_script__() {
     // inspect "args", and this option generally obscures useful debugging
     // information without any benefit in the context of Phabricator.
     'zend.exception_ignore_args' => 0,
+
+    // See T13100. We'd like the regex engine to fail, rather than segfault,
+    // if handed a pathological regular expression.
+    'pcre.backtrack_limit' => 10000,
+    'pcre.recusion_limit' => 10000,
+
+    // NOTE: Phabricator applies a similar set of startup options for Web
+    // environments in "PhabricatorStartup". Changes here may also be
+    // appropriate to apply there.
   );
 
   foreach ($config_map as $config_key => $config_value) {
@@ -103,8 +112,6 @@ function __arcanist_init_script__() {
 
   $root = dirname(dirname(dirname(__FILE__)));
   require_once $root.'/src/init/init-library.php';
-
-  PhutilErrorHandler::initialize();
 
   PhutilErrorHandler::initialize();
 
