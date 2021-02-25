@@ -123,9 +123,23 @@ final class UberTask extends Phobject {
       }
 
       // prompt user to choose from menu
-      $fzf = id(new UberFZF())
-        ->requireFZF()
-        ->setMulti(50)
+      $fzf = id(new UberFZF());
+      if (!$fzf->isFZFAvailable()) {
+        $this->console->writeOut(
+          "<bg:red>** %s **</bg>\n<bg:red>** %s **</bg>\n".
+          "<bg:red>** %s **</bg> %s\n".
+          "<bg:red>** %s **</bg>\n<bg:red>** %s **</bg>\n",
+          pht('WARNING'),
+          pht('WARNING'),
+          pht('WARNING'),
+          pht('Looks like you do not have `fzf`, please install using '.
+              '`brew install fzf` or `apt-get install fzf` or `dnf install '.
+              'fzf` and try again. Your productivity will improve if you '.
+              "install this tool."),
+          pht('WARNING'),
+          pht('WARNING'));
+      }
+      $fzf->setMulti(50)
         ->setHeader('Select issue to attach to Differential Revision '.
                     '(use tab for multiple selection)');
       $result = $fzf->fuzzyChoosePrompt($for_search);

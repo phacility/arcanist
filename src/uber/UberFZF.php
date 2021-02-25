@@ -10,16 +10,23 @@ final class UberFZF extends Phobject {
     * also suggests commands to install `fzf`
   */
   public function requireFZF() {
-    try {
-      id(new ExecFuture('fzf --version'))
-        ->resolvex();
-    }
-    catch (CommandException $e) {
+    if (!$this->isFZFAvailable()) {
       throw new ArcanistUsageException('Looks like you do not have `fzf`, '.
         'please install using `brew install fzf` or `apt-get install fzf` '.
         'or `dnf install fzf` and try again.');
     }
     return $this;
+  }
+
+  public function isFZFAvailable() {
+    try {
+      id(new ExecFuture('fzf --version'))
+        ->resolvex();
+    }
+    catch (CommandException $e) {
+      return false;
+    }
+    return true;
   }
 
   public function setMulti($multi) {
