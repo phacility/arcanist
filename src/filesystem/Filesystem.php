@@ -52,7 +52,7 @@ final class Filesystem extends Phobject {
    * Make assertions about the state of path in preparation for
    * writeFile() and writeFileIfChanged().
    */
-  private static function assertWritableFile($path) {
+  public static function assertWritableFile($path) {
     $path = self::resolvePath($path);
     $dir = dirname($path);
 

@@ -2008,3 +2008,89 @@ function phutil_partition(array $map) {
 
   return $partitions;
 }
+
+function phutil_preg_match(
+  $pattern,
+  $subject,
+  $flags = 0,
+  $offset = 0) {
+
+  $matches = null;
+  $result = @preg_match($pattern, $subject, $matches, $flags, $offset);
+  if ($result === false || $result === null) {
+    phutil_raise_preg_exception(
+      'preg_match',
+      array(
+        $pattern,
+        $subject,
+        $matches,
+        $flags,
+        $offset,
+      ));
+  }
+
+  return $matches;
+}
+
+function phutil_preg_match_all(
+  $pattern,
+  $subject,
+  $flags = 0,
+  $offset = 0) {
+
+  $matches = null;
+  $result = @preg_match_all($pattern, $subject, $matches, $flags, $offset);
+  if ($result === false || $result === null) {
+    phutil_raise_preg_exception(
+      'preg_match_all',
+      array(
+        $pattern,
+        $subject,
+        $matches,
+        $flags,
+        $offset,
+      ));
+  }
+
+  return $matches;
+}
+
+function phutil_raise_preg_exception($function, array $argv) {
+  $trap = new PhutilErrorTrap();
+
+  // NOTE: This ugly construction to avoid issues with reference behavior when
+  // passing values through "call_user_func_array()".
+
+  switch ($function) {
+    case 'preg_match':
+      @preg_match($argv[0], $argv[1], $argv[2], $argv[3], $argv[4]);
+      break;
+    case 'preg_match_all':
+      @preg_match_all($argv[0], $argv[1], $argv[2], $argv[3], $argv[4]);
+      break;
+  }
+  $error_message = $trap->getErrorsAsString();
+
+  $trap->destroy();
+
+  $pattern = $argv[0];
+  $pattern_display = sprintf(
+    '"%s"',
+    addcslashes($pattern, '\\\"'));
+
+  $message = array();
+  $message[] = pht(
+    'Call to %s(%s, ...) failed.',
+    $function,
+    $pattern_display);
+
+  if (strlen($error_message)) {
+    $message[] = pht(
+      'Regular expression engine emitted message: %s',
+      $error_message);
+  }
+
+  $message = implode("\n\n", $message);
+
+  throw new PhutilRegexException($message);
+}
