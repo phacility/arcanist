@@ -28,7 +28,7 @@ final class PhutilErrorLog
   public function activateLog() {
     $log_path = $this->getLogPath();
 
-    if ($log_path !== null) {
+    if ($log_path !== null && false) {
       // Test that the path is writable.
       $write_exception = null;
       try {
