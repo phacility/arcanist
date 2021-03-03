@@ -780,13 +780,15 @@ abstract class ArcanistLandEngine
       $display_summary = $commit->getDisplaySummary();
 
       if ($is_implicit) {
+        // NOTE: Mark commits with both a color and a character so the marking
+        // survives copy/paste.
         echo tsprintf(
-          "       <bg:yellow> %s </bg> %s\n",
+          "       ! <bg:yellow> %s </bg> %s\n",
           $display_hash,
           $display_summary);
       } else {
         echo tsprintf(
-          "        %s  %s\n",
+          "          %s  %s\n",
           $display_hash,
           $display_summary);
       }
