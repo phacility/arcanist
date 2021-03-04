@@ -475,9 +475,12 @@ EOTEXT
         'message' => $commit_message,
       ));
 
+    $diff_spec = $this->buildDiffSpecification(); // UBER CODE
+
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
-      $this->attachJiraIssues($revision, $commit_message); // UBER CODE
+      $this->attachJiraIssues($revision, $diff_spec, // UBER CODE
+                              $commit_message);      // UBER CODE
     }
 
     $this->runCheckPromptResolveScripts();
@@ -515,7 +518,7 @@ EOTEXT
       'changes' => mpull($changes, 'toDictionary'),
       'lintStatus' => $this->getLintStatus($lint_result),
       'unitStatus' => $this->getUnitStatus($unit_result),
-    ) + $this->buildDiffSpecification();
+    ) + $diff_spec; // UBER CODE
 
     $conduit = $this->getConduit();
     $diff_info = $conduit->callMethodSynchronous(
@@ -2118,7 +2121,7 @@ EOTEXT
   }
 
   // check and if necessary prompts to enter jira tasks
-  private function attachJiraIssues(&$revision,
+  private function attachJiraIssues(&$revision, array $diff_spec,
     ArcanistDifferentialCommitMessage $message = null) {
 
     // check if message already has jira issues
@@ -2153,6 +2156,16 @@ EOTEXT
       'differential.lookup-jira-issues');
     if (!$lookup_issues) {
       return;
+    }
+
+    $branch = idx($diff_spec, 'branch');
+    if ($branch !== null) {
+      if (preg_match('/^([A-Z][A-Z0-9]*-[1-9]\d*)/', $branch)) {
+        $this->console->writeOut("%s\n",
+          pht('Revision branch contains JIRA alike task, '.
+              'skipping jira quick search'));
+        return;
+      }
     }
 
     $issues = array();
