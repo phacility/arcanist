@@ -39,7 +39,20 @@ abstract class ArcanistFilesystemConfigurationSource
     $content = id(new PhutilJSON())
       ->encodeFormatted($values);
 
-    Filesystem::writeFile($this->path, $content);
+    $path = $this->path;
+
+    // If the containing directory does not exist yet, create it.
+    //
+    // This is expected when (for example) you first write to project
+    // configuration in a Git working copy: the ".git/arc" directory will
+    // not exist yet.
+
+    $dir = dirname($path);
+    if (!Filesystem::pathExists($dir)) {
+      Filesystem::createDirectory($dir, 0755, $recursive = true);
+    }
+
+    Filesystem::writeFile($path, $content);
   }
 
 }

@@ -300,78 +300,186 @@ final class ArcanistGitLandEngine
         $api->getDisplayHash($max_hash),
         $max_commit->getDisplaySummary()));
 
-    $argv = array();
-    $argv[] = '--no-stat';
-    $argv[] = '--no-commit';
+    // See T13576. We have several different approaches for performing the
+    // actual merge.
+    //
+    // In the simplest case, we're using the "merge" strategy. This means
+    // we always want to merge the entire history, and we can just use a
+    // "git merge" to accomplish our goal. No other approach is permissible
+    // here, so if that doesn't work we're all done and just tell the user
+    // to go resolve conflicts.
+    //
+    // If we're using the "squash" strategy, we may be merging a range of
+    // commits that aren't direct descendants of any ancestor of the state
+    // we're merging into. That is, there may be some ancestors of this
+    // range that we do NOT want to merge. A simple way to get into this
+    // state is to use "--pick". We need to slice off only the commits we
+    // want to merge to ensure we don't bring anything extra along.
+    //
+    // If history is simple and linear, we can select this slice with
+    // "git rebase". However, if history includes merge commits, it seems
+    // as though there are many cases where a (non-interactive) rebase is
+    // doomed to failure.
+    //
+    // If a "git rebase" fails, try to "reduce" the slice first, by using
+    // a "git merge --squash" to collapse the whole slice on top of its
+    // parent. This produces a single non-merge commit with all the changes,
+    // which we can then rebase and merge.
 
-    // When we're merging into the empty state, Git refuses to perform the
-    // merge until we tell it explicitly that we're doing something unusual.
-    if ($is_empty) {
-      $argv[] = '--allow-unrelated-histories';
-    }
-
-    if ($this->isSquashStrategy()) {
-      // NOTE: We're explicitly specifying "--ff" to override the presence
-      // of "merge.ff" options in user configuration.
-      $argv[] = '--ff';
-      $argv[] = '--squash';
+    $try = array();
+    if ($this->isSquashStrategy() && !$is_empty) {
+      $try[] = 'rebase-merge';
+      $try[] = 'reduce-rebase-merge';
     } else {
-      $argv[] = '--no-ff';
+      $try[] = 'merge';
     }
 
-    $argv[] = '--';
+    $merge_exceptions = array();
+    $merge_complete = false;
+    foreach ($try as $approach) {
+      $reduce_min = null;
+      $reduce_max = null;
 
-    $is_rebasing = false;
-    $is_merging = false;
-    try {
-      if ($this->isSquashStrategy() && !$is_empty) {
-        // If we're performing a squash merge, we're going to rebase the
-        // commit range first. We only want to merge the specific commits
-        // in the range, and merging too much can create conflicts.
+      $rebase_min = null;
+      $rebase_max = null;
 
-        $api->execxLocal('checkout %s --', $max_hash);
+      $merge_hash = null;
+      $force_resolve = false;
 
-        $is_rebasing = true;
-        $api->execxLocal(
-          'rebase --onto %s -- %s',
-          $into_commit,
-          $min_hash.'^');
-        $is_rebasing = false;
+      switch ($approach) {
+        case 'reduce-rebase-merge':
+          $reduce_min = $min_hash;
+          $reduce_max = $max_hash;
 
-        $merge_hash = $api->getCanonicalRevisionName('HEAD');
-      } else {
-        $merge_hash = $max_hash;
+          $log->writeStatus(
+            pht('MERGE'),
+            pht('Attempting to reduce and rebase changes.'));
+          break;
+        case 'rebase-merge':
+          $rebase_min = $min_hash;
+          $rebase_max = $max_hash;
+
+          $log->writeStatus(
+            pht('MERGE'),
+            pht('Attempting to rebase changes.'));
+          break;
+        case 'merge':
+          $merge_hash = $max_hash;
+
+          $log->writeStatus(
+            pht('MERGE'),
+            pht('Attempting to merge changes.'));
+          break;
+        default:
+          throw new Exception(
+            pht(
+              'Unknown merge approach "%s".',
+              $approach));
       }
 
-      $api->execxLocal('checkout %s --', $into_commit);
+      try {
+        if ($reduce_max) {
+          $reduce_dst = $reduce_min.'^';
 
-      $argv[] = $merge_hash;
+          // Squash the "into" state on top of the range. The goal is to
+          // guarantee that there are no unresolved conflicts between the
+          // maximum commit and the "into" state, because we're going to
+          // force conflicts to resolve in our favor later.
 
-      $is_merging = true;
-      $api->execxLocal('merge %Ls', $argv);
-      $is_merging = false;
-    } catch (CommandException $ex) {
+          $this->applyMergeOperation(
+            $into_commit,
+            $reduce_max,
+            true,
+            $is_empty);
+
+          $join_hash = $this->applyCommitOperation(
+            sprintf(
+              'arc land: join (%s -> %s)',
+              $api->getDisplayHash($into_commit),
+              $api->getDisplayHash($reduce_max)),
+            null,
+            null,
+            $allow_empty = true);
+
+          // Squash the range, including the new merge, into a single
+          // commit. The goal here is to produce a new range with no merge
+          // commits so we can rebase it (we'll produce a sequence exactly
+          // one commit long).
+
+          $this->applyMergeOperation(
+            $join_hash,
+            $reduce_dst,
+            true,
+            $is_empty);
+
+          $reduce_hash = $this->applyCommitOperation(
+            sprintf(
+              'arc land: reduce (%s..%s -> %s)',
+              $api->getDisplayHash($reduce_min),
+              $api->getDisplayHash($reduce_max),
+              $reduce_dst));
+
+          // We've reduced the range into a new range that is one commit
+          // long, has no merge commits, and has no conflicts against the
+          // "into" state.
+
+          // We'll rebase it and force conflicts to resolve in favor of the
+          // reduced state. The hope is that we've taken sufficient steps to
+          // guarantee this resolution is always reasonable.
+
+          $rebase_min = $reduce_hash;
+          $rebase_max = $reduce_hash;
+          $force_resolve = true;
+        }
+
+        if ($rebase_max) {
+          $merge_hash = $this->applyRebaseOperation(
+            $rebase_min,
+            $rebase_max,
+            $into_commit,
+            $force_resolve);
+        }
+
+        $this->applyMergeOperation(
+          $merge_hash,
+          $into_commit,
+          $this->isSquashStrategy(),
+          $is_empty);
+
+        $log->writeStatus(pht('DONE'), pht('Merge succeeded.'));
+
+        $merge_complete = true;
+      } catch (CommandException $ex) {
+        $merge_exceptions[] = $ex;
+      }
+
+      if ($merge_complete) {
+        break;
+      }
+    }
+
+    if (!$merge_complete) {
       $direct_symbols = $max_commit->getDirectSymbols();
       $indirect_symbols = $max_commit->getIndirectSymbols();
       if ($direct_symbols) {
         $message = pht(
           'Local commit "%s" (%s) does not merge cleanly into "%s". '.
-          'Merge or rebase local changes so they can merge cleanly.',
+          'Rebase or merge local changes so they can merge cleanly.',
           $api->getDisplayHash($max_hash),
           $this->getDisplaySymbols($direct_symbols),
           $api->getDisplayHash($into_commit));
       } else if ($indirect_symbols) {
         $message = pht(
           'Local commit "%s" (reachable from: %s) does not merge cleanly '.
-          'into "%s". Merge or rebase local changes so they can merge '.
+          'into "%s". Rebase or merge local changes so they can merge '.
           'cleanly.',
           $api->getDisplayHash($max_hash),
           $this->getDisplaySymbols($indirect_symbols),
           $api->getDisplayHash($into_commit));
       } else {
         $message = pht(
-          'Local commit "%s" does not merge cleanly into "%s". Merge or '.
-          'rebase local changes so they can merge cleanly.',
+          'Local commit "%s" does not merge cleanly into "%s". Rebase or '.
+          'merge local changes so they can merge cleanly.',
           $api->getDisplayHash($max_hash),
           $api->getDisplayHash($into_commit));
       }
@@ -388,18 +496,6 @@ final class ArcanistGitLandEngine
             'Use "--incremental" to merge and push changes one by one.'));
       }
 
-      if ($is_rebasing) {
-        $api->execManualLocal('rebase --abort');
-      }
-
-      if ($is_merging) {
-        $api->execManualLocal('merge --abort');
-      }
-
-      if ($is_merging || $is_rebasing) {
-        $api->execManualLocal('reset --hard HEAD --');
-      }
-
       throw new PhutilArgumentUsageException(
         pht('Encountered a merge conflict.'));
     }
@@ -410,15 +506,10 @@ final class ArcanistGitLandEngine
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
 
-    $future = $api->execFutureLocal(
-      'commit --author %s --date %s -F - --',
+    $new_cursor = $this->applyCommitOperation(
+      $commit_message,
       $original_author,
       $original_date);
-    $future->write($commit_message);
-    $future->resolvex();
-
-    list($stdout) = $api->execxLocal('rev-parse --verify %s', 'HEAD');
-    $new_cursor = trim($stdout);
 
     if ($is_empty) {
       // See T12876. If we're landing into the empty state, we just did a fake
@@ -1600,5 +1691,115 @@ final class ArcanistGitLandEngine
       pht(
         'Desired merge strategy is ambiguous, choose an explicit strategy.'));
   }
+
+  private function applyRebaseOperation(
+    $src_min,
+    $src_max,
+    $dst,
+    $force_resolve) {
+
+    $api = $this->getRepositoryAPI();
+
+    $api->execxLocal('checkout %s --', $src_max);
+
+    $argv = array();
+    $argv[] = '--onto';
+    $argv[] = gitsprintf('%s', $dst);
+
+    if ($force_resolve) {
+      $argv[] = '--strategy';
+      $argv[] = 'recursive';
+      $argv[] = '--strategy-option';
+      $argv[] = 'theirs';
+    }
+
+    $argv[] = '--';
+    $argv[] = gitsprintf('%s', $src_min.'^');
+
+    try {
+      $api->execxLocal('rebase %Ls', $argv);
+    } catch (CommandException $ex) {
+      $api->execManualLocal('rebase --abort');
+      $api->execManualLocal('reset --hard HEAD --');
+      throw $ex;
+    }
+
+    $merge_hash = $api->getCanonicalRevisionName('HEAD');
+
+    return $merge_hash;
+  }
+
+  private function applyMergeOperation($src, $dst, $is_squash, $is_empty) {
+    $api = $this->getRepositoryAPI();
+
+    $api->execxLocal('checkout %s --', $dst);
+
+    $argv = array();
+    $argv[] = '--no-stat';
+    $argv[] = '--no-commit';
+
+    // When we're merging into the empty state, Git refuses to perform the
+    // merge until we tell it explicitly that we're doing something unusual.
+    if ($is_empty) {
+      $argv[] = '--allow-unrelated-histories';
+    }
+
+    if ($is_squash) {
+      // NOTE: We're explicitly specifying "--ff" to override the presence
+      // of "merge.ff" options in user configuration.
+      $argv[] = '--ff';
+      $argv[] = '--squash';
+    } else {
+      $argv[] = '--no-ff';
+    }
+
+    $argv[] = '--';
+
+    $argv[] = $src;
+
+    try {
+      $api->execxLocal('merge %Ls', $argv);
+    } catch (CommandException $ex) {
+      $api->execManualLocal('merge --abort');
+      $api->execManualLocal('reset --hard HEAD');
+      throw $ex;
+    }
+  }
+
+  private function applyCommitOperation(
+    $message,
+    $author = null,
+    $date = null,
+    $allow_empty = false) {
+
+    $api = $this->getRepositoryAPI();
+
+    $argv = array();
+    if ($author !== null) {
+      $argv[] = '--author';
+      $argv[] = $author;
+    }
+
+    if ($date !== null) {
+      $argv[] = '--date';
+      $argv[] = $date;
+    }
+
+    if ($allow_empty) {
+      $argv[] = '--allow-empty';
+    }
+
+    $future = $api->execFutureLocal(
+      'commit %Ls -F - --',
+      $argv);
+    $future->write($message);
+    $future->resolvex();
+
+    list($stdout) = $api->execxLocal('rev-parse --verify %s', 'HEAD');
+    $new_commit = trim($stdout);
+
+    return $new_commit;
+  }
+
 
 }
