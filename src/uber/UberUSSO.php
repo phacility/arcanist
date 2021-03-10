@@ -54,11 +54,13 @@ final class UberUSSO extends Phobject {
   public function getUSSOToken($domain) {
     // check ussh and if necessary ask to auth
     list($e, $stdin, $stderr) = exec_manual('ussh');
+    $error_msg = '`ussh` binary is missing or it cannot be executed. Please '.
+      'read http://t.uber.com/phabricator-usso';
+
     if ($e != 0) {
       $e = phutil_passthru('ussh');
       if ($e != 0) {
-        throw new ArcanistUsageException(
-          pht('`ussh` binary is missing or it cannot be executed'));
+        throw new ArcanistUsageException($error_msg);
       }
     }
     // try fetching usso token
@@ -66,8 +68,7 @@ final class UberUSSO extends Phobject {
     if ($e != 0) {
       $e = phutil_passthru('usso -ussh %s', $domain);
       if ($e != 0) {
-        throw new ArcanistUsageException(
-          pht('`usso` binary is missing or it cannot be executed'));
+        throw new ArcanistUsageException($error_msg);
       }
     }
     // try actually fetching token
