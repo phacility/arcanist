@@ -19,7 +19,7 @@ final class PhutilJSON extends Phobject {
    * @param   dict    An object to encode in JSON.
    * @return  string  Pretty-printed object representation.
    */
-  public function encodeFormatted(array $object) {
+  public function encodeFormatted($object) {
     return $this->encodeFormattedObject($object, 0)."\n";
   }
 
@@ -47,6 +47,10 @@ final class PhutilJSON extends Phobject {
    * @task internal
    */
   private function encodeFormattedObject($object, $depth) {
+    if ($object instanceof stdClass) {
+      $object = (array)$object;
+    }
+
     if (empty($object)) {
       return '{}';
     }
@@ -123,6 +127,8 @@ final class PhutilJSON extends Phobject {
       } else {
         return $this->encodeFormattedObject($value, $depth);
       }
+    } else if (is_object($value)) {
+      return $this->encodeFormattedObject($value, $depth);
     } else {
       if (defined('JSON_UNESCAPED_SLASHES')) {
         // If we have a new enough version of PHP, disable escaping of slashes
