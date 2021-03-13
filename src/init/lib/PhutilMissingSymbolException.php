@@ -18,7 +18,7 @@ final class PhutilMissingSymbolException extends Exception {
       'moved, your library map may need to be rebuilt. You can rebuild '.
       'the map by running "arc liberate".'.
       "\n\n".
-      'For more information, see: https://phurl.io/newclasses',
+      'For more information, see: https://phurl.io/u/newclasses',
       $symbol,
       $type,
       $reason);
