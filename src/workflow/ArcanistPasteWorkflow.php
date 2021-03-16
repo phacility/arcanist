@@ -12,7 +12,7 @@ final class ArcanistPasteWorkflow
 Share and grab text using the Paste application. To create a paste, use the
 "--input" flag or provide the text on stdin:
 
-  $ cat list_of_ducks.txt | arc paste
+  $ cat list_of_ducks.txt | arc paste --
   $ arc paste --input list_of_ducks.txt
 
 To retrieve a paste, specify the paste ID:
