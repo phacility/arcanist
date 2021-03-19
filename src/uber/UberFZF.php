@@ -4,6 +4,8 @@
 final class UberFZF extends Phobject {
   private $multi = false;
   private $header = '';
+  // Print query as the first line
+  private $printQuery = false;
 
   /**
     * checks if `fzf` tool is available and throws exception if not
@@ -39,6 +41,11 @@ final class UberFZF extends Phobject {
     return $this;
   }
 
+  public function setPrintQuery($print_query) {
+    $this->printQuery = $print_query;
+    return $this;
+  }
+
   private function buildFZFCommand() {
     $cmd = array('fzf', '--read0', '--print0');
     $args = array();
@@ -51,6 +58,11 @@ final class UberFZF extends Phobject {
       $cmd[] = '--header %s';
       $args[] = $this->header;
     }
+
+    if ($this->printQuery) {
+      $cmd[] = '--print-query';
+    }
+
     return array(implode(' ', $cmd), $args);
   }
 
@@ -77,6 +89,15 @@ final class UberFZF extends Phobject {
     ));
     // we ignore error code from fzf and treat it as nothing was selected
     $result = Filesystem::readFile($result);
-    return array_filter(explode("\0", $result));
+    if ($result != '') {
+      // fzf returns result which looks like line\0line\0 - last line still
+      // terminates with \0 so explode will return empty line for last item,
+      // we remove it
+      $result = explode("\0", $result);
+      array_pop($result);
+      return $result;
+    } else {
+      return array();
+    }
   }
 }
