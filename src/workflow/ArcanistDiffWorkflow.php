@@ -2168,6 +2168,16 @@ EOTEXT
       }
     }
 
+    $summary = idx($revision['fields'], 'summary');
+    if ($summary !== null) {
+      if (preg_match('/([A-Z][A-Z0-9]*-[1-9]\d*)/', $sumamry)) {
+        $this->console->writeOut("%s\n",
+          pht('Revision summary contains JIRA alike task, '.
+              'skipping jira quick search'));
+        return;
+      }
+    }
+
     $issues = array();
     // read from scratch files maybe user already chose issues previously
     if (!idx($revision, 'id', false)) {
