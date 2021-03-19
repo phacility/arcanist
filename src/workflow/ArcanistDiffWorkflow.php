@@ -2170,7 +2170,7 @@ EOTEXT
 
     $summary = idx($revision['fields'], 'summary');
     if ($summary !== null) {
-      if (preg_match('/([A-Z][A-Z0-9]*-[1-9]\d*)/', $sumamry)) {
+      if (preg_match('/([A-Z][A-Z0-9]*-[1-9]\d*)/', $summary)) {
         $this->console->writeOut("%s\n",
           pht('Revision summary contains JIRA alike task, '.
               'skipping jira quick search'));
