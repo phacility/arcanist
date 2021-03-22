@@ -269,7 +269,29 @@ final class Filesystem extends Phobject {
     self::assertReadable($from);
 
     if (phutil_is_windows()) {
-      execx('copy /Y %s %s', $from, $to);
+      $trap = new PhutilErrorTrap();
+      $ok = @copy($from, $to);
+      $err = $trap->getErrorsAsString();
+      $trap->destroy();
+
+      if (!$ok) {
+        if (strlen($err)) {
+          throw new FilesystemException(
+            $to,
+            pht(
+              'Failed to copy file from "%s" to "%s": %s',
+              $from,
+              $to,
+              $err));
+        } else {
+          throw new FilesystemException(
+            $to,
+            pht(
+              'Failed to copy file from "%s" to "%s".',
+              $from,
+              $to));
+        }
+      }
     } else {
       execx('cp -p %s %s', $from, $to);
     }
