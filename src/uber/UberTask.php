@@ -141,7 +141,10 @@ final class UberTask extends Phobject {
       }
       $fzf->setMulti(50)
         ->setHeader('Select issue to attach to Differential Revision '.
-                    '(use tab for multiple selection)')
+                    '(use tab for multiple selection). You can skip adding '.
+                    'task by pressing esc/ctrl+c/ctrl+d. If you just enter '.
+                    'issue ID it will be used if it is not matching anything '.
+                    'in the list.')
         ->setPrintQuery(true);
       $result = $fzf->fuzzyChoosePrompt($for_search);
       if (empty($result)) {
