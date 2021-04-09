@@ -279,7 +279,7 @@ final class ArcanistSettings extends Phobject {
         'type' => 'bool',
         'help' => pht(
           'If true, arc will query jira for issues and display it for user selection'),
-        'default' => false,
+        'default' => true,
       ),
     );
   }
