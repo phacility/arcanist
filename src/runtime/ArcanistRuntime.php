@@ -236,7 +236,7 @@ final class ArcanistRuntime {
         'curl_init' => array(
           'text',
           "You need to install the cURL PHP extension, maybe with ".
-          "'apt-get install php5-curl' or 'yum install php53-curl' or ".
+          "'apt-get install php-curl' or 'yum install php53-curl' or ".
           "something similar.",
         ),
         'json_decode' => array('flag', '--without-json'),
