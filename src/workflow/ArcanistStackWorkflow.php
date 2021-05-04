@@ -106,7 +106,7 @@ EOTEXT
              checking each Differential Revision build status.
 
           8. How to contact support team with arc-stack questions ?
-             Please ping us at "Arc Stack" uchat channel.
+             Please ping us at "submitqueue" slack channel.
 
              If you have issue with `arc stack` while landing changes to non Submit Queue enabled repository, please ping us at
              "Phabricator" slack channel.
