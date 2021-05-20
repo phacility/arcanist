@@ -1,0 +1,13 @@
+package main
+
+import (
+	"fmt"
+)
+
+var problem_PROBLEM = ""
+
+func main() {
+	fmt.Println("Hello, playground")
+}
+~~~~~~~~~~
+error:7:5
