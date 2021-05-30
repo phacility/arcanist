@@ -142,6 +142,7 @@ abstract class PhutilAWSFuture extends FutureProxy {
     try {
       $xml = @(new SimpleXMLElement($body));
     } catch (Exception $ex) {
+      phlog($ex);
       $xml = null;
     }
 
@@ -155,9 +156,28 @@ abstract class PhutilAWSFuture extends FutureProxy {
       );
       if ($xml) {
         $params['RequestID'] = $xml->RequestID[0];
-        $errors = array($xml->Error);
-        foreach ($errors as $error) {
-          $params['Errors'][] = array($error->Code, $error->Message);
+
+        // NOTE: The S3 and EC2 APIs return slightly different error responses.
+
+        // In S3 responses, there's a simple top-level "<Error>" element.
+        $s3_error = $xml->Error;
+        if ($s3_error) {
+          $params['Errors'][] = array(
+            phutil_string_cast($s3_error->Code),
+            phutil_string_cast($s3_error->Message),
+          );
+        }
+
+        // In EC2 responses, there's an "<Errors>" element with "<Error>"
+        // children.
+        $ec2_errors = $xml->Errors[0];
+        if ($ec2_errors) {
+          foreach ($ec2_errors as $error) {
+            $params['Errors'][] = array(
+              phutil_string_cast($error->Code),
+              phutil_string_cast($error->Message),
+            );
+          }
         }
       }
 

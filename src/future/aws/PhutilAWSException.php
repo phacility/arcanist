@@ -49,4 +49,24 @@ final class PhutilAWSException extends Exception {
     return $this->httpStatus;
   }
 
+  public function isNotFoundError() {
+    if ($this->hasErrorCode('InvalidVolume.NotFound')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private function hasErrorCode($code) {
+    $errors = idx($this->params, 'Errors', array());
+
+    foreach ($errors as $error) {
+      if ($error[0] === $code) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
 }
