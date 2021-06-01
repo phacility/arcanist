@@ -19,8 +19,8 @@ final class ICFlowChangedLinesField extends ICFlowField {
     $git = $workspace->getGitAPI();
     foreach ($workspace->getFeatures() as $branch => $feature) {
       $local_diff = $feature->getHead()->getHeadDiff();
-      if ($feature->getRevisionFirstCommit()) {
-         $local_diff = $git->getAPI()->getFullGitDiff($feature->getRevisionFirstCommit()."^", $feature->getHead()->getObjectName());
+      if ($feature->getActiveDiffID()) {
+         $local_diff = $git->getAPI()->getFullGitDiff($feature->getRevisionBaseCommit(), $feature->getHead()->getObjectName());
       }
       if ($local_diff) {
         $md5 = md5($local_diff);
