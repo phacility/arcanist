@@ -311,6 +311,13 @@ EOTEXT
       $use_phlq = false;
     }
 
+    if($use_phlq && !empty($this->getArgument('onto'))) {
+      $log->writeWarning(
+        pht('PHLQ'),
+        pht("You have PHLQ enabled, but have specified an -onto argument. Attempting at landing by git push."));
+      $use_phlq = false;
+    }
+
     if ($this->getIsPhlq()) {
       // If landing in PHLQ service we use the standard land engine
       $land_engine = $repository_api->getLandEngine();
