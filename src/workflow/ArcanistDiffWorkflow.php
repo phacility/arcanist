@@ -22,6 +22,7 @@ final class ArcanistDiffWorkflow extends ArcanistDiffBasedWorkflow {
   private $commitMessageFromRevision;
   private $hitAutotargets;
   private $uberRefProvider; // UBER CODE
+  private $autolandProjectPhid = 'PHID-PROJ-u4i3446wedyolppkckbp'; // UBER CODE
 
   public function getWorkflowName() {
     return 'diff';
@@ -476,11 +477,13 @@ EOTEXT
       ));
 
     $diff_spec = $this->buildDiffSpecification(); // UBER CODE
+    $shouldTagWithAutoland = false; // UBER CODE
 
     if (!$this->shouldOnlyCreateDiff()) {
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
       $this->attachJiraIssues($revision, $diff_spec, // UBER CODE
                               $commit_message);      // UBER CODE
+      $shouldTagWithAutoland = $this->shouldTagWithAutoland($revision); // UBER CODE
     }
 
     $this->runCheckPromptResolveScripts();
@@ -672,6 +675,16 @@ EOTEXT
       // UBER CODE
       if (idx($revision, 'id')) {
         $this->removeScratchFile(sprintf('D%s-jira-issues.json', $revision['id']));
+      }
+
+      if ($shouldTagWithAutoland) {
+        $tagResult = $conduit->callMethodSynchronous('differential.revision.edit',
+          array(
+            'objectIdentifier' => $result['revisionid'],
+            'transactions' => array(
+              array('type' => 'projects.add', 'value' => array($this->autolandProjectPhid)),
+            ),
+        ));
       }
       // UBER CODE END
     }
@@ -2203,6 +2216,74 @@ EOTEXT
       }
       $revision['fields']['uber-jira.issues'] = $issues;
       $message->setFieldValue('uber-jira.issues', $issues);
+    }
+  }
+
+  // Check and tag with #autoland as needed
+  private function shouldTagWithAutoland(&$revision) {
+    // Skip
+    // - When lint/unit are skipped
+    // - For raw diffs
+    if ($this->getArgument('nolint') ||
+        $this->getArgument('nounit') ||
+        $this->isRawDiffSource()) {
+      return false;
+    }
+
+    // Skip if SubmitQueue is not enabled
+    $usesSubmitQueue = nonempty(
+      $this->getConfigFromAnySource('uber.land.submitqueue.enable'),
+      $this->getArgument('use-sq'),
+      false
+    );
+    if (!$usesSubmitQueue) {
+      return false;
+    }
+
+    // Skip if summary already has #autoland
+    $hasAutolandTag = (bool)preg_match('/#autoland/i', $revision['fields']['summary']);
+    if ($hasAutolandTag) {
+      return false;
+    }
+
+    // Skip if author is member of autoland project
+    $projects_raw = $this->getConduit()->callMethodSynchronous(
+      'project.search',
+      array(
+        'constraints' => array(
+          'phids' => array(
+            $this->autolandProjectPhid,
+          ),
+          'members' => array(
+            $this->getUserPHID(),
+          ),
+        ),
+      ));
+    $projects = $projects_raw['data'];
+
+    if(!empty($projects)) {
+      return false;
+    }
+
+    // Check for autoland prompt configuration
+    $autoland_prompt = $this->getConfigurationManager()->getConfigFromAnySource(
+      'uber.differential.autoland-prompt'
+    );
+    if (is_null($autoland_prompt)) {
+      return false;
+    }
+    if ($autoland_prompt == "default-yes" || $autoland_prompt == "default-no") {
+      // Prompt user for confirmation
+      $autoland_prompt_message = $this->getConfigurationManager()->getConfigFromAnySource(
+        'uber.differential.autoland-prompt-message'
+      );
+      return phutil_console_confirm(
+        $autoland_prompt_message, $default_no = ($autoland_prompt == "default-no"));
+    } else {
+      throw new ArcanistUsageException(
+        pht("Malformed uber.differential.autoland-prompt ".
+            "record: %s (must be default-yes or default-no)",
+            $autoland_prompt));
     }
   }
   // END UBER CODE

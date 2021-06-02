@@ -281,6 +281,16 @@ final class ArcanistSettings extends Phobject {
           'If true, arc will query jira for issues and display it for user selection'),
         'default' => true,
       ),
+      'uber.differential.autoland-prompt' => array(
+        'type' => 'string',
+        'help' => pht('Set to default-yes / default-no for tagging change with #autoland'),
+        'default' => null,
+      ),
+      'uber.differential.autoland-prompt-message' => array(
+        'type' => 'string',
+        'help' => pht('Message to show in prompt for #autoland'),
+        'default' => 'Autoland after builds pass and reviewers approve?',
+      ),
     );
   }
 
