@@ -2241,9 +2241,12 @@ EOTEXT
     }
 
     // Skip if summary already has #autoland
-    $hasAutolandTag = (bool)preg_match('/#autoland/i', $revision['fields']['summary']);
-    if ($hasAutolandTag) {
-      return false;
+    $summary = idx($revision['fields'], 'summary');
+    if ($summary !== null) {
+      $hasAutolandTag = (bool)preg_match('/#autoland/i', $summary);
+      if ($hasAutolandTag) {
+        return false;
+      }
     }
 
     // Skip if author is member of autoland project
