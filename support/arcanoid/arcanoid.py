@@ -212,11 +212,16 @@ def main(stdscr):
             i = int(time.time() / 0.8)
             for x in range(width):
                 for y in range(6):
-                    game.addch(height / 2 + y - 3 + (x / 8 + i) % 2, x,
-                               curses.ACS_BLOCK,
-                               curses.A_BOLD | curses.color_pair(colors[y]))
-            game.addstr(height / 2, (width - len(message)) / 2, message,
-                           curses.A_BOLD | curses.color_pair(7))
+                    game.addch(
+                        int(height / 2 + y - 3 + (x / 8 + i) % 2),
+                        x,
+                        curses.ACS_BLOCK,
+                        curses.A_BOLD | curses.color_pair(colors[y]))
+            game.addstr(
+                int(height / 2),
+                int((width - len(message)) / 2),
+                message,
+                curses.A_BOLD | curses.color_pair(7))
 
         game.refresh()
         status.refresh()

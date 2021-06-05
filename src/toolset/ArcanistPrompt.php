@@ -93,16 +93,9 @@ final class ArcanistPrompt
 
     // NOTE: We're making stdin nonblocking so that we can respond to signals
     // immediately. If we don't, and you ^C during a prompt, the program does
-    // not handle the signal until fgets() returns.
+    // not handle the signal until fgets() returns. See also T13649.
 
-    // On Windows, we skip this because stdin can not be made nonblocking.
-
-    if (!phutil_is_windows()) {
-      $ok = stream_set_blocking($stdin, false);
-      if (!$ok) {
-        throw new Exception(pht('Unable to set stdin nonblocking.'));
-      }
-    }
+    $guard = ArcanistNonblockingGuard::newForStream($stdin);
 
     echo "\n";
 
@@ -123,7 +116,7 @@ final class ArcanistPrompt
 
         $is_saved = false;
 
-        if (phutil_is_windows()) {
+        if (!$guard->getIsNonblocking()) {
           $response = fgets($stdin);
         } else {
           while (true) {
