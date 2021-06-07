@@ -2731,8 +2731,8 @@ EOTEXT
 
       throw new ArcanistUsageException(
         pht(
-          'Failed to push changes to staging area. Correct the issue, or '.
-          'use --skip-staging to skip this step.'));
+          'Failed to push changes to staging area. You need this to work '.
+          'or else your tests will fail.'));
     }
 
     if ($is_lfs) {
