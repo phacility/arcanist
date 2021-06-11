@@ -377,7 +377,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
         // Since we didn't push the SHA of the landed commit won't match
         // what would have been pushed from here. We rebase which should
         // fast forward unless something went wrong.
-        $this->rebaseIfPristineMaster($api, $log);
+        $this->rebaseIfPristineDefaultBranch($api, $log);
 
         $log->writeSuccess(
           pht('DONE'),
@@ -404,13 +404,13 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     $api->execxLocal("fetch --prune origin '+refs/tags/*:refs/tags/*'");
   }
 
-  function rebaseIfPristineMaster($api, $log) {
+  function rebaseIfPristineDefaultBranch($api, $log) {
     $current_branch = $api->getBranchName();
     $log->writeStatus(
       pht('CLEANUP'),
       pht("Current branch is '%s'", $current_branch));
 
-    if ($current_branch == "master") {
+    if ($current_branch == "master" || $current_branch == "develop") {
       list($stdout) = $api->execxLocal('status --porcelain');
       $status = trim($stdout);
       if ($status != "") {
@@ -423,8 +423,8 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       try {
         $log->writeStatus(
           pht('CLEANUP'),
-          pht('Rebasing to origin/master'));
-        $api->execxLocal('rebase origin/master');
+          pht('Rebasing to origin/' . $current_branch));
+        $api->execxLocal('rebase origin/' . $current_branch);
       } catch (Exception $e) {
         $log->writeWarning(
           pht('CLEANUP'),
