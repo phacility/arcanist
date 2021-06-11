@@ -4,7 +4,7 @@
  * Base class that workflows within rIC should extend from.
  *
  * It mainly eases the process of collecting information about a users remote
- * and local data, like users revisions, diffs, branches.
+ * and local data, like users revisions, diffs, branches and queue submissions.
  * It's very common to need to inspect both the local and remote state of
  * these things, but usually also relatively tedious.
  *
@@ -39,6 +39,21 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
 
   public function requiresRepositoryAPI() {
     return true;
+  }
+
+  protected function searchMethodForID($method, $id) {
+    $rval = $this->getConduit()->callMethodSynchronous($method, array(
+      'constraints' => array(
+        'ids' => array((int)$id),
+      ),
+    ));
+    if (!idx($rval, 'data')) {
+      throw new ArcanistUsageException(pht(
+        'No results for id %s from %s.',
+        $id,
+        $method));
+    }
+    return head($rval['data']);
   }
 
   protected function getGitAPI() {
@@ -80,7 +95,7 @@ abstract class ICArcanistWorkflow extends ArcanistWorkflow {
     if (!$feature || !$feature->getRevisionID()) {
       return false;
     }
-    $this->getFlow()->loadRevisions()->loadActiveDiffs();
+    $this->getFlow()->loadRevisions();
     return $feature;
   }
 

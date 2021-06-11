@@ -29,7 +29,7 @@ final class ICFlowHashField extends ICFlowField {
   public function getValues(ICFlowFeature $feature) {
     $hash = $feature->getHead()->getObjectName();
     $local_diff = $feature->getHead()->getHeadDiff();
-    $remote_diff = $feature->getRawActiveDiff();
+    $remote_diff = $feature->getActiveDiff();
     $values = array(
       'hash' => $hash,
       'stale' => false,

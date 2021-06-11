@@ -6,8 +6,9 @@ final class ICFlowFeature extends Phobject {
   private $differentialCommitMessage = null;
   // commit sha which has differential commit message, essentially where
   // differential revision starts
+  private $revisionFirstCommit = null;
   private $revision;
-  private $rawActiveDiff;
+  private $search;
   private $activeDiff;
 
   private function __construct() {}
@@ -48,6 +49,7 @@ final class ICFlowFeature extends Phobject {
         $log->getMetadata('message'));
       if ($message->getRevisionID() != null) {
         $feature->differentialCommitMessage = $message;
+        $feature->revisionFirstCommit = $log->getCommitHash();
         break;
       }
     }
@@ -94,18 +96,25 @@ final class ICFlowFeature extends Phobject {
     return $this->differentialCommitMessage->getRevisionID();
   }
 
-  public function getActiveDiffField($index, $default = null) {
-    if (!$this->activeDiff) {
-      return null;
-    }
-    return idx($this->activeDiff, $index, $default);
+  public function getRevisionFirstCommit() {
+    return $this->revisionFirstCommit;
   }
 
-  public function getRevisionBaseCommit() {
-    if ($this->activeDiff == null) {
-      throw new Exception('Active diff is not attached! Cannot get base commit');
+  public function getSearchField($index, $default = null) {
+    if (!$this->search) {
+      return $default;
     }
-    return $this->getActiveDiffField('sourceControlBaseRevision');
+    return idx($this->search, $index, $default);
+  }
+
+  public function attachSearchData(array $search = null) {
+    $this->search = $search;
+    return $this;
+  }
+
+  public function getSearchAttachment($name) {
+    $attachments = $this->getSearchField('attachments', array());
+    return idx($attachments, $name);
   }
 
   public function getDifferentialCommitMessage() {
@@ -118,15 +127,6 @@ final class ICFlowFeature extends Phobject {
 
   public function getHead() {
     return $this->head;
-  }
-
-  public function attachRawActiveDiff($diff) {
-    $this->rawActiveDiff = $diff;
-    return $this;
-  }
-
-  public function getRawActiveDiff() {
-    return $this->rawActiveDiff;
   }
 
   public function attachActiveDiff($diff) {

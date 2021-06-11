@@ -8,7 +8,7 @@ final class ICFlowStatusField extends ICFlowField {
 
   public function getSummary() {
     return pht(
-      'The review status of the differential revision '.
+      'The review status or queue status of the differential revision '.
       'associated with HEAD of the branch.');
   }
 
@@ -20,6 +20,19 @@ final class ICFlowStatusField extends ICFlowField {
 
   public function getValues(ICFlowFeature $feature) {
     $status = $feature->getRevisionStatusName();
+    $submissions = $feature->getSearchAttachment('queue-submissions');
+    if ($submissions) {
+      $submissions = igroup($submissions, 'status');
+      if (idx($submissions, 'applied')) {
+        if ($status !== 'Closed') {
+          $status = 'Queue Landing';
+        }
+      } else if (idx($submissions, 'queued')) {
+        $status = 'In Queue';
+      } else if (idx($submissions, 'rejected')) {
+        $status = 'Queue Rejected';
+      }
+    }
     $color = idx(array(
       'Closed'          => 'cyan',
       'Needs Review'    => 'magenta',

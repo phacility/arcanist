@@ -122,7 +122,7 @@ EOTEXT
                "technique (rebase --onto)";
           $api->execxLocal('rebase --abort');
           list($err, $stdout, $stderr) = $this->rebaseOnto($branch_name,
-                            $feature->getRevisionBaseCommit(),
+                            $feature->getRevisionFirstCommit().'^',
                             $child_branch);
         }
       }
