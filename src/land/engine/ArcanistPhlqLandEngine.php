@@ -393,10 +393,11 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
   }
 
   function fetchAfterLand($api, $log) {
+    $current_branch = $api->getBranchName();
     $log->writeStatus(
       pht('CLEANUP'),
-      pht('Fetching origin master'));
-    $api->execxLocal('fetch --no-tags --quiet -- origin master');
+      pht('Fetching origin %s', $current_branch));
+    $api->execxLocal('fetch --no-tags --quiet -- origin ' . $current_branch);
 
     $log->writeStatus(
       pht('CLEANUP'),
