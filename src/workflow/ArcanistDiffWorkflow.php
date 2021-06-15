@@ -2133,6 +2133,28 @@ EOTEXT
     }
   }
 
+  // Common checks before showing interactive prompts for user input
+  private function commonPrePromptChecks() {
+    // atm we do not request automation to add tasks/issues/autoland tags
+    if ($this->getArgument('nointeractive')) {
+      return false;
+    }
+    // check if we have TTY otherwise it is probably automation...
+    try {
+      phutil_console_require_tty();
+    } catch (PhutilConsoleStdinNotInteractiveException $e) {
+      return false;
+    }
+
+    // do not execute check for non uber Phabricator though general
+    // recommendation would be to checkout upstream arcanist
+    if (strpos($this->getConduit()->getHost(), "uberinternal.com")===false) {
+      return false;
+    }
+
+    return true;
+  }
+
   // check and if necessary prompts to enter jira tasks
   private function attachJiraIssues(&$revision, array $diff_spec,
     ArcanistDifferentialCommitMessage $message = null) {
@@ -2147,20 +2169,7 @@ EOTEXT
       return;
     }
 
-    // atm we do not request automation to add tasks/issues
-    if ($this->getArgument('nointeractive')) {
-      return;
-    }
-    // check if we have TTY otherwise it is probably automation...
-    try {
-      phutil_console_require_tty();
-    } catch (PhutilConsoleStdinNotInteractiveException $e) {
-      return;
-    }
-
-    // do not execute check for non uber Phabricator though general
-    // recommendation would be to checkout upstream arcanist
-    if (strpos($this->getConduit()->getHost(), "uberinternal.com")===false) {
+    if (!$this->commonPrePromptChecks()) {
       return;
     }
 
@@ -2221,6 +2230,16 @@ EOTEXT
 
   // Check and tag with #autoland as needed
   private function shouldTagWithAutoland(&$revision) {
+    // Skip for common checks like automated diffs etc.
+    if (!$this->commonPrePromptChecks()) {
+      return false;
+    }
+
+    // Skip if revision has already been created before
+    if (idx($revision, 'id', false)) {
+      return false;
+    }
+
     // Skip
     // - When lint/unit are skipped
     // - For raw diffs
@@ -2275,6 +2294,7 @@ EOTEXT
     if (is_null($autoland_prompt)) {
       return false;
     }
+
     if ($autoland_prompt == "default-yes" || $autoland_prompt == "default-no") {
       // Prompt user for confirmation
       $autoland_prompt_message = $this->getConfigurationManager()->getConfigFromAnySource(
