@@ -5,7 +5,7 @@
   "preface": "Technical documentation for developing Arcanist.",
   "root": "../../../",
   "uri.source":
-    "https://secure.phabricator.com/diffusion/ARC/browse/master/%f$%l",
+    "https://we.phorge.it/diffusion/ARC/browse/master/%f$%l",
   "rules": {
     "(\\.diviner$)": "DivinerArticleAtomizer",
     "(\\.php$)": "DivinerPHPAtomizer"

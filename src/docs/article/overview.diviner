@@ -10,7 +10,7 @@ a collection of PHP utility classes and functions. Most code in the library is
 general-purpose, and makes it easier to build applications in PHP.
 
 libphutil is principally the shared library for
-[[ http://www.phabricator.org | Phabricator ]] and its CLI **Arcanist**, but is
+[[ http://phorge.it | Phorge ]] and its CLI **Arcanist**, but is
 suitable for inclusion in other projects. In particular, some of the classes
 provided in this library vastly improve the state of common operations in PHP,
 like executing system commands.
@@ -51,7 +51,7 @@ Some of the major components of libphutil are:
 = Extending and Contributing =
 
 Information on extending and contributing to libphutil is available in the
-Phabricator documentation:
+Phorge documentation:
 
-  - To get started as a contributor, see @{article@phabcontrib:Contributor
+  - To get started as a contributor, see @{article@contrib:Contributor
     Introduction}.
