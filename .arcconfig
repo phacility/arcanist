@@ -1,5 +1,5 @@
 {
-  "phabricator.uri": "https://secure.phabricator.com/",
+  "phabricator.uri": "https://we.phorge.it/",
   "load": [
     "src/"
   ],
