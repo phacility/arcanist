@@ -1261,7 +1261,7 @@ EOTEXT
     $base_tag = $this->uberRefProvider->getBaseRefName($prefix, $id);
     echo pht('Fetching base ref "%s" from staging remote', $base_tag)."\n";
     $err = phutil_passthru(
-          'git fetch --tag -n %s %s',
+          'git fetch --no-tags --depth=1 %s %s',
           $staging_uri,
           $base_tag);
 
@@ -1269,7 +1269,7 @@ EOTEXT
       $base_tag = "{$prefix}/base/{$id}";
       echo pht('Fetching base tag "%s" from staging remote', $base_tag)."\n";
       $err = phutil_passthru(
-            'git fetch --tag -n %s %s',
+            'git fetch --no-tags --depth=1 %s %s',
             $staging_uri,
             $base_tag);
       if ($err) {
