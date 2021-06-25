@@ -511,17 +511,18 @@ EOTEXT
           "<bg:blue>** %s **</bg> %s\n",
           pht('INFO'),
           pht('Base commit is not in local repository; trying to fetch.'));
-        $repository_api->execManualLocal('fetch --quiet --all');
+        // UBER CODE
+        $this->authenticateConduit();
+        $this->pullFromAllRemotesUntilFound($bundle->getBaseRevision());
         $has_base_revision = $repository_api->hasLocalCommit(
           $bundle->getBaseRevision());
-        // UBER CODE
         if (!$has_base_revision) {
-          $this->authenticateConduit();
-          $this->pullFromAllRemotesUntilFound($bundle->getBaseRevision());
+          // UBER CODE
+          $repository_api->execManualLocal('fetch --quiet --all');
           $has_base_revision = $repository_api->hasLocalCommit(
             $bundle->getBaseRevision());
         }
-        // UBER CODE
+
       }
     }
 
