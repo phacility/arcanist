@@ -15,7 +15,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   protected function buildLocalFuture(array $argv) {
     $env = $this->getMercurialEnvironmentVariables();
 
-    $argv[0] = 'hg '.$argv[0];
+    // Mercurial deceptively indicates that the default encoding is UTF-8
+    // however the actual default appears to be "something else", at least on
+    // Windows systems. Force all mercurial commands to use UTF-8 encoding.
+    $argv[0] = 'hg --encoding utf-8 '.$argv[0];
 
     $future = newv('ExecFuture', $argv)
       ->setEnv($env)
