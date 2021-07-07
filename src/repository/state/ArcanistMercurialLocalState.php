@@ -7,6 +7,14 @@ final class ArcanistMercurialLocalState
   private $localBranch;
   private $localBookmark;
 
+  public function getLocalCommit() {
+    return $this->localCommit;
+  }
+
+  public function getLocalBookmark() {
+    return $this->localBookmark;
+  }
+
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
     $log = $this->getWorkflow()->getLogEngine();

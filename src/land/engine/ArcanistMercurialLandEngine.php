@@ -6,6 +6,8 @@ final class ArcanistMercurialLandEngine
   private $ontoBranchMarker;
   private $ontoMarkers;
 
+  private $rebasedActiveCommit;
+
   protected function getDefaultSymbols() {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
@@ -698,8 +700,14 @@ final class ArcanistMercurialLandEngine
     $commit_map = array();
     foreach ($symbols as $symbol) {
       $symbol_commit = $symbol->getCommit();
-      $template = '{node}-{parents}-';
+      $template = '{node}-{parents % \'{node} \'}-{desc|firstline}\\n';
 
+      // The returned array of commits is expected to be ordered by max to min
+      // where the max commit has no descendants in the range and the min
+      // commit has no ancestors in the range. Use 'reverse()' in the template
+      // so the output is ordered with the max commit as the first line. The
+      // max/min terms are used in a topological sense as chronological terms
+      // for commits may be misleading or incorrect in some situations.
       if ($into_commit === null) {
         list($commits) = $api->execxLocal(
           'log --rev %s --template %s --',
@@ -789,8 +797,14 @@ final class ArcanistMercurialLandEngine
 
     $commits = $set->getCommits();
 
-    $min_commit = last($commits)->getHash();
-    $max_commit = head($commits)->getHash();
+    // confirmCommits() reverses the order of the commits as they're ordered
+    // above in selectCommits(). Now the head of the list is the min commit and
+    // the last is the max commit, where within the range the max commit has no
+    // descendants and the min commit has no ancestors. The min/max terms are
+    // used in a topological sense as chronological terms for commits can be
+    // misleading or incorrect in certain situations.
+    $max_commit = last($commits)->getHash();
+    $min_commit = head($commits)->getHash();
 
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
@@ -825,8 +839,9 @@ final class ArcanistMercurialLandEngine
       $future->resolvex();
 
     } catch (CommandException $ex) {
-      // TODO
-      // $api->execManualLocal('rebase --abort');
+      // Aborting the rebase should restore the same state prior to running the
+      // rebase command.
+      $api->execManualLocal('rebase --abort');
       throw $ex;
     }
 
@@ -855,13 +870,21 @@ final class ArcanistMercurialLandEngine
     list($stdout) = $api->execxLocal('log --rev tip --template %s', '{node}');
     $new_cursor = trim($stdout);
 
+    // If any of the commits that were rebased was the active commit before the
+    // workflow started, track the new commit so it can be used as the working
+    // directory after the land has succeeded.
+    if (isset($obsolete_map[$this->getLocalState()->getLocalCommit()])) {
+      $this->rebasedActiveCommit = $new_cursor;
+    }
+
     return $new_cursor;
   }
 
   protected function pushChange($into_commit) {
     $api = $this->getRepositoryAPI();
 
-    list($head, $body, $tail) = $this->newPushCommands($into_commit);
+    list($head, $body, $tail_pass, $tail_fail) = $this->newPushCommands(
+      $into_commit);
 
     foreach ($head as $command) {
       $api->execxLocal('%Ls', $command);
@@ -876,10 +899,20 @@ final class ArcanistMercurialLandEngine
               'Push failed! Fix the error and run "arc land" again.'));
         }
       }
-    } finally {
-      foreach ($tail as $command) {
+
+      foreach ($tail_pass as $command) {
         $api->execxLocal('%Ls', $command);
       }
+    } catch (Exception $ex) {
+      foreach ($tail_fail as $command) {
+        $api->execxLocal('%Ls', $command);
+      }
+      throw $ex;
+    } catch (Throwable $ex) {
+      foreach ($tail_fail as $command) {
+        $api->execxLocal('%Ls', $command);
+      }
+      throw $ex;
     }
   }
 
@@ -888,7 +921,8 @@ final class ArcanistMercurialLandEngine
 
     $head_commands = array();
     $body_commands = array();
-    $tail_commands = array();
+    $tail_pass_commands = array();
+    $tail_fail_commands = array();
 
     $bookmarks = array();
     foreach ($this->ontoMarkers as $onto_marker) {
@@ -902,7 +936,7 @@ final class ArcanistMercurialLandEngine
     // to the merge commit. (There doesn't seem to be any way to specify
     // "push commit X as bookmark Y" in Mercurial.)
 
-    $restore = array();
+    $restore_bookmarks = array();
     if ($bookmarks) {
       $markers = $api->newMarkerRefQuery()
         ->withNames(mpull($bookmarks, 'getName'))
@@ -934,7 +968,9 @@ final class ArcanistMercurialLandEngine
           hgsprintf('%s', $new_position),
           $bookmark_name);
 
-        $restore[$bookmark_name] = $old_position;
+        if ($old_position !== null) {
+          $restore_bookmarks[$bookmark_name] = $old_position;
+        }
       }
     }
 
@@ -963,28 +999,41 @@ final class ArcanistMercurialLandEngine
 
     // Finally, restore the bookmarks.
 
-    foreach ($restore as $bookmark_name => $old_position) {
-      $tail = array();
-      $tail[] = 'bookmark';
+    if ($restore_bookmarks) {
+      // Instead of restoring the previous state, assume landing onto bookmarks
+      // also updates those bookmarks in the remote. After pushing, pull the
+      // latest state of these bookmarks. Mercurial allows pulling multiple
+      // bookmarks in a single pull command which will be faster than pulling
+      // them from a remote individually.
+      $tail = array(
+        'pull',
+      );
 
-      if ($old_position === null) {
-        $tail[] = '--delete';
-      } else {
-        $tail[] = '--force';
-        $tail[] = '--rev';
-        $tail[] = hgsprintf('%s', $api->getDisplayHash($old_position));
+      foreach ($restore_bookmarks as $bookmark_name => $old_position) {
+        $tail[] = '--bookmark';
+        $tail[] = $bookmark_name;
+
+        // In the failure case restore the state of the bookmark. Mercurial
+        // does not provide a way to move multiple bookmarks in a single
+        // command however these commands do not involve the remote.
+        $tail_fail_commands[] = array(
+          'bookmark',
+          '--force',
+          '--rev',
+          hgsprintf('%s', $api->getDisplayHash($old_position)),
+        );
       }
 
-      $tail[] = '--';
-      $tail[] = $bookmark_name;
-
-      $tail_commands[] = $tail;
+      if ($tail) {
+        $tail_pass_commands[] = $tail;
+      }
     }
 
     return array(
       $head_commands,
       $body_commands,
-      $tail_commands,
+      $tail_pass_commands,
+      $tail_fail_commands,
     );
   }
 
@@ -1020,7 +1069,9 @@ final class ArcanistMercurialLandEngine
           $child_hash,
           $new_commit);
       } catch (CommandException $ex) {
-        // TODO: Recover state.
+        // Aborting the rebase should restore the same state prior to running
+        // the rebase command.
+        $api->execManualLocal('rebase --abort');
         throw $ex;
       }
     }
@@ -1040,6 +1091,8 @@ final class ArcanistMercurialLandEngine
     $revs = array();
     $obsolete_map = array();
 
+    $using_evolve = $api->getMercurialFeature('evolve');
+
     // We've rebased all descendants already, so we can safely delete all
     // of these commits.
 
@@ -1047,10 +1100,22 @@ final class ArcanistMercurialLandEngine
     foreach ($sets as $set) {
       $commits = $set->getCommits();
 
+      // In the commit set the min commit should be the commit with no
+      // ancestors and the max commit should be the commit with no descendants.
+      // The min/max terms are used in a toplogical sense as chronological
+      // terms for commits may be misleading or incorrect in some situations.
       $min_commit = head($commits)->getHash();
       $max_commit = last($commits)->getHash();
 
-      $revs[] = hgsprintf('%s::%s', $min_commit, $max_commit);
+      if ($using_evolve) {
+        // If non-head series of commits are rebased while the evolve extension
+        // is in use, the rebase leaves behind the entire series of descendants
+        // in which case the entire chain needs removed, not just a section.
+        // Otherwise this results in the prune leaving behind orphaned commits.
+        $revs[] = hgsprintf('%s::', $min_commit);
+      } else {
+        $revs[] = hgsprintf('%s::%s', $min_commit, $max_commit);
+      }
 
       foreach ($commits as $commit) {
         $obsolete_map[$commit->getHash()] = true;
@@ -1071,10 +1136,7 @@ final class ArcanistMercurialLandEngine
     // bookmarks which point at these now-obsoleted commits.
 
     $bookmark_refs = $api->newMarkerRefQuery()
-      ->withMarkerTypes(
-        array(
-          ArcanistMarkerRef::TYPE_BOOKMARK,
-        ))
+      ->withMarkerTypes(array(ArcanistMarkerRef::TYPE_BOOKMARK))
       ->execute();
     foreach ($bookmark_refs as $bookmark_ref) {
       $bookmark_hash = $bookmark_ref->getCommitHash();
@@ -1093,7 +1155,7 @@ final class ArcanistMercurialLandEngine
         $bookmark_name);
     }
 
-    if ($api->getMercurialFeature('evolve')) {
+    if ($using_evolve) {
       $api->execxLocal(
         'prune --rev %s',
         $rev_set);
@@ -1108,7 +1170,54 @@ final class ArcanistMercurialLandEngine
     $into_commit,
     ArcanistRepositoryLocalState $state) {
 
-    // TODO: For now, just leave users wherever they ended up.
+    $api = $this->getRepositoryAPI();
+
+    // If the starting working state was not part of land process just update
+    // to that original working state.
+    if ($this->rebasedActiveCommit === null) {
+      $update_marker = $this->getLocalState()->getLocalCommit();
+      if ($this->getLocalState()->getLocalBookmark() !== null) {
+        $update_marker = $this->getLocalState()->getLocalBookmark();
+      }
+
+      $api->execxLocal(
+        'update -- %s',
+        $update_marker);
+
+      $state->discardLocalState();
+      return;
+    }
+
+    // If the working state was landed into multiple destinations then the
+    // resulting working state is ambiguous.
+    if (count($this->ontoMarkers) != 1) {
+      $state->discardLocalState();
+      return;
+    }
+
+    // Get the current state of bookmarks
+    $bookmark_refs = $api->newMarkerRefQuery()
+      ->withMarkerTypes(array(ArcanistMarkerRef::TYPE_BOOKMARK))
+      ->execute();
+
+    $update_marker = $this->rebasedActiveCommit;
+
+    // Find any bookmarks which exist on the commit which is the result of the
+    // starting working directory's rebase. If any of those bookmarks are also
+    // the destination marker then we use that bookmark as the update in order
+    // for it to become active.
+    $onto_marker = $this->ontoMarkers[0]->getName();
+    foreach ($bookmark_refs as $bookmark_ref) {
+      if ($bookmark_ref->getCommitHash() == $this->rebasedActiveCommit &&
+        $bookmark_ref->getName() == $onto_marker) {
+          $update_marker = $onto_marker;
+          break;
+      }
+    }
+
+    $api->execxLocal(
+      'update -- %s',
+      $update_marker);
 
     $state->discardLocalState();
   }
@@ -1120,8 +1229,9 @@ final class ArcanistMercurialLandEngine
     $message = pht(
       'Holding changes locally, they have not been pushed.');
 
-    list($head, $body, $tail) = $this->newPushCommands($into_commit);
-    $commands = array_merge($head, $body, $tail);
+    list($head, $body, $tail_pass, $tail_fail) = $this->newPushCommands(
+      $into_commit);
+    $commands = array_merge($head, $body, $tail_pass);
 
     echo tsprintf(
       "\n%!\n%s\n\n",
