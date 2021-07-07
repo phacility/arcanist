@@ -194,6 +194,12 @@ EOTEXT
         'help' => pht('Do not run CPR scripts. This will also be skipped '.
                       'on --nolint'),
       ),
+      'autoland' => array(
+        'help' => pht('Autoland this change (Skips interactive prompt)'),
+      ),
+      'noautoland' => array(
+        'help' => pht('Do not autoland this change (Skips interactive prompt)'),
+      ),
       'nolint' => array(
         'help' => pht('Do not run lint.'),
         'conflicts' => array(
@@ -2230,6 +2236,15 @@ EOTEXT
 
   // Check and tag with #autoland as needed
   private function shouldTagWithAutoland(&$revision) {
+    // Check if explicit flags are provided
+    if ($this->getArgument('noautoland')) {
+      return false;
+    }
+
+    if ($this->getArgument('autoland')) {
+      return true;
+    }
+
     // Skip for common checks like automated diffs etc.
     if (!$this->commonPrePromptChecks()) {
       return false;
