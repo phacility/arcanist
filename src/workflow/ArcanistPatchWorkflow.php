@@ -909,6 +909,8 @@ EOTEXT
 
       $commit_message = $this->newInteractiveEditor($template)
         ->setName('arcanist-patch-commit-message')
+        ->setTaskMessage(pht(
+          'Supply a commit message for this patch, then save and exit.'))
         ->editInteractively();
 
       $commit_message = ArcanistCommentRemover::removeComments($commit_message);

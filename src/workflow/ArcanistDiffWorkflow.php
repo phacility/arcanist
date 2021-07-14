@@ -674,6 +674,8 @@ EOTEXT
       if ($should_edit) {
         $edited = $this->newInteractiveEditor($remote_corpus)
           ->setName('differential-edit-revision-info')
+          ->setTaskMessage(pht(
+            'Update the details for a revision, then save and exit.'))
           ->editInteractively();
         if ($edited != $remote_corpus) {
           $remote_corpus = $edited;
@@ -1476,6 +1478,8 @@ EOTEXT
       } else {
         $new_template = $this->newInteractiveEditor($template)
           ->setName('new-commit')
+          ->setTaskMessage(pht(
+            'Provide the details for a new revision, then save and exit.'))
           ->editInteractively();
       }
       $first = false;
@@ -1752,6 +1756,8 @@ EOTEXT
 
     $comments = $this->newInteractiveEditor($template)
       ->setName('differential-update-comments')
+      ->setTaskMessage(pht(
+        'Update the revision comments, then save and exit.'))
       ->editInteractively();
 
     return $comments;

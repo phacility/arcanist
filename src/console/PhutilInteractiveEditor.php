@@ -22,6 +22,7 @@ final class PhutilInteractiveEditor extends Phobject {
   private $offset   = 0;
   private $preferred;
   private $fallback;
+  private $taskMessage;
 
 
 /* -(  Creating a New Editor  )---------------------------------------------- */
@@ -74,6 +75,20 @@ final class PhutilInteractiveEditor extends Phobject {
     $editor = $this->getEditor();
     $offset = $this->getLineOffset();
 
+    $binary = basename($editor);
+
+    // This message is primarily an assistance to users with GUI-based
+    // editors configured. Users with terminal-based editors won't have a
+    // chance to see this prior to the editor being launched.
+    echo tsprintf(
+      "%s\n",
+      pht('Launching editor "%s"...', $binary));
+
+    $task_message = $this->getTaskMessage();
+    if ($task_message !== null) {
+      echo tsprintf("%s\n", $task_message);
+    }
+
     $err = $this->invokeEditor($editor, $path, $offset);
 
     if ($err) {
@@ -85,7 +100,6 @@ final class PhutilInteractiveEditor extends Phobject {
         'vim' => true,
       );
 
-      $binary = basename($editor);
       if (isset($vi_binaries[$binary])) {
         // This runs "Q" (an invalid command), then "q" (a valid command,
         // meaning "quit"). Vim binaries with behavior that makes them poor
@@ -264,6 +278,33 @@ final class PhutilInteractiveEditor extends Phobject {
   public function setPreferredEditor($editor) {
     $this->preferred = $editor;
     return $this;
+  }
+
+  /**
+   * Set the message that identifies the task for which the editor is being
+   * launched, displayed to the user prior to it being launched.
+   *
+   * @param  string  The message to display to the user.
+   * @return $this
+   *
+   * @task config
+   */
+  public function setTaskMessage($task_message) {
+    $this->taskMessage = $task_message;
+    return $this;
+  }
+
+  /**
+   * Retrieve the current message that will display to the user just prior to
+   * invoking the editor.
+   *
+   * @return string  The message that will display to the user, or null if no
+   *   message will be displayed.
+   *
+   * @task config
+   */
+  public function getTaskMessage() {
+    return $this->taskMessage;
   }
 
 
