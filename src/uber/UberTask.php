@@ -120,8 +120,13 @@ final class UberTask extends Phobject {
       $issues = array();
       try {
         $issues = $this->getIssues();
+      } catch (Exception $e) {
+        $this->console->writeOut(
+          pht("Something is wrong with jira, skipping...\n\n"));
+        return array();
       } catch (Throwable $e) {
-        $this->console->writeOut(pht("Something is wrong with jira, skipping...\n\n"));
+        $this->console->writeOut(
+          pht("Something is wrong with jira, skipping...\n\n"));
         return array();
       }
       $for_search = array();
