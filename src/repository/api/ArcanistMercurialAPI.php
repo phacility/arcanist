@@ -658,35 +658,109 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal('commit -l %s', $tmp_file);
+    $this->execxLocal('commit --logfile %s', $tmp_file);
     $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message = null) {
+    $path_statuses = $this->buildUncommittedStatus();
+
     if ($message === null) {
+      if (empty($path_statuses)) {
+        // If there are no changes to the working directory and the message is
+        // not being changed then there's nothing to amend. Notably Mercurial
+        // will return an error code if trying to amend a commit with no change
+        // to the commit metadata or file changes.
+        return;
+      }
+
       $message = $this->getCommitMessage('.');
     }
 
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
 
-    try {
-      $this->execxLocal(
-        'commit --amend -l %s',
-        $tmp_file);
-    } catch (CommandException $ex) {
-      if (preg_match('/nothing changed/', $ex->getStdout())) {
-        // NOTE: Mercurial considers it an error to make a no-op amend. Although
-        // we generally defer to the underlying VCS to dictate behavior, this
-        // one seems a little goofy, and we use amend as part of various
-        // workflows under the assumption that no-op amends are fine. If this
-        // amend failed because it's a no-op, just continue.
-      } else {
+    if ($this->getMercurialFeature('evolve')) {
+      $this->execxLocal('amend --logfile %s --', $tmp_file);
+      try {
+        $this->execxLocal('evolve --all --');
+      } catch (CommandException $ex) {
+        $this->execxLocal('evolve --abort --');
         throw $ex;
       }
+      $this->reloadWorkingCopy();
+      return;
+    }
+
+    // Get the child nodes of the current changeset.
+    list($children) = $this->execxLocal(
+      'log --template %s --rev %s --',
+      '{node} ',
+      'children(.)');
+    $child_nodes = array_filter(explode(' ', $children));
+
+    // For a head commit we can simply use `commit --amend` for both new commit
+    // message and amending changes from the working directory.
+    if (empty($child_nodes)) {
+        $this->execxLocal('commit --amend --logfile %s --', $tmp_file);
+    } else {
+      $this->amendNonHeadCommit($child_nodes, $tmp_file);
     }
 
     $this->reloadWorkingCopy();
+  }
+
+  /**
+   * Amends a non-head commit with a new message and file changes. This
+   * strategy is for Mercurial repositories without the evolve extension.
+   *
+   * 1. Run 'arc-amend' which uses Mercurial internals to amend the current
+   *    commit with updated message/file-changes. It results in a new commit
+   *    from the right parent
+   * 2. For each branch from the original commit, rebase onto the new commit,
+   *    removing the original branch. Note that there is potential for this to
+   *    cause a conflict but this is something the user has to address.
+   * 3. Strip the original commit.
+   *
+   * @param array     The list of child changesets off the original commit.
+   * @param file      The file containing the new commit message.
+   */
+  private function amendNonHeadCommit($child_nodes, $tmp_file) {
+    list($current) = $this->execxLocal(
+      'log --template %s --rev . --',
+      '{node}');
+
+    $argv = array();
+    foreach ($this->getMercurialExtensionArguments() as $arg) {
+      $argv[] = $arg;
+    }
+    $argv[] = 'arc-amend';
+    $argv[] = '--logfile';
+    $argv[] = $tmp_file;
+    $this->execxLocal('%Ls', $argv);
+
+    list($new_commit) = $this->execxLocal(
+      'log --rev tip --template %s --',
+      '{node}');
+
+    try {
+      $rebase_args = array(
+        '--dest',
+        $new_commit,
+      );
+      foreach ($child_nodes as $child) {
+        $rebase_args[] = '--source';
+        $rebase_args[] = $child;
+      }
+
+      $this->execxLocal('rebase %Ls --', $rebase_args);
+    } catch (CommandException $ex) {
+      $this->execxLocal('rebase --abort --');
+      throw $ex;
+    }
+
+    $this->execxLocal('--config extensions.strip= strip --rev %s --',
+      $current);
   }
 
   public function getCommitSummary($commit) {

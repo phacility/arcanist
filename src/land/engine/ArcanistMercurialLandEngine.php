@@ -803,8 +803,8 @@ final class ArcanistMercurialLandEngine
     // descendants and the min commit has no ancestors. The min/max terms are
     // used in a topological sense as chronological terms for commits can be
     // misleading or incorrect in certain situations.
-    $max_commit = last($commits)->getHash();
     $min_commit = head($commits)->getHash();
+    $max_commit = last($commits)->getHash();
 
     $revision_ref = $set->getRevisionRef();
     $commit_message = $revision_ref->getCommitMessage();
