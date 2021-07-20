@@ -1160,8 +1160,9 @@ final class ArcanistMercurialLandEngine
         'prune --rev %s',
         $rev_set);
     } else {
-      $api->execxLocal(
-        '--config extensions.strip= strip --rev %s',
+      $api->execxLocalWithExtension(
+        'strip',
+        'strip --rev %s',
         $rev_set);
     }
   }
