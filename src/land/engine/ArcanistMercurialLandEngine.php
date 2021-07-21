@@ -834,14 +834,19 @@ final class ArcanistMercurialLandEngine
       $argv[] = '--keep';
       $argv[] = '--collapse';
 
-      $future = $api->execFutureLocal('rebase %Ls', $argv);
+      $future = $api->execFutureLocalWithExtension(
+        'rebase',
+        'rebase %Ls',
+        $argv);
       $future->write($commit_message);
       $future->resolvex();
 
     } catch (CommandException $ex) {
       // Aborting the rebase should restore the same state prior to running the
       // rebase command.
-      $api->execManualLocal('rebase --abort');
+      $api->execManualLocalWithExtension(
+        'rebase',
+        'rebase --abort');
       throw $ex;
     }
 
@@ -1064,14 +1069,17 @@ final class ArcanistMercurialLandEngine
       // be deleted, we can skip this rebase?
 
       try {
-        $api->execxLocal(
+        $api->execxLocalWithExtension(
+          'rebase',
           'rebase --source %s --dest %s --keep --keepbranches',
           $child_hash,
           $new_commit);
       } catch (CommandException $ex) {
         // Aborting the rebase should restore the same state prior to running
         // the rebase command.
-        $api->execManualLocal('rebase --abort');
+        $api->execManualLocalWithExtension(
+          'rebase',
+          'rebase --abort');
         throw $ex;
       }
     }

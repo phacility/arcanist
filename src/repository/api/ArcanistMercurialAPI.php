@@ -1149,6 +1149,20 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       $extended_args);
   }
 
+  public function execManualLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execManualLocal'),
+      $extended_args);
+  }
+
   private function executeMercurialFeatureTest($feature, $resolve) {
     if (array_key_exists($feature, $this->featureResults)) {
       return $this->featureResults[$feature];
