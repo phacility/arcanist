@@ -707,7 +707,7 @@ EOTEXT
         'git apply --whitespace nowarn --index --reject -- %s',
         $patchfile);
       $passthru->setCWD($repository_api->getPath());
-      $err = $passthru->execute();
+      $err = $passthru->resolve();
 
       if ($err) {
         echo phutil_console_format(

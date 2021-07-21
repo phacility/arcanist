@@ -10,8 +10,8 @@
  * This is primarily useful for executing things like `$EDITOR` from command
  * line scripts.
  *
- *   $exec = new PhutilExecPassthru('ls %s', $dir);
- *   $err = $exec->execute();
+ *   $exec = new PhutilExecPassthru('nano -- %s', $filename);
+ *   $err = $exec->resolve();
  *
  * You can set the current working directory for the command with
  * @{method:setCWD}, and set the environment with @{method:setEnv}.
@@ -30,6 +30,14 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
 /* -(  Executing Passthru Commands  )---------------------------------------- */
 
 
+  public function execute() {
+    phlog(
+      pht(
+        'The "execute()" method of "PhutilExecPassthru" is deprecated and '.
+        'calls should be replaced with "resolve()". See T13660.'));
+    return $this->resolve();
+  }
+
   /**
    * Execute this command.
    *
@@ -37,7 +45,7 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
    *
    * @task command
    */
-  public function execute() {
+  private function executeCommand() {
     $command = $this->getCommand();
 
     $is_write = ($this->stdinData !== null);
@@ -116,7 +124,7 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     // make it easier to share code with ExecFuture.
 
     if (!$this->hasResult()) {
-      $result = $this->execute();
+      $result = $this->executeCommand();
       $this->setResult($result);
     }
 
