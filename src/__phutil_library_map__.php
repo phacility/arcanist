@@ -972,7 +972,6 @@ phutil_register_library_map(array(
     'phutil_count' => 'internationalization/pht.php',
     'phutil_date_format' => 'utils/viewutils.php',
     'phutil_decode_mime_header' => 'utils/utils.php',
-    'phutil_deprecated' => 'init/lib/moduleutils.php',
     'phutil_describe_type' => 'utils/utils.php',
     'phutil_encode_log' => 'utils/utils.php',
     'phutil_error_listener_example' => 'error/phlog.php',
