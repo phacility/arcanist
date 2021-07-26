@@ -1056,7 +1056,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
         $path = phutil_get_library_root('arcanist');
         $path = dirname($path);
         $path = $path.'/support/hg/arc-hg.py';
-        $ext_config = 'extensions.arg-hg='.$path;
+        $ext_config = 'extensions.arc-hg='.$path;
         break;
       case 'rebase':
         $ext_config = 'extensions.rebase=';
