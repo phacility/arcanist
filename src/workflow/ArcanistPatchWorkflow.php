@@ -435,18 +435,18 @@ EOTEXT
             $param);
           break;
         case self::SOURCE_DIFF:
+          $bundle = $this->loadDiffBundleFromConduit(
+             $this->getConduit(),
+             $param);
           if ($this->shouldMergeUsingStagingGitTag()) {
-            $bundle = $this->loadDiffBundleFromConduit(
-              $this->getConduit(),
-              $param);
             $this->mergeBranchFromStagingArea($param, $bundle);
             return 0;
           } elseif ($this->shouldUseStagingGitTags()) {
+            $repository_api = $this->getRepositoryAPI();
+            if (!$repository_api->hasLocalCommit($bundle->getBaseRevision())) {
               $this->pullBaseTagFromStagingArea($param);
             }
-          $bundle = $this->loadDiffBundleFromConduit(
-            $this->getConduit(),
-            $param);
+          }
           break;
       }
     } catch (ConduitClientException $ex) {
