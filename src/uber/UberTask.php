@@ -142,12 +142,11 @@ final class UberTask extends Phobject {
       $for_search[] = self::SKIP_MSG;
       // general jira task creation
       $for_search[] = self::CREATE_MSG;
-      // get top 3 projects to display
+      // sort projects by number of tasks
       uasort($projects,
         function ($v1, $v2) {
           return $v2['tasks'] - $v1['tasks'];
       });
-      $projects = array_slice($projects, 0, 3);
       // attach create task in project XXX to the list
       foreach ($projects as $project => $v) {
         $for_search[] = sprintf(self::CREATE_IN_PROJ_MSG, $project);
