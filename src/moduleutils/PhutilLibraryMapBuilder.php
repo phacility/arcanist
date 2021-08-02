@@ -122,7 +122,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
    */
   private function log($message) {
     if (!$this->quiet) {
-      @fwrite(STDERR, "%s\n", $message);
+      @fprintf(STDERR, "%s\n", $message);
     }
     return $this;
   }
