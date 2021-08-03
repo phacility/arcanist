@@ -293,7 +293,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithoutReviewState($revision_refs) {
-    $expected_pattern = "/\sFORCE_LAND=.+/m";
+    $expected_pattern = "/\sALLOW_UNACCEPTED=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -499,7 +499,7 @@ abstract class ArcanistLandEngine
         }
         $log->writeWarning(
           pht('FORCE LANDING UNACCEPTED REVISION D%s', $revision_ref->getID()),
-          pht('Landing D%s in unaccepted state with FORCE_LAND', $revision_ref->getID()));
+          pht('Landing D%s in unaccepted state with ALLOW_UNACCEPTED', $revision_ref->getID()));
       }
 
       $query = pht(
