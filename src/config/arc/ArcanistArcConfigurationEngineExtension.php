@@ -165,7 +165,7 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Rejected: You should never land revision without review. '.
             'If you know what you are doing and still want to land, add a '.
-            '`FORCE_LAND=<reason>` line to the revision summary and it will be audited.'))
+            '`ALLOW_UNACCEPTED=<reason>` line to the revision summary and it will be audited.'))
         ->setSummary(
           pht(
             'Error message when attempting to land a non-accepted revision.')),
