@@ -275,7 +275,24 @@ abstract class ArcanistLandEngine
     return $this->getWorkflow()->getConfig($config_key);
   }
 
-  final public function allowForcedLandWithoutReview($revision_refs) {
+  final public function allowForcedLandInMessage($revision_refs) {
+    $this->getWorkflow()->loadHardpoints(
+      $revision_refs,
+      array(
+        ArcanistRevisionRef::HARDPOINT_COMMITMESSAGE,
+      ));
+    foreach($revision_refs as $ref){
+      $commit_msg = $ref->getCommitMessage();
+      $commit = ArcanistDifferentialCommitMessage::newFromRawCorpus($commit_msg);
+      # Even if you are forcing the land, you need to have 1 reviewer
+      if ($commit->getFieldValue('reviewerPHIDs') > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  final public function allowForcedLandWithoutReviewState($revision_refs) {
     $expected_pattern = "/\sFORCE_LAND=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
@@ -472,14 +489,17 @@ abstract class ArcanistLandEngine
       }
 
       foreach ($not_accepted as $revision_ref) {
-        if ($this->allowForcedLandWithoutReview(array($revision_ref))) {
-          $log->writeWarning(
-            pht('FORCE LANDING UNACCEPTED REVISION D%s', $revision_ref->getID()),
-            pht('Landing D%s in unaccepted state with FORCE_LAND', $revision_ref->getID()));
-        } else {
+        if (!$this->allowForcedLandInMessage(array($revision_ref))) {
+          $log->writeError(pht('REVIEW'), pht('Revision D%s not accepted by at least one person', $revision_ref->getID()));
+          throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
+        }
+        if (!$this->allowForcedLandWithoutReviewState(array($revision_ref))) {
           $log->writeError(pht('REVIEW'), pht('Revision D%s not accepted', $revision_ref->getID()));
           throw new ArcanistRevisionStatusException($this->getWorkflow()->getNotAcceptedMessage());
         }
+        $log->writeWarning(
+          pht('FORCE LANDING UNACCEPTED REVISION D%s', $revision_ref->getID()),
+          pht('Landing D%s in unaccepted state with FORCE_LAND', $revision_ref->getID()));
       }
 
       $query = pht(
@@ -713,7 +733,7 @@ abstract class ArcanistLandEngine
               continue;
             }
           }
-          
+
           else {
             // Land queue won't allow this revision to land so block locally as well
             $log->writeError(
