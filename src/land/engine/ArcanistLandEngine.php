@@ -276,6 +276,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandInMessage($revision_refs) {
+    $expected_pattern = "/^Reviewed By: .+$/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -283,9 +284,8 @@ abstract class ArcanistLandEngine
       ));
     foreach($revision_refs as $ref){
       $commit_msg = $ref->getCommitMessage();
-      $commit = ArcanistDifferentialCommitMessage::newFromRawCorpus($commit_msg);
       # Even if you are forcing the land, you need to have 1 reviewer
-      if ($commit->getFieldValue('reviewerPHIDs') > 0) {
+      if (preg_match($expected_pattern, $commit_msg) > 0){
         return true;
       }
     }
