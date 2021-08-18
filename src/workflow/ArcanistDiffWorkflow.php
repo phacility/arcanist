@@ -1449,8 +1449,8 @@ EOTEXT
 
     $issues = array_merge(
       array(
-        pht('*NEW FEATURE*: auto land (http://go/autolandwiki)'),
-        pht('To use auto land, add `Tags: #ready_to_land` in this commit message'),
+        pht('Uncomment this line if you\'d like this diff to land when tests pass (http://go/ready_to_land)'),
+        pht('Tags: #ready_to_land'),
         '',
       ),
       array(
