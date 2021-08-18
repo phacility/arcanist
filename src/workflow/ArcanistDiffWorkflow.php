@@ -1448,6 +1448,11 @@ EOTEXT
 
     $issues = array_merge(
       array(
+        pht('*NEW FEATURE*: auto land (http://go/autolandwiki)'),
+        pht('To use auto land, add `Tags: #ready_to_land` in this commit message'),
+        '',
+      ),
+      array(
         pht('NEW DIFFERENTIAL REVISION'),
         pht('Describe the changes in this new revision.'),
       ),
