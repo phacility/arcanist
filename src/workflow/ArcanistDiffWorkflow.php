@@ -1446,7 +1446,7 @@ EOTEXT
 
     $issues = array_merge(
       array(
-        pht('Uncomment this line if you\'d like this diff to land when tests pass (http://go/ready_to_land)'),
+        pht('Uncomment next line if you\'d like this diff to land when tests pass (http://go/ready_to_land)'),
         pht('Tags: #ready_to_land'),
         '',
       ),
