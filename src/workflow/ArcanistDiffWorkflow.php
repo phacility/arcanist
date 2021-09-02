@@ -2808,17 +2808,10 @@ EOTEXT
         $lint[$key] = $this->getModernLintDictionary($message);
       }
 
-      // Consider this target to have failed if there are any unresolved
+      // DEVX-1842, behavior change
+      // Consider this target to have passed even if there are any unresolved
       // errors or warnings.
       $type = 'pass';
-      foreach ($lint as $message) {
-        switch (idx($message, 'severity')) {
-          case ArcanistLintSeverity::SEVERITY_WARNING:
-          case ArcanistLintSeverity::SEVERITY_ERROR:
-            $type = 'fail';
-            break;
-        }
-      }
 
       $futures[] = $this->getConduit()->callMethod(
         'harbormaster.sendmessage',
