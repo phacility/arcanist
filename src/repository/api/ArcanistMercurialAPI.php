@@ -454,6 +454,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
+  protected function newCurrentCommitSymbol() {
+    return $this->getWorkingCopyRevision();
+  }
+
   public function getWorkingCopyRevision() {
     return '.';
   }

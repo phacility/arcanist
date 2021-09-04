@@ -164,8 +164,6 @@ EOTEXT
         ->execute();
     }
 
-    return;
-
     if ($api->getUncommittedChanges()) {
       // TODO: Make this class of error show the uncommitted changes.
 
