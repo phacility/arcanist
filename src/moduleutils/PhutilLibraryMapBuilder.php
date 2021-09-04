@@ -12,7 +12,6 @@
 final class PhutilLibraryMapBuilder extends Phobject {
 
   private $root;
-  private $quiet = true;
   private $subprocessLimit = 8;
 
   private $fileSymbolMap;
@@ -36,19 +35,6 @@ final class PhutilLibraryMapBuilder extends Phobject {
    */
   public function __construct($root) {
     $this->root = $root;
-  }
-
-  /**
-   * Control status output. Use `--quiet` to set this.
-   *
-   * @param  bool  If true, don't show status output.
-   * @return this
-   *
-   * @task map
-   */
-  public function setQuiet($quiet) {
-    $this->quiet = $quiet;
-    return $this;
   }
 
   /**
@@ -108,23 +94,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
   public function buildAndWriteMap() {
     $library_map = $this->buildMap();
 
-    $this->log(pht('Writing map...'));
     $this->writeLibraryMap($library_map);
-  }
-
-  /**
-   * Write a status message to the user, if not running in quiet mode.
-   *
-   * @param  string  Message to write.
-   * @return this
-   *
-   * @task map
-   */
-  private function log($message) {
-    if (!$this->quiet) {
-      @fwrite(STDERR, "%s\n", $message);
-    }
-    return $this;
   }
 
 
@@ -236,11 +206,7 @@ final class PhutilLibraryMapBuilder extends Phobject {
     }
 
     $json = json_encode($cache);
-    try {
-      Filesystem::writeFile($cache_file, $json);
-    } catch (FilesystemException $ex) {
-      $this->log(pht('Unable to save the cache!'));
-    }
+    Filesystem::writeFile($cache_file, $json);
   }
 
   /**
@@ -251,7 +217,6 @@ final class PhutilLibraryMapBuilder extends Phobject {
    * @task symbol
    */
   public function dropSymbolCache() {
-    $this->log(pht('Dropping symbol cache...'));
     Filesystem::remove($this->getPathForSymbolCache());
   }
 
@@ -451,14 +416,10 @@ EOPHP;
    */
   private function analyzeLibrary() {
     // Identify all the ".php" source files in the library.
-    $this->log(pht('Finding source files...'));
     $source_map = $this->loadSourceFileMap();
-    $this->log(
-      pht('Found %s files.', new PhutilNumber(count($source_map))));
 
     // Load the symbol cache with existing parsed symbols. This allows us
     // to remap libraries quickly by analyzing only changed files.
-    $this->log(pht('Loading symbol cache...'));
     $symbol_cache = $this->loadSymbolCache();
 
     // If the XHPAST binary is not up-to-date, build it now. Otherwise,
@@ -481,23 +442,12 @@ EOPHP;
       }
       $futures[$file] = $this->buildSymbolAnalysisFuture($file);
     }
-    $this->log(
-      pht('Found %s files in cache.', new PhutilNumber(count($symbol_map))));
 
     // Run the analyzer on any files which need analysis.
     if ($futures) {
       $limit = $this->subprocessLimit;
 
-      $this->log(
-        pht(
-          'Analyzing %s file(s) with %s subprocess(es)...',
-          phutil_count($futures),
-          new PhutilNumber($limit)));
-
       $progress = new PhutilConsoleProgressBar();
-      if ($this->quiet) {
-        $progress->setQuiet(true);
-      }
       $progress->setTotal(count($futures));
 
       $futures = id(new FutureIterator($futures))
@@ -525,8 +475,6 @@ EOPHP;
     $this->writeSymbolCache($symbol_map, $source_map);
 
     // Our map is up to date, so either show it on stdout or write it to disk.
-    $this->log(pht('Building library map...'));
-
     $this->librarySymbolMap = $this->buildLibraryMap($symbol_map);
   }
 
