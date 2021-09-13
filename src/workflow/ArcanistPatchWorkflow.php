@@ -391,7 +391,8 @@ EOTEXT
           break;
       }
     } catch (ConduitClientException $ex) {
-      if ($ex->getErrorCode() == 'ERR-INVALID-SESSION') {
+      if ($ex->getErrorCode() == 'ERR-INVALID-SESSION' ||
+           $ex->getErrorCode() == 'ERR-INVALID-AUTH') {
         // Phabricator is not configured to allow anonymous access to
         // Differential.
         $this->authenticateConduit();
