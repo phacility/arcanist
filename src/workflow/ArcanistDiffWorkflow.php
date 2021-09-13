@@ -335,6 +335,10 @@ EOTEXT
           'hg' => pht('Mercurial does not support %s yet.', '--head'),
         ),
       ),
+      'rebase' => array(
+        'param' => 'val',
+        'help'  => pht('Rebase to stable before creating diff, true or false, default to false.'),
+      )
     );
 
     return $arguments;
@@ -344,11 +348,52 @@ EOTEXT
     return $this->getArgument('raw') || $this->getArgument('raw-command');
   }
 
+  private function runRebaseToStable() {
+    # return if continue creating the diff, true or false
+    $is_rebasing = trim(strtolower($this->getArgument('rebase')));
+    $do_rebase = null;
+    if ($is_rebasing == 'true') {
+      $do_rebase = true;
+    } elseif ($is_rebasing == "false") {
+      $do_rebase = false;
+    } else {
+      // Default to not rebase to stable. Will switch to default to true later.
+      $do_rebase = false; 
+    }
+    if ($do_rebase) {
+      echo "Running arc rebase... \n";
+      $outputs = null;
+      $retval = null;
+      exec('arc rebase', $outputs, $retval);
+      echo "Returned with status $retval and outputs:\n";
+      foreach ($outputs as $output) {
+        echo "$output\n";
+      }
+      if ($retval == 1) {
+        $prompt = "arc rebase failed. You can skip the rebase and continue creating the diff with the original base commit, then deal with the merge conflicts later. Skip rebase?";
+        $continue_diff = phutil_console_confirm($prompt, $default_no = true);
+        if (!$continue_diff) {
+          echo "Stop creating diff... \n";
+          echo "Please follow above console outputs to resolve all conflicts manually. \n";
+          return false;
+        }
+        echo "Running git rebase --abort to skip rebase \n";
+        exec('git rebase --abort');
+      }
+    }
+    return true;
+  }
+
   public function run() {
     $this->console = PhutilConsole::getConsole();
 
     $this->runRepositoryAPISetup();
     $this->runDiffSetupBasics();
+
+    $continue_diff = $this->runRebaseToStable();
+    if (!$continue_diff) {
+      return;
+    }
 
     $commit_message = $this->buildCommitMessage();
 
