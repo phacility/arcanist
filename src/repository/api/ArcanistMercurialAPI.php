@@ -672,7 +672,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function amendCommit($message = null) {
     $path_statuses = $this->buildUncommittedStatus();
 
-    if ($message === null) {
+    $existing_message = $this->getCommitMessage(
+      $this->getWorkingCopyRevision());
+
+    if ($message === null || $message == $existing_message) {
       if (empty($path_statuses)) {
         // If there are no changes to the working directory and the message is
         // not being changed then there's nothing to amend. Notably Mercurial

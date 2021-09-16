@@ -159,7 +159,7 @@ final class ArcanistMercurialCommitSymbolCommitHardpointQuery
     // a spot which a marker might match.
     foreach ($node_list as $node) {
       foreach ($symbol_set as $symbol) {
-        if (str_starts_with($node, $symbol)) {
+        if (strncmp($node, $symbol, strlen($symbol)) === 0) {
           if (!isset($hash_map[$symbol])) {
             $hash_map[$symbol] = $node;
           }
