@@ -908,7 +908,7 @@ class ArcanistGitLandEngine
     $this->writeInfo(
       pht('REMOTE'),
       pht(
-        'Using remote "%s", the default remote under Git.',
+        'Using remote "%s", the default remote under git.',
         $remote));
 
     return $remote;
