@@ -40,9 +40,9 @@ final class ArcanistUSEnglishTranslation extends PhutilTranslation {
         'Do you want to mark these files as binary and continue?',
       ),
 
-      'Do you want to amend these %s change(s) to the current commit?' => array(
-        'Do you want to amend this change to the current commit?',
-        'Do you want to amend these changes to the current commit?',
+      'Do you want to append these %s change(s) to the current commit?' => array(
+        'Do you want to append this change to the current commit?',
+        'Do you want to append these changes to the current commit?',
       ),
 
       'Do you want to create a new commit with these %s change(s)?' => array(
