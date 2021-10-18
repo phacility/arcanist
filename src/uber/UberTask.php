@@ -81,7 +81,13 @@ final class UberTask extends Phobject {
   }
 
   public function openURIsInBrowser($uris) {
-    return $this->workflow->openURIsInBrowser($uris);
+    try {
+      return $this->workflow->openURIsInBrowser($uris);
+    } catch (ArcanistUsageException $e) {
+      $this->console->writeOut(
+        "<bg:yellow>** Unable to open links %s in browser **</bg>\n",
+        implode(' , ', $uris));
+    }
   }
 
   public static function getTasksAndProjects($issues = array()) {
