@@ -798,6 +798,10 @@ abstract class ArcanistLandEngine
     }
 
     if (!$problem_builds) {
+      if ($allow_failing_forceable_tests) {
+        // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
+        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures or ongoing builds. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+      }
       return;
     }
 
