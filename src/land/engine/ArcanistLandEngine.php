@@ -641,6 +641,7 @@ abstract class ArcanistLandEngine
     $has_ongoing = false;
     $has_blocking_failures = false;
     $has_blocking_ongoing = false;
+    $force_landing = false;
 
     $build_refs = msortv($build_refs, 'getStatusSortVector');
     $buildable_map = mpull($buildable_refs, null, 'getPHID');
@@ -727,6 +728,7 @@ abstract class ArcanistLandEngine
             $log->writeWarning(
               pht('FORCE LANDING D%s WITH FAILED TESTS', $revision_ref->getID()),
               pht('Landing D%s with failing forceable tests with ALLOW_FAILED_TESTS (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            $force_landing = true;
             if ($is_phlq) {
               // If this is PHLQ then continue so this failure is not prompted for
               // If running locally, still prompt to allow user to confirm land with failures
@@ -776,6 +778,7 @@ abstract class ArcanistLandEngine
             $log->writeWarning(
               pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
               pht('Landing D%s with ongoing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            $force_landing = true;
             if ($is_phlq) {
               // If this is PHLQ then continue so this failure is not prompted for
               continue;
@@ -798,7 +801,7 @@ abstract class ArcanistLandEngine
     }
 
     if (!$problem_builds) {
-      if ($allow_failing_forceable_tests) {
+      if ($allow_failing_forceable_tests && !$force_landing) {
         // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
         throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures or ongoing builds. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
       }
