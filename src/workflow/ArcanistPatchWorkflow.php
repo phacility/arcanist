@@ -743,7 +743,7 @@ EOTEXT
       if ($this->shouldCommit()) {
         $flags = array();
         if ($bundle->getFullAuthor()) {
-          $flags[] = csprintf('--author=%s', $bundle->getFullAuthor());
+          $flags[] = sprintf('--author=%s', $bundle->getFullAuthor());
         }
 
         $commit_message = $this->getCommitMessage($bundle);
