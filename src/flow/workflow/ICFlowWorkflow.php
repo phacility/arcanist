@@ -14,6 +14,15 @@ final class ICFlowWorkflow extends ICFlowBaseWorkflow {
     return 'branch';
   }
 
+  // we do not need network when we just branch out
+  public function requiresAuthentication() {
+    return false;
+  }
+
+  public function requiresConduit() {
+    return true;
+  }
+
   public function getCommandSynopses() {
     $workflow_name = $this->getWorkflowName();
     return phutil_console_format(<<<EOTEXT
@@ -77,6 +86,8 @@ EOTEXT
       $this->markFlowUsage();
       return 0;
     }
+
+    $this->authenticateConduit();
 
     if ($this->getArgument('json')) {
       $out = $this->getFlowData();
