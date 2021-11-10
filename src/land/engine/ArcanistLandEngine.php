@@ -818,14 +818,16 @@ abstract class ArcanistLandEngine
       $problem_builds[] = $build_ref;
     }
 
-    if (!$problem_builds && !$force_landing) {
-      if ($allow_failing_forceable_tests) {
-        // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
-        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
-      }
-      else if ($allow_ongoing_forceable_tests) {
-        // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
-        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_ONGOING_TESTS set but has NO ongoing builds. Remove ALLOW_ONGOING_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+    if (!$problem_builds) {
+      if (!$force_landing) {
+        if ($allow_failing_forceable_tests) {
+          // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
+          throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+        }
+        else if ($allow_ongoing_forceable_tests) {
+          // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
+          throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_ONGOING_TESTS set but has NO ongoing builds. Remove ALLOW_ONGOING_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+        }
       }
       return;
     }
