@@ -174,7 +174,8 @@ final class ArcanistArcConfigurationEngineExtension
           pht(
             'Rejected: You should not land revisions with failed or ongoing builds. '.
             'If you know what you are doing and still want to land, add a '.
-            '`ALLOW_FAILED_TESTS=<reason>` line to the revision summary and it will be audited.'))
+            '`ALLOW_FAILED_TESTS=<reason>` or `ALLOW_ONGOING_TESTS=<reason>` line to the '.
+            'revision summary and it will be audited.'))
         ->setSummary(
           pht(
             'Error message when attempting to land a revision with failed builds.')),
