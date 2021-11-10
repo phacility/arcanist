@@ -324,6 +324,22 @@ abstract class ArcanistLandEngine
     return false;
   }
 
+  final public function allowForcedLandWithOngoingForceableTests($revision_refs) {
+    $expected_pattern = "/\sALLOW_ONGOING_TESTS=.+/m";
+    $this->getWorkflow()->loadHardpoints(
+      $revision_refs,
+      array(
+        ArcanistRevisionRef::HARDPOINT_COMMITMESSAGE,
+      ));
+    foreach($revision_refs as $ref){
+      $commit_msg = $ref->getCommitMessage();
+      if(preg_match($expected_pattern, $commit_msg) > 0){
+        return true;
+      }
+    }
+    return false;
+  }
+
   final protected function confirmRevisions(array $sets) {
     assert_instances_of($sets, 'ArcanistLandCommitSet');
 
@@ -647,6 +663,9 @@ abstract class ArcanistLandEngine
     $buildable_map = mpull($buildable_refs, null, 'getPHID');
     $revision_map = mpull($revision_refs, null, 'getDiffPHID');
 
+    $allow_failing_forceable_tests = $this->allowForcedLandWithFailingForceableTests($revision_refs);
+    $allow_ongoing_forceable_tests = $this->allowForcedLandWithOngoingForceableTests($revision_refs);
+
     foreach ($build_refs as $build_ref) {
       $plan_ref = $build_ref->getBuildPlanRef();
       if (!$plan_ref) {
@@ -657,7 +676,6 @@ abstract class ArcanistLandEngine
       $buildable_ref = $buildable_map[$buildable_phid];
       $object_phid = $buildable_ref->getObjectPHID();
       $revision_ref = $revision_map[$object_phid];
-      $allow_failing_forceable_tests = $this->allowForcedLandWithFailingForceableTests(array($revision_ref));
 
       $plan_behavior = $plan_ref->getBehavior('arc-land', 'always');
       $if_building = ($plan_behavior == 'building');
@@ -774,7 +792,7 @@ abstract class ArcanistLandEngine
 
           // If build plan is an forceable plan then allow it to land in ongoing state if
           // ALLOW_FAILED_TESTS is set
-          else if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
+          else if ($forceable_build_plan_phids && $allow_ongoing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
             $log->writeWarning(
               pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
               pht('Landing D%s with ongoing forceable tests (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
@@ -800,10 +818,14 @@ abstract class ArcanistLandEngine
       $problem_builds[] = $build_ref;
     }
 
-    if (!$problem_builds) {
-      if ($allow_failing_forceable_tests && !$force_landing) {
+    if (!$problem_builds && !$force_landing) {
+      if ($allow_failing_forceable_tests) {
         // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
-        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures or ongoing builds. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_FAILED_TESTS set but has NO blocking build failures. Remove ALLOW_FAILED_TESTS from the revision description and try landing again.', $revision_ref->getID()));
+      }
+      else if ($allow_ongoing_forceable_tests) {
+        // Diff has set ALLOW_FAILED_TESTS but there were no problem builds
+        throw new ArcanistRevisionStatusException(pht('Revision D%s has ALLOW_ONGOING_TESTS set but has NO ongoing builds. Remove ALLOW_ONGOING_TESTS from the revision description and try landing again.', $revision_ref->getID()));
       }
       return;
     }
