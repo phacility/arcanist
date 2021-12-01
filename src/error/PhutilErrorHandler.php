@@ -428,16 +428,6 @@ final class PhutilErrorHandler extends Phobject {
         $metadata['default_message'] = $default_message;
         error_log($default_message);
         break;
-      case self::DEPRECATED:
-        $default_message = sprintf(
-          '[%s] DEPRECATED: %s is deprecated; %s',
-          $timestamp,
-          $value,
-          $metadata['why']);
-
-        $metadata['default_message'] = $default_message;
-        error_log($default_message);
-        break;
       default:
         error_log(pht('Unknown event %s', $event));
         break;

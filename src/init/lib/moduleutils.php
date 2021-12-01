@@ -36,18 +36,6 @@ function phutil_get_current_library_name() {
   return phutil_get_library_name_for_root($root);
 }
 
-/**
- * Warns about use of deprecated behavior.
- */
-function phutil_deprecated($what, $why) {
-  PhutilErrorHandler::dispatchErrorMessage(
-    PhutilErrorHandler::DEPRECATED,
-    $what,
-    array(
-      'why' => $why,
-    ));
-}
-
 function phutil_load_library($path) {
   PhutilBootloader::getInstance()->loadLibrary($path);
 }

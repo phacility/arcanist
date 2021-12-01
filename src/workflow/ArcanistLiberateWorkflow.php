@@ -79,22 +79,35 @@ EOTEXT
       );
     }
 
+    $any_errors = false;
     foreach ($paths as $path) {
       $log->writeStatus(
         pht('WORK'),
         pht(
           'Updating library: %s',
           Filesystem::readablePath($path).DIRECTORY_SEPARATOR));
-      $this->liberatePath($path);
+      $exit_code = $this->liberatePath($path);
+      if ($exit_code !== 0) {
+        $any_errors = true;
+        $log->writeError(
+          pht('ERROR'),
+          pht('Failed to update library: %s', $path));
+      }
     }
 
-    $log->writeSuccess(
-      pht('DONE'),
-      pht('Updated %s librarie(s).', phutil_count($paths)));
+    if (!$any_errors) {
+      $log->writeSuccess(
+        pht('DONE'),
+        pht('Updated %s librarie(s).', phutil_count($paths)));
+    }
 
     return 0;
   }
 
+  /**
+   * @return  int The exit code of running the rebuild-map.php script, which
+   *              will be 0 to indicate success or non-zero for failure.
+   */
   private function liberatePath($path) {
     if (!Filesystem::pathExists($path.'/__phutil_library_init__.php')) {
       echo tsprintf(
@@ -103,8 +116,7 @@ EOTEXT
           'No library currently exists at the path "%s"...',
           $path));
       $this->liberateCreateDirectory($path);
-      $this->liberateCreateLibrary($path);
-      return;
+      return $this->liberateCreateLibrary($path);
     }
 
     $version = $this->getLibraryFormatVersion($path);
@@ -119,8 +131,6 @@ EOTEXT
         throw new ArcanistUsageException(
           pht("Unknown library version '%s'!", $version));
     }
-
-    echo tsprintf("%s\n", pht('Done.'));
   }
 
   private function getLibraryFormatVersion($path) {
@@ -140,6 +150,10 @@ EOTEXT
     return 1;
   }
 
+  /**
+   * @return  int The exit code of running the rebuild-map.php script, which
+   *              will be 0 to indicate success or non-zero for failure.
+   */
   private function liberateVersion2($path) {
     $bin = $this->getScriptPath('support/lib/rebuild-map.php');
 
@@ -181,10 +195,14 @@ EOTEXT
     execx('mkdir -p %R', $path);
   }
 
+  /**
+   * @return  int The exit code of running the rebuild-map.php script, which
+   *              will be 0 to indicate success or non-zero for failure.
+   */
   private function liberateCreateLibrary($path) {
     $init_path = $path.'/__phutil_library_init__.php';
     if (Filesystem::pathExists($init_path)) {
-      return;
+      return 0;
     }
 
     echo pht("Creating new libphutil library in '%s'.", $path)."\n";
@@ -213,7 +231,7 @@ EOTEXT
       '__phutil_library_init__.php',
       $path);
     Filesystem::writeFile($init_path, $template);
-    $this->liberateVersion2($path);
+    return $this->liberateVersion2($path);
   }
 
 

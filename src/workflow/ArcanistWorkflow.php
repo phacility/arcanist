@@ -1234,6 +1234,9 @@ abstract class ArcanistWorkflow extends Phobject {
 
         $commit_message = $this->newInteractiveEditor($template)
           ->setName(pht('commit-message'))
+          ->setTaskMessage(pht(
+            'Supply commit message for uncommitted changes, then save and '.
+            'exit.'))
           ->editInteractively();
 
         if ($commit_message === $template) {

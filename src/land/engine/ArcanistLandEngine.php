@@ -1407,6 +1407,21 @@ abstract class ArcanistLandEngine
     ArcanistLandCommitSet $set,
     $into_commit);
   abstract protected function pushChange($into_commit);
+
+  /**
+   * Update all local refs that depend on refs selected-and-modified during the
+   * land. E.g. with branches named change1 -> change2 -> change3 and using
+   * `arc land change2`, in the general case the local change3 should be
+   * rebased onto the landed version of change2 so that it no longer has
+   * out-of-date ancestors.
+   *
+   * When multiple revisions are landed at once this will be called in a loop
+   * for each set, in order of max to min, where max is the latest descendant
+   * and min is the earliest ancestor. This is done so that non-landing commits
+   * that are descendants of the latest revision will only be rebased once.
+   *
+   * @param ArcanistLandCommitSet  The current commit set to cascade.
+   */
   abstract protected function cascadeState(
     ArcanistLandCommitSet $set,
     $into_commit);
@@ -1415,12 +1430,35 @@ abstract class ArcanistLandEngine
     return ($this->getStrategy() === 'squash');
   }
 
+  /**
+   * Prunes the given sets of commits. This should be called after the sets
+   * have been merged.
+   *
+   * @param array  The list of ArcanistLandCommitSet to prune, in order of
+   *   min to max commit set, where min is the earliest ancestor and max
+   *   is the latest descendant.
+   */
   abstract protected function pruneBranches(array $sets);
 
+  /**
+   * Restore the local repository to an expected state after landing. This
+   * should only be called after all changes have been merged, pruned, and
+   * pushed.
+   *
+   * @param string  The commit hash that was landed into.
+   * @param ArcanistRepositoryLocalState  The local state that was captured
+   *   at the beginning of the land process. This may include stashed changes.
+   */
   abstract protected function reconcileLocalState(
     $into_commit,
     ArcanistRepositoryLocalState $state);
 
+  /**
+   * Display information to the user about how to proceed since the land
+   * process was not fully completed. The merged branch has not been pushed.
+   *
+   * @param string  The commit hash that was landed into.
+   */
   abstract protected function didHoldChanges($into_commit);
 
   private function selectMergeStrategy() {

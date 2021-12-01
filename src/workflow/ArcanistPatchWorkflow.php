@@ -707,7 +707,7 @@ EOTEXT
         'git apply --whitespace nowarn --index --reject -- %s',
         $patchfile);
       $passthru->setCWD($repository_api->getPath());
-      $err = $passthru->execute();
+      $err = $passthru->resolve();
 
       if ($err) {
         echo phutil_console_format(
@@ -909,6 +909,8 @@ EOTEXT
 
       $commit_message = $this->newInteractiveEditor($template)
         ->setName('arcanist-patch-commit-message')
+        ->setTaskMessage(pht(
+          'Supply a commit message for this patch, then save and exit.'))
         ->editInteractively();
 
       $commit_message = ArcanistCommentRemover::removeComments($commit_message);
