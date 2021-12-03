@@ -305,7 +305,7 @@ abstract class ArcanistLinter extends Phobject {
    * @param  list<string>
    * @return list<string>
    */
-  final private function filterPaths(array $paths) {
+  private function filterPaths(array $paths) {
     $engine = $this->getEngine();
 
     $keep = array();
