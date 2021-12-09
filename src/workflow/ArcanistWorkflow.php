@@ -143,7 +143,7 @@ abstract class ArcanistWorkflow extends Phobject {
 
     if ($information) {
       $synopsis = $information->getSynopsis();
-      if (strlen($synopsis)) {
+      if ($synopsis !== null) {
         $phutil_workflow->setSynopsis($synopsis);
       }
 

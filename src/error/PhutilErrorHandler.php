@@ -181,7 +181,6 @@ final class PhutilErrorHandler extends Phobject {
    * @task internal
    */
   public static function handleError($num, $str, $file, $line, $ctx = null) {
-
     foreach (self::$traps as $trap) {
       $trap->addError($num, $str, $file, $line);
     }
@@ -378,7 +377,7 @@ final class PhutilErrorHandler extends Phobject {
    * @task internal
    */
   public static function dispatchErrorMessage($event, $value, $metadata) {
-    $timestamp = strftime('%Y-%m-%d %H:%M:%S');
+    $timestamp = date('Y-m-d H:i:s');
 
     switch ($event) {
       case self::ERROR:
