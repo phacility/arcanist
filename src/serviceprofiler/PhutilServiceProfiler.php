@@ -137,7 +137,7 @@ final class PhutilServiceProfiler extends Phobject {
 
           $uri = phutil_censor_credentials($data['uri']);
 
-          if (strlen($proxy)) {
+          if ($proxy !== null) {
             $desc = "{$proxy} >> {$uri}";
           } else {
             $desc = $uri;
@@ -203,6 +203,10 @@ final class PhutilServiceProfiler extends Phobject {
   }
 
   private static function escapeProfilerStringForDisplay($string) {
+    if ($string === null) {
+      return '';
+    }
+
     // Convert tabs and newlines to spaces and collapse blocks of whitespace,
     // most often formatting in queries.
     $string = preg_replace('/\s{2,}/', ' ', $string);

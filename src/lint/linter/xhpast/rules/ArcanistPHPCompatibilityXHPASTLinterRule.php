@@ -155,7 +155,9 @@ final class ArcanistPHPCompatibilityXHPASTLinterRule
       if ($this->windowsVersion) {
         $windows = idx($compat_info['functions_windows'], $name);
 
-        if ($windows === false) {
+        if ($windows === null) {
+          // This function has no special Windows considerations.
+        } else if ($windows === false) {
           $this->raiseLintAtNode(
             $node,
             pht(

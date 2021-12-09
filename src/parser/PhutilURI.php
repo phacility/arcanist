@@ -171,14 +171,19 @@ final class PhutilURI extends Phobject {
       }
     }
 
-    if (strlen($protocol) || strlen($auth) || strlen($domain)) {
+    $has_protocol = ($protocol !== null) && strlen($protocol);
+    $has_auth = ($auth !== null);
+    $has_domain = ($domain !== null) && strlen($domain);
+    $has_port = ($port !== null) && strlen($port);
+
+    if ($has_protocol || $has_auth || $has_domain) {
       if ($this->isGitURI()) {
         $prefix = "{$auth}{$domain}";
       } else {
         $prefix = "{$protocol}://{$auth}{$domain}";
       }
 
-      if (strlen($port)) {
+      if ($has_port) {
         $prefix .= ':'.$port;
       }
     }

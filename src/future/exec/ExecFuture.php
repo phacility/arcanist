@@ -192,11 +192,18 @@ final class ExecFuture extends PhutilExecutableFuture {
    * @task interact
    */
   public function read() {
-    $stdout = $this->readStdout();
+    $stdout_value = $this->readStdout();
+
+    $stderr = $this->stderr;
+    if ($stderr === null) {
+      $stderr_value = '';
+    } else {
+      $stderr_value = substr($stderr, $this->stderrPos);
+    }
 
     $result = array(
-      $stdout,
-      (string)substr($this->stderr, $this->stderrPos),
+      $stdout_value,
+      $stderr_value,
     );
 
     $this->stderrPos = $this->getStderrBufferLength();
@@ -209,7 +216,14 @@ final class ExecFuture extends PhutilExecutableFuture {
       $this->updateFuture(); // Sync
     }
 
-    $result = (string)substr($this->stdout, $this->stdoutPos);
+    $stdout = $this->stdout;
+
+    if ($stdout === null) {
+      $result = '';
+    } else {
+      $result = substr($stdout, $this->stdoutPos);
+    }
+
     $this->stdoutPos = $this->getStdoutBufferLength();
 
     return $result;

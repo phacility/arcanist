@@ -154,7 +154,7 @@ abstract class ArcanistWorkflow extends Phobject {
       }
 
       $help = $information->getHelp();
-      if (strlen($help)) {
+      if ($help !== null) {
         // Unwrap linebreaks in the help text so we don't get weird formatting.
         $help = preg_replace("/(?<=\S)\n(?=\S)/", ' ', $help);
 

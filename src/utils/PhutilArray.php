@@ -29,6 +29,7 @@ abstract class PhutilArray
 /* -(  Countable Interface  )------------------------------------------------ */
 
 
+  #[\ReturnTypeWillChange]
   public function count() {
     return count($this->data);
   }
@@ -37,22 +38,27 @@ abstract class PhutilArray
 /* -(  Iterator Interface  )------------------------------------------------- */
 
 
+  #[\ReturnTypeWillChange]
   public function current() {
     return current($this->data);
   }
 
+  #[\ReturnTypeWillChange]
   public function key() {
     return key($this->data);
   }
 
+  #[\ReturnTypeWillChange]
   public function next() {
     return next($this->data);
   }
 
+  #[\ReturnTypeWillChange]
   public function rewind() {
     reset($this->data);
   }
 
+  #[\ReturnTypeWillChange]
   public function valid() {
     return (key($this->data) !== null);
   }
@@ -61,18 +67,22 @@ abstract class PhutilArray
 /* -(  ArrayAccess Interface  )---------------------------------------------- */
 
 
+  #[\ReturnTypeWillChange]
   public function offsetExists($key) {
     return array_key_exists($key, $this->data);
   }
 
+  #[\ReturnTypeWillChange]
   public function offsetGet($key) {
     return $this->data[$key];
   }
 
+  #[\ReturnTypeWillChange]
   public function offsetSet($key, $value) {
     $this->data[$key] = $value;
   }
 
+  #[\ReturnTypeWillChange]
   public function offsetUnset($key) {
     unset($this->data[$key]);
   }
