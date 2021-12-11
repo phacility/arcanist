@@ -639,8 +639,7 @@ final class ArcanistBundle extends Phobject {
     $old_path = $change->getOldPath();
     $type = $change->getType();
 
-    if (!strlen($old_path) ||
-        $type == ArcanistDiffChangeType::TYPE_ADD) {
+    if ($old_path === '' || $type == ArcanistDiffChangeType::TYPE_ADD) {
       $old_path = null;
     }
 
@@ -1023,7 +1022,7 @@ final class ArcanistBundle extends Phobject {
         if ($is_64bit) {
           for ($count = 4; $count >= 0; $count--) {
             $val = $accum % 85;
-            $accum = $accum / 85;
+            $accum = (int)($accum / 85);
             $slice .= $map[$val];
           }
         } else {

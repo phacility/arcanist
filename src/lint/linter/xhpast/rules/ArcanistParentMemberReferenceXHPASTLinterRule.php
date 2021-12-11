@@ -55,7 +55,12 @@ final class ArcanistParentMemberReferenceXHPASTLinterRule
             }
           }
 
-          if (version_compare($this->version, '5.4.0', '>=') || !$in_closure) {
+          $version_target = $this->version;
+          if ($version_target === null) {
+            $version_target = phpversion();
+          }
+
+          if (version_compare($version_target, '5.4.0', '>=') || !$in_closure) {
             $this->raiseLintAtNode(
               $class_ref,
               pht(

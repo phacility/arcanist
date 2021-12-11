@@ -65,8 +65,9 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
       50   => "<fg:green>%s</fg><fg:yellow>{$star}</fg> ",
       200  => '<fg:green>%s</fg>  ',
       500  => '<fg:yellow>%s</fg>  ',
-      INF  => '<fg:red>%s</fg>  ',
     );
+
+    $least_acceptable = '<fg:red>%s</fg>  ';
 
     $milliseconds = $seconds * 1000;
     $duration = $this->formatTime($seconds);
@@ -75,7 +76,8 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
         return phutil_console_format($formatting, $duration);
       }
     }
-    return phutil_console_format(end($acceptableness), $duration);
+
+    return phutil_console_format($least_acceptable, $duration);
   }
 
   private function formatTime($seconds) {

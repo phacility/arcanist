@@ -13,6 +13,7 @@ final class PhutilEmailAddress extends Phobject {
   private $domainName;
 
   public function __construct($email_address = null) {
+    $email_address = phutil_string_cast($email_address);
     $email_address = trim($email_address);
 
     $matches = null;
@@ -89,7 +90,7 @@ final class PhutilEmailAddress extends Phobject {
 
   public function getAddress() {
     $address = $this->localPart;
-    if (strlen($this->domainName)) {
+    if ($this->domainName !== null && strlen($this->domainName)) {
       $address .= '@'.$this->domainName;
     }
     return $address;

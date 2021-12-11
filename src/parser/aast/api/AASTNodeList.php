@@ -80,6 +80,7 @@ final class AASTNodeList
 
 /* -(  Countable  )---------------------------------------------------------- */
 
+  #[\ReturnTypeWillChange]
   public function count() {
     return count($this->ids);
   }
@@ -87,22 +88,27 @@ final class AASTNodeList
 
 /* -(  Iterator  )----------------------------------------------------------- */
 
+  #[\ReturnTypeWillChange]
   public function current() {
     return $this->list[$this->key()];
   }
 
+  #[\ReturnTypeWillChange]
   public function key() {
     return $this->ids[$this->pos];
   }
 
+  #[\ReturnTypeWillChange]
   public function next() {
     $this->pos++;
   }
 
+  #[\ReturnTypeWillChange]
   public function rewind() {
     $this->pos = 0;
   }
 
+  #[\ReturnTypeWillChange]
   public function valid() {
     return $this->pos < count($this->ids);
   }

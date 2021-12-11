@@ -769,7 +769,12 @@ final class PhutilArgumentParser extends Phobject {
         pht('There is no **%s** workflow.', $workflow_name));
     } else {
       $out[] = $this->indent($indent, $workflow->getExamples());
-      $out[] = $this->indent($indent, $workflow->getSynopsis());
+
+      $synopsis = $workflow->getSynopsis();
+      if ($synopsis !== null) {
+        $out[] = $this->indent($indent, $workflow->getSynopsis());
+      }
+
       if ($show_details) {
         $full_help = $workflow->getHelp();
         if ($full_help) {

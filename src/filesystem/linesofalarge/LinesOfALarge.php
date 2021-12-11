@@ -212,7 +212,7 @@ abstract class LinesOfALarge extends Phobject implements Iterator {
         if (strlen($this->buf)) {
           $this->num++;
           $this->line = $this->buf;
-          $this->buf = null;
+          $this->buf = '';
         } else {
           $this->valid = false;
         }
