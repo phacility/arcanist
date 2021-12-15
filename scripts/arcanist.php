@@ -424,6 +424,7 @@ try {
   $config->willRunWorkflow($command, $workflow);
   $workflow->willRunWorkflow();
   try {
+    $workflow->setDevxMetricsEnabled($configuration_manager->getConfigFromAnySource('devx.metrics'));
     $err = $workflow->run();
     $config->didRunWorkflow($command, $workflow, $err);
   } catch (Exception $e) {
