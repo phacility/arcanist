@@ -402,6 +402,19 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
     return $this;
   }
 
+  public function getCommitTS($commit_hash) {
+    list($err, $commit_ts) = $this->execManualLocal(
+      "show --no-patch --no-notes --pretty='%%ct' %s",
+      $commit_hash);
+
+    if ($err) {
+      throw new ArcanistUsageException(
+        pht("Failed to get commit ts for commit %s", $commit_hash));
+    }
+
+    return (int) $commit_ts;
+  }
+
   /**
    * Translates a symbolic commit (like "HEAD^") to a commit identifier.
    * @param string_symbol commit.
@@ -540,6 +553,23 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       throw new Exception(
         pht('Command %s failed: %s', 'git symbolic-ref', $stderr));
     }
+  }
+
+  public function getBranchCreationTS() {
+    list($err, $logs) = $this->execManualLocal(
+      "reflog --date=unix --pretty='%%gd' %s",
+      $this->getBranchName());
+
+    $logs_arr = preg_split("/\s+/", trim($logs));
+    preg_match("/\{(.*?)\}/", end($logs_arr), $matches);
+    $branch_time = $matches[1];
+
+    if ($err) {
+      throw new ArcanistUsageException(
+        pht('Failed to get branch creation ts.'));
+    }
+
+    return (int) $branch_time;
   }
 
   public function getRemoteURI() {

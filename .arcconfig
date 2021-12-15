@@ -1,5 +1,5 @@
 {
-  "phabricator.uri": "https://we.phorge.it/",
+  "phabricator.uri": "https://phabricator.robinhood.com/",
   "load": [
     "src/"
   ],
