@@ -80,6 +80,7 @@ abstract class ArcanistWorkflow extends Phobject {
   // LOCAL MODIFICATION
   private $not_accepted_message;
   private $build_failures_message;
+  private $devx_metrics_enabled;
   private $use_phlq;
   private $is_phlq;
   private $phlq_uri;
@@ -103,6 +104,15 @@ abstract class ArcanistWorkflow extends Phobject {
 
   final public function getBuildFailuresMessage() {
     return $this->build_failures_message;
+  }
+
+  final public function setDevxMetricsEnabled($enabled) {
+    $this->devx_metrics_enabled = $enabled;
+    return $this;
+  }
+
+  final public function getDevxMetricsEnabled() {
+    return $this->devx_metrics_enabled;
   }
 
   final public function setPhlqUri($url) {

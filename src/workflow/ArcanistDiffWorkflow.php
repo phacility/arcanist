@@ -604,55 +604,57 @@ EOTEXT
         $this->openURIsInBrowser(array($uri));
       }
 
-      try {
-        $ch = curl_init("https://devhooks.build.rhinternal.net/api/events/");
-
-        $repository_api = $this->getRepositoryAPI();
-        $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
-        $base_commit_sha = $repository_api->getBaseCommit();
-        $base_commit_ts = $repository_api->getCommitTS($base_commit_sha) * 1000;
-        $head_commit_sha = $repository_api->getHeadCommit();
-        $head_commit_ts = $repository_api->getCommitTS($head_commit_sha) * 1000;
-        $author = $this->getUserName();
-        $branch_name = $repository_api->getBranchName();
-        $hostname = gethostname();
-        $payload = json_encode(array(
-          "event_type" => "dev_branch_info",
-          "from" => "arc",
-          "events" => array(array(
-            "event_ts" => (int)(microtime(true)*1000),
-            "revision_id" => (int)$result_id,
-            "code_review_type" => "phab",
-            "branch_create_ts" => $branch_create_ts,
-            "arc_diff_ts" => $arc_diff_ts,
-            "base_commit_sha" => $base_commit_sha,
-            "base_commit_ts" => $base_commit_ts,
-            "head_commit_sha" => $head_commit_sha,
-            "head_commit_ts" => $head_commit_ts,
-            "author" => $author,
-            "branch_name" => $branch_name,
-            "hostname" => $hostname,
-          ))
-        ));
-
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_exec($ch);
-        if (!curl_errno($ch)) {
-          $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-          if (floor($http_code / 100) != 2) {
-            throw new ErrorException("Unexpected HTTP code: {$http_code}.\n");
+      if ($this->getDevxMetricsEnabled()) {
+        try {
+          $ch = curl_init("https://devhooks.build.rhinternal.net/api/events/");
+  
+          $repository_api = $this->getRepositoryAPI();
+          $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
+          $base_commit_sha = $repository_api->getBaseCommit();
+          $base_commit_ts = $repository_api->getCommitTS($base_commit_sha) * 1000;
+          $head_commit_sha = $repository_api->getHeadCommit();
+          $head_commit_ts = $repository_api->getCommitTS($head_commit_sha) * 1000;
+          $author = $this->getUserName();
+          $branch_name = $repository_api->getBranchName();
+          $hostname = gethostname();
+          $payload = json_encode(array(
+            "event_type" => "dev_branch_info",
+            "from" => "arc",
+            "events" => array(array(
+              "event_ts" => (int)(microtime(true)*1000),
+              "revision_id" => (int)$result_id,
+              "code_review_type" => "phab",
+              "branch_create_ts" => $branch_create_ts,
+              "arc_diff_ts" => $arc_diff_ts,
+              "base_commit_sha" => $base_commit_sha,
+              "base_commit_ts" => $base_commit_ts,
+              "head_commit_sha" => $head_commit_sha,
+              "head_commit_ts" => $head_commit_ts,
+              "author" => $author,
+              "branch_name" => $branch_name,
+              "hostname" => $hostname,
+            ))
+          ));
+  
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+          curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+          curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+          curl_exec($ch);
+          if (!curl_errno($ch)) {
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (floor($http_code / 100) != 2) {
+              throw new ErrorException("Unexpected HTTP code: {$http_code}.\n");
+            }
           }
+  
+          echo "Arcanist event sent to devhooks.\n";
+          curl_close($ch);
+        } catch (Exception $e) {
+          echo "Failed to send logging event to devhooks.";
+          echo " Caught exception: {$e->getMessage()}.";
+          echo " Please contact DevX team if the problem persists.\n";
+          curl_close($ch);
         }
-
-        echo "Arcanist event sent to devhooks.\n";
-        curl_close($ch);
-      } catch (Exception $e) {
-        echo "Failed to send logging event to devhooks.";
-        echo " Caught exception: {$e->getMessage()}.";
-        echo " Please contact DevX team if the problem persists.\n";
-        curl_close($ch);
       }
     }
 

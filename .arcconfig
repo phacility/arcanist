@@ -3,5 +3,6 @@
   "load": [
     "src/"
   ],
-  "history.immutable": false
+  "history.immutable": false,
+  "devx.metrics": true
 }
