@@ -348,12 +348,12 @@ EOTEXT
   }
 
   private function runRebaseToStable() {
-    # return if continue creating the diff, true or false
-    # Default not rebase before creating a diff, will switch to true after fully tested.
+    // return if continue creating the diff, true or false
+    // Default not rebase before creating a diff, will switch to true after fully tested.
     $do_rebase = false;
     if ($this->getArgument('rebase')) {
       $do_rebase = true;
-    } 
+    }
     if ($do_rebase) {
       echo "Running arc rebase... \n";
       $outputs = null;
@@ -607,7 +607,7 @@ EOTEXT
       if ($this->getDevxMetricsEnabled()) {
         try {
           $ch = curl_init("https://devhooks.build.rhinternal.net/api/events/");
-  
+
           $repository_api = $this->getRepositoryAPI();
           $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
           $base_commit_sha = $repository_api->getBaseCommit();
@@ -619,7 +619,7 @@ EOTEXT
           $hostname = gethostname();
           $payload = json_encode(array(
             "event_type" => "dev_branch_info",
-            "from" => "arc",
+            'source' => 'arc',
             "events" => array(array(
               "event_ts" => (int)(microtime(true)*1000),
               "revision_id" => (int)$result_id,
@@ -635,7 +635,7 @@ EOTEXT
               "hostname" => $hostname,
             ))
           ));
-  
+
           curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
           curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -646,7 +646,7 @@ EOTEXT
               throw new ErrorException("Unexpected HTTP code: {$http_code}.\n");
             }
           }
-  
+
           echo "Arcanist event sent to devhooks.\n";
           curl_close($ch);
         } catch (Exception $e) {
