@@ -622,7 +622,7 @@ EOTEXT
             'source' => 'arc',
             "events" => array(array(
               "event_ts" => (int)(microtime(true)*1000),
-              "revision_id" => (int)$result_id,
+              "revision_id" => $result_id,
               "code_review_type" => "phab",
               "branch_create_ts" => $branch_create_ts,
               "arc_diff_ts" => $arc_diff_ts,
@@ -633,7 +633,7 @@ EOTEXT
               "author" => $author,
               "branch_name" => $branch_name,
               "hostname" => $hostname,
-            ))
+            )),
           ));
 
           curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
