@@ -620,7 +620,7 @@ EOTEXT
             'source' => 'arc',
             "events" => array(array(
               "event_ts" => (int)(microtime(true)*1000),
-              "revision_id" => $result_id,
+              "revision_id" => strval($result_id),
               "code_review_type" => "phab",
               "branch_create_ts" => $branch_create_ts,
               "arc_diff_ts" => $arc_diff_ts,
@@ -637,11 +637,11 @@ EOTEXT
           curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
           curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-          curl_exec($ch);
+          $content = curl_exec($ch);
           if (!curl_errno($ch)) {
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (floor($http_code / 100) != 2) {
-              throw new ErrorException("Unexpected HTTP code: {$http_code}.\n");
+              throw new ErrorException("Unexpected HTTP code: {$http_code}, {$content}");
             }
           }
 
