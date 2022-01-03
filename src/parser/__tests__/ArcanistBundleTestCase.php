@@ -239,7 +239,7 @@ EODIFF;
         break;
       case '39c8e7dd3914edff087a6214f0cd996ad08e5b3d':
         // "Mark koan as +x."
-        // Primarily a test against a recusive synthetic hunk construction bug.
+        // Primarily a test against a recursive synthetic hunk construction bug.
         $this->assertEqual(1, count($changes));
 
         $c = $changes['koan'];

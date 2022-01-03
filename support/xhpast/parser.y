@@ -187,8 +187,8 @@ static void yyerror(void* yyscanner, void* _, const char* error) {
 %token T_DOLLAR_OPEN_CURLY_BRACES /* unused in XHP: `${` in `"${foo}"` */
 %token T_CURLY_OPEN /* unused in XHP: `{$` in `"{$foo}"` */
 %token T_PAAMAYIM_NEKUDOTAYIM
-%token T_BINARY_DOUBLE /* unsused in XHP: `b"` in `b"foo"` */
-%token T_BINARY_HEREDOC /* unsused in XHP: `b<<<` in `b<<<FOO` */
+%token T_BINARY_DOUBLE /* unused in XHP: `b"` in `b"foo"` */
+%token T_BINARY_HEREDOC /* unused in XHP: `b<<<` in `b<<<FOO` */
 %token T_NAMESPACE
 %token T_NS_C
 %token T_DIR

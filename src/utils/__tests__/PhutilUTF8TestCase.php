@@ -733,7 +733,7 @@ final class PhutilUTF8TestCase extends PhutilTestCase {
       "\xE2\x98" => array(
         false,
         false,
-        pht('Partial BMP cahracter.'),
+        pht('Partial BMP character.'),
       ),
     );
 

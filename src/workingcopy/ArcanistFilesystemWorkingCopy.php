@@ -18,7 +18,7 @@ final class ArcanistFilesystemWorkingCopy
   }
 
   public function getProjectConfigurationFilePath() {
-    // We don't support project-level configuration for "filesytem" working
+    // We don't support project-level configuration for "filesystem" working
     // copies because scattering random ".arcconfig" files around the
     // filesystem and having them affect program behavior is silly.
     return null;

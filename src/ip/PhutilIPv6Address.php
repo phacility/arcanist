@@ -31,7 +31,7 @@ final class PhutilIPv6Address extends PhutilIPAddress {
     if (count($parts) < 3) {
       throw new Exception(
         pht(
-          'IP address "%s" is not properly formated: it has too few '.
+          'IP address "%s" is not properly formatted: it has too few '.
           'parts. Expected a minimum of 2 colons, like "%s".',
           $str,
           '::1'));
@@ -53,7 +53,7 @@ final class PhutilIPv6Address extends PhutilIPAddress {
         throw new Exception(
           pht(
             'IP address "%s" is not properly formatted: an address with '.
-            'omitted leading sements must begin with "::".',
+            'omitted leading segments must begin with "::".',
             $str));
       }
     } else if (last($parts) === '') {

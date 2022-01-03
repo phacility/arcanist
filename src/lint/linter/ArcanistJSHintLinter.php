@@ -120,7 +120,7 @@ final class ArcanistJSHintLinter extends ArcanistExternalLinter {
     } catch (PhutilJSONParserException $ex) {
       // Something went wrong and we can't decode the output. Exit abnormally.
       throw new PhutilProxyException(
-        pht('JSHint returned unparseable output.'),
+        pht('JSHint returned unparsable output.'),
         $ex);
     }
 

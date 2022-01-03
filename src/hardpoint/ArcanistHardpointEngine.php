@@ -156,7 +156,7 @@ final class ArcanistHardpointEngine
       }
 
       // If we made progress by directly executing requests, continue
-      // excuting them until we stop making progress. We want to queue all
+      // executing them until we stop making progress. We want to queue all
       // reachable futures before we wait on futures.
 
       if ($any_progress) {

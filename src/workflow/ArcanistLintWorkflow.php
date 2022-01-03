@@ -173,7 +173,7 @@ EOTEXT
     // minor warning about whitespace or spelling elsewhere in the file, you
     // don't need to correct it.
 
-    // In other modes, notably "arc lint <file>", this is not the defualt
+    // In other modes, notably "arc lint <file>", this is not the default
     // behavior. If you ask us to lint a specific file, we show you all the
     // lint messages in the file.
 

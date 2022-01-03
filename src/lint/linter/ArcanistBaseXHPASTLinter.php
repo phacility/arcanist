@@ -153,7 +153,7 @@ abstract class ArcanistBaseXHPASTLinter extends ArcanistFutureLinter {
    * Get a path's tree from the responsible linter.
    *
    * @param   string           Path to retrieve tree for.
-   * @return  XHPASTTree|null  Tree, or null if unparseable.
+   * @return  XHPASTTree|null  Tree, or null if unparsable.
    * @task sharing
    */
   final protected function getXHPASTTreeForPath($path) {

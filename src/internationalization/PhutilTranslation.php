@@ -60,7 +60,7 @@ abstract class PhutilTranslation extends Phobject {
    * translation map.
    *
    * @param string Locale code, like "en_US".
-   * @return map<string, wild> Map of all avialable translations.
+   * @return map<string, wild> Map of all available translations.
    */
   public static function getTranslationMapForLocale($locale_code) {
     $locale = PhutilLocale::loadLocale($locale_code);

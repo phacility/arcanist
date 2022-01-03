@@ -92,7 +92,7 @@ final class PhutilPHPFragmentLexer extends PhutilLexer {
       array('(#|//)', 'c', 'line_comment'),
 
       // This prevents the doc comment rule from over-consuming when we see
-      // an empty coment.
+      // an empty comment.
       array('/\\*\\*/', 'cm'),
       array('/\\*\\*.*?\\*/', 'sd'),
       array('/\\*.*?\\*/', 'cm'),

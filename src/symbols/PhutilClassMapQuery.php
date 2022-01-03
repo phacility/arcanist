@@ -114,7 +114,7 @@ final class PhutilClassMapQuery extends Phobject {
    *     );
    *   }
    *
-   * This allows multiple entires in the final map to share an entire
+   * This allows multiple entries in the final map to share an entire
    * implementation, rather than requiring that they each have their own unique
    * subclass.
    *

@@ -26,7 +26,7 @@ from mercurial import (
 _ = i18n._
 cmdtable = {}
 
-# Older veresions of Mercurial (~4.7) moved the command function and the
+# Older versions of Mercurial (~4.7) moved the command function and the
 # remoteopts object to different modules. Using try/except here to attempt
 # allowing this module to load properly, despite whether individual commands
 # will work properly on older versions of Mercurial or not.

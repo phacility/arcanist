@@ -943,7 +943,7 @@ final class ArcanistDiffParser extends Phobject {
         if (strlen(rtrim($line, "\r\n"))) {
           $char = $line[0];
         } else {
-          // Normally, we do not encouter empty lines in diffs, because
+          // Normally, we do not encounter empty lines in diffs, because
           // unchanged lines have an initial space. However, in Git, with
           // the option `diff.suppress-blank-empty` set, unchanged blank lines
           // emit as completely empty. If we encounter a completely empty line,

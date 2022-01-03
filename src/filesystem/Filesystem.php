@@ -256,7 +256,7 @@ final class Filesystem extends Phobject {
    * @param string  File path to copy from.  This file must exist and be
    *                readable, or an exception will be thrown.
    * @param string  File path to copy to.  If a file exists at this path
-   *                already, it wll be overwritten.
+   *                already, it will be overwritten.
    *
    * @task  file
    */

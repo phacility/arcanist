@@ -44,7 +44,7 @@ function xsprintf_git($userdata, &$pattern, &$pos, &$value, &$length) {
       // To resolve this, we reject any ref selector which begins with "-".
       // These selectors are never valid anyway, so there is no loss of overall
       // correctness. It would be more desirable to pass them to Git in a way
-      // that guarantees Git inteprets the string as a ref selector, but it
+      // that guarantees Git interprets the string as a ref selector, but it
       // appears that no mechanism exists to allow this.
 
       if (preg_match('(^-)', $value)) {

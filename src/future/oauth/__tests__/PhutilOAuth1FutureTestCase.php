@@ -68,7 +68,7 @@ final class PhutilOAuth1FutureTestCase extends PhutilTestCase {
         pht('Required "openssl" extension is not installed.'));
     }
 
-    // NOTE: This is an emprically example against JIRA v6.0.6, in that the
+    // NOTE: This is an empirical example against JIRA v6.0.6, in that the
     // code seems to work when actually authing. It primarily serves as a check
     // of the RSA-SHA1 signature method.
 

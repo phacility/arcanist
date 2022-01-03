@@ -113,7 +113,7 @@ type="text/css"?>
             <ulist>
                 <item><p>The link is expressed at one of its ends (similar to the <code>A</code> element in some document)</p></item>
                 <item><p>Users can only initiate travel from that end to the other</p></item>
-                <item><p>The link's effect on windows, frames, go-back lists, stylesheets in use, and so on is mainly determined by browsers, not by the link itself. For example, traveral of <code>A</code> links normally replaces the current view, perhaps with a user option to open a new window.</p></item>
+                <item><p>The link's effect on windows, frames, go-back lists, stylesheets in use, and so on is mainly determined by browsers, not by the link itself. For example, traversal of <code>A</code> links normally replaces the current view, perhaps with a user option to open a new window.</p></item>
                 <item><p>The link goes to only one destination (although a server may have great freedom in finding or dynamically creating that destination).</p></item>
             </ulist>
         </p>
@@ -307,7 +307,7 @@ xlink:title="The Xlink Working Draft"&gt;The XLink Working Draft.&lt;/A&gt;</eg>
         <eg>&lt;xlink:simple href="http://www.w3.org/TR/wd-xlink/"
 title="The XLink Working Draft"&gt;The XLink Working Draft&lt;/xlink:simple&gt;</eg>
     Any arbitrary element can be made into an XLink by using the <code>xlink:type</code> attribute. And, of course, the explicit XLink elements may be used, as well. This document will go on to describe the linking attributes that are associated with linking elements. It may be assumed by the reader that these attributes would require the <code>xlink</code> namespace prefix if they existed within an arbitrary element, or that they may be used directly if they exist within an explicit Xlink element.</p>
-        <!-- heavily modified this section to accomodate namespace-aware link recognition - bent -->
+        <!-- heavily modified this section to accommodate namespace-aware link recognition - bent -->
 </div1>
 
 <!-- Rewrote this entire section. - bent -->
