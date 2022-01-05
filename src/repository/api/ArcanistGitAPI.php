@@ -548,7 +548,15 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
       return $branch;
     } else if ($err === 1) {
       // Exit status 1 with --quiet indicates that HEAD is detached.
-      return null;
+      // Try to find the branch name during a rebase.
+      list($err, $branches) = $this->execManualLocal(
+        'branch --list');
+      $has_match = preg_match("/rebasing\\s*([^\\)]*)/", $branches, $matches);
+      if ($has_match) {
+        return $matches[1];
+      } else {
+        return null;
+      }
     } else {
       throw new Exception(
         pht('Command %s failed: %s', 'git symbolic-ref', $stderr));
