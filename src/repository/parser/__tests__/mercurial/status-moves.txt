@@ -1,6 +1,0 @@
-M changed_file
-A moved_file
-  move_source
-R moved_source
-A copied_file
-  copy_source

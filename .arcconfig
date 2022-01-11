@@ -1,7 +1,4 @@
 {
-  "phabricator.uri": "https://secure.phabricator.com/",
-  "load": [
-    "src/"
-  ],
-  "history.immutable": false
+  "phabricator.uri" : "https://phabricator.eva.cab"
 }
+

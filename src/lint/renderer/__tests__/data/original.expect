@@ -1,7 +1,0 @@
->>> Lint for path/to/example.c:
-
-
-   Warning  (WARN123) Lint Warning
-    Consider this.
-
-    >>>        1 He >should of< known.

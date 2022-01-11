@@ -1,9 +1,0 @@
-<?php
-namespace X {
-  namespace Y {
-    namespace Z {}
-  }
-}
-~~~~~~~~~~
-error:3:3:XHP90:Nested `namespace` Statements
-error:4:5:XHP90:Nested `namespace` Statements

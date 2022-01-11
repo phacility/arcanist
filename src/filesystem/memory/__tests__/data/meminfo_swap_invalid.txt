@@ -1,2 +1,0 @@
-MemTotal:        8140924 kB
-SwapTotal:       aardvark kB

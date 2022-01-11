@@ -1,5 +1,0 @@
-<?php
-
-// This is quite odd, but seems somewhat reasonable.
-MyClass/* comment */::/* another comment */myMethod();
-~~~~~~~~~~

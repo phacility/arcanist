@@ -1,4 +1,0 @@
-def hello()
-  puts "hello world"
-~~~~~~~~~~
-error:2::RUBY:Syntax Error

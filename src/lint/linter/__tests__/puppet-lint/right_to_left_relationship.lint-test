@@ -1,3 +1,0 @@
-Service['httpd'] <- Package['httpd']
-~~~~~~~~~~
-warning:1:18

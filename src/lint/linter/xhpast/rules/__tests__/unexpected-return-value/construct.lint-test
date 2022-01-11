@@ -1,8 +1,0 @@
-<?php
-class SomeClass {
-  public function __construct() {
-    return null;
-  }
-}
-~~~~~~~~~~
-warning:4:5:XHP92:Unexpected `return` Value

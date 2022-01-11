@@ -1,6 +1,0 @@
-<?php
-
-$a = range(1, 2);
-each($a);
-~~~~~~~~~~
-error:4:1:XHP133

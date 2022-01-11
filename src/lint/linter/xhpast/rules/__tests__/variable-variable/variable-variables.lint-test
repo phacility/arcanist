@@ -1,6 +1,0 @@
-<?php
-
-$$foo;
-$obj->$bar; // okay
-~~~~~~~~~~
-error:3:1:XHP3:Use of Variable

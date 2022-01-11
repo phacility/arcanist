@@ -1,7 +1,0 @@
-<?php
-
-function f() {
-  $this = "cannot be re-assigned";
-}
-~~~~~~~~~
-error:4::PHP2:Fatal Error

@@ -1,2 +1,0 @@
-default                    15101:a21ccf4412d5
-stable                     15095:ec222a29bdf0 (inactive)

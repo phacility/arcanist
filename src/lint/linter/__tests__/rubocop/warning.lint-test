@@ -1,7 +1,0 @@
-# frozen_string_literal: true
-
-def hello(unused)
-  puts 'hi'
-end
-~~~~~~~~~
-warning:3:11

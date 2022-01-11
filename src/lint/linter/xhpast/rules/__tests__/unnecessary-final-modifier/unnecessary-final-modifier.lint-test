@@ -1,9 +1,0 @@
-<?php
-
-final class Foo {
-  public function bar() {}
-  final public function baz() {}
-}
-$c = new class {};
-~~~~~~~~~~
-advice:5:3:XHP55:Unnecessary Final Modifier

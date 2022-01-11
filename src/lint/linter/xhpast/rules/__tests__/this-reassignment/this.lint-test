@@ -1,4 +1,0 @@
-<?php
-$this = null;
-~~~~~~~~~~
-error:2:1:XHP91:`$this` Reassignment

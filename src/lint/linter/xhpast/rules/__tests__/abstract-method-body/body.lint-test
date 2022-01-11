@@ -1,6 +1,0 @@
-<?php
-abstract class SomeClass {
-  abstract public function someMethod() {}
-}
-~~~~~~~~~~
-error:3:41:XHP108:`abstract` Method Cannot Contain Body

@@ -1,9 +1,0 @@
-<?php
-
-define('PONY', 'cute');
-define($pony, 'cute');
-define('PONY', $cute);
-define($pony, $cute);
-~~~~~~~~~~
-error:4:8:XHP12:Dynamic `define`
-error:6:8:XHP12:Dynamic `define`

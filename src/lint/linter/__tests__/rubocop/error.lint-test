@@ -1,4 +1,0 @@
-def hello
-  puts 'world'
-~~~~~~~~~~
-error:3:1

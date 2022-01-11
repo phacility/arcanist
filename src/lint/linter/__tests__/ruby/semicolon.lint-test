@@ -1,4 +1,0 @@
-def asdf()
-  puts "semicolons are ok";
-end
-~~~~~~~~~~
