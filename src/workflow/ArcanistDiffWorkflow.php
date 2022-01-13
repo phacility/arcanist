@@ -433,6 +433,11 @@ EOTEXT
         'help' => pht(
           'After creating a diff or revision, open it in a web browser.'),
       ),
+      // UBER CODE
+      'nojira' => array(
+        'help' => pht('Do not run Jira checks and suggestions.'),
+      ),
+      // UBER CODE END
       '*' => 'paths',
       'head' => array(
         'param' => 'commit',
@@ -2164,6 +2169,10 @@ EOTEXT
   // check and if necessary prompts to enter jira tasks
   private function attachJiraIssues(&$revision, array $diff_spec,
     ArcanistDifferentialCommitMessage $message = null) {
+
+    if ($this->getArgument('nojira')) {
+      return;
+    }
 
     // check if message already has jira issues
     if ($message->getFieldValue('uber-jira.issues')) {
