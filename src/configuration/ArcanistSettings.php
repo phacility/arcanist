@@ -291,6 +291,13 @@ final class ArcanistSettings extends Phobject {
         'help' => pht('Message to show in prompt for #autoland'),
         'default' => 'Autoland after builds pass and reviewers approve?',
       ),
+      'uber.differential.autoland-if-building' => array(
+        'type' => 'bool',
+        'help' => pht(
+          'Add #autoland tag if user decides to proceed landing with ongoing '.
+          'builds'),
+        'default' => false,
+      ),
     );
   }
 

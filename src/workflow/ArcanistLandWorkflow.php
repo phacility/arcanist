@@ -32,6 +32,11 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   private $revision;
   private $messageFile;
 
+  /**
+   * Variable is set to true if there are ongoing builds.
+   */
+  private $uberOngoingBuildsExist = false;
+
   const REFTYPE_BRANCH = 'branch';
   const REFTYPE_BOOKMARK = 'bookmark';
 
@@ -336,11 +341,12 @@ EOTEXT
     $engine = null;
     $uberShadowEngine = null;
     if ($this->isGit && !$this->isGitSvn) {
-      $engine = new ArcanistGitLandEngine();
       if ($this->shouldUseSubmitQueue) {
           $engine = new UberArcanistSubmitQueueEngine(
             $this->submitQueueClient,
             $this->getConduit());
+      } else {
+        $engine = new ArcanistGitLandEngine();
       }
     }
 
@@ -1522,6 +1528,9 @@ EOTEXT
    * before landing if it does.
    */
   private function checkForBuildables($diff_phid) {
+    // Reset ongoing builds value.
+    $this->uberOngoingBuildsExist = false;
+
     // Try to use the more modern check which respects the "Warn on Land"
     // behavioral flag on build plans if we can. This newer check won't work
     // unless the server is running code from March 2019 or newer since the
@@ -1573,6 +1582,7 @@ EOTEXT
         $message = pht(
           'Harbormaster is still building the active diff for this revision.');
         $prompt = pht('Land revision anyway, despite ongoing build?');
+        $this->uberOngoingBuildsExist = true;
         break;
       case 'failed':
         $message = pht(
@@ -1622,13 +1632,20 @@ EOTEXT
     }
   }
 
+  /**
+   * Returns true if builds are fine. False if land procedure should be stopped.
+   */
   public function uberBuildEngineMessage(UberArcanistSubmitQueueEngine $engine) {
     // TODO: This is oh-so-gross because the below method is gross.
     $this->buildEngineMessage($engine);
     $engine->setRevision($this->revision);
+    return !$this->uberOngoingBuildsExist;
   }
 
   private function checkForBuildablesWithPlanBehaviors($diff_phid) {
+    // Reset ongoing builds value.
+    $this->uberOngoingBuildsExist = false;
+
     // TODO: These queries should page through all results instead of fetching
     // only the first page, but we don't have good primitives to support that
     // in "master" yet.
@@ -1751,6 +1768,7 @@ EOTEXT
         pht('ONGOING BUILDS'),
         pht(
           'Harbormaster is still building the active diff for this revision:'));
+      $this->uberOngoingBuildsExist = true;
       $prompt = pht('Land revision anyway, despite ongoing build?');
     }
 

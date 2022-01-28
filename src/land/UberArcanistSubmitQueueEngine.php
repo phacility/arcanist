@@ -12,6 +12,7 @@ class UberArcanistSubmitQueueEngine
   private $tbr;
   private $submitQueueTags;
   private $usesArcFlow;
+  private $autolandProjectPhid = 'PHID-PROJ-u4i3446wedyolppkckbp'; // UBER CODE
 
   public function execute() {
     $this->verifySourceAndTargetExist();
@@ -82,13 +83,101 @@ class UberArcanistSubmitQueueEngine
       $api->execxLocal('checkout %s --', $this->getSourceRef());
       $c = $this->getBuildMessageCallback();
       if (!empty($c)) {
-        call_user_func($c, $this);
+        $builds_fine = call_user_func($c, $this);
+        $revision = $this->getRevision();
+        if ($revision && !$builds_fine) {
+          if ($this->tagWithAutoland($revision)) {
+            exit(0);
+          }
+        }
       } else {
         $message = pht(
           "Revision and callback empty");
         throw new ArcanistUsageException($message);
       }
     }
+  }
+
+  /**
+   * Validate if autoland tag should be added to the revision and actual landing
+   * procedure should be stopped. Return false if tagging was skipped.
+   */
+  private function tagWithAutoland($revision) {
+    // Check if explicit flags are provided
+    if (true === $this->getTbr()) {
+      return false;
+    }
+
+    // check if we have TTY otherwise it is probably automation...
+    try {
+      phutil_console_require_tty();
+    } catch (PhutilConsoleStdinNotInteractiveException $e) {
+      return false;
+    }
+
+    // do not execute check for non uber Phabricator though general
+    // recommendation would be to checkout upstream arcanist
+    if (strpos($this->getConduit()->getHost(), "uberinternal.com")===false) {
+      return false;
+    }
+
+    // Skip if SubmitQueue is not enabled
+    $workflow = $this->getWorkflow();
+    $usesSubmitQueue = nonempty(
+      $workflow->getConfigFromAnySource('uber.land.submitqueue.enable'),
+      false
+    );
+
+    if (!$usesSubmitQueue) {
+      return false;
+    }
+
+    $taggingEnabled = nonempty(
+      $workflow->getConfigFromAnySource(
+        'uber.differential.autoland-if-building'),
+      false
+    );
+
+    if (!$taggingEnabled) {
+      return false;
+    }
+
+    // Skip if summary already has #autoland or BREAKGLASS
+    $summary = idx($revision, 'summary');
+    if ($summary !== null) {
+      $hasAutolandTag = (bool)preg_match('/\b#autoland\b/i', $summary);
+      $hasBreakglass = (bool)preg_match('/\bBREAKGLASS\b/i', $summary);
+      if ($hasAutolandTag || $hasBreakglass) {
+        return false;
+      }
+    }
+
+    $this
+      ->getConduit()
+      ->callMethodSynchronous('differential.revision.edit',
+      array(
+        'objectIdentifier' => $revision['id'],
+        'transactions' => array(
+          array(
+            'type'  => 'projects.add',
+            'value' => array($this->autolandProjectPhid),
+          ),
+        ),
+    ));
+
+    $this->writeInfo(
+      pht('LANDING'),
+      pht('There are ongoing build(s) for this revision. #autoland tag was ' .
+      'added to the revision to land it automatically after builds pass.'
+      )
+    );
+    $this->writeInfo(
+      pht('LANDING'),
+      pht('During emergency situation add BREAKGLASS keyword to revision '.
+        'description via Phabricator UI and click "Land to SubmitQueue" link.')
+    );
+
+    return true;
   }
 
   protected function pushChangeToSubmitQueue() {
