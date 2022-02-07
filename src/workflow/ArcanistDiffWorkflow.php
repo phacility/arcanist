@@ -638,18 +638,19 @@ EOTEXT
           curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
           $content = curl_exec($ch);
-          if (!curl_errno($ch)) {
+          if (curl_errno($ch)) {
+            throw new ErrorException('Curl error: ' . curl_error($ch));
+          } else {
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (floor($http_code / 100) != 2) {
               throw new ErrorException("Unexpected HTTP code: {$http_code}, {$content}");
             }
+            echo "Arcanist event sent to devhooks.\n";
           }
-
-          echo "Arcanist event sent to devhooks.\n";
           curl_close($ch);
         } catch (Exception $e) {
           echo "Failed to send logging event to devhooks.";
-          echo " Caught exception: {$e->getMessage()}.";
+          echo " Caught exception: {$e}.";
           echo " Please contact DevX team if the problem persists.\n";
           curl_close($ch);
         }
