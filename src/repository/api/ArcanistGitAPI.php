@@ -565,7 +565,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getBranchCreationTS() {
     list($err, $logs) = $this->execManualLocal(
-      "reflog --date=unix --pretty='%%gd' %s",
+      "reflog --date=unix --pretty='%%gd' %s --",
       $this->getBranchName());
 
     $logs_arr = preg_split("/\s+/", trim($logs));

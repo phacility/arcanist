@@ -652,7 +652,7 @@ EOTEXT
           curl_close($ch);
         } catch (Exception $e) {
           echo "Failed to send logging event to devhooks.";
-          echo " Caught exception: {$e}.";
+          echo " Caught exception: {$e->getMessage()}.";
           echo " Please contact DevX team if the problem persists.\n";
           curl_close($ch);
         }
