@@ -404,7 +404,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function getCommitTS($commit_hash) {
     list($err, $commit_ts) = $this->execManualLocal(
-      "show --no-patch --no-notes --pretty='%%ct' %s",
+      "show --no-patch --no-notes --pretty='%%at' %s",
       $commit_hash);
 
     if ($err) {
