@@ -337,6 +337,9 @@ EOTEXT
       ),
       'rebase' => array(
         'help'  => pht('Rebase to stable before creating diff.'),
+      ),
+      'no-rebase' => array(
+        'help'  => pht('Rebase to stable before creating diff.'),
       )
     );
 
