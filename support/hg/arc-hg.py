@@ -39,11 +39,16 @@ except:
   command = cmdutil.command(cmdtable)
 
 try:
-  if "remoteopts" in cmdutil:
-    remoteopts = cmdutil.remoteopts
+  remoteopts = cmdutil.remoteopts
 except:
   from mercurial import commands
   remoteopts = commands.remoteopts
+
+try:
+  parseurl = hg.parseurl
+except:
+  from mercurial import utils
+  parseurl = utils.urlutil.parseurl
 
 @command(
   b'arc-amend',
@@ -268,7 +273,7 @@ def remotemarkers(ui, repo, source, opts):
 
   markers = []
 
-  source, branches = hg.parseurl(ui.expandpath(source))
+  source, branches = parseurl(ui.expandpath(source))
   remote = hg.peer(repo, opts, source)
 
   with remote.commandexecutor() as e:
