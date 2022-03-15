@@ -43,6 +43,9 @@ EOTEXT
       'no-lint' => array(
         'help' => pht('Do not run lint.'),
       ),
+      'noautoland' => array(
+        'help' => pht('Do not autoland this change (Skips interactive prompt)'),
+      ),
       'plan-changes' => array(
         'help' => pht(
           'Create or update a revision without requesting a code review.'),
@@ -131,6 +134,9 @@ EOTEXT
       if ($this->getArgument('excuse')) {
         $extra_diff_args[] = '--excuse';
         $extra_diff_args[] = $this->getArgument('excuse');
+      }
+      if ($this->getArgument('noautoland')) {
+        $extra_diff_args[] = '--noautoland';
       }
 
       $this->runRevisionSync($extra_diff_args);
