@@ -229,7 +229,13 @@ final class UberSingleScriptAndRegexLinter extends ArcanistLinter {
         continue;
       }
 
-      list($path, $line, $char) = $this->getMatchPathLineAndChar($match);
+      $path = idx($match, 'file');
+      if (strlen($path)) {
+          list($line, $char) = $this->getMatchLineAndChar($match, $path);
+      } else {
+          $line = null;
+          $char = null;
+      }
 
       $dict = array(
         'path'        => $path,
@@ -313,12 +319,7 @@ final class UberSingleScriptAndRegexLinter extends ArcanistLinter {
    *
    * @task parse
    */
-  private function getMatchPathLineAndChar(array $match) {
-    $path = idx($match, 'path');
-    if (!strlen($path)) {
-      return array(null, null, null);
-    }
-
+  private function getMatchLineAndChar(array $match, $path) {
     if (!empty($match['offset'])) {
       list($line, $char) = $this->getEngine()->getLineAndCharFromOffset(
         idx($match, 'file', $path),
