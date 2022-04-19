@@ -334,10 +334,10 @@ EOTEXT
         ),
       ),
       'rebase' => array(
-        'help'  => pht('Rebase to stable before creating diff.'),
+        'help'  => pht('Rebase to stable before creating diff, default behavior when arc diff.'),
       ),
       'no-rebase' => array(
-        'help'  => pht('Rebase to stable before creating diff.'),
+        'help'  => pht('Do not rebase to stable before creating diff.'),
       )
     );
 
@@ -350,10 +350,10 @@ EOTEXT
 
   private function runRebaseToStable() {
     // return if continue creating the diff, true or false
-    // Default not rebase before creating a diff, will switch to true after fully tested.
-    $do_rebase = false;
-    if ($this->getArgument('rebase')) {
-      $do_rebase = true;
+    // Default to rebase before creating a diff.
+    $do_rebase = true;
+    if ($this->getArgument('no-rebase')) {
+      $do_rebase = false;
     }
     if ($do_rebase) {
       echo "Running arc rebase... \n";
