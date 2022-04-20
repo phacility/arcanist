@@ -1000,4 +1000,74 @@ final class PhutilUtilsTestCase extends PhutilTestCase {
     }
   }
 
+  public function testEmptyStringMethods() {
+
+    $uri = new PhutilURI('http://example.org/');
+
+    $map = array(
+      array(null, false, false, false, 'literal null'),
+      array('', false, false, false, 'empty string'),
+      array('x', true, true, true, 'nonempty string'),
+      array(false, null, null, null, 'bool'),
+      array(1, null, null, true, 'integer'),
+      array($uri, null, true, true, 'uri object'),
+      array(2.5, null, null, true, 'float'),
+      array(array(), null, null, null, 'array'),
+      array((object)array(), null, null, null, 'object'),
+    );
+
+    foreach ($map as $test_case) {
+      $input = $test_case[0];
+
+      $expect_string = $test_case[1];
+      $expect_stringlike = $test_case[2];
+      $expect_scalar = $test_case[3];
+
+      $test_name = $test_case[4];
+
+      $this->executeEmptyStringTest(
+        $input,
+        $expect_string,
+        'phutil_nonempty_string',
+        $test_name);
+
+      $this->executeEmptyStringTest(
+        $input,
+        $expect_stringlike,
+        'phutil_nonempty_stringlike',
+        $test_name);
+
+      $this->executeEmptyStringTest(
+        $input,
+        $expect_scalar,
+        'phutil_nonempty_scalar',
+        $test_name);
+    }
+
+  }
+
+  private function executeEmptyStringTest($input, $expect, $call, $name) {
+    $name = sprintf('%s(<%s>)', $call, $name);
+
+    $caught = null;
+    try {
+      $actual = call_user_func($call, $input);
+    } catch (Exception $ex) {
+      $caught = $ex;
+    } catch (Throwable $ex) {
+      $caught = $ex;
+    }
+
+    if ($expect === null) {
+      $expect_exceptions = array('InvalidArgumentException');
+    } else {
+      $expect_exceptions = false;
+    }
+
+    $this->assertCaught($expect_exceptions, $caught, $name);
+    if (!$caught) {
+      $this->assertEqual($expect, $actual, $name);
+    }
+  }
+
 }

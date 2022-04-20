@@ -2094,3 +2094,128 @@ function phutil_raise_preg_exception($function, array $argv) {
 
   throw new PhutilRegexException($message);
 }
+
+
+/**
+ * Test if a value is a nonempty string.
+ *
+ * The value "null" and the empty string are considered empty; all other
+ * strings are considered nonempty.
+ *
+ * This method raises an exception if passed a value which is neither null
+ * nor a string.
+ *
+ * @param Value to test.
+ * @return bool True if the parameter is a nonempty string.
+ */
+function phutil_nonempty_string($value) {
+  if ($value === null) {
+    return false;
+  }
+
+  if ($value === '') {
+    return false;
+  }
+
+  if (is_string($value)) {
+    return true;
+  }
+
+  throw new InvalidArgumentException(
+    pht(
+      'Call to phutil_nonempty_string() expected null or a string, got: %s.',
+      phutil_describe_type($value)));
+}
+
+
+/**
+ * Test if a value is a nonempty, stringlike value.
+ *
+ * The value "null", the empty string, and objects which have a "__toString()"
+ * method which returns the empty string are empty.
+ *
+ * Other strings, and objects with a "__toString()" method that returns a
+ * string other than the empty string are considered nonempty.
+ *
+ * This method raises an exception if passed any other value.
+ *
+ * @param Value to test.
+ * @return bool True if the parameter is a nonempty, stringlike value.
+ */
+function phutil_nonempty_stringlike($value) {
+  if ($value === null) {
+    return false;
+  }
+
+  if ($value === '') {
+    return false;
+  }
+
+  if (is_string($value)) {
+    return true;
+  }
+
+  if (is_object($value)) {
+    try {
+      $string = phutil_string_cast($value);
+      return phutil_nonempty_string($string);
+    } catch (Exception $ex) {
+      // Continue below.
+    } catch (Throwable $ex) {
+      // Continue below.
+    }
+  }
+
+  throw new InvalidArgumentException(
+    pht(
+      'Call to phutil_nonempty_stringlike() expected a string or stringlike '.
+      'object, got: %s.',
+      phutil_describe_type($value)));
+}
+
+
+/**
+ * Test if a value is a nonempty, scalar value.
+ *
+ * The value "null", the empty string, and objects which have a "__toString()"
+ * method which returns the empty string are empty.
+ *
+ * Other strings, objects with a "__toString()" method which returns a
+ * string other than the empty string, integers, and floats are considered
+ * scalar.
+ *
+ * This method raises an exception if passed any other value.
+ *
+ * @param Value to test.
+ * @return bool True if the parameter is a nonempty, scalar value.
+ */
+function phutil_nonempty_scalar($value) {
+  if ($value === null) {
+    return false;
+  }
+
+  if ($value === '') {
+    return false;
+  }
+
+  if (is_string($value) || is_int($value) || is_float($value)) {
+    return true;
+  }
+
+  if (is_object($value)) {
+    try {
+      $string = phutil_string_cast($value);
+      return phutil_nonempty_string($string);
+    } catch (Exception $ex) {
+      // Continue below.
+    } catch (Throwable $ex) {
+      // Continue below.
+    }
+  }
+
+  throw new InvalidArgumentException(
+    pht(
+      'Call to phutil_nonempty_scalar() expected: a string; or stringlike '.
+      'object; or int; or float. Got: %s.',
+      phutil_describe_type($value)));
+}
