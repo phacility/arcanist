@@ -51,9 +51,9 @@ EOTEXT
       if (!$is_git) {
         throw new PhutilArgumentUsageException(
           pht(
-            'The "arc upgrade" workflow uses "git pull" to upgrade, but '.
-            'the "arcanist/" directory  (in "%s") is not a Git working '.
-            'copy. You must leave "arcanist/" as a Git working copy to '.
+            'The "upgrade" workflow uses "git pull" to upgrade, but '.
+            'the software directory (in "%s") is not a Git working '.
+            'copy. You must leave this directory as a Git working copy to '.
             'use "arc upgrade".',
             $root));
       }

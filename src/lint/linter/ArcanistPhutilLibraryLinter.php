@@ -304,9 +304,9 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
             $details = pht(
               "Common causes are:\n".
               "\n".
-              "  - Your copy of Arcanist is out of date.\n".
+              "  - Your copy of %s is out of date.\n".
               "    This is the most common cause.\n".
-              "    Update this copy of Arcanist:\n".
+              "    Update this copy of %s:\n".
               "\n".
               "      %s\n".
               "\n".
@@ -324,6 +324,8 @@ final class ArcanistPhutilLibraryLinter extends ArcanistLinter {
               "  - This symbol is defined in an external library.\n".
               "    Use \"@phutil-external-symbol\" to annotate it.\n".
               "    Use \"grep\" to find examples of usage.",
+              PlatformSymbols::getPlatformClientName(),
+              PlatformSymbols::getPlatformClientName(),
               $arcanist_root);
 
             $message = implode(

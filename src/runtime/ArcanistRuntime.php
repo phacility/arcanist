@@ -270,9 +270,9 @@ final class ArcanistRuntime {
         $problems[] = sprintf(
           'The build of PHP you are running was compiled with the configure '.
           'flag "%s", which means it does not support the function "%s()". '.
-          'This function is required for Arcanist to run. Install a standard '.
-          'build of PHP or rebuild it without this flag. You may also be '.
-          'able to build or install the relevant extension separately.',
+          'This function is required for this software to run. Install a '.
+          'standard build of PHP or rebuild it without this flag. You may '.
+          'also be able to build or install the relevant extension separately.',
           $which,
           $fname);
         continue;
@@ -477,8 +477,8 @@ final class ArcanistRuntime {
       $log->writeWarn(
         pht('VERY META'),
         pht(
-          'You are running one copy of Arcanist (at path "%s") against '.
-          'another copy of Arcanist (at path "%s"). Code in the current '.
+          'You are running one copy of this software (at path "%s") against '.
+          'another copy of this software (at path "%s"). Code in the current '.
           'working directory will not be loaded or executed.',
           $executing_directory,
           $working_directory));
@@ -519,10 +519,10 @@ final class ArcanistRuntime {
     if (!isset($toolsets[$binary])) {
       throw new PhutilArgumentUsageException(
         pht(
-          'Arcanist toolset "%s" is unknown. The Arcanist binary should '.
-          'be executed so that "argv[0]" identifies a supported toolset. '.
-          'Rename the binary or install the library that provides the '.
-          'desired toolset. Current available toolsets: %s.',
+          'Toolset "%s" is unknown. The binary should be executed so that '.
+          '"argv[0]" identifies a supported toolset. Rename the binary or '.
+          'install the library that provides the desired toolset. Current '.
+          'available toolsets: %s.',
           $binary,
           implode(', ', array_keys($toolsets))));
     }

@@ -41,7 +41,7 @@ final class ArcanistProductNameLiteralXHPASTLinterRule
         continue;
       }
 
-      $literal_value = $identifier->getStringLiteralValue();
+      $literal_value = $identifier->evalStatic();
 
       $matches = phutil_preg_match_all($search_pattern, $literal_value);
       if (!$matches[0]) {
