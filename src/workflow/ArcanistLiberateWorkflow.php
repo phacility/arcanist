@@ -11,13 +11,13 @@ final class ArcanistLiberateWorkflow
     // TOOLSETS: Expand this help.
 
     $help = pht(<<<EOTEXT
-Create or update an Arcanist library.
+Create or update a library.
 EOTEXT
 );
 
     return $this->newWorkflowInformation()
       ->setSynopsis(
-        pht('Create or update an Arcanist library.'))
+        pht('Create or update a library.'))
       ->addExample(pht('**liberate**'))
       ->addExample(pht('**liberate** [__path__]'))
       ->setHelp($help);

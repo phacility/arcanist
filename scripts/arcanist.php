@@ -68,7 +68,10 @@ $base_args->parsePartial(
     array(
       'name'    => 'conduit-uri',
       'param'   => 'uri',
-      'help'    => pht('Connect to Phabricator install specified by __uri__.'),
+      'help'    => pht(
+        'Connect to the %s (or compatible software) server specified by '.
+        '__uri__.',
+        PlatformSymbols::getPlatformServerName()),
     ),
     array(
       'name' => 'conduit-token',
@@ -85,7 +88,8 @@ $base_args->parsePartial(
       'repeat' => true,
       'help'   => pht(
         'Specify a runtime configuration value. This will take precedence '.
-        'over static values, and only affect the current arcanist invocation.'),
+        'over static values, and only affect the current process: the '.
+        'setting is not saved anywhere.'),
     ),
 ));
 
@@ -310,9 +314,13 @@ try {
       $message = phutil_console_format(
         "%s\n\n  - %s\n  - %s\n  - %s\n",
         pht(
-          'This command requires arc to connect to a Phabricator install, '.
-          'but no Phabricator installation is configured. To configure a '.
-          'Phabricator URI:'),
+          'This command requires %s to connect to a %s (or compatible '.
+          'software) server, but no %s server is configured. To configure a '.
+          '%s server URI:',
+          PlatformSymbols::getPlatformClientName(),
+          PlatformSymbols::getPlatformServerName(),
+          PlatformSymbols::getPlatformServerName(),
+          PlatformSymbols::getPlatformServerName()),
         pht(
           'set a default location with `%s`; or',
           'arc set-config default <uri>'),
@@ -688,10 +696,12 @@ function arcanist_load_libraries(
           "**<bg:yellow> %s </bg>** %s\n",
           pht('VERY META'),
           pht(
-            'You are running one copy of Arcanist (at path "%s") against '.
-            'another copy of Arcanist (at path "%s"). Code in the current '.
+            'You are running one copy of %s (at path "%s") against '.
+            'another copy of %s (at path "%s"). Code in the current '.
             'working directory will not be loaded or executed.',
+            PlatformSymbols::getPlatformClientName(),
             $executing_directory,
+            PlatformSymbols::getPlatformClientName(),
             $working_directory)));
     }
   }

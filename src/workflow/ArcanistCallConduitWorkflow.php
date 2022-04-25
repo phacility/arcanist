@@ -15,8 +15,7 @@ Allows you to make a raw Conduit method call:
   - Call parameters are required, and read as a JSON blob from stdin.
   - Results are written to stdout as a JSON blob.
 
-This workflow is primarily useful for writing scripts which integrate
-with Phabricator. Examples:
+This workflow is primarily useful for writing scripts. Examples:
 
   $ echo '{}' | arc call-conduit -- conduit.ping
   $ echo '{"phid":"PHID-FILE-xxxx"}' | arc call-conduit -- file.download

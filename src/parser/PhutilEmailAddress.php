@@ -42,12 +42,13 @@ final class PhutilEmailAddress extends Phobject {
 
   public function __toString() {
     $address = $this->getAddress();
-    if (strlen($this->displayName)) {
+
+    if (phutil_nonempty_string($this->displayName)) {
       $display_name = $this->encodeDisplayName($this->displayName);
       return $display_name.' <'.$address.'>';
-    } else {
-      return $address;
     }
+
+    return $address;
   }
 
   public function setDisplayName($display_name) {

@@ -9,12 +9,12 @@ final class ArcanistUpgradeWorkflow
 
   public function getWorkflowInformation() {
     $help = pht(<<<EOTEXT
-Upgrade Arcanist to the latest version.
+Upgrade this program to the latest version.
 EOTEXT
 );
 
     return $this->newWorkflowInformation()
-      ->setSynopsis(pht('Upgrade Arcanist to the latest version.'))
+      ->setSynopsis(pht('Upgrade this program to the latest version.'))
       ->addExample(pht('**upgrade**'))
       ->setHelp($help);
   }
@@ -51,10 +51,10 @@ EOTEXT
       if (!$is_git) {
         throw new PhutilArgumentUsageException(
           pht(
-            'The "arc upgrade" workflow uses "git pull" to upgrade '.
-            'Arcanist, but the "arcanist/" directory  (in "%s") is not a Git '.
-            'working copy. You must leave "arcanist/" as a Git '.
-            'working copy to use "arc upgrade".',
+            'The "arc upgrade" workflow uses "git pull" to upgrade, but '.
+            'the "arcanist/" directory  (in "%s") is not a Git working '.
+            'copy. You must leave "arcanist/" as a Git working copy to '.
+            'use "arc upgrade".',
             $root));
       }
 
@@ -125,7 +125,7 @@ EOTEXT
 
     $log->writeSuccess(
       pht('UPGRADED'),
-      pht('Your copy of Arcanist is now up to date.'));
+      pht('This software is now up to date.'));
 
     return 0;
   }
