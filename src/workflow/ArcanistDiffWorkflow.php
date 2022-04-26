@@ -1649,6 +1649,7 @@ EOTEXT
     }
 
 
+    $revision = null;
     if (!$is_raw && !$is_create && !$is_update) {
       $repository_api = $this->getRepositoryAPI();
       $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
@@ -1672,7 +1673,6 @@ EOTEXT
             '--create'));
       }
     }
-
     $message = null;
     if ($is_create) {
       $message_file = $this->getArgument('message-file');
@@ -1689,6 +1689,38 @@ EOTEXT
             'Parameter to %s must be a Differential Revision number.',
             '--update'));
       }
+
+      // UBER CODE
+      if ($this->commonPrePromptChecks()) {
+        $revision_for_fields = $revision;
+
+        // Try load revision data if it does not exist.
+        if ($revision_for_fields === null && $is_update) {
+          $repository_api = $this->getRepositoryAPI();
+          $revisions = $repository_api->loadWorkingCopyDifferentialRevisions(
+            $this->getConduit(),
+            array(
+              'authors' => array($this->getUserPHID()),
+              'status'  => 'status-open',
+            ));
+          foreach ($revisions as $rev) {
+            if ($rev['id'] == $revision_id) {
+              $revision_for_fields = $rev;
+              break;
+            }
+          }
+        }
+
+        // This value should not be null. But if execution path exist when it is
+        // then just skip the validation.
+        if ($revision_for_fields) {
+          $affected_paths = $this->selectPathsForWorkflow(array(), null);
+          id(new UberMandatoryFields($this))->validateRevision(
+            $revision_for_fields, $affected_paths);
+        }
+      }
+
+      // UBER CODE END
       return $this->getCommitMessageFromRevision($revision_id);
     } else {
       // This is --raw without enough info to create a revision, so force just
@@ -2042,7 +2074,10 @@ EOTEXT
         ));
     }
 
-    $this->uberValidateMandatoryFields($message); // UBER CODE
+    // UBER CODE
+    $affected_paths = $this->selectPathsForWorkflow(array(), null);
+    id(new UberMandatoryFields($this))->validateCommitMessage(
+      $message, $affected_paths);
 
     foreach (new FutureIterator($futures) as $key => $future) {
       $result = $future->resolve();
@@ -2122,27 +2157,6 @@ EOTEXT
   }
 
   // UBER CODE
-  private function uberValidateMandatoryFields($message) {
-    if (!$message instanceof ArcanistDifferentialCommitMessage) {
-      return;
-    }
-
-    $config = $this->getConfigurationManager();
-    $mandatory_fields = $config->getConfigFromAnySource(
-      'differential.mandatory_fields');
-
-    if (!is_null($mandatory_fields)) {
-      foreach ($mandatory_fields as $mandatory_field){
-        $field_name = $mandatory_field['field_name'];
-        $field = $message->getFieldValue($field_name);
-        if (empty($field)) {
-          $field_message = $mandatory_field['field_message'];
-          throw new ArcanistUsageException(
-            pht('%s', $field_message));
-        }
-      }
-    }
-  }
 
   // Common checks before showing interactive prompts for user input
   private function commonPrePromptChecks() {
