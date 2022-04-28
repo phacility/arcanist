@@ -94,7 +94,7 @@ final class PhutilErrorLog
 
     if (strlen($message)) {
       $message = tsprintf("%B\n", $message);
-      @fwrite(STDERR, $message);
+      PhutilSystem::writeStderr($message);
     }
   }
 

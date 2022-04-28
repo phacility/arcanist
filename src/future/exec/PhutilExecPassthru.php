@@ -53,10 +53,14 @@ final class PhutilExecPassthru extends PhutilExecutableFuture {
     if ($is_write) {
       $stdin_spec = array('pipe', 'r');
     } else {
-      $stdin_spec = STDIN;
+      $stdin_spec = PhutilSystem::getStdinHandle();
     }
 
-    $spec = array($stdin_spec, STDOUT, STDERR);
+    $spec = array(
+      $stdin_spec,
+      PhutilSystem::getStdoutHandle(),
+      PhutilSystem::getStderrHandle(),
+    );
     $pipes = array();
 
     $unmasked_command = $command->getUnmaskedString();

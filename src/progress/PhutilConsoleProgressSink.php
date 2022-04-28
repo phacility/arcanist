@@ -110,6 +110,6 @@ final class PhutilConsoleProgressSink
   }
 
   private function printLine($line) {
-    fprintf(STDERR, '%s', $line);
+    PhutilSystem::writeStderr($line);
   }
 }

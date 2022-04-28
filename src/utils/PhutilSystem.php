@@ -3,10 +3,76 @@
 /**
  * Interact with the operating system.
  *
+ * @task stdio Interacting with Standard I/O
  * @task memory Interacting with System Memory
  */
 final class PhutilSystem extends Phobject {
 
+  private static $stdin = false;
+  private static $stderr = false;
+  private static $stdout = false;
+
+  /**
+   * @task stdio
+   */
+  public static function getStdinHandle() {
+    if (self::$stdin === false) {
+      self::$stdin = self::newStdioHandle('php://stdin');
+    }
+
+    return self::$stdin;
+  }
+
+  /**
+   * @task stdio
+   */
+  public static function getStdoutHandle() {
+    if (self::$stdout === false) {
+      self::$stdout = self::newStdioHandle('php://stdout');
+    }
+
+    return self::$stdout;
+  }
+
+  /**
+   * @task stdio
+   */
+  public static function getStderrHandle() {
+    if (self::$stderr === false) {
+      self::$stderr = self::newStdioHandle('php://stderr');
+    }
+
+    return self::$stderr;
+  }
+
+  /**
+   * @task stdio
+   */
+  public static function writeStderr($message) {
+    $stderr = self::getStderrHandle();
+
+    if ($stderr === null) {
+      return;
+    }
+
+    $message = phutil_string_cast($message);
+    @fwrite($stderr, $message);
+  }
+
+
+  /**
+   * @task stdio
+   */
+  private static function newStdioHandle($ref) {
+    $ignored_mode = '';
+
+    $handle = @fopen($ref, $ignored_mode);
+    if ($handle === false) {
+      return null;
+    }
+
+    return $handle;
+  }
 
   /**
    * Get information about total and free memory on the system.

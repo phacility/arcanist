@@ -1565,7 +1565,7 @@ abstract class ArcanistWorkflow extends Phobject {
    * @return void
    */
   final protected function writeStatusMessage($msg) {
-    fwrite(STDERR, $msg);
+    PhutilSystem::writeStderr($msg);
   }
 
   final public function writeInfo($title, $message) {

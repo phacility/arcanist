@@ -805,7 +805,7 @@ final class PhutilArgumentParser extends Phobject {
 
 
   private function logMessage($message) {
-    fwrite(STDERR, $message);
+    PhutilSystem::writeStderr($message);
   }
 
 

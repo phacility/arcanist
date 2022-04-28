@@ -33,7 +33,7 @@ final class ArcanistBaseCommitParser extends Phobject {
 
   private function log($message) {
     if ($this->verbose) {
-      fwrite(STDERR, $message."\n");
+      PhutilSystem::writeStderr($message."\n");
     }
   }
 

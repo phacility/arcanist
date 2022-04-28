@@ -19,7 +19,7 @@ final class ArcanistLogEngine
   }
 
   private function writeBytes($bytes) {
-    fprintf(STDERR, '%s', $bytes);
+    PhutilSystem::writeStderr($bytes);
     return $this;
   }
 
