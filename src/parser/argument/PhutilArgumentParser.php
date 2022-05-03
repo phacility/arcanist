@@ -625,6 +625,33 @@ final class PhutilArgumentParser extends Phobject {
     return $this->specs[$name]->getDefault();
   }
 
+  public function getArgAsInteger($name) {
+    $value = $this->getArg($name);
+
+    if ($value === null) {
+      return $value;
+    }
+
+    if (!preg_match('/^-?\d+\z/', $value)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Parameter provided to argument "--%s" must be an integer.',
+          $name));
+    }
+
+    $intvalue = (int)$value;
+
+    if (phutil_string_cast($intvalue) !== phutil_string_cast($value)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Parameter provided to argument "--%s" is too large to '.
+          'parse as an integer.',
+          $name));
+    }
+
+    return $intvalue;
+  }
+
   public function getUnconsumedArgumentVector() {
     return $this->argv;
   }
