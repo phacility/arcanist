@@ -12,7 +12,7 @@ final class ArcanistUnitConsoleRenderer extends ArcanistUnitRenderer {
 
     $test_name = $result->getName();
     $test_namespace = $result->getNamespace();
-    if (strlen($test_namespace)) {
+    if (phutil_nonempty_string($test_namespace) && strlen($test_namespace)) {
       $test_name = $test_namespace.'::'.$test_name;
     }
 

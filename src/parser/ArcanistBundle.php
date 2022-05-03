@@ -762,7 +762,11 @@ final class ArcanistBundle extends Phobject {
       $old_data = $this->getBlob($old_phid, $name);
     }
 
-    $old_length = strlen($old_data);
+    if (phutil_nonempty_string($old_data)) {
+      $old_length = strlen($old_data);
+    } else {
+      $old_length = 0;
+    }
 
     // Here, and below, the binary will be emitted with base85 encoding. This
     // encoding encodes each 4 bytes of input in 5 bytes of output, so we may
