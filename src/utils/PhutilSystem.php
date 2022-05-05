@@ -17,7 +17,7 @@ final class PhutilSystem extends Phobject {
    */
   public static function getStdinHandle() {
     if (self::$stdin === false) {
-      self::$stdin = self::newStdioHandle('php://stdin');
+      self::$stdin = self::getStdioHandle('STDIN');
     }
 
     return self::$stdin;
@@ -28,7 +28,7 @@ final class PhutilSystem extends Phobject {
    */
   public static function getStdoutHandle() {
     if (self::$stdout === false) {
-      self::$stdout = self::newStdioHandle('php://stdout');
+      self::$stdout = self::getStdioHandle('STDOUT');
     }
 
     return self::$stdout;
@@ -39,7 +39,7 @@ final class PhutilSystem extends Phobject {
    */
   public static function getStderrHandle() {
     if (self::$stderr === false) {
-      self::$stderr = self::newStdioHandle('php://stderr');
+      self::$stderr = self::getStdioHandle('STDERR');
     }
 
     return self::$stderr;
@@ -63,15 +63,12 @@ final class PhutilSystem extends Phobject {
   /**
    * @task stdio
    */
-  private static function newStdioHandle($ref) {
-    $ignored_mode = '';
-
-    $handle = @fopen($ref, $ignored_mode);
-    if ($handle === false) {
-      return null;
+  private static function getStdioHandle($ref) {
+    if (defined($ref)) {
+      return constant($ref);
     }
 
-    return $handle;
+    return null;
   }
 
   /**
