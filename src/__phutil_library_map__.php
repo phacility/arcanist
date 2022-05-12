@@ -968,6 +968,7 @@ phutil_register_library_map(array(
     'nonempty' => 'utils/utils.php',
     'phlog' => 'error/phlog.php',
     'pht' => 'internationalization/pht.php',
+    'pht_list' => 'internationalization/pht.php',
     'phutil_build_http_querystring' => 'utils/utils.php',
     'phutil_build_http_querystring_from_pairs' => 'utils/utils.php',
     'phutil_censor_credentials' => 'utils/utils.php',
