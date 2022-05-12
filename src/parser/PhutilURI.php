@@ -194,7 +194,7 @@ final class PhutilURI extends Phobject {
       $query = null;
     }
 
-    if (strlen($this->getFragment())) {
+    if (phutil_nonempty_string($this->getFragment())) {
       $fragment = '#'.$this->getFragment();
     } else {
       $fragment = null;
@@ -433,7 +433,7 @@ final class PhutilURI extends Phobject {
     if ($this->isGitURI()) {
       // Git URIs use relative paths which do not need to begin with "/".
     } else {
-      if ($this->domain && strlen($path) && $path[0] !== '/') {
+      if ($this->domain && phutil_nonempty_string($path) && $path[0] !== '/') {
         $path = '/'.$path;
       }
     }
