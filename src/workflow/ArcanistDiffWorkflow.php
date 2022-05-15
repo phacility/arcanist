@@ -357,6 +357,15 @@ EOTEXT
     if ($this->getArgument('no-rebase')) {
       $do_rebase = false;
     }
+    exec('git remote get-url origin', $remote_url, $git_remote_retval);
+    if ($git_remote_retval == 1) {
+      $do_rebase = false;
+      echo "Failed to execute `git remote get-url origin`, please check if you are under the correct repo.";
+    }
+    if ($remote_url[0] != "git@github.com:robinhoodmarkets/rh.git") {
+      $do_rebase = false;
+      echo "Will not perform the auto rebase since you are currently outside of `rh` monorepo.";
+    }
     if ($do_rebase) {
       echo "Running arc rebase... \n";
       $outputs = null;
