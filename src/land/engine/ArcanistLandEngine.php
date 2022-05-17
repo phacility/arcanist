@@ -791,7 +791,7 @@ abstract class ArcanistLandEngine
           }
 
           // If build plan is an forceable plan then allow it to land in ongoing state if
-          // ALLOW_FAILED_TESTS is set
+          // ALLOW_ONGOING_TESTS is set
           else if ($forceable_build_plan_phids && $allow_ongoing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
             $log->writeWarning(
               pht('FORCE LANDING D%s WITH ONGOING TESTS', $revision_ref->getID()),
@@ -804,10 +804,19 @@ abstract class ArcanistLandEngine
           }
 
           else {
-            // Land queue won't allow this revision to land so block locally as well
-            $log->writeError(
-              pht('BLOCKING ONGOING TESTS', $revision_ref->getID()),
-              pht('Blocking ongoing build plans on D%s are fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            // If build plan is an forceable plan and ALLOW_FAILED_TESTS is set
+            // then tell user they can land if they change ALLOW_FAILED_TESTS
+            // to ALLOW_ONGOING_TESTS instead
+            if ($forceable_build_plan_phids && $allow_failing_forceable_tests && in_array($plan_phid, $forceable_build_plan_phids)) {
+              $log->writeError(
+                pht('BLOCKING ONGOING TESTS', $revision_ref->getID()),
+                pht('Blocking ongoing build plans on D%s are fatal for land (build plan %s: %s). If you are in a SEV and must land this quickly, you can replace ALLOW_FAILED_TESTS with ALLOW_ONGOING_TESTS; otherwise, please wait until the ongoing build plans have completed before trying to land again', $revision_ref->getID(), $plan_id, $plan_name));
+            }
+            else {
+              $log->writeError(
+                pht('BLOCKING ONGOING TESTS', $revision_ref->getID()),
+                pht('Blocking ongoing build plans on D%s are fatal for land (build plan %s: %s)', $revision_ref->getID(), $plan_id, $plan_name));
+            }
             $has_blocking_ongoing = true;
           }
         }
