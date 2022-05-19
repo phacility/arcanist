@@ -356,19 +356,23 @@ EOTEXT
     $do_rebase = true;
     if ($this->getArgument('no-rebase')) {
       $do_rebase = false;
+      return true;
     }
     if (file_exists(".git/rebase-merge")) {
       $do_rebase = false;
       echo "It seems like you are in the middle of a rebase already; will not perform auto-rebase.";
+      return true;
     }
     exec('git remote get-url origin', $remote_url, $git_remote_retval);
     if ($git_remote_retval == 1) {
       $do_rebase = false;
       echo "Failed to execute `git remote get-url origin`, please check if you are under the correct repo.";
+      return true;
     }
     if ($remote_url[0] != "git@github.com:robinhoodmarkets/rh.git" && $remote_url[0] != "git@github.com:robinhoodmarkets/rh" && $remote_url[0] != "ssh://git@github.com/robinhoodmarkets/rh.git") {
       $do_rebase = false;
       echo "Will not perform auto-rebase since you are currently outside of `rh` monorepo.";
+      return true;
     }
     if ($do_rebase) {
       echo "Running arc rebase... \n";
