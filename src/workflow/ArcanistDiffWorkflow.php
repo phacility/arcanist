@@ -364,7 +364,7 @@ EOTEXT
       $do_rebase = false;
       echo "Failed to execute `git remote get-url origin`, please check if you are under the correct repo.";
     }
-    if ($remote_url[0] != "git@github.com:robinhoodmarkets/rh.git" && $remote_url[0] != "git@github.com:robinhoodmarkets/rh") {
+    if ($remote_url[0] != "git@github.com:robinhoodmarkets/rh.git" && $remote_url[0] != "git@github.com:robinhoodmarkets/rh" && $remote_url[0] != "ssh://git@github.com/robinhoodmarkets/rh.git") {
       $do_rebase = false;
       echo "Will not perform auto-rebase since you are currently outside of `rh` monorepo.";
     }
