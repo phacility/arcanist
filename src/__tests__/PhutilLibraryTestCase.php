@@ -125,8 +125,8 @@ class PhutilLibraryTestCase extends PhutilTestCase {
               $failures[] = pht(
                 'Class "%s" implements method "%s" with the wrong visibility. '.
                 'The method has visibility "%s", but it is defined in parent '.
-                '"%s" with visibility "%s". In Phabricator, a method which '.
-                'overrides another must always have the same visibility.',
+                '"%s" with visibility "%s". A method which overrides another '.
+                'must always have the same visibility.',
                 $class_name,
                 $method_name,
                 $this->getVisibility($method),

@@ -44,3 +44,7 @@ function phutil_count($countable) {
 function phutil_person(PhutilPerson $person) {
   return $person;
 }
+
+function pht_list(array $items) {
+  return implode(', ', $items);
+}

@@ -115,8 +115,7 @@ EOTEXT
       'raw' => array(
         'help' => pht(
           'Read diff from stdin, not from the working copy. This disables '.
-          'many Arcanist/Phabricator features which depend on having access '.
-          'to the working copy.'),
+          'many features which depend on having access to the working copy.'),
         'conflicts' => array(
           'apply-patches'       => pht('%s disables lint.', '--raw'),
           'never-apply-patches' => pht('%s disables lint.', '--raw'),
@@ -138,8 +137,8 @@ EOTEXT
         'param' => 'command',
         'help' => pht(
           'Generate diff by executing a specified command, not from the '.
-          'working copy. This disables many Arcanist/Phabricator features '.
-          'which depend on having access to the working copy.'),
+          'working copy. This disables many features which depend on having '.
+          'access to the working copy.'),
         'conflicts' => array(
           'apply-patches'       => pht('%s disables lint.', '--raw-command'),
           'never-apply-patches' => pht('%s disables lint.', '--raw-command'),
@@ -326,9 +325,8 @@ EOTEXT
       'head' => array(
         'param' => 'commit',
         'help' => pht(
-          'Specify the end of the commit range. This disables many '.
-          'Arcanist/Phabricator features which depend on having access to '.
-          'the working copy.'),
+          'Specify the end of the commit range. This disables many features '.
+          'which depend on having access to the working copy.'),
         'supports' => array('git'),
         'nosupport' => array(
           'svn' => pht('Subversion does not support commit ranges.'),
@@ -517,7 +515,7 @@ EOTEXT
           if ($is_draft) {
             throw new ArcanistUsageException(
               pht(
-                'You have specified "--draft", but the version of Phabricator '.
+                'You have specified "--draft", but the software version '.
                 'on the server is too old to support draft revisions. Omit '.
                 'the flag or upgrade the server software.'));
           }
@@ -808,7 +806,10 @@ EOTEXT
     if ($is_raw) {
 
       if ($this->getArgument('raw')) {
-        fwrite(STDERR, pht('Reading diff from stdin...')."\n");
+        PhutilSystem::writeStderr(
+          tsprintf(
+            "%s\n",
+            pht('Reading diff from stdin...')));
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
         list($raw_diff) = execx('%C', $this->getArgument('raw-command'));
@@ -949,7 +950,7 @@ EOTEXT
             } catch (ConduitClientException $e) {
               if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
                 echo phutil_console_wrap(
-                  pht('Lookup of encoding in arcanist project failed: %s',
+                  pht('Lookup of encoding in project failed: %s',
                       $e->getMessage())."\n");
               } else {
                 throw $e;
@@ -990,10 +991,10 @@ EOTEXT
             'these files will be marked as binary.',
             phutil_count($utf8_problems)),
           pht(
-            "You can learn more about how Phabricator handles character ".
+            "You can learn more about how this software handles character ".
             "encodings (and how to configure encoding settings and detect and ".
             "correct encoding problems) by reading 'User Guide: UTF-8 and ".
-            "Character Encoding' in the Phabricator documentation."),
+            "Character Encoding' in the documentation."),
           pht(
             '%s AFFECTED FILE(S)',
             phutil_count($utf8_problems)));
@@ -2652,7 +2653,7 @@ EOTEXT
     if (!$supported) {
       $this->writeInfo(
         pht('SKIP STAGING'),
-        pht('Phabricator does not support staging areas for this repository.'));
+        pht('The server does not support staging areas for this repository.'));
       return self::STAGING_REPOSITORY_UNSUPPORTED;
     }
 

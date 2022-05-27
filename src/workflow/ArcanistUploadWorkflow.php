@@ -9,7 +9,7 @@ final class ArcanistUploadWorkflow
 
   public function getWorkflowInformation() {
     $help = pht(<<<EOTEXT
-Upload one or more files from local disk to Phabricator.
+Upload one or more files from local disk.
 EOTEXT
 );
 

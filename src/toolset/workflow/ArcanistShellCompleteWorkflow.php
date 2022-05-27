@@ -14,7 +14,7 @@ final class ArcanistShellCompleteWorkflow
   public function getWorkflowInformation() {
     $help = pht(<<<EOTEXT
 Install shell completion so you can use the "tab" key to autocomplete
-commands and flags in your shell for Arcanist toolsets and workflows.
+commands and flags in your shell for toolsets and workflows.
 
 The **bash** shell is supported.
 
@@ -28,7 +28,7 @@ This will install shell completion into your current shell. After installing,
 you may need to start a new shell (or open a new terminal window) to pick up
 the updated configuration.
 
-Once installed, completion should work across all Arcanist toolsets.
+Once installed, completion should work across all toolsets.
 
 **Using Completion**
 
@@ -53,9 +53,9 @@ You can update shell completion without reinstalling it by running:
 
 You may need to update shell completion if:
 
-  - you install new Arcanist toolsets; or
-  - you move the Arcanist directory; or
-  - you upgrade Arcanist and the new version fixes shell completion bugs.
+  - you install new toolsets; or
+  - you move this software on disk; or
+  - you upgrade this software and the new version fixes shell completion bugs.
 EOTEXT
 );
 

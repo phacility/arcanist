@@ -313,7 +313,7 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function writeStatus($message) {
-    fwrite(STDERR, $message."\n");
+    PhutilSystem::writeStderr($message."\n");
   }
 
 }

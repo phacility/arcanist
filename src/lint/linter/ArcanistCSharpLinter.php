@@ -64,11 +64,11 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
         throw new Exception(
           pht(
             "In order to keep StyleCop integration with IDEs and other tools ".
-            "consistent with Arcanist results, you aren't permitted to ".
+            "consistent with lint results, you aren't permitted to ".
             "disable StyleCop rules within '%s'. Instead configure the ".
             "severity using the StyleCop settings dialog (usually accessible ".
             "from within your IDE). StyleCop settings for your project will ".
-            "be used when linting for Arcanist.",
+            "be used when linting.",
             '.arclint'));
       }
     }
@@ -132,8 +132,8 @@ final class ArcanistCSharpLinter extends ArcanistLinter {
     } else if ($ver > self::SUPPORTED_VERSION) {
       throw new Exception(
         pht(
-          'Arcanist does not support this version of %s (it is newer). '.
-          'You can try upgrading Arcanist with `%s`.',
+          'This version of %s is not supported (it is too new). '.
+          'You can try upgrading with `%s`.',
           'cslint',
           'arc upgrade'));
     }

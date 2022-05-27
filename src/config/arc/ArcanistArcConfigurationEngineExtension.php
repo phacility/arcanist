@@ -71,10 +71,10 @@ final class ArcanistArcConfigurationEngineExtension
         ->setSummary(pht('Repository for the current working copy.'))
         ->setHelp(
           pht(
-            'Associate the working copy with a specific Phabricator '.
-            'repository. Normally, Arcanist can figure this association '.
-            'out on its own, but if your setup is unusual you can use '.
-            'this option to tell it what the desired value is.'))
+            'Associate the working copy with a specific repository. Normally, '.
+            'this association can be determined automatically, but if your '.
+            'setup is unusual you can use this option to tell it what the '.
+            'desired value is.'))
         ->setExamples(
           array(
             'libexample',
@@ -89,14 +89,15 @@ final class ArcanistArcConfigurationEngineExtension
             'conduit_uri',
             'default',
           ))
-        ->setSummary(pht('Phabricator install to connect to.'))
+        ->setSummary(pht('Server to connect to.'))
         ->setHelp(
           pht(
             'Associates this working copy with a specific installation of '.
-            'Phabricator.'))
+            '%s (or compatible software).',
+            PlatformSymbols::getPlatformServerName()))
         ->setExamples(
           array(
-            'https://phabricator.mycompany.com/',
+            'https://devtools.example.com/',
           )),
       id(new ArcanistAliasesConfigOption())
         ->setKey(self::KEY_ALIASES)

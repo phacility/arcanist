@@ -9,7 +9,7 @@ final class ArcanistArcToolset extends ArcanistToolset {
       array(
         'name' => 'conduit-uri',
         'param' => 'uri',
-        'help' => pht('Connect to Phabricator install specified by __uri__.'),
+        'help' => pht('Connect to server specified by __uri__.'),
       ),
       array(
         'name' => 'conduit-token',

@@ -22,23 +22,38 @@ final class PhutilConsoleFormatter extends Phobject {
 
   public static function getDisableANSI() {
     if (self::$disableANSI === null) {
-      $term = phutil_utf8_strtolower(getenv('TERM'));
-      // ansicon enables ANSI support on Windows
-      if (!$term && getenv('ANSICON')) {
-        $term = 'ansi';
-      }
-
-      if (phutil_is_windows() && $term !== 'cygwin' && $term !== 'ansi') {
-        self::$disableANSI = true;
-      } else if (!defined('STDOUT')) {
-        self::$disableANSI = true;
-      } else if (function_exists('posix_isatty') && !posix_isatty(STDOUT)) {
-        self::$disableANSI = true;
-      } else {
-        self::$disableANSI = false;
-      }
+      self::$disableANSI = self::newShouldDisableAnsi();
     }
     return self::$disableANSI;
+  }
+
+  private static function newShouldDisableANSI() {
+    $term = phutil_utf8_strtolower(getenv('TERM'));
+
+    // ansicon enables ANSI support on Windows
+    if (!$term && getenv('ANSICON')) {
+      $term = 'ansi';
+    }
+
+
+    if (phutil_is_windows()) {
+      if ($term !== 'cygwin' && $term !== 'ansi') {
+        return true;
+      }
+    }
+
+    $stdout = PhutilSystem::getStdoutHandle();
+    if ($stdout === null) {
+      return true;
+    }
+
+    if (function_exists('posix_isatty')) {
+      if (!posix_isatty($stdout)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public static function formatString($format /* ... */) {

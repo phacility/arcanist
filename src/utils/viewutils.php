@@ -141,7 +141,7 @@ function phutil_format_units_generic(
   $scale = array_shift($scales);
   $label = array_shift($labels);
   while ($n >= $scale && count($labels)) {
-    $remainder += ($n % $scale) * $accum;
+    $remainder += ((int)$n % $scale) * $accum;
     $n /= $scale;
     $accum *= $scale;
     $label = array_shift($labels);

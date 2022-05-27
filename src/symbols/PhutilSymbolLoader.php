@@ -296,11 +296,12 @@ final class PhutilSymbolLoader {
         // library without breaking library startup.
         if ($should_continue) {
           // We may not have `pht()` yet.
-          fprintf(
-            STDERR,
+          $message = sprintf(
             "%s: %s\n",
             'IGNORING CLASS LOAD FAILURE',
             $caught->getMessage());
+
+          @file_put_contents('php://stderr', $message);
         } else {
           throw $caught;
         }

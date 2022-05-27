@@ -28,15 +28,15 @@ The __symbol__ may be a branch or bookmark name, a revision name (like "D123"),
 a task name (like "T123"), or a new symbol.
 
 If you provide a symbol which currently does not identify any ongoing work,
-Arcanist will create a new branch or bookmark with the name you provide.
+a new branch or bookmark will be created with the name you provide.
 
-If you provide the name of an existing branch or bookmark, Arcanist will switch
-to that branch or bookmark.
+If you provide the name of an existing branch or bookmark, the working copy
+will be switched to that branch or bookmark.
 
-If you provide the name of a revision or task, Arcanist will look for a related
-branch or bookmark that exists in the working copy. If it finds one, it will
-switch to it. If it does not find one, it will attempt to create a new branch
-or bookmark.
+If you provide the name of a revision or task, the workflow will look for a
+related branch or bookmark that already exists in the working copy. If one is
+found, it will switch to it. If it does not find one, it will attempt to create
+a new branch or bookmark.
 
 When "arc work" creates a branch or bookmark, it will use **--start** as the
 branchpoint if it is provided. Otherwise, the current working copy state will

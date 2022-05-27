@@ -890,8 +890,8 @@ EOTEXT
           'revision_id' => $revision_id,
         ));
       $prompt_message = pht(
-        '  Note arcanist failed to load the commit message '.
-        'from differential for revision %s.',
+        '  NOTE: Failed to load the commit message from Differential (for '.
+        'revision "%s".)',
         "D{$revision_id}");
     }
 
