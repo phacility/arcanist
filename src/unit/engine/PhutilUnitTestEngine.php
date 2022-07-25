@@ -170,16 +170,14 @@ final class PhutilUnitTestEngine extends ArcanistUnitTestEngine {
       if (!$library_name) {
         throw new Exception(
           pht(
-            "Attempting to run unit tests on a libphutil library which has ".
+            "Attempting to run unit tests on a library which has ".
             "not been loaded, at:\n\n".
             "    %s\n\n".
-            "This probably means one of two things:\n\n".
-            "    - You may need to add this library to %s.\n".
-            "    - You may be running tests on a copy of libphutil or ".
-            "arcanist using a different copy of libphutil or arcanist. ".
-            "This operation is not supported.\n",
-            $library_root,
-            '.arcconfig.'));
+            "Make sure this library is configured to load.\n\n".
+            "(In rare cases, this may be because you are attempting to run ".
+            "one copy of this software against a different copy of this ".
+            "software. This operation is not supported.)",
+            $library_root));
       }
 
       $path = Filesystem::resolvePath($path, $root);

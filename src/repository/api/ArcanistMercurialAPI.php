@@ -5,6 +5,13 @@
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
+  /**
+   * Mercurial deceptively indicates that the default encoding is UTF-8 however
+   * however the actual default appears to be "something else", at least on
+   * Windows systems. Force all mercurial commands to use UTF-8 encoding.
+   */
+  const ROOT_HG_COMMAND = 'hg --encoding utf-8 ';
+
   private $branch;
   private $localCommitInfo;
   private $rawDiffCache = array();
@@ -13,25 +20,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private $featureFutures = array();
 
   protected function buildLocalFuture(array $argv) {
-    $env = $this->getMercurialEnvironmentVariables();
+    $argv[0] = self::ROOT_HG_COMMAND.$argv[0];
 
-    $argv[0] = 'hg '.$argv[0];
-
-    $future = newv('ExecFuture', $argv)
-      ->setEnv($env)
-      ->setCWD($this->getPath());
-
-    return $future;
+    return $this->newConfiguredFuture(newv('ExecFuture', $argv));
   }
 
   public function newPassthru($pattern /* , ... */) {
     $args = func_get_args();
+    $args[0] = self::ROOT_HG_COMMAND.$args[0];
+
+    return $this->newConfiguredFuture(newv('PhutilExecPassthru', $args));
+  }
+
+  private function newConfiguredFuture(PhutilExecutableFuture $future) {
+    $args = func_get_args();
 
     $env = $this->getMercurialEnvironmentVariables();
 
-    $args[0] = 'hg '.$args[0];
-
-    return newv('PhutilExecPassthru', $args)
+    return $future
       ->setEnv($env)
       ->setCWD($this->getPath());
   }
@@ -448,6 +454,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
+  protected function newCurrentCommitSymbol() {
+    return $this->getWorkingCopyRevision();
+  }
+
   public function getWorkingCopyRevision() {
     return '.';
   }
@@ -655,35 +665,115 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal('commit -l %s', $tmp_file);
+    $this->execxLocal('commit --logfile %s', $tmp_file);
     $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message = null) {
-    if ($message === null) {
+    $path_statuses = $this->buildUncommittedStatus();
+
+    $existing_message = $this->getCommitMessage(
+      $this->getWorkingCopyRevision());
+
+    if ($message === null || $message == $existing_message) {
+      if (empty($path_statuses)) {
+        // If there are no changes to the working directory and the message is
+        // not being changed then there's nothing to amend. Notably Mercurial
+        // will return an error code if trying to amend a commit with no change
+        // to the commit metadata or file changes.
+        return;
+      }
+
       $message = $this->getCommitMessage('.');
     }
 
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
 
-    try {
-      $this->execxLocal(
-        'commit --amend -l %s',
-        $tmp_file);
-    } catch (CommandException $ex) {
-      if (preg_match('/nothing changed/', $ex->getStdout())) {
-        // NOTE: Mercurial considers it an error to make a no-op amend. Although
-        // we generally defer to the underlying VCS to dictate behavior, this
-        // one seems a little goofy, and we use amend as part of various
-        // workflows under the assumption that no-op amends are fine. If this
-        // amend failed because it's a no-op, just continue.
-      } else {
+    if ($this->getMercurialFeature('evolve')) {
+      $this->execxLocal('amend --logfile %s --', $tmp_file);
+      try {
+        $this->execxLocal('evolve --all --');
+      } catch (CommandException $ex) {
+        $this->execxLocal('evolve --abort --');
         throw $ex;
       }
+      $this->reloadWorkingCopy();
+      return;
+    }
+
+    // Get the child nodes of the current changeset.
+    list($children) = $this->execxLocal(
+      'log --template %s --rev %s --',
+      '{node} ',
+      'children(.)');
+    $child_nodes = array_filter(explode(' ', $children));
+
+    // For a head commit we can simply use `commit --amend` for both new commit
+    // message and amending changes from the working directory.
+    if (empty($child_nodes)) {
+        $this->execxLocal('commit --amend --logfile %s --', $tmp_file);
+    } else {
+      $this->amendNonHeadCommit($child_nodes, $tmp_file);
     }
 
     $this->reloadWorkingCopy();
+  }
+
+  /**
+   * Amends a non-head commit with a new message and file changes. This
+   * strategy is for Mercurial repositories without the evolve extension.
+   *
+   * 1. Run 'arc-amend' which uses Mercurial internals to amend the current
+   *    commit with updated message/file-changes. It results in a new commit
+   *    from the right parent
+   * 2. For each branch from the original commit, rebase onto the new commit,
+   *    removing the original branch. Note that there is potential for this to
+   *    cause a conflict but this is something the user has to address.
+   * 3. Strip the original commit.
+   *
+   * @param array     The list of child changesets off the original commit.
+   * @param file      The file containing the new commit message.
+   */
+  private function amendNonHeadCommit($child_nodes, $tmp_file) {
+    list($current) = $this->execxLocal(
+      'log --template %s --rev . --',
+      '{node}');
+
+    $this->execxLocalWithExtension(
+      'arc-hg',
+      'arc-amend --logfile %s',
+      $tmp_file);
+
+    list($new_commit) = $this->execxLocal(
+      'log --rev tip --template %s --',
+      '{node}');
+
+    try {
+      $rebase_args = array(
+        '--dest',
+        $new_commit,
+      );
+      foreach ($child_nodes as $child) {
+        $rebase_args[] = '--source';
+        $rebase_args[] = $child;
+      }
+
+      $this->execxLocalWithExtension(
+        'rebase',
+        'rebase %Ls --',
+        $rebase_args);
+    } catch (CommandException $ex) {
+      $this->execxLocalWithExtension(
+        'rebase',
+        'rebase --abort --');
+      throw $ex;
+    }
+
+    $this->execxLocalWithExtension(
+      'strip',
+      'strip --rev %s --',
+      $current);
   }
 
   public function getCommitSummary($commit) {
@@ -957,6 +1047,129 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return $this->executeMercurialFeatureTest($feature, true);
   }
 
+  /**
+   * Returns the necessary flag for using a Mercurial extension. This will
+   * enable Mercurial built-in extensions and the "arc-hg" extension that is
+   * included with Arcanist. This will not enable other extensions, e.g.
+   * "evolve".
+   *
+   * @param string  The name of the extension to enable.
+   * @return string  A new command pattern that includes the necessary flags to
+   *                 enable the specified extension.
+   */
+  private function getMercurialExtensionFlag($extension) {
+    switch ($extension) {
+      case 'arc-hg':
+        $path = phutil_get_library_root('arcanist');
+        $path = dirname($path);
+        $path = $path.'/support/hg/arc-hg.py';
+        $ext_config = 'extensions.arc-hg='.$path;
+        break;
+      case 'rebase':
+        $ext_config = 'extensions.rebase=';
+        break;
+      case 'shelve':
+        $ext_config = 'extensions.shelve=';
+        break;
+      case 'strip':
+        $ext_config = 'extensions.strip=';
+        break;
+      default:
+        throw new Exception(
+          pht('Unknown Mercurial Extension: "%s".', $extension));
+    }
+
+    return csprintf('--config %s', $ext_config);
+  }
+
+  /**
+   * Produces the arguments that should be passed to Mercurial command
+   * execution that enables a desired extension.
+   *
+   * @param string  The name of the extension to enable.
+   * @param string  The command pattern that will be run with the extension
+   *                enabled.
+   * @param array   Parameters for the command pattern argument.
+   * @return array  An array where the first item is a Mercurial command
+   *                pattern that includes the necessary flag for enabling the
+   *                desired extension, and all remaining items are parameters
+   *                to that command pattern.
+   */
+  private function buildMercurialExtensionCommand(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+
+    $pattern_args = array_slice($args, 2);
+
+    $ext_flag = $this->getMercurialExtensionFlag($extension);
+
+    $full_cmd = $ext_flag.' '.$pattern;
+
+    $args = array_merge(
+      array($full_cmd),
+      $pattern_args);
+
+    return $args;
+  }
+
+  public function execxLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execxLocal'),
+      $extended_args);
+  }
+
+  public function execFutureLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execFutureLocal'),
+      $extended_args);
+  }
+
+  public function execPassthruWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execPassthru'),
+      $extended_args);
+  }
+
+  public function execManualLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execManualLocal'),
+      $extended_args);
+  }
+
   private function executeMercurialFeatureTest($feature, $resolve) {
     if (array_key_exists($feature, $this->featureResults)) {
       return $this->featureResults[$feature];
@@ -982,8 +1195,9 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   private function newMercurialFeatureFuture($feature) {
     switch ($feature) {
       case 'shelve':
-        return $this->execFutureLocal(
-          '--config extensions.shelve= shelve --help --');
+        return $this->execFutureLocalWithExtension(
+          'shelve',
+          'shelve --help --');
       case 'evolve':
         return $this->execFutureLocal('prune --help --');
       default:
@@ -1015,17 +1229,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   protected function newRemoteRefQueryTemplate() {
     return new ArcanistMercurialRepositoryRemoteQuery();
-  }
-
-  public function getMercurialExtensionArguments() {
-    $path = phutil_get_library_root('arcanist');
-    $path = dirname($path);
-    $path = $path.'/support/hg/arc-hg.py';
-
-    return array(
-      '--config',
-      'extensions.arc-hg='.$path,
-    );
   }
 
   protected function newNormalizedURI($uri) {

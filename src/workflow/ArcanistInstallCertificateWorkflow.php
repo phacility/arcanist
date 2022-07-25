@@ -19,12 +19,12 @@ EOTEXT
   public function getCommandHelp() {
     return phutil_console_format(<<<EOTEXT
           Supports: http, https
-          Installs Conduit credentials into your ~/.arcrc for the given install
-          of Phabricator. You need to do this before you can use 'arc', as it
-          enables 'arc' to link your command-line activity with your account on
-          the web. Run this command from within a project directory to install
-          that project's certificate, or specify an explicit URI (like
-          "https://phabricator.example.com/").
+          Installs Conduit credentials into your ~/.arcrc for the given server.
+          You need to do this before you can use 'arc', as it enables 'arc' to
+          link your command-line activity with your account on the web. Run
+          this command from within a project directory to install that
+          project's certificate, or specify an explicit URI (like
+          "https://devtools.example.com/").
 EOTEXT
       );
   }
@@ -91,12 +91,11 @@ EOTEXT
       // Ignore.
     }
 
-    echo phutil_console_format("**%s**\n", pht('LOGIN TO PHABRICATOR'));
+    echo phutil_console_format("**%s**\n", pht('LOG IN'));
     echo phutil_console_format(
       "%s\n\n%s\n\n%s",
       pht(
-        'Open this page in your browser and login to '.
-        'Phabricator if necessary:'),
+        'Open this page in your browser and log in if necessary:'),
       $token_uri,
       pht('Then paste the API Token on that page below.'));
 
@@ -204,7 +203,7 @@ EOTEXT
       $uri = $conduit_uri;
     }
 
-    $example = 'https://phabricator.example.com/';
+    $example = 'https://devtools.example.com/';
 
     $uri_object = new PhutilURI($uri);
     $protocol = $uri_object->getProtocol();

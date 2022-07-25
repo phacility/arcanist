@@ -21,18 +21,123 @@ from mercurial import (
   hg,
   i18n,
   node,
-  registrar,
 )
 
 _ = i18n._
 cmdtable = {}
-command = registrar.command(cmdtable)
+
+# Older veresions of Mercurial (~4.7) moved the command function and the
+# remoteopts object to different modules. Using try/except here to attempt
+# allowing this module to load properly, despite whether individual commands
+# will work properly on older versions of Mercurial or not.
+# https://phab.mercurial-scm.org/rHG46ba2cdda476ac53a8a8f50e4d9435d88267db60
+# https://phab.mercurial-scm.org/rHG04baab18d60a5c833ab3190506147e01b3c6d12c
+try:
+  from mercurial import registrar
+  command = registrar.command(cmdtable)
+except:
+  command = cmdutil.command(cmdtable)
+
+try:
+  remoteopts = cmdutil.remoteopts
+except:
+  from mercurial import commands
+  remoteopts = commands.remoteopts
+
+try:
+  parseurl = hg.parseurl
+except:
+  from mercurial import utils
+  parseurl = utils.urlutil.parseurl
+
+@command(
+  b'arc-amend',
+  [
+    (b'l',
+      b'logfile',
+      b'',
+      _(b'read commit message from file'),
+      _(b'FILE')),
+    (b'm',
+      b'message',
+      b'',
+      _(b'use text as commit message'),
+      _(b'TEXT')),
+    (b'u',
+      b'user',
+      b'',
+      _(b'record the specified user as committer'),
+      _(b'USER')),
+    (b'd',
+      b'date',
+      b'',
+      _(b'record the specified date as commit date'),
+      _(b'DATE')),
+    (b'A',
+      b'addremove',
+      False,
+      _(b'mark new/missing files as added/removed before committing')),
+    (b'n',
+      b'note',
+      b'',
+      _(b'store a note on amend'),
+      _(b'TEXT')),
+  ],
+  _(b'[OPTION]'))
+def amend(ui, repo, source=None, **opts):
+  """amend
+
+  Uses Mercurial internal API to amend changes to a non-head commit.
+
+  (This is an Arcanist extension to Mercurial.)
+
+  Returns 0 if amending succeeds, 1 otherwise.
+  """
+
+  # The option keys seem to come in as 'str' type but the cmdutil.amend() code
+  # expects them as binary. To account for both Python 2 and Python 3
+  # compatibility, insert the value under both 'str' and binary type.
+  newopts = {}
+  for key in opts:
+    val = opts.get(key)
+    newopts[key] = val
+    if isinstance(key, str):
+      newkey = key.encode('UTF-8')
+      newopts[newkey] = val
+
+  orig = repo[b'.']
+  extra = {}
+  pats = []
+  cmdutil.amend(ui, repo, orig, extra, pats, newopts)
+
+  """
+  # This will allow running amend on older versions of Mercurial, ~3.5, however
+  # the behavior on those versions will squash child commits of the working
+  # directory into the amended commit which is undesired.
+  try:
+    cmdutil.amend(ui, repo, orig, extra, pats, newopts)
+  except:
+    def commitfunc(ui, repo, message, match, opts):
+      return repo.commit(
+        message,
+        opts.get('user') or orig.user(),
+        opts.get('date') or orig.date(),
+        match,
+        extra=extra)
+    cmdutil.amend(ui, repo, commitfunc, orig, extra, pats, newopts)
+  """
+
+  return 0
 
 @command(
   b'arc-ls-markers',
-  [(b'', b'output', b'',
-    _(b'file to output refs to'), _(b'FILE')),
-  ] + cmdutil.remoteopts,
+  [
+    (b'',
+      b'output',
+      b'',
+    _(b'file to output refs to'),
+    _(b'FILE')),
+  ] + remoteopts,
   _(b'[--output FILENAME] [SOURCE]'))
 def lsmarkers(ui, repo, source=None, **opts):
   """list markers
@@ -168,7 +273,7 @@ def remotemarkers(ui, repo, source, opts):
 
   markers = []
 
-  source, branches = hg.parseurl(ui.expandpath(source))
+  source, branches = parseurl(ui.expandpath(source))
   remote = hg.peer(repo, opts, source)
 
   with remote.commandexecutor() as e:

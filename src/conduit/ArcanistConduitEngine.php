@@ -89,8 +89,8 @@ final class ArcanistConduitEngine
     $block = id(new PhutilConsoleBlock())
       ->addParagraph(
         pht(
-          'This command needs to communicate with Phabricator, but no '.
-          'Phabricator URI is configured.'))
+          'This command needs to communicate with a server, but no '.
+          'server URI is configured.'))
       ->addList($list);
 
     throw new ArcanistUsageException($block->drawConsoleString());

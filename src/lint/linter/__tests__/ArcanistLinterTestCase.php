@@ -51,6 +51,13 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
   private function lintFile($file, ArcanistLinter $linter) {
     $linter = clone $linter;
 
+    if (!$linter->canRun()) {
+      $this->assertSkipped(
+        pht(
+          'Linter "%s" can not run.',
+          get_class($linter)));
+    }
+
     $contents = Filesystem::readFile($file);
     $contents = preg_split('/^~{4,}\n/m', $contents);
     if (count($contents) < 2) {
@@ -283,9 +290,12 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
   }
 
   private function compareTransform($expected, $actual) {
+    $expected = phutil_string_cast($expected);
+
     if (!strlen($expected)) {
       return;
     }
+
     $this->assertEqual(
       $expected,
       $actual,

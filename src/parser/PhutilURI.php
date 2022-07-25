@@ -154,9 +154,9 @@ final class PhutilURI extends Phobject {
 
     $user = $this->user;
     $pass = $this->pass;
-    if (strlen($user) && strlen($pass)) {
+    if (phutil_nonempty_string($user) && phutil_nonempty_string($pass)) {
       $auth = rawurlencode($user).':'.rawurlencode($pass).'@';
-    } else if (strlen($user)) {
+    } else if (phutil_nonempty_string($user)) {
       $auth = rawurlencode($user).'@';
     } else {
       $auth = null;
@@ -166,19 +166,24 @@ final class PhutilURI extends Phobject {
     if ($this->isGitURI()) {
       $protocol = null;
     } else {
-      if (strlen($auth)) {
+      if ($auth !== null) {
         $protocol = nonempty($this->protocol, 'http');
       }
     }
 
-    if (strlen($protocol) || strlen($auth) || strlen($domain)) {
+    $has_protocol = ($protocol !== null) && strlen($protocol);
+    $has_auth = ($auth !== null);
+    $has_domain = ($domain !== null) && strlen($domain);
+    $has_port = ($port !== null) && strlen($port);
+
+    if ($has_protocol || $has_auth || $has_domain) {
       if ($this->isGitURI()) {
         $prefix = "{$auth}{$domain}";
       } else {
         $prefix = "{$protocol}://{$auth}{$domain}";
       }
 
-      if (strlen($port)) {
+      if ($has_port) {
         $prefix .= ':'.$port;
       }
     }
@@ -189,7 +194,7 @@ final class PhutilURI extends Phobject {
       $query = null;
     }
 
-    if (strlen($this->getFragment())) {
+    if (phutil_nonempty_string($this->getFragment())) {
       $fragment = '#'.$this->getFragment();
     } else {
       $fragment = null;
@@ -428,7 +433,7 @@ final class PhutilURI extends Phobject {
     if ($this->isGitURI()) {
       // Git URIs use relative paths which do not need to begin with "/".
     } else {
-      if ($this->domain && strlen($path) && $path[0] !== '/') {
+      if ($this->domain && phutil_nonempty_string($path) && $path[0] !== '/') {
         $path = '/'.$path;
       }
     }

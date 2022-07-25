@@ -19,12 +19,6 @@ final class ArcanistMercurialRepositoryMarkerQuery
     // to provide a command which works like "git for-each-ref" locally and
     // "git ls-remote" when given a remote.
 
-    $argv = array();
-    foreach ($api->getMercurialExtensionArguments() as $arg) {
-      $argv[] = $arg;
-    }
-    $argv[] = 'arc-ls-markers';
-
     // NOTE: In remote mode, we're using passthru and a tempfile on this
     // because it's a remote command and may prompt the user to provide
     // credentials interactively. In local mode, we can just read stdout.
@@ -33,20 +27,17 @@ final class ArcanistMercurialRepositoryMarkerQuery
       $tmpfile = new TempFile();
       Filesystem::remove($tmpfile);
 
+      $argv = array();
       $argv[] = '--output';
       $argv[] = phutil_string_cast($tmpfile);
-    }
-
-    $argv[] = '--';
-
-    if ($remote !== null) {
+      $argv[] = '--';
       $argv[] = $remote->getRemoteName();
-    }
 
-    if ($remote !== null) {
-      $passthru = $api->newPassthru('%Ls', $argv);
+      $err = $api->execPassthruWithExtension(
+        'arc-hg',
+        'arc-ls-markers %Ls',
+        $argv);
 
-      $err = $passthru->execute();
       if ($err) {
         throw new Exception(
           pht(
@@ -57,8 +48,10 @@ final class ArcanistMercurialRepositoryMarkerQuery
       $raw_data = Filesystem::readFile($tmpfile);
       unset($tmpfile);
     } else {
-      $future = $api->newFuture('%Ls', $argv);
-      list($raw_data) = $future->resolve();
+      $future = $api->execFutureLocalWithExtension(
+        'arc-hg',
+        'arc-ls-markers --');
+      list($err, $raw_data) = $future->resolve();
     }
 
     $items = phutil_json_decode($raw_data);

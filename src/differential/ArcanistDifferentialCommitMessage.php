@@ -139,10 +139,10 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     throw new ArcanistUsageException(
       pht(
         'Invalid "Differential Revision" field in commit message. This field '.
-        'should have a revision identifier like "%s" or a Phabricator URI '.
+        'should have a revision identifier like "%s" or a server URI '.
         'like "%s", but has "%s".',
         'D123',
-        'https://phabricator.example.com/D123',
+        'https://devtools.example.com/D123',
         $revision_value));
   }
 

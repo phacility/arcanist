@@ -28,6 +28,8 @@ final class PhutilDirectoryFixture extends Phobject {
   }
 
   public function getPath($to_file = null) {
+    $to_file = phutil_string_cast($to_file);
+
     return $this->path.'/'.ltrim($to_file, '/');
   }
 

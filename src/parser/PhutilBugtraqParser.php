@@ -85,7 +85,7 @@ final class PhutilBugtraqParser extends Phobject {
       $captured_text = $capture['text'];
       $captured_offset = $capture['at'];
 
-      if (strlen($select_regexp)) {
+      if ($select_regexp !== null) {
         $selections = null;
         preg_match_all(
           $select_regexp,

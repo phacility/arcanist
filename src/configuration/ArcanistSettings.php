@@ -7,11 +7,11 @@ final class ArcanistSettings extends Phobject {
       'default' => array(
         'type' => 'string',
         'help' => pht(
-          'The URI of a Phabricator install to connect to by default, if '.
-          '%s is run in a project without a Phabricator URI or run outside '.
+          'The URI of a server to connect to by default, if '.
+          '%s is run in a project without a configured URI or run outside '.
           'of a project.',
           'arc'),
-        'example' => '"http://phabricator.example.com/"',
+        'example' => '"http://devtools.example.com/"',
       ),
       'base' => array(
         'type' => 'string',
@@ -35,7 +35,7 @@ final class ArcanistSettings extends Phobject {
         'type' => 'string',
         'example' => '"X"',
         'help' => pht(
-          'Associate the working copy with a specific Phabricator repository. '.
+          'Associate the working copy with a specific repository. '.
           'Normally, %s can figure this association out on its own, but if '.
           'your setup is unusual you can use this option to tell it what the '.
           'desired value is.',
@@ -44,10 +44,9 @@ final class ArcanistSettings extends Phobject {
       'phabricator.uri' => array(
         'type' => 'string',
         'legacy' => 'conduit_uri',
-        'example' => '"https://phabricator.mycompany.com/"',
+        'example' => '"https://devtools.example.com/"',
         'help' => pht(
-          'Associates this working copy with a specific installation of '.
-          'Phabricator.'),
+          'Associates this working copy with a specific server.'),
       ),
       'lint.engine' => array(
         'type' => 'string',
@@ -96,8 +95,8 @@ final class ArcanistSettings extends Phobject {
       'https.cabundle' => array(
         'type' => 'string',
         'help' => pht(
-          "Path to a custom CA bundle file to be used for arcanist's cURL ".
-          "calls. This is used primarily when your conduit endpoint is ".
+          "Path to a custom CA bundle file to be used for cURL calls. ".
+          "This is used primarily when your conduit endpoint is ".
           "behind HTTPS signed by your organization's internal CA."),
         'example' => 'support/yourca.pem',
       ),
@@ -118,7 +117,7 @@ final class ArcanistSettings extends Phobject {
           'Whether %s should permit the automatic stashing of changes in the '.
           'working directory when requiring a clean working copy. This option '.
           'should only be used when users understand how to restore their '.
-          'working directory from the local stash if an Arcanist operation '.
+          'working directory from the local stash if an operation '.
           'causes an unrecoverable error.',
           'arc'),
         'default' => false,

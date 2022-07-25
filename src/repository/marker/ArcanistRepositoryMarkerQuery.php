@@ -64,8 +64,10 @@ abstract class ArcanistRepositoryMarkerQuery
       $marker->attachWorkingCopyStateRef($state_ref);
 
       $hash = $marker->getCommitHash();
-      $hash = $api->getDisplayHash($hash);
-      $marker->setDisplayHash($hash);
+      if ($hash !== null) {
+        $hash = $api->getDisplayHash($hash);
+        $marker->setDisplayHash($hash);
+      }
     }
 
     $types = $this->markerTypes;

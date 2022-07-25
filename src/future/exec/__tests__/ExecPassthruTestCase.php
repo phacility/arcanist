@@ -11,7 +11,7 @@ final class ExecPassthruTestCase extends PhutilTestCase {
     $bin = $this->getSupportExecutable('exit');
 
     $exec = new PhutilExecPassthru('php -f %R', $bin);
-    $err = $exec->execute();
+    $err = $exec->resolve();
     $this->assertEqual(0, $err);
   }
 

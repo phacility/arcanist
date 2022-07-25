@@ -19,7 +19,7 @@ abstract class PhutilExecutableFuture extends Future {
           pht(
             'Command (of class "%s") was constructed with a '.
             '"PhutilCommandString", but also passed arguments. '.
-            'When using a preprebuilt command, you must not pass '.
+            'When using a prebuilt command, you must not pass '.
             'arguments.',
             get_class($this)));
       }

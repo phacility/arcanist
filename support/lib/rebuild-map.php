@@ -17,10 +17,6 @@ $args->parseStandardArguments();
 $args->parse(
   array(
     array(
-      'name'      => 'quiet',
-      'help'      => pht('Do not write status messages to stderr.'),
-    ),
-    array(
       'name'      => 'drop-cache',
       'help'      => pht(
         'Drop the symbol cache and rebuild the entire map from scratch.'),
@@ -56,7 +52,6 @@ if (count($root) !== 1) {
 $root = Filesystem::resolvePath(head($root));
 
 $builder = new PhutilLibraryMapBuilder($root);
-$builder->setQuiet($args->getArg('quiet'));
 $builder->setSubprocessLimit($args->getArg('limit'));
 
 if ($args->getArg('drop-cache')) {

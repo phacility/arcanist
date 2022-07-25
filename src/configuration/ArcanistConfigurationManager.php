@@ -258,7 +258,7 @@ final class ArcanistConfigurationManager extends Phobject {
   }
 
   public function getUserConfigurationFileLocation() {
-    if (strlen($this->customArcrcFilename)) {
+    if ($this->customArcrcFilename !== null) {
       return $this->customArcrcFilename;
     }
 

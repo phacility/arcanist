@@ -7,6 +7,14 @@ final class ArcanistMercurialLocalState
   private $localBranch;
   private $localBookmark;
 
+  public function getLocalCommit() {
+    return $this->localCommit;
+  }
+
+  public function getLocalBookmark() {
+    return $this->localBookmark;
+  }
+
   protected function executeSaveLocalState() {
     $api = $this->getRepositoryAPI();
     $log = $this->getWorkflow()->getLogEngine();
@@ -152,8 +160,9 @@ final class ArcanistMercurialLocalState
       'arc-%s',
       Filesystem::readRandomCharacters(12));
 
-    $api->execxLocal(
-      '--config extensions.shelve= shelve --unknown --name %s --',
+    $api->execxLocalWithExtension(
+      'shelve',
+      'shelve --unknown --name %s --',
       $stash_ref);
 
     $log->writeStatus(
@@ -171,16 +180,18 @@ final class ArcanistMercurialLocalState
       pht('UNSHELVE'),
       pht('Restoring uncommitted changes to working copy.'));
 
-    $api->execxLocal(
-      '--config extensions.shelve= unshelve --keep --name %s --',
+    $api->execxLocalWithExtension(
+      'shelve',
+      'unshelve --keep --name %s --',
       $stash_ref);
   }
 
   protected function discardStash($stash_ref) {
     $api = $this->getRepositoryAPI();
 
-    $api->execxLocal(
-      '--config extensions.shelve= shelve --delete %s --',
+    $api->execxLocalWithExtension(
+      'shelve',
+      'shelve --delete %s --',
       $stash_ref);
   }
 

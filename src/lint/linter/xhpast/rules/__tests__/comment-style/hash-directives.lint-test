@@ -1,0 +1,23 @@
+<?php
+
+class X implements Iterator {
+
+  #[\ReturnTypeWillChange]
+  public function reset() {
+    # See T13588 for PHP8.1 compatibility information.
+  }
+
+}
+~~~~~~~~~~
+error:7:5:XHP18:Comment Style
+~~~~~~~~~~
+<?php
+
+class X implements Iterator {
+
+  #[\ReturnTypeWillChange]
+  public function reset() {
+    // See T13588 for PHP8.1 compatibility information.
+  }
+
+}

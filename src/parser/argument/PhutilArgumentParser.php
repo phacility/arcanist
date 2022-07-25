@@ -625,6 +625,33 @@ final class PhutilArgumentParser extends Phobject {
     return $this->specs[$name]->getDefault();
   }
 
+  public function getArgAsInteger($name) {
+    $value = $this->getArg($name);
+
+    if ($value === null) {
+      return $value;
+    }
+
+    if (!preg_match('/^-?\d+\z/', $value)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Parameter provided to argument "--%s" must be an integer.',
+          $name));
+    }
+
+    $intvalue = (int)$value;
+
+    if (phutil_string_cast($intvalue) !== phutil_string_cast($value)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'Parameter provided to argument "--%s" is too large to '.
+          'parse as an integer.',
+          $name));
+    }
+
+    return $intvalue;
+  }
+
   public function getUnconsumedArgumentVector() {
     return $this->argv;
   }
@@ -769,7 +796,12 @@ final class PhutilArgumentParser extends Phobject {
         pht('There is no **%s** workflow.', $workflow_name));
     } else {
       $out[] = $this->indent($indent, $workflow->getExamples());
-      $out[] = $this->indent($indent, $workflow->getSynopsis());
+
+      $synopsis = $workflow->getSynopsis();
+      if ($synopsis !== null) {
+        $out[] = $this->indent($indent, $workflow->getSynopsis());
+      }
+
       if ($show_details) {
         $full_help = $workflow->getHelp();
         if ($full_help) {
@@ -800,7 +832,7 @@ final class PhutilArgumentParser extends Phobject {
 
 
   private function logMessage($message) {
-    fwrite(STDERR, $message);
+    PhutilSystem::writeStderr($message);
   }
 
 
