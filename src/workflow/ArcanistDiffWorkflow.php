@@ -626,16 +626,29 @@ EOTEXT
 
       if ($this->getDevxMetricsEnabled()) {
         try {
+          $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
+        }
+        catch (Exception $e) {
+          # When developer do `arc diff` which out a branch it will has this exception
+          # https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
+          # Therefore we use current time as the branch create time
+          $branch_create_ts = time() * 1000;
+        }
+        try {
           $ch = curl_init("https://devhooks.build.rhinternal.net/api/events/");
 
           $repository_api = $this->getRepositoryAPI();
-          $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
           $base_commit_sha = $repository_api->getBaseCommit();
           $base_commit_ts = $repository_api->getCommitTS($base_commit_sha) * 1000;
           $head_commit_sha = $repository_api->getHeadCommit();
           $head_commit_ts = $repository_api->getCommitTS($head_commit_sha) * 1000;
           $author = $this->getUserName();
           $branch_name = $repository_api->getBranchName();
+          if ($branch_name == null) {
+            # When developer do `arc diff` which out a branch it will has this exception
+            # https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
+            $branch_name = "devx-kpi-nobranch";
+          }
           $hostname = gethostname();
           $payload = json_encode(array(
             "event_type" => "dev_branch_info",
