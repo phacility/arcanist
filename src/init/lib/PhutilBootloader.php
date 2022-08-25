@@ -191,6 +191,10 @@ final class PhutilBootloader {
   }
 
   public function getLibraryRoot($name) {
+    if ($name === 'phabricator') {
+      // TODO warning
+      $name = 'phorge';
+    }
     if (empty($this->registeredLibraries[$name])) {
       throw new PhutilBootloaderException(
         "The phutil library '{$name}' has not been loaded!");

@@ -460,6 +460,7 @@ final class PhutilErrorHandler extends Phobject {
       // For these libraries, the effective root is one level up.
       switch ($library) {
         case 'arcanist':
+        case 'phorge':
         case 'phabricator':
           $root = dirname($root);
           break;

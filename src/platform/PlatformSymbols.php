@@ -8,7 +8,7 @@ final class PlatformSymbols
   }
 
   public static function getPlatformServerName() {
-    return 'Phabricator';
+    return 'Phorge';
   }
 
   public static function getProductNames() {
