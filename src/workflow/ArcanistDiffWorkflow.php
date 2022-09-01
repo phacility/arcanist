@@ -2075,9 +2075,12 @@ EOTEXT
     }
 
     // UBER CODE
-    $affected_paths = $this->selectPathsForWorkflow(array(), null);
-    id(new UberMandatoryFields($this))->validateCommitMessage(
-      $message, $affected_paths);
+    if ($this->hasRepositoryAPI()) {
+      $affected_paths = $this->selectPathsForWorkflow(array(), null);
+      id(new UberMandatoryFields($this))->validateCommitMessage(
+        $message, $affected_paths);
+    }
+    // UBER CODE END
 
     foreach (new FutureIterator($futures) as $key => $future) {
       $result = $future->resolve();
