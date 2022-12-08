@@ -47,12 +47,12 @@ final class PhutilTwitchFuture extends FutureProxy {
       }
 
       $uri = new PhutilURI('https://api.twitch.tv/');
-      $uri->setPath('/kraken/'.ltrim($this->action, '/'));
-      $uri->replaceQueryParam('oauth_token', $this->accessToken);
+      $uri->setPath('/helix/'.ltrim($this->action, '/'));
 
       $future = new HTTPSFuture($uri);
       $future->setData($this->params);
       $future->setMethod($this->method);
+      $future->addHeader('Authorization', 'Bearer '.$this->accessToken);
 
       // NOTE: This is how the Twitch API is versioned.
       $future->addHeader('Accept', 'application/vnd.twitchtv.2+json');
@@ -87,7 +87,7 @@ final class PhutilTwitchFuture extends FutureProxy {
       throw new Exception(pht('Received error from Twitch: %s', $error));
     }
 
-    return $data;
+    return $data['data'][0];
   }
 
 }
