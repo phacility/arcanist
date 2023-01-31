@@ -288,9 +288,11 @@ function phutil_is_utf8_slowly($string, $only_bmp = false) {
  * @return int   The character length of the string.
  */
 function phutil_utf8_strlen($string) {
-  if (function_exists('utf8_decode')) {
-    return strlen(utf8_decode($string));
-  }
+  //utf8_decode is depricated as of php 8.2
+  //https://www.php.net/releases/8.2/en.php#deprecations_and_bc_breaks
+  //if (function_exists('utf8_decode')) {
+  // return strlen(utf8_decode($string));
+  //}
   return count(phutil_utf8v($string));
 }
 
