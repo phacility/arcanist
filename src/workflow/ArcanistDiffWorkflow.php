@@ -438,10 +438,7 @@ EOTEXT
       $revision = $this->buildRevisionFromCommitMessage($commit_message);
     }
 
-    $runSecretDetector = false;
-    if (strtolower(getenv('ENABLE_SECRET_DETECTION_PROCESS')) == "true") {
-      $runSecretDetector = true;
-    }
+    $runSecretDetector = true;
 
     if (!($this->isProcessRunningInsideMonorepo())) {
       $runSecretDetector = false;
