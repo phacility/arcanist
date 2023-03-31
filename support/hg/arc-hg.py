@@ -273,8 +273,21 @@ def remotemarkers(ui, repo, source, opts):
 
   markers = []
 
-  source, branches = parseurl(ui.expandpath(source))
-  remote = hg.peer(repo, opts, source)
+  # Determine the remote to use based on the default path configured in
+  # [ui.paths] for this local repository.
+  #
+  # The expandpath function in the ui module was deprecated in 5.8 and removed
+  # in 6.4. NOTE: There is also an expandpath function in mercurial.util (not
+  # plural mercurial.utils...) however that function behaves differently from
+  # the old ui.expandpath. Reviewing the source comments for the old
+  # ui.expandpath function points to using urilutils.get_ functions.
+  try:
+    remote_path, branches = parseurl(ui.expandpath(source))
+  except:
+    from mercurial import utils
+    origsource, remote_path, branch = utils.urlutil.get_clone_path(ui, source)
+
+  remote = hg.peer(repo, opts, remote_path)
 
   with remote.commandexecutor() as e:
     branchmap = e.callcommand(b'branchmap', {}).result()
