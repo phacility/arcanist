@@ -338,7 +338,7 @@ EOTEXT
       'rebase' => array(
         'help'  => pht('Rebase to stable before creating diff, default behavior when arc diff.'),
       ),
-      'no-rebase' => array(
+      'norebase' => array(
         'help'  => pht('Do not rebase to stable before creating diff.'),
       ),
       'unsafe-no-secret-detection' => array(
@@ -369,7 +369,7 @@ EOTEXT
     // return if continue creating the diff, true or false
     // Default to rebase before creating a diff.
     $do_rebase = true;
-    if ($this->getArgument('no-rebase')) {
+    if ($this->getArgument('norebase')) {
       $do_rebase = false;
       return true;
     }
