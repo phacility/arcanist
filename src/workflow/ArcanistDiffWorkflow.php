@@ -455,7 +455,8 @@ EOTEXT
     }
 
     if ($runSecretDetector) {
-      $this->console->writeOut("%s\n", pht('Running secret detection...'));
+      $time_now = date('Y-m-d h:i:s');
+      $this->console->writeOut("[%s] %s\n", pht($time_now), pht('Running secret detection...'));
       $root = phutil_get_library_root('arcanist');
       $script_path = $root.'/../scripts/secscan_scan_pre_push.sh';
       $script_path = Filesystem::resolvePath($script_path);
@@ -473,10 +474,11 @@ EOTEXT
 
     if ($runSecretDetector) {
       list($err, $stdout, $stderr) = $secretDetectorFuture->resolve();
+      $time_now = date('Y-m-d h:i:s');
       if ( $err == 1 ) {
-        throw new Exception(pht("\nSecurity findings detected\n %s \n", $stdout));
+        throw new Exception(pht("\n[%s] Security findings detected\n %s \n", $time_now, $stdout));
       }
-      $this->console->writeOut("%s\n", pht('Secret detection completed. No findings.'));
+      $this->console->writeOut("[%s] %s\n", pht($time_now), pht('Secret detection completed. No findings.'));
     }
 
     $changes = $this->generateChanges();
