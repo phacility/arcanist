@@ -461,7 +461,9 @@ EOTEXT
       $script_path = $root.'/../scripts/secscan_scan_pre_push.sh';
       $script_path = Filesystem::resolvePath($script_path);
       $secretDetectorFuture = new ExecFuture('sh %C', $script_path);
-      $secretDetectorFuture->setTimeout(8);
+      // temporary change to understand `bazel run` metrics of secret detection,
+      // please remove this line after the experiment is done.
+      $secretDetectorFuture->setTimeout(120);
       $secretDetectorFuture->start();
     }
 
