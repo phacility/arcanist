@@ -82,7 +82,7 @@ final class PHPASTParserTestCase extends PhutilTestCase {
       case 'pass':
         $this->assertEqual(0, $err, pht('Exit code for "%s".', $name));
 
-        if (!strlen($expect)) {
+        if ($expect === null || !strlen($expect)) {
           // If there's no "expect" data in the test case, that's OK.
           break;
         }

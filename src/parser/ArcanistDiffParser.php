@@ -263,7 +263,9 @@ final class ArcanistDiffParser extends Phobject {
         // searching for "diff -r" or "diff --git" in the text.
         $this->saveLine();
         $line = $this->nextLineThatLooksLikeDiffStart();
-        if (!$this->tryMatchHeader($patterns, $line, $match)) {
+        if ($line === null
+          || !$this->tryMatchHeader($patterns, $line, $match)) {
+
           // Restore line before guessing to display correct error.
           $this->restoreLine();
           $failed_parse = true;

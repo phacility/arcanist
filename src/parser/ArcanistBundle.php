@@ -762,26 +762,25 @@ final class ArcanistBundle extends Phobject {
       $old_data = $this->getBlob($old_phid, $name);
     }
 
-    $old_length = strlen($old_data);
-
-    // Here, and below, the binary will be emitted with base85 encoding. This
-    // encoding encodes each 4 bytes of input in 5 bytes of output, so we may
-    // need up to 5/4ths as many bytes to represent it.
-
-    // We reserve space up front because base85 encoding isn't super cheap. If
-    // the blob is enormous, we'd rather just bail out now before doing a ton
-    // of work and then throwing it away anyway.
-
-    // However, the data is compressed before it is emitted so we may actually
-    // end up using fewer bytes. For now, the allocator just assumes the worst
-    // case since it isn't important to be precise, but we could do a more
-    // exact job of this.
-    $this->reserveBytes($old_length * 5 / 4);
-
     if ($old_data === null) {
+      $old_length = 0;
       $old_data = '';
       $old_sha1 = str_repeat('0', 40);
     } else {
+      // Here, and below, the binary will be emitted with base85 encoding. This
+      // encoding encodes each 4 bytes of input in 5 bytes of output, so we may
+      // need up to 5/4ths as many bytes to represent it.
+
+      // We reserve space up front because base85 encoding isn't super cheap. If
+      // the blob is enormous, we'd rather just bail out now before doing a ton
+      // of work and then throwing it away anyway.
+
+      // However, the data is compressed before it is emitted so we may actually
+      // end up using fewer bytes. For now, the allocator just assumes the worst
+      // case since it isn't important to be precise, but we could do a more
+      // exact job of this.
+      $old_length = strlen($old_data);
+      $this->reserveBytes($old_length * 5 / 4);
       $old_sha1 = sha1("blob {$old_length}\0{$old_data}");
     }
 
@@ -795,13 +794,13 @@ final class ArcanistBundle extends Phobject {
       $new_data = $this->getBlob($new_phid, $name);
     }
 
-    $new_length = strlen($new_data);
-    $this->reserveBytes($new_length * 5 / 4);
-
     if ($new_data === null) {
+      $new_length = 0;
       $new_data = '';
       $new_sha1 = str_repeat('0', 40);
     } else {
+      $new_length = strlen($new_data);
+      $this->reserveBytes($new_length * 5 / 4);
       $new_sha1 = sha1("blob {$new_length}\0{$new_data}");
     }
 

@@ -1305,8 +1305,12 @@ function phutil_microseconds_since($timestamp) {
  * @return  mixed     Decoded list/dictionary.
  */
 function phutil_json_decode($string) {
-  $result = @json_decode($string, true);
+  if ($string === null) {
+    throw new PhutilJSONParserException(pht('Value "null" is not a valid JSON '.
+      'encoded object.'));
+  }
 
+  $result = @json_decode($string, true);
   if (!is_array($result)) {
     // Failed to decode the JSON. Try to use @{class:PhutilJSONParser} instead.
     // This will probably fail, but will throw a useful exception.

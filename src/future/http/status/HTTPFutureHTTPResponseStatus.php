@@ -13,7 +13,7 @@ final class HTTPFutureHTTPResponseStatus extends HTTPFutureResponseStatus {
 
     // NOTE: Avoiding PhutilUTF8StringTruncator here because this isn't lazy
     // and responses may be large.
-    if (strlen($body) > 512) {
+    if ($body !== null && strlen($body) > 512) {
       $excerpt = substr($body, 0, 512).'...';
     } else {
       $excerpt = $body;
@@ -21,7 +21,8 @@ final class HTTPFutureHTTPResponseStatus extends HTTPFutureResponseStatus {
 
     $content_type = BaseHTTPFuture::getHeader($headers, 'Content-Type');
     $match = null;
-    if (preg_match('/;\s*charset=([^;]+)/', $content_type, $match)) {
+    if ($content_type !== null && strlen($content_type)
+      && preg_match('/;\s*charset=([^;]+)/', $content_type, $match)) {
       $encoding = trim($match[1], "\"'");
       try {
         $excerpt = phutil_utf8_convert($excerpt, 'UTF-8', $encoding);
