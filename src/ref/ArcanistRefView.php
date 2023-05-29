@@ -98,12 +98,14 @@ final class ArcanistRefView
     // TODO: This should truncate based on console display width, not
     // glyphs, but there's currently no "setMaximumConsoleCharacterWidth()".
 
-    $title = id(new PhutilUTF8StringTruncator())
-      ->setMaximumGlyphs($usable_width)
-      ->truncateString($title);
+    if ($title !== null && strlen($title)) {
+      $title = id(new PhutilUTF8StringTruncator())
+        ->setMaximumGlyphs($usable_width)
+        ->truncateString($title);
+    }
 
     if ($object_name !== null) {
-      if (strlen($title)) {
+      if ($title !== null && strlen($title)) {
         $display_text = tsprintf('**%s** %s', $object_name, $title);
       } else {
         $display_text = tsprintf('**%s**', $object_name);

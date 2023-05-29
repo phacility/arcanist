@@ -15,7 +15,7 @@ final class ArcanistBrowseObjectNameURIHardpointQuery
     $token_set = array();
     foreach ($refs as $key => $ref) {
       $token = $ref->getToken();
-      if (!strlen($token)) {
+      if ($token === null || !strlen($token)) {
         continue;
       }
 

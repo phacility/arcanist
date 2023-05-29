@@ -480,7 +480,7 @@ abstract class ArcanistWorkflow extends Phobject {
       // token-based authentication. Use that instead of all the certificate
       // stuff.
       $token = idx($credentials, 'token');
-      if (strlen($token)) {
+      if ($token !== null && strlen($token)) {
         $conduit = $this->getConduit();
 
         $conduit->setConduitToken($token);
@@ -2245,7 +2245,7 @@ abstract class ArcanistWorkflow extends Phobject {
     $map = $this->getModernCommonDictionary($map);
 
     $details = idx($map, 'userData');
-    if (strlen($details)) {
+    if ($details !== null && strlen($details)) {
       $map['details'] = (string)$details;
     }
     unset($map['userData']);

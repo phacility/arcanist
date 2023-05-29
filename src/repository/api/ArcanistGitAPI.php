@@ -1143,7 +1143,7 @@ final class ArcanistGitAPI extends ArcanistRepositoryAPI {
 
   public function hasLocalCommit($commit) {
     try {
-      if (!$this->getCanonicalRevisionName($commit)) {
+      if ($commit === null || !$this->getCanonicalRevisionName($commit)) {
         return false;
       }
     } catch (CommandException $exception) {
