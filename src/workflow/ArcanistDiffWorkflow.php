@@ -359,9 +359,13 @@ EOTEXT
       return false;
     }
 
-    if ($remote_url[0] != "git@github.com:robinhoodmarkets/rh.git" && $remote_url[0] != "git@github.com:robinhoodmarkets/rh" && $remote_url[0] != "ssh://git@github.com/robinhoodmarkets/rh.git") {
+    $compatible_monorepo_origins = array(
+      "git@github.com:robinhoodmarkets/rh.git", "git@github.com:robinhoodmarkets/rh", "ssh://git@github.com/robinhoodmarkets/rh.git", "https://github.com/robinhoodmarkets/rh.git", // Monorepo
+    );
+    if (!in_array($remote_url[0], $compatible_monorepo_origins)) {
       return false;
     }
+
     return true;
   }
 
@@ -385,7 +389,7 @@ EOTEXT
       return true;
     }
     $compatible_repos = array(
-      "git@github.com:robinhoodmarkets/rh.git", "git@github.com:robinhoodmarkets/rh", "ssh://git@github.com/robinhoodmarkets/rh.git", // Monorepo
+      "git@github.com:robinhoodmarkets/rh.git", "git@github.com:robinhoodmarkets/rh", "ssh://git@github.com/robinhoodmarkets/rh.git", "https://github.com/robinhoodmarkets/rh.git", // Monorepo
       "git@github.com:robinhoodmarkets/robinhood-trader-ios.git", "git@github.com:robinhoodmarkets/robinhood-trader-ios", "ssh://git@github.com/robinhoodmarkets/robinhood-trader-ios.git", // iOS
       "git@github.com:robinhoodmarkets/robinhood-trader-android.git", "git@github.com:robinhoodmarkets/robinhood-trader-android", "ssh://git@github.com/robinhoodmarkets/robinhood-trader-android.git", // Android
     );
