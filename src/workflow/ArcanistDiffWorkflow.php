@@ -1633,7 +1633,7 @@ EOTEXT
 
     $issues = array_merge(
       array(
-        pht('Tags: #ready_to_land'),
+        pht('#ready_to_land'),
         pht('Uncomment the previous line to auto land the diff when tests pass and it is accepted.'),
         pht('More info on the Ready To Land feature: http://go/ready_to_land'),
         '',
