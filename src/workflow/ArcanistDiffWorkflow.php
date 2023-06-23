@@ -1063,10 +1063,11 @@ EOTEXT
               "\n\n  $ %s\n",
               'svn propset svn:mime-type application/octet-stream <filename>'));
         } else {
+          $skip_confirmation = !$this->isTTY() && $this->getArgument('nointeractive');
           $confirm = $byte_warning.' '.pht(
             "If the file is not a text file, you can mark it 'binary'. ".
             "Mark this file as 'binary' and continue?");
-          if (phutil_console_confirm($confirm)) {
+          if ($skip_confirmation || phutil_console_confirm($confirm)) {
             $change->convertToBinaryChange($repository_api);
           } else {
             throw new ArcanistUsageException(
@@ -2160,6 +2161,17 @@ EOTEXT
   }
 
   // UBER CODE
+
+  // Returns true if TTY environment, else false
+  private function isTTY() {
+    $is_tty = true;
+    try {
+      phutil_console_require_tty();
+    } catch (PhutilConsoleStdinNotInteractiveException $e) {
+      $is_tty = false;
+    }
+    return $is_tty;
+  }
 
   // Common checks before showing interactive prompts for user input
   private function commonPrePromptChecks() {
