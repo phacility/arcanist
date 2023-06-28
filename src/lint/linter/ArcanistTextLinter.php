@@ -261,8 +261,7 @@ final class ArcanistTextLinter extends ArcanistLinter {
         self::LINT_TRAILING_WHITESPACE,
         pht(
           'This line contains trailing whitespace. Consider setting '.
-          'up your editor to automatically remove trailing whitespace, '.
-          'you will save time.'),
+          'up your editor to automatically remove trailing whitespace.'),
         $string,
         '');
     }

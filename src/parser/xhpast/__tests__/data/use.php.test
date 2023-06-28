@@ -1,0 +1,86 @@
+<?php
+
+use A;
+use \B;
+use C as D;
+use E, F;
+use G, H as I;
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > A
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > "\"
+      > B
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > C
+     > " "
+     > as
+     > " "
+     * n_STRING
+      > D
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > E
+     * n_EMPTY
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > F
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > G
+     * n_EMPTY
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > H
+     > " "
+     > as
+     > " "
+     * n_STRING
+      > I
+   > ;
+ > "\n"

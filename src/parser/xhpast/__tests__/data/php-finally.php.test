@@ -1,0 +1,36 @@
+<?php try {} catch (C $x) {} finally {}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_TRY
+    > try
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+    > " "
+    * n_CATCH_LIST
+     * n_CATCH
+      > catch
+      > " "
+      > (
+      * n_CLASS_NAME
+       > C
+      > " "
+      * n_VARIABLE
+       > $x
+      > )
+      > " "
+      * n_STATEMENT_LIST
+       > {
+       > }
+    > " "
+    * n_FINALLY
+     * n_STATEMENT_LIST
+ > "\n"

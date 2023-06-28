@@ -1,0 +1,100 @@
+<?php
+
+function g() {
+  yield;
+  yield $x;
+  yield $y => $z;
+
+  $data = (yield $a);
+  $data = (yield $b => $c);
+}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > g
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_YIELD
+       * n_EMPTY
+       * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_YIELD
+       > yield
+       > " "
+       * n_VARIABLE
+        * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_YIELD
+       > yield
+       > " "
+       * n_VARIABLE
+        > $y
+       > " "
+       > =>
+       > " "
+       * n_VARIABLE
+        > $z
+      > ;
+     > "\n\n  "
+     * n_STATEMENT
+      * n_BINARY_EXPRESSION
+       * n_VARIABLE
+        > $data
+       > " "
+       * n_OPERATOR
+        > =
+       > " "
+       * n_YIELD
+        > (
+        > yield
+        > " "
+        * n_VARIABLE
+         * n_EMPTY
+        > )
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_BINARY_EXPRESSION
+       * n_VARIABLE
+        > $data
+       > " "
+       * n_OPERATOR
+        > =
+       > " "
+       * n_YIELD
+        > (
+        > yield
+        > " "
+        * n_VARIABLE
+         > $b
+        > " "
+        > =>
+        > " "
+        * n_VARIABLE
+         > $c
+        > )
+      > ;
+     > "\n"
+     > }
+ > "\n"

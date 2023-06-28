@@ -56,7 +56,6 @@ abstract class ArcanistLintEngine extends Phobject {
 
   private $changedLines = array();
 
-  private $enableAsyncLint = false;
   private $configurationManager;
 
   private $linterResources = array();
@@ -108,15 +107,6 @@ abstract class ArcanistLintEngine extends Phobject {
   final public function setFileData($data) {
     $this->fileData = $data + $this->fileData;
     return $this;
-  }
-
-  final public function setEnableAsyncLint($enable_async_lint) {
-    $this->enableAsyncLint = $enable_async_lint;
-    return $this;
-  }
-
-  final public function getEnableAsyncLint() {
-    return $this->enableAsyncLint;
   }
 
   final public function loadData($path) {

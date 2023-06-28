@@ -11,12 +11,28 @@ fprintf(null, 'x');
 queryfx(null, 'x', 'y');
 
 foobar(null, null, '%s');
+
+pht('x %s y');
+pht('x %s y'.'z');
+
+pht(<<<HEREDOC
+a b c
+HEREDOC
+  );
+
+pht(<<<HEREDOC
+a %s c
+HEREDOC
+  );
 ~~~~~~~~~~
 error:3:1:XHP54:Formatted String
 error:7:1:XHP54:Formatted String
 error:8:1:XHP54:Formatted String
 error:11:1:XHP54:Formatted String
 error:13:1:XHP54:Formatted String
+error:15:1:XHP54:Formatted String
+error:16:1:XHP54:Formatted String
+error:23:1:XHP54:Formatted String
 ~~~~~~~~~~
 ~~~~~~~~~~
 {

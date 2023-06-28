@@ -43,118 +43,132 @@ final class ArcanistLandWorkflow extends ArcanistWorkflow {
   public function getRevisionDict() {
     return $this->revision;
   }
+final class ArcanistLandWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'land';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **land** [__options__] [__ref__]
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Supports: git, git/p4, git/svn, hg
+
+Publish accepted revisions after review. This command is the last step in the
+standard Differential code review workflow.
+
+To publish changes in local branch or bookmark "feature1", you will usually
+run this command:
+
+  **$ arc land feature1**
+
+This workflow merges and pushes changes associated with revisions that are
+ancestors of __ref__. Without __ref__, the current working copy state will be
+used. You can specify multiple __ref__ arguments to publish multiple changes at
+once.
+
+A __ref__ can be any symbol which identifies a commit: a branch name, a tag
+name, a bookmark name, a topic name, a raw commit hash, a symbolic reference,
+etc.
+
+When you provide a __ref__, all unpublished changes which are present in
+ancestors of that __ref__ will be selected for publishing. (With the
+**--pick** flag, only the unpublished changes you directly reference will be
+selected.)
+
+For example, if you provide local branch "feature3" as a __ref__ argument, that
+may also select the changes in "feature1" and "feature2" (if they are ancestors
+of "feature3"). If you stack changes in a single local branch, all commits in
+the stack may be selected.
+
+The workflow merges unpublished changes reachable from __ref__ "into" some
+intermediate branch, then pushes the combined state "onto" some destination
+branch (or list of branches).
+
+(In Mercurial, the "into" and "onto" branches may be bookmarks instead.)
+
+In the most common case, there is only one "onto" branch (often "master" or
+"default" or some similar branch) and the "into" branch is the same branch. For
+example, it is common to merge local feature branch "feature1" into
+"origin/master", then push it onto "origin/master".
+
+The list of "onto" branches is selected by examining these sources in order:
+
+  - the **--onto** flags;
+  - the __arc.land.onto__ configuration setting;
+  - (in Git) the upstream of the branch targeted by the land operation,
+    recursively;
+  - or by falling back to a standard default:
+    - (in Git) "master";
+    - (in Mercurial) "default".
+
+The remote to push "onto" is selected by examining these sources in order:
+
+  - the **--onto-remote** flag;
+  - the __arc.land.onto-remote__ configuration setting;
+  - (in Git) the upstream of the current branch, recursively;
+  - (in Git) the special "p4" remote which indicates a repository has
+    been synchronized with Perforce;
+  - or by falling back to a standard default:
+    - (in Git) "origin";
+    - (in Mercurial) "default".
+
+The branch to merge "into" is selected by examining these sources in order:
+
+  - the **--into** flag;
+  - the **--into-empty** flag;
+  - or by falling back to the first "onto" branch.
+
+The remote to merge "into" is selected by examining these sources in order:
+
+  - the **--into-remote** flag;
+  - the **--into-local** flag (which disables fetching before merging);
+  - or by falling back to the "onto" remote.
+
+After selecting remotes and branches, the commits which will land are printed.
+
+With **--preview**, execution stops here, before the change is merged.
+
+The "into" branch is fetched from the "into" remote (unless **--into-local** or
+**--into-empty** are specified) and the changes are merged into the state in
+the "into" branch according to the selected merge strategy.
+
+The default merge strategy is "squash", which produces a single commit from
+all local commits for each change. A different strategy can be selected with
+the **--strategy** flag.
+
+The resulting merged change will be given an up-to-date commit message
+describing the final state of the revision in Differential.
+
+With **--hold**, execution stops here, before the change is pushed.
+
+The change is pushed onto all of the "onto" branches in the "onto" remote.
+
+If you are landing multiple changes, they are normally all merged locally and
+then all pushed in a single operation. Instead, you can merge and push them one
+at a time with **--incremental**.
+
+Under merge strategies which mutate history (including the default "squash"
+strategy), local refs which descend from commits that were published are
+now updated. For example, if you land "feature4", local branches "feature5" and
+"feature6" may now be rebased on the published version of the change.
+
+Once everything has been pushed, cleanup occurs. Consulting mystical sources of
+power, the workflow makes a guess about what state you wanted to end up in
+after the process finishes. The working copy is put into that state.
+
+Any obsolete refs that point at commits which were published are deleted,
+unless the **--keep-branches** flag is passed.
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Publish reviewed changes.'))
+      ->addExample(pht('**land** [__options__] -- [__ref__ ...]'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: git, git/p4, hg
-
-          Publish an accepted revision after review. This command is the last
-          step in the standard Differential code review workflow.
-
-          This command merges and pushes changes associated with an accepted
-          revision that are currently sitting in __ref__, which is usually the
-          name of a local branch. Without __ref__, the current working copy
-          state will be used.
-
-          Under Git: branches, tags, and arbitrary commits (detached HEADs)
-          may be landed.
-
-          Under Git/Perforce: branches, tags, and arbitrary commits may
-          be submitted.
-
-          Under Mercurial: branches and bookmarks may be landed, but only
-          onto a target of the same type. See T3855.
-
-          The workflow selects a target branch to land onto and a remote where
-          the change will be pushed to.
-
-          A target branch is selected by examining these sources in order:
-
-            - the **--onto** flag;
-            - the upstream of the branch targeted by the land operation,
-              recursively (Git only);
-            - the __arc.land.onto.default__ configuration setting;
-            - or by falling back to a standard default:
-              - "master" in Git;
-              - "default" in Mercurial.
-
-          A remote is selected by examining these sources in order:
-
-            - the **--remote** flag;
-            - the upstream of the current branch, recursively (Git only);
-            - the special "p4" remote which indicates a repository has
-              been synchronized with Perforce (Git only);
-            - or by falling back to a standard default:
-              - "origin" in Git;
-              - the default remote in Mercurial.
-
-          After selecting a target branch and a remote, the commits which will
-          be landed are printed.
-
-          With **--preview**, execution stops here, before the change is
-          merged.
-
-          The change is merged with the changes in the target branch,
-          following these rules:
-
-          In repositories with mutable history or with **--squash**, this will
-          perform a squash merge (the entire branch will be represented as one
-          commit after the merge).
-
-          In repositories with immutable history or with **--merge**, this will
-          perform a strict merge (a merge commit will always be created, and
-          local commits will be preserved).
-
-          The resulting commit will be given an up-to-date commit message
-          describing the final state of the revision in Differential.
-
-          In Git, the merge occurs in a detached HEAD. The local branch
-          reference (if one exists) is not updated yet.
-
-          With **--hold**, execution stops here, before the change is pushed.
-
-          The change is pushed into the remote.
-
-          Consulting mystical sources of power, the workflow makes a guess
-          about what state you wanted to end up in after the process finishes
-          and the working copy is put into that state.
-
-          The branch which was landed is deleted, unless the **--keep-branch**
-          flag was passed or the landing branch is the same as the target
-          branch.
-
-EOTEXT
-      );
-  }
-
-  public function requiresWorkingCopy() {
-    return true;
-  }
-
-  public function requiresConduit() {
-    return true;
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  public function requiresRepositoryAPI() {
-    return true;
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
       'onto' => array(
         'param' => 'master',
@@ -1164,169 +1178,171 @@ EOTEXT
         $repository_api->execManualLocal('rebase --abort');
         $this->restoreBranch();
         throw new ArcanistUsageException(
+      $this->newWorkflowArgument('hold')
+        ->setHelp(
           pht(
-            "Squashing the commits under %s failed. ".
-            "Manually squash your commits and run '%s' again.",
-            $this->branch,
-            'arc land'));
-      }
-
-      if ($repository_api->isBookmark($this->branch)) {
-        // a bug in mercurial means bookmarks end up on the revision prior
-        // to the collapse when using --collapse with --keep,
-        // so we manually move them to the correct spots
-        // see: http://bz.selenic.com/show_bug.cgi?id=3716
-        $repository_api->execxLocal(
-          'bookmark -f %s',
-          $this->onto);
-
-        $repository_api->execxLocal(
-          'bookmark -f %s -r %s',
-          $this->branch,
-          $branch_rev_id);
-      }
-
-      // check if the branch had children
-      list($output) = $repository_api->execxLocal(
-        'log -r %s --template %s',
-        hgsprintf('children(%s)', $this->branch),
-        '{node}\n');
-
-      $child_branch_roots = phutil_split_lines($output, false);
-      $child_branch_roots = array_filter($child_branch_roots);
-      if ($child_branch_roots) {
-        // move the branch's children onto the collapsed commit
-        foreach ($child_branch_roots as $child_root) {
-          $repository_api->execxLocal(
-            'rebase -d %s -s %s --keep --keepbranches',
-            $this->onto,
-            $child_root);
-        }
-      }
-
-      // All the rebases may have moved us to another branch
-      // so we move back.
-      $repository_api->execxLocal('checkout %s', $this->onto);
-    }
-  }
-
-  /**
-   * Detect alternate branches and prompt the user for how to handle
-   * them. An alternate branch is a branch that forks from the landing
-   * branch prior to the landing branch tip.
-   *
-   * In a situation like this:
-   *   -a--------b  master
-   *     \
-   *      w--x  landingbranch
-   *       \  \-- g subbranch
-   *        \--y  altbranch1
-   *         \--z  altbranch2
-   *
-   * y and z are alternate branches and will get deleted by the squash,
-   * so we need to detect them and ask the user what they want to do.
-   *
-   * @param string The revision id of the landing branch's root commit.
-   * @param string The revset specifying all the commits in the landing branch.
-   * @return void
-   */
-  private function handleAlternateBranches($branch_root, $branch_range) {
-    $repository_api = $this->getRepositoryAPI();
-
-    // Using the tree in the doccomment, the revset below resolves as follows:
-    // 1. roots(descendants(w) - descendants(x) - (w::x))
-    // 2. roots({x,g,y,z} - {g} - {w,x})
-    // 3. roots({y,z})
-    // 4. {y,z}
-    $alt_branch_revset = hgsprintf(
-      'roots(descendants(%s)-descendants(%s)-%R)',
-      $branch_root,
-      $this->branch,
-      $branch_range);
-    list($alt_branches) = $repository_api->execxLocal(
-      'log --template %s -r %s',
-      '{node}\n',
-       $alt_branch_revset);
-
-    $alt_branches = phutil_split_lines($alt_branches, false);
-    $alt_branches = array_filter($alt_branches);
-
-    $alt_count = count($alt_branches);
-    if ($alt_count > 0) {
-      $input = phutil_console_prompt(pht(
-        "%s '%s' has %s %s(s) forking off of it that would be deleted ".
-        "during a squash. Would you like to keep a non-squashed copy, rebase ".
-        "them on top of '%s', or abort and deal with them yourself? ".
-        "(k)eep, (r)ebase, (a)bort:",
-        ucfirst($this->branchType),
-        $this->branch,
-        $alt_count,
-        $this->branchType,
-        $this->branch));
-
-      if ($input == 'k' || $input == 'keep') {
-        $this->keepBranch = true;
-      } else if ($input == 'r' || $input == 'rebase') {
-        foreach ($alt_branches as $alt_branch) {
-          $repository_api->execxLocal(
-            'rebase --keep --keepbranches -d %s -s %s',
-            $this->branch,
-            $alt_branch);
-        }
-      } else if ($input == 'a' || $input == 'abort') {
-        $branch_string = implode("\n", $alt_branches);
-        echo
-          "\n",
+            'Prepare the changes to be pushed, but do not actually push '.
+            'them.')),
+      $this->newWorkflowArgument('keep-branches')
+        ->setHelp(
           pht(
-            "Remove the %s starting at these revisions and run %s again:\n%s",
-            $this->branchType.'s',
-            $branch_string,
-            'arc land'),
-          "\n\n";
-        throw new ArcanistUserAbortException();
-      } else {
-        throw new ArcanistUsageException(
-          pht('Invalid choice. Aborting arc land.'));
-      }
-    }
+            'Keep local branches around after changes are pushed. By '.
+            'default, local branches are deleted after the changes they '.
+            'contain are published.')),
+      $this->newWorkflowArgument('onto-remote')
+        ->setParameter('remote-name')
+        ->setHelp(pht('Push to a remote other than the default.'))
+        ->addRelatedConfig('arc.land.onto-remote'),
+      $this->newWorkflowArgument('onto')
+        ->setParameter('branch-name')
+        ->setRepeatable(true)
+        ->addRelatedConfig('arc.land.onto')
+        ->setHelp(
+          array(
+            pht(
+              'After merging, push changes onto a specified branch.'),
+            pht(
+              'Specifying this flag multiple times will push to multiple '.
+              'branches.'),
+          )),
+      $this->newWorkflowArgument('strategy')
+        ->setParameter('strategy-name')
+        ->addRelatedConfig('arc.land.strategy')
+        ->setHelp(
+          array(
+            pht(
+              'Merge using a particular strategy. Supported strategies are '.
+              '"squash" and "merge".'),
+            pht(
+              'The "squash" strategy collapses multiple local commits into '.
+              'a single commit when publishing. It produces a linear '.
+              'published history (but discards local checkpoint commits). '.
+              'This is the default strategy.'),
+            pht(
+              'The "merge" strategy generates a merge commit when publishing '.
+              'that retains local checkpoint commits (but produces a '.
+              'nonlinear published history). Select this strategy if you do '.
+              'not want "arc land" to discard checkpoint commits.'),
+          )),
+      $this->newWorkflowArgument('revision')
+        ->setParameter('revision-identifier')
+        ->setHelp(
+          pht(
+            'Land a specific revision, rather than determining revisions '.
+            'automatically from the commits that are landing.')),
+      $this->newWorkflowArgument('preview')
+        ->setHelp(
+          pht(
+            'Show the changes that will land. Does not modify the working '.
+            'copy or the remote.')),
+      $this->newWorkflowArgument('into')
+        ->setParameter('commit-ref')
+        ->setHelp(
+          pht(
+            'Specify the state to merge into. By default, this is the same '.
+            'as the "onto" ref.')),
+      $this->newWorkflowArgument('into-remote')
+        ->setParameter('remote-name')
+        ->setHelp(
+          pht(
+            'Specifies the remote to fetch the "into" ref from. By '.
+            'default, this is the same as the "onto" remote.')),
+      $this->newWorkflowArgument('into-local')
+        ->setHelp(
+          pht(
+            'Use the local "into" ref state instead of fetching it from '.
+            'a remote.')),
+      $this->newWorkflowArgument('into-empty')
+        ->setHelp(
+          pht(
+            'Merge into the empty state instead of an existing state. This '.
+            'mode is primarily useful when creating a new repository, and '.
+            'selected automatically if the "onto" ref does not exist and the '.
+            '"into" state is not specified.')),
+      $this->newWorkflowArgument('incremental')
+        ->setHelp(
+          array(
+            pht(
+              'When landing multiple revisions at once, push and rebase '.
+              'after each merge completes instead of waiting until all '.
+              'merges are completed to push.'),
+            pht(
+              'This is slower than the default behavior and not atomic, '.
+              'but may make it easier to resolve conflicts and land '.
+              'complicated changes by allowing you to make progress one '.
+              'step at a time.'),
+          )),
+      $this->newWorkflowArgument('pick')
+        ->setHelp(
+          pht(
+            'Land only the changes directly named by arguments, instead '.
+            'of all reachable ancestors.')),
+      $this->newWorkflowArgument('ref')
+        ->setWildcard(true),
+    );
   }
 
-  private function merge() {
-    $repository_api = $this->getRepositoryAPI();
-
-    // In immutable histories, do a --no-ff merge to force a merge commit with
-    // the right message.
-    $repository_api->execxLocal('checkout %s', $this->onto);
-
-    chdir($repository_api->getPath());
-    if ($this->isGit) {
-      $err = phutil_passthru(
-        'git merge --no-stat --no-ff --no-commit %s',
-        $this->branch);
-
-      if ($err) {
-        throw new ArcanistUsageException(pht(
-          "'%s' failed. Your working copy has been left in a partially ".
-          "merged state. You can: abort with '%s'; or follow the ".
-          "instructions to complete the merge.",
-          'git merge',
-          'git merge --abort'));
-      }
-    } else if ($this->isHg) {
-      // HG arc land currently doesn't support --merge.
-      // When merging a bookmark branch to a master branch that
-      // hasn't changed since the fork, mercurial fails to merge.
-      // Instead of only working in some cases, we just disable --merge
-      // until there is a demand for it.
-      // The user should never reach this line, since --merge is
-      // forbidden at the command line argument level.
-      throw new ArcanistUsageException(
-        pht('%s is not currently supported for hg repos.', '--merge'));
-    }
+  protected function newPrompts() {
+    return array(
+      $this->newPrompt('arc.land.large-working-set')
+        ->setDescription(
+          pht(
+            'Confirms landing more than %s commit(s) in a single operation.',
+            new PhutilNumber($this->getLargeWorkingSetLimit()))),
+      $this->newPrompt('arc.land.confirm')
+        ->setDescription(
+          pht(
+            'Confirms that the correct changes have been selected to '.
+            'land.')),
+      $this->newPrompt('arc.land.implicit')
+        ->setDescription(
+          pht(
+            'Confirms that local commits which are not associated with '.
+            'a revision have been associated correctly and should land.')),
+      $this->newPrompt('arc.land.unauthored')
+        ->setDescription(
+          pht(
+            'Confirms that revisions you did not author should land.')),
+      $this->newPrompt('arc.land.changes-planned')
+        ->setDescription(
+          pht(
+            'Confirms that revisions with changes planned should land.')),
+      $this->newPrompt('arc.land.published')
+        ->setDescription(
+          pht(
+            'Confirms that revisions that are already published should land.')),
+      $this->newPrompt('arc.land.not-accepted')
+        ->setDescription(
+          pht(
+            'Confirms that revisions that are not accepted should land.')),
+      $this->newPrompt('arc.land.open-parents')
+        ->setDescription(
+          pht(
+            'Confirms that revisions with open parent revisions should '.
+            'land.')),
+      $this->newPrompt('arc.land.failed-builds')
+        ->setDescription(
+          pht(
+            'Confirms that revisions with failed builds should land.')),
+      $this->newPrompt('arc.land.ongoing-builds')
+        ->setDescription(
+          pht(
+            'Confirms that revisions with ongoing builds should land.')),
+      $this->newPrompt('arc.land.create')
+        ->setDescription(
+          pht(
+            'Confirms that new branches or bookmarks should be created '.
+            'in the remote.')),
+    );
   }
 
-  private function push() {
-    $repository_api = $this->getRepositoryAPI();
+  public function getLargeWorkingSetLimit() {
+    return 50;
+  }
+
+  public function runWorkflow() {
+    $working_copy = $this->getWorkingCopy();
+    $repository_api = $working_copy->getRepositoryAPI();
 
     // These commands can fail legitimately (e.g. commit hooks)
     try {
@@ -1770,40 +1786,52 @@ EOTEXT
           'Harbormaster is still building the active diff for this revision:'));
       $this->uberOngoingBuildsExist = true;
       $prompt = pht('Land revision anyway, despite ongoing build?');
+    $land_engine = $repository_api->getLandEngine();
+    if (!$land_engine) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          '"arc land" must be run in a Git or Mercurial working copy.'));
     }
 
-    $show_builds = array_merge($failed_builds, $ongoing_builds);
-    echo "\n";
-    foreach ($show_builds as $build_ref) {
-      $ansi_color = $build_ref->getStatusANSIColor();
-      $status_name = $build_ref->getStatusName();
-      $object_name = $build_ref->getObjectName();
-      $build_name = $build_ref->getName();
+    $is_incremental = $this->getArgument('incremental');
+    $source_refs = $this->getArgument('ref');
 
-      echo tsprintf(
-        "    **<bg:".$ansi_color."> %s </bg>** %s: %s\n",
-        $status_name,
-        $object_name,
-        $build_name);
-    }
+    $onto_remote_arg = $this->getArgument('onto-remote');
+    $onto_args = $this->getArgument('onto');
 
-    echo tsprintf(
-      "\n%s\n\n",
-      pht('You can review build details here:'));
+    $into_remote = $this->getArgument('into-remote');
+    $into_empty = $this->getArgument('into-empty');
+    $into_local = $this->getArgument('into-local');
+    $into = $this->getArgument('into');
 
-    foreach ($buildables as $buildable) {
-      $buildable_uri = id(new PhutilURI($this->getConduitURI()))
-        ->setPath(sprintf('/B%d', $buildable['id']));
+    $is_preview = $this->getArgument('preview');
+    $should_hold = $this->getArgument('hold');
+    $should_keep = $this->getArgument('keep-branches');
 
-      echo tsprintf(
-        "          **%s**: __%s__\n",
-        pht('Buildable %d', $buildable['id']),
-        $buildable_uri);
-    }
+    $revision = $this->getArgument('revision');
+    $strategy = $this->getArgument('strategy');
+    $pick = $this->getArgument('pick');
 
-    if (!phutil_console_confirm($prompt)) {
-      throw new ArcanistUserAbortException();
-    }
+    $land_engine
+      ->setViewer($this->getViewer())
+      ->setWorkflow($this)
+      ->setLogEngine($this->getLogEngine())
+      ->setSourceRefs($source_refs)
+      ->setShouldHold($should_hold)
+      ->setShouldKeep($should_keep)
+      ->setStrategyArgument($strategy)
+      ->setShouldPreview($is_preview)
+      ->setOntoRemoteArgument($onto_remote_arg)
+      ->setOntoArguments($onto_args)
+      ->setIntoRemoteArgument($into_remote)
+      ->setIntoEmptyArgument($into_empty)
+      ->setIntoLocalArgument($into_local)
+      ->setIntoArgument($into)
+      ->setPickArgument($pick)
+      ->setIsIncremental($is_incremental)
+      ->setRevisionSymbol($revision);
+
+    $land_engine->execute();
   }
 
   public function buildEngineMessage(ArcanistLandEngine $engine) {

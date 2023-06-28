@@ -204,7 +204,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
    */
   public function lintPath($path) {
     $output = idx($this->output, $path);
-    if (!strlen($output)) {
+    if ($output === null || !strlen($output)) {
       // No output, but it exited 0, so just move on.
       return;
     }
@@ -338,7 +338,7 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
     }
 
     $line = idx($match, 'line');
-    if (strlen($line)) {
+    if ($line !== null && strlen($line)) {
       $line = (int)$line;
       if (!$line) {
         $line = 1;
@@ -376,7 +376,11 @@ final class ArcanistScriptAndRegexLinter extends ArcanistLinter {
       'disabled' => ArcanistLintSeverity::SEVERITY_DISABLED,
     );
 
-    $severity_name = strtolower(idx($match, 'severity'));
+    $severity_name = idx($match, 'severity');
+    if ($severity_name === null || !strlen($severity_name)) {
+      return ArcanistLintSeverity::SEVERITY_ERROR;
+    }
+    $severity_name = strtolower($severity_name);
 
     foreach ($map as $name => $severity) {
       if (!empty($match[$name])) {

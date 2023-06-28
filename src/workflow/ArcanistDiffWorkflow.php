@@ -13,16 +13,25 @@ final class ArcanistDiffWorkflow extends ArcanistDiffBasedWorkflow {
   private $console;
   private $hasWarnedExternals = false;
   private $unresolvedLint;
-  private $excuses = array('lint' => null, 'unit' => null);
   private $testResults;
   private $diffID;
   private $revisionID;
-  private $haveUncommittedChanges = false;
   private $diffPropertyFutures = array();
   private $commitMessageFromRevision;
   private $hitAutotargets;
   private $uberRefProvider; // UBER CODE
   private $autolandProjectPhid = 'PHID-PROJ-u4i3446wedyolppkckbp'; // UBER CODE
+  private $revisionTransactions;
+  private $revisionIsDraft;
+
+  const STAGING_PUSHED = 'pushed';
+  const STAGING_USER_SKIP = 'user.skip';
+  const STAGING_DIFF_RAW = 'diff.raw';
+  const STAGING_REPOSITORY_UNKNOWN = 'repository.unknown';
+  const STAGING_REPOSITORY_UNAVAILABLE = 'repository.unavailable';
+  const STAGING_REPOSITORY_UNSUPPORTED = 'repository.unsupported';
+  const STAGING_REPOSITORY_UNCONFIGURED = 'repository.unconfigured';
+  const STAGING_CLIENT_UNSUPPORTED = 'client.unsupported';
 
   public function getWorkflowName() {
     return 'diff';
@@ -69,10 +78,6 @@ EOTEXT
       return true;
     }
 
-    if ($this->getArgument('use-commit-message')) {
-      return true;
-    }
-
     return false;
   }
 
@@ -97,20 +102,6 @@ EOTEXT
           'When creating a revision, read revision information '.
           'from this file.'),
       ),
-      'use-commit-message' => array(
-        'supports' => array(
-          'git',
-          // TODO: Support mercurial.
-        ),
-        'short' => 'C',
-        'param' => 'commit',
-        'help' => pht('Read revision information from a specific commit.'),
-        'conflicts' => array(
-          'only'    => null,
-          'preview' => null,
-          'update'  => null,
-        ),
-      ),
       'edit' => array(
         'supports'    => array(
           'git',
@@ -126,14 +117,10 @@ EOTEXT
       'raw' => array(
         'help' => pht(
           'Read diff from stdin, not from the working copy. This disables '.
-          'many Arcanist/Phabricator features which depend on having access '.
-          'to the working copy.'),
+          'many features which depend on having access to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw'),
           'never-apply-patches' => pht('%s disables lint.', '--raw'),
-          'advice'              => pht('%s disables lint.', '--raw'),
-          'lintall'             => pht('%s disables lint.', '--raw'),
 
           'create'              => pht(
             '%s and %s both need stdin. Use %s.',
@@ -152,14 +139,11 @@ EOTEXT
         'param' => 'command',
         'help' => pht(
           'Generate diff by executing a specified command, not from the '.
-          'working copy. This disables many Arcanist/Phabricator features '.
-          'which depend on having access to the working copy.'),
+          'working copy. This disables many features which depend on having '.
+          'access to the working copy.'),
         'conflicts' => array(
-          'less-context'        => null,
           'apply-patches'       => pht('%s disables lint.', '--raw-command'),
           'never-apply-patches' => pht('%s disables lint.', '--raw-command'),
-          'advice'              => pht('%s disables lint.', '--raw-command'),
-          'lintall'             => pht('%s disables lint.', '--raw-command'),
         ),
       ),
       'create' => array(
@@ -169,14 +153,10 @@ EOTEXT
             '%s can not be used with %s.',
             '--create',
             '--edit'),
-          'only'    => pht(
+          'only' => pht(
             '%s can not be used with %s.',
             '--create',
             '--only'),
-          'preview' => pht(
-            '%s can not be used with %s.',
-            '--create',
-            '--preview'),
           'update'  => pht(
             '%s can not be used with %s.',
             '--create',
@@ -186,6 +166,18 @@ EOTEXT
       'update' => array(
         'param' => 'revision_id',
         'help'  => pht('Always update a specific revision.'),
+      ),
+      'draft' => array(
+        'help' => pht(
+          'Create a draft revision so you can look over your changes before '.
+          'involving anyone else. Other users will not be notified about the '.
+          'revision until you later use "Request Review" to publish it. You '.
+          'can still share the draft by giving someone the link.'),
+        'conflicts' => array(
+          'edit' => null,
+          'only' => null,
+          'update' => null,
+        ),
       ),
       'nounit' => array(
         'help' => pht('Do not run unit tests.'),
@@ -203,8 +195,6 @@ EOTEXT
       'nolint' => array(
         'help' => pht('Do not run lint.'),
         'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--nolint'),
-          'advice'    => pht('%s suppresses lint.', '--nolint'),
           'apply-patches' => pht('%s suppresses lint.', '--nolint'),
           'never-apply-patches' => pht('%s suppresses lint.', '--nolint'),
         ),
@@ -215,80 +205,15 @@ EOTEXT
       ),
       'only' => array(
         'help' => pht(
-          'Only generate a diff, without running lint, unit tests, or other '.
-          'auxiliary steps. See also %s.',
-          '--preview'),
-        'conflicts' => array(
-          'preview'   => null,
-          'message'   => pht('%s does not affect revisions.', '--only'),
-          'edit'      => pht('%s does not affect revisions.', '--only'),
-          'lintall'   => pht('%s suppresses lint.', '--only'),
-          'advice'    => pht('%s suppresses lint.', '--only'),
-          'apply-patches' => pht('%s suppresses lint.', '--only'),
-          'never-apply-patches' => pht('%s suppresses lint.', '--only'),
-        ),
-      ),
-      'preview' => array(
-        'help' => pht(
           'Instead of creating or updating a revision, only create a diff, '.
-          'which you may later attach to a revision. This still runs lint '.
-          'unit tests. See also %s.',
-          '--only'),
+          'which you may later attach to a revision.'),
         'conflicts' => array(
-          'only'      => null,
-          'edit'      => pht('%s does affect revisions.', '--preview'),
-          'message'   => pht('%s does not update any revision.', '--preview'),
+          'edit'      => pht('%s does affect revisions.', '--only'),
+          'message'   => pht('%s does not update any revision.', '--only'),
         ),
-      ),
-      'plan-changes' => array(
-        'help' => pht(
-          'Create or update a revision without requesting a code review.'),
-        'conflicts' => array(
-          'only'     => pht('%s does not affect revisions.', '--only'),
-          'preview'  => pht('%s does not affect revisions.', '--preview'),
-        ),
-      ),
-      'encoding' => array(
-        'param' => 'encoding',
-        'help' => pht(
-          'Attempt to convert non UTF-8 hunks into specified encoding.'),
       ),
       'allow-untracked' => array(
         'help' => pht('Skip checks for untracked files in the working copy.'),
-      ),
-      'excuse' => array(
-        'param' => 'excuse',
-        'help' => pht(
-          'Provide a prepared in advance excuse for any lints/tests '.
-          'shall they fail.'),
-      ),
-      'less-context' => array(
-        'help' => pht(
-          "Normally, files are diffed with full context: the entire file is ".
-          "sent to Differential so reviewers can 'show more' and see it. If ".
-          "you are making changes to very large files with tens of thousands ".
-          "of lines, this may not work well. With this flag, a diff will ".
-          "be created that has only a few lines of context."),
-      ),
-      'lintall' => array(
-        'help' => pht(
-          'Raise all lint warnings, not just those on lines you changed.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
-      ),
-      'advice' => array(
-        'help' => pht(
-          'Require excuse for lint advice in addition to lint warnings and '.
-          'errors.'),
-      ),
-      'only-new' => array(
-        'param' => 'bool',
-        'help' => pht(
-          'Display only lint messages not present in the original code.'),
-        'passthru' => array(
-          'lint' => true,
-        ),
       ),
       'apply-patches' => array(
         'help' => pht(
@@ -356,10 +281,8 @@ EOTEXT
           'git',
         ),
         'conflicts' => array(
-          'use-commit-message'  => true,
           'update'              => true,
-          'only'                => true,
-          'preview'             => true,
+          'only' => true,
           'raw'                 => true,
           'raw-command'         => true,
           'message-file'        => true,
@@ -369,8 +292,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add reviewers.'),
         'conflicts' => array(
-          'only'    => true,
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -378,8 +300,7 @@ EOTEXT
         'param' => 'usernames',
         'help' => pht('When creating a revision, add CCs.'),
         'conflicts' => array(
-          'only'    => true,
-          'preview' => true,
+          'only' => true,
           'update'  => true,
         ),
       ),
@@ -389,9 +310,6 @@ EOTEXT
       'skip-staging' => array(
         'help' => pht('Do not copy changes to the staging area.'),
       ),
-      'ignore-unsound-tests' => array(
-        'help'  => pht('Ignore unsound test failures without prompting.'),
-      ),
       'base' => array(
         'param' => 'rules',
         'help'  => pht('Additional rules for determining base revision.'),
@@ -399,20 +317,6 @@ EOTEXT
           'svn' => pht('Subversion does not use base commits.'),
         ),
         'supports' => array('git', 'hg'),
-      ),
-      'no-diff' => array(
-        'help' => pht(
-          'Only run lint and unit tests. Intended for internal use.'),
-      ),
-      'cache' => array(
-        'param' => 'bool',
-        'help' => pht(
-          '%d to disable lint cache, %d to enable (default).',
-          0,
-          1),
-        'passthru' => array(
-          'lint' => true,
-        ),
       ),
       'coverage' => array(
         'help' => pht('Always enable coverage information.'),
@@ -442,17 +346,12 @@ EOTEXT
       'head' => array(
         'param' => 'commit',
         'help' => pht(
-          'Specify the end of the commit range. This disables many '.
-          'Arcanist/Phabricator features which depend on having access to '.
-          'the working copy.'),
+          'Specify the end of the commit range. This disables many features '.
+          'which depend on having access to the working copy.'),
         'supports' => array('git'),
         'nosupport' => array(
           'svn' => pht('Subversion does not support commit ranges.'),
           'hg' => pht('Mercurial does not support %s yet.', '--head'),
-        ),
-        'conflicts' => array(
-          'lintall'   => pht('%s suppresses lint.', '--head'),
-          'advice'    => pht('%s suppresses lint.', '--head'),
         ),
       ),
     );
@@ -469,14 +368,6 @@ EOTEXT
     // UBER CODE END
 
     $this->runRepositoryAPISetup();
-
-    if ($this->getArgument('no-diff')) {
-      $this->removeScratchFile('diff-result.json');
-      $data = $this->runLintUnit();
-      $this->writeScratchJSONFile('diff-result.json', $data);
-      return 0;
-    }
-
     $this->runDiffSetupBasics();
 
     $commit_message = $this->buildCommitMessage();
@@ -507,20 +398,6 @@ EOTEXT
     $this->unresolvedLint = $data['unresolvedLint'];
     $unit_result = $data['unitResult'];
     $this->testResults = $data['testResults'];
-
-    if ($this->getArgument('nolint')) {
-      $this->excuses['lint'] = $this->getSkipExcuse(
-        pht('Provide explanation for skipping lint or press Enter to abort:'),
-        'lint-excuses');
-    }
-
-    if ($this->getArgument('nounit')) {
-      $this->excuses['unit'] = $this->getSkipExcuse(
-        pht(
-          'Provide explanation for skipping unit tests '.
-          'or press Enter to abort:'),
-        'unit-excuses');
-    }
 
     $changes = $this->generateChanges();
     if (!$changes) {
@@ -587,6 +464,7 @@ EOTEXT
         $this->openURIsInBrowser(array($diff_info['uri']));
       }
     } else {
+      $is_draft = $this->getArgument('draft');
       $revision['diffid'] = $this->getDiffID();
       // UBER CODE
       if ($this->getArgument('plan-changes')) {
@@ -613,6 +491,30 @@ EOTEXT
           }
         }
         // UBER CODE END
+        if ($is_draft) {
+          // TODO: In at least some cases, we could raise this earlier in the
+          // workflow to save users some time before the workflow aborts.
+          if ($this->revisionIsDraft) {
+            $this->writeWarn(
+              pht('ALREADY A DRAFT'),
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision is already a draft. You only need to '.
+                'provide the "--draft" flag when creating a revision. Draft '.
+                'revisions are not published until you explicitly request '.
+                'review from the web UI.',
+                $commit_message->getRevisionMonogram()));
+          } else {
+            throw new ArcanistUsageException(
+              pht(
+                'You are updating a revision ("%s") with the "--draft" flag, '.
+                'but this revision has already been published for review. '.
+                'You can not turn a revision back into a draft once it has '.
+                'been published.',
+                $commit_message->getRevisionMonogram()));
+          }
+        }
+
         $result = $conduit->callMethodSynchronous(
           'differential.updaterevision',
           $revision);
@@ -622,6 +524,9 @@ EOTEXT
           unset($messages[$revision['id']]);
           $this->writeScratchJSONFile($file, $messages);
         }
+
+        $result_uri = $result['uri'];
+        $result_id = $result['revisionid'];
 
         echo pht('Updated an existing Differential revision:')."\n";
       } else {
@@ -638,15 +543,65 @@ EOTEXT
         }
         // UBER CODE END
         $revision = $this->dispatchWillCreateRevisionEvent($revision);
+        // NOTE: We're either using "differential.revision.edit" (preferred)
+        // if we can, or falling back to "differential.createrevision"
+        // (the older way) if not.
 
-        $result = $conduit->callMethodSynchronous(
-          'differential.createrevision',
-          $revision);
+        $xactions = $this->revisionTransactions;
+        if ($xactions) {
+          $xactions[] = array(
+            'type' => 'update',
+            'value' => $diff_info['phid'],
+          );
+
+          if ($is_draft) {
+            $xactions[] = array(
+              'type' => 'draft',
+              'value' => true,
+            );
+          }
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.revision.edit',
+            array(
+              'transactions' => $xactions,
+            ));
+
+          $result_id = idxv($result, array('object', 'id'));
+          if (!$result_id) {
+            throw new Exception(
+              pht(
+                'Expected a revision ID to be returned by '.
+                '"differential.revision.edit".'));
+          }
+
+          // TODO: This is hacky, but we don't currently receive a URI back
+          // from "differential.revision.edit".
+          $result_uri = id(new PhutilURI($this->getConduitURI()))
+            ->setPath('/D'.$result_id);
+        } else {
+          if ($is_draft) {
+            throw new ArcanistUsageException(
+              pht(
+                'You have specified "--draft", but the software version '.
+                'on the server is too old to support draft revisions. Omit '.
+                'the flag or upgrade the server software.'));
+          }
+
+          $revision = $this->dispatchWillCreateRevisionEvent($revision);
+
+          $result = $conduit->callMethodSynchronous(
+            'differential.createrevision',
+            $revision);
+
+          $result_uri = $result['uri'];
+          $result_id = $result['revisionid'];
+        }
 
         $revised_message = $conduit->callMethodSynchronous(
           'differential.getcommitmessage',
           array(
-            'revision_id' => $result['revisionid'],
+            'revision_id' => $result_id,
           ));
 
         if ($this->shouldAmend()) {
@@ -664,21 +619,11 @@ EOTEXT
         echo pht('Created a new Differential revision:')."\n";
       }
 
-      $uri = $result['uri'];
+      $uri = $result_uri;
       echo phutil_console_format(
         "        **%s** __%s__\n\n",
         pht('Revision URI:'),
         $uri);
-
-      if ($this->getArgument('plan-changes')) {
-        $conduit->callMethodSynchronous(
-          'differential.createcomment',
-          array(
-            'revision_id' => $result['revisionid'],
-            'action' => 'rethink',
-          ));
-        echo pht('Planned changes to the revision.')."\n";
-      }
 
       if ($this->shouldOpenCreatedObjectsInBrowser()) {
         $this->openURIsInBrowser(array($uri));
@@ -721,9 +666,6 @@ EOTEXT
     }
 
     $repository_api = $this->getRepositoryAPI();
-    if ($this->getArgument('less-context')) {
-      $repository_api->setDiffLinesOfContext(3);
-    }
 
     $repository_api->setBaseCommitArgumentRules(
       $this->getArgument('base', ''));
@@ -778,6 +720,7 @@ EOTEXT
     $revision = array(
       'fields' => $message->getFields(),
     );
+    $xactions = $message->getTransactions();
 
     if ($revision_id) {
 
@@ -813,6 +756,8 @@ EOTEXT
       if ($should_edit) {
         $edited = $this->newInteractiveEditor($remote_corpus)
           ->setName('differential-edit-revision-info')
+          ->setTaskMessage(pht(
+            'Update the details for a revision, then save and exit.'))
           ->editInteractively();
         if ($edited != $remote_corpus) {
           $remote_corpus = $edited;
@@ -832,12 +777,13 @@ EOTEXT
       }
 
       $revision['fields'] = $new_message->getFields();
+      $xactions = $new_message->getTransactions();
 
       $revision['id'] = $revision_id;
       $this->revisionID = $revision_id;
 
       $revision['message'] = $this->getArgument('message');
-      if (!strlen($revision['message'])) {
+      if ($revision['message'] === null) {
         $update_messages = $this->readScratchJSONFile('update-messages.json');
 
         $update_messages[$revision_id] = $this->getUpdateMessage(
@@ -854,6 +800,8 @@ EOTEXT
       }
     }
 
+    $this->revisionTransactions = $xactions;
+
     return $revision;
   }
 
@@ -866,16 +814,11 @@ EOTEXT
       return false;
     }
 
-    if ($this->getArgument('use-commit-message')) {
-      return false;
-    }
-
     if ($this->isRawDiffSource()) {
       return true;
     }
 
-    return $this->getArgument('preview') ||
-           $this->getArgument('only');
+    return $this->getArgument('only');
   }
 
   private function generateAffectedPaths() {
@@ -947,7 +890,10 @@ EOTEXT
     if ($is_raw) {
 
       if ($this->getArgument('raw')) {
-        fwrite(STDERR, pht('Reading diff from stdin...')."\n");
+        PhutilSystem::writeStderr(
+          tsprintf(
+            "%s\n",
+            pht('Reading diff from stdin...')));
         $raw_diff = file_get_contents('php://stdin');
       } else if ($this->getArgument('raw-command')) {
         list($raw_diff) = execx('%C', $this->getArgument('raw-command'));
@@ -1050,11 +996,6 @@ EOTEXT
           "Generally, source changes should not be this large.",
           $change->getCurrentPath(),
           new PhutilNumber($size));
-        if (!$this->getArgument('less-context')) {
-          $byte_warning .= ' '.pht(
-            "If this file is a huge text file, try using the '%s' flag.",
-            '--less-context');
-        }
         if ($repository_api instanceof ArcanistSubversionAPI) {
           throw new ArcanistUsageException(
             $byte_warning.' '.
@@ -1077,8 +1018,6 @@ EOTEXT
       }
     }
 
-    $try_encoding = nonempty($this->getArgument('encoding'), null);
-
     $utf8_problems = array();
     foreach ($changes as $change) {
       foreach ($change->getHunks() as $hunk) {
@@ -1091,17 +1030,15 @@ EOTEXT
           $is_binary = ArcanistDiffUtils::isHeuristicBinaryFile($corpus);
           if (!$is_binary) {
 
-            if (!$try_encoding) {
-              try {
-                $try_encoding = $this->getRepositoryEncoding();
-              } catch (ConduitClientException $e) {
-                if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
-                  echo phutil_console_wrap(
-                    pht('Lookup of encoding in arcanist project failed: %s',
-                        $e->getMessage())."\n");
-                } else {
-                  throw $e;
-                }
+            try {
+              $try_encoding = $this->getRepositoryEncoding();
+            } catch (ConduitClientException $e) {
+              if ($e->getErrorCode() == 'ERR-BAD-ARCANIST-PROJECT') {
+                echo phutil_console_wrap(
+                  pht('Lookup of encoding in project failed: %s',
+                      $e->getMessage())."\n");
+              } else {
+                throw $e;
               }
             }
 
@@ -1139,10 +1076,10 @@ EOTEXT
             'these files will be marked as binary.',
             phutil_count($utf8_problems)),
           pht(
-            "You can learn more about how Phabricator handles character ".
+            "You can learn more about how this software handles character ".
             "encodings (and how to configure encoding settings and detect and ".
             "correct encoding problems) by reading 'User Guide: UTF-8 and ".
-            "Character Encoding' in the Phabricator documentation."),
+            "Character Encoding' in the documentation."),
           pht(
             '%s AFFECTED FILE(S)',
             phutil_count($utf8_problems)));
@@ -1249,10 +1186,6 @@ EOTEXT
 
   private function shouldAmend() {
     if ($this->isRawDiffSource()) {
-      return false;
-    }
-
-    if ($this->haveUncommittedChanges) {
       return false;
     }
 
@@ -1406,7 +1339,6 @@ EOTEXT
    */
   private function runLint() {
     if ($this->getArgument('nolint') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistLintWorkflow::RESULT_SKIP;
@@ -1433,34 +1365,22 @@ EOTEXT
 
       switch ($lint_result) {
         case ArcanistLintWorkflow::RESULT_OKAY:
-          if ($this->getArgument('advice') &&
-              $lint_workflow->getUnresolvedMessages()) {
-            $this->getErrorExcuse(
-              'lint',
-              pht('Lint issued unresolved advice.'),
-              'lint-excuses');
-          } else {
-            $this->console->writeOut(
-              "<bg:green>** %s **</bg> %s\n",
-              pht('LINT OKAY'),
-              pht('No lint problems.'));
-          }
+          $this->console->writeOut(
+            "<bg:green>** %s **</bg> %s\n",
+            pht('LINT OKAY'),
+            pht('No lint problems.'));
           break;
         case ArcanistLintWorkflow::RESULT_WARNINGS:
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved warnings.'),
-            'lint-excuses');
+          $this->console->writeOut(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('LINT MESSAGES'),
+            pht('Lint issued unresolved warnings.'));
           break;
         case ArcanistLintWorkflow::RESULT_ERRORS:
           $this->console->writeOut(
             "<bg:red>** %s **</bg> %s\n",
             pht('LINT ERRORS'),
             pht('Lint raised errors!'));
-          $this->getErrorExcuse(
-            'lint',
-            pht('Lint issued unresolved errors!'),
-            'lint-excuses');
           break;
       }
 
@@ -1487,7 +1407,6 @@ EOTEXT
    */
   private function runUnit() {
     if ($this->getArgument('nounit') ||
-        $this->getArgument('only') ||
         $this->isRawDiffSource() ||
         $this->getArgument('head')) {
       return ArcanistUnitWorkflow::RESULT_SKIP;
@@ -1513,32 +1432,26 @@ EOTEXT
             pht('No unit test failures.'));
           break;
         case ArcanistUnitWorkflow::RESULT_UNSOUND:
-          if ($this->getArgument('ignore-unsound-tests')) {
-            echo phutil_console_format(
-              "<bg:yellow>** %s **</bg> %s\n",
-              pht('UNIT UNSOUND'),
-              pht(
-                'Unit testing raised errors, but all '.
-                'failing tests are unsound.'));
-          } else {
-            $continue = phutil_console_confirm(
-              pht(
-                'Unit test results included failures, but all failing tests '.
-                'are known to be unsound. Ignore unsound test failures?'));
-            if (!$continue) {
-              throw new ArcanistUserAbortException();
-            }
+          $continue = phutil_console_confirm(
+            pht(
+              'Unit test results included failures, but all failing tests '.
+              'are known to be unsound. Ignore unsound test failures?'));
+          if (!$continue) {
+            throw new ArcanistUserAbortException();
           }
+
+          echo phutil_console_format(
+            "<bg:yellow>** %s **</bg> %s\n",
+            pht('UNIT UNSOUND'),
+            pht(
+              'Unit testing raised errors, but all '.
+              'failing tests are unsound.'));
           break;
         case ArcanistUnitWorkflow::RESULT_FAIL:
           $this->console->writeOut(
             "<bg:red>** %s **</bg> %s\n",
             pht('UNIT ERRORS'),
             pht('Unit testing raised errors!'));
-          $this->getErrorExcuse(
-            'unit',
-            pht('Unit test results include failures!'),
-            'unit-excuses');
           break;
       }
 
@@ -1563,66 +1476,6 @@ EOTEXT
     return $this->testResults;
   }
 
-  private function getSkipExcuse($prompt, $history) {
-    $excuse = $this->getArgument('excuse');
-
-    if ($excuse === null) {
-      $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-      $excuse = phutil_console_prompt($prompt, $history);
-      if ($excuse == '') {
-        throw new ArcanistUserAbortException();
-      }
-    }
-
-    return $excuse;
-  }
-
-  private function getErrorExcuse($type, $prompt, $history) {
-    if ($this->getArgument('excuse')) {
-      $this->console->sendMessage(array(
-        'type'    => $type,
-        'confirm'  => $prompt.' '.pht('Ignore them?'),
-      ));
-      return;
-    }
-
-    $history = $this->getRepositoryAPI()->getScratchFilePath($history);
-
-    $prompt .= ' '.
-      pht('Provide explanation to continue or press Enter to abort.');
-    $this->console->writeOut("\n\n%s", phutil_console_wrap($prompt));
-    $this->console->sendMessage(array(
-      'type'    => $type,
-      'prompt'  => pht('Explanation:'),
-      'history' => $history,
-    ));
-  }
-
-  public function handleServerMessage(PhutilConsoleMessage $message) {
-    $data = $message->getData();
-
-    if ($this->getArgument('excuse')) {
-      try {
-        phutil_console_require_tty();
-      } catch (PhutilConsoleStdinNotInteractiveException $ex) {
-        $this->excuses[$data['type']] = $this->getArgument('excuse');
-        return null;
-      }
-    }
-
-    $response = '';
-    if (isset($data['prompt'])) {
-      $response = phutil_console_prompt($data['prompt'], idx($data, 'history'));
-    } else if (phutil_console_confirm($data['confirm'])) {
-      $response = $this->getArgument('excuse');
-    }
-    if ($response == '') {
-      throw new ArcanistUserAbortException();
-    }
-    $this->excuses[$data['type']] = $response;
-    return null;
-  }
-
 
 /* -(  Commit and Update Messages  )----------------------------------------- */
 
@@ -1631,19 +1484,14 @@ EOTEXT
    * @task message
    */
   private function buildCommitMessage() {
-    if ($this->getArgument('preview') || $this->getArgument('only')) {
+    if ($this->getArgument('only')) {
       return null;
     }
 
     $is_create = $this->getArgument('create');
     $is_update = $this->getArgument('update');
     $is_raw = $this->isRawDiffSource();
-    $is_message = $this->getArgument('use-commit-message');
     $is_verbatim = $this->getArgument('verbatim');
-
-    if ($is_message) {
-      return $this->getCommitMessageFromCommit($is_message);
-    }
 
     if ($is_verbatim) {
       return $this->getCommitMessageFromUser();
@@ -1888,6 +1736,8 @@ EOTEXT
       } else {
         $new_template = $this->newInteractiveEditor($template)
           ->setName('new-commit')
+          ->setTaskMessage(pht(
+            'Provide the details for a new revision, then save and exit.'))
           ->editInteractively();
       }
       $first = false;
@@ -2034,6 +1884,12 @@ EOTEXT
     }
 
     $this->checkRevisionOwnership($revision);
+
+    // TODO: Save this status to improve a prompt later. See PHI458. This is
+    // extra awful until we move to "differential.revision.search" because
+    // the "differential.query" method doesn't return a real draft status for
+    // compatibility.
+    $this->revisionIsDraft = (idx($revision, 'statusName') === 'Draft');
 
     $message = $this->getConduit()->callMethodSynchronous(
       'differential.getcommitmessage',
@@ -2391,9 +2247,12 @@ EOTEXT
     if ($template == '') {
       $comments = $this->getDefaultUpdateMessage();
 
+      $comments = phutil_string_cast($comments);
+      $comments = rtrim($comments);
+
       $template = sprintf(
         "%s\n\n# %s\n#\n# %s\n# %s\n#\n# %s\n#  $ %s\n\n",
-        rtrim($comments),
+        $comments,
         pht(
           'Updating %s: %s',
           "D{$fields['revisionID']}",
@@ -2407,6 +2266,8 @@ EOTEXT
 
     $comments = $this->newInteractiveEditor($template)
       ->setName('differential-update-comments')
+      ->setTaskMessage(pht(
+        'Update the revision comments, then save and exit.'))
       ->editInteractively();
 
     return $comments;
@@ -2465,6 +2326,15 @@ EOTEXT
     }
     if ($this->getArgument('cc')) {
       $faux_message[] = pht('CC: %s', $this->getArgument('cc'));
+    }
+
+    // NOTE: For now, this isn't a real field, so it just ends up as the first
+    // part of the summary.
+    $depends_ref = $this->getDependsOnRevisionRef();
+    if ($depends_ref) {
+      $faux_message[] = pht(
+        'Depends on %s. ',
+        $depends_ref->getMonogram());
     }
 
     // See T12069. After T10312, the first line of a message is always parsed
@@ -2930,12 +2800,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateLintDiffProperty() {
-    if (strlen($this->excuses['lint'])) {
-      $this->updateDiffProperty(
-        'arc:lint-excuse',
-        json_encode($this->excuses['lint']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->unresolvedLint) {
         $this->updateDiffProperty(
@@ -2954,11 +2818,6 @@ EOTEXT
    * @task diffprop
    */
   private function updateUnitDiffProperty() {
-    if (strlen($this->excuses['unit'])) {
-      $this->updateDiffProperty('arc:unit-excuse',
-        json_encode($this->excuses['unit']));
-    }
-
     if (!$this->hitAutotargets) {
       if ($this->testResults) {
         $this->updateDiffProperty('arc:unit', json_encode($this->testResults));
@@ -3008,10 +2867,10 @@ EOTEXT
 
     // If we track an upstream branch either directly or indirectly, use that.
     $branch = $api->getBranchName();
-    if (strlen($branch)) {
+    if (phutil_nonempty_string($branch)) {
       $upstream_path = $api->getPathToUpstream($branch);
       $remote_branch = $upstream_path->getRemoteBranchName();
-      if (strlen($remote_branch)) {
+      if ($remote_branch !== null) {
         return array(
           array(
             'type' => 'branch',
@@ -3025,7 +2884,7 @@ EOTEXT
     // If "arc.land.onto.default" is configured, use that.
     $config_key = 'arc.land.onto.default';
     $onto = $this->getConfigFromAnySource($config_key);
-    if (strlen($onto)) {
+    if ($onto !== null) {
       return array(
         array(
           'type' => 'branch',
@@ -3183,7 +3042,7 @@ EOTEXT
     }
 
     $uploader = id(new ArcanistFileUploader())
-      ->setConduitClient($this->getConduit());
+      ->setConduitEngine($this->getConduitEngine());
 
     foreach ($need_upload as $key => $spec) {
       $ref = id(new ArcanistFileDataRef())
@@ -3275,6 +3134,42 @@ EOTEXT
 
     if (!$success) {
         return $message;
+    if ($this->isRawDiffSource()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Raw changes can not be pushed to a staging area.'));
+      return self::STAGING_DIFF_RAW;
+    }
+
+    if (!$this->getRepositoryPHID()) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('Unable to determine repository for this change.'));
+      return self::STAGING_REPOSITORY_UNKNOWN;
+    }
+
+    $staging = $this->getRepositoryStagingConfiguration();
+    if ($staging === null) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('The server does not support staging areas.'));
+      return self::STAGING_REPOSITORY_UNAVAILABLE;
+    }
+
+    $supported = idx($staging, 'supported');
+    if (!$supported) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('The server does not support staging areas for this repository.'));
+      return self::STAGING_REPOSITORY_UNSUPPORTED;
+    }
+
+    $staging_uri = idx($staging, 'uri');
+    if (!$staging_uri) {
+      $this->writeInfo(
+        pht('SKIP STAGING'),
+        pht('No staging area is configured for this repository.'));
+      return self::STAGING_REPOSITORY_UNCONFIGURED;
     }
 
     $api = $this->getRepositoryAPI();
@@ -3311,6 +3206,8 @@ EOTEXT
       'uri' => $staging_uri,
     );
 
+    $is_lfs = $api->isGitLFSWorkingCopy();
+
     // If the base commit is a real commit, we're going to push it. We don't
     // use this, but pushing it to a ref reduces the amount of redundant work
     // that Git does on later pushes by helping it figure out that the remote
@@ -3334,7 +3231,7 @@ EOTEXT
     $refs[] = array(
       'ref' => $diff_tag,
       'type' => 'diff',
-      'commit' => $commit,
+      'commit' => $is_lfs ? $base_commit : $commit,
       'remote' => $remote,
     );
 
@@ -3358,6 +3255,25 @@ EOTEXT
         pht(
           'Failed to push changes to staging area. Correct the issue, or '.
           'use --skip-staging to skip this step.'));
+    }
+
+    if ($is_lfs) {
+      $ref = '+'.$commit.':'.$diff_tag;
+      $err = phutil_passthru(
+        'git push -- %s %s',
+        $staging_uri,
+        $ref);
+
+      if ($err) {
+        $this->writeWarn(
+          pht('STAGING FAILED'),
+          pht('Unable to push lfs changes to the staging area.'));
+
+        throw new ArcanistUsageException(
+          pht(
+            'Failed to push lfs changes to staging area. Correct the issue, '.
+            'or use --skip-staging to skip this step.'));
+      }
     }
 
     return $refs;
@@ -3447,6 +3363,49 @@ EOTEXT
       phlog($ex);
       return false;
     }
+  }
+
+  private function getDependsOnRevisionRef() {
+    // TODO: Restore this behavior after updating for toolsets. Loading the
+    // required hardpoints currently depends on a "WorkingCopy" existing.
+    return null;
+
+    $api = $this->getRepositoryAPI();
+    $base_ref = $api->getBaseCommitRef();
+
+    $state_ref = id(new ArcanistWorkingCopyStateRef())
+      ->setCommitRef($base_ref);
+
+    $this->loadHardpoints(
+      $state_ref,
+      ArcanistWorkingCopyStateRef::HARDPOINT_REVISIONREFS);
+
+    $revision_refs = $state_ref->getRevisionRefs();
+    $viewer_phid = $this->getUserPHID();
+
+    foreach ($revision_refs as $key => $revision_ref) {
+      // Don't automatically depend on closed revisions.
+      if ($revision_ref->isClosed()) {
+        unset($revision_refs[$key]);
+        continue;
+      }
+
+      // Don't automatically depend on revisions authored by other users.
+      if ($revision_ref->getAuthorPHID() != $viewer_phid) {
+        unset($revision_refs[$key]);
+        continue;
+      }
+    }
+
+    if (!$revision_refs) {
+      return null;
+    }
+
+    if (count($revision_refs) > 1) {
+      return null;
+    }
+
+    return head($revision_refs);
   }
 
 }

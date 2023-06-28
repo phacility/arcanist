@@ -804,7 +804,7 @@ EOTEXT
         'git apply --whitespace nowarn --index --reject -- %s',
         $patchfile);
       $passthru->setCWD($repository_api->getPath());
-      $err = $passthru->execute();
+      $err = $passthru->resolve();
 
       if ($err) {
         echo phutil_console_format(
@@ -993,8 +993,8 @@ EOTEXT
           'revision_id' => $revision_id,
         ));
       $prompt_message = pht(
-        '  Note arcanist failed to load the commit message '.
-        'from differential for revision %s.',
+        '  NOTE: Failed to load the commit message from Differential (for '.
+        'revision "%s".)',
         "D{$revision_id}");
     }
 
@@ -1026,6 +1026,8 @@ EOTEXT
 
       $commit_message = $this->newInteractiveEditor($template)
         ->setName('arcanist-patch-commit-message')
+        ->setTaskMessage(pht(
+          'Supply a commit message for this patch, then save and exit.'))
         ->editInteractively();
 
       $commit_message = ArcanistCommentRemover::removeComments($commit_message);

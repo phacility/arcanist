@@ -5,7 +5,7 @@
  *
  *   // Create a new uploader.
  *   $uploader = id(new ArcanistFileUploader())
- *     ->setConduitClient($conduit);
+ *     ->setConduitEngine($conduit);
  *
  *   // Queue one or more files to be uploaded.
  *   $file = id(new ArcanistFileDataRef())
@@ -25,22 +25,14 @@
  */
 final class ArcanistFileUploader extends Phobject {
 
-  private $conduit;
+  private $conduitEngine;
   private $files = array();
 
 
 /* -(  Configuring the Uploader  )------------------------------------------- */
 
-
-  /**
-   * Provide a Conduit client to choose which server to upload files to.
-   *
-   * @param ConduitClient Configured client.
-   * @return this
-   * @task config
-   */
-  public function setConduitClient(ConduitClient $conduit) {
-    $this->conduit = $conduit;
+  public function setConduitEngine(ArcanistConduitEngine $engine) {
+    $this->conduitEngine = $engine;
     return $this;
   }
 
@@ -85,7 +77,7 @@ final class ArcanistFileUploader extends Phobject {
    * Upload files to the server.
    *
    * This transfers all files which have been queued with @{method:addFiles}
-   * over the Conduit link configured with @{method:setConduitClient}.
+   * over the Conduit link configured with @{method:setConduitEngine}.
    *
    * This method returns a map of all file data references. If references were
    * added with an explicit key when @{method:addFile} was called, the key is
@@ -99,8 +91,8 @@ final class ArcanistFileUploader extends Phobject {
    * @task upload
    */
   public function uploadFiles() {
-    if (!$this->conduit) {
-      throw new PhutilInvalidStateException('setConduitClient');
+    if (!$this->conduitEngine) {
+      throw new PhutilInvalidStateException('setConduitEngine');
     }
 
     $files = $this->files;
@@ -113,7 +105,7 @@ final class ArcanistFileUploader extends Phobject {
       }
     }
 
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
     $futures = array();
     foreach ($files as $key => $file) {
       $params = $this->getUploadParameters($file) + array(
@@ -126,7 +118,7 @@ final class ArcanistFileUploader extends Phobject {
         $params['deleteAfterEpoch'] = $delete_after;
       }
 
-      $futures[$key] = $conduit->callMethod('file.allocate', $params);
+      $futures[$key] = $conduit->newFuture('file.allocate', $params);
     }
 
     $iterator = id(new FutureIterator($futures))->limit(4);
@@ -219,13 +211,14 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function uploadChunks(ArcanistFileDataRef $file, $file_phid) {
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
 
-    $chunks = $conduit->callMethodSynchronous(
+    $future = $conduit->newFuture(
       'file.querychunks',
       array(
         'filePHID' => $file_phid,
       ));
+    $chunks = $future->resolve();
 
     $remaining = array();
     foreach ($chunks as $chunk) {
@@ -262,7 +255,7 @@ final class ArcanistFileUploader extends Phobject {
     foreach ($remaining as $chunk) {
       $data = $file->readBytes($chunk['byteStart'], $chunk['byteEnd']);
 
-      $conduit->callMethodSynchronous(
+      $future = $conduit->newFuture(
         'file.uploadchunk',
         array(
           'filePHID' => $file_phid,
@@ -270,6 +263,7 @@ final class ArcanistFileUploader extends Phobject {
           'dataEncoding' => 'base64',
           'data' => base64_encode($data),
         ));
+      $future->resolve();
 
       $progress->update(1);
     }
@@ -282,15 +276,17 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function uploadData(ArcanistFileDataRef $file) {
-    $conduit = $this->conduit;
+    $conduit = $this->conduitEngine;
 
     $data = $file->readBytes(0, $file->getByteSize());
 
-    return $conduit->callMethodSynchronous(
+    $future = $conduit->newFuture(
       'file.upload',
       $this->getUploadParameters($file) + array(
         'data_base64' => base64_encode($data),
       ));
+
+    return $future->resolve();
   }
 
 
@@ -317,7 +313,7 @@ final class ArcanistFileUploader extends Phobject {
    * @task internal
    */
   private function writeStatus($message) {
-    fwrite(STDERR, $message."\n");
+    PhutilSystem::writeStderr($message."\n");
   }
 
 }

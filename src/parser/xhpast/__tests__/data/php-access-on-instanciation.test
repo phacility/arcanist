@@ -1,0 +1,145 @@
+<?php
+
+class a {
+ public $b;
+
+ public function c() { }
+}
+
+$d = (new a)->b;
+
+$e = (new a)->c();
+
+(new a)->b;
+
+(new a)->c();
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > a
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > public
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $b
+        * n_EMPTY
+      > ;
+     > "\n\n "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > public
+       * n_EMPTY
+       * n_STRING
+        > c
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > " "
+        > }
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $d
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_OBJECT_PROPERTY_ACCESS
+     * n_NEW
+      > (
+      > new
+      > " "
+      * n_CLASS_NAME
+       > a
+      * n_EMPTY
+     > ->
+     * n_STRING
+      > b
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $e
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_METHOD_CALL
+     * n_OBJECT_PROPERTY_ACCESS
+      * n_NEW
+       > (
+       > new
+       > " "
+       * n_CLASS_NAME
+        > a
+       * n_EMPTY
+      > ->
+      * n_STRING
+       > c
+     * n_CALL_PARAMETER_LIST
+      > (
+      > )
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_OBJECT_PROPERTY_ACCESS
+    * n_NEW
+     > (
+     > new
+     > " "
+     * n_CLASS_NAME
+      > a
+     * n_EMPTY
+    > ->
+    * n_STRING
+     > b
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_METHOD_CALL
+    * n_OBJECT_PROPERTY_ACCESS
+     * n_NEW
+      > (
+      > new
+      > " "
+      * n_CLASS_NAME
+       > a
+      * n_EMPTY
+     > ->
+     * n_STRING
+      > c
+    * n_CALL_PARAMETER_LIST
+     > (
+     > )
+   > ;
+ > "\n"

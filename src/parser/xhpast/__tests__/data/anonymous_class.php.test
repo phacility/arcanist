@@ -1,0 +1,132 @@
+<?php
+
+$a = new class {};
+$b = new class(10) extends c implements d {
+  private $num;
+
+  public function __construct($num) {
+    $this->num = $num;
+  }
+};
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $a
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_NEW
+     > new
+     > " "
+     > class
+     > " "
+     * n_CLASS_DECLARATION
+      * n_EMPTY
+      * n_EMPTY
+      * n_EMPTY
+      * n_EMPTY
+      * n_STATEMENT_LIST
+       > {
+       > }
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $b
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_NEW
+     > new
+     > " "
+     > class
+     > " "
+     * n_CLASS_DECLARATION
+      * n_EMPTY
+      * n_EMPTY
+      * n_EXTENDS_LIST
+       > extends
+       > " "
+       * n_CLASS_NAME
+        > c
+      > " "
+      * n_IMPLEMENTS_LIST
+       > implements
+       > " "
+       * n_CLASS_NAME
+        > d
+      > " "
+      * n_STATEMENT_LIST
+       > {
+       > "\n  "
+       * n_STATEMENT
+        * n_CLASS_MEMBER_DECLARATION_LIST
+         * n_CLASS_MEMBER_MODIFIER_LIST
+          * n_STRING
+           > private
+         > " "
+         * n_CLASS_MEMBER_DECLARATION
+          * n_VARIABLE
+           > $num
+          * n_EMPTY
+        > ;
+       > "\n\n  "
+       * n_STATEMENT
+        * n_METHOD_DECLARATION
+         * n_METHOD_MODIFIER_LIST
+          * n_STRING
+           > public
+         * n_EMPTY
+         * n_STRING
+          > __construct
+         * n_DECLARATION_PARAMETER_LIST
+          > (
+          * n_DECLARATION_PARAMETER
+           * n_EMPTY
+           * n_VARIABLE
+            > $num
+           * n_EMPTY
+          > )
+         * n_EMPTY
+         * n_EMPTY
+         * n_STATEMENT_LIST
+          > {
+          > "\n    "
+          * n_STATEMENT
+           * n_BINARY_EXPRESSION
+            * n_OBJECT_PROPERTY_ACCESS
+             * n_VARIABLE
+              > $this
+             > ->
+             * n_STRING
+              > num
+            > " "
+            * n_OPERATOR
+             > =
+            > " "
+            * n_VARIABLE
+             > $num
+           > ;
+          > "\n  "
+          > }
+       > "\n"
+       > }
+     * n_CALL_PARAMETER_LIST
+      > (
+      * n_NUMERIC_SCALAR
+       > 10
+      > )
+   > ;
+ > "\n"

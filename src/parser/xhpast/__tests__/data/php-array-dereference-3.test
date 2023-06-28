@@ -1,0 +1,45 @@
+<?php
+if (isset(self::getSearchStates()[$state])) { }
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_FUNCTION_CALL
+       * n_SYMBOL_NAME
+        > isset
+       * n_CALL_PARAMETER_LIST
+        > (
+        * n_INDEX_ACCESS
+         * n_FUNCTION_CALL
+          * n_CLASS_STATIC_ACCESS
+           * n_CLASS_NAME
+            > self
+           > ::
+           * n_STRING
+            > getSearchStates
+          * n_CALL_PARAMETER_LIST
+           > (
+           > )
+         > [
+         * n_VARIABLE
+          > $state
+         > ]
+        > )
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > " "
+      > }
+ > "\n"

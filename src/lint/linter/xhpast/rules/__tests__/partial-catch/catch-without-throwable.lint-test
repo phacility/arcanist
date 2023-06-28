@@ -1,0 +1,17 @@
+<?php
+try {
+  f();
+} catch (Exception $ex) {
+  g();
+}
+
+try {
+  f();
+} catch (Exception $ex) {
+  g();
+} catch (Throwable $ex) {
+  h();
+}
+
+~~~~~~~~~~
+warning:4:10:XHP132

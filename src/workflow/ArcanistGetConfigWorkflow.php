@@ -52,7 +52,7 @@ EOTEXT
       ArcanistConfigurationManager::CONFIG_SOURCE_LOCAL =>
         $configuration_manager->readLocalArcConfig(),
       ArcanistConfigurationManager::CONFIG_SOURCE_PROJECT =>
-        $this->getWorkingCopy()->readProjectConfig(),
+        $this->getWorkingCopyIdentity()->readProjectConfig(),
       ArcanistConfigurationManager::CONFIG_SOURCE_USER =>
         $configuration_manager->readUserArcConfig(),
       ArcanistConfigurationManager::CONFIG_SOURCE_SYSTEM =>

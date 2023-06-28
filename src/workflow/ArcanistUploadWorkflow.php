@@ -1,70 +1,61 @@
 <?php
 
-/**
- * Upload a file to Phabricator.
- */
-final class ArcanistUploadWorkflow extends ArcanistWorkflow {
-
-  private $paths;
-  private $json;
+final class ArcanistUploadWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'upload';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **upload** __file__ [__file__ ...] [--json]
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Upload one or more files from local disk.
 EOTEXT
-      );
+);
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Upload files.'))
+      ->addExample(pht('**upload** [__options__] -- __file__ [__file__ ...]'))
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: filesystems
-          Upload a file from local disk.
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      'json' => array(
-        'help' => pht('Output upload information in JSON format.'),
-      ),
-      'temporary' => array(
-        'help' => pht(
-          'Mark the file as temporary. Temporary files will be deleted '.
-          'automatically after 24 hours.'),
-      ),
-      '*' => 'paths',
+      $this->newWorkflowArgument('json')
+        ->setHelp(pht('Output upload information in JSON format.')),
+      $this->newWorkflowArgument('browse')
+        ->setHelp(
+          pht(
+            'After the upload completes, open the files in a web browser.')),
+      $this->newWorkflowArgument('temporary')
+        ->setHelp(
+          pht(
+            'Mark the file as temporary. Temporary files will be '.
+            'deleted after 24 hours.')),
+      $this->newWorkflowArgument('paths')
+        ->setWildcard(true)
+        ->setIsPathArgument(true),
     );
   }
 
-  protected function didParseArguments() {
+  public function runWorkflow() {
     if (!$this->getArgument('paths')) {
-      throw new ArcanistUsageException(
-        pht('Specify one or more files to upload.'));
+      throw new PhutilArgumentUsageException(
+        pht('Specify one or more paths to files you want to upload.'));
     }
 
-    $this->paths = $this->getArgument('paths');
-    $this->json = $this->getArgument('json');
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  public function run() {
     $is_temporary = $this->getArgument('temporary');
+    $is_json = $this->getArgument('json');
+    $is_browse = $this->getArgument('browse');
+    $paths = $this->getArgument('paths');
 
-    $conduit = $this->getConduit();
+    $conduit = $this->getConduitEngine();
     $results = array();
 
     $uploader = id(new ArcanistFileUploader())
-      ->setConduitClient($conduit);
+      ->setConduitEngine($conduit);
 
-    foreach ($this->paths as $key => $path) {
+    foreach ($paths as $key => $path) {
       $file = id(new ArcanistFileDataRef())
         ->setName(basename($path))
         ->setPath($path);
@@ -79,34 +70,68 @@ EOTEXT
 
     $files = $uploader->uploadFiles();
 
-    $results = array();
+    $phids = array();
     foreach ($files as $file) {
-      // TODO: This could be handled more gracefully; just preserving behavior
-      // until we introduce `file.query` and modernize this.
+      // TODO: This could be handled more gracefully.
       if ($file->getErrors()) {
         throw new Exception(implode("\n", $file->getErrors()));
       }
-      $phid = $file->getPHID();
-      $name = $file->getName();
+      $phids[] = $file->getPHID();
+    }
 
-      $info = $conduit->callMethodSynchronous(
-        'file.info',
-        array(
-          'phid' => $phid,
-        ));
+    $symbols = $this->getSymbolEngine();
+    $symbol_refs = $symbols->loadFilesForSymbols($phids);
 
-      $results[$path] = $info;
+    $refs = array();
+    foreach ($symbol_refs as $symbol_ref) {
+      $ref = $symbol_ref->getObject();
+      if ($ref === null) {
+        throw new Exception(
+          pht(
+            'Failed to resolve symbol ref "%s".',
+            $symbol_ref->getSymbol()));
+      }
+      $refs[] = $ref;
+    }
 
-      if (!$this->json) {
-        $id = $info['id'];
-        echo "  F{$id} {$name}: ".$info['uri']."\n\n";
+    if ($is_json) {
+      $json = array();
+
+      foreach ($refs as $key => $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+
+        $map = array(
+          'argument' => $paths[$key],
+          'id' => $ref->getID(),
+          'phid' => $ref->getPHID(),
+          'name' => $ref->getName(),
+          'uri' => $uri,
+        );
+
+        $json[] = $map;
+      }
+
+      echo id(new PhutilJSON())->encodeAsList($json);
+    } else {
+      foreach ($refs as $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+        echo tsprintf(
+          '%s',
+          $ref->newRefView()
+            ->setURI($uri));
       }
     }
 
-    if ($this->json) {
-      echo json_encode($results)."\n";
-    } else {
-      $this->writeStatus(pht('Done.'));
+    if ($is_browse) {
+      $uris = array();
+      foreach ($refs as $ref) {
+        $uri = $ref->getURI();
+        $uri = $this->getAbsoluteURI($uri);
+        $uris[] = $uri;
+      }
+      $this->openURIsInBrowser($uris);
     }
 
     return 0;
@@ -114,85 +139,6 @@ EOTEXT
 
   private function writeStatus($line) {
     $this->writeStatusMessage($line."\n");
-  }
-
-  private function uploadChunks($file_phid, $path) {
-    $conduit = $this->getConduit();
-
-    $f = @fopen($path, 'rb');
-    if (!$f) {
-      throw new Exception(pht('Unable to open file "%s"', $path));
-    }
-
-    $this->writeStatus(pht('Beginning chunked upload of large file...'));
-    $chunks = $conduit->callMethodSynchronous(
-      'file.querychunks',
-      array(
-        'filePHID' => $file_phid,
-      ));
-
-    $remaining = array();
-    foreach ($chunks as $chunk) {
-      if (!$chunk['complete']) {
-        $remaining[] = $chunk;
-      }
-    }
-
-    $done = (count($chunks) - count($remaining));
-
-    if ($done) {
-      $this->writeStatus(
-        pht(
-          'Resuming upload (%s of %s chunks remain).',
-          phutil_count($remaining),
-          phutil_count($chunks)));
-    } else {
-      $this->writeStatus(
-        pht(
-          'Uploading chunks (%s chunks to upload).',
-          phutil_count($remaining)));
-    }
-
-    $progress = new PhutilConsoleProgressBar();
-    $progress->setTotal(count($chunks));
-
-    for ($ii = 0; $ii < $done; $ii++) {
-      $progress->update(1);
-    }
-
-    $progress->draw();
-
-    // TODO: We could do these in parallel to improve upload performance.
-    foreach ($remaining as $chunk) {
-      $offset = $chunk['byteStart'];
-
-      $ok = fseek($f, $offset);
-      if ($ok !== 0) {
-        throw new Exception(
-          pht(
-            'Failed to %s!',
-            'fseek()'));
-      }
-
-      $data = fread($f, $chunk['byteEnd'] - $chunk['byteStart']);
-      if ($data === false) {
-        throw new Exception(
-          pht(
-            'Failed to %s!',
-            'fread()'));
-      }
-
-      $conduit->callMethodSynchronous(
-        'file.uploadchunk',
-        array(
-          'filePHID' => $file_phid,
-          'byteStart' => $offset,
-          'dataEncoding' => 'base64',
-          'data' => base64_encode($data),
-        ));
-
-      $progress->update(1);
-    }
   }
 
 }

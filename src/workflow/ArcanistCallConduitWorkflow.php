@@ -1,72 +1,49 @@
 <?php
 
-/**
- * Provides command-line access to the Conduit API.
- */
-final class ArcanistCallConduitWorkflow extends ArcanistWorkflow {
+final class ArcanistCallConduitWorkflow
+  extends ArcanistArcWorkflow {
 
   public function getWorkflowName() {
     return 'call-conduit';
   }
 
-  public function getCommandSynopses() {
-    return phutil_console_format(<<<EOTEXT
-      **call-conduit** __method__
+  public function getWorkflowInformation() {
+    $help = pht(<<<EOTEXT
+Allows you to make a raw Conduit method call:
+
+  - Run this command from a working directory.
+  - Call parameters are required, and read as a JSON blob from stdin.
+  - Results are written to stdout as a JSON blob.
+
+This workflow is primarily useful for writing scripts. Examples:
+
+  $ echo '{}' | arc call-conduit -- conduit.ping
+  $ echo '{"phid":"PHID-FILE-xxxx"}' | arc call-conduit -- file.download
 EOTEXT
       );
+
+    return $this->newWorkflowInformation()
+      ->setSynopsis(pht('Call Conduit API methods.'))
+      ->addExample('**call-conduit** -- __method__')
+      ->setHelp($help);
   }
 
-  public function getCommandHelp() {
-    return phutil_console_format(<<<EOTEXT
-          Supports: http, https
-          Allows you to make a raw Conduit method call:
-
-            - Run this command from a working directory.
-            - Call parameters are REQUIRED and read as a JSON blob from stdin.
-            - Results are written to stdout as a JSON blob.
-
-          This workflow is primarily useful for writing scripts which integrate
-          with Phabricator. Examples:
-
-            $ echo '{}' | arc call-conduit conduit.ping
-            $ echo '{"phid":"PHID-FILE-xxxx"}' | arc call-conduit file.download
-EOTEXT
-      );
-  }
-
-  public function getArguments() {
+  public function getWorkflowArguments() {
     return array(
-      '*' => 'method',
+      $this->newWorkflowArgument('method')
+        ->setWildcard(true),
     );
   }
 
-  protected function shouldShellComplete() {
-    return false;
-  }
-
-  public function requiresConduit() {
-    return true;
-  }
-
-  public function requiresAuthentication() {
-    return true;
-  }
-
-  public function run() {
-    $method = $this->getArgument('method', array());
+  public function runWorkflow() {
+    $method = $this->getArgument('method');
     if (count($method) !== 1) {
-      throw new ArcanistUsageException(
-        pht('Provide exactly one Conduit method name.'));
+      throw new PhutilArgumentUsageException(
+        pht('Provide exactly one Conduit method name to call.'));
     }
-    $method = reset($method);
+    $method = head($method);
 
-    $console = PhutilConsole::getConsole();
-    if (!function_exists('posix_isatty') || posix_isatty(STDIN)) {
-      $console->writeErr(
-        "%s\n",
-        pht('Waiting for JSON parameters on stdin...'));
-    }
-    $params = @file_get_contents('php://stdin');
+    $params = $this->readStdin();
     try {
       $params = phutil_json_decode($params);
     } catch (PhutilJSONParserException $ex) {
@@ -74,23 +51,25 @@ EOTEXT
         pht('Provide method parameters on stdin as a JSON blob.'));
     }
 
+    $engine = $this->getConduitEngine();
+    $conduit_future = $engine->newFuture($method, $params);
+
     $error = null;
     $error_message = null;
     try {
-      $result = $this->getConduit()->callMethodSynchronous(
-        $method,
-        $params);
+      $result = $conduit_future->resolve();
     } catch (ConduitClientException $ex) {
       $error = $ex->getErrorCode();
       $error_message = $ex->getMessage();
       $result = null;
     }
 
-    echo json_encode(array(
-      'error'         => $error,
-      'errorMessage'  => $error_message,
-      'response'      => $result,
-    ))."\n";
+    echo id(new PhutilJSON())->encodeFormatted(
+      array(
+        'error' => $error,
+        'errorMessage' => $error_message,
+        'response' => $result,
+      ));
 
     return 0;
   }

@@ -1,0 +1,13 @@
+<?php 0b10;
+~~~~~~~~~~
+pass, rtrim
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 0b10
+   > ;

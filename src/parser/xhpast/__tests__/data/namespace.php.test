@@ -1,0 +1,93 @@
+<?php
+
+namespace A;
+
+class B {}
+
+namespace A\B\C {
+  class D {}
+}
+
+namespace {
+  class A {}
+}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_NAMESPACE
+    > namespace
+    > " "
+    * n_SYMBOL_NAME
+     > A
+    * n_EMPTY
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > B
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_NAMESPACE
+    > namespace
+    > " "
+    * n_SYMBOL_NAME
+     > A
+     > "\"
+     > B
+     > "\"
+     > C
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_DECLARATION
+       * n_CLASS_ATTRIBUTES
+        > class
+       > " "
+       * n_CLASS_NAME
+        > D
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_NAMESPACE
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_DECLARATION
+       * n_CLASS_ATTRIBUTES
+        > class
+       > " "
+       * n_CLASS_NAME
+        > A
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n"
+     > }
+ > "\n"

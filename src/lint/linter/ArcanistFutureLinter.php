@@ -15,7 +15,8 @@ abstract class ArcanistFutureLinter extends ArcanistLinter {
     $limit = $this->getFuturesLimit();
     $this->futures = id(new FutureIterator(array()))->limit($limit);
     foreach ($this->buildFutures($paths) as $path => $future) {
-      $this->futures->addFuture($future, $path);
+      $future->setFutureKey($path);
+      $this->futures->addFuture($future);
     }
   }
 

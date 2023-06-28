@@ -3,4 +3,4 @@ if (foo = 'bar') {
   return true;
 }
 ~~~~~~~~~~
-warning:2:16:W084
+warning:2:9:W084

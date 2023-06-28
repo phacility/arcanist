@@ -8,6 +8,7 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
   private $rawCorpus;
   private $revisionID;
   private $fields = array();
+  private $xactions = null;
 
   private $gitSVNBaseRevision;
   private $gitSVNBasePath;
@@ -37,6 +38,13 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     return $this->revisionID;
   }
 
+  public function getRevisionMonogram() {
+    if ($this->revisionID) {
+      return 'D'.$this->revisionID;
+    }
+    return null;
+  }
+
   public function pullDataFromConduit(
     ConduitClient $conduit,
     $partial = false) {
@@ -49,6 +57,9 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
       ));
 
     $this->fields = $result['fields'];
+
+    // NOTE: This does not exist prior to late October 2017.
+    $this->xactions = idx($result, 'transactions');
 
     if (!empty($result['errors'])) {
       throw new ArcanistDifferentialCommitMessageParserException(
@@ -93,6 +104,10 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     return md5($fields);
   }
 
+  public function getTransactions() {
+    return $this->xactions;
+  }
+
   /**
    * Extract the revision ID from a commit message.
    *
@@ -124,10 +139,10 @@ final class ArcanistDifferentialCommitMessage extends Phobject {
     throw new ArcanistUsageException(
       pht(
         'Invalid "Differential Revision" field in commit message. This field '.
-        'should have a revision identifier like "%s" or a Phabricator URI '.
+        'should have a revision identifier like "%s" or a server URI '.
         'like "%s", but has "%s".',
         'D123',
-        'https://phabricator.example.com/D123',
+        'https://devtools.example.com/D123',
         $revision_value));
   }
 

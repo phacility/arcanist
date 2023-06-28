@@ -5,44 +5,41 @@
  */
 final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
+  /**
+   * Mercurial deceptively indicates that the default encoding is UTF-8 however
+   * however the actual default appears to be "something else", at least on
+   * Windows systems. Force all mercurial commands to use UTF-8 encoding.
+   */
+  const ROOT_HG_COMMAND = 'hg --encoding utf-8 ';
+
   private $branch;
   private $localCommitInfo;
   private $rawDiffCache = array();
 
-  private $supportsRebase;
-  private $supportsPhases;
+  private $featureResults = array();
+  private $featureFutures = array();
 
   protected function buildLocalFuture(array $argv) {
-    // Mercurial has a "defaults" feature which basically breaks automation by
-    // allowing the user to add random flags to any command. This feature is
-    // "deprecated" and "a bad idea" that you should "forget ... existed"
-    // according to project lead Matt Mackall:
-    //
-    //  http://markmail.org/message/hl3d6eprubmkkqh5
-    //
-    // There is an HGPLAIN environmental variable which enables "plain mode"
-    // and hopefully disables this stuff.
+    $argv[0] = self::ROOT_HG_COMMAND.$argv[0];
 
-    if (phutil_is_windows()) {
-      $argv[0] = 'set HGPLAIN=1 & hg '.$argv[0];
-    } else {
-      $argv[0] = 'HGPLAIN=1 hg '.$argv[0];
-    }
-
-    $future = newv('ExecFuture', $argv);
-    $future->setCWD($this->getPath());
-    return $future;
+    return $this->newConfiguredFuture(newv('ExecFuture', $argv));
   }
 
-  public function execPassthru($pattern /* , ... */) {
+  public function newPassthru($pattern /* , ... */) {
     $args = func_get_args();
-    if (phutil_is_windows()) {
-      $args[0] = 'hg '.$args[0];
-    } else {
-      $args[0] = 'HGPLAIN=1 hg '.$args[0];
-    }
+    $args[0] = self::ROOT_HG_COMMAND.$args[0];
 
-    return call_user_func_array('phutil_passthru', $args);
+    return $this->newConfiguredFuture(newv('PhutilExecPassthru', $args));
+  }
+
+  private function newConfiguredFuture(PhutilExecutableFuture $future) {
+    $args = func_get_args();
+
+    $env = $this->getMercurialEnvironmentVariables();
+
+    return $future
+      ->setEnv($env)
+      ->setCWD($this->getPath());
   }
 
   public function getSourceControlSystemName() {
@@ -58,42 +55,11 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getCanonicalRevisionName($string) {
-    $match = null;
-    if ($this->isHgSubversionRepo() &&
-        preg_match('/@([0-9]+)$/', $string, $match)) {
-      $string = hgsprintf('svnrev(%s)', $match[1]);
-    }
-
     list($stdout) = $this->execxLocal(
       'log -l 1 --template %s -r %s --',
       '{node}',
       $string);
-    return $stdout;
-  }
 
-  public function getHashFromFromSVNRevisionNumber($revision_id) {
-    $matches = array();
-    $string = hgsprintf('svnrev(%s)', $revision_id);
-    list($stdout) = $this->execxLocal(
-      'log -l 1 --template %s -r %s --',
-      '{node}',
-       $string);
-    if (!$stdout) {
-      throw new ArcanistUsageException(
-        pht('Cannot find the HG equivalent of %s given.', $revision_id));
-    }
-    return $stdout;
-  }
-
-
-  public function getSVNRevisionNumberFromHash($hash) {
-    $matches = array();
-    list($stdout) = $this->execxLocal(
-      'log -r %s --template {svnrev}', $hash);
-    if (!$stdout) {
-      throw new ArcanistUsageException(
-        pht('Cannot find the SVN equivalent of %s given.', $hash));
-    }
     return $stdout;
   }
 
@@ -151,19 +117,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
       return $base;
     }
 
-    // Mercurial 2.1 and up have phases which indicate if something is
-    // published or not. To find which revs are outgoing, it's much
-    // faster to check the phase instead of actually checking the server.
-    if ($this->supportsPhases()) {
-      list($err, $stdout) = $this->execManualLocal(
-        'log --branch %s -r %s --style default',
-        $this->getBranchName(),
-        'draft()');
-    } else {
-      list($err, $stdout) = $this->execManualLocal(
-        'outgoing --branch %s --style default',
-        $this->getBranchName());
-    }
+    list($err, $stdout) = $this->execManualLocal(
+      'log --branch %s -r %s --style default',
+      $this->getBranchName(),
+      'draft()');
 
     if (!$err) {
       $logs = ArcanistMercurialParser::parseMercurialLog($stdout);
@@ -497,6 +454,10 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
+  protected function newCurrentCommitSymbol() {
+    return $this->getWorkingCopyRevision();
+  }
+
   public function getWorkingCopyRevision() {
     return '.';
   }
@@ -514,24 +475,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
   }
 
-  public function supportsRebase() {
-    if ($this->supportsRebase === null) {
-      list($err) = $this->execManualLocal('help rebase');
-      $this->supportsRebase = $err === 0;
-    }
-
-    return $this->supportsRebase;
-  }
-
-  public function supportsPhases() {
-    if ($this->supportsPhases === null) {
-      list($err) = $this->execManualLocal('help phase');
-      $this->supportsPhases = $err === 0;
-    }
-
-    return $this->supportsPhases;
-  }
-
   public function supportsCommitRanges() {
     return true;
   }
@@ -540,28 +483,18 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     return true;
   }
 
-  public function getAllBranches() {
-    list($branch_info) = $this->execxLocal('bookmarks');
-    if (trim($branch_info) == 'no bookmarks set') {
-      return array();
+  public function getBaseCommitRef() {
+    $base_commit = $this->getBaseCommit();
+
+    if ($base_commit === 'null') {
+      return null;
     }
 
-    $matches = null;
-    preg_match_all(
-      '/^\s*(\*?)\s*(.+)\s(\S+)$/m',
-      $branch_info,
-      $matches,
-      PREG_SET_ORDER);
+    $base_message = $this->getCommitMessage($base_commit);
 
-    $return = array();
-    foreach ($matches as $match) {
-      list(, $current, $name) = $match;
-      $return[] = array(
-        'current' => (bool)$current,
-        'name'    => rtrim($name),
-      );
-    }
-    return $return;
+    return $this->newCommitRef()
+      ->setCommitHash($base_commit)
+      ->attachMessage($base_message);
   }
 
   public function hasLocalCommit($commit) {
@@ -587,29 +520,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
     $parser = new ArcanistDiffParser();
     return $parser->parseDiff($diff);
-  }
-
-  public function supportsLocalBranchMerge() {
-    return true;
-  }
-
-  public function performLocalBranchMerge($branch, $message) {
-    if ($branch) {
-      $err = phutil_passthru(
-        '(cd %s && HGPLAIN=1 hg merge --rev %s && hg commit -m %s)',
-        $this->getPath(),
-        $branch,
-        $message);
-    } else {
-      $err = phutil_passthru(
-        '(cd %s && HGPLAIN=1 hg merge && hg commit -m %s)',
-        $this->getPath(),
-        $message);
-    }
-
-    if ($err) {
-      throw new ArcanistUsageException(pht('Merge failed!'));
-    }
   }
 
   public function getFinalizedRevisionMessage() {
@@ -755,35 +665,115 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   public function doCommit($message) {
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
-    $this->execxLocal('commit -l %s', $tmp_file);
+    $this->execxLocal('commit --logfile %s', $tmp_file);
     $this->reloadWorkingCopy();
   }
 
   public function amendCommit($message = null) {
-    if ($message === null) {
+    $path_statuses = $this->buildUncommittedStatus();
+
+    $existing_message = $this->getCommitMessage(
+      $this->getWorkingCopyRevision());
+
+    if ($message === null || $message == $existing_message) {
+      if (empty($path_statuses)) {
+        // If there are no changes to the working directory and the message is
+        // not being changed then there's nothing to amend. Notably Mercurial
+        // will return an error code if trying to amend a commit with no change
+        // to the commit metadata or file changes.
+        return;
+      }
+
       $message = $this->getCommitMessage('.');
     }
 
     $tmp_file = new TempFile();
     Filesystem::writeFile($tmp_file, $message);
 
-    try {
-      $this->execxLocal(
-        'commit --amend -l %s',
-        $tmp_file);
-    } catch (CommandException $ex) {
-      if (preg_match('/nothing changed/', $ex->getStdout())) {
-        // NOTE: Mercurial considers it an error to make a no-op amend. Although
-        // we generally defer to the underlying VCS to dictate behavior, this
-        // one seems a little goofy, and we use amend as part of various
-        // workflows under the assumption that no-op amends are fine. If this
-        // amend failed because it's a no-op, just continue.
-      } else {
+    if ($this->getMercurialFeature('evolve')) {
+      $this->execxLocal('amend --logfile %s --', $tmp_file);
+      try {
+        $this->execxLocal('evolve --all --');
+      } catch (CommandException $ex) {
+        $this->execxLocal('evolve --abort --');
         throw $ex;
       }
+      $this->reloadWorkingCopy();
+      return;
+    }
+
+    // Get the child nodes of the current changeset.
+    list($children) = $this->execxLocal(
+      'log --template %s --rev %s --',
+      '{node} ',
+      'children(.)');
+    $child_nodes = array_filter(explode(' ', $children));
+
+    // For a head commit we can simply use `commit --amend` for both new commit
+    // message and amending changes from the working directory.
+    if (empty($child_nodes)) {
+        $this->execxLocal('commit --amend --logfile %s --', $tmp_file);
+    } else {
+      $this->amendNonHeadCommit($child_nodes, $tmp_file);
     }
 
     $this->reloadWorkingCopy();
+  }
+
+  /**
+   * Amends a non-head commit with a new message and file changes. This
+   * strategy is for Mercurial repositories without the evolve extension.
+   *
+   * 1. Run 'arc-amend' which uses Mercurial internals to amend the current
+   *    commit with updated message/file-changes. It results in a new commit
+   *    from the right parent
+   * 2. For each branch from the original commit, rebase onto the new commit,
+   *    removing the original branch. Note that there is potential for this to
+   *    cause a conflict but this is something the user has to address.
+   * 3. Strip the original commit.
+   *
+   * @param array     The list of child changesets off the original commit.
+   * @param file      The file containing the new commit message.
+   */
+  private function amendNonHeadCommit($child_nodes, $tmp_file) {
+    list($current) = $this->execxLocal(
+      'log --template %s --rev . --',
+      '{node}');
+
+    $this->execxLocalWithExtension(
+      'arc-hg',
+      'arc-amend --logfile %s',
+      $tmp_file);
+
+    list($new_commit) = $this->execxLocal(
+      'log --rev tip --template %s --',
+      '{node}');
+
+    try {
+      $rebase_args = array(
+        '--dest',
+        $new_commit,
+      );
+      foreach ($child_nodes as $child) {
+        $rebase_args[] = '--source';
+        $rebase_args[] = $child;
+      }
+
+      $this->execxLocalWithExtension(
+        'rebase',
+        'rebase %Ls --',
+        $rebase_args);
+    } catch (CommandException $ex) {
+      $this->execxLocalWithExtension(
+        'rebase',
+        'rebase --abort --');
+      throw $ex;
+    }
+
+    $this->execxLocalWithExtension(
+      'strip',
+      'strip --rev %s --',
+      $current);
   }
 
   public function getCommitSummary($commit) {
@@ -798,19 +788,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     $summary = head(explode("\n", $summary));
 
     return trim($summary);
-  }
-
-  public function backoutCommit($commit_hash) {
-    $this->execxLocal('backout -r %s', $commit_hash);
-    $this->reloadWorkingCopy();
-    if (!$this->getUncommittedStatus()) {
-      throw new ArcanistUsageException(
-        pht('%s has already been reverted.', $commit_hash));
-    }
-  }
-
-  public function getBackoutMessage($commit_hash) {
-    return pht('Backed out changeset %s,', $commit_hash);
   }
 
   public function resolveBaseCommitRule($rule, $source) {
@@ -891,7 +868,7 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
                 pht(
                   "'%s' has been amended with 'Differential Revision:', ".
                   "as specified by '%s' in your %s 'base' configuration.",
-                  '.'.
+                  '.',
                   $rule,
                   $source));
               // NOTE: This should be safe because Mercurial doesn't support
@@ -971,10 +948,6 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
 
   }
 
-  public function isHgSubversionRepo() {
-    return file_exists($this->getPath('.hg/svn/rev_map'));
-  }
-
   public function getSubversionInfo() {
     $info = array();
     $base_path = null;
@@ -1006,96 +979,24 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
   }
 
   public function getActiveBookmark() {
-    $bookmarks = $this->getBookmarks();
-    foreach ($bookmarks as $bookmark) {
-      if ($bookmark['is_active']) {
-        return $bookmark['name'];
-      }
+    $bookmark = $this->newMarkerRefQuery()
+      ->withMarkerTypes(
+        array(
+          ArcanistMarkerRef::TYPE_BOOKMARK,
+        ))
+      ->withIsActive(true)
+      ->executeOne();
+
+    if (!$bookmark) {
+      return null;
     }
 
-    return null;
-  }
-
-  public function isBookmark($name) {
-    $bookmarks = $this->getBookmarks();
-    foreach ($bookmarks as $bookmark) {
-      if ($bookmark['name'] === $name) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public function isBranch($name) {
-    $branches = $this->getBranches();
-    foreach ($branches as $branch) {
-      if ($branch['name'] === $name) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public function getBranches() {
-    list($stdout) = $this->execxLocal('--debug branches');
-    $lines = ArcanistMercurialParser::parseMercurialBranches($stdout);
-
-    $branches = array();
-    foreach ($lines as $name => $spec) {
-      $branches[] = array(
-        'name' => $name,
-        'revision' => $spec['rev'],
-      );
-    }
-
-    return $branches;
-  }
-
-  public function getBookmarks() {
-    $bookmarks = array();
-
-    list($raw_output) = $this->execxLocal('bookmarks');
-    $raw_output = trim($raw_output);
-    if ($raw_output !== 'no bookmarks set') {
-      foreach (explode("\n", $raw_output) as $line) {
-        // example line:  * mybook               2:6b274d49be97
-        list($name, $revision) = $this->splitBranchOrBookmarkLine($line);
-
-        $is_active = false;
-        if ('*' === $name[0]) {
-          $is_active = true;
-          $name = substr($name, 2);
-        }
-
-        $bookmarks[] = array(
-          'is_active' => $is_active,
-          'name' => $name,
-          'revision' => $revision,
-        );
-      }
-    }
-
-    return $bookmarks;
-  }
-
-  private function splitBranchOrBookmarkLine($line) {
-    // branches and bookmarks are printed in the format:
-    // default                 0:a5ead76cdf85 (inactive)
-    // * mybook               2:6b274d49be97
-    // this code divides the name half from the revision half
-    // it does not parse the * and (inactive) bits
-    $colon_index = strrpos($line, ':');
-    $before_colon = substr($line, 0, $colon_index);
-    $start_rev_index = strrpos($before_colon, ' ');
-    $name = substr($line, 0, $start_rev_index);
-    $rev = substr($line, $start_rev_index);
-
-    return array(trim($name), trim($rev));
+    return $bookmark->getName();
   }
 
   public function getRemoteURI() {
+    // TODO: Remove this method in favor of RemoteRefQuery.
+
     list($stdout) = $this->execxLocal('paths default');
 
     $stdout = trim($stdout);
@@ -1104,6 +1005,260 @@ final class ArcanistMercurialAPI extends ArcanistRepositoryAPI {
     }
 
     return null;
+  }
+
+  private function getMercurialEnvironmentVariables() {
+    $env = array();
+
+    // Mercurial has a "defaults" feature which basically breaks automation by
+    // allowing the user to add random flags to any command. This feature is
+    // "deprecated" and "a bad idea" that you should "forget ... existed"
+    // according to project lead Matt Mackall:
+    //
+    //  http://markmail.org/message/hl3d6eprubmkkqh5
+    //
+    // There is an HGPLAIN environmental variable which enables "plain mode"
+    // and hopefully disables this stuff.
+
+    $env['HGPLAIN'] = 1;
+
+    return $env;
+  }
+
+  protected function newLandEngine() {
+    return new ArcanistMercurialLandEngine();
+  }
+
+  protected function newWorkEngine() {
+    return new ArcanistMercurialWorkEngine();
+  }
+
+  public function newLocalState() {
+    return id(new ArcanistMercurialLocalState())
+      ->setRepositoryAPI($this);
+  }
+
+  public function willTestMercurialFeature($feature) {
+    $this->executeMercurialFeatureTest($feature, false);
+    return $this;
+  }
+
+  public function getMercurialFeature($feature) {
+    return $this->executeMercurialFeatureTest($feature, true);
+  }
+
+  /**
+   * Returns the necessary flag for using a Mercurial extension. This will
+   * enable Mercurial built-in extensions and the "arc-hg" extension that is
+   * included with Arcanist. This will not enable other extensions, e.g.
+   * "evolve".
+   *
+   * @param string  The name of the extension to enable.
+   * @return string  A new command pattern that includes the necessary flags to
+   *                 enable the specified extension.
+   */
+  private function getMercurialExtensionFlag($extension) {
+    switch ($extension) {
+      case 'arc-hg':
+        $path = phutil_get_library_root('arcanist');
+        $path = dirname($path);
+        $path = $path.'/support/hg/arc-hg.py';
+        $ext_config = 'extensions.arc-hg='.$path;
+        break;
+      case 'rebase':
+        $ext_config = 'extensions.rebase=';
+        break;
+      case 'shelve':
+        $ext_config = 'extensions.shelve=';
+        break;
+      case 'strip':
+        $ext_config = 'extensions.strip=';
+        break;
+      default:
+        throw new Exception(
+          pht('Unknown Mercurial Extension: "%s".', $extension));
+    }
+
+    return csprintf('--config %s', $ext_config);
+  }
+
+  /**
+   * Produces the arguments that should be passed to Mercurial command
+   * execution that enables a desired extension.
+   *
+   * @param string  The name of the extension to enable.
+   * @param string  The command pattern that will be run with the extension
+   *                enabled.
+   * @param array   Parameters for the command pattern argument.
+   * @return array  An array where the first item is a Mercurial command
+   *                pattern that includes the necessary flag for enabling the
+   *                desired extension, and all remaining items are parameters
+   *                to that command pattern.
+   */
+  private function buildMercurialExtensionCommand(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+
+    $pattern_args = array_slice($args, 2);
+
+    $ext_flag = $this->getMercurialExtensionFlag($extension);
+
+    $full_cmd = $ext_flag.' '.$pattern;
+
+    $args = array_merge(
+      array($full_cmd),
+      $pattern_args);
+
+    return $args;
+  }
+
+  public function execxLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execxLocal'),
+      $extended_args);
+  }
+
+  public function execFutureLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execFutureLocal'),
+      $extended_args);
+  }
+
+  public function execPassthruWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execPassthru'),
+      $extended_args);
+  }
+
+  public function execManualLocalWithExtension(
+    $extension,
+    $pattern /* , ... */) {
+
+    $args = func_get_args();
+    $extended_args = call_user_func_array(
+      array($this, 'buildMercurialExtensionCommand'),
+      $args);
+
+    return call_user_func_array(
+      array($this, 'execManualLocal'),
+      $extended_args);
+  }
+
+  private function executeMercurialFeatureTest($feature, $resolve) {
+    if (array_key_exists($feature, $this->featureResults)) {
+      return $this->featureResults[$feature];
+    }
+
+    if (!array_key_exists($feature, $this->featureFutures)) {
+      $future = $this->newMercurialFeatureFuture($feature);
+      $future->start();
+      $this->featureFutures[$feature] = $future;
+    }
+
+    if (!$resolve) {
+      return;
+    }
+
+    $future = $this->featureFutures[$feature];
+    $result = $this->resolveMercurialFeatureFuture($feature, $future);
+    $this->featureResults[$feature] = $result;
+
+    return $result;
+  }
+
+  private function newMercurialFeatureFuture($feature) {
+    switch ($feature) {
+      case 'shelve':
+        return $this->execFutureLocalWithExtension(
+          'shelve',
+          'shelve --help --');
+      case 'evolve':
+        return $this->execFutureLocal('prune --help --');
+      default:
+        throw new Exception(
+          pht(
+            'Unknown Mercurial feature "%s".',
+            $feature));
+    }
+  }
+
+  private function resolveMercurialFeatureFuture($feature, $future) {
+    // By default, assume the feature is a simple capability test and the
+    // capability is present if the feature resolves without an error.
+
+    list($err) = $future->resolve();
+    return !$err;
+  }
+
+  protected function newSupportedMarkerTypes() {
+    return array(
+      ArcanistMarkerRef::TYPE_BRANCH,
+      ArcanistMarkerRef::TYPE_BOOKMARK,
+    );
+  }
+
+  protected function newMarkerRefQueryTemplate() {
+    return new ArcanistMercurialRepositoryMarkerQuery();
+  }
+
+  protected function newRemoteRefQueryTemplate() {
+    return new ArcanistMercurialRepositoryRemoteQuery();
+  }
+
+  protected function newNormalizedURI($uri) {
+    return new ArcanistRepositoryURINormalizer(
+      ArcanistRepositoryURINormalizer::TYPE_MERCURIAL,
+      $uri);
+  }
+
+  protected function newCommitGraphQueryTemplate() {
+    return new ArcanistMercurialCommitGraphQuery();
+  }
+
+  protected function newPublishedCommitHashes() {
+    $future = $this->newFuture(
+      'log --rev %s --template %s',
+      hgsprintf('parents(draft()) - draft()'),
+      '{node}\n');
+    list($lines) = $future->resolve();
+
+    $lines = phutil_split_lines($lines, false);
+
+    $hashes = array();
+    foreach ($lines as $line) {
+      if (!strlen(trim($line))) {
+        continue;
+      }
+      $hashes[] = $line;
+    }
+
+    return $hashes;
   }
 
 }

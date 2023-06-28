@@ -15,7 +15,7 @@ final class ArcanistBlindlyTrustHTTPEngineExtension
   }
 
   public function getExtensionName() {
-    return pht('Arcanist HTTPS Trusted Domains');
+    return pht('HTTPS Trusted Domains');
   }
 
   public function shouldTrustAnySSLAuthorityForURI(PhutilURI $uri) {

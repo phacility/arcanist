@@ -1,0 +1,170 @@
+<?php
+
+function a(...$a) { }
+
+function b(&...$a) { }
+
+function c(Type ...$a) { }
+
+function d(Type &...$a) { }
+
+a(...[1, 2, 3]);
+
+b(...$foo);
+
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > a
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_UNPACK
+       > ...
+       * n_VARIABLE
+        > $a
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > " "
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > b
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE_REFERENCE
+       > &
+       * n_UNPACK
+        > ...
+        * n_VARIABLE
+         > $a
+      * n_EMPTY
+     > ...
+     > $a
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > " "
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > c
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_CLASS_NAME
+       > Type
+      > " "
+      * n_UNPACK
+       > ...
+       * n_VARIABLE
+        > $a
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > " "
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > d
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_CLASS_NAME
+       > Type
+      > " "
+      * n_VARIABLE_REFERENCE
+       > &
+       * n_UNPACK
+        > ...
+        * n_VARIABLE
+         > $a
+      * n_EMPTY
+     > ...
+     > $a
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > " "
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_CALL
+    * n_SYMBOL_NAME
+     > a
+    * n_CALL_PARAMETER_LIST
+     > (
+     * n_UNPACK
+      > ...
+      * n_ARRAY_LITERAL
+       * n_ARRAY_VALUE_LIST
+        > [
+        * n_ARRAY_VALUE
+         * n_EMPTY
+         * n_NUMERIC_SCALAR
+          > 1
+        > ,
+        > " "
+        * n_ARRAY_VALUE
+         * n_EMPTY
+         * n_NUMERIC_SCALAR
+          > 2
+        > ,
+        > " "
+        * n_ARRAY_VALUE
+         * n_EMPTY
+         * n_NUMERIC_SCALAR
+          > 3
+        > ]
+     > )
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_CALL
+    * n_SYMBOL_NAME
+     > b
+    * n_CALL_PARAMETER_LIST
+     > (
+     * n_UNPACK
+      > ...
+      * n_VARIABLE
+       > $foo
+     > )
+   > ;
+ > "\n\n"

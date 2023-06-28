@@ -3,15 +3,15 @@
 final class ArcanistSettings extends Phobject {
 
   private function getOptions() {
-    return array(
+    $legacy_builtins = array(
       'default' => array(
         'type' => 'string',
         'help' => pht(
-          'The URI of a Phabricator install to connect to by default, if '.
-          '%s is run in a project without a Phabricator URI or run outside '.
+          'The URI of a server to connect to by default, if '.
+          '%s is run in a project without a configured URI or run outside '.
           'of a project.',
           'arc'),
-        'example' => '"http://phabricator.example.com/"',
+        'example' => '"http://devtools.example.com/"',
       ),
       'base' => array(
         'type' => 'string',
@@ -35,7 +35,7 @@ final class ArcanistSettings extends Phobject {
         'type' => 'string',
         'example' => '"X"',
         'help' => pht(
-          'Associate the working copy with a specific Phabricator repository. '.
+          'Associate the working copy with a specific repository. '.
           'Normally, %s can figure this association out on its own, but if '.
           'your setup is unusual you can use this option to tell it what the '.
           'desired value is.',
@@ -44,10 +44,9 @@ final class ArcanistSettings extends Phobject {
       'phabricator.uri' => array(
         'type' => 'string',
         'legacy' => 'conduit_uri',
-        'example' => '"https://phabricator.mycompany.com/"',
+        'example' => '"https://devtools.example.com/"',
         'help' => pht(
-          'Associates this working copy with a specific installation of '.
-          'Phabricator.'),
+          'Associates this working copy with a specific server.'),
       ),
       'lint.engine' => array(
         'type' => 'string',
@@ -65,13 +64,6 @@ final class ArcanistSettings extends Phobject {
           'engine is specified by the current project.'),
         'example' => '"ExampleUnitTestEngine"',
       ),
-      'arc.feature.start.default' => array(
-        'type' => 'string',
-        'help' => pht(
-          'The name of the default branch to create the new feature branch '.
-          'off of.'),
-        'example' => '"develop"',
-      ),
       'arc.land.onto.default' => array(
         'type' => 'string',
         'help' => pht(
@@ -79,19 +71,6 @@ final class ArcanistSettings extends Phobject {
           '`%s` is run.',
           'arc land'),
         'example' => '"develop"',
-      ),
-      'arc.lint.cache' => array(
-        'type' => 'bool',
-        'help' => pht(
-          'Enable the lint cache by default. When enabled, `%s` attempts to '.
-          'use cached results if possible. Currently, the cache is not always '.
-          'invalidated correctly and may cause `%s` to report incorrect '.
-          'results, particularly while developing linters. This is probably '.
-          'worth enabling only if your linters are very slow.',
-          'arc lint',
-          'arc lint'),
-        'default' => false,
-        'example' => 'false',
       ),
       'history.immutable' => array(
         'type' => 'bool',
@@ -116,18 +95,10 @@ final class ArcanistSettings extends Phobject {
       'https.cabundle' => array(
         'type' => 'string',
         'help' => pht(
-          "Path to a custom CA bundle file to be used for arcanist's cURL ".
-          "calls. This is used primarily when your conduit endpoint is ".
+          "Path to a custom CA bundle file to be used for cURL calls. ".
+          "This is used primarily when your conduit endpoint is ".
           "behind HTTPS signed by your organization's internal CA."),
         'example' => 'support/yourca.pem',
-      ),
-      'https.blindly-trust-domains' => array(
-        'type' => 'list',
-        'help' => pht(
-          'List of domains to blindly trust SSL certificates for. '.
-          'Disables peer verification.'),
-        'default' => array(),
-        'example' => '["secure.mycompany.com"]',
       ),
       'browser' => array(
         'type' => 'string',
@@ -140,23 +111,13 @@ final class ArcanistSettings extends Phobject {
         'default' => array(),
         'example' => '["ExampleEventListener"]',
       ),
-      'http.basicauth.user' => array(
-        'type' => 'string',
-        'help' => pht('Username to use for basic auth over HTTP transports.'),
-        'example' => '"bob"',
-      ),
-      'http.basicauth.pass' => array(
-        'type' => 'string',
-        'help' => pht('Password to use for basic auth over HTTP transports.'),
-        'example' => '"bobhasasecret"',
-      ),
       'arc.autostash' => array(
         'type' => 'bool',
         'help' => pht(
           'Whether %s should permit the automatic stashing of changes in the '.
           'working directory when requiring a clean working copy. This option '.
           'should only be used when users understand how to restore their '.
-          'working directory from the local stash if an Arcanist operation '.
+          'working directory from the local stash if an operation '.
           'causes an unrecoverable error.',
           'arc'),
         'default' => false,
@@ -299,6 +260,16 @@ final class ArcanistSettings extends Phobject {
         'default' => false,
       ),
     );
+
+    $settings = ArcanistSetting::getAllSettings();
+    foreach ($settings as $key => $setting) {
+      $settings[$key] = $setting->getLegacyDictionary();
+    }
+
+    $results = $settings + $legacy_builtins;
+    ksort($results);
+
+    return $results;
   }
 
   private function getOption($key) {

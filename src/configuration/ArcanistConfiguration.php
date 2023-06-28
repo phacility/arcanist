@@ -26,9 +26,6 @@ class ArcanistConfiguration extends Phobject {
       // Special-case "arc --help" to behave like "arc help" instead of telling
       // you to type "arc help" without being helpful.
       $command = 'help';
-    } else if ($command == '--version') {
-      // Special-case "arc --version" to behave like "arc version".
-      $command = 'version';
     }
 
     $workflow = idx($this->buildAllWorkflows(), $command);
@@ -79,53 +76,6 @@ class ArcanistConfiguration extends Phobject {
     $workflow = $this->buildWorkflow($command);
     if ($workflow) {
       return $workflow;
-    }
-
-    // If the user has an alias, like 'arc alias dhelp diff help', look it up
-    // and substitute it. We do this only after trying to resolve the workflow
-    // normally to prevent you from doing silly things like aliasing 'alias'
-    // to something else.
-    $aliases = ArcanistAliasWorkflow::getAliases($configuration_manager);
-    list($new_command, $args) = ArcanistAliasWorkflow::resolveAliases(
-      $command,
-      $this,
-      $args,
-      $configuration_manager);
-
-    $full_alias = idx($aliases, $command, array());
-    $full_alias = implode(' ', $full_alias);
-
-    // Run shell command aliases.
-    if (ArcanistAliasWorkflow::isShellCommandAlias($new_command)) {
-      $shell_cmd = substr($full_alias, 1);
-
-      $console->writeLog(
-        "[%s: 'arc %s' -> $ %s]",
-        pht('alias'),
-        $command,
-        $shell_cmd);
-
-      if ($args) {
-        $err = phutil_passthru('%C %Ls', $shell_cmd, $args);
-      } else {
-        $err = phutil_passthru('%C', $shell_cmd);
-      }
-
-      exit($err);
-    }
-
-    // Run arc command aliases.
-    if ($new_command) {
-      $workflow = $this->buildWorkflow($new_command);
-      if ($workflow) {
-        $console->writeLog(
-          "[%s: 'arc %s' -> 'arc %s']\n",
-          pht('alias'),
-          $command,
-          $full_alias);
-        $command = $new_command;
-        return $workflow;
-      }
     }
 
     $all = array_keys($this->buildAllWorkflows());

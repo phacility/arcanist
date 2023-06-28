@@ -51,6 +51,13 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
   private function lintFile($file, ArcanistLinter $linter) {
     $linter = clone $linter;
 
+    if (!$linter->canRun()) {
+      $this->assertSkipped(
+        pht(
+          'Linter "%s" can not run.',
+          get_class($linter)));
+    }
+
     $contents = Filesystem::readFile($file);
     $contents = preg_split('/^~{4,}\n/m', $contents);
     if (count($contents) < 2) {
@@ -63,8 +70,6 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     list($data, $expect, $xform, $config) = array_merge(
       $contents,
       array(null, null));
-
-    $basename = basename($file);
 
     if ($config) {
       $config = phutil_json_decode($config);
@@ -89,6 +94,14 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
 
     try {
       $file_extension = idx($config, 'file_extension', '');
+      $path_name = idx($config, 'path');
+
+      if ($path_name !== null) {
+        $basename = basename($path_name);
+      } else {
+        $basename = basename($file);
+      }
+
       $tmp = new TempFile($basename);
       if (!empty($file_extension)) {
         $tmp .= '.'.$file_extension;
@@ -102,7 +115,6 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       }
 
       $dir = dirname($full_path);
-      $path = basename($full_path);
 
       $working_copy = ArcanistWorkingCopyIdentity::newFromRootAndConfigFile(
         $dir,
@@ -111,26 +123,25 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $configuration_manager = new ArcanistConfigurationManager();
       $configuration_manager->setWorkingCopyIdentity($working_copy);
 
-
       $engine = new ArcanistUnitTestableLintEngine();
       $engine->setWorkingCopy($working_copy);
       $engine->setConfigurationManager($configuration_manager);
 
-      $path_name = idx($config, 'path', $path);
-      $engine->setPaths(array($path_name));
+      $engine->setPaths(array($basename));
 
       $linter->setEngine($engine);
-      $linter->addPath($path_name);
-      $linter->addData($path_name, $data);
+      $linter->addPath($basename);
+      $linter->addData($basename, $data);
 
       foreach (idx($config, 'config', array()) as $key => $value) {
         $linter->setLinterConfigurationValue($key, $value);
       }
 
       $engine->addLinter($linter);
-      $engine->addFileData($path_name, $data);
+      $engine->addFileData($basename, $data);
 
       $results = $engine->run();
+
       $this->assertEqual(
         1,
         count($results),
@@ -192,9 +203,20 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
       $message = new ArcanistLintMessage();
 
       $severity = idx($parts, 0);
-      $line     = idx($parts, 1);
-      $char     = idx($parts, 2);
-      $code     = idx($parts, 3);
+      $line = idx($parts, 1);
+      if ($line === '') {
+        $line = null;
+      }
+
+      $char = idx($parts, 2);
+      if ($char === '') {
+        $char = null;
+      }
+
+      $code = idx($parts, 3);
+      if ($code === '') {
+        $code = null;
+      }
 
       if ($severity !== null) {
         $message->setSeverity($severity);
@@ -261,53 +283,24 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
     }
 
     if ($missing || $surprising) {
-      $expected = pht('EXPECTED MESSAGES');
-      if ($missing) {
-        foreach ($missing as $message) {
-          $expected .= sprintf(
-            "\n  %s: %s %s",
-            pht(
-              '%s at line %d, char %d',
-              $message->getSeverity(),
-              $message->getLine(),
-              $message->getChar()),
-            $message->getCode(),
-            $message->getName());
-        }
-      } else {
-        $expected .= "\n  ".pht('No messages');
-      }
-
-      $actual = pht('UNEXPECTED MESSAGES');
-      if ($surprising) {
-        foreach ($surprising as $message) {
-          $actual .= sprintf(
-            "\n  %s: %s %s",
-            pht(
-              '%s at line %d, char %d',
-              $message->getSeverity(),
-              $message->getLine(),
-              $message->getChar()),
-            $message->getCode(),
-            $message->getName());
-        }
-      } else {
-        $actual .= "\n  ".pht('No messages');
-      }
-
       $this->assertFailure(
         sprintf(
-          "%s\n\n%s\n\n%s",
-          pht("Lint failed for '%s'.", $file),
-          $expected,
-          $actual));
+          "%s\n%s%s",
+          pht(
+            'Lint emitted an unexpected set of messages for file "%s".',
+            $file),
+          $this->renderMessages(pht('MISSING MESSAGES'), $missing),
+          $this->renderMessages(pht('SURPLUS MESSAGES'), $surprising)));
     }
   }
 
   private function compareTransform($expected, $actual) {
+    $expected = phutil_string_cast($expected);
+
     if (!strlen($expected)) {
       return;
     }
+
     $this->assertEqual(
       $expected,
       $actual,
@@ -317,15 +310,78 @@ abstract class ArcanistLinterTestCase extends PhutilTestCase {
   /**
    * Compare properties of @{class:ArcanistLintMessage} instances.
    *
-   * The expectation is that if one (or both) of the properties is null, then
-   * we don't care about its value.
-   *
    * @param  wild
    * @param  wild
    * @return bool
    */
   private static function compareLintMessageProperty($x, $y) {
-    return $x === null || $y === null || $x === $y;
+    if ($x === null) {
+      return true;
+    }
+
+    return ($x === $y);
+  }
+
+  private function renderMessages($header, array $messages) {
+    if (!$messages) {
+      $display = tsprintf(
+        "%s\n",
+        pht('(No messages.)'));
+    } else {
+      $lines = array();
+      foreach ($messages as $message) {
+        $line = $message->getLine();
+        if ($line === null) {
+          $display_line = pht('<null>');
+        } else {
+          $display_line = $line;
+        }
+
+        $char = $message->getChar();
+        if ($char === null) {
+          $display_char = pht('<null>');
+        } else {
+          $display_char = $char;
+        }
+
+        $code = $message->getCode();
+        $name = $message->getName();
+        if ($code !== null && $name !== null) {
+          $display_code = pht('%s: %s', $code, $name);
+        } else if ($code !== null) {
+          $display_code = pht('%s', $code);
+        } else {
+          $display_code = null;
+        }
+
+        $severity = $message->getSeverity();
+
+        if ($display_code === null) {
+          $display_message = pht(
+            'Message with severity "%s" at "%s:%s"',
+            $severity,
+            $display_line,
+            $display_char);
+        } else {
+          $display_message = pht(
+            'Message with severity "%s" at "%s:%s" (%s)',
+            $severity,
+            $display_line,
+            $display_char,
+            $display_code);
+        }
+
+        $lines[] = tsprintf(
+          "    %s\n",
+          $display_message);
+      }
+      $display = implode('', $lines);
+    }
+
+    return tsprintf(
+      "%s\n%B\n",
+      $header,
+      $display);
   }
 
 }

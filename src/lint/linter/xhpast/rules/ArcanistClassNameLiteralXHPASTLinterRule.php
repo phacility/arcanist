@@ -34,7 +34,20 @@ final class ArcanistClassNameLiteralXHPASTLinterRule
           $replacement = '__CLASS__';
         }
 
-        $regex = '/\b'.preg_quote($class_name, '/').'\b/';
+        // NOTE: We're only warning when the entire string content is the
+        // class name. It's okay to hard-code the class name as part of a
+        // longer string, like an error or exception message.
+
+        // Sometimes the class name (like "Filesystem") is also a valid part
+        // of the message, which makes this warning a false positive.
+
+        // Even when we're generating a true positive by detecting a class
+        // name in part of a longer string, the cost of an error message
+        // being out-of-date is generally very small (mild confusion, but
+        // no incorrect beahavior) and using "__CLASS__" in errors is often
+        // clunky.
+
+        $regex = '(^'.preg_quote($class_name).'$)';
         if (!preg_match($regex, $contents)) {
           continue;
         }
@@ -42,8 +55,7 @@ final class ArcanistClassNameLiteralXHPASTLinterRule
         $this->raiseLintAtNode(
           $string,
           pht(
-            "Don't hard-code class names, use `%s` instead.",
-            '__CLASS__'),
+            'Prefer "__CLASS__" over hard-coded class names.'),
           $replacement);
       }
     }

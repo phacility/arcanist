@@ -23,7 +23,17 @@ final class ArcanistImplodeArgumentOrderXHPASTLinterRule
       }
 
       $parameter = $parameters->getChildByIndex(1);
-      if (!$parameter->isStaticScalar()) {
+
+      // If the value is a static scalar, like a string literal, it's probably
+      // the glue.
+      $is_scalar = $parameter->isStaticScalar();
+
+      // If the value is a constant, like "DIRECTORY_SEPARATOR", it's probably
+      // the glue.
+      $is_constant = ($parameter->getTypeName() === 'n_SYMBOL_NAME');
+
+      $looks_like_glue = ($is_scalar || $is_constant);
+      if (!$looks_like_glue) {
         continue;
       }
 

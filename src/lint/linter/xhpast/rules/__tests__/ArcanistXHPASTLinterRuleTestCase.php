@@ -29,6 +29,8 @@ abstract class ArcanistXHPASTLinterRuleTestCase
    * @return ArcanistXHPASTLinterRule
    */
   protected function getLinterRule() {
+    $this->assertExecutable('xhpast');
+
     $class = get_class($this);
     $matches = null;
 

@@ -1,0 +1,20 @@
+<?php try {} finally {}
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > " "
+  * n_STATEMENT
+   * n_TRY
+    > try
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+    * n_CATCH_LIST
+    * n_FINALLY
+     * n_STATEMENT_LIST
+ > "\n"

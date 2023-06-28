@@ -27,7 +27,11 @@ final class ArcanistXMLLinter extends ArcanistLinter {
   }
 
   public function getCacheVersion() {
-    return LIBXML_VERSION;
+    if (defined('LIBXML_VERSION')) {
+      return LIBXML_VERSION;
+    } else {
+      return 'unavailable';
+    }
   }
 
   public function lintPath($path) {

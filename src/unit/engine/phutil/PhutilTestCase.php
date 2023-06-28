@@ -20,6 +20,7 @@ abstract class PhutilTestCase extends Phobject {
   private $paths;
   private $renderer;
 
+  private static $executables = array();
 
 /* -(  Making Test Assertions  )--------------------------------------------- */
 
@@ -151,6 +152,147 @@ abstract class PhutilTestCase extends Phobject {
   final protected function assertSkipped($message) {
     $this->skipTest($message);
     throw new PhutilTestSkippedException($message);
+  }
+
+  final protected function assertCaught(
+    $expect,
+    $actual,
+    $message = null) {
+
+    if ($message !== null) {
+      $message = phutil_string_cast($message);
+    }
+
+    if ($actual === null) {
+      // This is okay: no exception.
+    } else if ($actual instanceof Exception) {
+      // This is also okay.
+    } else if ($actual instanceof Throwable) {
+      // And this is okay too.
+    } else {
+      // Anything else is no good.
+
+      if ($message !== null) {
+        $output = pht(
+          'Call to "assertCaught(..., <junk>, ...)" for test case "%s" '.
+          'passed bad value for test result. Expected null, Exception, '.
+          'or Throwable; got: %s.',
+          $message,
+          phutil_describe_type($actual));
+      } else {
+        $output = pht(
+          'Call to "assertCaught(..., <junk>, ...)" passed bad value for '.
+          'test result. Expected null, Exception, or Throwable; got: %s.',
+          phutil_describe_type($actual));
+      }
+
+      $this->failTest($output);
+
+      throw new PhutilTestTerminatedException($output);
+    }
+
+    $expect_list = null;
+
+    if ($expect === false) {
+      $expect_list = array();
+    } else if ($expect === true) {
+      $expect_list = array(
+        'Exception',
+        'Throwable',
+      );
+    } else if (is_string($expect) || is_array($expect)) {
+      $list = (array)$expect;
+
+      $items_ok = true;
+      foreach ($list as $key => $item) {
+        if (!phutil_nonempty_stringlike($item)) {
+          $items_ok = false;
+          break;
+        }
+
+        $list[$key] = phutil_string_cast($item);
+      }
+
+      if ($items_ok) {
+        $expect_list = $list;
+      }
+    }
+
+    if ($expect_list === null) {
+      if ($message !== null) {
+        $output = pht(
+          'Call to "assertCaught(<junk>, ...)" for test case "%s" '.
+          'passed bad expected value. Expected bool, class name as a string, '.
+          'or a list of class names. Got: %s.',
+          $message,
+          phutil_describe_type($expect));
+      } else {
+        $output = pht(
+          'Call to "assertCaught(<junk>, ...)" passed bad expected value. '.
+          'expected result. Expected null, Exception, or Throwable; got: %s.',
+          phutil_describe_type($expect));
+      }
+
+      $this->failTest($output);
+
+      throw new PhutilTestTerminatedException($output);
+    }
+
+    if ($actual === null) {
+      $is_match = !$expect_list;
+    } else {
+      $is_match = false;
+      foreach ($expect_list as $exception_class) {
+        if ($actual instanceof $exception_class) {
+          $is_match = true;
+          break;
+        }
+      }
+    }
+
+    if ($is_match) {
+      $this->assertions++;
+      return;
+    }
+
+    $caller = self::getCallerInfo();
+    $file = $caller['file'];
+    $line = $caller['line'];
+
+    $output = array();
+
+    if ($message !== null) {
+      $output[] = pht(
+        'Assertion of caught exception failed (at %s:%d in test case "%s").',
+        $file,
+        $line,
+        $message);
+    } else {
+      $output[] = pht(
+        'Assertion of caught exception failed (at %s:%d).',
+        $file,
+        $line);
+    }
+
+    if ($actual === null) {
+      $output[] = pht('Expected any exception, got no exception.');
+    } else if (!$expect_list) {
+      $output[] = pht(
+        'Expected no exception, got exception of class "%s".',
+        get_class($actual));
+    } else {
+      $expected_classes = implode(', ', $expect_list);
+      $output[] = pht(
+        'Expected exception (in class(es): %s), got exception of class "%s".',
+        $expected_classes,
+        get_class($actual));
+    }
+
+    $output = implode("\n\n", $output);
+
+    $this->failTest($output);
+
+    throw new PhutilTestTerminatedException($output);
   }
 
 
@@ -747,5 +889,38 @@ abstract class PhutilTestCase extends Phobject {
     $this->failTest($output);
     throw new PhutilTestTerminatedException($output);
   }
+
+  final protected function assertExecutable($binary) {
+    if (!isset(self::$executables[$binary])) {
+      switch ($binary) {
+        case 'xhpast':
+          $ok = true;
+          if (!PhutilXHPASTBinary::isAvailable()) {
+            try {
+              PhutilXHPASTBinary::build();
+            } catch (Exception $ex) {
+              $ok = false;
+            }
+          }
+          break;
+        default:
+          $ok = Filesystem::binaryExists($binary);
+          break;
+      }
+
+      self::$executables[$binary] = $ok;
+    }
+
+    if (!self::$executables[$binary]) {
+      $this->assertSkipped(
+        pht('Required executable "%s" is not available.', $binary));
+    }
+  }
+
+  final protected function getSupportExecutable($executable) {
+    $root = dirname(phutil_get_library_root('arcanist'));
+    return $root.'/support/unit/'.$executable.'.php';
+  }
+
 
 }

@@ -1,0 +1,2492 @@
+<?php
+
+1;
+array(1);
+
+function f() {}
+function f1($x) {}
+function &f2($x) {}
+function f3(&$x) {}
+function &f4(&$x) {}
+function f5(C $x) {}
+function f6(array $x) {}
+function f7(array $x = array()) {}
+function f8($x = null) {}
+function f9(C $x = null) {}
+
+class A {}
+class B extends C {}
+class D extends E implements F {}
+class G extends H implements J, K {}
+final class L {}
+abstract class M {}
+
+final class T {
+  const C = 1;
+  const D = 1, E = 1;
+
+  var $f;
+  var $g, $h;
+  public $i;
+  protected $j, $k;
+  private $l = 3;
+  public static $m = 4, $n = 5;
+
+
+  function m() {}
+  public function m2() {}
+  protected function m3() {}
+  private function m4() {}
+  function &n() {}
+  static function n1() {}
+}
+
+abstract class U {
+  abstract function v();
+}
+
+interface N {}
+interface O extends P {}
+interface Q extends R, S {}
+
+use z;
+use aa, ab;
+use qq as rr, mm as nn, \oo, \pp as qq;
+const F = 1;
+const G = 2, H = 3;
+lbl:
+
+if (1) {}
+if (1) {} else {}
+if (1) {} elseif (2) {} else {}
+if (1) {} elseif (2) {} elseif (3) {}
+
+if (1):
+endif;
+
+if (1):
+else:
+endif;
+
+if (1):
+elseif (2):
+endif;
+
+if (1):
+elseif (2):
+elseif (3):
+endif;
+
+while (1) {}
+
+while (1):
+endwhile;
+
+do {} while (1);
+
+
+for (;;) {}
+
+for (;;):
+endfor;
+
+switch (1) {
+  case 1:
+    break;
+  case 2;
+    break;
+  default:
+    continue;
+}
+
+switch(1) {;}
+switch(1):
+endswitch;
+
+break;
+break 1;
+continue;
+continue 1;
+return;
+return 1;
+return $x;
+
+global $x;
+global $x, $y;
+global $$q;
+global ${$z.$z};
+static $x;
+static $x, $y;
+
+echo 1;
+echo 1, 2;
+
+unset($a, $b);
+
+foreach ($x as $y) {}
+foreach ($x as $k => $y) {}
+foreach ($x as $k => &$y) {}
+
+foreach (array() as $x) {}
+foreach (array() as $k => $y) {}
+
+foreach ($x as $y):
+endforeach;
+
+declare(x=1);
+
+declare(y=1) {
+}
+
+declare(z=1):
+enddeclare;
+
+try {} catch (C $x) {}
+try {} catch (C $x) {} catch (D $x) {}
+
+throw 1;
+
+clone $q;
+$x + $x;
+$x - $x;
+$x * $x;
+$x / $x;
+$x . $x;
+$x % $x;
+$x & $x;
+$x | $x;
+$x ^ $x;
+$x << $x;
+$x >> $x;
+$x++;
+++$x;
+$x--;
+--$x;
++$x;
+-$x;
+!$x;
+~$x;
+$x == $x;
+$x === $x;
+$x != $x;
+$x !== $x;
+$x = $x;
+$x < $x;
+$x <= $x;
+$x > $x;
+$x >= $x;
+$x instanceof $x;
+($x);
+($x ? $x : $x);
+($x ?: $x);
+$x || $x;
+$x && $x;
+$x and $x;
+$x or $x;
+$x xor $x;
+$x += $x;
+$x -= $x;
+$x *= $x;
+$x /= $x;
+$x .= $x;
+$x %= $x;
+$x &= $x;
+$x |= $x;
+$x ^= $x;
+$x <<= $x;
+$x >>= $x;
+(int)$x;
+(double)$x;
+(string)$x;
+(binary)$x;
+(array)$x;
+(object)$x;
+(bool)$x;
+(unset)$x;
+$x[] = $x;
+
+@$x;
+
+__LINE__;
+__FILE__;
+__DIR__;
+__CLASS__;
+__METHOD__;
+__FUNCTION__;
+__NAMESPACE__;
+
+goto lbl;
+~~~~~~~~~~
+pass
+~~~~~~~~~~
+* n_PROGRAM
+ * n_STATEMENT_LIST
+  * n_OPEN_TAG
+   > <?php
+  > "\n\n"
+  * n_STATEMENT
+   * n_NUMERIC_SCALAR
+    > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_ARRAY_LITERAL
+    > array
+    * n_ARRAY_VALUE_LIST
+     > (
+     * n_ARRAY_VALUE
+      * n_EMPTY
+      * n_NUMERIC_SCALAR
+       > 1
+     > )
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f1
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_REFERENCE
+     > &
+    * n_STRING
+     > f2
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f3
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE_REFERENCE
+       > &
+       * n_VARIABLE
+        > $x
+      * n_EMPTY
+     > $x
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_REFERENCE
+     > &
+    * n_STRING
+     > f4
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE_REFERENCE
+       > &
+       * n_VARIABLE
+        > $x
+      * n_EMPTY
+     > $x
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f5
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_CLASS_NAME
+       > C
+      > " "
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f6
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_TYPE_NAME
+       > array
+      > " "
+      * n_VARIABLE
+       > $x
+      * n_EMPTY
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f7
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_TYPE_NAME
+       > array
+      > " "
+      * n_VARIABLE
+       > $x
+      > " "
+      > =
+      > " "
+      * n_ARRAY_LITERAL
+       > array
+       * n_ARRAY_VALUE_LIST
+        > (
+        > )
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f8
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_EMPTY
+      * n_VARIABLE
+       > $x
+      > " "
+      > =
+      > " "
+      * n_SYMBOL_NAME
+       > null
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FUNCTION_DECLARATION
+    * n_EMPTY
+    * n_EMPTY
+    * n_STRING
+     > f9
+    * n_DECLARATION_PARAMETER_LIST
+     > (
+     * n_DECLARATION_PARAMETER
+      * n_CLASS_NAME
+       > C
+      > " "
+      * n_VARIABLE
+       > $x
+      > " "
+      > =
+      > " "
+      * n_SYMBOL_NAME
+       > null
+     > )
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > A
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > B
+    > " "
+    * n_EXTENDS_LIST
+     > extends
+     > " "
+     * n_CLASS_NAME
+      > C
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > D
+    > " "
+    * n_EXTENDS_LIST
+     > extends
+     > " "
+     * n_CLASS_NAME
+      > E
+    > " "
+    * n_IMPLEMENTS_LIST
+     > implements
+     > " "
+     * n_CLASS_NAME
+      > F
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     > class
+    > " "
+    * n_CLASS_NAME
+     > G
+    > " "
+    * n_EXTENDS_LIST
+     > extends
+     > " "
+     * n_CLASS_NAME
+      > H
+    > " "
+    * n_IMPLEMENTS_LIST
+     > implements
+     > " "
+     * n_CLASS_NAME
+      > J
+     > ,
+     > " "
+     * n_CLASS_NAME
+      > K
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     * n_STRING
+      > final
+     > " "
+     > class
+    > " "
+    * n_CLASS_NAME
+     > L
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     * n_STRING
+      > abstract
+     > " "
+     > class
+    > " "
+    * n_CLASS_NAME
+     > M
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     * n_STRING
+      > final
+     > " "
+     > class
+    > " "
+    * n_CLASS_NAME
+     > T
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_CONSTANT_DECLARATION_LIST
+       > const
+       > " "
+       * n_CLASS_CONSTANT_DECLARATION
+        * n_STRING
+         > C
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 1
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_CONSTANT_DECLARATION_LIST
+       > const
+       > " "
+       * n_CLASS_CONSTANT_DECLARATION
+        * n_STRING
+         > D
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 1
+       > ,
+       > " "
+       * n_CLASS_CONSTANT_DECLARATION
+        * n_STRING
+         > E
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 1
+      > ;
+     > "\n\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > var
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $f
+        * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > var
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $g
+        * n_EMPTY
+       > ,
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $h
+        * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > public
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $i
+        * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > protected
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $j
+        * n_EMPTY
+       > ,
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $k
+        * n_EMPTY
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > private
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $l
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 3
+      > ;
+     > "\n  "
+     * n_STATEMENT
+      * n_CLASS_MEMBER_DECLARATION_LIST
+       * n_CLASS_MEMBER_MODIFIER_LIST
+        * n_STRING
+         > public
+        > " "
+        * n_STRING
+         > static
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $m
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 4
+       > ,
+       > " "
+       * n_CLASS_MEMBER_DECLARATION
+        * n_VARIABLE
+         > $n
+        > " "
+        > =
+        > " "
+        * n_NUMERIC_SCALAR
+         > 5
+      > ;
+     > "\n\n\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+       * n_EMPTY
+       * n_STRING
+        > m
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > public
+       * n_EMPTY
+       * n_STRING
+        > m2
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > protected
+       * n_EMPTY
+       * n_STRING
+        > m3
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > private
+       * n_EMPTY
+       * n_STRING
+        > m4
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+       * n_REFERENCE
+        > &
+       * n_STRING
+        > n
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > static
+       * n_EMPTY
+       * n_STRING
+        > n1
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_STATEMENT_LIST
+        > {
+        > }
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CLASS_DECLARATION
+    * n_CLASS_ATTRIBUTES
+     * n_STRING
+      > abstract
+     > " "
+     > class
+    > " "
+    * n_CLASS_NAME
+     > U
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_STATEMENT
+      * n_METHOD_DECLARATION
+       * n_METHOD_MODIFIER_LIST
+        * n_STRING
+         > abstract
+       * n_EMPTY
+       * n_STRING
+        > v
+       * n_DECLARATION_PARAMETER_LIST
+        > (
+        > )
+       * n_EMPTY
+       * n_EMPTY
+       * n_EMPTY
+     > ;
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_INTERFACE_DECLARATION
+    * n_CLASS_ATTRIBUTES
+    * n_CLASS_NAME
+     > N
+    * n_EMPTY
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_INTERFACE_DECLARATION
+    * n_CLASS_ATTRIBUTES
+    * n_CLASS_NAME
+     > O
+    > " "
+    * n_EXTENDS_LIST
+     > extends
+     > " "
+     * n_CLASS_NAME
+      > P
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_INTERFACE_DECLARATION
+    * n_CLASS_ATTRIBUTES
+    * n_CLASS_NAME
+     > Q
+    > " "
+    * n_EXTENDS_LIST
+     > extends
+     > " "
+     * n_CLASS_NAME
+      > R
+     > ,
+     > " "
+     * n_CLASS_NAME
+      > S
+    * n_EMPTY
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > z
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > aa
+     * n_EMPTY
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > ab
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_USE_LIST
+    > use
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > qq
+     > " "
+     > as
+     > " "
+     * n_STRING
+      > rr
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > mm
+     > " "
+     > as
+     > " "
+     * n_STRING
+      > nn
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > "\"
+      > oo
+     * n_EMPTY
+    > ,
+    > " "
+    * n_USE
+     * n_SYMBOL_NAME
+      > "\"
+      > pp
+     > " "
+     > as
+     > " "
+     * n_STRING
+      > qq
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CONSTANT_DECLARATION_LIST
+    > const
+    > " "
+    * n_CONSTANT_DECLARATION
+     * n_STRING
+      > F
+     > " "
+     > =
+     > " "
+     * n_NUMERIC_SCALAR
+      > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CONSTANT_DECLARATION_LIST
+    > const
+    > " "
+    * n_CONSTANT_DECLARATION
+     * n_STRING
+      > G
+     > " "
+     > =
+     > " "
+     * n_NUMERIC_SCALAR
+      > 2
+    > ,
+    > " "
+    * n_CONSTANT_DECLARATION
+     * n_STRING
+      > H
+     > " "
+     > =
+     > " "
+     * n_NUMERIC_SCALAR
+      > 3
+   > ;
+  > "\n"
+  * n_LABEL
+   * n_STRING
+    > lbl
+   > :
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+  > "\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+    > " "
+    * n_ELSE
+     > else
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+  > "\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+    > " "
+    * n_ELSEIF
+     > elseif
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 2
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+    > " "
+    * n_ELSE
+     > else
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+  > "\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+    > " "
+    * n_ELSEIF
+     > elseif
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 2
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+    > " "
+    * n_ELSEIF
+     > elseif
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 3
+      > )
+     > " "
+     * n_STATEMENT_LIST
+      > {
+      > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     * n_STATEMENT_LIST
+    * n_EMPTY
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     * n_STATEMENT_LIST
+    > :
+    > "\n"
+    * n_ELSE
+     * n_STATEMENT_LIST
+    > :
+    > "\n"
+    > endif
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     * n_STATEMENT_LIST
+    > :
+    > "\n"
+    * n_ELSEIF
+     > elseif
+     > " "
+     > (
+     * n_NUMERIC_SCALAR
+      > 2
+     * n_STATEMENT_LIST
+    * n_EMPTY
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_CONDITION_LIST
+    * n_IF
+     > if
+     > " "
+     * n_CONTROL_CONDITION
+      > (
+      * n_NUMERIC_SCALAR
+       > 1
+      > )
+     * n_STATEMENT_LIST
+    > :
+    > "\n"
+    * n_ELSEIF
+     > elseif
+     > " "
+     > (
+     * n_NUMERIC_SCALAR
+      > 2
+     * n_STATEMENT_LIST
+    > )
+    > :
+    > "\n"
+    * n_ELSEIF
+     > elseif
+     > " "
+     > (
+     * n_NUMERIC_SCALAR
+      > 3
+     * n_STATEMENT_LIST
+    * n_EMPTY
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_WHILE
+    > while
+    > " "
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_WHILE
+    > while
+    > " "
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+    * n_STATEMENT_LIST
+     > :
+     > "\n"
+     > endwhile
+     > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_DO_WHILE
+    > do
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+    > " "
+    > while
+    > " "
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+   > ;
+  > "\n\n\n"
+  * n_STATEMENT
+   * n_FOR
+    > for
+    > " "
+    * n_FOR_EXPRESSION
+     * n_EMPTY
+     * n_EMPTY
+     * n_EMPTY
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FOR
+    > for
+    > " "
+    * n_FOR_EXPRESSION
+     * n_EMPTY
+     * n_EMPTY
+     * n_EMPTY
+    * n_STATEMENT_LIST
+     > :
+     > "\n"
+     > endfor
+     > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_SWITCH
+    > switch
+    > " "
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > "\n  "
+     * n_CASE
+      > case
+      > " "
+      * n_NUMERIC_SCALAR
+       > 1
+      > :
+      > "\n    "
+      * n_STATEMENT_LIST
+       * n_STATEMENT
+        * n_BREAK
+         * n_EMPTY
+        > ;
+     > "\n  "
+     * n_CASE
+      > case
+      > " "
+      * n_NUMERIC_SCALAR
+       > 2
+      > ;
+      > "\n    "
+      * n_STATEMENT_LIST
+       * n_STATEMENT
+        * n_BREAK
+         * n_EMPTY
+        > ;
+     > "\n  "
+     * n_DEFAULT
+      > default
+      > :
+      > "\n    "
+      * n_STATEMENT_LIST
+       * n_STATEMENT
+        * n_CONTINUE
+         * n_EMPTY
+        > ;
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_SWITCH
+    > switch
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     * n_STATEMENT
+      > ;
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_SWITCH
+    > switch
+    * n_CONTROL_CONDITION
+     > (
+     * n_NUMERIC_SCALAR
+      > 1
+     > )
+    * n_STATEMENT_LIST
+     > :
+     > "\n"
+     > endswitch
+     > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_BREAK
+    * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BREAK
+    > break
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CONTINUE
+    * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CONTINUE
+    > continue
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_RETURN
+    * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_RETURN
+    > return
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_RETURN
+    > return
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_GLOBAL_DECLARATION_LIST
+    > global
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_GLOBAL_DECLARATION_LIST
+    > global
+    > " "
+    * n_VARIABLE
+     > $x
+    > ,
+    > " "
+    * n_VARIABLE
+     > $y
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_GLOBAL_DECLARATION_LIST
+    > global
+    > " "
+    * n_VARIABLE_VARIABLE
+     > $
+     * n_VARIABLE
+      > $q
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_GLOBAL_DECLARATION_LIST
+    > global
+    > " "
+    * n_VARIABLE_VARIABLE
+     > $
+     > {
+     * n_CONCATENATION_LIST
+      * n_VARIABLE
+       > $z
+      * n_OPERATOR
+       > .
+      * n_VARIABLE
+       > $z
+   > }
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STATIC_DECLARATION_LIST
+    > static
+    > " "
+    * n_STATIC_DECLARATION
+     * n_VARIABLE
+      > $x
+     * n_EMPTY
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_STATIC_DECLARATION_LIST
+    > static
+    > " "
+    * n_STATIC_DECLARATION
+     * n_VARIABLE
+      > $x
+     * n_EMPTY
+    > ,
+    > " "
+    * n_STATIC_DECLARATION
+     * n_VARIABLE
+      > $y
+     * n_EMPTY
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_ECHO_LIST
+    > echo
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_ECHO_LIST
+    > echo
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+    > ,
+    > " "
+    * n_NUMERIC_SCALAR
+     > 2
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_UNSET_LIST
+    > unset
+    > (
+    * n_VARIABLE
+     > $a
+    > ,
+    > " "
+    * n_VARIABLE
+     > $b
+    > )
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_VARIABLE
+      > $x
+     * n_EMPTY
+     * n_VARIABLE
+      > $y
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_VARIABLE
+      > $x
+     > " "
+     > as
+     > " "
+     * n_VARIABLE
+      > $k
+     > " "
+     > =>
+     > " "
+     * n_VARIABLE
+      > $y
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_VARIABLE
+      > $x
+     > " "
+     > as
+     > " "
+     * n_VARIABLE
+      > $k
+     > " "
+     > =>
+     > " "
+     * n_VARIABLE_REFERENCE
+      > &
+      * n_VARIABLE
+       > $y
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_ARRAY_LITERAL
+      > array
+      * n_ARRAY_VALUE_LIST
+       > (
+       > )
+     * n_EMPTY
+     * n_VARIABLE
+      > $x
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_ARRAY_LITERAL
+      > array
+      * n_ARRAY_VALUE_LIST
+       > (
+       > )
+     > " "
+     > as
+     > " "
+     * n_VARIABLE
+      > $k
+     > " "
+     > =>
+     > " "
+     * n_VARIABLE
+      > $y
+     > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_FOREACH
+    > foreach
+    > " "
+    * n_FOREACH_EXPRESSION
+     > (
+     * n_VARIABLE
+      > $x
+     * n_EMPTY
+     * n_VARIABLE
+      > $y
+     > )
+    * n_STATEMENT_LIST
+     > :
+     > "\n"
+     > endforeach
+     > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_DECLARE
+    > declare
+    > (
+    * n_DECLARE_DECLARATION_LIST
+     * n_DECLARE_DECLARATION
+      * n_STRING
+       > x
+      > =
+      * n_NUMERIC_SCALAR
+       > 1
+    > )
+    * n_STATEMENT
+     * n_EMPTY
+  > "\n\n"
+  * n_STATEMENT
+   * n_DECLARE
+    > declare
+    > (
+    * n_DECLARE_DECLARATION_LIST
+     * n_DECLARE_DECLARATION
+      * n_STRING
+       > y
+      > =
+      * n_NUMERIC_SCALAR
+       > 1
+    > )
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > "\n"
+     > }
+  > "\n\n"
+  * n_STATEMENT
+   * n_DECLARE
+    > declare
+    > (
+    * n_DECLARE_DECLARATION_LIST
+     * n_DECLARE_DECLARATION
+      * n_STRING
+       > z
+      > =
+      * n_NUMERIC_SCALAR
+       > 1
+    > )
+    * n_STATEMENT_LIST
+     > :
+     > "\n"
+     > enddeclare
+     > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_TRY
+    > try
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+    > " "
+    * n_CATCH_LIST
+     * n_CATCH
+      > catch
+      > " "
+      > (
+      * n_CLASS_NAME
+       > C
+      > " "
+      * n_VARIABLE
+       > $x
+      > )
+      > " "
+      * n_STATEMENT_LIST
+       > {
+       > }
+    * n_EMPTY
+  > "\n"
+  * n_STATEMENT
+   * n_TRY
+    > try
+    > " "
+    * n_STATEMENT_LIST
+     > {
+     > }
+    > " "
+    * n_CATCH_LIST
+     * n_CATCH
+      > catch
+      > " "
+      > (
+      * n_CLASS_NAME
+       > C
+      > " "
+      * n_VARIABLE
+       > $x
+      > )
+      > " "
+      * n_STATEMENT_LIST
+       > {
+       > }
+     > " "
+     * n_CATCH
+      > catch
+      > " "
+      > (
+      * n_CLASS_NAME
+       > D
+      > " "
+      * n_VARIABLE
+       > $x
+      > )
+      > " "
+      * n_STATEMENT_LIST
+       > {
+       > }
+    * n_EMPTY
+  > "\n\n"
+  * n_STATEMENT
+   * n_THROW
+    > throw
+    > " "
+    * n_NUMERIC_SCALAR
+     > 1
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > clone
+    > " "
+    * n_VARIABLE
+     > $q
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > +
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > -
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > *
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > /
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CONCATENATION_LIST
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > .
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > %
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > &
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > |
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > ^
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > <<
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > >>
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_POSTFIX_EXPRESSION
+    * n_VARIABLE
+     > $x
+    * n_OPERATOR
+     > ++
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > ++
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_POSTFIX_EXPRESSION
+    * n_VARIABLE
+     > $x
+    * n_OPERATOR
+     > --
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > --
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > +
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > -
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > !
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > ~
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > ==
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > ===
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > !=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > !==
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > <
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > <=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > >
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > >=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > instanceof
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_PARENTHETICAL_EXPRESSION
+    > (
+    * n_VARIABLE
+     > $x
+    > )
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_PARENTHETICAL_EXPRESSION
+    > (
+    * n_TERNARY_EXPRESSION
+     * n_VARIABLE
+      > $x
+     > " "
+     * n_OPERATOR
+      > ?
+     > " "
+     * n_VARIABLE
+      > $x
+     > " "
+     * n_OPERATOR
+      > :
+     > " "
+     * n_VARIABLE
+      > $x
+    > )
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_PARENTHETICAL_EXPRESSION
+    > (
+    * n_TERNARY_EXPRESSION
+     * n_VARIABLE
+      > $x
+     > " "
+     * n_OPERATOR
+      > ?
+     * n_EMPTY
+     * n_OPERATOR
+      > :
+     > " "
+     * n_VARIABLE
+      > $x
+    > )
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > ||
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > &&
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > and
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > or
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > xor
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > +=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > -=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > *=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > /=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > .=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > %=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > &=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > |=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > ^=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > <<=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_VARIABLE
+     > $x
+    > " "
+    * n_OPERATOR
+     > >>=
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (int)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (double)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (string)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (binary)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (array)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (object)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (bool)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_CAST_EXPRESSION
+    * n_CAST
+     > (unset)
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_BINARY_EXPRESSION
+    * n_INDEX_ACCESS
+     * n_VARIABLE
+      > $x
+     * n_EMPTY
+    > " "
+    * n_OPERATOR
+     > =
+    > " "
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_UNARY_PREFIX_EXPRESSION
+    * n_OPERATOR
+     > @
+    * n_VARIABLE
+     > $x
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __LINE__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __FILE__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __DIR__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __CLASS__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __METHOD__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __FUNCTION__
+   > ;
+  > "\n"
+  * n_STATEMENT
+   * n_MAGIC_SCALAR
+    > __NAMESPACE__
+   > ;
+  > "\n\n"
+  * n_STATEMENT
+   * n_GOTO
+    > goto
+    > " "
+    * n_STRING
+     > lbl
+   > ;
+ > "\n"
