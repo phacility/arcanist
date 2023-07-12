@@ -3,7 +3,7 @@
 set +o errexit
 REPO_PATH="$(git rev-parse --show-toplevel)"
 
-bazel run --ui_event_filters=-info,-stdout,-stderr --noshow_progress //secscan -- scan -d "${REPO_PATH}" -s=pre-commit --timeout=8 --report-metrics=true
+bazel run --ui_event_filters=-info,-stdout,-stderr --noshow_progress //secscan -- scan -d "${REPO_PATH}" -s=pre-commit --timeout=8 --report-metrics=true --log-file="/tmp/secscan.log"
 
 EXIT_CODE=$?
 
