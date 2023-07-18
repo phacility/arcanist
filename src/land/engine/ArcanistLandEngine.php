@@ -309,7 +309,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithFailingForceableTests($revision_refs) {
-    $expected_pattern = "/\sALLOW_FAILED_TESTS=.+/m";
+    $expected_pattern = "/\sALLOW_(FAILED|ONGOING)_TESTS=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
@@ -325,7 +325,7 @@ abstract class ArcanistLandEngine
   }
 
   final public function allowForcedLandWithOngoingForceableTests($revision_refs) {
-    $expected_pattern = "/\sALLOW_ONGOING_TESTS=.+/m";
+    $expected_pattern = "/\sALLOW_(FAILED|ONGOING)_TESTS=.+/m";
     $this->getWorkflow()->loadHardpoints(
       $revision_refs,
       array(
