@@ -2728,7 +2728,8 @@ EOTEXT
     foreach ($need_upload as $key => $spec) {
       $ref = id(new ArcanistFileDataRef())
         ->setName($spec['name'])
-        ->setData($spec['data']);
+        ->setData($spec['data'])
+        ->setViewPolicy('users');
 
       $uploader->addFile($ref, $key);
     }
