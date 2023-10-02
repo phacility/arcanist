@@ -46,7 +46,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     return file_get_contents($url);
   }
 
-  function confirmImplicitCommits(array $sets, array $symbols) {
+  protected function confirmImplicitCommits(array $sets, array $symbols) {
     assert_instances_of($sets, 'ArcanistLandCommitSet');
     assert_instances_of($symbols, 'ArcanistLandSymbol');
 
@@ -75,7 +75,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       "Run 'arc diff' before landing.");
   }
 
-  function execute() {
+  public function execute() {
     $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
     $workflow = $this->getWorkflow();
@@ -183,7 +183,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       $revision_ref = head($group)->getRevisionRef();
       $revision_id = $revision_ref->getID();
 
-      # get the last modified time for the revision diff
+      // get the last modified time for the revision diff
       $local_timestamp_warning = false;
       $future = $conduitEngine->newFuture(
         "differential.revision.search",
@@ -202,7 +202,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       $response = $future->resolve();
       $diff_date_modified = $response['data'][0]['fields']['dateModified'];
 
-      # compare against the unix commiter timestamps for each commit
+      // compare against the unix commiter timestamps for each commit
       foreach ($group as $commit) {
         $git_cmd = "show -s --format=%%ct " . $commit->getHash();
         list($err, $commit_unix_date) = $api->execManualLocal($git_cmd);
@@ -211,7 +211,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
         }
         $commit_unix_date = intval(trim($commit_unix_date));
         $timestamp_diff = $commit_unix_date - $diff_date_modified;
-        # allow for small theshold before tripping the warning
+        // allow for small theshold before tripping the warning
         if ($timestamp_diff > 5) {
           $pretty_diff = sprintf('%02dh %02dm %02ds', ($timestamp_diff/3600),($timestamp_diff/60%60), $timestamp_diff%60);
           echo tsprintf(
@@ -242,7 +242,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       }
     }
 
-    # get phabricator user name
+    // get phabricator user name
     $future = $conduitEngine->newFuture("user.whoami", array());
     $response = $future->resolve();
     $username = $response['userName'];
@@ -441,7 +441,7 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
     }
   }
 
-  function tailLogs($phlq_uri, $log_id, $log_tail_start, $log) {
+  public function tailLogs($phlq_uri, $log_id, $log_tail_start, $log) {
     $count = 0;
     $landing_errors = 0;
     $last_state = "";
@@ -454,18 +454,18 @@ class ArcanistPhlqLandEngine extends ArcanistGitLandEngine {
       print($out);
       $msg = $log_id.": ".$land_state;
       if ($land_state == "DONE") {
-        # Success
+        // Success
         $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
         return true;
       } else if ($land_state == "ERROR") {
-        # Failure
+        // Failure
         $log->writeError(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
         return false;
       } else if ($count % 10 == 0) {
-        # Periodic update
+        // Periodic update
         $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
       } else if ($land_state != $last_state) {
-        # State change
+        // State change
         $log->writeStatus(pht("LAND QUEUE"), pht($log_id.": ".$land_state));
       }
       $last_state = $land_state;

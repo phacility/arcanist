@@ -233,7 +233,7 @@ EOTEXT
       echo tsprintf(
         "\n%W\n",
         pht(
-          'They river bubbles peacefully.'));
+          'The river bubbles peacefully.'));
     } else {
       echo tsprintf(
         "%W\n",
