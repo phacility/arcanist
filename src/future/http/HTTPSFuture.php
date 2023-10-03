@@ -399,7 +399,12 @@ final class HTTPSFuture extends BaseHTTPFuture {
       }
 
       if ($this->canSetCAInfo()) {
-        curl_setopt($curl, CURLOPT_CAINFO, $this->getCABundle());
+        $path = $this->getCABundle();
+        if (is_dir($path)) {
+          curl_setopt($curl, CURLOPT_CAPATH, $path);
+        } else {
+          curl_setopt($curl, CURLOPT_CAINFO, $path);
+        }
       }
 
       $verify_peer = 1;

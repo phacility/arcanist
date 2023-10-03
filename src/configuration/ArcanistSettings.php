@@ -95,7 +95,7 @@ final class ArcanistSettings extends Phobject {
       'https.cabundle' => array(
         'type' => 'string',
         'help' => pht(
-          "Path to a custom CA bundle file to be used for cURL calls. ".
+          "Path to certificate bundle or directory to be used for cURL calls. ".
           "This is used primarily when your conduit endpoint is ".
           "behind HTTPS signed by your organization's internal CA."),
         'example' => 'support/yourca.pem',
