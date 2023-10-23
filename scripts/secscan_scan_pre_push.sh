@@ -11,8 +11,11 @@ BASE_COMMIT=$(
     | head -1
 )
 
-bazel run --ui_event_filters=-info,-stdout,-stderr --noshow_progress //secscan/tools/trufflehog:scan_local -- $REPO_PATH $BASE_COMMIT
-
+if [ $ENABLE_SECRET_DETECTION_PROCESS = "true" ]; then
+  bazel run --ui_event_filters=-info,-stdout,-stderr --noshow_progress //secscan/tools/trufflehog:scan_local -- $REPO_PATH $BASE_COMMIT
+else
+  bazel run --ui_event_filters=-info,-stdout,-stderr --noshow_progress //secscan -- scan -d "${REPO_PATH}" -s=pre-commit --timeout=8 --report-metrics=true --log-file="/tmp/secscan.log"
+fi
 EXIT_CODE=$?
 
 set -o errexit
