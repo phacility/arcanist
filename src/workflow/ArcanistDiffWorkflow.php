@@ -686,9 +686,9 @@ EOTEXT
           $branch_create_ts = $repository_api->getBranchCreationTS() * 1000;
         }
         catch (Exception $e) {
-          # When developer do `arc diff` which out a branch it will has this exception
-          # https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
-          # Therefore we use current time as the branch create time
+          // When developer do `arc diff` which out a branch it will has this exception
+          // https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
+          // Therefore we use current time as the branch create time
           $branch_create_ts = time() * 1000;
         }
         try {
@@ -702,8 +702,8 @@ EOTEXT
           $author = $this->getUserName();
           $branch_name = $repository_api->getBranchName();
           if ($branch_name == null) {
-            # When developer do `arc diff` which out a branch it will has this exception
-            # https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
+            // When developer do `arc diff` which out a branch it will has this exception
+            // https://hood.slack.com/archives/C016GGP0QDD/p1660233270559149
             $branch_name = "devx-kpi-nobranch";
           }
           $hostname = gethostname();
@@ -1634,8 +1634,12 @@ EOTEXT
     $issues = array_merge(
       array(
         pht('#ready_to_land'),
-        pht('Uncomment the previous line to auto land the diff when tests pass and it is accepted.'),
+        pht('#frontend_no_user_facing_changes'),
+        pht('Uncommenting the lines above will add them as tags to your diff.'),
+        pht('Uncomment #ready_to_land to auto land the diff when tests pass and it is accepted.'),
         pht('More info on the Ready To Land feature: http://go/ready_to_land'),
+        pht('Uncomment #frontend_no_user_facing_changes if your change has no UI facing changes.'),
+        pht('More info about the check can be found at http://go/redoak-check'),
         '',
       ),
       array(
