@@ -79,7 +79,7 @@ final class ArcanistMetricsLogger extends Phobject {
   }
 
   public function setRevisionID($revisionID) {
-    if (empty($this->revisionID)) {
+    if (empty($this->revisionID) AND $revisionID != 'D') {
       $this->revisionID = $revisionID;
     }
   }

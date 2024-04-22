@@ -596,7 +596,7 @@ abstract class ArcanistLintEngine extends Phobject {
         'event_start_ts' => $willLintEventStartTs,
         'event_end_ts' => (int)(microtime(true)*1000000),
       ));
-    $lintPathsEventStartTs = (int)(microtime(true)*100000);
+    $lintPathsEventStartTs = (int)(microtime(true)*1000000);
 
     try {
       foreach ($paths as $path) {

@@ -181,7 +181,7 @@ final class ArcanistArcConfigurationEngineExtension
             'Error message when attempting to land a revision with failed builds.')),
       id(new ArcanistBoolConfigOption())
         ->setKey('devx.metrics')
-        ->setDefaultValue(false)
+        ->setDefaultValue(true)
         ->setSummary(pht('Collect devx metrics.'))
         ->setHelp(pht('Collect devx metrics.')),
       id(new ArcanistBoolConfigOption())

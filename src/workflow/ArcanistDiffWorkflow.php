@@ -691,6 +691,8 @@ EOTEXT
         echo pht('Created a new Differential revision:')."\n";
       }
 
+      $this->metricsEventLogger->setRevisionId('D'.$result_id);
+
       $uri = $result_uri;
       echo phutil_console_format(
         "        **%s** __%s__\n\n",
