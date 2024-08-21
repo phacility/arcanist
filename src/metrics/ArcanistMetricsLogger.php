@@ -7,6 +7,7 @@ final class ArcanistMetricsLogger extends Phobject {
   private $eventFile = null;
   private $repositoryName;
   private $osType;
+  private $diffOrigin; // rde, k8s jobs or developer local machine
   private $cmdUuid;
 
   private $nounit;
@@ -23,7 +24,10 @@ final class ArcanistMetricsLogger extends Phobject {
     $repository_name;
     exec('basename -s .git `git config --get remote.origin.url`', $repository_name);
     $this->setRepositoryName(implode(",",$repository_name));
-    $this->setOsType(strtolower(php_uname('s')));
+    $os = strtolower(php_uname('s'));
+    $this->setOsType($os);
+    
+    $this->setDiffOrigin($this->inferDiffOrigin($os));
     $this->setCmdUuid($this->generateUuid());
     $this->setNounit(false);
     $this->setNolint(false);
@@ -36,6 +40,12 @@ final class ArcanistMetricsLogger extends Phobject {
       self::$instance = new ArcanistMetricsLogger();
     }
     return self::$instance;
+  }
+
+  private function setDiffOrigin($diffOrigin) {
+    if (empty($this->diffOrigin)) {
+      $this->diffOrigin = $diffOrigin;
+    }
   }
 
   private function setOsType($osType) {
@@ -105,6 +115,7 @@ final class ArcanistMetricsLogger extends Phobject {
     $metadata = [
       "author" => $this->author,
       "os_type" => $this->osType,
+      "diff_origin" => $this->diffOrigin,
       "repository_name" => $this->repositoryName,
       "cmd_uuid" => $this->cmdUuid,
       "revision_id" => $this->revisionID,
@@ -136,6 +147,21 @@ final class ArcanistMetricsLogger extends Phobject {
 
     // return 36 character UUID.
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+  }
+
+  private function inferDiffOrigin($osType) {
+    $diffOrigin;
+    if (getenv('CODER_WORKSPACE') !== false) {
+        $diffOrigin = 'rde';
+    } else if ($osType === 'darwin') {
+        $diffOrigin = 'developer_local_machine';
+    } else if ($osType === 'linux'){
+        $diffOrigin = 'k8s_jobs';
+    } else {
+      error_log("Unknown OS type: $osType");
+      $diffOrigin = 'unknown';
+    }
+    return $diffOrigin;
   }
 }
 ?>
