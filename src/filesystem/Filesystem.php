@@ -931,7 +931,7 @@ final class Filesystem extends Phobject {
     if (phutil_is_windows()) {
       return (bool)preg_match('/^[A-Za-z]+:/', $path);
     } else {
-      return !strncmp($path, DIRECTORY_SEPARATOR, 1);
+      return !strncmp($path ?? '', DIRECTORY_SEPARATOR, 1);
     }
   }
 
