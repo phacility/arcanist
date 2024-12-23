@@ -490,7 +490,7 @@ final class PhutilArgumentParser extends Phobject {
     if ($workflow->isExecutable()) {
       $workflow->setArgv($this);
       $err = $workflow->execute($this);
-      exit($err);
+      exit((int)$err);
     } else {
       return $workflow;
     }

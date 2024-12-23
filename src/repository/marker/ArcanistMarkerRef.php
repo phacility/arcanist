@@ -174,7 +174,7 @@ final class ArcanistMarkerRef
     return $this->getHardpoint(self::HARDPOINT_WORKINGCOPYSTATEREF);
   }
 
-  public function attachRemoteRef(ArcanistRemoteRef $ref = null) {
+  public function attachRemoteRef(?ArcanistRemoteRef $ref = null) {
     return $this->attachHardpoint(self::HARDPOINT_REMOTEREF, $ref);
   }
 

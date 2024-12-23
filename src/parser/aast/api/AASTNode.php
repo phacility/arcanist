@@ -42,7 +42,7 @@ abstract class AASTNode extends Phobject {
     return $this->parentNode;
   }
 
-  final public function setParentNode(AASTNode $node = null) {
+  final public function setParentNode(?AASTNode $node = null) {
     $this->parentNode = $node;
     return $this;
   }
@@ -51,7 +51,7 @@ abstract class AASTNode extends Phobject {
     return $this->previousSibling;
   }
 
-  final public function setPreviousSibling(AASTNode $node = null) {
+  final public function setPreviousSibling(?AASTNode $node = null) {
     $this->previousSibling = $node;
     return $this;
   }
@@ -60,7 +60,7 @@ abstract class AASTNode extends Phobject {
     return $this->nextSibling;
   }
 
-  final public function setNextSibling(AASTNode $node = null) {
+  final public function setNextSibling(?AASTNode $node = null) {
     $this->nextSibling = $node;
     return $this;
   }

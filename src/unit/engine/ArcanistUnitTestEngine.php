@@ -78,7 +78,7 @@ abstract class ArcanistUnitTestEngine extends Phobject {
     return $this->enableCoverage;
   }
 
-  final public function setRenderer(ArcanistUnitRenderer $renderer = null) {
+  final public function setRenderer(?ArcanistUnitRenderer $renderer = null) {
     $this->renderer = $renderer;
     return $this;
   }

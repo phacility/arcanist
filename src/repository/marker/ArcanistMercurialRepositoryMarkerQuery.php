@@ -7,11 +7,11 @@ final class ArcanistMercurialRepositoryMarkerQuery
     return $this->newMarkers();
   }
 
-  protected function newRemoteRefMarkers(ArcanistRemoteRef $remote = null) {
+  protected function newRemoteRefMarkers(?ArcanistRemoteRef $remote = null) {
     return $this->newMarkers($remote);
   }
 
-  private function newMarkers(ArcanistRemoteRef $remote = null) {
+  private function newMarkers(?ArcanistRemoteRef $remote = null) {
     $api = $this->getRepositoryAPI();
 
     // In native Mercurial it is difficult to identify remote markers, and
