@@ -148,7 +148,9 @@ function mpull(array $list, $method, $key_method = null) {
     } else {
       $value = $object;
     }
-    $result[$key] = $value;
+    if ($key !== null) {
+      $result[$key] = $value;
+    }
   }
   return $result;
 }
