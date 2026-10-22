@@ -960,6 +960,7 @@ phutil_register_library_map(array(
     'mfilter' => 'utils/utils.php',
     'mgroup' => 'utils/utils.php',
     'mpull' => 'utils/utils.php',
+    'mpull_filter_keys' => 'utils/utils.php',
     'msort' => 'utils/utils.php',
     'msortv' => 'utils/utils.php',
     'msortv_internal' => 'utils/utils.php',

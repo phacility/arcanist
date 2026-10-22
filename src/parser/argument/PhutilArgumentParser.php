@@ -145,8 +145,7 @@ final class PhutilArgumentParser extends Phobject {
     }
 
     $specs_by_name  = mpull($non_wildcard, null, 'getName');
-    $specs_by_short = mpull($non_wildcard, null, 'getShortAlias');
-    unset($specs_by_short[null]);
+    $specs_by_short = mpull_filter_keys($non_wildcard, null, 'getShortAlias');
 
     $argv = $this->argv;
     $len = count($argv);
