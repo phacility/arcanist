@@ -861,8 +861,7 @@ final class PhutilArgumentParser extends Phobject {
 
   private function mergeSpecs(array $specs) {
 
-    $short_map = mpull($this->specs, null, 'getShortAlias');
-    unset($short_map[null]);
+    $short_map = mpull_filter_keys($this->specs, null, 'getShortAlias');
 
     $wildcard = null;
     foreach ($this->specs as $spec) {
