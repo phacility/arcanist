@@ -154,6 +154,41 @@ function mpull(array $list, $method, $key_method = null) {
 }
 
 
+function mpull_filter_keys(array $list, $method, $key_method = null) {
+  $result = array();
+  foreach ($list as $key => $object) {
+    if ($key_method !== null) {
+      $key = $object->$key_method();
+
+      if ($key === null) {
+        continue;
+      }
+
+      // NOTE: This is intentionally forbidding objects with "__toString()"
+      // because it's messy and rare.
+      if (!is_string($key) && !is_int($key)) {
+        throw new Exception(
+          pht(
+            'Call to "%s" provided a key extraction method which extracted '.
+            'a key with an invalid type ("%s"). Array keys must be strings '.
+            'or integers.',
+            'mpull_filter_keys(...)',
+            phutil_describe_type($key)));
+      }
+    }
+
+    if ($method !== null) {
+      $value = $object->$method();
+    } else {
+      $value = $object;
+    }
+    $result[$key] = $value;
+  }
+
+  return $result;
+}
+
+
 /**
  * Access a property on a list of objects. Short for "property pull", this
  * function works just like @{function:mpull}, except that it accesses object
