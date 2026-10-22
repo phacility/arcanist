@@ -220,6 +220,14 @@ final class PhutilErrorHandler extends Phobject {
       return;
     }
 
+    // TODO: There's no way to write these such that they'll run in
+    // PHP 5 and PHP 8 without warnings, so just silence the warning
+    // until support for older PHP is dropped.
+    $null_pattern = '/^Implicitly marking parameter (\w+) as nullable /';
+    if (preg_match($null_pattern, $str)) {
+      return;
+    }
+
     // Convert typehint failures into exceptions.
     if (preg_match('/^Argument (\d+) passed to (\S+) must be/', $str)) {
       throw new InvalidArgumentException($str);

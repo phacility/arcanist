@@ -272,8 +272,15 @@ final class PhutilBootloader {
     if ($new_last !== null) {
       if ($new_last !== $old_last) {
         $message = $new_last['message'];
-        throw new Exception(
-          "Error while loading file \"{$path}\": {$message}");
+
+        if (preg_match('/explicit nullable type must be used/', $message)) {
+          // TODO: There's no way to write code with nullable types that
+          // runs in PHP 5 and PHP 8 without warnings, so just ignore the
+          // warning until we drop support for older PHP.
+        } else {
+          throw new Exception(
+            "Error while loading file \"{$path}\": {$message}");
+        }
       }
     }
   }

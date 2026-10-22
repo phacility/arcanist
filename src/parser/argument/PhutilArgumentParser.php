@@ -489,7 +489,11 @@ final class PhutilArgumentParser extends Phobject {
     if ($workflow->isExecutable()) {
       $workflow->setArgv($this);
       $err = $workflow->execute($this);
-      exit($err);
+
+      // TODO: This fixes a warning when the function returns null; it
+      // probably shouldn't, but permit it for now.
+
+      exit((int)$err);
     } else {
       return $workflow;
     }
