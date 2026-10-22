@@ -8,7 +8,7 @@ if ($argc != 2) {
 // NOTE: Sleep for the requested duration even if our actual sleep() call is
 // interrupted by a signal.
 
-$then = microtime(true) + (double)$argv[1];
+$then = microtime(true) + (float)$argv[1];
 while (true) {
   $now = microtime(true);
   if ($now >= $then) {
