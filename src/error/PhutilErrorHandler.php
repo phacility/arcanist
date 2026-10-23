@@ -231,7 +231,7 @@ final class PhutilErrorHandler extends Phobject {
     // TODO: Silence deprecation warnings about "strlen(null)" and
     // "$a[null]" and similar to restore service, see T13704.
 
-    $strnull_pattern = '/^\w+(): Passing null to parameter/';
+    $strnull_pattern = '/^\w+\\(\\): Passing null to parameter/';
     if (preg_match($strnull_pattern, $str)) {
       return;
     }
