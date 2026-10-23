@@ -228,6 +228,24 @@ final class PhutilErrorHandler extends Phobject {
       return;
     }
 
+    // TODO: Silence deprecation warnings about "strlen(null)" and
+    // "$a[null]" and similar to restore service, see T13704.
+
+    $strnull_pattern = '/^\w+(): Passing null to parameter/';
+    if (preg_match($strnull_pattern, $str)) {
+      return;
+    }
+
+    $nullidx_pattern = '/^Using null as an array offset is deprecated/';
+    if (preg_match($nullidx_pattern, $str)) {
+      return;
+    }
+
+    $nullparam_pattern = '/^Using null as the key parameter for/';
+    if (preg_match($nullparam_pattern, $str)) {
+      return;
+    }
+
     // Convert typehint failures into exceptions.
     if (preg_match('/^Argument (\d+) passed to (\S+) must be/', $str)) {
       throw new InvalidArgumentException($str);

@@ -75,6 +75,8 @@ final class PhutilConsoleFormatter extends Phobject {
   }
 
   public static function interpretFormat($format) {
+    $format = (string)$format;
+
     $colors = implode('|', array_keys(self::$colorCodes));
 
     // Sequence should be preceded by start-of-string or non-backslash
